@@ -35,6 +35,11 @@ const envSchema = z.object({
   ADMIN_EMAIL:    z.string().optional(),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
+  SENTRY_DSN: z.string().optional(),
+  SENTRY_ENVIRONMENT: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   // TikTok Login Kit (creator social-account OAuth connect)
   TIKTOK_CLIENT_KEY: z.string().optional(),

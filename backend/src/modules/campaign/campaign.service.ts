@@ -15,6 +15,8 @@ import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { emitToRole } from '../../socket';
 import { logger } from '../../config/logger';
+import { logActivity } from '../logging/activity.service';
+import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import {
   sendPaymentSecuredEmail,
@@ -247,6 +249,8 @@ export class CampaignService {
       locationType,
     });
     const campaign = toCampaignDto(raw);
+
+    logActivity({ userId, action: ActivityAction.CAMPAIGN_CREATED, entityType: EntityType.CAMPAIGN, entityId: raw.id, metadata: { campaignType: raw.campaignType, status: raw.status } });
 
     notificationService.createForAdmins({
       type:    'campaign_created',
@@ -543,6 +547,8 @@ export class CampaignService {
     });
     const application = toApplicationDto(rawApp);
 
+    logActivity({ userId, action: ActivityAction.APPLICATION_CREATED, entityType: EntityType.APPLICATION, entityId: application.id, metadata: { campaignId, proposedRate: input.proposedRate, isFreeEvent: isFreeCampaign } });
+
     // Freeze the contract terms at submission time (paid campaigns only — a free
     // event has no price/deliverable-for-payment exchange to put under agreement).
     // Creator's e-signature (see submit-proposal.tsx, which gates this call behind
@@ -656,6 +662,10 @@ export class CampaignService {
 
     const rawUpdated = await this.repo.updateApplicationStatus(appId, status);
     const updated    = toApplicationDto(rawUpdated);
+
+    if (status === 'ACCEPTED') {
+      logActivity({ userId, action: ActivityAction.APPLICATION_HIRED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId, creatorId: application.creatorId } });
+    }
 
     // Business's e-signature (see campaign-proposals.tsx, which gates the accept
     // call behind the contract modal's "I Agree" button) — completes the
@@ -888,6 +898,8 @@ export class CampaignService {
       amount:        application.proposedRate,
     });
 
+    logActivity({ userId, action: ActivityAction.PAYMENT_ESCROWED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: application.campaignId, amount: application.proposedRate } });
+
     // Notify creator
     const creatorUserId = (application.creator as any)?.userId as string | undefined;
     if (creatorUserId) {
@@ -950,6 +962,8 @@ export class CampaignService {
 
     const updated = await this.repo.submitWork(appId, data);
 
+    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_SUBMITTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, hasNote: !!data.note } });
+
     const businessUserId = app.campaign.business.userId;
     notificationService.create({
       userId:  businessUserId,
@@ -980,6 +994,9 @@ export class CampaignService {
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
 
     const updated = await this.repo.approveWork(appId);
+
+    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+
     // Payment is no longer auto-released on approval — an admin must
     // manually release the held escrow amount (see admin.service.releasePayment).
 

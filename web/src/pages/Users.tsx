@@ -1,5 +1,5 @@
 import { useState, useEffect }      from 'react';
-import { Search }        from 'lucide-react';
+import { Search, Eye, BarChart3, Trash2 } from 'lucide-react';
 import { useNavigate }   from 'react-router-dom';
 import { DataTable }     from '../components/DataTable';
 import { StatusBadge }   from '../components/StatusBadge';
@@ -7,6 +7,7 @@ import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
 import { DetailModal }   from '../components/DetailModal';
+import { ActionButton }  from '../components/ActionButton';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiUser } from '../lib/api';
 import { useApi }        from '../lib/useApi';
@@ -102,6 +103,7 @@ export function Users() {
         showToast(`Account ${isActive ? 'reactivated' : 'suspended'}.`);
       }
       setAction(null);
+      setViewing(null);
       refetch();
     } catch (e) {
       showToast((e as Error).message ?? 'Something went wrong.', false);
@@ -154,42 +156,17 @@ export function Users() {
       key:    'actions',
       header: 'Actions',
       render: (row: ApiUser) => (
-        <div className="flex gap-2">
-          <button
-            className="text-xs text-gray-600 hover:text-gray-900 font-medium"
-            onClick={() => setViewing(row)}
-          >
-            View
-          </button>
+        <div className="flex items-center gap-1.5">
+          <ActionButton icon={Eye} title="View" onClick={() => setViewing(row)} />
           {(row.role === 'CREATOR' || row.role === 'BUSINESS') && (
-            <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            <ActionButton
+              variant="primary"
+              icon={BarChart3}
+              title="Analytics"
               onClick={() => navigate(`/analytics/${row.id}`, { state: { name: displayName(row), email: row.email } })}
-            >
-              Analytics
-            </button>
+            />
           )}
-          {row.isActive === false ? (
-            <button
-              className="text-xs text-green-600 hover:text-green-800 font-medium"
-              onClick={() => setAction({ type: 'activate', user: row })}
-            >
-              Activate
-            </button>
-          ) : (
-            <button
-              className="text-xs text-orange-500 hover:text-orange-700 font-medium"
-              onClick={() => setAction({ type: 'suspend', user: row })}
-            >
-              Suspend
-            </button>
-          )}
-          <button
-            className="text-xs text-red-500 hover:text-red-700 font-medium"
-            onClick={() => setAction({ type: 'delete', user: row })}
-          >
-            Delete
-          </button>
+          <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', user: row })} />
         </div>
       ),
     },
@@ -321,12 +298,29 @@ export function Users() {
               : []),
           ]}
           footer={
-            <button
-              onClick={() => setViewing(null)}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              Close
-            </button>
+            <>
+              {viewing.isActive === false ? (
+                <button
+                  onClick={() => setAction({ type: 'activate', user: viewing })}
+                  className="px-4 py-2.5 text-sm font-medium text-green-600 bg-green-50 rounded-xl hover:bg-green-100 transition-colors"
+                >
+                  Activate
+                </button>
+              ) : (
+                <button
+                  onClick={() => setAction({ type: 'suspend', user: viewing })}
+                  className="px-4 py-2.5 text-sm font-medium text-orange-600 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors"
+                >
+                  Suspend
+                </button>
+              )}
+              <button
+                onClick={() => setViewing(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </>
           }
         />
       )}

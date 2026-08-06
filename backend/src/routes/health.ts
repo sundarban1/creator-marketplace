@@ -23,6 +23,10 @@ import prisma from '../prisma';
  *                 timestamp:
  *                   type: string
  *                   format: date-time
+ *                 uptime:
+ *                   type: number
+ *                   description: Process uptime in seconds
+ *                   example: 12345.678
  *                 environment:
  *                   type: string
  *                   example: development
@@ -38,6 +42,7 @@ export function registerHealthCheck(app: Express): void {
       await prisma.$queryRaw`SELECT 1`;
       res.status(200).json({
         status: 'ok',
+        uptime: process.uptime(),
         timestamp: new Date().toISOString(),
         environment: env.NODE_ENV,
         database: 'connected',
@@ -45,6 +50,7 @@ export function registerHealthCheck(app: Express): void {
     } catch {
       res.status(503).json({
         status: 'error',
+        uptime: process.uptime(),
         timestamp: new Date().toISOString(),
         environment: env.NODE_ENV,
         database: 'disconnected',

@@ -4,6 +4,9 @@ import { AdminService } from './admin.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { AppError } from '../../middleware/error';
+import { logActivity } from '../logging/activity.service';
+import { logAudit } from '../logging/audit.service';
+import { ActivityAction, AuditAction, EntityType } from '../logging/logging.constants';
 import {
   sendAccountSuspendedEmail,
   sendAccountReactivatedEmail,
@@ -61,6 +64,13 @@ export async function suspendUser(req: Request, res: Response, next: NextFunctio
     const { isActive } = req.body as { isActive: boolean };
     if (typeof isActive !== 'boolean') throw new AppError('isActive must be a boolean', 400);
     const updated = await service.suspendUser(id!, isActive);
+
+    logAudit({
+      userId:      id,
+      action:      isActive ? AuditAction.ACCOUNT_REACTIVATED : AuditAction.ACCOUNT_SUSPENDED,
+      performedBy: req.user!.id,
+    });
+
     const name = updated.email.split('@')[0]!;
     if (!isActive) {
       sendAccountSuspendedEmail(updated.email, name).catch(() => {});
@@ -79,6 +89,14 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
     const { id } = req.params;
     const user = await service.getUser(id!);
     await service.removeUser(id!);
+
+    logAudit({
+      userId:      id,
+      action:      AuditAction.ACCOUNT_DELETED_BY_ADMIN,
+      performedBy: req.user!.id,
+      oldValue:    { email: user.email },
+    });
+
     sendAccountDeletedEmail(user.email, user.email.split('@')[0]!).catch(() => {});
     return success(res, null, 'User deleted');
   } catch (err) {
@@ -105,6 +123,40 @@ export async function getBusinesses(req: Request, res: Response, next: NextFunct
     const search = req.query['search'] as string | undefined;
     const { businesses, total } = await service.getBusinesses(page, limit, search);
     return paginated(res, businesses, total, page, limit);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/activity-logs
+export async function getActivityLogs(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePagination(req);
+    const filters = {
+      userId: req.query['userId'] as string | undefined,
+      action: req.query['action'] as string | undefined,
+      from:   req.query['from'] ? new Date(req.query['from'] as string) : undefined,
+      to:     req.query['to']   ? new Date(req.query['to']   as string) : undefined,
+    };
+    const { logs, total } = await service.getActivityLogs(page, limit, filters);
+    return paginated(res, logs, total, page, limit);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/audit-logs
+export async function getAuditLogs(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePagination(req);
+    const filters = {
+      userId: req.query['userId'] as string | undefined,
+      action: req.query['action'] as string | undefined,
+      from:   req.query['from'] ? new Date(req.query['from'] as string) : undefined,
+      to:     req.query['to']   ? new Date(req.query['to']   as string) : undefined,
+    };
+    const { logs, total } = await service.getAuditLogs(page, limit, filters);
+    return paginated(res, logs, total, page, limit);
   } catch (err) {
     next(err);
   }
@@ -241,7 +293,11 @@ export async function getConversations(req: Request, res: Response, next: NextFu
 // DELETE /api/admin/conversations/:id
 export async function deleteConversation(req: Request, res: Response, next: NextFunction) {
   try {
-    await service.removeConversation(req.params['id']!);
+    const id = req.params['id']!;
+    await service.removeConversation(id);
+
+    logActivity({ userId: req.user!.id, action: ActivityAction.CONVERSATION_DELETED_BY_ADMIN, entityType: EntityType.CONVERSATION, entityId: id });
+
     return success(res, null, 'Conversation deleted');
   } catch (err) {
     next(err);
@@ -302,7 +358,7 @@ export async function verifyCreator(req: Request, res: Response, next: NextFunct
     const { id }       = req.params;
     const { verified } = req.body as { verified: boolean };
     if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', 400);
-    const updated = await service.setCreatorVerified(id!, verified);
+    const updated = await service.setCreatorVerified(id!, verified, req.user!.id);
     return success(res, updated, 'Creator verification badge updated');
   } catch (err) {
     next(err);
@@ -343,7 +399,7 @@ export async function verifyBusiness(req: Request, res: Response, next: NextFunc
     const { id }       = req.params;
     const { verified } = req.body as { verified: boolean };
     if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', 400);
-    const updated = await service.setBusinessVerified(id!, verified);
+    const updated = await service.setBusinessVerified(id!, verified, req.user!.id);
     return success(res, updated, 'Business verification badge updated');
   } catch (err) {
     next(err);
@@ -356,7 +412,7 @@ export async function rejectBusiness(req: Request, res: Response, next: NextFunc
     const { id }     = req.params;
     const { reason } = req.body as { reason: string };
     if (!reason?.trim()) throw new AppError('reason is required', 400);
-    const updated = await service.rejectBusiness(id!, reason.trim());
+    const updated = await service.rejectBusiness(id!, reason.trim(), req.user!.id);
     return success(res, updated, 'Business verification rejected');
   } catch (err) {
     next(err);

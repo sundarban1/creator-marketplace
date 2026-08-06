@@ -517,4 +517,62 @@ export class AdminRepository {
 
     return { transactions, total };
   }
+
+  // ── Activity / Audit logs ─────────────────────────────────────────────────
+
+  async getAllActivityLogs(
+    page: number,
+    limit: number,
+    filters: { userId?: string; action?: string; from?: Date; to?: Date } = {},
+  ) {
+    const where: Record<string, unknown> = {};
+    if (filters.userId) where['userId'] = filters.userId;
+    if (filters.action)  where['action'] = filters.action;
+    if (filters.from || filters.to) {
+      where['createdAt'] = {
+        ...(filters.from ? { gte: filters.from } : {}),
+        ...(filters.to   ? { lte: filters.to }   : {}),
+      };
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.activityLog.findMany({
+        where,
+        skip:    (page - 1) * limit,
+        take:    limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      }),
+      prisma.activityLog.count({ where }),
+    ]);
+
+    return { logs, total };
+  }
+
+  async getAllAuditLogs(
+    page: number,
+    limit: number,
+    filters: { userId?: string; action?: string; from?: Date; to?: Date } = {},
+  ) {
+    const where: Record<string, unknown> = {};
+    if (filters.userId) where['userId'] = filters.userId;
+    if (filters.action)  where['action'] = filters.action;
+    if (filters.from || filters.to) {
+      where['createdAt'] = {
+        ...(filters.from ? { gte: filters.from } : {}),
+        ...(filters.to   ? { lte: filters.to }   : {}),
+      };
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        skip:    (page - 1) * limit,
+        take:    limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    return { logs, total };
+  }
 }

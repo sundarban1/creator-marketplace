@@ -12,6 +12,8 @@ import { CreatorRepository } from './creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { PlatformRepository } from '../platform/platform.repository';
 import { analyticsService } from '../analytics/analytics.service';
+import { logActivity } from '../logging/activity.service';
+import { ActivityAction } from '../logging/logging.constants';
 import type {
   UpdateCreatorProfileInput,
   AddPortfolioLinkInput,
@@ -417,7 +419,11 @@ export class CreatorService {
       await this.repo.setAccountEmail(userId, email);
     }
 
-    return toCreatorProfileDto(await this.repo.update(userId, rest));
+    const updated = await this.repo.update(userId, rest);
+
+    logActivity({ userId, action: ActivityAction.CREATOR_PROFILE_UPDATED, metadata: { changedFields: Object.keys(rest) } });
+
+    return toCreatorProfileDto(updated);
   }
 
   async uploadCitizenship(userId: string, docUrl: string) {

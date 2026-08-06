@@ -17,6 +17,9 @@ import { AdminRepository } from '../admin/admin.repository';
 import { ReferralService } from '../referral/referral.service';
 import { BusinessReferralService } from '../business-referral/business-referral.service';
 import { notificationService } from '../notifications/notification.service';
+import { logActivity } from '../logging/activity.service';
+import { logAudit } from '../logging/audit.service';
+import { ActivityAction, AuditAction } from '../logging/logging.constants';
 import { toUserDto } from './auth.dto';
 import type {
   RegisterInput,
@@ -138,6 +141,8 @@ export class AuthService {
         .catch((err) => logger.error({ err, userId: user.id }, 'Business referral code linking failed at signup'));
     }
     if (deviceId) await this.repo.setDeviceId(user.id, deviceId);
+
+    logActivity({ userId: user.id, action: ActivityAction.USER_REGISTERED, metadata: { role: input.role, channel, referralCode: input.referralCode } });
 
     await this.issueOtp(user.id, channel, channel === 'email' ? emailForRecord : phoneForRecord!);
 
@@ -269,6 +274,8 @@ export class AuthService {
     const refreshToken = signRefreshToken(tokenPayload);
     await this.repo.createSession(activeUser.id, refreshToken, deviceId);
     if (deviceId) await this.repo.setDeviceId(activeUser.id, deviceId);
+
+    logActivity({ userId: activeUser.id, action: ActivityAction.USER_LOGIN, metadata: { channel, reactivated, deviceId } });
 
     return { user: toUserDto(activeUser), accessToken, refreshToken, reactivated };
   }
@@ -406,6 +413,8 @@ export class AuthService {
     await this.repo.deleteOtpsByUserId(userId);
     await this.repo.updateUserPhone(userId, normalizePhone(input.phone));
 
+    logAudit({ userId, action: AuditAction.PHONE_CHANGED, performedBy: userId });
+
     return { message: 'Phone number verified successfully' };
   }
 
@@ -440,6 +449,8 @@ export class AuthService {
 
     await this.repo.deleteOtpsByUserId(userId);
     await this.repo.updateUserEmail(userId, input.email);
+
+    logAudit({ userId, action: AuditAction.EMAIL_CHANGED, performedBy: userId });
 
     return { message: 'Email verified successfully' };
   }
@@ -569,6 +580,9 @@ export class AuthService {
     const hashedPassword = await hashPassword(input.newPassword);
     await this.repo.updatePassword(user.id, hashedPassword);
     await this.repo.deleteAllSessions(user.id);
+
+    logAudit({ userId: user.id, action: AuditAction.PASSWORD_RESET, performedBy: user.id });
+
     return { message: 'Password reset successfully. Please login with your new password.' };
   }
 }

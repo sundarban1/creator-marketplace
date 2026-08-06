@@ -1,5 +1,5 @@
 import { useState, useEffect }      from 'react';
-import { Search }        from 'lucide-react';
+import { Search, Eye, BarChart3, Trash2 } from 'lucide-react';
 import { useNavigate }   from 'react-router-dom';
 import { DataTable }     from '../components/DataTable';
 import { StatusBadge }   from '../components/StatusBadge';
@@ -8,6 +8,7 @@ import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
 import { DetailModal }   from '../components/DetailModal';
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal';
+import { ActionButton } from '../components/ActionButton';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiCreator } from '../lib/api';
 import { useApi }        from '../lib/useApi';
@@ -174,20 +175,14 @@ export function Creators() {
       key:    'actions',
       header: 'Actions',
       render: (row: ApiCreator) => (
-        <div className="flex items-center gap-2">
-          <button
-            className="text-xs text-gray-600 hover:text-gray-900 font-medium"
-            onClick={() => setViewing(row)}>
-            View
-          </button>
-          <button
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.fullName ?? row.user.email, email: row.user.email } })}>
-            Analytics
-          </button>
-          <button className="text-xs text-red-500 hover:text-red-700 font-medium" onClick={() => setAction({ type: 'delete', creator: row })}>
-            Delete
-          </button>
+        <div className="flex items-center gap-1.5">
+          <ActionButton icon={Eye} title="View" onClick={() => setViewing(row)} />
+          <ActionButton
+            variant="primary"
+            icon={BarChart3}
+            title="Analytics"
+            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.fullName ?? row.user.email, email: row.user.email } })} />
+          <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', creator: row })} />
         </div>
       ),
     },

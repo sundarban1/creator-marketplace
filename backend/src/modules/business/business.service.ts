@@ -8,6 +8,8 @@ import { PlatformRepository } from '../platform/platform.repository';
 import type { UpdateBusinessProfileInput, AddSocialAccountInput, UpdateSocialAccountInput } from './business.schema';
 import { translateFields, translateMany } from '../../utils/translation';
 import { analyticsService } from '../analytics/analytics.service';
+import { logActivity } from '../logging/activity.service';
+import { ActivityAction } from '../logging/logging.constants';
 
 const BUSINESS_FIELDS = ['description', 'location', 'categories'] as const;
 
@@ -47,7 +49,11 @@ export class BusinessService {
       await this.repo.setAccountEmail(userId, email);
     }
 
-    return toBusinessProfileDto(await this.repo.update(userId, rest));
+    const updated = await this.repo.update(userId, rest);
+
+    logActivity({ userId, action: ActivityAction.BUSINESS_PROFILE_UPDATED, metadata: { changedFields: Object.keys(rest) } });
+
+    return toBusinessProfileDto(updated);
   }
 
   async listBusinesses(params: {

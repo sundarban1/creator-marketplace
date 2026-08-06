@@ -14,6 +14,9 @@ import { analyticsService } from '../analytics/analytics.service';
 import { sendAccountVerifiedEmail, sendVerificationRejectedEmail } from '../../utils/email';
 import { AppError } from '../../middleware/error';
 import { invalidateSettingsCache } from '../../utils/settingsCache';
+import { logActivity } from '../logging/activity.service';
+import { logAudit } from '../logging/audit.service';
+import { ActivityAction, AuditAction, EntityType } from '../logging/logging.constants';
 
 export class AdminService {
   private repo: AdminRepository;
@@ -50,6 +53,14 @@ export class AdminService {
 
   getCampaigns(page: number, limit: number, status?: string, search?: string) {
     return this.repo.getAllCampaigns(page, limit, status, search);
+  }
+
+  getActivityLogs(page: number, limit: number, filters: { userId?: string; action?: string; from?: Date; to?: Date }) {
+    return this.repo.getAllActivityLogs(page, limit, filters);
+  }
+
+  getAuditLogs(page: number, limit: number, filters: { userId?: string; action?: string; from?: Date; to?: Date }) {
+    return this.repo.getAllAuditLogs(page, limit, filters);
   }
 
   verifyUser(userId: string, verified: boolean) {
@@ -255,6 +266,9 @@ export class AdminService {
       adminId:       adminUserId,
       amount:        app.proposedRate,
     });
+
+    logActivity({ userId: adminUserId, action: ActivityAction.PAYMENT_RELEASED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, amount: app.proposedRate } });
+
     const creatorUserId = app.creator.userId;
     const businessUserId = app.campaign.business.userId;
     analyticsService.incrPaymentReleased(creatorUserId, businessUserId, app.proposedRate);
@@ -287,8 +301,19 @@ export class AdminService {
     return updated;
   }
 
-  async setCreatorVerified(creatorId: string, verified: boolean) {
+  async setCreatorVerified(creatorId: string, verified: boolean, adminUserId: string) {
     const updated = await this.repo.updateCreatorVerification(creatorId, verified);
+
+    if (verified) {
+      logActivity({ userId: updated.userId, action: ActivityAction.ACCOUNT_VERIFIED, entityType: EntityType.CREATOR_PROFILE, entityId: updated.id, metadata: { profileId: updated.id, profileType: 'creator' } });
+    }
+    logAudit({
+      userId:      updated.userId,
+      action:      verified ? AuditAction.VERIFICATION_APPROVED : AuditAction.VERIFICATION_REJECTED,
+      performedBy: adminUserId,
+      newValue:    { profileId: updated.id, profileType: 'creator', verified },
+    });
+
     if (verified && updated.user) {
       const name = updated.fullName ?? 'there';
       notificationService.create({
@@ -312,8 +337,19 @@ export class AdminService {
     return this.repo.setBusinessDocumentStatus(businessId, doc, approved);
   }
 
-  async setBusinessVerified(businessId: string, verified: boolean) {
+  async setBusinessVerified(businessId: string, verified: boolean, adminUserId: string) {
     const updated = await this.repo.updateBusinessVerification(businessId, verified);
+
+    if (verified) {
+      logActivity({ userId: updated.userId, action: ActivityAction.ACCOUNT_VERIFIED, entityType: EntityType.BUSINESS_PROFILE, entityId: updated.id, metadata: { profileId: updated.id, profileType: 'business' } });
+    }
+    logAudit({
+      userId:      updated.userId,
+      action:      verified ? AuditAction.VERIFICATION_APPROVED : AuditAction.VERIFICATION_REJECTED,
+      performedBy: adminUserId,
+      newValue:    { profileId: updated.id, profileType: 'business', verified },
+    });
+
     if (verified && updated.user) {
       const name = updated.businessName ?? 'there';
       notificationService.create({
@@ -329,8 +365,16 @@ export class AdminService {
     return updated;
   }
 
-  async rejectBusiness(businessId: string, reason: string) {
+  async rejectBusiness(businessId: string, reason: string, adminUserId: string) {
     const updated = await this.repo.rejectBusinessVerification(businessId, reason);
+
+    logAudit({
+      userId:      updated.userId,
+      action:      AuditAction.VERIFICATION_REJECTED,
+      performedBy: adminUserId,
+      newValue:    { profileId: updated.id, profileType: 'business', reason },
+    });
+
     if (updated.user) {
       const name = updated.businessName ?? 'there';
       notificationService.create({

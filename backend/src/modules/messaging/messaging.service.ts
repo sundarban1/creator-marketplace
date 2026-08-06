@@ -7,6 +7,8 @@ import { MessagingRepository } from './messaging.repository';
 import { AdminRepository } from '../admin/admin.repository';
 import { notificationService, sendExpoPush } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
+import { logActivity } from '../logging/activity.service';
+import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { emitToUser } from '../../socket';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
@@ -414,6 +416,8 @@ export class MessagingService {
 
     const field = this.hiddenFieldFor(conversation, userId, role);
     await this.repo.hideConversationForUser(conversationId, field);
+
+    logActivity({ userId, action: ActivityAction.CONVERSATION_HIDDEN, entityType: EntityType.CONVERSATION, entityId: conversationId });
   }
 
   // Side-effect-free: conversation lookup + access/block/status checks only.
@@ -482,6 +486,10 @@ export class MessagingService {
     const conversationId = conversation.id;
     const raw     = await this.repo.createMessage({ conversationId, senderId: userId, ...data });
     const message = toMessageDto(raw);
+
+    if (data.type === 'VOICE') {
+      logActivity({ userId, action: ActivityAction.MESSAGE_VOICE_SENT, entityType: EntityType.CONVERSATION, entityId: conversationId, metadata: { durationSec: data.attachmentDurationSec } });
+    }
 
     // Mark the conversation as seen for the sender immediately so their own
     // badge count stays at zero (prevents the flash caused by the race between

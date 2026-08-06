@@ -1,22 +1,23 @@
 import { useState, useMemo } from 'react';
 import { useNavigate }       from 'react-router-dom';
-import { ChevronDown, ToggleLeft, ToggleRight } from 'lucide-react';
+import { ChevronDown, ToggleLeft, ToggleRight, Eye, Pencil } from 'lucide-react';
 import { DataTable }    from '../components/DataTable';
 import { StatusBadge }  from '../components/StatusBadge';
 import { PageHeader }   from '../components/PageHeader';
 import { Pagination }   from '../components/Pagination';
 import { EditEventModal } from '../components/EditEventModal';
+import { ActionButton } from '../components/ActionButton';
 import { api, type ApiCampaign } from '../lib/api';
 import { useApi }       from '../lib/useApi';
 
 const PAGE_SIZE = 10;
 
 const PLATFORM_COLORS: Record<string, string> = {
-  Instagram: 'text-pink-600 bg-pink-50',
-  TikTok:    'text-gray-800 bg-gray-100',
-  YouTube:   'text-red-600 bg-red-50',
-  LinkedIn:  'text-blue-600 bg-blue-50',
-  Twitter:   'text-sky-600 bg-sky-50',
+  Instagram: 'text-pink-600 bg-pink-50 border-pink-200',
+  TikTok:    'text-gray-800 bg-gray-100 border-gray-300',
+  YouTube:   'text-red-600 bg-red-50 border-red-200',
+  LinkedIn:  'text-blue-600 bg-blue-50 border-blue-200',
+  Twitter:   'text-sky-600 bg-sky-50 border-sky-200',
 };
 
 const STATUS_FILTERS = ['All', 'PENDING_APPROVAL', 'ACTIVE', 'PAUSED', 'CLOSED'] as const;
@@ -122,12 +123,12 @@ export function Campaigns() {
       key:    'platform',
       header: 'Platform',
       render: (row: ApiCampaign) => (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {row.platforms.map((p) => (
             <span
               key={p}
-              className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                PLATFORM_COLORS[p] ?? 'bg-gray-100 text-gray-700'
+              className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
+                PLATFORM_COLORS[p] ?? 'bg-gray-100 text-gray-700 border-gray-300'
               }`}
             >
               {p}
@@ -179,7 +180,7 @@ export function Campaigns() {
       render: (row: ApiCampaign) => {
         const canToggle = row.status === 'ACTIVE' || row.status === 'PAUSED';
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => canToggle && handleToggleActive(row)}
               disabled={!canToggle || togglingId === row.id}
@@ -188,26 +189,16 @@ export function Campaigns() {
                   ? row.status === 'ACTIVE' ? 'Deactivate' : 'Activate'
                   : 'Only active or inactive events can be toggled'
               }
-              className={`p-1 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`p-1.5 rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 row.status === 'ACTIVE'
-                  ? 'text-emerald-600 hover:bg-emerald-50'
-                  : 'text-gray-400 hover:bg-gray-100'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'
+                  : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'
               }`}
             >
               {row.status === 'ACTIVE' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
             </button>
-            <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-              onClick={() => navigate(`/campaigns/${row.id}`)}
-            >
-              View
-            </button>
-            <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-              onClick={() => setEditId(row.id)}
-            >
-              Edit
-            </button>
+            <ActionButton variant="primary" icon={Eye} title="View" onClick={() => navigate(`/campaigns/${row.id}`)} />
+            <ActionButton variant="primary" icon={Pencil} title="Edit" onClick={() => setEditId(row.id)} />
           </div>
         );
       },

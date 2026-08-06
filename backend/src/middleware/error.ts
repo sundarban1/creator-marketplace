@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import multer from 'multer';
+import * as Sentry from '@sentry/node';
 
 // req.log is normally always set by pinoHttp, but errors can originate before it
 // runs (e.g. a malformed body). Falls back to console so logging itself never throws
@@ -145,6 +146,10 @@ export function errorHandler(
   if (err instanceof AppError) {
     const level = err.statusCode >= 500 || !err.isOperational ? 'error' : 'warn';
     logError(req, err, err.message, level);
+    // Only genuinely unexpected server faults go to Sentry — expected 4xx
+    // AppErrors (validation, auth, not-found, etc.) are normal traffic, not
+    // exceptions worth an alert.
+    if (err.statusCode >= 500) Sentry.captureException(err);
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
@@ -155,6 +160,7 @@ export function errorHandler(
 
   // Generic / unknown errors
   logError(req, err, 'Unhandled error');
+  Sentry.captureException(err);
   res.status(500).json({
     success: false,
     message:

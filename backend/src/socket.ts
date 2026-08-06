@@ -9,6 +9,7 @@ import { VisitorChatService, visitorChatRoom, ADMIN_VISITOR_CHATS_ROOM } from '.
 import prisma from './prisma';
 import { env } from './config/env';
 import { logger } from './config/logger';
+import * as Sentry from '@sentry/node';
 import type { Role } from '@prisma/client';
 
 const messagingService = new MessagingService();
@@ -83,6 +84,7 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
     // type from the authenticated-user flow below (no userId/role at all).
     if (socket.data.isVisitor) {
       const chatId = socket.data.visitorChatId as string;
+      logger.debug({ socketId: socket.id, chatId }, 'Socket connected (visitor)');
       void socket.join(visitorChatRoom(chatId));
 
       socket.on('visitor-message:send', ({ content }: { content: string }) => {
@@ -96,6 +98,7 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
 
     const userId = socket.data.userId as string;
     const role   = socket.data.role   as string;
+    logger.debug({ socketId: socket.id, userId, role }, 'Socket connected');
     socket.join(`user:${userId}`);
     socket.join(`role:${role}`);   // 'role:CREATOR' | 'role:BUSINESS'
 
@@ -143,6 +146,7 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
     });
 
     socket.on('disconnect', () => {
+      logger.debug({ socketId: socket.id, userId, role }, 'Socket disconnected');
       void (async () => {
         // Another tab/device for the same user may still be connected — only
         // mark them offline once every socket for this user has disconnected.
@@ -168,8 +172,13 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
         .catch((err) => {
           // Rate-limit/duplicate-message rejections carry a real message the
           // client should show (see MessagingService.sendMessage/persistAndBroadcast)
-          // — previously this only sent a bare signal with no explanation.
+          // — previously this only sent a bare signal with no explanation, and the
+          // failure itself was never logged server-side (only visible to the client).
           const message = err instanceof AppError ? err.message : 'Failed to send message';
+          if (!(err instanceof AppError) || !err.isOperational) {
+            logger.error({ err, conversationId, userId }, 'Socket message:send failed');
+            Sentry.captureException(err);
+          }
           socket.emit('message:error', { conversationId, message });
         });
     });

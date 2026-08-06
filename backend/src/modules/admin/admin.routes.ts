@@ -11,6 +11,8 @@ import {
   deleteUser,
   getCreators,
   getBusinesses,
+  getActivityLogs,
+  getAuditLogs,
   getCampaigns,
   getCampaignDetail,
   updateCampaign,
@@ -57,6 +59,9 @@ router.get('/businesses', getBusinesses);
 router.patch('/businesses/:id/verify', verifyBusiness);
 router.patch('/businesses/:id/documents/:doc', setBusinessDocumentStatus);
 router.patch('/businesses/:id/reject', rejectBusiness);
+
+router.get('/activity-logs', getActivityLogs);
+router.get('/audit-logs',    getAuditLogs);
 
 router.get('/campaigns', getCampaigns);
 router.get('/campaigns/:id', getCampaignDetail);

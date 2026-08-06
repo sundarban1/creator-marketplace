@@ -116,6 +116,9 @@
           "microphonePermission": "Allow Kolab to use your microphone to record voice messages for the AI assistant."
         }
       ],
+      "@sentry/react-native/expo",
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
       "./plugins/withFixMapsPodfile.js"
     ],
     "experiments": {

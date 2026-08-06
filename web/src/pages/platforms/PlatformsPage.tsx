@@ -131,13 +131,15 @@ export function PlatformsPage() {
                 <td className="px-4 py-3">
                   <StatusBadge status={plt.status} />
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-1">
+                <td className="px-4 py-3 text-right">
+                  <div className="flex items-center justify-end gap-1.5">
                     <button
                       onClick={() => toggleStatus(plt.id)}
                       title={plt.status === 'active' ? 'Deactivate' : 'Activate'}
-                      className={`p-1.5 rounded-lg transition-colors ${
-                        plt.status === 'active' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-gray-400 hover:bg-gray-100'
+                      className={`p-1.5 rounded-lg border transition-colors ${
+                        plt.status === 'active'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'
+                          : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'
                       }`}
                     >
                       {plt.status === 'active' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
@@ -145,14 +147,14 @@ export function PlatformsPage() {
                     <button
                       onClick={() => navigate(`/platforms/edit/${plt.id}`)}
                       title="Edit"
-                      className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 transition-colors"
+                      className="p-1.5 rounded-lg border bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100 transition-colors"
                     >
                       <Pencil size={15} />
                     </button>
                     <button
                       onClick={() => setDeleteTarget({ id: plt.id, name: plt.name })}
                       title="Delete"
-                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded-lg border bg-red-50 border-red-200 text-red-500 hover:bg-red-100 transition-colors"
                     >
                       <Trash2 size={15} />
                     </button>

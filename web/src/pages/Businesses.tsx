@@ -1,9 +1,11 @@
+import { Eye, BarChart3, Trash2 } from 'lucide-react';
 import { DataTable }     from '../components/DataTable';
 import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
 import { DetailModal }   from '../components/DetailModal';
+import { ActionButton }  from '../components/ActionButton';
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiBusiness } from '../lib/api';
@@ -174,20 +176,14 @@ export function Businesses() {
       key:    'actions',
       header: 'Actions',
       render: (row: ApiBusiness) => (
-        <div className="flex items-center gap-2">
-          <button
-            className="text-xs text-gray-600 hover:text-gray-900 font-medium"
-            onClick={() => setViewing(row)}>
-            View
-          </button>
-          <button
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.businessName, email: row.user.email } })}>
-            Analytics
-          </button>
-          <button className="text-xs text-red-500 hover:text-red-700 font-medium" onClick={() => setAction({ type: 'delete', business: row })}>
-            Delete
-          </button>
+        <div className="flex items-center gap-1.5">
+          <ActionButton icon={Eye} title="View" onClick={() => setViewing(row)} />
+          <ActionButton
+            variant="primary"
+            icon={BarChart3}
+            title="Analytics"
+            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.businessName, email: row.user.email } })} />
+          <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', business: row })} />
         </div>
       ),
     },

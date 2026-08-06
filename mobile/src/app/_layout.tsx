@@ -1,8 +1,9 @@
+import * as Sentry from '@sentry/react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   useFonts,
@@ -27,12 +28,74 @@ import { ToastProvider } from '@/components/Toast';
 import { isBiometricLoginEnabled } from '@/services/biometric';
 import { authService } from '@/services/auth';
 import { initBackgroundVideoUploadManager } from '@/services/backgroundVideoUploadManager';
+import { initSentry } from '@/utilities/sentry';
+import { COLORS, F, SPACING, FONT_SIZE, RADIUS } from '@/utilities/constants';
 import type { UserRole } from '@/types';
+
+// Must run before the provider tree renders — this is what wires up global JS
+// exception / unhandled-promise-rejection capture for the whole app.
+initSentry();
 
 // Registered once per app process, before any screen mounts — a video upload
 // left mid-transfer by a killed app has no live screen to resume it, so the
 // listener + boot-time reconciliation must not depend on one being mounted.
 initBackgroundVideoUploadManager();
+
+// Rendered by Sentry.ErrorBoundary when a render error escapes the whole app
+// tree. Deliberately styled with static color/spacing literals rather than
+// useAppColors()/theme context — this boundary sits above every provider
+// (AppThemeProvider included), so theme context may not be mounted when an
+// error this high up fires. Values below are hand-picked to match this app's
+// COLORS/F/SPACING tokens so it still looks native to the app.
+function ErrorFallback({ resetError }: { resetError: () => void }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: SPACING.xl,
+        backgroundColor: COLORS.background,
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: F.semibold,
+          fontSize: FONT_SIZE.xl,
+          color: COLORS.text,
+          textAlign: 'center',
+          marginBottom: SPACING.sm,
+        }}
+      >
+        Something went wrong
+      </Text>
+      <Text
+        style={{
+          fontFamily: F.regular,
+          fontSize: FONT_SIZE.md,
+          color: COLORS.textSecondary,
+          textAlign: 'center',
+          marginBottom: SPACING.xl,
+        }}
+      >
+        The app hit an unexpected error. Please try again.
+      </Text>
+      <TouchableOpacity
+        onPress={resetError}
+        style={{
+          backgroundColor: COLORS.brinjal1,
+          paddingVertical: SPACING.md,
+          paddingHorizontal: SPACING.xxl,
+          borderRadius: RADIUS.md,
+        }}
+      >
+        <Text style={{ fontFamily: F.semibold, fontSize: FONT_SIZE.md, color: '#FFFFFF' }}>
+          Try Again
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 // Handles auth-based redirects for both login AND logout
 function RootNavigator() {
@@ -152,7 +215,7 @@ function RootLayoutInner() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded] = useFonts({
     'Poppins-Regular':    Poppins_400Regular,
     'Poppins-Medium':     Poppins_500Medium,
@@ -165,17 +228,25 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppThemeProvider>
-        <ToastProvider>
-          <LanguageProvider>
-            <View style={{ flex: 1 }}>
-              <RootLayoutInner />
-              <SplashScreen />
-            </View>
-          </LanguageProvider>
-        </ToastProvider>
-      </AppThemeProvider>
-    </GestureHandlerRootView>
+    <Sentry.ErrorBoundary fallback={({ resetError }) => <ErrorFallback resetError={resetError} />}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AppThemeProvider>
+          <ToastProvider>
+            <LanguageProvider>
+              <View style={{ flex: 1 }}>
+                <RootLayoutInner />
+                <SplashScreen />
+              </View>
+            </LanguageProvider>
+          </ToastProvider>
+        </AppThemeProvider>
+      </GestureHandlerRootView>
+    </Sentry.ErrorBoundary>
   );
 }
+
+// Sentry.wrap adds touch-event breadcrumbs + a root profiler span around the
+// whole app (the current Sentry Expo setup guide's recommended entry-point
+// pattern) — separate from Sentry.ErrorBoundary above, which is what actually
+// catches render errors and shows the fallback UI.
+export default Sentry.wrap(RootLayout);

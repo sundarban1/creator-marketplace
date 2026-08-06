@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
+import * as Sentry from '@sentry/react-native';
+import { getCrashlytics, setUserId as setCrashlyticsUserId } from '@react-native-firebase/crashlytics';
 import { authService, type Identifier } from '@/services/auth';
 import { setSessionExpiredHandler, clearSessionExpiredGuard } from '@/lib/api';
 import type { User } from '@/types';
@@ -42,6 +44,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => { setSessionExpiredHandler(() => { /* unmounted */ }); };
   }, []);
+
+  // Keeps Sentry + Crashlytics user identification in sync with auth state —
+  // covers every path that changes `user` (login, session restore, logout,
+  // force-logout, biometric lock) from one place instead of duplicating calls
+  // at each call site. Telemetry must never break auth, so both are swallowed.
+  useEffect(() => {
+    if (user?.id) {
+      try {
+        Sentry.setUser({ id: user.id });
+      } catch {
+        // never let telemetry break auth
+      }
+      setCrashlyticsUserId(getCrashlytics(), user.id).catch(() => {});
+    } else {
+      try {
+        Sentry.setUser(null);
+      } catch {
+        // never let telemetry break auth
+      }
+      setCrashlyticsUserId(getCrashlytics(), '').catch(() => {});
+    }
+  }, [user?.id]);
 
   async function login(identifier: Identifier, password: string, rememberMe = true) {
     clearSessionExpiredGuard(); // reset the once-guard so future expiries fire again

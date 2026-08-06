@@ -1129,3 +1129,43 @@ model VisitorMessage {
   @@index([chatId, createdAt])
   @@map("visitor_messages")
 }
+
+// Business activity trail (registrations, applications, payments, ...). No FK to User —
+// rows must remain queryable even after the referenced account is deleted.
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  entityType  String?
+  entityId    String?
+  description String?
+  metadata    Json?
+  ipAddress   String?
+  device      String?
+  platform    String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+// Security-sensitive change trail (password resets, verification decisions, suspensions, ...).
+// Immutable by convention: no service method ever updates or deletes a row. No FK to User for
+// the same reason as ActivityLog.
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  oldValue    Json?
+  newValue    Json?
+  performedBy String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

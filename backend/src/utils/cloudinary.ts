@@ -1,9 +1,11 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { env } from '../config/env';
+import { logger } from '../config/logger';
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: env.CLOUDINARY_CLOUD_NAME,
+  api_key:    env.CLOUDINARY_API_KEY,
+  api_secret: env.CLOUDINARY_API_SECRET,
 });
 
 export type UploadFolder = 'creators/avatars' | 'creators/covers' | 'businesses/logos' | 'businesses/covers' | 'creators/citizenship' | 'creators/pan' | 'businesses/pan' | 'businesses/company-reg' | 'campaigns/features' | 'messages/attachments' | 'campaigns/deliverables' | 'success-stories/photos' | 'contracts/pdfs' | 'support/attachments';
@@ -26,7 +28,10 @@ export async function uploadImage(
         transformation,
       },
       (err, result) => {
-        if (err || !result) return reject(err ?? new Error('Cloudinary upload failed'));
+        if (err || !result) {
+          logger.error({ err, folder, publicId }, 'Cloudinary image upload failed');
+          return reject(err ?? new Error('Cloudinary upload failed'));
+        }
         resolve(result.secure_url);
       },
     );
@@ -49,7 +54,10 @@ export async function uploadRawFile(
         resource_type: 'raw',
       },
       (err, result) => {
-        if (err || !result) return reject(err ?? new Error('Cloudinary upload failed'));
+        if (err || !result) {
+          logger.error({ err, folder, publicId }, 'Cloudinary raw file upload failed');
+          return reject(err ?? new Error('Cloudinary upload failed'));
+        }
         resolve(result.secure_url);
       },
     );
@@ -58,13 +66,15 @@ export async function uploadRawFile(
 }
 
 export async function deleteImage(publicIdWithFolder: string): Promise<void> {
-  await cloudinary.uploader.destroy(publicIdWithFolder).catch(() => {});
+  await cloudinary.uploader.destroy(publicIdWithFolder)
+    .catch((err) => logger.error({ err, publicIdWithFolder }, 'Cloudinary image delete failed'));
 }
 
 // deleteImage's bare destroy() defaults to resource_type: 'image' and silently
 // no-ops on a raw asset (PDF/DOCX) — this is the counterpart for those.
 export async function deleteRawFile(publicIdWithFolder: string): Promise<void> {
-  await cloudinary.uploader.destroy(publicIdWithFolder, { resource_type: 'raw' }).catch(() => {});
+  await cloudinary.uploader.destroy(publicIdWithFolder, { resource_type: 'raw' })
+    .catch((err) => logger.error({ err, publicIdWithFolder }, 'Cloudinary raw file delete failed'));
 }
 
 // Enforced server-side in completeDeliverableVideo/completeVideoAttachment using
@@ -100,13 +110,13 @@ export type VideoUploadSignature = {
 // redirect the upload to a different folder/public_id even though those
 // values also travel as plain form fields alongside it.
 export function generateVideoUploadSignature(folder: UploadFolder, publicId: string): VideoUploadSignature {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME!;
+  const cloudName = env.CLOUDINARY_CLOUD_NAME!;
   const timestamp = Math.floor(Date.now() / 1000);
   const paramsToSign = { timestamp, folder, public_id: publicId };
-  const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET!);
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, env.CLOUDINARY_API_SECRET!);
   return {
     cloudName,
-    apiKey: process.env.CLOUDINARY_API_KEY!,
+    apiKey: env.CLOUDINARY_API_KEY!,
     timestamp,
     signature,
     folder,
@@ -135,5 +145,6 @@ export function videoPlaybackUrl(secureVideoUrl: string): string {
 }
 
 export async function deleteVideo(publicIdWithFolder: string): Promise<void> {
-  await cloudinary.uploader.destroy(publicIdWithFolder, { resource_type: 'video' }).catch(() => {});
+  await cloudinary.uploader.destroy(publicIdWithFolder, { resource_type: 'video' })
+    .catch((err) => logger.error({ err, publicIdWithFolder }, 'Cloudinary video delete failed'));
 }

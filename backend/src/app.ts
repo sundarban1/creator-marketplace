@@ -1,4 +1,4 @@
-import './config/env'; // load and validate env first
+import './instrument'; // Sentry.init — must run before express/other modules are required; also loads and validates env first
 import express from 'express';
 
 import { errorHandler, notFoundHandler } from './middleware/error';
@@ -7,6 +7,7 @@ import { languageMiddleware } from './middleware/language';
 import { applyRateLimits } from './middleware/rateLimit';
 import { applySecurityMiddleware } from './middleware/security';
 import { requestLogger } from './middleware/requestLogger';
+import { requestContext } from './middleware/requestContext';
 import { registerHealthCheck } from './routes/health';
 import { registerApiDocs } from './routes/docs';
 import { registerApiRoutes } from './routes';
@@ -19,6 +20,7 @@ applySecurityMiddleware(app);
 // Registered before body parsing so req.log is always set, even if a request
 // fails to parse (malformed JSON) — errorHandler relies on req.log existing.
 app.use(requestLogger);
+app.use(requestContext);
 
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
