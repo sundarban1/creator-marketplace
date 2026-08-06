@@ -118,9 +118,20 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
     // (No DB write here — lastSeenAt only matters once the user goes offline.)
     socket.to(`presence:${userId}`).emit('presence:update', { userId, online: true, lastSeenAt: null });
 
-    // Conversation presence — join/leave a per-conversation room for typing relay
+    // Conversation presence — join/leave a per-conversation room for typing relay.
+    // Access is verified here (not just at send time) because this room also
+    // fans out typing:start/stop to everyone in it — without this check, any
+    // authenticated user could join an arbitrary conversationId and both see
+    // and spoof typing into a conversation they're not a participant of.
     socket.on('join:conversation', ({ conversationId }: { conversationId: string }) => {
-      void socket.join(`conv:${conversationId}`);
+      if (!conversationId?.trim()) return;
+      void messagingService.canAccessConversation(conversationId, userId, role as Role).then((allowed) => {
+        if (!allowed) {
+          logger.warn({ socketId: socket.id, userId, conversationId }, 'Rejected join:conversation — not a participant');
+          return;
+        }
+        void socket.join(`conv:${conversationId}`);
+      });
     });
     socket.on('leave:conversation', ({ conversationId }: { conversationId: string }) => {
       void socket.leave(`conv:${conversationId}`);
@@ -129,8 +140,16 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
     // Online/last-seen presence for a chat partner — mirrors the join/leave:conversation
     // pattern above. On subscribe we reply immediately with the current snapshot so the
     // chat header doesn't have to wait for a future connect/disconnect event to render.
+    // Gated by canViewPresence so any authenticated user can't enumerate an
+    // arbitrary other user's online/last-seen state (only shared-conversation
+    // partners and admins can).
     socket.on('presence:subscribe', async ({ userId: targetId }: { userId: string }) => {
       if (!targetId) return;
+      const allowed = await messagingService.canViewPresence(userId, role as Role, targetId);
+      if (!allowed) {
+        logger.warn({ socketId: socket.id, userId, targetId }, 'Rejected presence:subscribe — no shared conversation');
+        return;
+      }
       void socket.join(`presence:${targetId}`);
       const online = await isUserOnline(targetId);
       let lastSeenAt: string | null = null;
@@ -145,6 +164,20 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
       void socket.leave(`presence:${targetId}`);
     });
 
+    // 'disconnecting' (not 'disconnect') fires while socket.rooms is still
+    // populated — Socket.IO auto-leaves every room by the time 'disconnect'
+    // fires below, so this is the only point where the conv:{id} rooms this
+    // socket was in are still known. Without this, a client that crashes or
+    // loses connection mid-typing leaves its "typing…" indicator stuck on
+    // forever for the other participant.
+    socket.on('disconnecting', () => {
+      for (const room of socket.rooms) {
+        if (!room.startsWith('conv:')) continue;
+        const conversationId = room.slice('conv:'.length);
+        socket.to(room).emit('typing:stop', { conversationId });
+      }
+    });
+
     socket.on('disconnect', () => {
       logger.debug({ socketId: socket.id, userId, role }, 'Socket disconnected');
       void (async () => {
@@ -156,11 +189,18 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
       })();
     });
 
-    // Relay typing events to everyone else in the conversation room
+    // Relay typing events to everyone else in the conversation room. Requires
+    // the socket to have actually joined conv:{id} first (join:conversation
+    // above already verified conversation access) — a cheap in-memory
+    // membership check, not a repeat DB round trip on every keystroke —
+    // otherwise any authenticated user could spoof typing into a conversation
+    // they were never a participant of.
     socket.on('typing:start', ({ conversationId }: { conversationId: string }) => {
+      if (!socket.rooms.has(`conv:${conversationId}`)) return;
       socket.to(`conv:${conversationId}`).emit('typing:start', { conversationId });
     });
     socket.on('typing:stop', ({ conversationId }: { conversationId: string }) => {
+      if (!socket.rooms.has(`conv:${conversationId}`)) return;
       socket.to(`conv:${conversationId}`).emit('typing:stop', { conversationId });
     });
 

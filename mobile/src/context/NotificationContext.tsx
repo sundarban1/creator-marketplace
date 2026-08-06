@@ -115,6 +115,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         refreshBadge();
         refreshChatBadge();
         notificationService.registerPushToken().catch(() => {});
+
+        // A backgrounded app's socket connection is commonly torn down by the
+        // OS without ever firing a 'disconnect' the client reacts to, so it
+        // can sit "connected" per its own stale internal state while actually
+        // dead — nothing then kicks off socket.io's reconnection loop, and
+        // real-time events (chat, notifications) silently stop arriving until
+        // the app is killed and reopened. Reusing the same socket (not
+        // reconnectSocket()) keeps its already-attached listeners intact;
+        // .connect() is a no-op if it's already connected, and its `auth`
+        // callback re-reads the token fresh, so this also recovers a session
+        // that's been sitting long enough for the access token to have
+        // rotated (see the 'Invalid token' handling in socket.ts).
+        if (socketRef.current && !socketRef.current.connected) {
+          socketRef.current.connect();
+        }
       }
     };
     const sub = AppState.addEventListener('change', handleAppState);

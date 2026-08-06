@@ -505,6 +505,21 @@ const AUTH_PATHS_WITHOUT_REFRESH_RETRY = ['/api/auth/login', '/api/auth/refresh'
 
 let pendingRefresh: Promise<string> | null = null;
 
+// Exposed so the socket client can force a token refresh after a stale-auth
+// reconnect rejection, without waiting for a REST call to hit a 401 first —
+// mirrors mobile's lib/api.ts ensureFreshAccessToken.
+export async function ensureFreshAccessToken(): Promise<string | null> {
+  if (!getRefreshToken()) return null;
+  if (!pendingRefresh) {
+    pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
+  }
+  try {
+    return await pendingRefresh;
+  } catch {
+    return null;
+  }
+}
+
 async function refreshAccessToken(): Promise<string> {
   const rt = getRefreshToken();
   if (!rt) {

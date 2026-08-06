@@ -33,6 +33,10 @@ import {
   getActiveUploadsFor, subscribeToUploadProgress, subscribeToUploadFinalizing,
   getActiveUploadResult, cancelActiveUpload, setFocusedUploadTarget,
 } from '@/services/backgroundVideoUploadManager';
+import {
+  getActiveVoiceUploadsFor, subscribeToVoiceUploadProgress,
+  getActiveVoiceUploadResult, cancelActiveVoiceUpload,
+} from '@/services/voiceUploadRegistry';
 import type { ApiMessage } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
@@ -485,6 +489,7 @@ export default function BusinessChatRoomScreen() {
     // from mid-upload, would appear to vanish until it finishes.
     setMessages([]);
     getActiveUploadsFor({ targetType: 'chat', conversationId: id }).forEach(attachToActiveUpload);
+    getActiveVoiceUploadsFor(id).forEach(attachToActiveVoiceUpload);
     loadMessages();
     if (convStatus === 'ACCEPTED') markSeen();
   }, [id]);
@@ -814,6 +819,49 @@ export default function BusinessChatRoomScreen() {
     }).finally(() => {
       unsubProgress();
       unsubFinalizing();
+      delete uploadTasks.current[tempId];
+    });
+  }
+
+  // Voice analogue of attachToActiveUpload above — reconstructs a pending
+  // voice bubble for an upload that's still running (started before this
+  // screen mounted, or before the user navigated away and back). The upload
+  // itself never stopped (it's a plain JS promise chain, not tied to this
+  // component), only this screen's own local state lost track of it.
+  function attachToActiveVoiceUpload(active: ReturnType<typeof getActiveVoiceUploadsFor>[number]) {
+    const tempId = `temp-voice-upload-${active.localUploadId}`;
+    const optimistic: Message = {
+      id: tempId, conversationId: id,
+      senderId: user?.id ?? '', text: '',
+      timestamp: new Date().toISOString(), status: 'uploading',
+      type: 'VOICE',
+      attachmentDurationSec: active.durationSec,
+      attachmentWaveform: active.waveform.map((v) => v.toFixed(2)).join(','),
+      localUri: active.sourceFileUri, uploadProgress: active.progress, retryCount: 0,
+    };
+    setMessages((prev) => (prev.some((m) => m.id === tempId) ? prev : [...prev, optimistic]));
+
+    const unsubProgress = subscribeToVoiceUploadProgress(active.localUploadId, (p) => updateMsg(tempId, { uploadProgress: p }));
+    uploadTasks.current[tempId] = {
+      start: () => Promise.reject(new Error('Reconstructed upload cannot be (re)started')),
+      cancel: () => cancelActiveVoiceUpload(active.localUploadId),
+    };
+
+    getActiveVoiceUploadResult(active.localUploadId)?.then((apiMessage) => {
+      const serverMsg = toMessage(apiMessage as ApiMessage);
+      setMessages((prev) => {
+        const without = prev.filter((m) => m.id !== tempId);
+        return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
+      });
+    }).catch((e) => {
+      const detail = e instanceof Error ? e.message : undefined;
+      if (detail === 'Voice upload cancelled') {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        return;
+      }
+      updateMsg(tempId, { status: 'failed', errorDetail: detail });
+    }).finally(() => {
+      unsubProgress();
       delete uploadTasks.current[tempId];
     });
   }

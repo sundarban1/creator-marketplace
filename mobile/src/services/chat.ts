@@ -6,6 +6,10 @@ import { ACCESS_TOKEN_KEY }  from '@/utilities/constants';
 import { requestVideoUploadSignature } from '@/services/cloudinaryVideoUpload';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
 import { requestVoiceUploadSignature, uploadVoiceToCloudinary } from '@/services/cloudinaryVoiceUpload';
+import {
+  registerActiveVoiceUpload, unregisterActiveVoiceUpload, reportVoiceUploadProgress,
+  subscribeToVoiceUploadProgress, setActiveVoiceUploadResult,
+} from '@/services/voiceUploadRegistry';
 
 // ── Transformers ────────────────────────────────────────────────────────────────
 
@@ -97,7 +101,11 @@ export function createVideoUploadTask(
 // Same direct-to-Cloudinary shape as createVideoUploadTask above (signature →
 // upload → complete), but a single-shot upload instead of chunked — a voice
 // clip is capped at 15MB/2min, nowhere near the size that justifies video's
-// chunked/background-survival upload manager.
+// chunked/background-survival upload manager. Still registers with
+// voiceUploadRegistry (a much lighter analogue of backgroundVideoUploadManager)
+// so a chat screen that unmounts mid-upload and remounts later — the user
+// navigating away and back — can reconstruct its pending/sent state instead
+// of losing track of it (see attachToActiveVoiceUpload in the chat screens).
 export function createVoiceUploadTask(
   conversationId: string,
   fileUri: string,
@@ -106,21 +114,41 @@ export function createVoiceUploadTask(
   onProgress?: (fraction: number) => void,
 ): { start: () => Promise<Message>; cancel: () => void } {
   let cancelled = false;
+  let currentLocalUploadId: string | undefined;
+
+  const cancel = () => {
+    cancelled = true;
+    if (currentLocalUploadId) unregisterActiveVoiceUpload(currentLocalUploadId);
+  };
 
   return {
-    start: async () => {
-      if (cancelled) throw new Error('Voice upload cancelled');
-      const signature = await requestVoiceUploadSignature(conversationId);
-      if (cancelled) throw new Error('Voice upload cancelled');
-      await uploadVoiceToCloudinary(fileUri, signature, onProgress);
-      if (cancelled) throw new Error('Voice upload cancelled');
-      const res = await request<ApiMessage>(
-        'POST', `/api/messaging/conversations/${conversationId}/attachments/voice/complete`,
-        { publicId: signature.publicId, clientDurationSec: durationSec, waveform: waveform.map((v) => v.toFixed(2)).join(',') },
-      );
-      return toMessage(res.data);
+    start: () => {
+      const localUploadId = registerActiveVoiceUpload(conversationId, fileUri, durationSec, waveform, cancel);
+      currentLocalUploadId = localUploadId;
+      const unsubscribeProgress = onProgress ? subscribeToVoiceUploadProgress(localUploadId, onProgress) : undefined;
+
+      const result = (async (): Promise<Message> => {
+        try {
+          if (cancelled) throw new Error('Voice upload cancelled');
+          const signature = await requestVoiceUploadSignature(conversationId);
+          if (cancelled) throw new Error('Voice upload cancelled');
+          await uploadVoiceToCloudinary(fileUri, signature, (p) => reportVoiceUploadProgress(localUploadId, p));
+          if (cancelled) throw new Error('Voice upload cancelled');
+          const res = await request<ApiMessage>(
+            'POST', `/api/messaging/conversations/${conversationId}/attachments/voice/complete`,
+            { publicId: signature.publicId, clientDurationSec: durationSec, waveform: waveform.map((v) => v.toFixed(2)).join(',') },
+          );
+          return toMessage(res.data);
+        } finally {
+          unsubscribeProgress?.();
+          unregisterActiveVoiceUpload(localUploadId);
+        }
+      })();
+
+      setActiveVoiceUploadResult(localUploadId, result);
+      return result;
     },
-    cancel: () => { cancelled = true; },
+    cancel,
   };
 }
 

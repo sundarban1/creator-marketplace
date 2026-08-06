@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api, getAccessToken, type ApiNotification } from '../lib/api';
-import { connectSocket, disconnectSocket, getSocket } from '../lib/socket';
+import { connectSocket, disconnectSocket } from '../lib/socket';
 import { useAuth } from './AuthContext';
 
 interface NotificationContextValue {
@@ -43,9 +43,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     socket.on('notification:new', handleNew);
 
     return () => {
-      getSocket()?.off('notification:new', handleNew);
+      // Disconnect the actual socket this effect created (not whatever
+      // getSocket() happens to return by cleanup time) — otherwise a
+      // reconnect on user change/unmount leaves the old connection open
+      // with no listeners on it. Dependency is user?.id (not the whole user
+      // object) so an unrelated re-render doesn't tear down and rebuild the
+      // socket, which would also orphan any other component (e.g.
+      // AdminChatWidget) still holding a reference to the old instance.
+      socket.off('notification:new', handleNew);
+      disconnectSocket();
     };
-  }, [user]);
+  }, [user?.id]);
 
   async function markRead(id: string) {
     await api.notifications.markRead(id);

@@ -10,6 +10,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { emitToUser } from '../../socket';
+import prisma from '../../prisma';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { uploadImage as uploadToCloudinary, uploadRawFile, generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, type VideoUploadSignature } from '../../utils/cloudinary';
@@ -166,6 +167,49 @@ export class MessagingService {
   private async assertNotBlocked(userIdA: string, userIdB: string): Promise<void> {
     const block = await this.repo.findBlockBetween(userIdA, userIdB);
     if (block) throw new AppError('You cannot message this user.', 403);
+  }
+
+  // Boolean, non-throwing variant of verifyConversationAccess — lets the socket
+  // layer (join:conversation) decide up front whether to let a client into a
+  // conversation's room, instead of joining first and never checking at all
+  // (that room fans out typing events to everyone in it).
+  async canAccessConversation(conversationId: string, userId: string, role: Role): Promise<boolean> {
+    const conversation = await this.repo.findConversationById(conversationId);
+    if (!conversation) return false;
+    try {
+      await this.verifyConversationAccess(conversation, userId, role);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Presence visibility: anyone can see an admin's online status (support-facing),
+  // and any two users who share a conversation can see each other's — otherwise
+  // any authenticated user could enumerate any other user's online/last-seen
+  // state via presence:subscribe regardless of whether they've ever talked.
+  async canViewPresence(viewerId: string, viewerRole: Role, targetUserId: string): Promise<boolean> {
+    if (viewerRole === 'ADMIN' || viewerId === targetUserId) return true;
+
+    const target = await prisma.user.findUnique({ where: { id: targetUserId }, select: { role: true } });
+    if (!target) return false;
+    if (target.role === 'ADMIN') return true;
+
+    const [viewerCreator, viewerBusiness] = await Promise.all([
+      viewerRole === 'CREATOR'  ? this.creatorRepo.findByUserId(viewerId)  : null,
+      viewerRole === 'BUSINESS' ? this.businessRepo.findByUserId(viewerId) : null,
+    ]);
+    const viewerProfileId = viewerCreator?.id ?? viewerBusiness?.id;
+    if (!viewerProfileId) return false;
+
+    const [targetCreator, targetBusiness] = await Promise.all([
+      target.role === 'CREATOR'  ? this.creatorRepo.findByUserId(targetUserId)  : null,
+      target.role === 'BUSINESS' ? this.businessRepo.findByUserId(targetUserId) : null,
+    ]);
+    const targetProfileId = targetCreator?.id ?? targetBusiness?.id;
+    if (!targetProfileId) return false;
+
+    return this.repo.conversationExistsBetweenProfiles(viewerProfileId, targetProfileId);
   }
 
   // ── Conversation list ──────────────────────────────────────────────────────
@@ -798,6 +842,16 @@ export class MessagingService {
 
     const field = this.seenFieldFor(conversation, userId, role);
     await this.repo.updateSeenAt(conversationId, field);
+
+    // Read receipt — tell the other participant their messages here have now
+    // been seen. Conversation-level (matches the *SeenAt schema this reads/
+    // writes above), not per-message — there's no per-message readAt column,
+    // and this is the same granularity most chat apps expose as a "seen"
+    // indicator. Previously this endpoint updated the DB and emitted nothing,
+    // so the other party never learned their message had been read.
+    const [pA, pB] = this.participantsOf(conversation);
+    const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
+    emitToUser(otherUserId, 'message:read', { conversationId, seenAt: new Date().toISOString() });
   }
 
   async getBadgeCount(userId: string, role: Role) {

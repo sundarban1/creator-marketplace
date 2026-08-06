@@ -248,6 +248,23 @@ export class MessagingRepository {
     });
   }
 
+  // Existence check between two arbitrary profile ids, regardless of which
+  // side (creator/creatorId2/business) each one occupies — used for presence
+  // visibility, where the caller only knows two profile ids, not who's who.
+  async conversationExistsBetweenProfiles(profileIdA: string, profileIdB: string): Promise<boolean> {
+    const count = await prisma.conversation.count({
+      where: {
+        OR: [
+          { creatorId: profileIdA, businessId:  profileIdB },
+          { creatorId: profileIdB, businessId:  profileIdA },
+          { creatorId: profileIdA, creatorId2:  profileIdB },
+          { creatorId: profileIdB, creatorId2:  profileIdA },
+        ],
+      },
+    });
+    return count > 0;
+  }
+
   async updateStatus(id: string, status: ConversationStatus) {
     return prisma.conversation.update({ where: { id }, data: { status } });
   }
