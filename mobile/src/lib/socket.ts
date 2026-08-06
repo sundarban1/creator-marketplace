@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import { API_BASE, ensureFreshAccessToken } from './api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
+import { logger } from '@/utilities/logger';
 
 let _socket: Socket | null = null;
 
@@ -31,18 +32,18 @@ export function connectSocket(token: string): Socket {
 
   // Connection failures here were previously invisible on-device — this is
   // the only signal we get on a physical device without a debugger attached.
-  _socket.on('connect', () => console.log('[socket] connected', _socket?.id));
+  _socket.on('connect', () => logger.info('[socket] connected', { id: _socket?.id }));
   _socket.on('connect_error', (err) => {
-    console.warn('[socket] connect_error:', err.message);
+    logger.warn('[socket] connect_error', { message: err.message });
     // The auth middleware rejects with this exact message on an expired/invalid
     // JWT (backend/src/socket.ts). Proactively refresh now rather than waiting
     // for the next unrelated REST call to 401 — otherwise every reconnection
     // attempt keeps retrying with the same stale token and never recovers.
     if (err.message === 'Invalid token') {
-      ensureFreshAccessToken().catch(() => {});
+      ensureFreshAccessToken().catch((refreshErr) => logger.warn('[socket] token refresh after connect_error failed', { err: refreshErr }));
     }
   });
-  _socket.on('disconnect', (reason) => console.log('[socket] disconnected:', reason));
+  _socket.on('disconnect', (reason) => logger.info('[socket] disconnected', { reason }));
 
   return _socket;
 }

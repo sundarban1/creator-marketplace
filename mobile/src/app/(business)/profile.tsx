@@ -28,6 +28,7 @@ import { BackButton } from '@/components/BackButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { logger } from '@/utilities/logger';
 
 export default function BusinessProfileScreen() {
   const { user, updateUser } = useAuth();
@@ -50,7 +51,7 @@ export default function BusinessProfileScreen() {
         updateUser({ avatar: result.url });
       }
     } catch (err) {
-      console.error('[logo upload]', err);
+      logger.error('[profile] logo upload failed', err);
       toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
     } finally {
       setLogoUploading(false);
@@ -65,7 +66,7 @@ export default function BusinessProfileScreen() {
         setProfile((p) => p ? { ...p, coverImageUrl: result.url } : p);
       }
     } catch (err) {
-      console.error('[cover upload]', err);
+      logger.error('[profile] cover upload failed', err);
       toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
     } finally {
       setCoverUploading(false);

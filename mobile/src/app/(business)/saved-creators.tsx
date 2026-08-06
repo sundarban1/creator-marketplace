@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -30,6 +30,7 @@ import {
 } from '@/components/CreatorFilterModal';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -114,8 +115,7 @@ export default function SavedCreatorsScreen() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState('');
-  const [searchDebounced, setSearchDebounced] = useState('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [searchDebounced] = useDebouncedValue(search, 400);
 
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<CreatorFilterState>(DEFAULT_CREATOR_FILTER);
@@ -150,13 +150,6 @@ export default function SavedCreatorsScreen() {
   }
 
   useFocusEffect(useCallback(() => { void load(activeFilter, searchDebounced); }, []));
-
-  // Debounce search
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setSearchDebounced(search), 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [search]);
 
   useEffect(() => {
     void load(activeFilter, searchDebounced);

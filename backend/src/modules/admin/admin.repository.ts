@@ -34,6 +34,12 @@ const DEFAULTS: Record<string, unknown> = {
   // CampaignService.getFeaturedQuota. Lowercased on comparison.
   'featuredEvent.unlimitedEmails': [] as string[],
 
+  // ── App version enforcement ─────────────────────────────────────────────
+  // Empty string = no enforcement (mobile skips the force-update screen).
+  // Compared against expo-application's nativeApplicationVersion, semver-style.
+  'app.minVersion.ios':     '',
+  'app.minVersion.android': '',
+
   // ── Rate limits ──────────────────────────────────────────────────────────
   // Applies equally to creators and businesses. `max` values are admin-editable
   // live (see utils/settingsCache.ts + middleware/rateLimit.ts); the time

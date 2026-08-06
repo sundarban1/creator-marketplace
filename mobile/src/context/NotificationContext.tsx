@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { router } from 'expo-router';
 import type { Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
@@ -11,6 +12,15 @@ import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
 import type { ApiMessage } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
+import { logger } from '@/utilities/logger';
+import { resolveNotificationRoute } from '@/utilities/notificationRouting';
+
+function navigateFromPushData(data: unknown, isCreator: boolean) {
+  const d = data as { type?: string; refId?: string; refType?: string } | undefined;
+  if (!d?.type) return;
+  const route = resolveNotificationRoute({ type: d.type, refId: d.refId, refType: d.refType }, isCreator);
+  if (route) router.push(route);
+}
 
 type NotificationContextValue = {
   badgeCount:     number;   // notification tab badge
@@ -40,11 +50,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const decrementBadge   = useCallback(() => setBadgeCount((n) => Math.max(0, n - 1)), []);
 
   function refreshBadge() {
-    notificationService.getBadge().then((r) => setBadgeCount(r.count)).catch(() => {});
+    notificationService.getBadge().then((r) => setBadgeCount(r.count)).catch((err) => logger.warn('[notifications] refreshBadge failed', { err }));
   }
 
   function refreshChatBadge() {
-    chatService.getBadgeCount().then((r) => setChatBadgeCount(r.count)).catch(() => {});
+    chatService.getBadgeCount().then((r) => setChatBadgeCount(r.count)).catch((err) => logger.warn('[notifications] refreshChatBadge failed', { err }));
   }
 
   // The OS app-icon badge is otherwise only ever set by an incoming push's payload
@@ -72,7 +82,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // Fetch initial badge counts and register push token
     refreshBadge();
     refreshChatBadge();
-    notificationService.registerPushToken().catch(() => {});
+    notificationService.registerPushToken().catch((err) => logger.warn('[notifications] registerPushToken failed', { err }));
 
     const socket = connectSocket(token);
     socketRef.current = socket;
@@ -114,7 +124,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (next === 'active') {
         refreshBadge();
         refreshChatBadge();
-        notificationService.registerPushToken().catch(() => {});
+        notificationService.registerPushToken().catch((err) => logger.warn('[notifications] registerPushToken failed', { err }));
 
         // A backgrounded app's socket connection is commonly torn down by the
         // OS without ever firing a 'disconnect' the client reacts to, so it
@@ -134,6 +144,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     };
     const sub = AppState.addEventListener('change', handleAppState);
 
+    // ── Notification tap → deep link ─────────────────────────────────────────
+    // Fires while the app is foregrounded/backgrounded-but-alive. Cold-start
+    // (app launched *by* tapping a notification) is handled separately below
+    // since this listener alone never fires for that case.
+    const isCreator = user.role === 'CREATOR';
+    const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      navigateFromPushData(response.notification.request.content.data, isCreator);
+    });
+    // Small delay so this runs after RootNavigator's own initial auth-gate
+    // redirect has settled, instead of racing it.
+    const coldStartTimer = setTimeout(() => {
+      void Notifications.getLastNotificationResponseAsync().then((response) => {
+        if (response) navigateFromPushData(response.notification.request.content.data, isCreator);
+      });
+    }, 500);
+
     return () => {
       socket.off('notification:new', onNotificationNew);
       socket.off('message:new',         onMessageNew);
@@ -142,6 +168,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       disconnectSocket();
       socketRef.current = null;
       sub.remove();
+      responseSub.remove();
+      clearTimeout(coldStartTimer);
     };
   }, [user?.id]);
 

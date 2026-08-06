@@ -8,6 +8,7 @@ import { USER_KEY } from '@/utilities/constants';
 import { storage } from '@/utilities/storage';
 import { warmDeviceId } from '@/utilities/deviceId';
 import { isBiometricLoginEnabled } from '@/services/biometric';
+import { logger } from '@/utilities/logger';
 
 type AuthContextValue = {
   user: User | null;
@@ -34,7 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authService.getStoredUser().then((u) => {
       setUser(u);
       setIsLoading(false);
-    }).catch(() => {
+    }).catch((err) => {
+      logger.error('[auth] getStoredUser failed', err);
       setUser(null);
       setIsLoading(false);
     });
@@ -56,14 +58,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         // never let telemetry break auth
       }
-      setCrashlyticsUserId(getCrashlytics(), user.id).catch(() => {});
+      setCrashlyticsUserId(getCrashlytics(), user.id).catch((err) => logger.warn('[auth] Crashlytics setUserId failed', { err }));
     } else {
       try {
         Sentry.setUser(null);
       } catch {
         // never let telemetry break auth
       }
-      setCrashlyticsUserId(getCrashlytics(), '').catch(() => {});
+      setCrashlyticsUserId(getCrashlytics(), '').catch((err) => logger.warn('[auth] Crashlytics clear userId failed', { err }));
     }
   }, [user?.id]);
 
@@ -79,8 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function forceLogout() {
     try {
       await authService.logout();
-    } catch {
+    } catch (err) {
       // always clear state even if server call fails
+      logger.warn('[auth] server logout failed', { err });
     } finally {
       setUser(null);
     }

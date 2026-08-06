@@ -17,7 +17,7 @@ export interface LegalDocument {
   lastUpdated: string | null;
 }
 
-export type LegalSlug = 'terms' | 'privacy-policy';
+export type LegalSlug = 'terms' | 'privacy-policy' | 'guidelines';
 
 export const legalService = {
   async getDocument(slug: LegalSlug): Promise<LegalDocument> {

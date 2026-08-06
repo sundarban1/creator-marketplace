@@ -31,6 +31,8 @@ export class PublicService {
       supportEmail:                s['platform.supportEmail'] as string | undefined,
       platformCommission:          Number(s['platform.commission']) || 0,
       comingSoon:                  s['platform.comingSoon'] as boolean,
+      minVersionIos:               (s['app.minVersion.ios'] as string) || '',
+      minVersionAndroid:           (s['app.minVersion.android'] as string) || '',
     };
   }
 }

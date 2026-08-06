@@ -3,6 +3,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
 import { compressImage } from '@/utilities/uploadImage';
+import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
 
 export type PickedAttachment = { uri: string; name: string; mimeType: string };
 
@@ -48,7 +49,7 @@ async function toPickedImage(asset: ImagePicker.ImagePickerAsset): Promise<Picke
 export async function pickImageFromLibrary(): Promise<PickedAttachment | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow access to your photo library in Settings.');
     return null;
   }
   const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
@@ -59,7 +60,7 @@ export async function pickImageFromLibrary(): Promise<PickedAttachment | null> {
 export async function pickImageFromCamera(): Promise<PickedAttachment | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow camera access in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
   const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
@@ -105,7 +106,7 @@ async function validateAndBuildPickedVideo(asset: ImagePicker.ImagePickerAsset):
 export async function pickVideoFromLibrary(): Promise<PickedVideo | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow access to your photo library in Settings.');
     return null;
   }
   const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'] });
@@ -116,7 +117,7 @@ export async function pickVideoFromLibrary(): Promise<PickedVideo | null> {
 export async function pickVideoFromCamera(): Promise<PickedVideo | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow camera access in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
   const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'] });
@@ -131,7 +132,7 @@ export async function pickVideoFromCamera(): Promise<PickedVideo | null> {
 export async function pickDeliverableVideosFromLibrary(remainingSlots: number): Promise<PickedVideo[]> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow access to your photo library in Settings.');
     return [];
   }
   const result = await ImagePicker.launchImageLibraryAsync({
@@ -152,7 +153,7 @@ export async function pickDeliverableVideosFromLibrary(remainingSlots: number): 
 export async function pickDeliverableVideoFromCamera(): Promise<PickedVideo | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow camera access in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
   const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'] });
@@ -180,7 +181,7 @@ async function toPickedDeliverableImage(asset: ImagePicker.ImagePickerAsset): Pr
 export async function pickDeliverableImagesFromLibrary(remainingSlots: number): Promise<PickedFile[]> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow access to your photo library in Settings.');
     return [];
   }
   const result = await ImagePicker.launchImageLibraryAsync({
@@ -202,7 +203,7 @@ export async function pickDeliverableImagesFromLibrary(remainingSlots: number): 
 export async function pickDeliverableImageFromCamera(): Promise<PickedFile | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow camera access in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
   const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });

@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { buildGeocodeUrl } from './constants';
+import { showPermissionDeniedAlert } from './permissionAlert';
 
 export type LatLng = { lat: number; lng: number };
 
@@ -42,10 +43,20 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
  * position could be obtained — callers should fall back to the creator's saved
  * home location.
  */
-export async function getCurrentLocation(): Promise<LatLng | null> {
+export async function getCurrentLocation(opts: { notifyOnDenial?: boolean } = {}): Promise<LatLng | null> {
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return null;
+    if (status !== 'granted') {
+      // Only alert when the caller says this was a direct user action (e.g.
+      // tapping "Use current location") and only on an actual denial — a
+      // background/automatic call (e.g. on screen load) should keep silently
+      // falling back instead of interrupting the user every time they open
+      // the screen with location off.
+      if (opts.notifyOnDenial && status === 'denied') {
+        showPermissionDeniedAlert('Location access needed', 'Allow location access in Settings to find campaigns near you.');
+      }
+      return null;
+    }
 
     // Try a cached fix first — usually resolves near-instantly on a physical device
     // and is more than accurate enough for pinning a location on a map, so the UI

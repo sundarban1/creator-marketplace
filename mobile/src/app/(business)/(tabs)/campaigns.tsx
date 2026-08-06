@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -20,6 +20,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { TabSlider } from '@/components/TabSlider';
 import { useToast } from '@/components/Toast';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem, type ApiCreatorListItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -101,15 +102,9 @@ export default function CampaignsScreen() {
   // loaded for the active status tab, same as every other list search in
   // this app (explore-creators, saved-creators): no new backend support.
   const [search, setSearch] = useState('');
-  const [searchDebounced, setSearchDebounced] = useState('');
+  const [searchDebounced, setSearchDebouncedImmediate] = useDebouncedValue(search, 400);
   const [searchFocused, setSearchFocused] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setSearchDebounced(search), 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [search]);
 
   const [categoryFilter, setCategoryFilter]         = useState('');
   const [tempCategoryFilter, setTempCategoryFilter] = useState('');
@@ -347,7 +342,7 @@ export default function CampaignsScreen() {
   }
   function clearFilters() {
     setSearch('');
-    setSearchDebounced('');
+    setSearchDebouncedImmediate('');
     setCategoryFilter('');
   }
 

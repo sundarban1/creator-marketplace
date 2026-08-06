@@ -8,7 +8,9 @@ import { creatorService } from '@/services/creator';
 import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
 import { useLanguage } from '@/context/LanguageContext';
-import { API_BASE, request } from '@/lib/api';
+import { legalService, type LegalSlug } from '@/services/legal';
+import { contentService } from '@/services/content';
+import { supportService } from '@/services/support';
 import {
   ActivityIndicator,
   Animated,
@@ -551,9 +553,8 @@ export default function CreatorSettingsScreen() {
   useEffect(() => {
     if (subPage !== 'help-center' || helpArticles.length > 0) return;
     setHelpLoading(true);
-    fetch(`${API_BASE}/api/help`)
-      .then((r) => r.json() as Promise<{ data: typeof helpArticles }>)
-      .then((json) => setHelpArticles(json.data ?? []))
+    contentService.getHelpArticles()
+      .then((articles) => setHelpArticles(articles))
       .catch(() => {})
       .finally(() => setHelpLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -562,9 +563,8 @@ export default function CreatorSettingsScreen() {
   useEffect(() => {
     if (subPage !== 'faqs' || faqArticles.length > 0) return;
     setFaqLoading(true);
-    fetch(`${API_BASE}/api/faq`)
-      .then((r) => r.json() as Promise<{ data: typeof faqArticles }>)
-      .then((json) => setFaqArticles(json.data ?? []))
+    contentService.getFaqArticles()
+      .then((articles) => setFaqArticles(articles))
       .catch(() => {})
       .finally(() => setFaqLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -573,20 +573,20 @@ export default function CreatorSettingsScreen() {
   useEffect(() => { setExpandedItems(new Set()); }, [subPage]);
 
   useEffect(() => {
-    const slugToType: Record<string, string> = {
+    const slugToType: Record<string, LegalSlug> = {
       'privacy-policy': 'privacy-policy',
       'terms':          'terms',
       'guidelines':     'guidelines',
     };
     const slug = subPage ?? '';
-    if (!slugToType[slug] || legalSections[slug]) return;
+    const legalSlug = slugToType[slug];
+    if (!legalSlug || legalSections[slug]) return;
     setLegalLoading(true);
-    fetch(`${API_BASE}/api/legal/${slug}`)
-      .then((r) => r.json() as Promise<{ data: { sections: LegalSectionItem[]; lastUpdated: string | null } }>)
-      .then((json) => {
-        setLegalSections((prev) => ({ ...prev, [slug]: json.data?.sections ?? [] }));
-        if (json.data?.lastUpdated) {
-          setLegalLastUpdated((prev) => ({ ...prev, [slug]: json.data.lastUpdated! }));
+    legalService.getDocument(legalSlug)
+      .then((doc) => {
+        setLegalSections((prev) => ({ ...prev, [slug]: doc.sections }));
+        if (doc.lastUpdated) {
+          setLegalLastUpdated((prev) => ({ ...prev, [slug]: doc.lastUpdated! }));
         }
       })
       .catch(() => {})
@@ -948,7 +948,7 @@ export default function CreatorSettingsScreen() {
     if (!supportMsg.trim() || !supportTopic) return;
     setSupportSubmitting(true);
     try {
-      await request('POST', '/api/support/contact', { topic: supportTopic, message: supportMsg.trim(), attachmentUrls: supportAttachments });
+      await supportService.contact(supportTopic, supportMsg.trim(), supportAttachments);
       setSupportTopic(''); setSupportMsg(''); setSupportAttachments([]);
       showToast(t('creatorSettings.supportSentToast'));
       setSubPage(null);
@@ -963,7 +963,7 @@ export default function CreatorSettingsScreen() {
     if (!reportDesc.trim() || !reportType) return;
     setReportSubmitting(true);
     try {
-      await request('POST', '/api/support/report', { type: reportType, description: reportDesc.trim(), attachmentUrls: reportAttachments });
+      await supportService.report(reportType, reportDesc.trim(), reportAttachments);
       setReportType(''); setReportDesc(''); setReportAttachments([]);
       showToast(t('creatorSettings.reportSentToast'));
       setSubPage(null);

@@ -1,7 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Keyboard, LayoutAnimation, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, LayoutAnimation, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -629,7 +630,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/(creator)/profile')}>
             <View style={styles.avatarClip}>
               {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+                <Image source={{ uri: user.avatar }} style={styles.avatarImage} contentFit="cover" />
               ) : (
                 <View style={styles.avatarFallback}>
                   <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{getInitials(displayName)}</Text>

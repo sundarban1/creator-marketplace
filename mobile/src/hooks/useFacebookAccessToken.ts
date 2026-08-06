@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Facebook from 'expo-auth-session/providers/facebook';
+import { logger } from '@/utilities/logger';
 
 /**
  * Requests a Facebook access token with the given scopes (beyond the basic
@@ -44,7 +45,7 @@ export function useFacebookAccessToken(scopes: string[]) {
     setError('');
     setLoading(true);
     // TEMP: log the redirect URI so it can be added to Facebook's Valid OAuth Redirect URIs.
-    console.log('[Facebook OAuth] redirectUri:', request?.redirectUri);
+    logger.info('[Facebook OAuth] redirectUri', { redirectUri: request?.redirectUri });
     void promptAsync({ preferEphemeralSession: true });
   }
 

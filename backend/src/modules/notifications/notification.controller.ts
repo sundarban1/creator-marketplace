@@ -50,6 +50,15 @@ export class NotificationController {
     } catch (err) { next(err); }
   }
 
+  async removePushToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { token } = (req.body ?? {}) as { token?: string };
+      const deviceId = req.headers['x-device-id'] as string | undefined;
+      await notificationService.removePushToken(req.user!.id, deviceId, token);
+      res.json({ success: true });
+    } catch (err) { next(err); }
+  }
+
   async getSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const settings = await notificationService.getSettings(req.user!.id);

@@ -12,7 +12,24 @@ const NOTIFICATION_FIELDS = ['title', 'body'] as const;
 
 const repo = new NotificationRepository();
 
-export async function sendExpoPush(userId: string, title: string, body: string, chatBadgeCount = 0) {
+// Expo push `data` payloads must be flat string values — carries just enough
+// for the client's notification-tap listener to resolve where to navigate
+// (see mobile/src/utilities/notificationRouting.ts), without duplicating the
+// full notification record over the wire.
+function pushDeepLinkData(n: { type: string; refId?: string; refType?: string }): Record<string, string> {
+  const data: Record<string, string> = { type: n.type };
+  if (n.refId)   data['refId']   = n.refId;
+  if (n.refType) data['refType'] = n.refType;
+  return data;
+}
+
+export async function sendExpoPush(
+  userId: string,
+  title: string,
+  body: string,
+  chatBadgeCount = 0,
+  data?: Record<string, string>,
+) {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { pushNotificationsEnabled: true } });
     if (user?.pushNotificationsEnabled === false) {
@@ -45,7 +62,7 @@ export async function sendExpoPush(userId: string, title: string, body: string, 
     // Sent to every device the user is logged into, not just the most
     // recently registered one — see PushToken model.
     const messages: ExpoPushMessage[] = validTokens.map((pt) => (
-      { to: pt.token, title, body, sound: 'default', badge, channelId: 'default' }
+      { to: pt.token, title, body, sound: 'default', badge, channelId: 'default', ...(data ? { data } : {}) }
     ));
     const tickets = await expo.sendPushNotificationsAsync(messages);
     tickets.forEach((ticket, i) => {
@@ -137,6 +154,20 @@ export const notificationService = {
     });
   },
 
+  // Called on logout so a signed-out (or shared/resold) device stops
+  // receiving this user's pushes immediately, instead of waiting on Expo's
+  // own stale-token cleanup (DeviceNotRegistered, see scheduleReceiptCheck)
+  // which only kicks in after the token actually fails to deliver. Scoped to
+  // just this device (deviceId) when known so other logged-in devices for
+  // the same user are unaffected; falls back to the specific token if no
+  // deviceId was sent.
+  async removePushToken(userId: string, deviceId?: string, token?: string) {
+    if (!deviceId && !token) return;
+    await prisma.pushToken.deleteMany({
+      where: { userId, ...(deviceId ? { deviceId } : { token }) },
+    });
+  },
+
   // Per-channel opt-out, shared by BUSINESS and CREATOR — checked by
   // sendExpoPush (push) and campaign.service.ts's email call sites (email)
   // before every send, not just read/displayed here.
@@ -169,7 +200,7 @@ export const notificationService = {
     const raw = await repo.create(data);
     const notification = toNotificationDto(raw);
     emitToUser(data.userId, 'notification:new', notification);
-    void sendExpoPush(data.userId, data.title, data.body);
+    void sendExpoPush(data.userId, data.title, data.body, 0, pushDeepLinkData(data));
     return notification;
   },
 
@@ -189,7 +220,7 @@ export const notificationService = {
     for (const d of data) byUser.set(d.userId, d);
     for (const [userId, d] of byUser.entries()) {
       emitToUser(userId, 'notification:new', { userId });
-      void sendExpoPush(userId, d.title, d.body);
+      void sendExpoPush(userId, d.title, d.body, 0, pushDeepLinkData(d));
     }
     return result;
   },

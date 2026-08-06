@@ -14,6 +14,7 @@ import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { getSocket } from '@/lib/socket';
 import { F, RADIUS } from '@/utilities/constants';
+import { resolveNotificationRoute } from '@/utilities/notificationRouting';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import type { AppNotification } from '@/types';
 
@@ -187,86 +188,8 @@ export default function NotificationsScreen() {
     if (!n) return;
     const isCreator = user?.role === 'CREATOR';
 
-    // Free event notifications
-    if (n.refType === 'event' && n.refId) {
-      if (isCreator) {
-        // Creator got accepted → view event details
-        router.push({ pathname: '/campaign-detail', params: { campaignId: n.refId } });
-      } else {
-        // Business got a new participation request → view proposals list
-        router.push({
-          pathname: '/(business)/campaign-proposals',
-          params: { campaignId: n.refId, campaignType: 'OPEN_EVENT', campaignTitle: '' },
-        });
-      }
-      return;
-    }
-
-    // proposal_received → business sees the proposals list. work_started/
-    // work_submitted are business-only notifications for the same workspace
-    // flow, so they share this branch's business destination. revision_requested
-    // is creator-only (see CampaignService.requestRevision), so it routes into
-    // Activity Timeline with the feedback modal opened straight to the note.
-    if ((n.type === 'proposal_received' || n.type === 'work_started' || n.type === 'work_submitted' || n.type === 'revision_requested') && n.refId) {
-      if (isCreator) {
-        router.push({
-          pathname: '/(business)/activity-timeline',
-          params: { campaignId: n.refId, role: 'CREATOR', openFeedback: 'true' },
-        });
-      } else {
-        router.push({
-          pathname: '/(business)/campaign-proposals',
-          params: { campaignId: n.refId, campaignTitle: '', campaignType: '' },
-        });
-      }
-      return;
-    }
-
-    // workspace status notifications → activity timeline
-    if (n.refType === 'campaign' && n.refId &&
-      ['work_approved', 'payment_released', 'campaign_closed'].includes(n.type)) {
-      router.push({
-        pathname: '/(business)/activity-timeline',
-        params: {
-          campaignId: n.refId,
-          ...(isCreator ? { role: 'CREATOR' } : {}),
-        },
-      });
-      return;
-    }
-
-    if (n.type === 'campaign_invitation') {
-      if (n.refId) {
-        router.push({ pathname: '/campaign-detail', params: { campaignId: n.refId } });
-      }
-    } else if (n.type === 'creator_saved') {
-      // just acknowledge — no deep link needed
-    } else if (n.type === 'message_request_accepted') {
-      if (n.refId) {
-        if (n.refType === 'creator_profile') {
-          router.push({ pathname: '/(creator)/creator-detail', params: { id: n.refId } });
-        } else if (n.refType === 'business_profile') {
-          router.push({ pathname: '/(creator)/business-detail', params: { id: n.refId } });
-        }
-      }
-    } else if (n.type === 'business_favorited') {
-      // Only ever sent to the business owner (the creator who did the
-      // favoriting is refId/refType: 'creator_profile') — route to the
-      // business-side creator-detail screen, not the creator-side one.
-      if (n.refId) {
-        router.push({ pathname: '/(business)/creator-detail', params: { id: n.refId } });
-      }
-    } else if (n.type === 'new_campaign') {
-      if (n.refId) {
-        router.push({ pathname: '/campaign-detail', params: { campaignId: n.refId } });
-      } else if (isCreator) {
-        router.push('/(creator)/');
-      }
-    } else if (n.type === 'new_message') {
-      router.push(isCreator ? '/(creator)/messages/' : '/(business)/messages/');
-    } else if (['proposal_accepted', 'proposal_rejected', 'campaign_deadline'].includes(n.type)) {
-      if (isCreator) router.push('/(creator)/proposals');
-    }
+    const route = resolveNotificationRoute(n, isCreator);
+    if (route) router.push(route);
   }
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;

@@ -2762,6 +2762,11 @@ const en = {
     unlockWith: 'Unlock with {{label}}',
     usePasswordInstead: 'Use password instead',
   },
+  forceUpdate: {
+    title: 'Update Required',
+    subtitle: 'A new version of Kolab is available. Please update to continue.',
+    updateBtn: 'Update Now',
+  },
 };
 
 export default en;

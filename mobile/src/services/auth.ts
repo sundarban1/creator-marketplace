@@ -198,6 +198,11 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
+    // Best-effort, run before the tokens below are cleared (the endpoint is
+    // authenticated) — stops this device from receiving this user's pushes
+    // immediately, rather than waiting on Expo's stale-token cleanup.
+    await request('DELETE', '/api/notifications/push-token').catch(() => {});
+
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 4000);

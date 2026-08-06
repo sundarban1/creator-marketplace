@@ -9,6 +9,9 @@ export type PlatformFlags = {
   supportEmail?: string;
   platformCommission: number;
   comingSoon: boolean;
+  // Empty string = no enforcement.
+  minVersionIos: string;
+  minVersionAndroid: string;
 };
 
 export const platformSettingsService = {

@@ -35,7 +35,7 @@ import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { SupportAttachmentPicker } from '@/components/SupportAttachmentPicker';
 import { BackButton } from '@/components/BackButton';
-import { request } from '@/lib/api';
+import { supportService } from '@/services/support';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
@@ -801,7 +801,7 @@ export default function BusinessSettingsScreen() {
   async function handleSupportSubmit() {
     if (!supportMsg.trim()) return;
     try {
-      await request('POST', '/api/support/contact', { topic: supportTopic || 'General', message: supportMsg, attachmentUrls: supportAttachments });
+      await supportService.contact(supportTopic || 'General', supportMsg, supportAttachments);
       setSupportTopic(''); setSupportMsg(''); setSupportAttachments([]);
       showToast(t('businessSettings.supportSentToast'));
       setSubPage(null);
@@ -813,7 +813,7 @@ export default function BusinessSettingsScreen() {
   async function handleReportSubmit() {
     if (!reportDesc.trim()) return;
     try {
-      await request('POST', '/api/support/report', { type: reportType || 'Other', description: reportDesc, attachmentUrls: reportAttachments });
+      await supportService.report(reportType || 'Other', reportDesc, reportAttachments);
       setReportType(''); setReportDesc(''); setReportAttachments([]);
       showToast(t('businessSettings.reportSentToast'));
       setSubPage(null);

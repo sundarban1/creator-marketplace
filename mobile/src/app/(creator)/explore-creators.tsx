@@ -25,6 +25,7 @@ import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
 
 const PAGE_SIZE = 10;
@@ -261,8 +262,7 @@ export default function ExploreCreatorPeersScreen() {
   const [error, setError] = useState('');
 
   const [search, setSearch] = useState('');
-  const [searchDebounced, setSearchDebounced] = useState('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [searchDebounced] = useDebouncedValue(search, 400);
 
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterState>(DEFAULT_FILTER);
@@ -277,13 +277,6 @@ export default function ExploreCreatorPeersScreen() {
   // fire multiple times before a state update commits, otherwise triggering
   // the same page fetch twice and appending duplicate creators (duplicate keys).
   const loadingMoreRef = useRef(false);
-
-  // Debounce search
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setSearchDebounced(search), 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [search]);
 
   async function fetchCreators(p: number, replace: boolean, filter: FilterState, nameSearch: string) {
     if (p === 1 && replace) setLoading(true);

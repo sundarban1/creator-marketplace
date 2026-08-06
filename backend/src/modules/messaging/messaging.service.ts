@@ -556,7 +556,9 @@ export class MessagingService {
     emitToUser(recipient.userId, 'message:new', { conversationId, message, chatBadgeCount: recipientBadge.count });
 
     // Push notification (no DB record — message notifications do not appear in the bell)
-    sendExpoPush(recipient.userId, sender.name, pushBody.slice(0, 100), recipientBadge.count).catch(() => {});
+    sendExpoPush(recipient.userId, sender.name, pushBody.slice(0, 100), recipientBadge.count, {
+      type: 'new_message', refType: 'conversation', refId: conversationId,
+    }).catch(() => {});
 
     return message;
   }

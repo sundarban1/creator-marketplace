@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { request } from '@/lib/api';
 import type { AppNotification } from '@/types';
+import { logger } from '@/utilities/logger';
 
 type RawNotification = Omit<AppNotification, 'timestamp'> & { createdAt: string };
 
@@ -72,7 +73,7 @@ export const notificationService = {
     } catch (err) {
       // Common causes: FCM/APNs not configured for this build, no network,
       // or push-token endpoint rejecting the request — log so this isn't silent.
-      console.warn('[push] registerPushToken failed:', err);
+      logger.warn('[push] registerPushToken failed', { err });
     }
   },
 };

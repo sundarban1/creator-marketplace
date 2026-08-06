@@ -149,7 +149,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
     // Re-request a fresh GPS fix rather than trusting the coords captured when
     // the screen first mounted — the creator may have moved since then.
     setLocatingCurrent(true);
-    const fresh = await getCurrentLocation();
+    const fresh = await getCurrentLocation({ notifyOnDenial: true });
     setLocatingCurrent(false);
     const coords = fresh ?? currentCoords;
     if (coords) moveTo(coords);

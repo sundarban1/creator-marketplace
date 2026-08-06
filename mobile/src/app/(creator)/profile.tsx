@@ -21,6 +21,7 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import { logger } from '@/utilities/logger';
 
 const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
   instagram: { platform: 'Instagram', color: '#E1306C', iconName: 'instagram' },
@@ -99,7 +100,7 @@ export default function CreatorProfileScreen() {
         updateUser({ avatar: result.url });
       }
     } catch (err) {
-      console.error('[avatar upload]', err);
+      logger.error('[profile] avatar upload failed', err);
       toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
     } finally {
       setUploading(false);
@@ -114,7 +115,7 @@ export default function CreatorProfileScreen() {
         setProfile((p) => p ? { ...p, coverImageUrl: result.url } : p);
       }
     } catch (err) {
-      console.error('[cover upload]', err);
+      logger.error('[profile] cover upload failed', err);
       toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
     } finally {
       setCoverUploading(false);

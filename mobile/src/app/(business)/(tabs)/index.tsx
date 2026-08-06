@@ -1,7 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image } from 'expo-image';
 import { TabSlider } from '@/components/TabSlider';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
@@ -184,7 +185,7 @@ export default function BusinessHomeScreen() {
               on the same view. */}
           <View style={styles.avatarClip}>
             {user?.avatar ? (
-              <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+              <Image source={{ uri: user.avatar }} style={styles.avatarImage} contentFit="cover" />
             ) : (
               <View style={styles.avatarFallback}>
                 <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{displayName.trim()[0].toUpperCase()}</Text>
@@ -418,7 +419,7 @@ export default function BusinessHomeScreen() {
                     <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
                       <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
                       {cardImage && (
-                        <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                        <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
                       )}
                     </View>
                     <View style={styles.titleSection}>

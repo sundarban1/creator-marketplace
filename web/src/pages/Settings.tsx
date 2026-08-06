@@ -190,6 +190,8 @@ const DEFAULTS: PlatformSettings = {
   'platform.commission':         '12',
   'platform.description':        'Kolab connects brands with top creators for authentic events.',
   'featuredEvent.unlimitedEmails': [] as string[],
+  'app.minVersion.ios':           '',
+  'app.minVersion.android':       '',
 };
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -375,6 +377,12 @@ export function Settings() {
             settings={settings}
             onChange={setArray}
           />
+        </SectionCard>
+
+        {/* App Version */}
+        <SectionCard title="Minimum App Version" subtitle="Mobile installs older than these versions are blocked with an update screen. Leave blank to disable enforcement for that platform.">
+          <InputField label="iOS Minimum Version"     settingKey="app.minVersion.ios"     settings={settings} onChange={setString} />
+          <InputField label="Android Minimum Version" settingKey="app.minVersion.android" settings={settings} onChange={setString} />
         </SectionCard>
 
         {/* Security */}

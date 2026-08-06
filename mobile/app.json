@@ -119,6 +119,15 @@
       "@sentry/react-native/expo",
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
       "./plugins/withFixMapsPodfile.js"
     ],
     "experiments": {

@@ -1,16 +1,15 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
   ActivityIndicator,
   FlatList,
   Image,
-  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -25,32 +24,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
-import { chatService, toMessage, createVideoUploadTask, createVoiceUploadTask } from '@/services/chat';
-import { VoiceRecorderButton, type VoiceRecorderResult } from '@/features/chat/components/VoiceRecorderButton';
+import { chatService } from '@/services/chat';
+import { VoiceRecorderButton } from '@/features/chat/components/VoiceRecorderButton';
 import { VoiceBubblePlayer } from '@/features/chat/components/VoiceBubblePlayer';
-import { compressVideo } from '@/utilities/uploadVideo';
-import {
-  getActiveUploadsFor, subscribeToUploadProgress, subscribeToUploadFinalizing,
-  getActiveUploadResult, cancelActiveUpload, setFocusedUploadTarget,
-} from '@/services/backgroundVideoUploadManager';
-import {
-  getActiveVoiceUploadsFor, subscribeToVoiceUploadProgress,
-  getActiveVoiceUploadResult, cancelActiveVoiceUpload,
-} from '@/services/voiceUploadRegistry';
-import type { ApiMessage } from '@/lib/api';
-import { getSocket } from '@/lib/socket';
 import { notificationService } from '@/services/notifications';
-import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
 import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
-import {
-  pickImageFromLibrary, pickImageFromCamera, pickDocumentAttachment, pickVideoFromLibrary, pickVideoFromCamera, promptAttachmentChoice,
-  type PickedAttachment, type PickedVideo,
-} from '@/utilities/chatAttachments';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useChatConversation } from '@/hooks/useChatConversation';
 import type { Message } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,17 +63,6 @@ function formatDuration(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.round(sec % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function isTransientNetworkError(e: unknown): boolean {
-  // A definitive rejection from the server (e.g. "exceeds 2 minute limit") throws
-  // a plain Error with a specific message but no HTTP status attached the same way
-  // a generic fetch/timeout failure does — treat anything that isn't clearly a
-  // validation message as transient and worth retrying. A user-initiated cancel
-  // is deliberately excluded too — it's handled separately in runVideoSend and
-  // must never be auto-retried.
-  const msg = e instanceof Error ? e.message : '';
-  return !/limit|not supported|not allowed|cancelled/i.test(msg);
 }
 
 function formatDateLabel(ts: string): string {
@@ -473,648 +445,50 @@ export default function CreatorChatRoomScreen() {
     );
   }
 
-  const [messages, setMessages]       = useState<Message[]>([]);
-  const [messagesError, setMessagesError] = useState('');
-  const [status, setStatus]           = useState<'PENDING' | 'ACCEPTED' | 'DECLINED'>(
-    (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED',
-  );
-  const [text, setText]               = useState('');
-  // Mirrors `text` (see the effect below) so handleSend's deferred callback
-  // can read the latest value without closing over a stale render's `text`.
-  const textRef                       = useRef('');
-  useEffect(() => { textRef.current = text; }, [text]);
+  const [acting, setActing] = useState<'accept' | 'decline' | null>(null);
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const [acting, setActing]           = useState<'accept' | 'decline' | null>(null);
-  const [otherTyping, setOtherTyping] = useState(false);
-  const [emojiOpen, setEmojiOpen]     = useState(false);
-  const [presence, setPresence]       = useState<{ online: boolean; lastSeenAt: string | null } | null>(null);
-  const listRef         = useRef<FlatList>(null);
-  const inputRef        = useRef<TextInput>(null);
-  const isSending       = useRef(false);
-  const uploadTasks     = useRef<Record<string, { start: () => Promise<Message>; cancel: () => void }>>({});
-  const typingTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isTypingEmitted = useRef(false);
-  const seenTimer       = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const personName  = name ?? 'Chat';
   const personColor = avatarColor(personName);
   const personAvatar = avatar || undefined;
   const [personAvatarFailed, setPersonAvatarFailed] = useState(false);
 
-  // Scroll to offset 0 = visual bottom for inverted FlatList
-  function scrollToBottom(animated = true) {
-    listRef.current?.scrollToOffset({ offset: 0, animated });
-  }
+  // Video is only allowed when chatting with a business — not creator<->creator.
+  const allowVideo = participantRole !== 'CREATOR';
 
-  function markSeen() {
-    if (seenTimer.current) clearTimeout(seenTimer.current);
-    seenTimer.current = setTimeout(() => {
-      chatService.markSeen(id)
-        .then(() => {
-          messagingEvents.refresh();
-          notificationService.markReadByRef(id).catch(() => null);
-        })
-        .catch(() => null);
-    }, 800);
-  }
+  const chat = useChatConversation({
+    conversationId: id,
+    urlStatus,
+    participantUserId,
+    focusInputOnAccepted: focusInput === 'true',
+    onSeen: () => notificationService.markReadByRef(id).catch(() => null),
+    allowVideo,
+  });
 
-  // Load messages
-  function loadMessages() {
-    if (!id) return;
-    setMessagesError('');
-    chatService.getMessages(id)
-      .then((msgs) => {
-        // Keep any reconstructed pending-upload bubble(s) — they have no DB
-        // row yet, so the server list never includes them; merging (instead
-        // of replacing outright) is what keeps an in-progress video visible
-        // across this same refresh.
-        setMessages((prev) => [...msgs, ...prev.filter((m) => m.id.startsWith('temp-upload-'))]);
-      })
-      .catch((e) => setMessagesError(e instanceof Error ? e.message : t('messages.loadFailedSub')));
-  }
-
-  // Auto-refresh the moment connectivity is restored after being offline.
-  const { reconnectedAt } = useNetworkStatus();
+  // The native multiline TextInput doesn't shrink on its own when `text` is
+  // cleared (send/edit-cancel/etc, all inside the hook) — collapse the
+  // composer back to a single line whenever that happens.
   useEffect(() => {
-    if (reconnectedAt) loadMessages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reconnectedAt]);
-
-  useEffect(() => {
-    clearComposer();
-    const convStatus = (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED';
-    setStatus(convStatus);
-    if (!id) { setMessages([]); return; }
-    // Reconstruct any video upload(s) still running for this conversation
-    // before wiping/refetching — otherwise a video sent, then navigated away
-    // from mid-upload, would appear to vanish until it finishes.
-    setMessages([]);
-    getActiveUploadsFor({ targetType: 'chat', conversationId: id }).forEach(attachToActiveUpload);
-    getActiveVoiceUploadsFor(id).forEach(attachToActiveVoiceUpload);
-    loadMessages();
-    if (convStatus === 'ACCEPTED') markSeen();
-    if (focusInput === 'true' && convStatus === 'ACCEPTED') {
-      setTimeout(() => inputRef.current?.focus(), 400);
-    }
-  }, [id]);
-
-  // Report focus so GlobalUploadBanner knows not to duplicate this
-  // conversation's own inline upload progress while it's on screen.
-  useFocusEffect(
-    useCallback(() => {
-      if (!id) return;
-      setFocusedUploadTarget({ targetType: 'chat', conversationId: id });
-      return () => setFocusedUploadTarget(null);
-    }, [id])
-  );
-
-  // Incoming messages via NotificationContext's forwarded socket event bus
-  useEffect(() => {
-    if (!id) return;
-    return incomingMessageEvents.subscribe((data) => {
-      if (data.conversationId !== id) return;
-      const incoming = toMessage(data.message);
-      setMessages((prev) => {
-        const withoutTemp = prev.filter(
-          (m) => !(m.id.startsWith('temp-') && m.senderId === incoming.senderId)
-        );
-        if (withoutTemp.some((m) => m.id === incoming.id)) return withoutTemp;
-        return [...withoutTemp, incoming];
-      });
-      scrollToBottom();
-      markSeen();
-    });
-  }, [id]);
-
-  // Socket: typing indicators + room presence
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket || !id) return;
-    socket.emit('join:conversation', { conversationId: id });
-
-    const onTypingStart = (data: { conversationId: string }) => { if (data.conversationId === id) setOtherTyping(true); };
-    const onTypingStop  = (data: { conversationId: string }) => { if (data.conversationId === id) setOtherTyping(false); };
-    const onReconnect   = () => { socket.emit('join:conversation', { conversationId: id }); };
-    // The other participant "delete for everyone"-ing a message — tombstone it live.
-    const onMessageDeleted = (data: { conversationId: string; messageId: string }) => {
-      if (data.conversationId !== id) return;
-      setMessages((prev) => prev.map((m) =>
-        m.id === data.messageId ? { ...m, isDeleted: true, text: '', attachmentUrl: null, attachmentName: null } : m
-      ));
-    };
-    // The other participant edited a message — apply the update live.
-    const onMessageEdited = (data: { conversationId: string; message: ApiMessage }) => {
-      if (data.conversationId !== id) return;
-      const edited = toMessage(data.message);
-      setMessages((prev) => prev.map((m) => (m.id === edited.id ? edited : m)));
-    };
-    // A socket-sent text message was rejected server-side (e.g. the new
-    // messages-per-minute / duplicate-message rate limits) — the socket path
-    // never otherwise resolves on failure (no ack), so without this the
-    // optimistic bubble would sit there forever with no explanation.
-    const onMessageError = (data: { conversationId: string; message?: string }) => {
-      if (data.conversationId !== id) return;
-      isSending.current = false;
-      setMessages((prev) => {
-        const idx = [...prev].reverse().findIndex((m) => m.status === 'sending' && m.senderId === user?.id);
-        if (idx === -1) return prev;
-        const removeAt = prev.length - 1 - idx;
-        return prev.filter((_, i) => i !== removeAt);
-      });
-      Alert.alert(t('messages.sendFailedTitle'), data.message ?? t('messages.sendFailedGeneric'));
-    };
-
-    socket.on('typing:start', onTypingStart);
-    socket.on('typing:stop',  onTypingStop);
-    socket.on('connect',      onReconnect);
-    socket.on('message:deleted', onMessageDeleted);
-    socket.on('message:edited', onMessageEdited);
-    socket.on('message:error', onMessageError);
-
-    return () => {
-      socket.off('typing:start', onTypingStart);
-      socket.off('typing:stop',  onTypingStop);
-      socket.off('connect',      onReconnect);
-      socket.off('message:deleted', onMessageDeleted);
-      socket.off('message:edited', onMessageEdited);
-      socket.off('message:error', onMessageError);
-      socket.emit('leave:conversation', { conversationId: id });
-      if (typingTimer.current) clearTimeout(typingTimer.current);
-      if (seenTimer.current)   clearTimeout(seenTimer.current);
-    };
-  }, [id]);
-
-  // Socket: the other participant's online/last-seen status
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket || !participantUserId) return;
-    socket.emit('presence:subscribe', { userId: participantUserId });
-
-    const onPresenceUpdate = (data: { userId: string; online: boolean; lastSeenAt: string | null }) => {
-      if (data.userId === participantUserId) setPresence({ online: data.online, lastSeenAt: data.lastSeenAt });
-    };
-    const onReconnect = () => { socket.emit('presence:subscribe', { userId: participantUserId }); };
-
-    socket.on('presence:update', onPresenceUpdate);
-    socket.on('connect', onReconnect);
-
-    return () => {
-      socket.off('presence:update', onPresenceUpdate);
-      socket.off('connect', onReconnect);
-      socket.emit('presence:unsubscribe', { userId: participantUserId });
-    };
-  }, [participantUserId]);
-
-  function handleMessageLongPress(msg: Message) {
-    if (msg.isDeleted || msg.id.startsWith('temp-')) return;
-    const isMine = msg.senderId === user?.id;
-    const options: { text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }[] = [
-      { text: t('messages.deleteForMe'), style: 'destructive', onPress: () => void deleteMessage(msg, false) },
-    ];
-    if (isMine) {
-      if (msg.type === 'TEXT') {
-        options.unshift({ text: t('messages.editMessage'), onPress: () => {
-          setEditingMessage(msg);
-          setText(msg.text);
-          inputRef.current?.focus();
-        } });
-      }
-      options.push({ text: t('messages.deleteForEveryone'), style: 'destructive', onPress: () => void deleteMessage(msg, true) });
-    }
-    options.push({ text: t('common.cancel'), style: 'cancel' });
-    Alert.alert(t('messages.deleteMessageTitle'), undefined, options);
-  }
-
-  async function deleteMessage(msg: Message, forEveryone: boolean) {
-    try {
-      await chatService.deleteMessage(id, msg.id, forEveryone);
-      if (forEveryone) {
-        setMessages((prev) => prev.map((m) =>
-          m.id === msg.id ? { ...m, isDeleted: true, text: '', attachmentUrl: null, attachmentName: null } : m
-        ));
-      } else {
-        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
-      }
-    } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('messages.deleteFailedGeneric'));
-    }
-  }
-
-  useEffect(() => {
-    if (otherTyping) scrollToBottom();
-  }, [otherTyping]);
-
-  // Collapse the composer back to a single line — the native multiline
-  // TextInput doesn't shrink on its own when `text` is cleared, so every
-  // call site that clears it also resets this.
-  function clearComposer() {
-    setText('');
-    setInputHeight(MIN_INPUT_HEIGHT);
-    setEditingMessage(null);
-  }
-
-  async function handleSaveEdit() {
-    if (!editingMessage || !text.trim()) return;
-    const content = text.trim();
-    const msgId = editingMessage.id;
-    if (content === editingMessage.text) { clearComposer(); return; }
-    try {
-      const updated = await chatService.editMessage(id, msgId, content);
-      setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
-      clearComposer();
-    } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('messages.editFailedGeneric'));
-    }
-  }
-
-  function handleTextChange(val: string) {
-    setText(val);
-    const socket = getSocket();
-    if (!socket) return;
-    if (!val.trim()) {
-      if (isTypingEmitted.current) { socket.emit('typing:stop', { conversationId: id }); isTypingEmitted.current = false; }
-      if (typingTimer.current) clearTimeout(typingTimer.current);
-      return;
-    }
-    if (!isTypingEmitted.current) { socket.emit('typing:start', { conversationId: id }); isTypingEmitted.current = true; }
-    if (typingTimer.current) clearTimeout(typingTimer.current);
-    typingTimer.current = setTimeout(() => {
-      socket.emit('typing:stop', { conversationId: id });
-      isTypingEmitted.current = false;
-    }, 2000);
-  }
+    if (!chat.text) setInputHeight(MIN_INPUT_HEIGHT);
+  }, [chat.text]);
 
   async function handleRespond(action: 'accept' | 'decline') {
     setActing(action);
     try {
       await chatService.respondToRequest(id, action);
-      setStatus(action === 'accept' ? 'ACCEPTED' : 'DECLINED');
-      if (action === 'accept') { markSeen(); }
+      chat.setStatus(action === 'accept' ? 'ACCEPTED' : 'DECLINED');
+      if (action === 'accept') { chat.markSeen(); }
       else { messagingEvents.refresh(); router.back(); }
     } finally {
       setActing(null);
     }
   }
 
-  function handleSend() {
-    if (isSending.current) return;
-    if (editingMessage) { void handleSaveEdit(); return; }
-    // iOS autocorrect/predictive text can commit a word replacement (which
-    // fires onChangeText) in the very same tap that presses this button —
-    // reading `text` synchronously here can race ahead of that in-flight
-    // commit: the pre-correction word gets sent, and the correction's
-    // onChangeText lands afterward and repopulates the just-cleared input.
-    // Deferring one frame lets any in-flight autocorrect change reach
-    // textRef first, so the actual send always reflects the final text.
-    requestAnimationFrame(() => {
-      if (isSending.current) return;
-      const content = textRef.current.trim();
-      if (!content) return;
-      isSending.current = true;
-      const socket = getSocket();
-
-      // Stop typing indicator
-      if (socket && isTypingEmitted.current) {
-        socket.emit('typing:stop', { conversationId: id });
-        isTypingEmitted.current = false;
-      }
-      if (typingTimer.current) clearTimeout(typingTimer.current);
-
-      // Optimistic update — show message immediately at bottom
-      const tempId = `temp-${Date.now()}`;
-      const optimistic: Message = {
-        id: tempId, conversationId: id,
-        senderId: user?.id ?? '', text: content,
-        timestamp: new Date().toISOString(), status: 'sending',
-        type: 'TEXT',
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      textRef.current = '';
-      clearComposer();
-      scrollToBottom();
-
-      if (socket?.connected) {
-        socket.emit('message:send', { conversationId: id, content });
-        // The server echoes message:new back; the subscriber above replaces the temp message
-        isSending.current = false;
-      } else {
-        chatService.sendMessage(id, content)
-          .then((msg) => {
-            setMessages((prev) => {
-              const without = prev.filter((m) => m.id !== tempId);
-              return without.some((m) => m.id === msg.id) ? without : [...without, msg];
-            });
-          })
-          .catch((e) => {
-            setMessages((prev) => prev.filter((m) => m.id !== tempId));
-            Alert.alert(t('messages.sendFailedTitle'), e instanceof Error ? e.message : t('messages.sendFailedGeneric'));
-          })
-          .finally(() => { isSending.current = false; });
-      }
-    });
-  }
-
-  async function handleSendAttachment(file: PickedAttachment, type: 'IMAGE' | 'FILE') {
-    if (isSending.current) return;
-    isSending.current = true;
-    const caption = text.trim();
-
-    const socket = getSocket();
-    if (socket && isTypingEmitted.current) {
-      socket.emit('typing:stop', { conversationId: id });
-      isTypingEmitted.current = false;
-    }
-    if (typingTimer.current) clearTimeout(typingTimer.current);
-
-    const tempId = `temp-${Date.now()}`;
-    const optimistic: Message = {
-      id: tempId, conversationId: id,
-      senderId: user?.id ?? '', text: caption,
-      timestamp: new Date().toISOString(), status: 'sending',
-      type, attachmentUrl: file.uri, attachmentName: file.name,
-    };
-    setMessages((prev) => [...prev, optimistic]);
-    clearComposer();
-    scrollToBottom();
-
-    try {
-      const msg = await chatService.sendAttachment(id, file, caption);
-      setMessages((prev) => {
-        const without = prev.filter((m) => m.id !== tempId);
-        return without.some((m) => m.id === msg.id) ? without : [...without, msg];
-      });
-    } catch (e) {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      Alert.alert(t('messages.sendFailedTitle'), e instanceof Error ? e.message : t('messages.sendFailedGeneric'));
-    } finally {
-      isSending.current = false;
-    }
-  }
-
-  function updateMsg(id: string, patch: Partial<Message>) {
-    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
-  }
-
-  // Reconstructs a pending video bubble for an upload that's still running in
-  // the background (started before this screen mounted, or before the user
-  // navigated away and back) — the transfer itself never stopped
-  // (backgroundVideoUploadManager keeps driving it independently), only this
-  // screen's own local state lost track of it. Re-subscribes to the same
-  // progress/finalizing/result signals runVideoSend would have used.
-  function attachToActiveUpload(active: ReturnType<typeof getActiveUploadsFor>[number]) {
-    const tempId = `temp-upload-${active.localUploadId}`;
-    const caption = active.target.targetType === 'chat' ? (active.target.caption ?? '') : '';
-    const optimistic: Message = {
-      id: tempId, conversationId: id,
-      senderId: user?.id ?? '', text: caption,
-      timestamp: new Date().toISOString(), status: active.status,
-      type: 'VIDEO',
-      localUri: active.sourceFileUri, uploadProgress: active.progress, retryCount: 0,
-    };
-    setMessages((prev) => (prev.some((m) => m.id === tempId) ? prev : [...prev, optimistic]));
-
-    const unsubProgress = subscribeToUploadProgress(active.localUploadId, (p) => updateMsg(tempId, { uploadProgress: p, status: 'uploading' }));
-    const unsubFinalizing = subscribeToUploadFinalizing(active.localUploadId, () => updateMsg(tempId, { status: 'finalizing' }));
-    uploadTasks.current[tempId] = {
-      start: () => Promise.reject(new Error('Reconstructed upload cannot be (re)started')),
-      cancel: () => cancelActiveUpload(active.localUploadId),
-    };
-
-    getActiveUploadResult(active.localUploadId)?.then((apiMessage) => {
-      const serverMsg = toMessage(apiMessage as ApiMessage);
-      setMessages((prev) => {
-        const without = prev.filter((m) => m.id !== tempId);
-        return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
-      });
-    }).catch((e) => {
-      const detail = e instanceof Error ? e.message : undefined;
-      if (detail === 'Video upload cancelled') {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
-        return;
-      }
-      updateMsg(tempId, { status: 'failed', errorDetail: detail });
-    }).finally(() => {
-      unsubProgress();
-      unsubFinalizing();
-      delete uploadTasks.current[tempId];
-    });
-  }
-
-  // Voice analogue of attachToActiveUpload above — reconstructs a pending
-  // voice bubble for an upload that's still running (started before this
-  // screen mounted, or before the user navigated away and back). The upload
-  // itself never stopped (it's a plain JS promise chain, not tied to this
-  // component), only this screen's own local state lost track of it.
-  function attachToActiveVoiceUpload(active: ReturnType<typeof getActiveVoiceUploadsFor>[number]) {
-    const tempId = `temp-voice-upload-${active.localUploadId}`;
-    const optimistic: Message = {
-      id: tempId, conversationId: id,
-      senderId: user?.id ?? '', text: '',
-      timestamp: new Date().toISOString(), status: 'uploading',
-      type: 'VOICE',
-      attachmentDurationSec: active.durationSec,
-      attachmentWaveform: active.waveform.map((v) => v.toFixed(2)).join(','),
-      localUri: active.sourceFileUri, uploadProgress: active.progress, retryCount: 0,
-    };
-    setMessages((prev) => (prev.some((m) => m.id === tempId) ? prev : [...prev, optimistic]));
-
-    const unsubProgress = subscribeToVoiceUploadProgress(active.localUploadId, (p) => updateMsg(tempId, { uploadProgress: p }));
-    uploadTasks.current[tempId] = {
-      start: () => Promise.reject(new Error('Reconstructed upload cannot be (re)started')),
-      cancel: () => cancelActiveVoiceUpload(active.localUploadId),
-    };
-
-    getActiveVoiceUploadResult(active.localUploadId)?.then((apiMessage) => {
-      const serverMsg = toMessage(apiMessage as ApiMessage);
-      setMessages((prev) => {
-        const without = prev.filter((m) => m.id !== tempId);
-        return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
-      });
-    }).catch((e) => {
-      const detail = e instanceof Error ? e.message : undefined;
-      if (detail === 'Voice upload cancelled') {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
-        return;
-      }
-      updateMsg(tempId, { status: 'failed', errorDetail: detail });
-    }).finally(() => {
-      unsubProgress();
-      delete uploadTasks.current[tempId];
-    });
-  }
-
-  async function runVideoSend(msg: Message) {
-    try {
-      updateMsg(msg.id, { status: 'compressing', uploadProgress: 0 });
-      const compressedUri = await compressVideo(msg.localUri!, (p) => updateMsg(msg.id, { uploadProgress: p }));
-      updateMsg(msg.id, { status: 'uploading', uploadProgress: 0, localUri: compressedUri });
-
-      const task = createVideoUploadTask(id, compressedUri, 'video/mp4', msg.text,
-        (p) => updateMsg(msg.id, { uploadProgress: p }),
-        () => updateMsg(msg.id, { status: 'finalizing' }),
-        msg.attachmentDurationSec ?? undefined);
-      uploadTasks.current[msg.id] = task;
-
-      const serverMsg = await task.start();
-      setMessages((prev) => {
-        const without = prev.filter((m) => m.id !== msg.id);
-        return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
-      });
-    } catch (e) {
-      const detail = e instanceof Error ? e.message : undefined;
-      if (detail === 'Video upload cancelled') {
-        // User-initiated cancel — remove the bubble entirely rather than
-        // showing a "failed" state, and never retry.
-        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
-        return;
-      }
-      const attempt = (msg.retryCount ?? 0) + 1;
-      if (isTransientNetworkError(e) && attempt <= 3) {
-        updateMsg(msg.id, { retryCount: attempt, errorDetail: detail });
-        await runVideoSend({ ...msg, retryCount: attempt });
-        return;
-      }
-      updateMsg(msg.id, { status: 'failed', retryCount: attempt, errorDetail: detail });
-    } finally {
-      delete uploadTasks.current[msg.id];
-    }
-  }
-
-  async function handleSendVideoAttachment(video: PickedVideo) {
-    if (isSending.current) return;
-    isSending.current = true;
-    try {
-      const tempId = `temp-${Date.now()}`;
-      const caption = text.trim();
-
-      const socket = getSocket();
-      if (socket && isTypingEmitted.current) {
-        socket.emit('typing:stop', { conversationId: id });
-        isTypingEmitted.current = false;
-      }
-      if (typingTimer.current) clearTimeout(typingTimer.current);
-
-      const optimistic: Message = {
-        id: tempId, conversationId: id,
-        senderId: user?.id ?? '', text: caption,
-        timestamp: new Date().toISOString(), status: 'compressing',
-        type: 'VIDEO',
-        attachmentUrl: video.uri, attachmentDurationSec: video.durationSec,
-        attachmentWidth: video.width, attachmentHeight: video.height,
-        localUri: video.uri, uploadProgress: 0, retryCount: 0,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      clearComposer();
-      scrollToBottom();
-      await runVideoSend(optimistic);
-    } finally {
-      isSending.current = false;
-    }
-  }
-
-  // Single-shot direct-to-Cloudinary upload (see createVoiceUploadTask) —
-  // no compression/finalizing stage the way video has, just uploading → sent.
-  async function runVoiceSend(msg: Message) {
-    try {
-      const task = createVoiceUploadTask(
-        id, msg.localUri!, msg.attachmentDurationSec ?? 0,
-        (msg.attachmentWaveform ?? '').split(',').filter(Boolean).map(Number),
-        (p) => updateMsg(msg.id, { uploadProgress: p }),
-      );
-      uploadTasks.current[msg.id] = task;
-
-      const serverMsg = await task.start();
-      setMessages((prev) => {
-        const without = prev.filter((m) => m.id !== msg.id);
-        return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
-      });
-    } catch (e) {
-      const detail = e instanceof Error ? e.message : undefined;
-      if (detail === 'Voice upload cancelled') {
-        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
-        return;
-      }
-      const attempt = (msg.retryCount ?? 0) + 1;
-      if (isTransientNetworkError(e) && attempt <= 3) {
-        updateMsg(msg.id, { retryCount: attempt, errorDetail: detail });
-        await runVoiceSend({ ...msg, retryCount: attempt });
-        return;
-      }
-      updateMsg(msg.id, { status: 'failed', retryCount: attempt, errorDetail: detail });
-    } finally {
-      delete uploadTasks.current[msg.id];
-    }
-  }
-
-  async function handleSendVoiceAttachment(rec: VoiceRecorderResult) {
-    if (isSending.current) return;
-    isSending.current = true;
-    try {
-      const socket = getSocket();
-      if (socket && isTypingEmitted.current) {
-        socket.emit('typing:stop', { conversationId: id });
-        isTypingEmitted.current = false;
-      }
-      if (typingTimer.current) clearTimeout(typingTimer.current);
-
-      const tempId = `temp-${Date.now()}`;
-      const optimistic: Message = {
-        id: tempId, conversationId: id,
-        senderId: user?.id ?? '', text: '',
-        timestamp: new Date().toISOString(), status: 'uploading',
-        type: 'VOICE',
-        attachmentDurationSec: rec.durationSec,
-        attachmentWaveform: rec.waveform.map((v) => v.toFixed(2)).join(','),
-        localUri: rec.uri, uploadProgress: 0, retryCount: 0,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      scrollToBottom();
-      await runVoiceSend(optimistic);
-    } finally {
-      isSending.current = false;
-    }
-  }
-
-  async function handleCameraPress() {
-    const file = await pickImageFromCamera();
-    if (file) void handleSendAttachment(file, 'IMAGE');
-  }
-
-  // Video is only allowed when chatting with a business — not creator<->creator.
-  const allowVideo = participantRole !== 'CREATOR';
-
-  async function handleAttachmentPress() {
-    const choice = await promptAttachmentChoice(allowVideo);
-    if (choice === 'gallery') {
-      const file = await pickImageFromLibrary();
-      if (file) void handleSendAttachment(file, 'IMAGE');
-    } else if (choice === 'video-library') {
-      const video = await pickVideoFromLibrary();
-      if (video) void handleSendVideoAttachment(video);
-    } else if (choice === 'video-camera') {
-      const video = await pickVideoFromCamera();
-      if (video) void handleSendVideoAttachment(video);
-    } else if (choice === 'document') {
-      const file = await pickDocumentAttachment();
-      if (file) void handleSendAttachment(file, file.mimeType.startsWith('image/') ? 'IMAGE' : 'FILE');
-    }
-  }
-
-  function toggleEmojiPanel() {
-    if (!emojiOpen) Keyboard.dismiss();
-    setEmojiOpen((v) => !v);
-  }
-
-  function insertEmoji(emoji: string) {
-    handleTextChange(text + emoji);
-  }
-
-  const isPending  = status === 'PENDING';
-  const isDeclined = status === 'DECLINED';
-  const listItems  = buildItems(messages, user?.id ?? '', otherTyping);
+  const isPending  = chat.status === 'PENDING';
+  const isDeclined = chat.status === 'DECLINED';
+  const listItems  = buildItems(chat.messages, user?.id ?? '', chat.otherTyping);
   // Blocks starting a second video while one is already compressing/uploading/finalizing/sending.
-  const hasActiveUpload = messages.some((m) => m.status === 'compressing' || m.status === 'uploading' || m.status === 'finalizing' || m.status === 'sending');
+  const hasActiveUpload = chat.messages.some((m) => m.status === 'compressing' || m.status === 'uploading' || m.status === 'finalizing' || m.status === 'sending');
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -1134,7 +508,7 @@ export default function CreatorChatRoomScreen() {
           )}
           <View style={s.headerInfo}>
             <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
-            {otherTyping
+            {chat.otherTyping
               ? <Text style={[s.headerSub, { color: C.brinjal1 }]}>typing…</Text>
               : isPending
               ? (
@@ -1146,9 +520,9 @@ export default function CreatorChatRoomScreen() {
               : isDeclined
               ? <Text style={[s.headerSub, { color: C.error }]}>{t('messages.requestDeclined')}</Text>
               : (() => {
-                  const label = presence ? formatPresence(t, presence.online, presence.lastSeenAt) : null;
+                  const label = chat.presence ? formatPresence(t, chat.presence.online, chat.presence.lastSeenAt) : null;
                   return label
-                    ? <Text style={[s.headerSub, { color: presence?.online ? C.active : C.textSecondary }]}>{label}</Text>
+                    ? <Text style={[s.headerSub, { color: chat.presence?.online ? C.active : C.textSecondary }]}>{label}</Text>
                     : null;
                 })()}
           </View>
@@ -1217,7 +591,7 @@ export default function CreatorChatRoomScreen() {
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
         {/* inverted=true → newest messages at bottom, scroll up for history (Instagram pattern) */}
         <FlatList
-          ref={listRef}
+          ref={chat.listRef}
           style={[s.flex, { backgroundColor: C.background }]}
           data={listItems}
           keyExtractor={(item) => item.id}
@@ -1240,24 +614,24 @@ export default function CreatorChatRoomScreen() {
                 msg={item.msg} isSent={item.isSent}
                 showAvatar={item.showAvatar} isLast={item.isLast}
                 personName={personName} personColor={personColor} personAvatar={personAvatar}
-                onLongPress={() => handleMessageLongPress(item.msg)}
-                onRetryUpload={(msg) => void (msg.type === 'VOICE' ? runVoiceSend(msg) : runVideoSend(msg))}
-                onDeleteFailed={(msgId) => setMessages((prev) => prev.filter((m) => m.id !== msgId))}
-                onCancelUpload={(msg) => uploadTasks.current[msg.id]?.cancel()}
+                onLongPress={() => chat.handleMessageLongPress(item.msg)}
+                onRetryUpload={(msg) => void (msg.type === 'VOICE' ? chat.runVoiceSend(msg) : chat.runVideoSend(msg))}
+                onDeleteFailed={(msgId) => chat.setMessages((prev) => prev.filter((m) => m.id !== msgId))}
+                onCancelUpload={(msg) => chat.uploadTasks.current[msg.id]?.cancel()}
               />
             );
           }}
           contentContainerStyle={s.msgList}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            messagesError ? (
+            chat.messagesError ? (
               <View style={s.emptyWrap}>
                 <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
                   <FontAwesome5 name="exclamation-circle" solid size={36} color={C.brinjal1} />
                 </View>
                 <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.loadMessagesFailedTitle')}</Text>
-                <Text style={[s.emptyHint, { color: C.textSecondary }]}>{messagesError}</Text>
-                <Pressable onPress={loadMessages} style={s.retryBtn}>
+                <Text style={[s.emptyHint, { color: C.textSecondary }]}>{chat.messagesError}</Text>
+                <Pressable onPress={chat.loadMessages} style={s.retryBtn}>
                   <Text style={[s.retryBtnText, { color: C.brinjal1 }]}>{t('messages.retry')}</Text>
                 </Pressable>
               </View>
@@ -1278,77 +652,77 @@ export default function CreatorChatRoomScreen() {
         />
 
         {/* ── Input bar ── */}
-        {status === 'ACCEPTED' && !flags.messagingEnabled && (
+        {chat.status === 'ACCEPTED' && !flags.messagingEnabled && (
           <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
             <Text style={[s.charCount, { color: C.textSecondary }]}>{t('messages.messagingDisabled')}</Text>
           </View>
         )}
-        {status === 'ACCEPTED' && flags.messagingEnabled && (blockStatus?.blockedByMe || blockStatus?.blockedByOther) && (
+        {chat.status === 'ACCEPTED' && flags.messagingEnabled && (blockStatus?.blockedByMe || blockStatus?.blockedByOther) && (
           <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
             <Text style={[s.charCount, { color: C.textSecondary }]}>
               {blockStatus.blockedByMe ? t('messages.youBlockedUser') : t('messages.blockedByOther')}
             </Text>
           </View>
         )}
-        {status === 'ACCEPTED' && flags.messagingEnabled && !blockStatus?.blockedByMe && !blockStatus?.blockedByOther && (
+        {chat.status === 'ACCEPTED' && flags.messagingEnabled && !blockStatus?.blockedByMe && !blockStatus?.blockedByOther && (
           <>
-            {editingMessage && (
+            {chat.editingMessage && (
               <View style={[s.editingBanner, { backgroundColor: C.surface, borderTopColor: C.border }]}>
                 <FontAwesome5 name="edit" size={14} color={C.brinjal1} />
                 <Text style={[s.editingBannerTxt, { color: C.brinjal1 }]} numberOfLines={1}>{t('messages.editingMessage')}</Text>
-                <Pressable onPress={clearComposer} hitSlop={8}>
+                <Pressable onPress={chat.clearComposer} hitSlop={8}>
                   <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
                 </Pressable>
               </View>
             )}
-            <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: emojiOpen ? 8 : insets.bottom + 8 }]}>
-              <Pressable style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>
+            <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: chat.emojiOpen ? 8 : insets.bottom + 8 }]}>
+              <Pressable style={s.iconBtn} onPress={chat.handleCameraPress} hitSlop={4}>
                 <FontAwesome5 name="camera" solid size={24} color={C.brinjal1} />
               </Pressable>
-              <Pressable style={s.iconBtn} onPress={handleAttachmentPress} disabled={hasActiveUpload} hitSlop={4}>
+              <Pressable style={s.iconBtn} onPress={chat.handleAttachmentPress} disabled={hasActiveUpload} hitSlop={4}>
                 <FontAwesome5 name="images" solid size={24} color={hasActiveUpload ? C.textSecondary : C.brinjal1} />
               </Pressable>
               <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
-                <Pressable onPress={toggleEmojiPanel} hitSlop={4}>
-                  <FontAwesome5 name={emojiOpen ? 'smile' : 'smile'} size={20} color={C.textSecondary} />
+                <Pressable onPress={chat.toggleEmojiPanel} hitSlop={4}>
+                  <FontAwesome5 name={chat.emojiOpen ? 'smile' : 'smile'} size={20} color={C.textSecondary} />
                 </Pressable>
                 <TextInput
-                  ref={inputRef}
+                  ref={chat.inputRef}
                   style={[s.input, { color: C.text, height: Math.min(Math.max(MIN_INPUT_HEIGHT, inputHeight), MAX_INPUT_HEIGHT) }]}
-                  value={text}
-                  onChangeText={handleTextChange}
+                  value={chat.text}
+                  onChangeText={chat.handleTextChange}
                   onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
-                  onFocus={() => setEmojiOpen(false)}
+                  onFocus={() => chat.setEmojiOpen(false)}
                   placeholder={t('messages.typePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   multiline
                   maxLength={1000}
                   returnKeyType="default"
                 />
-                {text.length > 900 && (
-                  <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - text.length}</Text>
+                {chat.text.length > 900 && (
+                  <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - chat.text.length}</Text>
                 )}
               </View>
-              {text.trim() || editingMessage ? (
+              {chat.text.trim() || chat.editingMessage ? (
                 <Pressable
                   style={[s.sendBtn, { backgroundColor: C.brinjal1 }]}
-                  onPress={handleSend}>
-                  <FontAwesome5 name={editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
+                  onPress={chat.handleSend}>
+                  <FontAwesome5 name={chat.editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
                 </Pressable>
               ) : (
-                <VoiceRecorderButton disabled={hasActiveUpload || isSending.current} onRecorded={handleSendVoiceAttachment} />
+                <VoiceRecorderButton disabled={hasActiveUpload || chat.isSending.current} onRecorded={chat.handleSendVoiceAttachment} />
               )}
             </View>
 
             {/* ── Emoji panel (replaces the system keyboard when open) ── */}
-            {emojiOpen && (
+            {chat.emojiOpen && (
               <View style={[s.emojiPanel, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom }]}>
                 <FlatList
                   data={CHAT_EMOJIS}
                   keyExtractor={(e) => e}
                   numColumns={8}
                   renderItem={({ item }) => (
-                    <Pressable style={s.emojiItem} onPress={() => insertEmoji(item)}>
+                    <Pressable style={s.emojiItem} onPress={() => chat.insertEmoji(item)}>
                       <Text style={s.emojiTxt}>{item}</Text>
                     </Pressable>
                   )}

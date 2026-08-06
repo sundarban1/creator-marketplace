@@ -8,6 +8,7 @@ import { Alert, ActionSheetIOS, Platform } from 'react-native';
 import { API_BASE } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
+import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
 
 export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' | 'business-cover' | 'creator-citizenship' | 'creator-pan' | 'business-pan' | 'business-company-reg' | 'campaign-feature';
 
@@ -92,7 +93,7 @@ export async function compressImage(
 async function pickFromLibrary(aspect?: [number, number]): Promise<ImagePicker.ImagePickerAsset | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow access to your photo library in Settings.');
     return null;
   }
   const result = await ImagePicker.launchImageLibraryAsync({
@@ -106,7 +107,7 @@ async function pickFromLibrary(aspect?: [number, number]): Promise<ImagePicker.I
 async function pickFromCamera(aspect?: [number, number]): Promise<ImagePicker.ImagePickerAsset | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission required', 'Please allow camera access in Settings.');
+    showPermissionDeniedAlert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
   const result = await ImagePicker.launchCameraAsync({

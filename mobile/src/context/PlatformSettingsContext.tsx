@@ -10,6 +10,8 @@ const DEFAULT_FLAGS: PlatformFlags = {
   messagingEnabled:            true,
   platformCommission:          0,
   comingSoon:                  false,
+  minVersionIos:               '',
+  minVersionAndroid:           '',
 };
 
 type PlatformSettingsContextValue = {

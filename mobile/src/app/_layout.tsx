@@ -2,8 +2,9 @@ import * as Sentry from '@sentry/react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Application from 'expo-application';
 import { useEffect, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   useFonts,
@@ -22,6 +23,7 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { PlatformSettingsProvider, usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { SplashScreen } from '@/components/SplashScreen';
 import { BiometricGateScreen } from '@/components/BiometricGateScreen';
+import { ForceUpdateScreen } from '@/components/ForceUpdateScreen';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { GlobalUploadBanner } from '@/components/GlobalUploadBanner';
 import { ToastProvider } from '@/components/Toast';
@@ -29,6 +31,7 @@ import { isBiometricLoginEnabled } from '@/services/biometric';
 import { authService } from '@/services/auth';
 import { initBackgroundVideoUploadManager } from '@/services/backgroundVideoUploadManager';
 import { initSentry } from '@/utilities/sentry';
+import { isVersionBelowMinimum } from '@/utilities/versionCheck';
 import { COLORS, F, SPACING, FONT_SIZE, RADIUS } from '@/utilities/constants';
 import type { UserRole } from '@/types';
 
@@ -169,6 +172,16 @@ function RootNavigator() {
     // while signed in" branch — leaving the user stuck on the splash screen after
     // a successful biometric unlock.
   }, [user, isLoading, segments, flags.creatorOnboardingEnabled, flags.businessOnboardingEnabled, biometricUnlocked]);
+
+  // Hard block on an outdated build — takes precedence over auth/biometric
+  // state entirely (an outdated build talking to a since-changed API is worse
+  // than one extra screen for an already-logged-in user). flags default to
+  // empty-string minimums (no enforcement) until the real platform-flags
+  // fetch resolves, so this can never false-block during that brief window.
+  const minVersion = Platform.OS === 'ios' ? flags.minVersionIos : flags.minVersionAndroid;
+  if (isVersionBelowMinimum(Application.nativeApplicationVersion, minVersion)) {
+    return <ForceUpdateScreen />;
+  }
 
   // Gate the whole app behind biometric unlock on cold start when the user has
   // it enabled — sits after the redirect effect above (so navigation state is

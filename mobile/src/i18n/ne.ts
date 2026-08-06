@@ -2781,6 +2781,11 @@ const ne = {
     unlockWith: '{{label}} बाट अनलक गर्नुहोस्',
     usePasswordInstead: 'बरु पासवर्ड प्रयोग गर्नुहोस्',
   },
+  forceUpdate: {
+    title: 'अपडेट आवश्यक छ',
+    subtitle: 'Kolab को नयाँ संस्करण उपलब्ध छ। जारी राख्न कृपया अपडेट गर्नुहोस्।',
+    updateBtn: 'अहिले अपडेट गर्नुहोस्',
+  },
 };
 
 export default ne;

@@ -35,6 +35,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
 
 const PAGE_SIZE = 10;
@@ -135,8 +136,7 @@ export default function ExploreCreatorsScreen() {
   const [error, setError] = useState('');
 
   const [search, setSearch] = useState('');
-  const [searchDebounced, setSearchDebounced] = useState('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [searchDebounced] = useDebouncedValue(search, 400);
 
   const [sort, setSort] = useState<CreatorSort>('newest');
   const sortOptions: { value: CreatorSort; label: string }[] = [
@@ -184,12 +184,6 @@ export default function ExploreCreatorsScreen() {
     }
   }
 
-  // Debounce search
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setSearchDebounced(search), 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [search]);
 
   async function fetchCreators(p: number, replace: boolean, filter: CreatorFilterState, nameSearch: string, sortBy: CreatorSort) {
     if (p === 1 && replace) setLoading(true);

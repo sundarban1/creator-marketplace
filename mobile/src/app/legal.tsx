@@ -17,7 +17,11 @@ import { legalService, type LegalDocument, type LegalSlug } from '@/services/leg
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
-const META: Record<LegalSlug, { titleKey: string; icon: keyof typeof FontAwesome5.glyphMap }> = {
+// Partial, not Record<LegalSlug, ...> — this route is only ever linked to with
+// 'terms'/'privacy-policy' (see the `?? META['terms']` fallback below);
+// 'guidelines' is a valid LegalSlug for legalService.getDocument() but is
+// only ever navigated to as a settings sub-page, never as this route's `type` param.
+const META: Partial<Record<LegalSlug, { titleKey: string; icon: keyof typeof FontAwesome5.glyphMap }>> = {
   'terms':          { titleKey: 'legalScreen.termsTitle',   icon: 'file-alt' },
   'privacy-policy': { titleKey: 'legalScreen.privacyTitle', icon: 'shield-alt' },
 };
@@ -34,7 +38,9 @@ export default function LegalScreen() {
   const { t } = useLanguage();
 
   const slug = (type as LegalSlug) ?? 'terms';
-  const meta = META[slug] ?? META['terms'];
+  // META.terms is always present in the literal above — Partial<Record<...>>
+  // just can't express "this one key is guaranteed" to the indexer.
+  const meta = META[slug] ?? META.terms!;
 
   const [doc,     setDoc]     = useState<LegalDocument | null>(null);
   const [loading, setLoading] = useState(true);
