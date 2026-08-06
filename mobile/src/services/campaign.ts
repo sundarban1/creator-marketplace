@@ -135,6 +135,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     location:     api.location ?? undefined,
     locationLat:  api.locationLat ?? null,
     locationLng:  api.locationLng ?? null,
+    locationType: api.locationType ?? 'ONSITE',
     createdAt:    api.createdAt,
     campaignType:  (api as any).campaignType ?? 'PAID_CAMPAIGN',
     eventStatus:   (api as any).eventStatus,
@@ -280,6 +281,7 @@ export const campaignService = {
     location?: string;
     locationLat?: number;
     locationLng?: number;
+    locationType?: 'ONSITE' | 'REMOTE';
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
@@ -349,6 +351,9 @@ export const campaignService = {
     creatorsNeeded?: number;
     deadline?: string;
     location?: string | null;
+    locationLat?: number | null;
+    locationLng?: number | null;
+    locationType?: 'ONSITE' | 'REMOTE';
     isFeatured?: boolean;
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     capacity?: number;

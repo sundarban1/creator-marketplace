@@ -309,6 +309,34 @@ export async function verifyCreator(req: Request, res: Response, next: NextFunct
   }
 }
 
+// PATCH /api/admin/creators/:id/documents/:doc
+export async function setCreatorDocumentStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id, doc }  = req.params;
+    const { approved } = req.body as { approved: boolean };
+    if (doc !== 'citizenship' && doc !== 'pan') throw new AppError('doc must be "citizenship" or "pan"', 400);
+    if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', 400);
+    const updated = await service.setCreatorDocumentStatus(id!, doc, approved);
+    return success(res, updated, 'Document status updated');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/admin/businesses/:id/documents/:doc
+export async function setBusinessDocumentStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id, doc }  = req.params;
+    const { approved } = req.body as { approved: boolean };
+    if (doc !== 'pan' && doc !== 'companyReg') throw new AppError('doc must be "pan" or "companyReg"', 400);
+    if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', 400);
+    const updated = await service.setBusinessDocumentStatus(id!, doc, approved);
+    return success(res, updated, 'Document status updated');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // PATCH /api/admin/businesses/:id/verify
 export async function verifyBusiness(req: Request, res: Response, next: NextFunction) {
   try {

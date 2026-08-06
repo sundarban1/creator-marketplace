@@ -29,11 +29,16 @@ export function BiometricGateScreen({ onUnlock }: Props) {
     inProgressRef.current = true;
     setChecking(true);
     setFailed(false);
-    const ok = await authenticate(`Unlock Kolab${user?.name ? ` — ${user.name}` : ''}`);
-    inProgressRef.current = false;
-    setChecking(false);
-    if (ok) onUnlock();
-    else setFailed(true);
+    try {
+      const ok = await authenticate(`Unlock Kolab${user?.name ? ` — ${user.name}` : ''}`);
+      if (ok) onUnlock();
+      else setFailed(true);
+    } catch {
+      setFailed(true);
+    } finally {
+      inProgressRef.current = false;
+      setChecking(false);
+    }
   }
 
   useEffect(() => {

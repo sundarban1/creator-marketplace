@@ -304,6 +304,14 @@ export class AdminService {
     return updated;
   }
 
+  async setCreatorDocumentStatus(creatorId: string, doc: 'citizenship' | 'pan', approved: boolean) {
+    return this.repo.setCreatorDocumentStatus(creatorId, doc, approved);
+  }
+
+  async setBusinessDocumentStatus(businessId: string, doc: 'pan' | 'companyReg', approved: boolean) {
+    return this.repo.setBusinessDocumentStatus(businessId, doc, approved);
+  }
+
   async setBusinessVerified(businessId: string, verified: boolean) {
     const updated = await this.repo.updateBusinessVerification(businessId, verified);
     if (verified && updated.user) {

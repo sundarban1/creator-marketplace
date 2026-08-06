@@ -57,7 +57,7 @@ export function DetailModal({ open, onClose, avatar, title, subtitle, badges, se
           ))}
         </div>
 
-        {footer && <div className="p-6 pt-4 border-t border-gray-100 flex gap-3">{footer}</div>}
+        {footer && <div className="p-6 pt-4 border-t border-gray-100 flex flex-wrap gap-3">{footer}</div>}
       </div>
     </div>
   );

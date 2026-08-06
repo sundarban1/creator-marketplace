@@ -7,6 +7,7 @@ import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
 import { DetailModal }   from '../components/DetailModal';
+import { DocumentPreviewModal } from '../components/DocumentPreviewModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiCreator } from '../lib/api';
 import { useApi }        from '../lib/useApi';
@@ -22,12 +23,18 @@ function creatorStatus(c: ApiCreator): string {
   return c.isVerified ? 'active' : 'pending';
 }
 
+function docStatus(status?: string | null): 'approved' | 'unapproved' {
+  return status === 'APPROVED' ? 'approved' : 'unapproved';
+}
+
 export function Creators() {
   const navigate = useNavigate();
   const [search,          setSearch]          = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [action,  setAction]  = useState<Action | null>(null);
   const [viewing, setViewing] = useState<ApiCreator | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ doc: 'citizenship' | 'pan'; url: string; title: string; status?: string } | null>(null);
+  const [docLoading, setDocLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
   const [page, setPage] = useState(1);
@@ -73,6 +80,7 @@ export function Creators() {
         showToast(`Account ${isActive ? 'reactivated' : 'suspended'}.`);
       }
       setAction(null);
+      setViewing(null);
       refetch();
     } catch (e) {
       showToast((e as Error).message ?? 'Something went wrong.', false);
@@ -81,22 +89,43 @@ export function Creators() {
     }
   }
 
+  async function handleDocApproval(approved: boolean) {
+    if (!viewing || !previewDoc) return;
+    setDocLoading(true);
+    try {
+      await api.admin.setCreatorDocumentStatus(viewing.id, previewDoc.doc, approved);
+      const status = approved ? 'APPROVED' : 'REJECTED';
+      const patch = previewDoc.doc === 'citizenship' ? { citizenshipStatus: status } : { panDocStatus: status };
+      setViewing({ ...viewing, ...patch } as ApiCreator);
+      setPreviewDoc({ ...previewDoc, status });
+      showToast(`Document ${approved ? 'approved' : 'unapproved'}.`);
+      refetch();
+    } catch (e) {
+      showToast((e as Error).message ?? 'Failed to update document status.', false);
+    } finally {
+      setDocLoading(false);
+    }
+  }
+
   const columns = [
     {
       key:    'name',
       header: 'Creator',
       render: (row: ApiCreator) => (
-        <div className="flex items-center gap-3">
+        <button
+          onClick={() => setViewing(row)}
+          className="flex items-center gap-3 text-left group"
+        >
           {row.avatarUrl ? (
             <img src={row.avatarUrl} alt={row.fullName ?? ''} className="w-8 h-8 rounded-full object-cover" />
           ) : (
             <Avatar initials={(row.fullName ?? '?').slice(0, 2).toUpperCase()} size="sm" />
           )}
           <div className="min-w-0">
-            <p className="font-medium text-gray-900 truncate">{row.fullName ?? '(No name)'}</p>
+            <p className="font-medium text-gray-900 truncate group-hover:text-indigo-600 group-hover:underline">{row.fullName ?? '(No name)'}</p>
             <p className="text-xs text-gray-500 truncate">{displayEmailOrPhone(row.user.email)}</p>
           </div>
-        </div>
+        </button>
       ),
     },
     {
@@ -144,48 +173,23 @@ export function Creators() {
     {
       key:    'actions',
       header: 'Actions',
-      render: (row: ApiCreator) => {
-        const suspended = row.user.isActive === false;
-        return (
-          <div className="flex items-center gap-2">
-            <button
-              className="text-xs text-gray-600 hover:text-gray-900 font-medium"
-              onClick={() => setViewing(row)}>
-              View
-            </button>
-            <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-              onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.fullName ?? row.user.email, email: row.user.email } })}>
-              Analytics
-            </button>
-            <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-              onClick={() => setAction({ type: row.isVerified ? 'unverify' : 'verify', creator: row })}>
-              {row.isVerified ? 'Unverify' : 'Verify'}
-            </button>
-            {row.citizenshipDocUrl && (
-              <button
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                onClick={() => window.open(row.citizenshipDocUrl!, '_blank')}>
-                View Citizenship
-              </button>
-            )}
-            {row.citizenshipStatus === 'PENDING' && <StatusBadge status="pending" />}
-            {suspended ? (
-              <button className="text-xs text-green-600 hover:text-green-800 font-medium" onClick={() => setAction({ type: 'activate', creator: row })}>
-                Activate
-              </button>
-            ) : (
-              <button className="text-xs text-orange-500 hover:text-orange-700 font-medium" onClick={() => setAction({ type: 'suspend', creator: row })}>
-                Suspend
-              </button>
-            )}
-            <button className="text-xs text-red-500 hover:text-red-700 font-medium" onClick={() => setAction({ type: 'delete', creator: row })}>
-              Delete
-            </button>
-          </div>
-        );
-      },
+      render: (row: ApiCreator) => (
+        <div className="flex items-center gap-2">
+          <button
+            className="text-xs text-gray-600 hover:text-gray-900 font-medium"
+            onClick={() => setViewing(row)}>
+            View
+          </button>
+          <button
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.fullName ?? row.user.email, email: row.user.email } })}>
+            Analytics
+          </button>
+          <button className="text-xs text-red-500 hover:text-red-700 font-medium" onClick={() => setAction({ type: 'delete', creator: row })}>
+            Delete
+          </button>
+        </div>
+      ),
     },
   ];
 
@@ -240,19 +244,6 @@ export function Creators() {
         </>
       )}
 
-      {modalCfg && (
-        <ConfirmModal
-          open={!!action}
-          title={modalCfg.title}
-          body={modalCfg.body}
-          confirmLabel={modalCfg.confirmLabel}
-          variant={modalCfg.variant}
-          loading={loading}
-          onConfirm={handleConfirm}
-          onCancel={() => setAction(null)}
-        />
-      )}
-
       {viewing && (
         <DetailModal
           open={!!viewing}
@@ -280,6 +271,17 @@ export function Creators() {
                 },
               ],
             },
+            ...(viewing.citizenshipDocUrl || viewing.panDocUrl
+              ? [{
+                  heading: 'Documents',
+                  fields: [
+                    ...(viewing.citizenshipDocUrl ? [{ label: 'Citizenship', value: <button onClick={() => setPreviewDoc({ doc: 'citizenship', url: viewing.citizenshipDocUrl!, title: 'Citizenship', status: viewing.citizenshipStatus ?? undefined })} className="text-indigo-600 hover:underline font-medium">View document</button> }] : []),
+                    ...(viewing.citizenshipDocUrl ? [{ label: 'Citizenship status', value: <StatusBadge status={docStatus(viewing.citizenshipStatus)} /> }] : []),
+                    ...(viewing.panDocUrl ? [{ label: 'PAN', value: <button onClick={() => setPreviewDoc({ doc: 'pan', url: viewing.panDocUrl!, title: 'PAN', status: viewing.panDocStatus ?? undefined })} className="text-indigo-600 hover:underline font-medium">View document</button> }] : []),
+                    ...(viewing.panDocUrl ? [{ label: 'PAN status', value: <StatusBadge status={docStatus(viewing.panDocStatus)} /> }] : []),
+                  ],
+                }]
+              : []),
             {
               heading: 'Account',
               fields: [
@@ -299,24 +301,63 @@ export function Creators() {
                   })),
                 }]
               : []),
-            ...(viewing.citizenshipDocUrl
-              ? [{
-                  heading: 'Documents',
-                  fields: [
-                    { label: 'Citizenship', value: <a href={viewing.citizenshipDocUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View document</a> },
-                    { label: 'Status', value: viewing.citizenshipStatus ?? 'NONE' },
-                  ],
-                }]
-              : []),
           ]}
           footer={
-            <button
-              onClick={() => setViewing(null)}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              Close
-            </button>
+            <>
+              <button
+                onClick={() => setAction({ type: viewing.isVerified ? 'unverify' : 'verify', creator: viewing })}
+                className="px-4 py-2.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors"
+              >
+                {viewing.isVerified ? 'Unverify' : 'Verify'}
+              </button>
+              {viewing.user.isActive === false ? (
+                <button
+                  onClick={() => setAction({ type: 'activate', creator: viewing })}
+                  className="px-4 py-2.5 text-sm font-medium text-green-600 bg-green-50 rounded-xl hover:bg-green-100 transition-colors"
+                >
+                  Activate
+                </button>
+              ) : (
+                <button
+                  onClick={() => setAction({ type: 'suspend', creator: viewing })}
+                  className="px-4 py-2.5 text-sm font-medium text-orange-600 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors"
+                >
+                  Suspend
+                </button>
+              )}
+              <button
+                onClick={() => setViewing(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </>
           }
+        />
+      )}
+
+      {modalCfg && (
+        <ConfirmModal
+          open={!!action}
+          title={modalCfg.title}
+          body={modalCfg.body}
+          confirmLabel={modalCfg.confirmLabel}
+          variant={modalCfg.variant}
+          loading={loading}
+          onConfirm={handleConfirm}
+          onCancel={() => setAction(null)}
+        />
+      )}
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          url={previewDoc.url}
+          title={previewDoc.title}
+          approved={previewDoc.status === 'APPROVED'}
+          actionLoading={docLoading}
+          onApprove={() => handleDocApproval(true)}
+          onUnapprove={() => handleDocApproval(false)}
+          onClose={() => setPreviewDoc(null)}
         />
       )}
 

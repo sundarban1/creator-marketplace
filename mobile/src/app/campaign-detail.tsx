@@ -25,6 +25,7 @@ import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { TabSlider } from '@/components/TabSlider';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW, MAX_CONTENT_WIDTH } from '@/utilities/constants';
@@ -151,6 +152,7 @@ type EditForm = {
   budgetMax: string;
   deadline: Date | null;
   location: string;
+  locationType: 'ONSITE' | 'REMOTE';
   isFeatured: boolean;
   // OPEN_EVENT fields
   eventDate: Date | null;
@@ -215,7 +217,7 @@ export default function CampaignDetailScreen() {
     goal: GOAL_OPTIONS[0]!, deliverables: DEFAULT_DELIVERABLES, targetAudience: [], hashtags: [],
     objective: '', contentGuidelines: [], creatorsNeeded: '1',
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
-    location: '', isFeatured: false,
+    location: '', locationType: 'ONSITE', isFeatured: false,
     eventDate: null, venue: '', capacity: '20', benefits: [],
   });
   const [editErrors, setEditErrors] = useState<EditErrors>({});
@@ -282,6 +284,7 @@ export default function CampaignDetailScreen() {
       budgetMax:    String(campaign.budgetMax ?? ''),
       deadline:     campaign.deadline ? new Date(campaign.deadline) : null,
       location:     campaign.location ?? '',
+      locationType: campaign.locationType ?? 'ONSITE',
       isFeatured:   campaign.isFeatured,
       eventDate:    campaign.eventDate ? new Date(campaign.eventDate) : null,
       venue:        campaign.venue ?? '',
@@ -339,11 +342,14 @@ export default function CampaignDetailScreen() {
           featureImageUrl: editForm.featureImageUrl,
           status:      editForm.status,
           deadline:    editForm.deadline!.toISOString(),
-          isFeatured:  editForm.isFeatured,
           venue:       editForm.venue.trim() || null,
           capacity:    Number(editForm.capacity) || 20,
           eventDate:   editForm.eventDate?.toISOString(),
           benefits:    editForm.benefits,
+          // Locked by the backend once proposals exist — see the PAID_CAMPAIGN
+          // branch below for the full explanation of why this has to be
+          // conditionally omitted rather than sent as false/unchanged.
+          ...(hasProposals ? {} : { isFeatured: editForm.isFeatured }),
         });
       } else {
         await campaignService.update(campaign!.id, {
@@ -359,8 +365,6 @@ export default function CampaignDetailScreen() {
           creatorsNeeded: Number(editForm.creatorsNeeded) || undefined,
           status:       editForm.status,
           deadline:     editForm.deadline!.toISOString(),
-          location:     editForm.location.trim(),
-          isFeatured:   editForm.isFeatured,
           // Locked by the backend once proposals exist — only send these when
           // the UI actually allows changing them, otherwise the whole update
           // is rejected even for unrelated fields like title/description.
@@ -369,6 +373,9 @@ export default function CampaignDetailScreen() {
             deliverables: summarizeDeliverables(editForm.deliverables, [editForm.goal], t),
             budgetMin:    Number(editForm.budgetMin),
             budgetMax:    Number(editForm.budgetMax),
+            location:     editForm.locationType === 'REMOTE' ? null : editForm.location.trim(),
+            locationType: editForm.locationType,
+            isFeatured:   editForm.isFeatured,
           }),
         });
       }
@@ -590,7 +597,9 @@ export default function CampaignDetailScreen() {
                 )}
               </>
             )}
-            {isOpenEvent && campaign.venue ? (
+            {campaign.locationType === 'REMOTE' ? (
+              <DetailRow icon="globe" label={t('campaignDetail.detailLocation')} value={t('createEvent.locationRemote')} C={C} />
+            ) : isOpenEvent && campaign.venue ? (
               <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailVenue')} value={campaign.venue} C={C} />
             ) : (
               <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailLocation')} value={campaign.location ?? t('campaignDetail.remoteLocation')} C={C} />
@@ -904,14 +913,38 @@ export default function CampaignDetailScreen() {
                       {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
                     </SectionCard>
 
-                    <SectionCard title={t('campaignDetail.fieldLocation')} colors={C}>
-                      <PlacesAutocompleteInput
-                        value={editForm.location}
-                        onChangeText={(v) => updateEdit('location', v)}
-                        placeholder="e.g. Kathmandu, New York or Remote"
-                        types="geocode"
-                        error={editErrors.location}
+                    <SectionCard
+                      title={t('campaignDetail.fieldLocation')}
+                      sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
+                      colors={C}>
+                      <TabSlider
+                        tabs={[
+                          { key: 'ONSITE', label: t('createEvent.locationOnsite'), icon: 'map-marker-alt' },
+                          { key: 'REMOTE', label: t('createEvent.locationRemote'), icon: 'globe' },
+                        ]}
+                        active={editForm.locationType}
+                        onChange={(k) => { if (hasProposals) return; updateEdit('locationType', k as 'ONSITE' | 'REMOTE'); }}
+                        justify
                       />
+                      {editForm.locationType === 'REMOTE' ? (
+                        <View style={[em.remoteCard, { backgroundColor: C.background, borderColor: C.border, marginTop: 10 }]}>
+                          <FontAwesome5 name="globe" solid size={18} color={C.brinjal1} />
+                          <View style={em.remoteTextWrap}>
+                            <Text style={[em.remoteTitle, { color: C.text }]}>{t('createEvent.remoteLocationTitle')}</Text>
+                            <Text style={[em.remoteBody, { color: C.textSecondary }]}>{t('createEvent.remoteLocationBody')}</Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={{ marginTop: 10 }}>
+                          <PlacesAutocompleteInput
+                            value={editForm.location}
+                            onChangeText={(v) => { if (!hasProposals) updateEdit('location', v); }}
+                            placeholder="e.g. Kathmandu, New York"
+                            types="geocode"
+                            error={editErrors.location}
+                          />
+                        </View>
+                      )}
                     </SectionCard>
                   </>
                 )}
@@ -937,11 +970,15 @@ export default function CampaignDetailScreen() {
                 <View style={{ marginTop: 20 }}>
                   <FeaturedToggle
                     value={editForm.isFeatured}
-                    onChange={(v) => updateEdit('isFeatured', v)}
-                    quota={campaign?.isFeatured ? null : featuredQuota}
+                    onChange={(v) => { if (hasProposals) return; updateEdit('isFeatured', v); }}
+                    // Once proposals exist, force the locked (zero-quota) visual
+                    // regardless of the "already featured campaigns are always
+                    // freely toggleable" exemption below — see hasProposals above.
+                    quota={hasProposals ? { remaining: 0, price: featuredQuota?.price ?? 0, unlimited: false } : (campaign?.isFeatured ? null : featuredQuota)}
                     colors={C}
                     t={t}
                   />
+                  {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary, marginTop: 8 }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
                 </View>
 
       </BottomSheet>
@@ -1117,6 +1154,11 @@ const em = StyleSheet.create({
   input:      { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
   textarea:   { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 80, fontFamily: F.regular },
   errTxt:     { fontSize: 12, color: ERROR_RED, marginTop: 4, fontFamily: F.regular },
+
+  remoteCard:     { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14 },
+  remoteTextWrap: { flex: 1, gap: 3 },
+  remoteTitle:    { fontSize: 14, fontFamily: F.semibold },
+  remoteBody:     { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
 
   budgetRow:      { flexDirection: 'row', alignItems: 'flex-start' },
   budgetDash:     { marginHorizontal: 10, marginTop: 14, fontSize: 16 },

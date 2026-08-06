@@ -8,7 +8,7 @@ export const adminRepo = new AdminRepository();
 export const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
 
 const FROM_NAME    = 'Kolab';
-const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'no-reply@kolab.com.np';
+const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'noreply@ourkolab.com';
 const FROM         = `${FROM_NAME} <${FROM_ADDRESS}>`;
 
 // Resend requires the from-address to be on a domain verified with Resend —

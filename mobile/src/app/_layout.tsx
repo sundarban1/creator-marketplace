@@ -100,7 +100,12 @@ function RootNavigator() {
       // in-app screens like campaign-detail/submit-proposal/create-campaign.
       router.replace(user.role === 'CREATOR' ? '/(creator)/' : '/(business)/');
     }
-  }, [user, isLoading, segments, flags.creatorOnboardingEnabled, flags.businessOnboardingEnabled]);
+    // biometricUnlocked is a dependency even though it isn't read above: flipping
+    // it remounts <Stack> fresh onto the index route (see the gate below), and
+    // without it here this effect wouldn't re-run to catch the "landed on splash
+    // while signed in" branch — leaving the user stuck on the splash screen after
+    // a successful biometric unlock.
+  }, [user, isLoading, segments, flags.creatorOnboardingEnabled, flags.businessOnboardingEnabled, biometricUnlocked]);
 
   // Gate the whole app behind biometric unlock on cold start when the user has
   // it enabled — sits after the redirect effect above (so navigation state is

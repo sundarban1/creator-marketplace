@@ -345,6 +345,7 @@ model Campaign {
   location              String?
   locationLat           Float?
   locationLng           Float?
+  locationType          LocationType         @default(ONSITE)
   budgetMin             Float
   budgetMax             Float
   paymentType           String
@@ -972,6 +973,11 @@ enum ApplicationStatus {
 enum CampaignType {
   PAID_CAMPAIGN
   OPEN_EVENT
+}
+
+enum LocationType {
+  ONSITE
+  REMOTE
 }
 
 enum EventStatus {

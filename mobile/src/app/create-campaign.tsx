@@ -37,6 +37,7 @@ import { transcribeAudio } from '@/services/audioTranscribe';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { TabSlider } from '@/components/TabSlider';
 import { TabColors } from '@/utilities/tabColors';
 import {
   GOAL_OPTIONS, CREATOR_TYPES, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
@@ -343,6 +344,7 @@ type FormData = {
   creatorType: string[];
   platforms: string[];
   location: string;
+  locationType: 'ONSITE' | 'REMOTE';
   creatorsNeeded: number;
   deliverables: Record<string, number>;
   title: string;
@@ -858,6 +860,7 @@ export default function CreateCampaignScreen() {
     creatorType: [],
     platforms: ['Instagram'],
     location: '',
+    locationType: 'ONSITE',
     creatorsNeeded: 1,
     deliverables: { ...DEFAULT_DELIVERABLES },
     title: '',
@@ -978,6 +981,7 @@ export default function CreateCampaignScreen() {
       creatorType:    [],
       platforms:      ['Instagram'],
       location:       prev.location,
+      locationType:   prev.locationType,
       creatorsNeeded: 1,
       deliverables:   { ...DEFAULT_DELIVERABLES },
       title:          '',
@@ -1019,7 +1023,7 @@ export default function CreateCampaignScreen() {
   async function handleGenerateWithAi(promptOverride?: string) {
     const prompt = (promptOverride ?? aiPromptText).trim();
     if (!prompt || aiLoading) return;
-    if (!form.location.trim()) {
+    if (form.locationType === 'ONSITE' && !form.location.trim()) {
       setAiLocationError(t('createEvent.errNoLocation'));
       return;
     }
@@ -1114,7 +1118,7 @@ export default function CreateCampaignScreen() {
   async function handleGenerateEventWithAi(promptOverride?: string) {
     const prompt = (promptOverride ?? aiPromptText).trim();
     if (!prompt || aiLoading) return;
-    if (!form.venue.trim()) {
+    if (form.locationType === 'ONSITE' && !form.venue.trim()) {
       setAiLocationError(t('createEvent.errNoVenue'));
       return;
     }
@@ -1273,9 +1277,10 @@ export default function CreateCampaignScreen() {
       category:       form.template,
       goals:          form.goals,
       platforms:      form.platforms,
-      location:       form.location.trim() || undefined,
-      locationLat:    locationLat ?? undefined,
-      locationLng:    locationLng ?? undefined,
+      location:       form.locationType === 'REMOTE' ? undefined : (form.location.trim() || undefined),
+      locationLat:    form.locationType === 'REMOTE' ? undefined : (locationLat ?? undefined),
+      locationLng:    form.locationType === 'REMOTE' ? undefined : (locationLng ?? undefined),
+      locationType:   form.locationType,
       minFollowers:   0,
       contentType:    form.goals[0] ?? '',
       deliverables:   summarizeDeliverables(form.deliverables, form.goals, t),
@@ -1306,9 +1311,10 @@ export default function CreateCampaignScreen() {
       category:       form.template,
       goals:          ['Event Promotion', 'Brand Awareness'],
       platforms:      form.platforms,
-      location:       form.venue.trim() || undefined,
-      locationLat:    locationLat ?? undefined,
-      locationLng:    locationLng ?? undefined,
+      location:       form.locationType === 'REMOTE' ? undefined : (form.venue.trim() || undefined),
+      locationLat:    form.locationType === 'REMOTE' ? undefined : (locationLat ?? undefined),
+      locationLng:    form.locationType === 'REMOTE' ? undefined : (locationLng ?? undefined),
+      locationType:   form.locationType,
       minFollowers:   0,
       contentType:    form.eventContent.join(', ') || 'Event Coverage',
       deliverables:   form.benefits.join(', '),
@@ -1321,7 +1327,7 @@ export default function CreateCampaignScreen() {
       campaignType:   'OPEN_EVENT' as const,
       capacity:       form.capacity,
       eventDate:      form.eventDate?.toISOString(),
-      venue:          form.venue.trim() || undefined,
+      venue:          form.locationType === 'REMOTE' ? undefined : (form.venue.trim() || undefined),
       benefits:       form.benefits,
     };
   }
@@ -1599,15 +1605,36 @@ export default function CreateCampaignScreen() {
 
                   {/* Location */}
                   <SectionCard title={t('createEvent.secLocationTitle')} sub={t('createEvent.secLocationSub')} colors={C}>
-                    <Pressable
-                      style={[s.locationBtn, { backgroundColor: C.background, borderColor: aiLocationError ? ERROR_RED : C.border }]}
-                      onPress={() => setLocationModalOpen(true)}>
-                      <Text style={[s.locationBtnTxt, { color: form.location ? C.text : C.textSecondary }]} numberOfLines={2}>
-                        {form.location || t('createEvent.locationPlaceholder')}
-                      </Text>
-                      <Text style={s.locationArrow}>›</Text>
-                    </Pressable>
-                    {aiLocationError ? <Text style={s.errorText}>{aiLocationError}</Text> : null}
+                    <TabSlider
+                      tabs={[
+                        { key: 'ONSITE', label: t('createEvent.locationOnsite'), icon: 'map-marker-alt' },
+                        { key: 'REMOTE', label: t('createEvent.locationRemote'), icon: 'globe' },
+                      ]}
+                      active={form.locationType}
+                      onChange={(k) => update('locationType', k as 'ONSITE' | 'REMOTE')}
+                      justify
+                    />
+                    {form.locationType === 'REMOTE' ? (
+                      <View style={[s.remoteCard, { backgroundColor: C.background, borderColor: C.border }]}>
+                        <FontAwesome5 name="globe" solid size={18} color={C.brinjal1} />
+                        <View style={s.remoteTextWrap}>
+                          <Text style={[s.remoteTitle, { color: C.text }]}>{t('createEvent.remoteLocationTitle')}</Text>
+                          <Text style={[s.remoteBody, { color: C.textSecondary }]}>{t('createEvent.remoteLocationBody')}</Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <>
+                        <Pressable
+                          style={[s.locationBtn, { backgroundColor: C.background, borderColor: aiLocationError ? ERROR_RED : C.border }]}
+                          onPress={() => setLocationModalOpen(true)}>
+                          <Text style={[s.locationBtnTxt, { color: form.location ? C.text : C.textSecondary }]} numberOfLines={2}>
+                            {form.location || t('createEvent.locationPlaceholder')}
+                          </Text>
+                          <Text style={s.locationArrow}>›</Text>
+                        </Pressable>
+                        {aiLocationError ? <Text style={s.errorText}>{aiLocationError}</Text> : null}
+                      </>
+                    )}
                   </SectionCard>
 
                   {/* Create Event */}
@@ -1728,15 +1755,36 @@ export default function CreateCampaignScreen() {
 
                   {/* Venue / Location */}
                   <SectionCard title={t('createEvent.secVenueTitle')} sub={t('createEvent.secVenueSub')} colors={C}>
-                    <Pressable
-                      style={[s.locationBtn, { backgroundColor: C.background, borderColor: aiLocationError ? ERROR_RED : C.border }]}
-                      onPress={() => setLocationModalOpen(true)}>
-                      <Text style={[s.locationBtnTxt, { color: form.venue ? C.text : C.textSecondary }]} numberOfLines={2}>
-                        {form.venue || t('createEvent.locationPlaceholder')}
-                      </Text>
-                      <Text style={s.locationArrow}>›</Text>
-                    </Pressable>
-                    {aiLocationError ? <Text style={s.errorText}>{aiLocationError}</Text> : null}
+                    <TabSlider
+                      tabs={[
+                        { key: 'ONSITE', label: t('createEvent.locationOnsite'), icon: 'map-marker-alt' },
+                        { key: 'REMOTE', label: t('createEvent.locationRemote'), icon: 'globe' },
+                      ]}
+                      active={form.locationType}
+                      onChange={(k) => update('locationType', k as 'ONSITE' | 'REMOTE')}
+                      justify
+                    />
+                    {form.locationType === 'REMOTE' ? (
+                      <View style={[s.remoteCard, { backgroundColor: C.background, borderColor: C.border }]}>
+                        <FontAwesome5 name="globe" solid size={18} color={C.brinjal1} />
+                        <View style={s.remoteTextWrap}>
+                          <Text style={[s.remoteTitle, { color: C.text }]}>{t('createEvent.remoteLocationTitle')}</Text>
+                          <Text style={[s.remoteBody, { color: C.textSecondary }]}>{t('createEvent.remoteLocationBody')}</Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <>
+                        <Pressable
+                          style={[s.locationBtn, { backgroundColor: C.background, borderColor: aiLocationError ? ERROR_RED : C.border }]}
+                          onPress={() => setLocationModalOpen(true)}>
+                          <Text style={[s.locationBtnTxt, { color: form.venue ? C.text : C.textSecondary }]} numberOfLines={2}>
+                            {form.venue || t('createEvent.locationPlaceholder')}
+                          </Text>
+                          <Text style={s.locationArrow}>›</Text>
+                        </Pressable>
+                        {aiLocationError ? <Text style={s.errorText}>{aiLocationError}</Text> : null}
+                      </>
+                    )}
                   </SectionCard>
 
                   {/* Create Event */}
@@ -2111,7 +2159,7 @@ export default function CreateCampaignScreen() {
                   <SectionCard title={t('createEvent.secEventSummaryTitle')} icon="clipboard" colors={C}>
                     {[
                       { label: t('createEvent.summaryCategory'), value: form.template || '—' },
-                      { label: t('createEvent.summaryVenue'),    value: form.venue || t('createEvent.summaryTBD') },
+                      { label: t('createEvent.summaryVenue'),    value: form.locationType === 'REMOTE' ? t('createEvent.summaryRemote') : (form.venue || t('createEvent.summaryTBD')) },
                       { label: t('createEvent.summaryDate'),     value: form.eventDate ? fmtDate(form.eventDate) : '—' },
                       { label: t('createEvent.summaryCapacity'), value: t('createEvent.summaryNCreators', { n: form.capacity }) },
                     ].map(({ label, value }, i, arr) => (
@@ -2173,7 +2221,7 @@ export default function CreateCampaignScreen() {
                   as one continuous system rather than a bare list. */}
               <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 2 }]}>
                 <Text style={[sc.title, { color: C.text }]}>{t('createEvent.secSummaryTitle')}</Text>
-                <PreviewRow icon="map-marker-alt" label={t('createEvent.summaryLocation')} value={form.location || t('createEvent.summaryRemote')} colors={C} />
+                <PreviewRow icon={form.locationType === 'REMOTE' ? 'globe' : 'map-marker-alt'} label={t('createEvent.summaryLocation')} value={form.locationType === 'REMOTE' ? t('createEvent.summaryRemote') : form.location} colors={C} />
                 <PreviewRow icon="users" label={t('createEvent.confirmSectionWho')} value={form.targetAudience.join(', ') || '—'} colors={C} />
                 <PreviewRow icon="share-alt" label={t('createEvent.confirmSectionPlatforms')} value={form.platforms.join(', ') || '—'} colors={C} />
                 <PreviewRow icon="film" label={t('createEvent.confirmSectionDeliverables')} value={summarizeDeliverables(form.deliverables, form.goals, t)} colors={C} />
@@ -2341,6 +2389,10 @@ const s = StyleSheet.create({
   locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14, gap: 8 },
   locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: F.regular },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
+  remoteCard:     { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14 },
+  remoteTextWrap: { flex: 1, gap: 3 },
+  remoteTitle:    { fontSize: 14, fontFamily: F.semibold },
+  remoteBody:     { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
 
   descHeaderRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   descHeaderText: { flex: 1, minWidth: 0 },

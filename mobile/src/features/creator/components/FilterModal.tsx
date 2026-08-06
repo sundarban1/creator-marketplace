@@ -4,6 +4,7 @@ import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterC
 import { FilterChip, FilterChipGroup } from '@/components/FilterChip';
 import { BudgetRangePicker, matchBudgetPreset, type BudgetPreset } from '@/components/BudgetRangePicker';
 import { LocationSearchPicker, type LocationEntry, type LocationFilter } from '@/components/LocationSearchPicker';
+import { TabSlider } from '@/components/TabSlider';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { F } from '@/utilities/constants';
@@ -11,7 +12,6 @@ import { useEffect, useState } from 'react';
 
 export { LocationSearchPicker, type LocationEntry, type LocationFilter };
 
-const MAX_LOCS = 3;
 const BUDGET_MAX = 100000;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -97,12 +97,14 @@ type Props = {
   tempLocation: LocationFilter;
   tempDateFrom: Date | null;
   tempDateTo: Date | null;
+  tempLocationType: 'ONSITE' | 'REMOTE';
   setTempEventType: (v: EventTypeFilter[]) => void;
   setTempPriceMin: (v: number) => void;
   setTempPriceMax: (v: number) => void;
   setTempLocation: (v: LocationFilter) => void;
   setTempDateFrom: (v: Date | null) => void;
   setTempDateTo: (v: Date | null) => void;
+  setTempLocationType: (v: 'ONSITE' | 'REMOTE') => void;
   onApply: () => void;
   onReset: () => void;
   onClose: () => void;
@@ -256,12 +258,15 @@ export function FilterModal({
   tempPriceMin, tempPriceMax,
   tempLocation,
   tempDateFrom, tempDateTo,
+  tempLocationType,
   setTempEventType,
   setTempPriceMin, setTempPriceMax,
   setTempLocation,
   setTempDateFrom, setTempDateTo,
+  setTempLocationType,
   onApply, onReset, onClose,
 }: Props) {
+  const C = useAppColors();
   const { t } = useLanguage();
   const today = dayStart(new Date());
   const monthsShort = getMonthsShort(t);
@@ -328,6 +333,13 @@ export function FilterModal({
       key: `loc-${loc.label}`,
       label: loc.label === 'Remote' ? t('filterModal.remote') : loc.label,
       onClear: () => setTempLocation(tempLocation.filter((l) => l.label !== loc.label)),
+    });
+  }
+  if (tempLocationType === 'REMOTE') {
+    activeChips.push({
+      key: 'locationType',
+      label: t('createEvent.locationRemote'),
+      onClear: () => setTempLocationType('ONSITE'),
     });
   }
 
@@ -402,14 +414,36 @@ export function FilterModal({
         )}
       </View>
 
-      {/* Location */}
+      {/* Onsite / Remote */}
       <View>
-        <FilterSectionHeader
-          icon="map-marker-alt"
-          label={t('filterModal.sectionLocation')}
-          hint={t('filterModal.locationsAllowed', { n: tempLocation.length, max: MAX_LOCS })}
+        <FilterSectionHeader icon="globe" label={t('filterModal.sectionLocationType')} />
+        <TabSlider
+          tabs={[
+            { key: 'ONSITE', label: t('createEvent.locationOnsite'), icon: 'map-marker-alt' },
+            { key: 'REMOTE', label: t('createEvent.locationRemote'), icon: 'globe' },
+          ]}
+          active={tempLocationType}
+          onChange={(k) => setTempLocationType(k as 'ONSITE' | 'REMOTE')}
+          justify
         />
-        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
+      </View>
+
+      {/* City search when Onsite; when Remote, the toggle above already says
+          everything, so this becomes the same "work remotely" message
+          create-event shows instead of a redundant search bar. No section
+          header here — it'd just repeat what the tab slider above already says. */}
+      <View>
+        {tempLocationType === 'REMOTE' ? (
+          <View style={[styles.remoteCard, { backgroundColor: C.background, borderColor: C.border }]}>
+            <FontAwesome5 name="globe" solid size={18} color={C.brinjal1} />
+            <View style={styles.remoteTextWrap}>
+              <Text style={[styles.remoteTitle, { color: C.text }]}>{t('createEvent.remoteLocationTitle')}</Text>
+              <Text style={[styles.remoteBody, { color: C.textSecondary }]}>{t('createEvent.remoteLocationBody')}</Text>
+            </View>
+          </View>
+        ) : (
+          <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} showRemoteOption={false} />
+        )}
       </View>
     </FilterSheet>
   );
@@ -443,4 +477,8 @@ const dp = StyleSheet.create({
 const styles = StyleSheet.create({
   presetRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   customPanel: { marginTop: 12 },
+  remoteCard:     { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14 },
+  remoteTextWrap: { flex: 1, gap: 3 },
+  remoteTitle:    { fontSize: 14, fontFamily: F.semibold },
+  remoteBody:     { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
 });

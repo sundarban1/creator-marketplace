@@ -119,9 +119,9 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
           {/* Details */}
           <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
             <View style={styles.detailRow}>
-              <FontAwesome5 name="map-marker-alt" solid size={13} color={C.textSecondary} />
+              <FontAwesome5 name={campaign.locationType === 'REMOTE' ? 'globe' : 'map-marker-alt'} solid size={13} color={C.textSecondary} />
               <Text style={[styles.detailText, { color: C.textSecondary }]} numberOfLines={1}>
-                {campaign.location ?? t('campaignCard.nepalFallback')}
+                {campaign.locationType === 'REMOTE' ? t('createEvent.locationRemote') : (campaign.location ?? t('campaignCard.nepalFallback'))}
               </Text>
             </View>
             <View style={styles.detailRow}>

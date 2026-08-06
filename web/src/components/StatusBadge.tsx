@@ -15,7 +15,9 @@ type Status =
   | 'open'
   | 'reviewing'
   | 'resolved'
-  | 'dismissed';
+  | 'dismissed'
+  | 'approved'
+  | 'unapproved';
 
 const styles: Record<Status, string> = {
   active:     'bg-emerald-100 text-emerald-700',
@@ -35,6 +37,8 @@ const styles: Record<Status, string> = {
   reviewing:  'bg-blue-100 text-blue-700',
   resolved:   'bg-emerald-100 text-emerald-700',
   dismissed:  'bg-gray-100 text-gray-600',
+  approved:   'bg-emerald-100 text-emerald-700',
+  unapproved: 'bg-amber-100 text-amber-700',
 };
 
 interface StatusBadgeProps {

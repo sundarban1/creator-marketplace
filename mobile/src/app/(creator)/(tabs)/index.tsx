@@ -115,6 +115,8 @@ export default function HomeScreen() {
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(SLIDER_MAX);
   const [locationFilter, setLocationFilter] = useState<LocationFilter>([]);
+  const [locationTypeFilter, setLocationTypeFilter] = useState<'ONSITE' | 'REMOTE'>('ONSITE');
+  const [tempLocationTypeFilter, setTempLocationTypeFilter] = useState<'ONSITE' | 'REMOTE'>('ONSITE');
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -423,6 +425,7 @@ export default function HomeScreen() {
     priceMin > 0 || priceMax < SLIDER_MAX,
     locationFilter.length > 0,
     !!dateFrom,
+    locationTypeFilter === 'REMOTE', // ONSITE is the default (no real filter)
   ].filter(Boolean).length;
   const isFilterActive = filterActiveCount > 0;
 
@@ -433,6 +436,7 @@ export default function HomeScreen() {
     setTempLocation(locationFilter);
     setTempDateFrom(dateFrom);
     setTempDateTo(dateTo);
+    setTempLocationTypeFilter(locationTypeFilter);
     setFilterOpen(true);
   }
 
@@ -443,6 +447,7 @@ export default function HomeScreen() {
     setLocationFilter(tempLocation);
     setDateFrom(tempDateFrom);
     setDateTo(tempDateTo);
+    setLocationTypeFilter(tempLocationTypeFilter);
     setFilterOpen(false);
 
     // Re-fetch with the new committed values (don't wait for state to flush)
@@ -472,6 +477,7 @@ export default function HomeScreen() {
     setTempLocation([]);
     setTempDateFrom(null);
     setTempDateTo(null);
+    setTempLocationTypeFilter('ONSITE');
   }
 
   function resetAllFilters() {
@@ -481,6 +487,7 @@ export default function HomeScreen() {
     setLocationFilter([]);
     setDateFrom(null);
     setDateTo(null);
+    setLocationTypeFilter('ONSITE');
     setActiveCategories([]);
     setActivePlatforms([]);
     setActiveFilterTab('all');
@@ -493,7 +500,12 @@ export default function HomeScreen() {
     ...getCategoryMeta(adminCategories, cat.name),
   }));
 
-  const featured = campaigns.filter((c) => c.isFeatured);
+  const featured = campaigns.filter((c) => c.isFeatured && (c.locationType ?? 'ONSITE') === locationTypeFilter);
+
+  // Remote events have no lat/lng, so they'd never turn up in a geo "nearby"
+  // query anyway — filtering here just means Nearby correctly goes empty
+  // instead of silently ignoring the Onsite/Remote choice when Remote is picked.
+  const visibleNearbyCampaigns = nearbyCampaigns.filter((c) => (c.locationType ?? 'ONSITE') === locationTypeFilter);
 
   // Category, budget, deadline, and search are filtered server-side.
   // Client-side: location and quick-tab filters only.
@@ -502,9 +514,10 @@ export default function HomeScreen() {
       locationFilter.length === 0 ||
       locationFilter.some((l) =>
         l.label === 'Remote'
-          ? c.location === 'Remote'
+          ? c.locationType === 'REMOTE'
           : c.location?.toLowerCase().includes(l.label.toLowerCase()),
       );
+    const matchLocationType = (c.locationType ?? 'ONSITE') === locationTypeFilter;
 
     let matchTab = true;
     if (activeFilterTab === 'recommended') matchTab = !c.isFeatured;
@@ -519,7 +532,7 @@ export default function HomeScreen() {
       }
     }
 
-    return matchLocation && matchTab;
+    return matchLocation && matchLocationType && matchTab;
   }).sort((a, b) => {
     switch (sortBy) {
       case 'date-oldest': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -552,7 +565,8 @@ export default function HomeScreen() {
   ];
 
   useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns]);
-  useEffect(() => { setListVisibleCount(PAGE_SIZE); }, [campaigns, activeFilterTab, locationFilter, sortBy]);
+  useEffect(() => { setListVisibleCount(PAGE_SIZE); }, [campaigns, activeFilterTab, locationFilter, locationTypeFilter, sortBy]);
+  useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns, locationTypeFilter]);
 
   // While the search bar is focused, or a search filter is actively applied,
   // keep the list scrolled down to Categories so it's ready to refine results.
@@ -600,6 +614,7 @@ export default function HomeScreen() {
     { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'fire'    as const, color: TabColors.danger.color },
     { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'stopwatch'    as const, color: TabColors.warning.color },
   ];
+
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -1077,9 +1092,9 @@ export default function HomeScreen() {
               <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
                 {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
               </ScrollView>
-            ) : nearbyCampaigns.length > 0 ? (
+            ) : visibleNearbyCampaigns.length > 0 ? (
               <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-                {nearbyCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} variant="nearby" />)}
+                {visibleNearbyCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} variant="nearby" />)}
               </ScrollView>
             ) : nearbyLocationDenied && !nearbyHomeCoords ? (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -1137,12 +1152,14 @@ export default function HomeScreen() {
         tempLocation={tempLocation}
         tempDateFrom={tempDateFrom}
         tempDateTo={tempDateTo}
+        tempLocationType={tempLocationTypeFilter}
         setTempEventType={setTempEventType}
         setTempPriceMin={setTempPriceMin}
         setTempPriceMax={setTempPriceMax}
         setTempLocation={setTempLocation}
         setTempDateFrom={setTempDateFrom}
         setTempDateTo={setTempDateTo}
+        setTempLocationType={setTempLocationTypeFilter}
         onApply={applyFilter}
         onReset={resetFilter}
         onClose={() => setFilterOpen(false)}

@@ -258,20 +258,48 @@ export class AdminRepository {
   }
 
   async updateCreatorVerification(creatorProfileId: string, isVerified: boolean) {
-    const data: { isVerified: boolean; citizenshipStatus?: 'APPROVED' } = { isVerified };
+    const data: { isVerified: boolean; citizenshipStatus?: 'APPROVED'; panDocStatus?: 'APPROVED' } = { isVerified };
     if (isVerified) {
       const existing = await prisma.creatorProfile.findUnique({
         where:  { id: creatorProfileId },
-        select: { citizenshipDocUrl: true },
+        select: { citizenshipDocUrl: true, panDocUrl: true },
       });
       if (existing?.citizenshipDocUrl) data.citizenshipStatus = 'APPROVED';
+      if (existing?.panDocUrl) data.panDocStatus = 'APPROVED';
     }
     return prisma.creatorProfile.update({
       where: { id: creatorProfileId },
       data,
       select: {
-        id: true, userId: true, fullName: true, isVerified: true, citizenshipStatus: true, citizenshipDocUrl: true,
+        id: true, userId: true, fullName: true, isVerified: true,
+        citizenshipStatus: true, citizenshipDocUrl: true, panDocStatus: true, panDocUrl: true,
         user: { select: { email: true } },
+      },
+    });
+  }
+
+  async setCreatorDocumentStatus(creatorProfileId: string, doc: 'citizenship' | 'pan', approved: boolean) {
+    const status: 'APPROVED' | 'REJECTED' = approved ? 'APPROVED' : 'REJECTED';
+    const data = doc === 'citizenship' ? { citizenshipStatus: status } : { panDocStatus: status };
+    return prisma.creatorProfile.update({
+      where: { id: creatorProfileId },
+      data,
+      select: {
+        id: true, userId: true, fullName: true,
+        citizenshipStatus: true, citizenshipDocUrl: true, panDocStatus: true, panDocUrl: true,
+      },
+    });
+  }
+
+  async setBusinessDocumentStatus(businessProfileId: string, doc: 'pan' | 'companyReg', approved: boolean) {
+    const status: 'APPROVED' | 'REJECTED' = approved ? 'APPROVED' : 'REJECTED';
+    const data = doc === 'pan' ? { panDocStatus: status } : { companyRegDocStatus: status };
+    return prisma.businessProfile.update({
+      where: { id: businessProfileId },
+      data,
+      select: {
+        id: true, userId: true, businessName: true,
+        panDocUrl: true, panDocStatus: true, companyRegDocUrl: true, companyRegDocStatus: true,
       },
     });
   }

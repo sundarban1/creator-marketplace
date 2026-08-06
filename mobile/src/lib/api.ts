@@ -96,6 +96,7 @@ export interface ApiCampaign {
   location?:     string | null;
   locationLat?:  number | null;
   locationLng?:  number | null;
+  locationType?: 'ONSITE' | 'REMOTE';
   budgetMin:     number;
   budgetMax:     number;
   status:        'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED';

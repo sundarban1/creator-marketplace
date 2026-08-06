@@ -1999,8 +1999,6 @@ export default function CreatorSettingsScreen() {
 
         <SectionHeader title={t('creatorSettings.verificationSection')} />
         <Card>
-          {!(emailVerified === true && phoneVerified === true) && (
-          <>
           {/* Email row */}
           <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
@@ -2199,9 +2197,6 @@ export default function CreatorSettingsScreen() {
               </Pressable>
             </View>
           )}
-          </>
-          )}
-
           {/* Citizenship upload row */}
           <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
@@ -2288,7 +2283,7 @@ export default function CreatorSettingsScreen() {
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.creatorBadgeLabel')}</Text>
             {creatorIsVerified ? (
-              <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.verifiedBadge')}</Text></View>
+              <FontAwesome5 name="check-circle" solid size={20} color="#3B82F6" />
             ) : (
               <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
                 <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('creatorSettings.notVerifiedBadge')}</Text>
@@ -2464,7 +2459,7 @@ export default function CreatorSettingsScreen() {
           {!subPage && section === 'earnings'   && renderEarnings()}
           {!subPage && section === 'past-work'  && renderPastWork()}
           {!subPage && section === 'security'      && renderSecurity()}
-          {!subPage && section === 'bell' && renderNotifications()}
+          {!subPage && section === 'notifications' && renderNotifications()}
           {!subPage && section === 'support'    && renderSupport()}
           {!subPage && section === 'legal'      && renderLegal()}
         </ScrollView>

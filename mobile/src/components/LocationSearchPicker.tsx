@@ -14,9 +14,14 @@ const MAX_LOCS = 3;
 export function LocationSearchPicker({
   selected,
   onSelect,
+  showRemoteOption = true,
 }: {
   selected: LocationFilter;
   onSelect: (v: LocationFilter) => void;
+  // Callers that already have a dedicated Onsite/Remote toggle elsewhere
+  // (e.g. the creator home feed's Filter modal) pass false here so this
+  // picker doesn't offer a second, redundant way to express "remote".
+  showRemoteOption?: boolean;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -53,16 +58,18 @@ export function LocationSearchPicker({
           kind of thing (a chosen location filter), so they shouldn't cost two
           separate rows of vertical space. */}
       <View style={ls.selectedChips}>
-        <Pressable
-          style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
-          onPress={toggleRemote}
-          disabled={!remoteSelected && atMax}>
-          <FontAwesome5 name="globe" solid size={13} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
-          <Text style={[ls.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
-            {t('filterModal.remote')}
-          </Text>
-          {remoteSelected && <FontAwesome5 name="times" solid size={13} color={C.brinjal1} />}
-        </Pressable>
+        {showRemoteOption && (
+          <Pressable
+            style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
+            onPress={toggleRemote}
+            disabled={!remoteSelected && atMax}>
+            <FontAwesome5 name="globe" solid size={13} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
+            <Text style={[ls.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
+              {t('filterModal.remote')}
+            </Text>
+            {remoteSelected && <FontAwesome5 name="times" solid size={13} color={C.brinjal1} />}
+          </Pressable>
+        )}
 
         {nonRemote.map((loc) => (
           <View key={loc.label} style={[ls.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>

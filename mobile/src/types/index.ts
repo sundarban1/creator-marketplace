@@ -40,6 +40,7 @@ export type Campaign = {
   location?: string;
   locationLat?: number | null;
   locationLng?: number | null;
+  locationType?: 'ONSITE' | 'REMOTE';
   createdAt: string;
   campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
   eventStatus?:  'OPEN' | 'FULL' | 'CLOSED';

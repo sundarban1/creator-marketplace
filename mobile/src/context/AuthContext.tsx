@@ -32,6 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authService.getStoredUser().then((u) => {
       setUser(u);
       setIsLoading(false);
+    }).catch(() => {
+      setUser(null);
+      setIsLoading(false);
     });
 
     // Register once — the ref keeps the reference live

@@ -26,7 +26,9 @@ import {
   releaseReferral,
   releasePayment,
   verifyCreator,
+  setCreatorDocumentStatus,
   verifyBusiness,
+  setBusinessDocumentStatus,
   rejectBusiness,
   getBusinessReferrals,
   releaseBusinessReferral,
@@ -50,8 +52,10 @@ router.delete('/users/:id', deleteUser);
 
 router.get('/creators',  getCreators);
 router.patch('/creators/:id/verify', verifyCreator);
+router.patch('/creators/:id/documents/:doc', setCreatorDocumentStatus);
 router.get('/businesses', getBusinesses);
 router.patch('/businesses/:id/verify', verifyBusiness);
+router.patch('/businesses/:id/documents/:doc', setBusinessDocumentStatus);
 router.patch('/businesses/:id/reject', rejectBusiness);
 
 router.get('/campaigns', getCampaigns);

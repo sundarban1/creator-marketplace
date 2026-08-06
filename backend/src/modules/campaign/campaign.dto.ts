@@ -58,6 +58,7 @@ export interface CampaignDto {
   location: string | null;
   locationLat: number | null;
   locationLng: number | null;
+  locationType: string;
   budgetMin: number;
   budgetMax: number;
   status: string;
@@ -165,6 +166,7 @@ type RawCampaign = {
   location: string | null;
   locationLat: number | null;
   locationLng: number | null;
+  locationType: string;
   budgetMin: number;
   budgetMax: number;
   status: string;
@@ -215,6 +217,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     location:       c.location,
     locationLat:    c.locationLat,
     locationLng:    c.locationLng,
+    locationType:   c.locationType,
     budgetMin:      c.budgetMin,
     budgetMax:      c.budgetMax,
     status:         c.status,

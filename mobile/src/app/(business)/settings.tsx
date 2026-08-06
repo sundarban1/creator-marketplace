@@ -2258,7 +2258,7 @@ export default function BusinessSettingsScreen() {
           {!subPage && !section                    && renderMainSettings()}
           {!subPage && section === 'profile'       && renderProfile()}
           {!subPage && section === 'account'       && renderAccount()}
-          {!subPage && section === 'bell' && renderNotifications()}
+          {!subPage && section === 'notifications' && renderNotifications()}
           {!subPage && section === 'payment'       && renderPayment()}
           {!subPage && section === 'campaigns'     && renderCampaignPreferences()}
           {!subPage && section === 'saved'         && renderSavedCreators()}

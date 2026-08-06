@@ -109,10 +109,13 @@ export function Campaigns() {
       key:    'title',
       header: 'Event',
       render: (row: ApiCampaign) => (
-        <div className="min-w-0">
-          <p className="font-medium text-gray-900 truncate max-w-[220px]">{row.title}</p>
+        <button
+          onClick={() => navigate(`/campaigns/${row.id}`)}
+          className="min-w-0 text-left group"
+        >
+          <p className="font-medium text-gray-900 truncate max-w-[220px] group-hover:text-indigo-600 group-hover:underline">{row.title}</p>
           <p className="text-xs text-gray-500 truncate">{row.business.businessName}</p>
-        </div>
+        </button>
       ),
     },
     {

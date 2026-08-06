@@ -2225,7 +2225,7 @@ const en = {
  secBudgetTitle: 'Budget per Creator',
     secBudgetSub:      'How much are you willing to invest per creator?',
     secLocationTitle:  'Location',
-    secLocationSub:    'Where should creators be based? Type "Remote" for online.',
+    secLocationSub:    'Where should creators be based?',
 
  secVenueTitle: 'Venue / Location',
     secVenueSub:       'Where is the event taking place? (auto-filled from your business profile)',
@@ -2233,8 +2233,12 @@ const en = {
     secCapacitySub:    'Maximum number of creators who can attend.',
 
     selectCategoryPlaceholder: 'Select a category…',
-    locationPlaceholder:       'e.g. Kathmandu, Pokhara or Remote',
+    locationPlaceholder:       'e.g. Kathmandu, Pokhara',
     notRequired:               'Not required',
+    locationOnsite:      'Onsite',
+    locationRemote:      'Remote',
+    remoteLocationTitle: 'Work remotely',
+    remoteLocationBody:  'You can work from anywhere. A physical location is not required.',
 
     eventHintText:        'Event title, description, date and creator benefits will be auto-generated on the next page based on your selected category.',
 
@@ -2696,6 +2700,7 @@ const en = {
     sectionBudget: 'Budget',
     sectionEventType: 'Event Type',
     sectionDeadlineRange: 'Deadline',
+    sectionLocationType: 'Location Type',
     sectionLocation: 'Location',
     locationsAllowed: '{{n}}/{{max}} allowed',
     applyFiltersCount: 'Apply Filters ({{n}})',

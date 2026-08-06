@@ -115,13 +115,16 @@ export function Users() {
       key:    'name',
       header: 'User',
       render: (row: ApiUser) => (
-        <div className="flex items-center gap-3">
+        <button
+          onClick={() => setViewing(row)}
+          className="flex items-center gap-3 text-left group"
+        >
           <Avatar initials={initials(row)} size="sm" />
           <div>
-            <p className="font-medium text-gray-900">{displayName(row)}</p>
+            <p className="font-medium text-gray-900 group-hover:text-indigo-600 group-hover:underline">{displayName(row)}</p>
             <p className="text-xs text-gray-500">{displayEmailOrPhone(row.email)}</p>
           </div>
-        </div>
+        </button>
       ),
     },
     {

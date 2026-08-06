@@ -53,7 +53,10 @@ function deliverableFileCloudinaryId(publicId: string): string {
 // Once a creator has submitted a proposal, the terms it was submitted against
 // (price, platform, deliverables) can no longer change under them — everything
 // else (title, description, deadline, status, etc.) can still be edited.
-const FIELDS_LOCKED_AFTER_PROPOSALS = ['budgetMin', 'budgetMax', 'platforms', 'deliverables'] as const;
+const FIELDS_LOCKED_AFTER_PROPOSALS = [
+  'budgetMin', 'budgetMax', 'platforms', 'deliverables',
+  'location', 'locationLat', 'locationLng', 'locationType', 'isFeatured',
+] as const;
 
 export const MASTER_CATEGORIES: { label: string }[] = [
   { label: 'Food' },
@@ -213,6 +216,11 @@ export class CampaignService {
 
     await this.assertCampaignCreationAllowed(business, input.status);
 
+    const locationType = input.locationType ?? 'ONSITE';
+    if (locationType === 'ONSITE' && !input.location?.trim()) {
+      throw new AppError('Location is required for onsite events', 400);
+    }
+
     const [resolvedStatus, commissionRate, featuredAllowed] = await Promise.all([
       this.resolvePublishStatus(input.status),
       this.adminRepo.getSetting('platform.commission').then((v) => Number(v) || 0),
@@ -230,6 +238,12 @@ export class CampaignService {
       commissionRate,
       deadline:  new Date(input.deadline),
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
+      // Never persist a stale address alongside REMOTE — the server is the
+      // source of truth here, not whatever the client happened to send.
+      location:     locationType === 'REMOTE' ? null : input.location,
+      locationLat:  locationType === 'REMOTE' ? null : input.locationLat,
+      locationLng:  locationType === 'REMOTE' ? null : input.locationLng,
+      locationType,
     });
     const campaign = toCampaignDto(raw);
 
@@ -374,6 +388,9 @@ export class CampaignService {
       status:    resolvedStatus,
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
+      // Never leave a stale address behind when switching to REMOTE — same
+      // normalization as create().
+      ...(input.locationType === 'REMOTE' ? { location: null, locationLat: null, locationLng: null } : {}),
     });
 
     const dto = toCampaignDto(updated);
@@ -421,6 +438,7 @@ export class CampaignService {
       status:    resolvedStatus,
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
+      ...(input.locationType === 'REMOTE' ? { location: null, locationLat: null, locationLng: null } : {}),
     });
 
     const dto = toCampaignDto(updated);

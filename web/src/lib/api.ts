@@ -93,6 +93,8 @@ export interface ApiCreator {
   isVerified:  boolean;
   citizenshipDocUrl?: string | null;
   citizenshipStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  panDocUrl?: string | null;
+  panDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt:   string;
   user:  { id: string; email: string; phone?: string | null; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { applications: number };
@@ -681,6 +683,9 @@ export const api = {
     verifyCreator: (id: string, verified: boolean) =>
       request<{ id: string; fullName: string | null; isVerified: boolean }>('PATCH', `/api/admin/creators/${id}/verify`, { verified }),
 
+    setCreatorDocumentStatus: (id: string, doc: 'citizenship' | 'pan', approved: boolean) =>
+      request<{ id: string; citizenshipStatus?: string; panDocStatus?: string }>('PATCH', `/api/admin/creators/${id}/documents/${doc}`, { approved }),
+
     referrals: (status?: string) =>
       request<ApiReferral[]>('GET', '/api/admin/referrals', undefined, status ? { status } : undefined),
 
@@ -689,6 +694,9 @@ export const api = {
 
     verifyBusiness: (id: string, verified: boolean) =>
       request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/verify`, { verified }),
+
+    setBusinessDocumentStatus: (id: string, doc: 'pan' | 'companyReg', approved: boolean) =>
+      request<{ id: string; panDocStatus?: string; companyRegDocStatus?: string }>('PATCH', `/api/admin/businesses/${id}/documents/${doc}`, { approved }),
 
     rejectBusiness: (id: string, reason: string) =>
       request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/reject`, { reason }),

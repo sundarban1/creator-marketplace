@@ -111,10 +111,12 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
             <Text style={[styles.deadlineText, { color: deadline.urgent ? '#DC2626' : C.brinjal1 }]}>{deadline.text}</Text>
           </View>
         </View>
-        {campaign.location && (
+        {(campaign.locationType === 'REMOTE' || campaign.location) && (
           <View style={styles.locationRow}>
-            <FontAwesome5 name="map-marker-alt" solid size={11} color={C.textSecondary} />
-            <Text style={[styles.campaignLocation, { color: C.textSecondary }]}>{campaign.location}</Text>
+            <FontAwesome5 name={campaign.locationType === 'REMOTE' ? 'globe' : 'map-marker-alt'} solid size={11} color={C.textSecondary} />
+            <Text style={[styles.campaignLocation, { color: C.textSecondary }]}>
+              {campaign.locationType === 'REMOTE' ? t('createEvent.locationRemote') : campaign.location}
+            </Text>
           </View>
         )}
 

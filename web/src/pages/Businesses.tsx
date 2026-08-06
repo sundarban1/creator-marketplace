@@ -4,6 +4,7 @@ import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
 import { DetailModal }   from '../components/DetailModal';
+import { DocumentPreviewModal } from '../components/DocumentPreviewModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiBusiness } from '../lib/api';
 import { useApi }        from '../lib/useApi';
@@ -21,10 +22,16 @@ function businessStatus(b: ApiBusiness): string {
   return b.isVerified ? 'active' : 'pending';
 }
 
+function docStatus(status?: string | null): 'approved' | 'unapproved' {
+  return status === 'APPROVED' ? 'approved' : 'unapproved';
+}
+
 export function Businesses() {
   const navigate = useNavigate();
   const [action,  setAction]  = useState<Action | null>(null);
   const [viewing, setViewing] = useState<ApiBusiness | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ doc: 'pan' | 'companyReg'; url: string; title: string; status?: string } | null>(null);
+  const [docLoading, setDocLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
   const [page, setPage] = useState(1);
@@ -63,6 +70,7 @@ export function Businesses() {
         showToast(`Account ${isActive ? 'reactivated' : 'suspended'}.`);
       }
       setAction(null);
+      setViewing(null);
       refetch();
     } catch (e) {
       showToast((e as Error).message ?? 'Something went wrong.', false);
@@ -71,22 +79,43 @@ export function Businesses() {
     }
   }
 
+  async function handleDocApproval(approved: boolean) {
+    if (!viewing || !previewDoc) return;
+    setDocLoading(true);
+    try {
+      await api.admin.setBusinessDocumentStatus(viewing.id, previewDoc.doc, approved);
+      const status = approved ? 'APPROVED' : 'REJECTED';
+      const patch = previewDoc.doc === 'pan' ? { panDocStatus: status } : { companyRegDocStatus: status };
+      setViewing({ ...viewing, ...patch } as ApiBusiness);
+      setPreviewDoc({ ...previewDoc, status });
+      showToast(`Document ${approved ? 'approved' : 'unapproved'}.`);
+      refetch();
+    } catch (e) {
+      showToast((e as Error).message ?? 'Failed to update document status.', false);
+    } finally {
+      setDocLoading(false);
+    }
+  }
+
   const columns = [
     {
       key:    'name',
       header: 'Business',
       render: (row: ApiBusiness) => (
-        <div className="flex items-center gap-3">
+        <button
+          onClick={() => setViewing(row)}
+          className="flex items-center gap-3 text-left group"
+        >
           {row.logoUrl ? (
             <img src={row.logoUrl} alt={row.businessName} className="w-8 h-8 rounded-lg object-cover" />
           ) : (
             <Avatar initials={row.businessName.slice(0, 2).toUpperCase()} size="sm" />
           )}
           <div className="min-w-0">
-            <p className="font-medium text-gray-900 truncate">{row.businessName}</p>
+            <p className="font-medium text-gray-900 truncate group-hover:text-indigo-600 group-hover:underline">{row.businessName}</p>
             <p className="text-xs text-gray-500 truncate">{displayEmailOrPhone(row.user.email)}</p>
           </div>
-        </div>
+        </button>
       ),
     },
     {
@@ -144,63 +173,23 @@ export function Businesses() {
     {
       key:    'actions',
       header: 'Actions',
-      render: (row: ApiBusiness) => {
-        const suspended = row.user.isActive === false;
-        return (
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              className="text-xs text-gray-600 hover:text-gray-900 font-medium"
-              onClick={() => setViewing(row)}>
-              View
-            </button>
-            <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-              onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.businessName, email: row.user.email } })}>
-              Analytics
-            </button>
-            <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-              onClick={() => setAction({ type: row.isVerified ? 'unverify' : 'verify', business: row })}>
-              {row.isVerified ? 'Unverify' : 'Verify'}
-            </button>
-            {!row.isVerified && (
-              <button
-                className="text-xs text-red-500 hover:text-red-700 font-medium"
-                onClick={() => { setRejectReason(''); setAction({ type: 'reject', business: row }); }}>
-                Reject
-              </button>
-            )}
-            {row.panDocUrl && (
-              <button
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                onClick={() => window.open(row.panDocUrl!, '_blank')}>
-                View PAN
-              </button>
-            )}
-            {row.panDocStatus === 'PENDING' && <StatusBadge status="pending" />}
-            {row.companyRegDocUrl && (
-              <button
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                onClick={() => window.open(row.companyRegDocUrl!, '_blank')}>
-                View Reg. Cert
-              </button>
-            )}
-            {row.companyRegDocStatus === 'PENDING' && <StatusBadge status="pending" />}
-            {suspended ? (
-              <button className="text-xs text-green-600 hover:text-green-800 font-medium" onClick={() => setAction({ type: 'activate', business: row })}>
-                Activate
-              </button>
-            ) : (
-              <button className="text-xs text-orange-500 hover:text-orange-700 font-medium" onClick={() => setAction({ type: 'suspend', business: row })}>
-                Suspend
-              </button>
-            )}
-            <button className="text-xs text-red-500 hover:text-red-700 font-medium" onClick={() => setAction({ type: 'delete', business: row })}>
-              Delete
-            </button>
-          </div>
-        );
-      },
+      render: (row: ApiBusiness) => (
+        <div className="flex items-center gap-2">
+          <button
+            className="text-xs text-gray-600 hover:text-gray-900 font-medium"
+            onClick={() => setViewing(row)}>
+            View
+          </button>
+          <button
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.businessName, email: row.user.email } })}>
+            Analytics
+          </button>
+          <button className="text-xs text-red-500 hover:text-red-700 font-medium" onClick={() => setAction({ type: 'delete', business: row })}>
+            Delete
+          </button>
+        </div>
+      ),
     },
   ];
 
@@ -244,30 +233,6 @@ export function Businesses() {
         </>
       )}
 
-      {modalCfg && (
-        <ConfirmModal
-          open={!!action}
-          title={modalCfg.title}
-          body={modalCfg.body}
-          confirmLabel={modalCfg.confirmLabel}
-          variant={modalCfg.variant}
-          loading={loading}
-          confirmDisabled={action?.type === 'reject' && !rejectReason.trim()}
-          extra={action?.type === 'reject' ? (
-            <textarea
-              autoFocus
-              rows={3}
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Reason for rejection (shown to the business)…"
-              className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
-            />
-          ) : undefined}
-          onConfirm={handleConfirm}
-          onCancel={() => { setAction(null); setRejectReason(''); }}
-        />
-      )}
-
       {viewing && (
         <DetailModal
           open={!!viewing}
@@ -295,6 +260,18 @@ export function Businesses() {
                 },
               ],
             },
+            ...(viewing.panDocUrl || viewing.companyRegDocUrl
+              ? [{
+                  heading: 'Documents',
+                  fields: [
+                    ...(viewing.panDocUrl ? [{ label: 'PAN registration', value: <button onClick={() => setPreviewDoc({ doc: 'pan', url: viewing.panDocUrl!, title: 'PAN registration', status: viewing.panDocStatus ?? undefined })} className="text-indigo-600 hover:underline font-medium">View document</button> }] : []),
+                    ...(viewing.panDocUrl ? [{ label: 'PAN status', value: <StatusBadge status={docStatus(viewing.panDocStatus)} /> }] : []),
+                    ...(viewing.companyRegDocUrl ? [{ label: 'Company registration certificate', value: <button onClick={() => setPreviewDoc({ doc: 'companyReg', url: viewing.companyRegDocUrl!, title: 'Company registration certificate', status: viewing.companyRegDocStatus ?? undefined })} className="text-indigo-600 hover:underline font-medium">View document</button> }] : []),
+                    ...(viewing.companyRegDocUrl ? [{ label: 'Reg. status', value: <StatusBadge status={docStatus(viewing.companyRegDocStatus)} /> }] : []),
+                    ...(viewing.verificationRejectReason ? [{ label: 'Reject reason', value: viewing.verificationRejectReason }] : []),
+                  ],
+                }]
+              : []),
             {
               heading: 'Account',
               fields: [
@@ -305,27 +282,82 @@ export function Businesses() {
                 { label: 'Joined', value: new Date(viewing.user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
               ],
             },
-            ...(viewing.panDocUrl || viewing.companyRegDocUrl
-              ? [{
-                  heading: 'Documents',
-                  fields: [
-                    ...(viewing.panDocUrl ? [{ label: 'PAN', value: <a href={viewing.panDocUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View document</a> }] : []),
-                    ...(viewing.panDocStatus ? [{ label: 'PAN status', value: viewing.panDocStatus }] : []),
-                    ...(viewing.companyRegDocUrl ? [{ label: 'Company reg.', value: <a href={viewing.companyRegDocUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View document</a> }] : []),
-                    ...(viewing.companyRegDocStatus ? [{ label: 'Reg. status', value: viewing.companyRegDocStatus }] : []),
-                    ...(viewing.verificationRejectReason ? [{ label: 'Reject reason', value: viewing.verificationRejectReason }] : []),
-                  ],
-                }]
-              : []),
           ]}
           footer={
-            <button
-              onClick={() => setViewing(null)}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              Close
-            </button>
+            <>
+              <button
+                onClick={() => setAction({ type: viewing.isVerified ? 'unverify' : 'verify', business: viewing })}
+                className="px-4 py-2.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors"
+              >
+                {viewing.isVerified ? 'Unverify' : 'Verify'}
+              </button>
+              {!viewing.isVerified && (
+                <button
+                  onClick={() => { setRejectReason(''); setAction({ type: 'reject', business: viewing }); }}
+                  className="px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
+                >
+                  Reject
+                </button>
+              )}
+              {viewing.user.isActive === false ? (
+                <button
+                  onClick={() => setAction({ type: 'activate', business: viewing })}
+                  className="px-4 py-2.5 text-sm font-medium text-green-600 bg-green-50 rounded-xl hover:bg-green-100 transition-colors"
+                >
+                  Activate
+                </button>
+              ) : (
+                <button
+                  onClick={() => setAction({ type: 'suspend', business: viewing })}
+                  className="px-4 py-2.5 text-sm font-medium text-orange-600 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors"
+                >
+                  Suspend
+                </button>
+              )}
+              <button
+                onClick={() => setViewing(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </>
           }
+        />
+      )}
+
+      {modalCfg && (
+        <ConfirmModal
+          open={!!action}
+          title={modalCfg.title}
+          body={modalCfg.body}
+          confirmLabel={modalCfg.confirmLabel}
+          variant={modalCfg.variant}
+          loading={loading}
+          confirmDisabled={action?.type === 'reject' && !rejectReason.trim()}
+          extra={action?.type === 'reject' ? (
+            <textarea
+              autoFocus
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Reason for rejection (shown to the business)…"
+              className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+            />
+          ) : undefined}
+          onConfirm={handleConfirm}
+          onCancel={() => { setAction(null); setRejectReason(''); }}
+        />
+      )}
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          url={previewDoc.url}
+          title={previewDoc.title}
+          approved={previewDoc.status === 'APPROVED'}
+          actionLoading={docLoading}
+          onApprove={() => handleDocApproval(true)}
+          onUnapprove={() => handleDocApproval(false)}
+          onClose={() => setPreviewDoc(null)}
         />
       )}
 

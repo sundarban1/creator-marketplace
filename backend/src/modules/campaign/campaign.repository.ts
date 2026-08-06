@@ -16,9 +16,10 @@ export class CampaignRepository {
     contentType: string;
     deliverables: string;
     deadline: Date;
-    location?: string;
-    locationLat?: number;
-    locationLng?: number;
+    location?: string | null;
+    locationLat?: number | null;
+    locationLng?: number | null;
+    locationType?: 'ONSITE' | 'REMOTE';
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
@@ -402,6 +403,7 @@ export class CampaignRepository {
     location: string | null;
     locationLat: number | null;
     locationLng: number | null;
+    locationType: 'ONSITE' | 'REMOTE';
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
