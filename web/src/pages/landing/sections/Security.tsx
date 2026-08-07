@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
 import { FaFingerprint, FaLock, FaIdBadge, FaStar } from 'react-icons/fa6';
-import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
+import { fadeUp, stagger, VP, CARD_HOVER, iconPop } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { SectionWave } from '../components/SectionWave';
+import { TextReveal } from '../components/TextReveal';
 
 const ICONS = [FaFingerprint, FaLock, FaIdBadge, FaStar];
 
@@ -23,9 +24,12 @@ export function Security() {
           <motion.p variants={fadeUp} className="font-serif text-base italic text-white/50">
             {d.security.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="text-balance mt-3 font-serif text-3xl font-medium md:text-4xl">
-            {d.security.heading}
-          </motion.h2>
+          <TextReveal
+            as="h2"
+            text={d.security.heading}
+            delay={0.1}
+            className="text-balance mt-3 font-serif text-3xl font-medium md:text-4xl"
+          />
           <motion.p variants={fadeUp} className="mt-4 text-white/60">
             {d.security.sub}
           </motion.p>
@@ -50,11 +54,14 @@ export function Security() {
                 key={i}
                 variants={fadeUp}
                 whileHover={CARD_HOVER}
-                className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm transition-all duration-300 hover:border-white/25 hover:bg-white/[0.07]"
+                className="shine-hover group rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm transition-all duration-300 hover:border-white/25 hover:bg-white/[0.07]"
               >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ${accent} ${glow} transition-transform duration-300 group-hover:scale-110`}>
+                <motion.span
+                  variants={iconPop(0.1 + i * 0.05)}
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ${accent} ${glow} transition-transform duration-300 group-hover:scale-110`}
+                >
                   <Icon size={16} />
-                </span>
+                </motion.span>
                 <h3 className="mt-4 text-sm font-bold text-white">{point.title}</h3>
                 <p className="mt-1.5 text-xs leading-relaxed text-white/50">{point.desc}</p>
               </motion.div>

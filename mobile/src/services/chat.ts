@@ -132,11 +132,11 @@ export function createVoiceUploadTask(
           if (cancelled) throw new Error('Voice upload cancelled');
           const signature = await requestVoiceUploadSignature(conversationId);
           if (cancelled) throw new Error('Voice upload cancelled');
-          await uploadVoiceToCloudinary(fileUri, signature, (p) => reportVoiceUploadProgress(localUploadId, p));
+          const uploaded = await uploadVoiceToCloudinary(fileUri, signature, (p) => reportVoiceUploadProgress(localUploadId, p));
           if (cancelled) throw new Error('Voice upload cancelled');
           const res = await request<ApiMessage>(
             'POST', `/api/messaging/conversations/${conversationId}/attachments/voice/complete`,
-            { publicId: signature.publicId, clientDurationSec: durationSec, waveform: waveform.map((v) => v.toFixed(2)).join(',') },
+            { publicId: uploaded.publicId, clientDurationSec: durationSec, waveform: waveform.map((v) => v.toFixed(2)).join(',') },
           );
           return toMessage(res.data);
         } finally {

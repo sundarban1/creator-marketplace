@@ -1,15 +1,8 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import { F, RADIUS } from '@/utilities/constants';
-
-function formatDuration(sec: number): string {
-  const totalSeconds = Math.max(0, Math.round(sec));
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { RADIUS } from '@/utilities/constants';
 
 // Fallback bars for a message that predates attachmentWaveform, or whose
 // waveform CSV failed to parse — a flat-ish shape rather than a blank row.
@@ -87,7 +80,6 @@ export function VoiceBubblePlayer({ url, waveform, durationSec, isSent, activeCo
           );
         })}
       </Pressable>
-      <Text style={[s.duration, { color: isSent ? '#fff' : mutedColor }]}>{formatDuration(total)}</Text>
     </View>
   );
 }
@@ -97,5 +89,4 @@ const s = StyleSheet.create({
   playBtn: { width: 32, height: 32, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   track:   { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2, height: 24 },
   bar:     { width: 3, borderRadius: 2 },
-  duration: { fontSize: 11, fontFamily: F.regular, minWidth: 32, textAlign: 'right' },
 });

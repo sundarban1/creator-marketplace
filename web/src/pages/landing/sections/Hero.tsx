@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { fadeUp, scaleIn, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
@@ -6,22 +6,53 @@ import { useLandingLanguage } from '../context/LanguageContext';
 import { AppStoreBadges } from '../components/AppStoreBadges';
 import { ComingSoonBadge } from '../components/ComingSoonBadge';
 import { PhoneShowcase } from '../components/PhoneShowcase';
+import { TextReveal } from '../components/TextReveal';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useComingSoon } from '../hooks/useComingSoon';
 import { useHeadlineTypewriter } from '../hooks/useHeadlineTypewriter';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export function Hero() {
   const { d } = useLandingLanguage();
   const { scrollTo } = useLenisScroll();
   const comingSoon = useComingSoon();
   const typed = useHeadlineTypewriter(d.hero.headlinePairs);
+  const reducedMotion = useReducedMotion();
+
+  // Cursor-driven parallax on the background glow — the blobs drift a few
+  // pixels toward the pointer, springing back to center on mouse-leave. Kept
+  // on a wrapper around the blobs (not the blobs themselves) so it doesn't
+  // fight with their own `mesh-drift` CSS transform animation.
+  const glowX = useMotionValue(0);
+  const glowY = useMotionValue(0);
+  const glowSpringX = useSpring(glowX, { stiffness: 50, damping: 20, mass: 0.6 });
+  const glowSpringY = useSpring(glowY, { stiffness: 50, damping: 20, mass: 0.6 });
+
+  function handlePointerMove(e: React.MouseEvent<HTMLElement>) {
+    if (reducedMotion) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    glowX.set(((e.clientX - rect.left) / rect.width - 0.5) * 36);
+    glowY.set(((e.clientY - rect.top) / rect.height - 0.5) * 24);
+  }
+
+  function resetPointer() {
+    glowX.set(0);
+    glowY.set(0);
+  }
 
   return (
-    <section id={SECTION_IDS.hero} className="relative overflow-hidden bg-paper pt-44 pb-28">
+    <section
+      id={SECTION_IDS.hero}
+      onMouseMove={handlePointerMove}
+      onMouseLeave={resetPointer}
+      className="relative overflow-hidden bg-paper pt-44 pb-28"
+    >
       {/* Soft brand-color glow, referencing the logo's violet/orange gradient */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="mesh-blob absolute left-1/2 top-[-20%] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-violet/[0.08] blur-[100px]" />
-        <div className="mesh-blob absolute right-[-8%] top-[10%] h-[360px] w-[360px] rounded-full bg-brand-orange/[0.08] blur-[100px]" style={{ animationDelay: '3s' }} />
+        <motion.div style={{ x: glowSpringX, y: glowSpringY }} className="absolute inset-0">
+          <div className="mesh-blob absolute left-1/2 top-[-20%] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-violet/[0.08] blur-[100px]" />
+          <div className="mesh-blob absolute right-[-8%] top-[10%] h-[360px] w-[360px] rounded-full bg-brand-orange/[0.08] blur-[100px]" style={{ animationDelay: '3s' }} />
+        </motion.div>
       </div>
 
       {/* Oversized watermark numeral — the one editorial flourish. The centered
@@ -101,18 +132,28 @@ export function Hero() {
               </span>
             </motion.h1>
 
-            <motion.p variants={fadeUp} className="mx-auto mt-8 max-w-lg text-lg leading-relaxed text-ink-soft">
-              {d.hero.sub}
-            </motion.p>
+            <TextReveal
+              as="p"
+              eager
+              text={d.hero.sub}
+              delay={0.5}
+              stagger={0.018}
+              className="mx-auto mt-8 max-w-lg text-lg leading-relaxed text-ink-soft"
+            />
 
             <motion.div variants={fadeUp} className="mx-auto mt-10 max-w-lg">
               <span className="mx-auto block h-1 w-10 rounded-full bg-gradient-to-r from-violet to-brand-orange" />
               <p className="mt-4 bg-gradient-to-br from-ink to-violet-dark bg-clip-text font-serif text-2xl font-medium text-transparent sm:text-3xl">
                 {d.finalCta.heading}
               </p>
-              <p className="mt-1.5 text-base text-ink-soft">
-                {d.finalCta.sub}
-              </p>
+              <TextReveal
+                as="p"
+                eager
+                text={d.finalCta.sub}
+                delay={0.75}
+                stagger={0.02}
+                className="mt-1.5 text-base text-ink-soft"
+              />
             </motion.div>
 
             <motion.div variants={fadeUp} className="mt-6 flex justify-center">
@@ -126,7 +167,12 @@ export function Hero() {
             variants={scaleIn}
             transition={{ delay: 0.25 }}
           >
-            <PhoneShowcase />
+            {/* Idle bob lives on this wrapper, not the scaleIn div above — both
+                animate `transform`, and a running CSS keyframe animation would
+                otherwise clobber framer's inline scale/opacity transform. */}
+            <div className={reducedMotion ? undefined : 'float-slow'}>
+              <PhoneShowcase />
+            </div>
           </motion.div>
         </div>
       </div>

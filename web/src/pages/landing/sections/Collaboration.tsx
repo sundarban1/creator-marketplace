@@ -4,6 +4,7 @@ import { FaUser, FaPaperPlane } from 'react-icons/fa6';
 import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { TextReveal } from '../components/TextReveal';
 
 // Simplified, stylized silhouette evoking Nepal's elongated east-west shape —
 // a decorative watermark, not a precise cartographic boundary. Same low-opacity
@@ -72,9 +73,12 @@ export function Collaboration() {
         variants={stagger()}
         className="mx-auto max-w-3xl px-6 text-center"
       >
-        <motion.h2 variants={fadeUp} className="text-balance font-serif text-3xl font-medium text-ink sm:text-4xl">
-          {d.collaboration.heading}
-        </motion.h2>
+        <TextReveal
+          as="h2"
+          text={d.collaboration.heading}
+          delay={0.1}
+          className="text-balance font-serif text-3xl font-medium text-ink sm:text-4xl"
+        />
         <motion.p variants={fadeUp} className="mx-auto mt-4 max-w-xl text-ink-soft">
           {d.collaboration.sub}
         </motion.p>

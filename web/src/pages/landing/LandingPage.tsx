@@ -71,9 +71,9 @@ function LandingPageInner() {
       <HowItWorks />
       <CampaignJourney />
       <Collaboration />
-      <Categories stats={stats} />
       <Security />
       <Stories stories={successStories} />
+      <Categories stats={stats} />
       <LandingFooter />
       <ChatWidget />
     </div>

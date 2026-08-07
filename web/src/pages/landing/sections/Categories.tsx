@@ -4,6 +4,7 @@ import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { getCategoryStyle } from '../lib/categoryIcons';
 import { getIconOption } from '../../../lib/iconOptions';
+import { TextReveal } from '../components/TextReveal';
 import type { LandingStats } from '../../../lib/api';
 
 const PER_ROW = 5;
@@ -35,9 +36,12 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
             {d.categories.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl">
-            {d.categories.heading}
-          </motion.h2>
+          <TextReveal
+            as="h2"
+            text={d.categories.heading}
+            delay={0.1}
+            className="mt-3 whitespace-nowrap font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl"
+          />
         </motion.div>
       </div>
 

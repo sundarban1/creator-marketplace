@@ -21,6 +21,17 @@ export const scaleIn: Variants = {
 // same amount — small per-section variance (y: -3 vs -5, scale: 1.02 vs 1.05)
 // reads as inconsistency once you notice it while scrolling through sections
 // back to back. CARD_HOVER for content cards (HowItWorks, Security, Stories,
-// TrustStats); PILL_HOVER for smaller chip-like elements (Categories).
-export const CARD_HOVER = { y: -4, scale: 1.03 };
-export const PILL_HOVER = { y: -3, scale: 1.05 };
+// TrustStats); PILL_HOVER for smaller chip-like elements (Categories). Each
+// carries its own spring `transition` (rather than relying on the default
+// tween) so the lift feels tactile or bouncy instead of a flat linear glide.
+const HOVER_SPRING = { type: 'spring', stiffness: 300, damping: 20, mass: 0.6 } as const;
+export const CARD_HOVER = { y: -6, scale: 1.03, transition: HOVER_SPRING };
+export const PILL_HOVER = { y: -3, scale: 1.06, transition: HOVER_SPRING };
+
+// Small spring pop used for icons/badges inside a card once the card itself
+// has entered — a beat behind the card's own fadeUp so it reads as "the icon
+// arrives inside the card" rather than everything landing in one flat instant.
+export const iconPop = (delay = 0.15): Variants => ({
+  hidden: { opacity: 0, scale: 0.4, rotate: -8 },
+  show: { opacity: 1, scale: 1, rotate: 0, transition: { type: 'spring', stiffness: 260, damping: 16, delay } },
+});

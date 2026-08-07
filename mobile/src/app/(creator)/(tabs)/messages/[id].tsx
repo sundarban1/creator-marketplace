@@ -362,6 +362,11 @@ function MessageBubble({
                 mutedColor={C.textSecondary}
               />
             )}
+            {!isPending && msg.status !== 'failed' && msg.attachmentDurationSec != null && (
+              <Text style={[s.voiceDurationLine, { color: isSent ? 'rgba(255,255,255,0.75)' : C.textSecondary }]}>
+                {formatDuration(msg.attachmentDurationSec)}
+              </Text>
+            )}
           </View>
         ) : (
           <View style={[
@@ -798,12 +803,12 @@ const s = StyleSheet.create({
   // Attachments
   imageBubble:          { width: 210, height: 210, borderRadius: RADIUS.lg, overflow: 'hidden' },
   attachmentImage:      { width: '100%', height: '100%' },
-  imageUploadingOverlay:{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  imageUploadingOverlay:{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', gap: 6 },
   captionBubble:        { marginTop: 4 },
   videoPlayOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
   durationBadge:    { position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: RADIUS.sm, paddingHorizontal: 6, paddingVertical: 2 },
   durationBadgeTxt: { color: '#fff', fontSize: 11, fontFamily: F.semibold },
-  videoStatusTxt:   { color: '#fff', fontSize: 12, fontFamily: F.semibold },
+  videoStatusTxt:   { color: '#fff', fontSize: 14, fontFamily: F.semibold, textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   videoStatusDetailTxt: { color: 'rgba(255,255,255,0.75)', fontSize: 10, fontFamily: F.regular, textAlign: 'center', paddingHorizontal: 10, marginTop: 2 },
   failedActions:    { flexDirection: 'row', gap: 8, marginTop: 4 },
   failedBtn:        { paddingHorizontal: 12, paddingVertical: 5, borderRadius: RADIUS.full, backgroundColor: '#fff' },
@@ -821,6 +826,7 @@ const s = StyleSheet.create({
   voiceFailedRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 2 },
   voiceFailedIconBtn: { width: 22, height: 22, justifyContent: 'center', alignItems: 'center' },
   voiceFailedTxt:   { flex: 1, fontSize: 12, fontFamily: F.medium },
+  voiceDurationLine: { fontSize: 11, fontFamily: F.regular, marginTop: -8, alignSelf: 'flex-end', marginRight: 10 },
 
   // Empty
   emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 32, paddingVertical: 80 },

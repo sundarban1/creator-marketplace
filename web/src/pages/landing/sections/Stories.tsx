@@ -3,6 +3,7 @@ import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { AnimatedTestimonials } from '../components/AnimatedTestimonials';
+import { TextReveal } from '../components/TextReveal';
 import type { ApiSuccessStory } from '../../../lib/api';
 
 // Used whenever a story (real API row or the static i18n fallback copy) has no
@@ -45,9 +46,12 @@ export function Stories({ stories }: StoriesProps) {
         <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
           {d.stories.eyebrow}
         </motion.p>
-        <motion.h2 variants={fadeUp} className="mt-3 font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl">
-          {d.stories.heading}
-        </motion.h2>
+        <TextReveal
+          as="h2"
+          text={d.stories.heading}
+          delay={0.1}
+          className="mt-3 font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl"
+        />
       </motion.div>
 
       <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp} className="mt-8">

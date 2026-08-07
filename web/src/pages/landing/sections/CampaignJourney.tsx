@@ -9,6 +9,7 @@ import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { SectionWave } from '../components/SectionWave';
+import { TextReveal } from '../components/TextReveal';
 
 const ICONS = [FaBullhorn, FaPaperPlane, FaHandshake, FaCreditCard, FaBell, FaBolt, FaCloudArrowUp, FaMagnifyingGlass, FaSackDollar];
 
@@ -160,9 +161,12 @@ export function CampaignJourney() {
           <motion.p variants={fadeUp} className="font-serif text-base italic text-white/50">
             {d.journey.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-white sm:text-2xl md:text-3xl lg:text-4xl">
-            {d.journey.heading}
-          </motion.h2>
+          <TextReveal
+            as="h2"
+            text={d.journey.heading}
+            delay={0.1}
+            className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-white sm:text-2xl md:text-3xl lg:text-4xl"
+          />
         </motion.div>
 
         {/* ── Animated horizontal timeline card ── */}

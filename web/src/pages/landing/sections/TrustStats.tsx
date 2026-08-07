@@ -4,6 +4,7 @@ import { SECTION_IDS } from '../constants';
 import { useCountUp } from '../hooks/useCountUp';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { SectionWave } from '../components/SectionWave';
+import { TextReveal } from '../components/TextReveal';
 import type { LandingStats } from '../../../lib/api';
 
 function StatTile({ value, label, index }: { value: number; label: string; index: number }) {
@@ -45,9 +46,12 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
           <motion.p variants={fadeUp} className="font-serif text-base italic text-white/50">
             {d.trust.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="mt-3 font-serif text-2xl font-medium sm:text-3xl md:text-4xl">
-            {d.trust.heading}
-          </motion.h2>
+          <TextReveal
+            as="h2"
+            text={d.trust.heading}
+            delay={0.1}
+            className="mt-3 font-serif text-2xl font-medium sm:text-3xl md:text-4xl"
+          />
         </motion.div>
 
         <motion.div

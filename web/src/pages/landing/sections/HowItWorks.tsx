@@ -1,9 +1,10 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { FaUserPlus, FaMagnifyingGlass, FaComments, FaShieldHalved } from 'react-icons/fa6';
-import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
+import { fadeUp, stagger, VP, CARD_HOVER, iconPop } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { TextReveal } from '../components/TextReveal';
 
 const ICONS = [FaUserPlus, FaMagnifyingGlass, FaComments, FaShieldHalved];
 
@@ -25,8 +26,9 @@ function StepCard({ step, index, Icon }: { step: { title: string; desc: string }
         {String(index + 1).padStart(2, '0')}
       </motion.span>
 
-      <motion.div variants={fadeUp} whileHover={CARD_HOVER} className="group mt-6">
-        <span
+      <motion.div variants={fadeUp} whileHover={CARD_HOVER} className="shine-hover group mt-6 rounded-2xl">
+        <motion.span
+          variants={iconPop(0.1 + index * 0.05)}
           className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white transition-transform duration-300 group-hover:scale-110 ${
             accent === 'violet'
               ? 'bg-gradient-to-br from-violet to-violet-dark shadow-[0_8px_20px_-6px_rgba(123,92,245,0.5)]'
@@ -34,7 +36,7 @@ function StepCard({ step, index, Icon }: { step: { title: string; desc: string }
           }`}
         >
           <Icon size={18} />
-        </span>
+        </motion.span>
         <h3 className="mt-4 text-lg font-bold text-ink">{step.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
       </motion.div>
@@ -52,9 +54,12 @@ export function HowItWorks() {
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
             {d.how.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-ink sm:text-2xl md:text-3xl lg:text-4xl">
-            {d.how.heading}
-          </motion.h2>
+          <TextReveal
+            as="h2"
+            text={d.how.heading}
+            delay={0.1}
+            className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-ink sm:text-2xl md:text-3xl lg:text-4xl"
+          />
         </motion.div>
 
         <motion.div
