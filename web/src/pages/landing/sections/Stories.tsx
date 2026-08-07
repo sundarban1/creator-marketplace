@@ -1,93 +1,57 @@
 import { motion } from 'framer-motion';
-import { fadeUp, VP, CARD_HOVER } from '../lib/motion';
+import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
-import { useAutoScroll } from '../hooks/useAutoScroll';
+import { AnimatedTestimonials } from '../components/AnimatedTestimonials';
 import type { ApiSuccessStory } from '../../../lib/api';
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
-}
+// Used whenever a story (real API row or the static i18n fallback copy) has no
+// photoUrl — the carousel is portrait-driven, so every entry needs some image.
+// Cycled by index rather than one fixed URL, since the static i18n fallback
+// copy has no photoUrl on ANY item — a single shared dummy would show the
+// same face for every "different" person in the carousel.
+const DUMMY_PHOTOS = [
+  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1623582854588-d60de57fa33f?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1636041293178-808a6762ab39?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1624561172888-ac93c696e10c?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+];
 
 type StoryItem = { quote: string; name: string; role: string; photoUrl?: string | null };
-
-function StoryCard({ quote, name, role, photoUrl, i }: StoryItem & { i: number }) {
-  return (
-    <motion.figure
-      whileHover={CARD_HOVER}
-      className="flex w-[320px] flex-shrink-0 flex-col rounded-2xl border border-ink/10 bg-white p-7 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.18)] sm:w-[380px]"
-    >
-      <div className={`mb-6 h-0.5 w-10 rounded-full bg-gradient-to-r ${i % 2 === 0 ? 'from-violet to-violet-dark' : 'from-brand-orange to-violet'}`} />
-      <blockquote className="font-serif text-xl italic leading-snug text-ink sm:text-2xl">
-        &ldquo;{quote}&rdquo;
-      </blockquote>
-      <figcaption className="mt-5 flex items-center gap-3 text-sm text-ink-soft">
-        {photoUrl ? (
-          <img src={photoUrl} alt={name} className="h-10 w-10 shrink-0 rounded-full object-cover" />
-        ) : (
-          <span
-            aria-hidden="true"
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white ${i % 2 === 0 ? 'from-violet to-violet-dark' : 'from-brand-orange to-violet'}`}
-          >
-            {initials(name)}
-          </span>
-        )}
-        <span>
-          <span className="font-semibold text-ink">{name}</span> — {role}
-        </span>
-      </figcaption>
-    </motion.figure>
-  );
-}
-
 type PublicSuccessStory = Pick<ApiSuccessStory, 'id' | 'name' | 'role' | 'quote' | 'photoUrl'>;
 
 interface StoriesProps {
   stories: PublicSuccessStory[] | null;
 }
 
-// Below this count, a duplicated pass reads as "the same card shown twice"
-// rather than an infinite loop — there just isn't enough content for the
-// seamless-reset illusion to land, so skip duplicating and disable scrolling.
-const MIN_ITEMS_TO_LOOP = 5;
-
 export function Stories({ stories }: StoriesProps) {
   const { d } = useLandingLanguage();
   // null = not yet loaded / fetch failed → fall back to static copy.
-  // A resolved empty array is genuine "no active stories" and renders empty.
+  // A resolved empty array is genuine "no active stories" and renders nothing.
   const items: StoryItem[] = stories !== null ? stories : d.stories.items;
-  const shouldLoop = items.length >= MIN_ITEMS_TO_LOOP;
-  const scrollRef = useAutoScroll<HTMLDivElement>(shouldLoop ? 0.3 : 0);
-  const groups = shouldLoop ? [items, items] : [items];
+  if (items.length === 0) return null;
+
+  const testimonials = items.map((item, i) => ({
+    quote: item.quote,
+    name: item.name,
+    designation: item.role,
+    src: item.photoUrl ?? DUMMY_PHOTOS[i % DUMMY_PHOTOS.length]!,
+  }));
 
   return (
     <section id={SECTION_IDS.stories} className="bg-paper py-28">
-      <motion.p
-        initial="hidden"
-        whileInView="show"
-        viewport={VP}
-        variants={fadeUp}
-        className="mb-14 text-center font-serif text-base italic text-ink-soft"
-      >
-        {d.stories.eyebrow}
-      </motion.p>
+      <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-4xl px-6 text-center">
+        <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
+          {d.stories.eyebrow}
+        </motion.p>
+        <motion.h2 variants={fadeUp} className="mt-3 font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl">
+          {d.stories.heading}
+        </motion.h2>
+      </motion.div>
 
-      <motion.div
-        initial="hidden"
-        whileInView="show"
-        viewport={VP}
-        variants={fadeUp}
-        ref={scrollRef}
-        className={`scrollbar-hide flex gap-6 overflow-x-hidden px-6 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)] ${shouldLoop ? '' : 'justify-center'}`}
-      >
-        {groups.map((group, gi) => (
-          <div key={gi} aria-hidden={gi === 1} className="flex flex-shrink-0 gap-6">
-            {group.map((item, i) => (
-              <StoryCard key={i} {...item} i={i} />
-            ))}
-          </div>
-        ))}
+      <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp} className="mt-8">
+        <AnimatedTestimonials testimonials={testimonials} autoplay />
       </motion.div>
     </section>
   );

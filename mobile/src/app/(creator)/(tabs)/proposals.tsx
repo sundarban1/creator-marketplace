@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -371,6 +372,10 @@ export default function ProposalsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListFooterComponent={current.loadingMore ? (
             <View style={styles.footerLoading}><ActivityIndicator size="small" color={C.brinjal1} /></View>
           ) : null}

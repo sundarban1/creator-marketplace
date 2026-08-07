@@ -3,6 +3,7 @@ import { PageHeader } from '@/features/creator/components/PageHeader';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -97,6 +98,10 @@ export default function FeaturedCampaignsScreen() {
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             <EmptyState faIcon="star" title={t('creator.featuredCampaigns.empty')} />
           }

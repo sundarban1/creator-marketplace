@@ -22,6 +22,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { logger } from '@/utilities/logger';
+import { getCached, setCached } from '@/utilities/offlineCache';
 
 const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
   instagram: { platform: 'Instagram', color: '#E1306C', iconName: 'instagram' },
@@ -78,7 +79,14 @@ export default function CreatorProfileScreen() {
   const [eventCounts, setEventCounts]   = useState({ completed: 0 });
 
   useFocusEffect(useCallback(() => {
-    creatorService.getProfile().then(setProfile).catch(() => {});
+    // Show the last-known profile immediately (e.g. offline) without
+    // clobbering anything already loaded from a previous, fresher focus.
+    void getCached<ApiCreatorProfile>('creator_profile').then((cached) => {
+      if (cached) setProfile((p) => p ?? cached);
+    });
+    creatorService.getProfile()
+      .then((p) => { setProfile(p); void setCached('creator_profile', p); })
+      .catch(() => {});
     // Only ACCEPTED applications carry a meaningful workStatus/paymentStatus —
     // "completed" requires the payment to have actually been released, not just
     // the work marked done, so COMPLETED alone isn't enough.

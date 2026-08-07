@@ -3,6 +3,7 @@ import { router, useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -353,6 +354,10 @@ export default function ProposalsScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListFooterComponent={loadingMore ? <View style={styles.footerLoading}><ActivityIndicator size="small" color={C.brinjal1} /></View> : null}
           ListEmptyComponent={
             <EmptyState

@@ -24,6 +24,7 @@ import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
+import { getCached, setCached } from '@/utilities/offlineCache';
 
 const STATUS_STYLE = {
   active: { bg: TabColors.positive.bg, color: TabColors.positive.color, statusKey: 'business.home.statusActive' as const },
@@ -80,8 +81,16 @@ export default function BusinessHomeScreen() {
     try {
       const { campaigns: data } = await campaignService.listMy();
       setCampaigns(data);
+      void setCached('business_feed_campaigns', data);
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : t('business.home.loadError'));
+      // Offline or request failed — fall back to the last-known feed instead
+      // of leaving the screen blank/erroring, so it stays usable offline.
+      const cached = await getCached<Campaign[]>('business_feed_campaigns');
+      if (cached && cached.length > 0) {
+        setCampaigns(cached);
+      } else {
+        setFetchError(e instanceof Error ? e.message : t('business.home.loadError'));
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -96,6 +105,16 @@ export default function BusinessHomeScreen() {
   // silently so cards don't flash/blank on every back-navigation.
   const hasLoadedCampaignsRef = useRef(false);
   useFocusEffect(useCallback(() => {
+    if (!hasLoadedCampaignsRef.current) {
+      // Show the last-known feed immediately (e.g. cold launch while
+      // offline) while the real fetch below runs and replaces it.
+      void getCached<Campaign[]>('business_feed_campaigns').then((cached) => {
+        if (cached && cached.length > 0) {
+          setCampaigns(cached);
+          setLoading(false);
+        }
+      });
+    }
     void fetchCampaigns(!hasLoadedCampaignsRef.current);
     hasLoadedCampaignsRef.current = true;
   }, [languageVersion]));

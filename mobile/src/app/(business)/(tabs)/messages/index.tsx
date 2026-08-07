@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -358,6 +359,10 @@ export default function BusinessChatListScreen() {
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListFooterComponent={tabData.pending.loadingMore ? <View style={s.footerLoading}><ActivityIndicator size="small" color={ACCENT} /></View> : null}
           ListEmptyComponent={
             <EmptyState
@@ -379,6 +384,10 @@ export default function BusinessChatListScreen() {
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListFooterComponent={tabData.chats.loadingMore ? <View style={s.footerLoading}><ActivityIndicator size="small" color={ACCENT} /></View> : null}
           ListEmptyComponent={
             <EmptyState

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -362,6 +363,10 @@ export default function ExploreBusinessesScreen() {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
             onEndReached={() => void loadMoreBusinesses()}
             onEndReachedThreshold={0.4}
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS === 'android'}
             ListFooterComponent={loadingMore ? (
               <View style={styles.footerLoading}>
                 <ActivityIndicator size="small" color={C.brinjal1} />

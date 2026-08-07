@@ -3,6 +3,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -234,6 +235,10 @@ export default function FavoriteBusinessesScreen() {
           )}
           contentContainerStyle={[s.list, filteredItems.length === 0 && s.listEmpty]}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             search || isFilterActive ? (
               <View style={s.empty}>

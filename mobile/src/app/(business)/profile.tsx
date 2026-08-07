@@ -29,6 +29,7 @@ import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { logger } from '@/utilities/logger';
+import { getCached, setCached } from '@/utilities/offlineCache';
 
 export default function BusinessProfileScreen() {
   const { user, updateUser } = useAuth();
@@ -75,7 +76,14 @@ export default function BusinessProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      profileService.getBusinessProfile().then(setProfile).catch(() => {});
+      // Show the last-known profile immediately (e.g. offline) without
+      // clobbering anything already loaded from a previous, fresher focus.
+      void getCached<BusinessProfile>('business_profile').then((cached) => {
+        if (cached) setProfile((p) => p ?? cached);
+      });
+      profileService.getBusinessProfile()
+        .then((p) => { setProfile(p); void setCached('business_profile', p); })
+        .catch(() => {});
       campaignService.listMy()
         .then(({ campaigns }) => setActiveCampaigns(campaigns.filter((c) => c.status === 'active').length))
         .catch(() => {});

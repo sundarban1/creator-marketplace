@@ -29,6 +29,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
 import { storage } from '@/utilities/storage';
+import { getCached, setCached } from '@/utilities/offlineCache';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
 import { ACCESS_TOKEN_KEY, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
@@ -199,8 +200,16 @@ export default function HomeScreen() {
         limit: 50,
       });
       setCampaigns(data);
+      void setCached('creator_feed_campaigns', data);
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : 'Failed to load events');
+      // Offline or request failed — fall back to the last-known feed instead
+      // of leaving the screen blank/erroring, so it stays usable offline.
+      const cached = await getCached<Campaign[]>('creator_feed_campaigns');
+      if (cached && cached.length > 0) {
+        setCampaigns(cached);
+      } else {
+        setFetchError(e instanceof Error ? e.message : 'Failed to load events');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -313,6 +322,14 @@ export default function HomeScreen() {
   }
 
   useEffect(() => {
+    // Show the last-known feed immediately (e.g. cold launch while offline)
+    // while the real fetch below runs and replaces it once it resolves.
+    void getCached<Campaign[]>('creator_feed_campaigns').then((cached) => {
+      if (cached && cached.length > 0) {
+        setCampaigns(cached);
+        setLoading(false);
+      }
+    });
     void fetchCampaigns();
     creatorService.getProfile()
       .then((profile) => {
@@ -733,6 +750,10 @@ export default function HomeScreen() {
         onEndReached={() => setListVisibleCount((n) => Math.min(n + PAGE_SIZE, filteredList.length))}
         onEndReachedThreshold={0.4}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
         data={listRows}
         keyExtractor={(row, i) => (
           row.kind === 'campaign' ? row.campaign.id :

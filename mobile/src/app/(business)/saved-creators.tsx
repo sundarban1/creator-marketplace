@@ -3,6 +3,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -301,6 +302,10 @@ export default function SavedCreatorsScreen() {
           )}
           contentContainerStyle={[s.list, items.length === 0 && s.listEmpty]}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             hasFilter ? (
               <EmptyState

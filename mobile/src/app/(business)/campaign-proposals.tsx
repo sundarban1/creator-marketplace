@@ -5,6 +5,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -799,6 +800,10 @@ export default function CampaignProposalsScreen() {
             />
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             <EmptyState
               faIcon="users"

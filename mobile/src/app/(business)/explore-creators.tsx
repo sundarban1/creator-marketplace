@@ -8,6 +8,7 @@ import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -412,6 +413,10 @@ export default function ExploreCreatorsScreen() {
             )}
             onEndReached={loadMore}
             onEndReachedThreshold={0.3}
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS === 'android'}
             ListFooterComponent={
               loadingMore ? (
                 <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />

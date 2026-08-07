@@ -1,9 +1,29 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { ContactForm } from '../components/ContactForm';
+
+// Same gradient-underline-sweep hover used by the main nav links (LandingNav) —
+// reused here so every text link on the page commits to one hover language
+// instead of the footer inventing its own.
+function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-ink/75 transition-colors duration-300 hover:text-ink">
+      <span>{children}</span>
+      <ArrowUpRight
+        size={13}
+        className="-translate-y-px translate-x-0 opacity-0 transition-all duration-300 ease-out group-hover:translate-x-0.5 group-hover:opacity-100"
+      />
+      <span
+        aria-hidden
+        className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
+      />
+    </Link>
+  );
+}
 
 export function LandingFooter() {
   const { d } = useLandingLanguage();
@@ -20,10 +40,10 @@ export function LandingFooter() {
             <motion.p variants={fadeUp} className="max-w-xs text-sm leading-relaxed text-ink/75">
               {d.footer.tagline}
             </motion.p>
-            <motion.div variants={fadeUp} className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink/75">
-              <Link to="/privacy" className="transition-colors hover:text-ink">{d.footer.privacy}</Link>
-              <Link to="/terms" className="transition-colors hover:text-ink">{d.footer.terms}</Link>
-              <Link to="/support" className="transition-colors hover:text-ink">{d.footer.support}</Link>
+            <motion.div variants={fadeUp} className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <FooterLink to="/privacy">{d.footer.privacy}</FooterLink>
+              <FooterLink to="/terms">{d.footer.terms}</FooterLink>
+              <FooterLink to="/support">{d.footer.support}</FooterLink>
             </motion.div>
           </motion.div>
 
@@ -39,21 +59,21 @@ export function LandingFooter() {
             footer on every page could otherwise pass to them. */}
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-14 border-t border-ink/10 pt-10">
           <motion.p variants={fadeUp} className="text-xs font-semibold uppercase tracking-wide text-ink/40">Explore Kolab</motion.p>
-          <motion.nav aria-label="More on Kolab" variants={fadeUp} className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink/75">
-            <Link to="/creator-marketplace-nepal" className="transition-colors hover:text-ink">Creator Marketplace Nepal</Link>
-            <Link to="/content-creators" className="transition-colors hover:text-ink">For Creators</Link>
-            <Link to="/brands" className="transition-colors hover:text-ink">For Brands</Link>
-            <Link to="/influencers" className="transition-colors hover:text-ink">Influencers</Link>
-            <Link to="/find-campaigns" className="transition-colors hover:text-ink">Find Campaigns</Link>
-            <Link to="/influencer-marketing-nepal" className="transition-colors hover:text-ink">Influencer Marketing</Link>
-            <Link to="/brand-collaboration-nepal" className="transition-colors hover:text-ink">Brand Collaboration</Link>
-            <Link to="/tiktok-creators" className="transition-colors hover:text-ink">TikTok Creators</Link>
-            <Link to="/instagram-creators" className="transition-colors hover:text-ink">Instagram Creators</Link>
-            <Link to="/youtube-creators" className="transition-colors hover:text-ink">YouTube Creators</Link>
-            <Link to="/facebook-creators" className="transition-colors hover:text-ink">Facebook Creators</Link>
-            <Link to="/paid-collaborations-nepal" className="transition-colors hover:text-ink">Paid Collaborations</Link>
-            <Link to="/industries-nepal" className="transition-colors hover:text-ink">Browse by Industry</Link>
-            <Link to="/cities-nepal" className="transition-colors hover:text-ink">Browse by City</Link>
+          <motion.nav aria-label="More on Kolab" variants={fadeUp} className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+            <FooterLink to="/creator-marketplace-nepal">Creator Marketplace Nepal</FooterLink>
+            <FooterLink to="/content-creators">For Creators</FooterLink>
+            <FooterLink to="/brands">For Brands</FooterLink>
+            <FooterLink to="/influencers">Influencers</FooterLink>
+            <FooterLink to="/find-campaigns">Find Campaigns</FooterLink>
+            <FooterLink to="/influencer-marketing-nepal">Influencer Marketing</FooterLink>
+            <FooterLink to="/brand-collaboration-nepal">Brand Collaboration</FooterLink>
+            <FooterLink to="/tiktok-creators">TikTok Creators</FooterLink>
+            <FooterLink to="/instagram-creators">Instagram Creators</FooterLink>
+            <FooterLink to="/youtube-creators">YouTube Creators</FooterLink>
+            <FooterLink to="/facebook-creators">Facebook Creators</FooterLink>
+            <FooterLink to="/paid-collaborations-nepal">Paid Collaborations</FooterLink>
+            <FooterLink to="/industries-nepal">Browse by Industry</FooterLink>
+            <FooterLink to="/cities-nepal">Browse by City</FooterLink>
           </motion.nav>
         </motion.div>
 

@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -391,6 +392,10 @@ export default function CreatorMessagesScreen() {
           contentContainerStyle={[s.reqList, requests.length === 0 && s.listEmpty]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             <EmptyState
               faIcon="envelope-open"
@@ -409,6 +414,10 @@ export default function CreatorMessagesScreen() {
           ItemSeparatorComponent={() => <View style={[s.sep, { backgroundColor: C.border }]} />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             <EmptyState
               faIcon="comment-dots"
