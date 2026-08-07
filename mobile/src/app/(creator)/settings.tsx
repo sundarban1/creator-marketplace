@@ -641,6 +641,13 @@ export default function CreatorSettingsScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [youtubeAuth.error]);
 
+  // User backed out of the Google auth tab without completing it — no error, no
+  // onSuccess, so this is the only signal that tells the button to stop spinning.
+  useEffect(() => {
+    if (youtubeAuth.dismissed) setConnectingPlatform(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [youtubeAuth.dismissed]);
+
   // TikTok requires an HTTPS redirect URI (no custom app-scheme redirects), so unlike
   // YouTube the code exchange happens server-side: the backend hands back a TikTok
   // authorize URL, we open it in a browser, and TikTok's redirect lands on our API,
@@ -758,6 +765,13 @@ export default function CreatorSettingsScreen() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facebookPagesAuth.error]);
+
+  // User backed out of the Facebook auth tab without completing it — no error, no
+  // onSuccess, so this is the only signal that tells the button to stop spinning.
+  useEffect(() => {
+    if (facebookPagesAuth.dismissed) setConnectingPlatform(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facebookPagesAuth.dismissed]);
 
   async function finishFacebookConnect(accessToken: string, pageId: string) {
     setConnectingPlatform('facebook');

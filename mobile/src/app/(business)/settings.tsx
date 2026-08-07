@@ -430,6 +430,13 @@ export default function BusinessSettingsScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [youtubeAuth.error]);
 
+  // User backed out of the Google auth tab without completing it — no error, no
+  // onSuccess, so this is the only signal that tells the button to stop spinning.
+  useEffect(() => {
+    if (youtubeAuth.dismissed) setConnectingPlatform(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [youtubeAuth.dismissed]);
+
   async function handleConnectTiktok() {
     setConnectingPlatform('tiktok');
     try {
@@ -531,6 +538,13 @@ export default function BusinessSettingsScreen() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facebookPagesAuth.error]);
+
+  // User backed out of the Facebook auth tab without completing it — no error, no
+  // onSuccess, so this is the only signal that tells the button to stop spinning.
+  useEffect(() => {
+    if (facebookPagesAuth.dismissed) setConnectingPlatform(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facebookPagesAuth.dismissed]);
 
   async function finishFacebookConnect(accessToken: string, pageId: string) {
     setConnectingPlatform('facebook');

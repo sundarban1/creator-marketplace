@@ -16,9 +16,7 @@
     "db:seed:platforms": "tsx prisma/seed-platforms.ts",
     "db:seed:success-stories": "tsx prisma/seed-success-stories.ts",
     "db:seed:contracts": "tsx prisma/seed-contracts.ts",
-    "db:seed:bulk": "tsx prisma/bulk-seed.ts",
-    "android": "expo run:android",
-    "ios": "expo run:ios"
+    "db:seed:bulk": "tsx prisma/bulk-seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.9.1",
@@ -31,7 +29,6 @@
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
-    "expo": "~54.0.33",
     "expo-server-sdk": "^6.1.0",
     "express": "^4.18.2",
     "express-rate-limit": "^8.5.2",
@@ -44,8 +41,6 @@
     "pdfkit": "^0.19.1",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
     "redis": "^6.1.0",
     "resend": "^6.17.2",
     "socket.io": "^4.8.3",

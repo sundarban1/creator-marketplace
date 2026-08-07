@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image as ExpoImage } from 'expo-image';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   Animated,
   Image,
@@ -26,7 +26,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
-import { useAppColors } from '@/context/ThemeContext';
+import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 
 const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
@@ -54,15 +54,16 @@ const LANG_OPTIONS: { lang: Lang; flag: string }[] = [
 // yet) — flip this back on once that's sorted, no other code changes needed.
 const FACEBOOK_LOGIN_ENABLED = false;
 
-// Soft pastel wash + card-less, minimal-border layout (per the reference design) —
-// brinjal/orange stay the brand accents (logo badge, active tab, button glow,
-// highlight word) rather than covering the whole screen the way the old solid
-// aurora did.
-const BRINJAL      = '#4F46E5';
-const BRINJAL_PALE = '#EDEBFC';
-const ORANGE       = '#ED651C';
-const TEXT_DARK     = '#221E3A';
-const MUTED         = '#8B87A8';
+// Blends a theme color with alpha for soft tints/glows that adapt automatically between
+// the light and dark palettes — avoids hand-picking a separate literal per theme for
+// every one-off tint (banner backgrounds, aurora blobs, glassy card fill, ...).
+function withAlpha(hex: string, alpha: number): string {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 // Content-creator/brand iconography scattered across the gradient background — random
 // per-icon opacity (computed once at module load, so it's stable across re-renders
@@ -81,10 +82,15 @@ const BG_ICONS: { name: string; size: number; rotate: string; style: object; opa
   { name: 'mobile-alt',       size: 26, rotate: '-9deg',  style: { top: 100, left: '2%'  }, opacity: scatterOpacity() },
 ];
 
-const ROLES = [
-  { key: 'CREATOR'  as const, label: 'Creator', sub: 'Influencer & creator', icon: 'camera'    as const, grad: [COLORS.brinjal1, COLORS.brinjal2] as const },
-  { key: 'BUSINESS' as const, label: 'Business', sub: 'Company & business', icon: 'briefcase' as const, grad: [COLORS.accent, '#EA580C'] as const },
-];
+// Role card accents pull straight from the active theme's own primary/accent tokens
+// (light or dark) instead of a hardcoded palette, so the cards stay in sync with
+// whatever the rest of the app is using.
+function buildRoles(C: typeof COLORS) {
+  return [
+    { key: 'CREATOR'  as const, label: 'Creator', sub: 'Influencer & creator', icon: 'camera'    as const, grad: [C.brinjal1, C.brinjal2] as const },
+    { key: 'BUSINESS' as const, label: 'Business', sub: 'Company & business', icon: 'briefcase' as const, grad: [C.accent, '#EA580C'] as const },
+  ];
+}
 
 const PW_RULES = [
   { test: (p: string) => p.length >= 8,   label: '8+ chars'  },
@@ -137,13 +143,15 @@ function Field({
   error?: string;
   rightSlot?: React.ReactNode;
 }) {
+  const C = useAppColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const [focused, setFocused] = useState(false);
   const [hidden,  setHidden]  = useState(secureTextEntry);
   const anim   = useRef(new Animated.Value(0)).current;
   const shadow = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const border = anim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [error ? '#FECACA' : '#E8E0F8', error ? '#EF4444' : BRINJAL],
+    outputRange: [error ? withAlpha(C.error, 0.35) : C.border, error ? C.error : C.brinjal1],
   });
 
   return (
@@ -157,15 +165,15 @@ function Field({
         { borderColor: border },
         focused && s.fieldFocused,
       ]}>
-        <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${BRINJAL}15` : '#F3F4F6' }]}>
-          <FontAwesome5 name={icon} size={16} color={focused ? BRINJAL : '#9CA3AF'} />
+        <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${C.brinjal1}15` : C.border }]}>
+          <FontAwesome5 name={icon} size={16} color={focused ? C.brinjal1 : C.textSecondary} />
         </View>
         <TextInput
           style={s.fieldInput}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#C4B5FD"
+          placeholderTextColor={C.textSecondary}
           secureTextEntry={hidden}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -179,7 +187,7 @@ function Field({
         />
         {secureTextEntry && (
           <Pressable onPress={() => setHidden(h => !h)} hitSlop={10} style={s.eyeBtn}>
-            <FontAwesome5 name={hidden ? 'eye' : 'eye-slash'} size={18} color={focused ? BRINJAL : '#9CA3AF'} />
+            <FontAwesome5 name={hidden ? 'eye' : 'eye-slash'} size={18} color={focused ? C.brinjal1 : C.textSecondary} />
           </Pressable>
         )}
       </Animated.View>
@@ -208,7 +216,7 @@ function Field({
       })()}
       {!!error && (
         <View style={s.fieldErrRow}>
-          <FontAwesome5 name="exclamation-circle" solid size={12} color="#EF4444" />
+          <FontAwesome5 name="exclamation-circle" solid size={12} color={C.error} />
           <Text style={s.fieldErrText}>{error}</Text>
         </View>
       )}
@@ -227,6 +235,8 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   facebookLoading: boolean;
   facebookError: string;
 }) {
+  const C = useAppColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const { login, reloadUser } = useAuth();
   const { t }     = useLanguage();
   const { flags } = usePlatformFlags();
@@ -306,15 +316,15 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   return (
     <View>
       {verified === '1' && (
-        <View style={[s.banner, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-          <FontAwesome5 name="check-circle" solid size={15} color="#15803D" />
-          <Text style={[s.bannerText, { color: '#15803D' }]}>{t('auth.login.verifiedBanner')}</Text>
+        <View style={[s.banner, { backgroundColor: withAlpha(C.active, 0.12), borderColor: withAlpha(C.active, 0.35) }]}>
+          <FontAwesome5 name="check-circle" solid size={15} color={C.active} />
+          <Text style={[s.bannerText, { color: C.active }]}>{t('auth.login.verifiedBanner')}</Text>
         </View>
       )}
       {!!apiError && (
-        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{apiError}</Text>
+        <View style={[s.banner, { backgroundColor: withAlpha(C.error, 0.12), borderColor: withAlpha(C.error, 0.35) }]}>
+          <FontAwesome5 name="exclamation-circle" solid size={15} color={C.error} />
+          <Text style={[s.bannerText, { color: C.error }]}>{apiError}</Text>
         </View>
       )}
 
@@ -338,14 +348,14 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       </View>
 
       <Pressable style={s.rememberRow} onPress={() => setRememberMe((v) => !v)} hitSlop={8}>
-        <FontAwesome5 name={rememberMe ? 'check-square' : 'square'} solid={rememberMe} size={19} color={rememberMe ? BRINJAL : '#9CA3AF'} />
+        <FontAwesome5 name={rememberMe ? 'check-square' : 'square'} solid={rememberMe} size={19} color={rememberMe ? C.brinjal1 : C.textSecondary} />
         <Text style={s.rememberText}>{t('auth.login.rememberMe')}</Text>
       </Pressable>
 
       <Pressable
         onPress={handleLogin} disabled={loading}
         style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-        <View style={[s.primaryBtn, { backgroundColor: BRINJAL }]}>
+        <View style={[s.primaryBtn, { backgroundColor: C.brinjal1 }]}>
           {loading
             ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
             : <>
@@ -360,12 +370,12 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           style={({ pressed }) => [
             s.socialBtn, s.socialBtnFull,
             biometricLoading && { opacity: 0.6 },
-            pressed && !biometricLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
+            pressed && !biometricLoading && { transform: [{ scale: 0.98 }], backgroundColor: C.primaryLight },
           ]}
           onPress={handleBiometricLogin} disabled={biometricLoading}>
           {biometricLoading
-            ? <View style={s.spinner} />
-            : <FontAwesome5 name={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'} size={17} color={BRINJAL} />}
+            ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
+            : <FontAwesome5 name={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'} size={17} color={C.brinjal1} />}
           <Text style={s.socialBtnText}>
             {biometricLoading ? t('auth.login.signingIn') : t('auth.login.biometricLoginBtn', { biometricLabel })}
           </Text>
@@ -373,9 +383,9 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       )}
 
       <View style={s.divider}>
-        <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
+        <View style={[s.dividerLine, { backgroundColor: C.border }]} />
         <Text style={s.dividerText}>{t('auth.login.or')}</Text>
-        <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
+        <View style={[s.dividerLine, { backgroundColor: C.border }]} />
       </View>
 
       <View style={s.socialRow}>
@@ -387,7 +397,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           ]}
           onPress={onGooglePress} disabled={googleLoading}>
           {googleLoading
-            ? <View style={s.spinner} />
+            ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
             : <ExpoImage source={require('@/assets/svg/google.svg')} style={s.googleIcon} contentFit="contain" />}
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
@@ -399,7 +409,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
             ]}
             onPress={onFacebookPress} disabled={facebookLoading}>
             {facebookLoading
-              ? <View style={s.spinner} />
+              ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
               : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
             <Text style={s.socialBtnFbText}>{facebookLoading ? t('auth.login.signingIn') : 'Facebook'}</Text>
           </Pressable>
@@ -407,15 +417,15 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       </View>
 
       {!!googleError && (
-        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
+        <View style={[s.banner, { backgroundColor: withAlpha(C.error, 0.12), borderColor: withAlpha(C.error, 0.35) }]}>
+          <FontAwesome5 name="exclamation-circle" solid size={15} color={C.error} />
+          <Text style={[s.bannerText, { color: C.error }]}>{googleError}</Text>
         </View>
       )}
       {FACEBOOK_LOGIN_ENABLED && !!facebookError && (
-        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{facebookError}</Text>
+        <View style={[s.banner, { backgroundColor: withAlpha(C.error, 0.12), borderColor: withAlpha(C.error, 0.35) }]}>
+          <FontAwesome5 name="exclamation-circle" solid size={15} color={C.error} />
+          <Text style={[s.bannerText, { color: C.error }]}>{facebookError}</Text>
         </View>
       )}
 
@@ -424,7 +434,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       <BottomSheet visible={suspendedModal} onClose={() => setSuspendedModal(false)} contentContainerStyle={{ gap: 4 }}>
         <View style={s.suspendedSheet}>
           <View style={s.suspendedIconWrap}>
-            <FontAwesome5 name="lock" size={22} color="#EF4444" solid />
+            <FontAwesome5 name="lock" size={22} color={C.error} solid />
           </View>
           <Text style={s.modalTitle}>{t('auth.login.suspendedTitle')}</Text>
           <Text style={s.modalSub}>{t('auth.login.suspendedMessage')}</Text>
@@ -453,6 +463,9 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
   facebookLoading: boolean;
   facebookError: string;
 }) {
+  const C = useAppColors();
+  const s = useMemo(() => makeStyles(C), [C]);
+  const ROLES = useMemo(() => buildRoles(C), [C]);
   const { t } = useLanguage();
 
   const [role,      setRole]      = useState<'CREATOR' | 'BUSINESS'>('CREATOR');
@@ -505,7 +518,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
               key={r.key}
               style={({ pressed }) => [
                 s.roleCard,
-                { borderColor: active ? tint : '#ECEAF5', backgroundColor: '#fff' },
+                { borderColor: active ? tint : C.border, backgroundColor: C.surface },
                 active && [s.roleCardActive, { shadowColor: tint }],
                 { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
@@ -514,13 +527,13 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
                   composite correctly with a translucent backgroundColor on the same view. */}
               {active && <View pointerEvents="none" style={[s.roleTintOverlay, { backgroundColor: `${tint}0D` }]} />}
               <LinearGradient
-                colors={active ? r.grad : ['#F5F3FF', '#EDE9FE']}
+                colors={active ? r.grad : [C.primaryLight, C.primaryLight]}
                 style={[s.roleIconBox, active && { shadowColor: tint, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }]}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <FontAwesome5 name={r.icon} size={22} color={active ? '#fff' : '#8B5CF6'} solid />
+                <FontAwesome5 name={r.icon} size={22} color={active ? '#fff' : C.brinjal1} solid />
               </LinearGradient>
               <Text style={s.roleLabel}>{roleLabel}</Text>
-              <Text style={[s.roleSub, { color: active ? tint : '#9CA3AF' }]}>{roleSub}</Text>
+              <Text style={[s.roleSub, { color: active ? tint : C.textSecondary }]}>{roleSub}</Text>
               {active && (
                 <View style={[s.roleCheck, { backgroundColor: tint }]}>
                   <FontAwesome5 name="check" solid size={13} color="#fff" />
@@ -550,9 +563,9 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
               const ok = rule.test(password);
               const ruleLabel = idx === 0 ? t('auth.signup.pwRule8Chars') : idx === 1 ? t('auth.signup.pwRuleUppercase') : t('auth.signup.pwRuleNumber');
               return (
-                <View key={rule.label} style={[s.rulePill, { backgroundColor: ok ? '#F0FDF4' : '#F5F3FF', borderColor: ok ? '#86EFAC' : '#DDD6FE' }]}>
-                  <FontAwesome5 name={ok ? 'check-circle' : 'circle'} solid={ok} size={11} color={ok ? '#16A34A' : '#A78BFA'} />
-                  <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#8B5CF6' }]}>{ruleLabel}</Text>
+                <View key={rule.label} style={[s.rulePill, { backgroundColor: ok ? withAlpha(C.active, 0.12) : C.primaryLight, borderColor: ok ? withAlpha(C.active, 0.4) : C.border }]}>
+                  <FontAwesome5 name={ok ? 'check-circle' : 'circle'} solid={ok} size={11} color={ok ? C.active : C.brinjal1} />
+                  <Text style={[s.ruleText, { color: ok ? C.active : C.brinjal1 }]}>{ruleLabel}</Text>
                 </View>
               );
             })}
@@ -561,16 +574,16 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       </View>
 
       {!!error && (
-        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{error}</Text>
+        <View style={[s.banner, { backgroundColor: withAlpha(C.error, 0.12), borderColor: withAlpha(C.error, 0.35) }]}>
+          <FontAwesome5 name="exclamation-circle" solid size={15} color={C.error} />
+          <Text style={[s.bannerText, { color: C.error }]}>{error}</Text>
         </View>
       )}
 
       <Pressable
         onPress={handleCreate} disabled={loading}
         style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-        <View style={[s.primaryBtn, { backgroundColor: BRINJAL }]}>
+        <View style={[s.primaryBtn, { backgroundColor: C.brinjal1 }]}>
           {loading
             ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
             : <>
@@ -581,9 +594,9 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       </Pressable>
 
       <View style={s.divider}>
-        <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
+        <View style={[s.dividerLine, { backgroundColor: C.border }]} />
         <Text style={s.dividerText}>{t('auth.signup.or')}</Text>
-        <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
+        <View style={[s.dividerLine, { backgroundColor: C.border }]} />
       </View>
 
       <View style={s.socialRow}>
@@ -595,7 +608,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
           ]}
           onPress={onGooglePress} disabled={googleLoading}>
           {googleLoading
-            ? <View style={s.spinner} />
+            ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
             : <ExpoImage source={require('@/assets/svg/google.svg')} style={s.googleIcon} contentFit="contain" />}
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
@@ -607,7 +620,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
             ]}
             onPress={onFacebookPress} disabled={facebookLoading}>
             {facebookLoading
-              ? <View style={s.spinner} />
+              ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
               : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
             <Text style={s.socialBtnFbText}>{facebookLoading ? t('auth.login.signingIn') : 'Facebook'}</Text>
           </Pressable>
@@ -615,23 +628,23 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       </View>
 
       {!!googleError && (
-        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
+        <View style={[s.banner, { backgroundColor: withAlpha(C.error, 0.12), borderColor: withAlpha(C.error, 0.35) }]}>
+          <FontAwesome5 name="exclamation-circle" solid size={15} color={C.error} />
+          <Text style={[s.bannerText, { color: C.error }]}>{googleError}</Text>
         </View>
       )}
       {FACEBOOK_LOGIN_ENABLED && !!facebookError && (
-        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{facebookError}</Text>
+        <View style={[s.banner, { backgroundColor: withAlpha(C.error, 0.12), borderColor: withAlpha(C.error, 0.35) }]}>
+          <FontAwesome5 name="exclamation-circle" solid size={15} color={C.error} />
+          <Text style={[s.bannerText, { color: C.error }]}>{facebookError}</Text>
         </View>
       )}
 
       <Text style={s.terms}>
         {t('auth.signup.termsPrefix')}{' '}
-        <Text style={{ color: BRINJAL, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>{t('auth.signup.termsLink')}</Text>
+        <Text style={{ color: C.brinjal1, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>{t('auth.signup.termsLink')}</Text>
         {' '}{t('auth.signup.termsAnd')}{' '}
-        <Text style={{ color: BRINJAL, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>{t('auth.signup.privacyLink')}</Text>.
+        <Text style={{ color: C.brinjal1, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>{t('auth.signup.privacyLink')}</Text>.
       </Text>
     </View>
   );
@@ -643,6 +656,9 @@ export default function LoginScreen() {
   const { user, reloadUser }      = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const C                         = useAppColors();
+  const { isDark }                = useIsDark();
+  const s                         = useMemo(() => makeStyles(C), [C]);
+  const ROLES                     = useMemo(() => buildRoles(C), [C]);
   const params                    = useLocalSearchParams<{ tab?: string; verified?: string }>();
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
@@ -659,9 +675,9 @@ export default function LoginScreen() {
     return (
       <>
         <Text style={s.heroTagline}>{t('auth.login.heroTaglinePrefix')}</Text>
-        <GradientHighlight text={t('auth.login.heroTaglineBrands')} style={s.heroTaglineHighlight} color={BRINJAL} />
+        <GradientHighlight text={t('auth.login.heroTaglineBrands')} style={s.heroTaglineHighlight} color={C.brinjal1} />
         <Text style={s.heroTagline}>{t('auth.login.heroTaglineMiddle')}</Text>
-        <GradientHighlight text={t('auth.login.heroTaglineCreators')} style={s.heroTaglineHighlight} color={ORANGE} />
+        <GradientHighlight text={t('auth.login.heroTaglineCreators')} style={s.heroTaglineHighlight} color={C.accent} />
         {!!t('auth.login.heroTaglineSuffix') && (
           <Text style={s.heroTagline}>{t('auth.login.heroTaglineSuffix')}</Text>
         )}
@@ -848,11 +864,12 @@ export default function LoginScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* Soft pastel wash (brinjal → white → warm peach) instead of a bold
-          full-bleed color — the reference's light, airy feel. */}
-      <LinearGradient colors={[BRINJAL_PALE, '#FAF9FF', '#FFF3E6']} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
+      {/* Soft pastel wash (brinjal → base → warm peach) instead of a bold
+          full-bleed color — the reference's light, airy feel. Tokens drawn from the
+          active theme so the same wash re-tunes itself for dark mode automatically. */}
+      <LinearGradient colors={[C.primaryLight, C.preLoginBackground, C.accentLight]} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
       <View style={s.auroraLayer} pointerEvents="none">
         <View style={[s.auroraBlob, s.auroraBlobA]} />
         <View style={[s.auroraBlob, s.auroraBlobB]} />
@@ -862,7 +879,7 @@ export default function LoginScreen() {
             key={i}
             name={icon.name as any}
             size={icon.size}
-            color={BRINJAL}
+            color={C.brinjal1}
             style={[s.bgIcon, icon.style, { opacity: icon.opacity, transform: [{ rotate: icon.rotate }] }]}
           />
         ))}
@@ -938,7 +955,7 @@ export default function LoginScreen() {
                       key={tabKey}
                       style={[s.tabBtn, tab === tabKey && s.tabBtnActive]}
                       onPress={() => setTab(tabKey)}>
-                      <Text style={[s.tabBtnText, { color: tab === tabKey ? BRINJAL : MUTED }]}>
+                      <Text style={[s.tabBtnText, { color: tab === tabKey ? C.brinjal1 : C.textSecondary }]}>
                         {tabKey === 'login' ? t('auth.login.tabLogin') : t('auth.login.tabSignup')}
                       </Text>
                     </Pressable>
@@ -964,7 +981,7 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <View style={s.footer}>
-            <FontAwesome5 name="shield-alt" solid size={12} color={MUTED} />
+            <FontAwesome5 name="shield-alt" solid size={12} color={C.textSecondary} />
             <Text style={s.footerText}>{t('auth.login.footer')}</Text>
           </View>
 
@@ -988,8 +1005,8 @@ export default function LoginScreen() {
                 <LinearGradient colors={r.grad} style={s.roleIconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                   <FontAwesome5 name={r.icon} size={22} color="#fff" solid />
                 </LinearGradient>
-                <Text style={[s.roleLabel, { color: '#111827' }]}>{roleLabel}</Text>
-                <Text style={[s.roleSub, { color: '#9CA3AF' }]}>{roleSub}</Text>
+                <Text style={[s.roleLabel, { color: C.text }]}>{roleLabel}</Text>
+                <Text style={[s.roleSub, { color: C.textSecondary }]}>{roleSub}</Text>
               </Pressable>
             );
           })}
@@ -1003,8 +1020,9 @@ export default function LoginScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAF9FF' },
+function makeStyles(C: typeof COLORS) {
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.preLoginBackground },
   flex: { flex: 1 },
 
   // `justifyContent: 'center'` only has an effect once flexGrow's extra space
@@ -1018,9 +1036,9 @@ const s = StyleSheet.create({
   // scattered decorative icons, echoing the app icon's own purple-triangle/orange-ring duo.
   auroraLayer:  { position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' },
   auroraBlob:   { position: 'absolute', borderRadius: RADIUS.full },
-  auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(79,70,229,0.06)', top: -90, right: -70 },
-  auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(255,173,51,0.14)', top: 80, left: -90 },
-  auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(79,70,229,0.05)', top: 250, right: 40 },
+  auroraBlobA:  { width: 280, height: 280, backgroundColor: withAlpha(C.brinjal1, 0.06), top: -90, right: -70 },
+  auroraBlobB:  { width: 220, height: 220, backgroundColor: withAlpha(C.accent, 0.14), top: 80, left: -90 },
+  auroraBlobC:  { width: 160, height: 160, backgroundColor: withAlpha(C.brinjal1, 0.05), top: 250, right: 40 },
   bgIcon:       { position: 'absolute' },
 
   logoImage: { width: 168, height: 168 / (1740 / 620) },
@@ -1037,7 +1055,7 @@ const s = StyleSheet.create({
   heroTaglineMeasure: { position: 'absolute', top: 0, opacity: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroTaglineClip: { width: '100%', overflow: 'hidden', alignItems: 'center' },
   heroTaglineRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroTagline: { fontSize: 20, color: TEXT_DARK, fontFamily: F.semibold, letterSpacing: 0.3 },
+  heroTagline: { fontSize: 20, color: C.text, fontFamily: F.semibold, letterSpacing: 0.3 },
   heroTaglineHighlight: { fontSize: 22, fontFamily: F.boldItalic, fontStyle: 'italic', letterSpacing: 0.1 },
 
   // Floating card — visible margin on every side (not an edge-to-edge sheet),
@@ -1048,14 +1066,14 @@ const s = StyleSheet.create({
   // Much lighter touch than a boxed "card" — a soft, wide, low shadow so the
   // form reads as gently lifted off the page rather than sitting in a hard
   // container, closer to the reference's card-less "floating on gradient" feel.
-  cardOuter:  { borderRadius: RADIUS.xl, shadowColor: BRINJAL, shadowOpacity: 0.08, shadowRadius: 30, shadowOffset: { width: 0, height: 14 }, elevation: 3 },
-  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.92)' },
+  cardOuter:  { borderRadius: RADIUS.xl, shadowColor: C.brinjal1, shadowOpacity: 0.08, shadowRadius: 30, shadowOffset: { width: 0, height: 14 }, elevation: 3 },
+  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: withAlpha(C.surface, 0.92) },
   cardBody:   { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 26 },
 
   // Pill-shaped segmented tab
-  tabBar:       { flexDirection: 'row', backgroundColor: '#F5F3FA', borderRadius: RADIUS.full, padding: 4, marginBottom: 22, gap: 2 },
+  tabBar:       { flexDirection: 'row', backgroundColor: C.primaryLight, borderRadius: RADIUS.full, padding: 4, marginBottom: 22, gap: 2 },
   tabBtn:       { flex: 1, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  tabBtnActive: { backgroundColor: '#fff', shadowColor: BRINJAL, shadowOpacity: 0.14, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  tabBtnActive: { backgroundColor: C.surface, shadowColor: C.brinjal1, shadowOpacity: 0.14, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
   tabBtnText:   { fontSize: 14, fontFamily: F.semibold },
 
   // Banners
@@ -1064,37 +1082,37 @@ const s = StyleSheet.create({
 
   // Remember me
   rememberRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20, marginTop: -4 },
-  rememberText: { fontSize: 13, fontFamily: F.medium, color: '#374151' },
+  rememberText: { fontSize: 13, fontFamily: F.medium, color: C.text },
 
   // Form — filled/tonal fields (soft lavender fill, no border until focused) rather than
   // outlined boxes, with circular icon badges to match the pill language used throughout.
   form:          { gap: 16, marginBottom: 20 },
   fieldWrap:     { gap: 6 },
   fieldLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fieldLabel:    { fontSize: 13, fontFamily: F.semibold, color: '#374151' },
-  forgotText:    { fontSize: 12, fontFamily: F.semibold, color: BRINJAL },
-  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F8F7FB' },
-  fieldFocused:  { borderColor: BRINJAL, backgroundColor: '#fff', shadowColor: BRINJAL, shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  fieldLabel:    { fontSize: 13, fontFamily: F.semibold, color: C.text },
+  forgotText:    { fontSize: 12, fontFamily: F.semibold, color: C.brinjal1 },
+  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: C.primaryLight },
+  fieldFocused:  { borderColor: C.brinjal1, backgroundColor: C.surface, shadowColor: C.brinjal1, shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   fieldIconWrap: { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
-  fieldInput:    { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, color: '#111827', textAlignVertical: 'center', letterSpacing: 0 },
+  fieldInput:    { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, color: C.text, textAlignVertical: 'center', letterSpacing: 0 },
   eyeBtn:        { paddingHorizontal: 12 },
   fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  fieldErrText:  { fontSize: 11, color: '#EF4444', fontFamily: F.medium },
-  domainSuggestBoxOuter: { borderRadius: RADIUS.md, shadowColor: '#4C1D95', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  domainSuggestBox:      { borderWidth: 1, borderColor: '#E8E0F8', borderRadius: RADIUS.md, overflow: 'hidden', backgroundColor: '#fff' },
-  domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F0EBFB' },
-  domainSuggestText:     { fontSize: 14, fontFamily: F.regular, color: '#6B7280' },
-  domainSuggestTextBold: { fontFamily: F.semibold, color: '#374151' },
+  fieldErrText:  { fontSize: 11, color: C.error, fontFamily: F.medium },
+  domainSuggestBoxOuter: { borderRadius: RADIUS.md, shadowColor: C.brinjal2, shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  domainSuggestBox:      { borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.md, overflow: 'hidden', backgroundColor: C.surface },
+  domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+  domainSuggestText:     { fontSize: 14, fontFamily: F.regular, color: C.textSecondary },
+  domainSuggestTextBold: { fontFamily: F.semibold, color: C.text },
 
   // Role cards
   roleRow:       { flexDirection: 'row', gap: 14, marginBottom: 22 },
-  roleCard:      { flex: 1, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: '#ECEAF5', padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
+  roleCard:      { flex: 1, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: C.border, padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
   roleCardActive:{ shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
   roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.lg },
   roleIconBox:   { width: 58, height: 58, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  roleLabel:     { fontSize: 14, fontFamily: F.bold, textAlign: 'center', color: '#111827' },
+  roleLabel:     { fontSize: 14, fontFamily: F.bold, textAlign: 'center', color: C.text },
   roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },
-  roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: C.surface, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
 
   // Password rules
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: -8 },
@@ -1102,42 +1120,45 @@ const s = StyleSheet.create({
   ruleText: { fontSize: 11, fontFamily: F.medium },
 
   // Button — full pill shape, solid brinjal fill with a matching soft glow shadow
-  primaryBtnWrap: { borderRadius: RADIUS.full, marginBottom: 20, shadowColor: BRINJAL, shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 7 },
+  primaryBtnWrap: { borderRadius: RADIUS.full, marginBottom: 20, shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 7 },
   primaryBtn:     { height: 54, borderRadius: RADIUS.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryBtnText: { fontSize: 16, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
 
   // Divider
   divider:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12, color: '#A78BFA', fontFamily: F.medium },
+  dividerText: { fontSize: 12, color: C.textSecondary, fontFamily: F.medium },
 
   // Social row (Google + Facebook side by side) — same pill family as the primary button
   socialRow:      { gap: 10, marginBottom: 12 },
-  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.surface, shadowColor: C.brinjal2, shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   socialBtnFull:  { flex: 0, marginBottom: 12 },
-  socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: '#374151' },
-  googleFullBtn:  { width: '100%', height: 48, justifyContent: 'center', alignItems: 'center', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: C.text },
+  googleFullBtn:  { width: '100%', height: 48, justifyContent: 'center', alignItems: 'center', shadowColor: C.brinjal2, shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   googleIcon:     { width: '100%', height: 48 },
+  // Facebook badge/button keep Facebook's own brand blue regardless of theme — this is a
+  // third-party brand mark, not part of the app's own color system.
   socialBtnFb:    { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
   socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
   fbBadge:        { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
   fbF:            { color: '#fff', fontSize: 13, fontFamily: F.bold },
-  spinner:        { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: BRINJAL },
+  spinner:        { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: C.border, borderTopColor: C.brinjal1 },
 
   // Role modal
-  modalTitle:      { fontSize: 20, fontFamily: F.bold, color: TEXT_DARK, textAlign: 'center' },
-  modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
+  modalTitle:      { fontSize: 20, fontFamily: F.bold, color: C.text, textAlign: 'center' },
+  modalSub:        { fontSize: 14, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', marginBottom: 20 },
   modalCancel:     { marginTop: 16, alignItems: 'center', padding: 12 },
-  modalCancelText: { fontSize: 15, fontFamily: F.semibold, color: '#9CA3AF' },
+  modalCancelText: { fontSize: 15, fontFamily: F.semibold, color: C.textSecondary },
 
   // Suspended-account modal
   suspendedSheet:          { alignItems: 'center', paddingTop: 8 },
-  suspendedIconWrap:       { width: 56, height: 56, borderRadius: RADIUS.full, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: BRINJAL, borderRadius: RADIUS.full, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
+  suspendedIconWrap:       { width: 56, height: 56, borderRadius: RADIUS.full, backgroundColor: withAlpha(C.error, 0.12), justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.brinjal1, borderRadius: RADIUS.full, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
   suspendedContactBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#fff' },
 
-  terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
+  terms:  { fontSize: 12, color: C.textSecondary, lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
 
   footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 16 },
-  footerText: { fontSize: 11, color: MUTED, fontFamily: F.regular },
-});
+  footerText: { fontSize: 11, color: C.textSecondary, fontFamily: F.regular },
+  });
+}

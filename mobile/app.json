@@ -128,7 +128,8 @@
           }
         }
       ],
-      "./plugins/withFixMapsPodfile.js"
+      "./plugins/withFixMapsPodfile.js",
+      "./plugins/withDisableFirebaseSPM.js"
     ],
     "experiments": {
       "typedRoutes": true,

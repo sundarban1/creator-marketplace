@@ -12,6 +12,10 @@ import { logger } from '@/utilities/logger';
 export function useFacebookAccessToken(scopes: string[]) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Bumped (never reset to 0) whenever the auth session closes without success — the
+  // consuming screen watches this to clear its own "connecting" state when the user
+  // backs out, since response.type 'dismiss'/'cancel' fires no error and no onSuccess.
+  const [dismissed, setDismissed] = useState(0);
   const onSuccessRef = useRef<((accessToken: string) => void) | null>(null);
 
   const [request, response, promptAsync] = Facebook.useAuthRequest({
@@ -36,6 +40,7 @@ export function useFacebookAccessToken(scopes: string[]) {
       setLoading(false);
     } else if (response.type === 'dismiss' || response.type === 'cancel') {
       setLoading(false);
+      setDismissed((d) => d + 1);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [response]);
@@ -49,5 +54,5 @@ export function useFacebookAccessToken(scopes: string[]) {
     void promptAsync({ preferEphemeralSession: true });
   }
 
-  return { prompt, loading, error, ready: !!request };
+  return { prompt, loading, error, dismissed, ready: !!request };
 }
