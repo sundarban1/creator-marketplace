@@ -21,7 +21,7 @@ function deriveTopic(message: string): string {
 // Shared between the landing footer and the standalone Support page — same
 // public /api/support/contact-public endpoint, same validation. `dark` picks
 // the color variant: true for use on a dark surface (Support page's ink
-// card), false for a light surface (the now-light footer).
+// card, and the footer's ink background), false for a light surface.
 export function ContactForm({ dark = true }: { dark?: boolean }) {
   const { d } = useLandingLanguage();
   const t = d.footer.contactForm;

@@ -11,7 +11,7 @@ import { ContactForm } from '../components/ContactForm';
 // instead of the footer inventing its own.
 function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-ink/75 transition-colors duration-300 hover:text-ink">
+    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-white/75 transition-colors duration-300 hover:text-white">
       <span>{children}</span>
       <ArrowUpRight
         size={13}
@@ -29,15 +29,15 @@ export function LandingFooter() {
   const { d } = useLandingLanguage();
 
   return (
-    <footer id={SECTION_IDS.contact} className="relative bg-paper py-16 text-[#0B0908]">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink/10 to-transparent" />
+    <footer id={SECTION_IDS.contact} className="relative bg-ink py-16 text-white">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="mx-auto max-w-5xl px-5">
         <div className="grid gap-12 md:grid-cols-2">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
             <motion.div variants={fadeUp} className="mb-3 flex w-fit items-center">
               <img src="/logo.png" alt="Kolab" className="h-6 w-auto object-contain" />
             </motion.div>
-            <motion.p variants={fadeUp} className="max-w-xs text-sm leading-relaxed text-ink/75">
+            <motion.p variants={fadeUp} className="max-w-xs text-sm leading-relaxed text-white/75">
               {d.footer.tagline}
             </motion.p>
             <motion.div variants={fadeUp} className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
@@ -48,8 +48,8 @@ export function LandingFooter() {
           </motion.div>
 
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp}>
-            <h3 className="mb-5 font-serif text-lg italic text-ink/75">{d.footer.contactForm.heading}</h3>
-            <ContactForm dark={false} />
+            <h3 className="mb-5 font-serif text-lg italic text-white/75">{d.footer.contactForm.heading}</h3>
+            <ContactForm dark />
           </motion.div>
         </div>
 
@@ -57,8 +57,8 @@ export function LandingFooter() {
             they'd be orphan pages reachable only by direct URL/search, which
             both hurts their own crawlability and wastes the link equity a
             footer on every page could otherwise pass to them. */}
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-14 border-t border-ink/10 pt-10">
-          <motion.p variants={fadeUp} className="text-xs font-semibold uppercase tracking-wide text-ink/40">Explore Kolab</motion.p>
+        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-14 border-t border-white/10 pt-10">
+          <motion.p variants={fadeUp} className="text-xs font-semibold uppercase tracking-wide text-white/40">Explore Kolab</motion.p>
           <motion.nav aria-label="More on Kolab" variants={fadeUp} className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
             <FooterLink to="/creator-marketplace-nepal">Creator Marketplace Nepal</FooterLink>
             <FooterLink to="/content-creators">For Creators</FooterLink>
@@ -77,8 +77,8 @@ export function LandingFooter() {
           </motion.nav>
         </motion.div>
 
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 border-t border-ink/10 pt-6">
-          <p className="text-xs text-ink/75">© {new Date().getFullYear()} Kolab Technologies Pvt. Ltd. {d.footer.rights}</p>
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 border-t border-white/10 pt-6">
+          <p className="text-xs text-white/75">© {new Date().getFullYear()} Kolab Technologies Pvt. Ltd. {d.footer.rights}</p>
         </div>
       </div>
     </footer>

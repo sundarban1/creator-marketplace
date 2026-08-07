@@ -20,8 +20,8 @@ export const scaleIn: Variants = {
 // Shared whileHover targets so every card/tile across the page lifts by the
 // same amount — small per-section variance (y: -3 vs -5, scale: 1.02 vs 1.05)
 // reads as inconsistency once you notice it while scrolling through sections
-// back to back. CARD_HOVER for content cards (Security, Stories, TrustStats,
-// Categories); PILL_HOVER for smaller chip-like elements. Each
+// back to back. CARD_HOVER for content cards (Security, Stories, TrustStats);
+// PILL_HOVER for smaller chip-like elements (Categories). Each
 // carries its own spring `transition` (rather than relying on the default
 // tween) so the lift feels tactile or bouncy instead of a flat linear glide.
 const HOVER_SPRING = { type: 'spring', stiffness: 300, damping: 20, mass: 0.6 } as const;
