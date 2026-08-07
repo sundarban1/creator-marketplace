@@ -25,10 +25,9 @@ export interface BenefitItem {
   accent?: 'violet' | 'orange';
 }
 
-// Same icon-badge-in-card treatment as the homepage's HowItWorks/Security
-// sections (gradient badge, group-hover scale) so a benefit grid dropped
-// into any content page reads as the same design system, not a bolted-on
-// afterthought.
+// Same icon-badge-in-card treatment as the homepage's Security section
+// (gradient badge, group-hover scale) so a benefit grid dropped into any
+// content page reads as the same design system, not a bolted-on afterthought.
 export function BenefitGrid({ items }: { items: BenefitItem[] }) {
   return (
     <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid gap-4 sm:grid-cols-2">

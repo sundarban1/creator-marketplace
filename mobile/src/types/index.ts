@@ -84,6 +84,8 @@ export type Conversation = {
   status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
   requestMessage?: string | null;
   lastMessage: string;
+  lastMessageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
+  lastMessageAttachmentName?: string | null;
   lastMessageTime: string;
   unreadCount: number;
   campaignTitle?: string;

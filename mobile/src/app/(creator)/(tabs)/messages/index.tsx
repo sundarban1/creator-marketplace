@@ -27,6 +27,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { getConversationPreviewText } from '@/utilities/messagePreview';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 import type { ApiMessage } from '@/lib/api';
@@ -253,7 +254,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
             <Text
               style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
               numberOfLines={1}>
-              {conv.lastMessage || t('messages.noMessagesYet')}
+              {getConversationPreviewText(conv, t)}
             </Text>
             <Text style={[s.previewTime, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}>
               {' · ' + formatTime(conv.lastMessageTime, t)}
@@ -325,6 +326,8 @@ export default function CreatorMessagesScreen() {
         const updated = [...prev];
         const conv = { ...updated[idx]! };
         conv.lastMessage = data.message.content;
+        conv.lastMessageType = data.message.type;
+        conv.lastMessageAttachmentName = data.message.attachmentName;
         conv.lastMessageTime = data.message.createdAt;
         if (data.message.senderId !== user?.id) {
           conv.unreadCount = (conv.unreadCount ?? 0) + 1;

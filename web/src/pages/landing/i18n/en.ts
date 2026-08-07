@@ -1,7 +1,6 @@
 export const en = {
   nav: {
     links: {
-      how: 'How it works',
       audience: 'Creators & Brands',
       categories: 'Categories',
       security: 'Security',
@@ -43,18 +42,6 @@ export const en = {
       { fallback: 5000, label: 'Creators' },
       { fallback: 300, label: 'Brands' },
       { fallback: 12, label: 'Categories' },
-    ],
-  },
-
-  how: {
-    eyebrow: 'How it works',
-    heading: 'From sign-up to payout, in four steps',
-    stepLabel: 'Step',
-    steps: [
-      { title: 'Create your profile', desc: 'Creators connect their social accounts. Brands set up a business profile.' },
-      { title: 'Discover & apply', desc: 'Brands post campaigns, creators apply, or brands invite creators directly.' },
-      { title: 'Collaborate', desc: 'Chat, share drafts, and finalize the content together.' },
-      { title: 'Get paid safely', desc: 'Payment is held in escrow and released once the work is approved.' },
     ],
   },
 

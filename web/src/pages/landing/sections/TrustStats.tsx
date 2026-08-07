@@ -12,8 +12,8 @@ function StatTile({ value, label, index }: { value: number; label: string; index
   return (
     <motion.div ref={ref} variants={fadeUp} className="px-6 text-center sm:text-left">
       {/* Zero-padded index numeral above each stat — the same editorial "001/002"
-          treatment used in HowItWorks, so the two full-bleed dark moments on the
-          page read as one family. */}
+          treatment used elsewhere on the page (Security), so the full-bleed dark
+          moments read as one family. */}
       <span className="font-mono text-xs tracking-[0.3em] text-white/35">{String(index + 1).padStart(2, '0')}</span>
       <div className="mt-3 font-serif text-7xl font-medium leading-none tracking-tight text-white sm:text-8xl lg:text-9xl">
         {display}

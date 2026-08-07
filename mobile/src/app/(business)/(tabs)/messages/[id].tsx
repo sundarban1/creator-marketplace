@@ -320,12 +320,6 @@ function MessageBubble({
             ]}>
             {msg.status === 'failed' ? (
               <View style={s.voiceFailedRow}>
-                <Pressable onPress={() => onRetryUpload(msg)} hitSlop={8} style={s.voiceFailedIconBtn} accessibilityLabel={t('messages.retry')}>
-                  <FontAwesome5 name="redo" solid size={13} color={isSent ? '#fff' : C.brinjal1} />
-                </Pressable>
-                <Pressable onPress={() => onDeleteFailed(msg.id)} hitSlop={8} style={s.voiceFailedIconBtn} accessibilityLabel={t('common.delete')}>
-                  <FontAwesome5 name="trash-alt" solid size={13} color={isSent ? '#fff' : '#EF4444'} />
-                </Pressable>
                 <FontAwesome5 name="exclamation-circle" solid size={16} color={isSent ? '#fff' : '#EF4444'} />
                 <Text style={[s.voiceFailedTxt, { color: isSent ? '#fff' : C.text }]} numberOfLines={1}>
                   {t('messages.uploadFailed')}
@@ -362,6 +356,22 @@ function MessageBubble({
               : [s.bubbleReceived, { backgroundColor: C.surface, borderColor: C.border }],
           ]}>
             <Text style={[s.bubbleTxt, { color: isSent ? '#fff' : C.text }]}>{msg.text}</Text>
+          </View>
+        )}
+        {isVoice && msg.status === 'failed' && (
+          // Two distinct buttons, not two icons crammed inside the voice bubble
+          // card above — each gets its own outlined pill, mirroring the failed
+          // video attachment's retry/delete pattern (s.failedBtn) elsewhere in
+          // this file.
+          <View style={s.voiceFailedActions}>
+            <Pressable onPress={() => onRetryUpload(msg)} style={[s.voiceFailedActionBtn, { borderColor: C.brinjal1 }]}>
+              <FontAwesome5 name="redo" solid size={11} color={C.brinjal1} />
+              <Text style={[s.voiceFailedActionTxt, { color: C.brinjal1 }]}>{t('messages.retry')}</Text>
+            </Pressable>
+            <Pressable onPress={() => onDeleteFailed(msg.id)} style={[s.voiceFailedActionBtn, { borderColor: '#EF4444' }]}>
+              <FontAwesome5 name="trash-alt" solid size={11} color="#EF4444" />
+              <Text style={[s.voiceFailedActionTxt, { color: '#EF4444' }]}>{t('common.delete')}</Text>
+            </Pressable>
           </View>
         )}
         <View style={s.bubbleMeta}>
@@ -689,9 +699,11 @@ const s = StyleSheet.create({
   voiceBubble:      { borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 8, minWidth: 210, maxWidth: 260 },
   voiceUploadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
   voiceUploadingTxt: { fontSize: 12, fontFamily: F.medium },
-  voiceFailedRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 2 },
-  voiceFailedIconBtn: { width: 22, height: 22, justifyContent: 'center', alignItems: 'center' },
+  voiceFailedRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
   voiceFailedTxt:   { flex: 1, fontSize: 12, fontFamily: F.medium },
+  voiceFailedActions:  { flexDirection: 'row', gap: 8, marginTop: 6 },
+  voiceFailedActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
+  voiceFailedActionTxt: { fontSize: 11, fontFamily: F.semibold },
   voiceDurationLine: { fontSize: 11, fontFamily: F.regular, marginTop: -8, alignSelf: 'flex-end', marginRight: 10 },
 
   // Empty

@@ -132,16 +132,25 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   }
 
   function handleRegionChangeComplete(region: Region) {
-    setPinCoords({ lat: region.latitude, lng: region.longitude });
     if (isProgrammaticMove.current) {
       // This change came from moveTo() finishing its animation, not a user drag — consume the flag.
+      setPinCoords({ lat: region.latitude, lng: region.longitude });
       isProgrammaticMove.current = false;
     } else if (userIsDragging.current) {
       // A genuine drag — the pin no longer matches Current or Home, so neither stays selected.
+      setPinCoords({ lat: region.latitude, lng: region.longitude });
       setDraftSource('custom');
       userIsDragging.current = false;
     }
-    // Otherwise this is the map's own initial-layout region-change — not a user action, ignore it.
+    // Otherwise this is the map's own initial-layout region-change — not a user
+    // action, so don't lock pinCoords to whatever coords happened to be current
+    // at that moment. Leaving pinCoords untouched here means `displayCoords`
+    // (pinCoords ?? resolveCoordsFor(source)) keeps tracking the live
+    // home/current props — previously this branch still called setPinCoords
+    // unconditionally above, which permanently froze the map on whatever
+    // location was active the very first time it ever laid out (effectively
+    // app-launch time), so a later "Home" address change made from Edit
+    // Profile never reached the map even though the Home label/chip updated.
   }
 
   async function handleSelectCurrent() {

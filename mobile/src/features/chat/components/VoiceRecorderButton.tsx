@@ -5,7 +5,7 @@ import {
 } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { InteractionManager, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -46,7 +46,39 @@ type Props = {
   disabled?: boolean;
 };
 
-export function VoiceRecorderButton({ onRecorded, disabled }: Props) {
+// `useAudioRecorder` below constructs a native AudioRecorder object
+// synchronously during render (plus GestureDetector/Reanimated worklet
+// setup) — expensive enough on first mount that, since this button sits
+// inline in the chat composer, it was visibly delaying the whole input bar
+// (camera/image/text-input/send) from painting together with the message
+// list right after opening a conversation. Deferring the real button's
+// mount to after the screen's initial transition/paint settles keeps that
+// cost off the critical path; everything else in the composer is unaffected
+// since it doesn't depend on this component. The placeholder below matches
+// the real button's footprint exactly so there's no layout shift when it
+// swaps in a beat later.
+export function VoiceRecorderButton(props: Props) {
+  const C = useAppColors();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setReady(true));
+    return () => task.cancel();
+  }, []);
+
+  if (!ready) {
+    return (
+      <View style={s.wrap}>
+        <View style={[s.micBtn, { backgroundColor: C.border }]}>
+          <FontAwesome5 name="microphone" solid size={18} color="#fff" />
+        </View>
+      </View>
+    );
+  }
+  return <VoiceRecorderButtonReady {...props} />;
+}
+
+function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
   const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
@@ -68,9 +100,12 @@ export function VoiceRecorderButton({ onRecorded, disabled }: Props) {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
+  // No eager setAudioModeAsync/requestRecordingPermissionsAsync call on mount
+  // here (there used to be one) — both are redundant with the identical
+  // calls startRecording() already makes right before actually recording,
+  // and asking for mic permission only once the user holds to record (rather
+  // than the instant any chat screen opens) is also the better permissions UX.
   useEffect(() => {
-    void setAudioModeAsync({ playsInSilentMode: true });
-    void requestRecordingPermissionsAsync();
     return () => {
       if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
       if (permissionErrorTimerRef.current) clearTimeout(permissionErrorTimerRef.current);
@@ -310,7 +345,15 @@ const s = StyleSheet.create({
   // composer, so centering a 160px-wide card over a 44px button pushed half
   // of it off the right edge of the screen. Anchoring the card's right edge
   // to the button's right edge and growing left keeps it fully on-screen.
-  overlay: { position: 'absolute', bottom: '100%', right: 0, alignItems: 'flex-end', justifyContent: 'center', marginBottom: 24, zIndex: 10 },
+  // `bottom` is a fixed px offset (micBtn's own height), not '100%' — `wrap`
+  // below has no explicit height (it's sized by its content), and Android's
+  // Yoga resolves a percentage `bottom` against an ancestor's *explicit*
+  // height only; against an auto/content-sized parent it falls through to a
+  // much larger positioned ancestor further up the tree, which is why this
+  // card rendered mid-screen on Android while iOS (no such fallback quirk)
+  // showed it correctly right above the mic button. A fixed px value sidesteps
+  // percentage resolution entirely, so both platforms anchor the same way.
+  overlay: { position: 'absolute', bottom: 44, right: 0, alignItems: 'flex-end', justifyContent: 'center', marginBottom: 24, zIndex: 10 },
   meterCard: { borderRadius: RADIUS.lg, paddingHorizontal: 22, paddingVertical: 18, alignItems: 'center', gap: 6, ...SHADOW.floating },
   meter:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, height: 36, width: 160 },
   meterBar:  { width: 3, borderRadius: 2 },

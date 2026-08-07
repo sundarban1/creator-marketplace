@@ -26,6 +26,8 @@ function toConversation(api: ApiConversation): Conversation {
     status:          api.status ?? 'ACCEPTED',
     requestMessage:  api.requestMessage,
     lastMessage:     lastMsg?.content ?? api.requestMessage ?? '',
+    lastMessageType: lastMsg?.type,
+    lastMessageAttachmentName: lastMsg?.attachmentName,
     lastMessageTime: api.lastMessageAt ?? lastMsg?.createdAt ?? api.createdAt,
     unreadCount:     api.unreadCount ?? 0,
     campaignTitle:   api.campaign?.title,
