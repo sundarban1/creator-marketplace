@@ -14,7 +14,7 @@ const SECTION_ORDER = Object.values(SECTION_IDS);
  *  Desktop-only (sm+) — on a phone this just competes with the thumb and the
  *  browser's own chrome for the same screen edge. */
 export function CornerChrome() {
-  const [active, setActive] = useState(SECTION_ORDER[0]!);
+  const [active, setActive] = useState<string>(SECTION_ORDER[0]!);
   const { scrollYProgress } = useScroll();
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 200, damping: 40, restDelta: 0.001 });
   const percent = useTransform(smoothProgress, (v) => `${Math.round(v * 100)}%`);
