@@ -2,96 +2,213 @@ import { BadgeCheck, Compass, Gift, Send, ShieldCheck, Wallet } from 'lucide-rea
 import { ContentPageLayout } from './ContentPageLayout';
 import { ContentSection, BenefitGrid, ContentList } from '../components/ContentBlocks';
 import { webPageSchema } from '../../../lib/seo/schema';
+import { LandingLanguageProvider, useLandingLanguage } from '../context/LanguageContext';
+
+// Icons are language-invariant, zipped by index with the translated
+// title/desc pulled from COPY[lang] below.
+const WHY_JOIN_ICONS = [Compass, Send, ShieldCheck, Wallet];
+
+const COPY = {
+  en: {
+    seo: {
+      title: 'Content Creator Jobs in Nepal | Join as a Creator',
+      description: 'Join Kolab as a content creator in Nepal. Build your profile, get discovered by brands, and apply to paid campaigns on Instagram, TikTok, YouTube, and Facebook.',
+      schemaTitle: 'Content Creator Jobs in Nepal | Kolab',
+      schemaDescription: 'Join Kolab as a content creator in Nepal.',
+    },
+    breadcrumbName: 'Content Creators',
+    eyebrow: 'For Content Creators',
+    heading: 'Become a Content Creator on Kolab',
+    intro: 'Turn your following into income. Kolab connects Nepali content creators — on Instagram, TikTok, YouTube, and Facebook — with brands looking to run paid campaigns and collaborations.',
+    faqs: [
+      {
+        question: 'How do I become a content creator on Kolab?',
+        answer: 'Download the Kolab app, create a creator profile with your categories and connected social platforms, and complete identity verification. Once your profile is live, you can browse and apply to open campaigns.',
+      },
+      {
+        question: 'Do I need a large following to join?',
+        answer: "There's no strict follower minimum. Brands look for creators whose niche, content style, and audience fit a specific campaign — not just follower count — so micro-influencers can find opportunities too.",
+      },
+      {
+        question: 'How much can I earn as a creator in Nepal?',
+        answer: 'Earnings depend on the budget each brand sets for their campaign. Budgets are visible before you apply, so you always know what a collaboration pays before committing to it.',
+      },
+      {
+        question: 'Which platforms can I connect to my profile?',
+        answer: 'Instagram, TikTok, YouTube, Facebook, Twitter/X, LinkedIn, Pinterest, Snapchat, and Twitch are all supported — connect as many as apply to you.',
+      },
+      {
+        question: 'How do I get paid for a campaign?',
+        answer: 'Paid campaigns use escrow-protected payments — the budget is held safely and released to you once the brand approves the completed work.',
+      },
+      {
+        question: 'Is there a fee to join as a creator?',
+        answer: "Kolab is a free download, and creating a creator profile and applying to campaigns doesn't cost anything.",
+      },
+    ],
+    related: [
+      { label: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal', description: 'How Kolab connects Nepali brands and creators.' },
+      { label: 'Find Campaigns', path: '/find-campaigns', description: 'Browse open paid campaigns and free events to apply to.' },
+      { label: 'TikTok Creators', path: '/tiktok-creators', description: 'TikTok creator opportunities on Kolab.' },
+      { label: 'For Brands', path: '/brands', description: 'See how brands discover and hire creators like you.' },
+    ],
+    cta: { heading: 'Ready to Start Creating for Brands?', sub: 'Download Kolab and build your creator profile in minutes.' },
+    sections: {
+      whyJoin: {
+        heading: 'Why creators join Kolab',
+        benefits: [
+          { title: 'Get discovered', desc: 'Brands browse creator profiles by category, platform, and location — your profile puts you in front of relevant campaigns.' },
+          { title: 'Apply with proposals', desc: 'Browse paid campaigns and free open events, and submit a proposal to the ones that fit your niche.' },
+          { title: 'Secure, escrow-protected pay', desc: 'Campaign budgets are held in escrow and released once your work is approved — no chasing payment after the fact.' },
+          { title: 'Track everything in one place', desc: 'Manage proposals, messages, and earnings from a single creator dashboard instead of scattered DMs.' },
+        ],
+      },
+      getStarted: {
+        heading: 'How to get started as a creator in Nepal',
+        items: [
+          'Download the Kolab app and sign up as a creator.',
+          'Build your profile — add your categories, connect your social platforms, and complete identity verification.',
+          'Browse open campaigns and events filtered by category, platform, and location anywhere in Nepal.',
+          'Apply with a proposal to the campaigns that fit your content and audience.',
+          'Message the brand directly in-app once matched, and align on deliverables.',
+          'Get paid through escrow-protected payments once your work is approved, and build your reputation with reviews.',
+        ],
+      },
+      paidAndFree: {
+        heading: 'Paid campaigns and free open events',
+        paragraph: "Kolab supports two kinds of collaborations: paid campaigns, where a brand sets a budget for specific deliverables, and open events, which are free to attend or cover in exchange for content and exposure. Both are visible with their budget, deadline, and requirements up front, so you can decide what's worth your time before applying.",
+      },
+      growBeyond: {
+        heading: 'Grow beyond your own profile',
+        text: "Kolab also includes a referral program — invite other creators to join, and grow the community you're part of while you're at it.",
+      },
+    },
+  },
+  ne: {
+    seo: {
+      title: 'Content Creator Jobs in Nepal | Join as a Creator',
+      description: 'Join Kolab as a content creator in Nepal. Build your profile, get discovered by brands, and apply to paid campaigns on Instagram, TikTok, YouTube, and Facebook.',
+      schemaTitle: 'Content Creator Jobs in Nepal | Kolab',
+      schemaDescription: 'Join Kolab as a content creator in Nepal.',
+    },
+    breadcrumbName: 'कन्टेन्ट क्रिएटरहरू',
+    eyebrow: 'कन्टेन्ट क्रिएटरहरूका लागि',
+    heading: 'Kolab मा कन्टेन्ट क्रिएटर बन्नुहोस्',
+    intro: 'आफ्नो फलोअरलाई आम्दानीमा बदल्नुहोस्। Kolab ले नेपाली कन्टेन्ट क्रिएटरहरू — Instagram, TikTok, YouTube, र Facebook मा — लाई तलबसहितका क्याम्पेन र सहकार्य चलाउन खोज्ने ब्रान्डहरूसँग जोड्छ।',
+    faqs: [
+      {
+        question: 'Kolab मा कन्टेन्ट क्रिएटर कसरी बन्ने?',
+        answer: 'Kolab एप डाउनलोड गर्नुहोस्, आफ्नो श्रेणी र जोडिएका सामाजिक प्लेटफर्महरूसहित क्रिएटर प्रोफाइल बनाउनुहोस्, र पहिचान प्रमाणीकरण पूरा गर्नुहोस्। तपाईंको प्रोफाइल लाइभ भएपछि, तपाईंले खुला क्याम्पेनहरू ब्राउज गर्न र आवेदन दिन सक्नुहुन्छ।',
+      },
+      {
+        question: 'जोडिन ठूलो फलोअर संख्या चाहिन्छ?',
+        answer: 'कुनै कडा फलोअर न्यूनतम छैन। ब्रान्डहरूले फलोअर संख्या मात्र होइन, निच, कन्टेन्ट शैली, र दर्शक कुनै निश्चित क्याम्पेनसँग मिल्ने क्रिएटरहरू खोज्छन् — त्यसैले माइक्रो-इन्फ्लुएन्सरहरूले पनि अवसरहरू फेला पार्न सक्छन्।',
+      },
+      {
+        question: 'नेपालमा क्रिएटरको रूपमा मैले कति कमाउन सक्छु?',
+        answer: 'आम्दानी प्रत्येक ब्रान्डले आफ्नो क्याम्पेनका लागि तय गर्ने बजेटमा भर पर्छ। तपाईंले आवेदन दिनुअघि नै बजेटहरू देखिन्छन्, त्यसैले तपाईंलाई सहकार्यले कति भुक्तानी गर्छ भन्ने कुरा प्रतिबद्ध हुनुअघि नै थाहा हुन्छ।',
+      },
+      {
+        question: 'मेरो प्रोफाइलमा कुन प्लेटफर्महरू जोड्न सक्छु?',
+        answer: 'Instagram, TikTok, YouTube, Facebook, Twitter/X, LinkedIn, Pinterest, Snapchat, र Twitch सबै समर्थित छन् — तपाईंलाई लागू हुने जति चाहे त्यति जोड्नुहोस्।',
+      },
+      {
+        question: 'क्याम्पेनको भुक्तानी कसरी पाउने?',
+        answer: 'तलबसहितका क्याम्पेनहरूमा एस्क्रो-सुरक्षित भुक्तानी प्रयोग हुन्छ — बजेट सुरक्षित राखिन्छ र ब्रान्डले सम्पन्न काम स्वीकृत गरेपछि तपाईंलाई रिलिज गरिन्छ।',
+      },
+      {
+        question: 'क्रिएटरको रूपमा जोडिन कुनै शुल्क लाग्छ?',
+        answer: 'Kolab निःशुल्क डाउनलोड हो, र क्रिएटर प्रोफाइल बनाउन र क्याम्पेनमा आवेदन दिन कुनै खर्च लाग्दैन।',
+      },
+    ],
+    related: [
+      { label: 'क्रिएटर मार्केटप्लेस नेपाल', path: '/creator-marketplace-nepal', description: 'Kolab ले नेपाली ब्रान्ड र क्रिएटरहरूलाई कसरी जोड्छ।' },
+      { label: 'क्याम्पेनहरू फेला पार्नुहोस्', path: '/find-campaigns', description: 'आवेदन दिन सकिने खुला तलबसहितका क्याम्पेन र निःशुल्क इभेन्टहरू ब्राउज गर्नुहोस्।' },
+      { label: 'TikTok क्रिएटरहरू', path: '/tiktok-creators', description: 'Kolab मा TikTok क्रिएटर अवसरहरू।' },
+      { label: 'ब्रान्डहरूका लागि', path: '/brands', description: 'ब्रान्डहरूले तपाईं जस्ता क्रिएटरहरू कसरी फेला पार्छन् र भाडामा लिन्छन् हेर्नुहोस्।' },
+    ],
+    cta: { heading: 'ब्रान्डहरूका लागि सिर्जना सुरु गर्न तयार हुनुहुन्छ?', sub: 'Kolab डाउनलोड गर्नुहोस् र मिनेटमै आफ्नो क्रिएटर प्रोफाइल बनाउनुहोस्।' },
+    sections: {
+      whyJoin: {
+        heading: 'क्रिएटरहरू किन Kolab मा जोडिन्छन्',
+        benefits: [
+          { title: 'फेला पर्नुहोस्', desc: 'ब्रान्डहरूले श्रेणी, प्लेटफर्म, र स्थान अनुसार क्रिएटर प्रोफाइलहरू ब्राउज गर्छन् — तपाईंको प्रोफाइलले तपाईंलाई सान्दर्भिक क्याम्पेनहरूअगाडि पुर्‍याउँछ।' },
+          { title: 'प्रस्तावसहित आवेदन दिनुहोस्', desc: 'तलबसहितका क्याम्पेन र निःशुल्क खुला इभेन्टहरू ब्राउज गर्नुहोस्, र तपाईंको निचसँग मिल्नेहरूमा प्रस्ताव पेश गर्नुहोस्।' },
+          { title: 'सुरक्षित, एस्क्रो-सुरक्षित भुक्तानी', desc: 'क्याम्पेन बजेटहरू एस्क्रोमा राखिन्छन् र तपाईंको काम स्वीकृत भएपछि रिलिज हुन्छन् — पछि भुक्तानीको पछि दौडनु पर्दैन।' },
+          { title: 'सबै कुरा एकै ठाउँमा ट्र्याक गर्नुहोस्', desc: 'छरिएका DM हरूको सट्टा एउटै क्रिएटर ड्यासबोर्डबाट प्रस्ताव, म्यासेज, र आम्दानी व्यवस्थापन गर्नुहोस्।' },
+        ],
+      },
+      getStarted: {
+        heading: 'नेपालमा क्रिएटरको रूपमा कसरी सुरु गर्ने',
+        items: [
+          'Kolab एप डाउनलोड गर्नुहोस् र क्रिएटरको रूपमा साइन अप गर्नुहोस्।',
+          'आफ्नो प्रोफाइल बनाउनुहोस् — आफ्ना श्रेणी थप्नुहोस्, आफ्ना सामाजिक प्लेटफर्महरू जोड्नुहोस्, र पहिचान प्रमाणीकरण पूरा गर्नुहोस्।',
+          'नेपालभरि कुनै पनि श्रेणी, प्लेटफर्म, र स्थान अनुसार फिल्टर गरिएका खुला क्याम्पेन र इभेन्टहरू ब्राउज गर्नुहोस्।',
+          'तपाईंको कन्टेन्ट र दर्शकसँग मिल्ने क्याम्पेनहरूमा प्रस्तावसहित आवेदन दिनुहोस्।',
+          'मिलेपछि एपभित्रै सिधै ब्रान्डलाई म्यासेज गर्नुहोस्, र डेलिभरेबलमा सहमत हुनुहोस्।',
+          'तपाईंको काम स्वीकृत भएपछि एस्क्रो-सुरक्षित भुक्तानीमार्फत भुक्तानी पाउनुहोस्, र समीक्षाहरूसँग आफ्नो प्रतिष्ठा बनाउनुहोस्।',
+        ],
+      },
+      paidAndFree: {
+        heading: 'तलबसहितका क्याम्पेन र निःशुल्क खुला इभेन्टहरू',
+        paragraph: 'Kolab ले दुई किसिमका सहकार्यलाई समर्थन गर्छ: तलबसहितका क्याम्पेन, जहाँ ब्रान्डले निश्चित डेलिभरेबलका लागि बजेट तय गर्छ, र खुला इभेन्ट, जुन शुल्कको सट्टा सामग्री र एक्सपोजरको बदलामा उपस्थित हुन वा कभर गर्न निःशुल्क हुन्छ। दुवै आफ्नो बजेट, अन्तिम मिति, र आवश्यकतासहित पहिले नै देखिन्छन्, त्यसैले तपाईंले आवेदन दिनुअघि नै के तपाईंको समयको लायक छ भनेर निर्णय गर्न सक्नुहुन्छ।',
+      },
+      growBeyond: {
+        heading: 'आफ्नो प्रोफाइलभन्दा बाहिर बढ्नुहोस्',
+        text: 'Kolab मा रेफरल कार्यक्रम पनि समावेश छ — अन्य क्रिएटरहरूलाई जोडिन आमन्त्रित गर्नुहोस्, र त्यसै क्रममा तपाईं जुन समुदायको हिस्सा हुनुहुन्छ त्यसलाई बढाउनुहोस्।',
+      },
+    },
+  },
+};
 
 export function ContentCreatorsPage() {
   return (
+    <LandingLanguageProvider>
+      <ContentCreatorsPageInner />
+    </LandingLanguageProvider>
+  );
+}
+
+function ContentCreatorsPageInner() {
+  const { lang, d } = useLandingLanguage();
+  const t = COPY[lang];
+
+  return (
     <ContentPageLayout
       seo={{
-        title: 'Content Creator Jobs in Nepal | Join as a Creator',
-        description: 'Join Kolab as a content creator in Nepal. Build your profile, get discovered by brands, and apply to paid campaigns on Instagram, TikTok, YouTube, and Facebook.',
+        title: t.seo.title,
+        description: t.seo.description,
         path: '/content-creators',
         keywords: ['content creator Nepal', 'creator jobs Nepal', 'digital creator Nepal', 'social media creator Nepal', 'creator app Nepal', 'content creator jobs Nepal', 'influencer jobs Nepal', 'paid brand collaborations', 'how to become influencer Nepal', 'creator community Nepal'],
-        jsonLd: webPageSchema({ path: '/content-creators', title: 'Content Creator Jobs in Nepal | Kolab', description: 'Join Kolab as a content creator in Nepal.' }),
+        jsonLd: webPageSchema({ path: '/content-creators', title: t.seo.schemaTitle, description: t.seo.schemaDescription }),
       }}
-      breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Content Creators', path: '/content-creators' }]}
+      breadcrumb={[{ name: d.contentPage.home, path: '/' }, { name: t.breadcrumbName, path: '/content-creators' }]}
       icon={BadgeCheck}
-      eyebrow="For Content Creators"
-      heading="Become a Content Creator on Kolab"
-      intro="Turn your following into income. Kolab connects Nepali content creators — on Instagram, TikTok, YouTube, and Facebook — with brands looking to run paid campaigns and collaborations."
-      faqs={[
-        {
-          question: 'How do I become a content creator on Kolab?',
-          answer: 'Download the Kolab app, create a creator profile with your categories and connected social platforms, and complete identity verification. Once your profile is live, you can browse and apply to open campaigns.',
-        },
-        {
-          question: 'Do I need a large following to join?',
-          answer: "There's no strict follower minimum. Brands look for creators whose niche, content style, and audience fit a specific campaign — not just follower count — so micro-influencers can find opportunities too.",
-        },
-        {
-          question: 'How much can I earn as a creator in Nepal?',
-          answer: 'Earnings depend on the budget each brand sets for their campaign. Budgets are visible before you apply, so you always know what a collaboration pays before committing to it.',
-        },
-        {
-          question: 'Which platforms can I connect to my profile?',
-          answer: 'Instagram, TikTok, YouTube, Facebook, Twitter/X, LinkedIn, Pinterest, Snapchat, and Twitch are all supported — connect as many as apply to you.',
-        },
-        {
-          question: 'How do I get paid for a campaign?',
-          answer: 'Paid campaigns use escrow-protected payments — the budget is held safely and released to you once the brand approves the completed work.',
-        },
-        {
-          question: 'Is there a fee to join as a creator?',
-          answer: "Kolab is a free download, and creating a creator profile and applying to campaigns doesn't cost anything.",
-        },
-      ]}
-      related={[
-        { label: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal', description: 'How Kolab connects Nepali brands and creators.' },
-        { label: 'Find Campaigns', path: '/find-campaigns', description: 'Browse open paid campaigns and free events to apply to.' },
-        { label: 'TikTok Creators', path: '/tiktok-creators', description: "TikTok creator opportunities on Kolab." },
-        { label: 'For Brands', path: '/brands', description: 'See how brands discover and hire creators like you.' },
-      ]}
-      cta={{ heading: 'Ready to Start Creating for Brands?', sub: 'Download Kolab and build your creator profile in minutes.' }}
+      eyebrow={t.eyebrow}
+      heading={t.heading}
+      intro={t.intro}
+      faqs={t.faqs}
+      related={t.related}
+      cta={t.cta}
     >
-      <ContentSection heading="Why creators join Kolab">
+      <ContentSection heading={t.sections.whyJoin.heading}>
         <BenefitGrid
-          items={[
-            { icon: Compass, title: 'Get discovered', desc: 'Brands browse creator profiles by category, platform, and location — your profile puts you in front of relevant campaigns.' },
-            { icon: Send, title: 'Apply with proposals', desc: 'Browse paid campaigns and free open events, and submit a proposal to the ones that fit your niche.' },
-            { icon: ShieldCheck, title: 'Secure, escrow-protected pay', desc: 'Campaign budgets are held in escrow and released once your work is approved — no chasing payment after the fact.' },
-            { icon: Wallet, title: 'Track everything in one place', desc: "Manage proposals, messages, and earnings from a single creator dashboard instead of scattered DMs." },
-          ]}
+          items={t.sections.whyJoin.benefits.map((b, i) => ({ icon: WHY_JOIN_ICONS[i], title: b.title, desc: b.desc }))}
         />
       </ContentSection>
 
-      <ContentSection heading="How to get started as a creator in Nepal">
-        <ContentList
-          items={[
-            'Download the Kolab app and sign up as a creator.',
-            'Build your profile — add your categories, connect your social platforms, and complete identity verification.',
-            'Browse open campaigns and events filtered by category, platform, and location anywhere in Nepal.',
-            'Apply with a proposal to the campaigns that fit your content and audience.',
-            'Message the brand directly in-app once matched, and align on deliverables.',
-            'Get paid through escrow-protected payments once your work is approved, and build your reputation with reviews.',
-          ]}
-        />
+      <ContentSection heading={t.sections.getStarted.heading}>
+        <ContentList items={t.sections.getStarted.items} />
       </ContentSection>
 
-      <ContentSection heading="Paid campaigns and free open events">
-        <p>
-          Kolab supports two kinds of collaborations: paid campaigns, where a brand sets a budget for specific
-          deliverables, and open events, which are free to attend or cover in exchange for content and exposure.
-          Both are visible with their budget, deadline, and requirements up front, so you can decide what's worth
-          your time before applying.
-        </p>
+      <ContentSection heading={t.sections.paidAndFree.heading}>
+        <p>{t.sections.paidAndFree.paragraph}</p>
       </ContentSection>
 
-      <ContentSection heading="Grow beyond your own profile">
+      <ContentSection heading={t.sections.growBeyond.heading}>
         <p className="flex items-start gap-2.5">
           <Gift size={18} className="mt-0.5 flex-shrink-0 text-brand-orange" />
-          <span>
-            Kolab also includes a referral program — invite other creators to join, and grow the community you're
-            part of while you're at it.
-          </span>
+          <span>{t.sections.growBeyond.text}</span>
         </p>
       </ContentSection>
     </ContentPageLayout>

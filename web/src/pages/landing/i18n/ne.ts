@@ -36,6 +36,8 @@ export const ne: LandingDict = {
   },
 
   trust: {
+    eyebrow: 'भरोसा गर्ने',
+    heading: 'नेपालको क्रिएटर इकोनोमी, संख्यामा',
     stats: [
       { fallback: 5000, label: 'क्रिएटरहरू' },
       { fallback: 300, label: 'ब्रान्डहरू' },
@@ -180,7 +182,6 @@ export const ne: LandingDict = {
     support: 'सहयोग',
     contact: 'सम्पर्क',
     rights: 'सर्वाधिकार सुरक्षित।',
-    madeIn: 'नेपालमा निर्मित',
     contactForm: {
       heading: 'सम्पर्कमा रहनुहोस्',
       nameLabel: 'नाम',
@@ -266,5 +267,14 @@ export const ne: LandingDict = {
     blog: { badge: 'लाइभ ब्लगिङ', quote: '“है साथीहरू, आज हामी अनबक्सिङ गर्दैछौं…”', caption: 'प्रकाश श्रेष्ठ · टेक ब्लगर' },
     payment: { badge: 'भुक्तानी रिलिज भयो', amount: '+ रु १५,००० प्राप्त भयो', caption: 'एस्क्रो रिलिज भयो · eSewa' },
     content: { recLabel: 'रेक', badge: 'सामग्री बनाउँदै' },
+  },
+
+  contentPage: {
+    home: 'गृहपृष्ठ',
+    faqHeading: 'बारम्बार सोधिने प्रश्नहरू',
+    exploreMore: 'थप हेर्नुहोस्',
+    whatYouGet: 'Kolab मा तपाईंले के पाउनुहुन्छ',
+    howItWorks: 'यसले कसरी काम गर्छ',
+    verifiedSafe: 'प्रमाणित, सुरक्षित सहकार्य',
   },
 };

@@ -1,10 +1,46 @@
-import { motion } from 'framer-motion';
+import { useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { FaUserPlus, FaMagnifyingGlass, FaComments, FaShieldHalved } from 'react-icons/fa6';
 import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 
 const ICONS = [FaUserPlus, FaMagnifyingGlass, FaComments, FaShieldHalved];
+
+function StepCard({ step, index, Icon }: { step: { title: string; desc: string }; index: number; Icon: (typeof ICONS)[number] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Tracks this card's own progress through the viewport — the large index
+  // numeral dims in from the edges and snaps fully opaque as the card
+  // crosses center, echoing the scroll-linked line-reveal from the reference.
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.9', 'start 0.4'] });
+  const numeralOpacity = useTransform(scrollYProgress, [0, 1], [0.15, 1]);
+  const accent = index % 2 === 0 ? 'violet' : 'brand-orange';
+
+  return (
+    <div ref={ref} className="relative flex flex-col border-t border-ink/10 pt-6">
+      <motion.span
+        style={{ opacity: numeralOpacity }}
+        className="font-serif text-6xl font-medium leading-none tracking-tight text-ink sm:text-7xl"
+      >
+        {String(index + 1).padStart(2, '0')}
+      </motion.span>
+
+      <motion.div variants={fadeUp} whileHover={CARD_HOVER} className="group mt-6">
+        <span
+          className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white transition-transform duration-300 group-hover:scale-110 ${
+            accent === 'violet'
+              ? 'bg-gradient-to-br from-violet to-violet-dark shadow-[0_8px_20px_-6px_rgba(123,92,245,0.5)]'
+              : 'bg-gradient-to-br from-brand-orange to-violet shadow-[0_8px_20px_-6px_rgba(249,115,22,0.5)]'
+          }`}
+        >
+          <Icon size={18} />
+        </span>
+        <h3 className="mt-4 text-lg font-bold text-ink">{step.title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
+      </motion.div>
+    </div>
+  );
+}
 
 export function HowItWorks() {
   const { d } = useLandingLanguage();
@@ -26,34 +62,11 @@ export function HowItWorks() {
           whileInView="show"
           viewport={VP}
           variants={stagger()}
-          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
+          className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8"
         >
-          {d.how.steps.map((step, i) => {
-            const Icon = ICONS[i] ?? FaUserPlus;
-            const accent = i % 2 === 0 ? 'violet' : 'brand-orange';
-            return (
-              <div key={i} className="flex flex-col items-center">
-                <motion.div
-                  variants={fadeUp}
-                  whileHover={CARD_HOVER}
-                  className="group w-full rounded-2xl border border-ink/10 bg-white p-6 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.2)]"
-                >
-                  <span
-                    className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white transition-transform duration-300 group-hover:scale-110 ${
-                      accent === 'violet'
-                        ? 'bg-gradient-to-br from-violet to-violet-dark shadow-[0_8px_20px_-6px_rgba(123,92,245,0.5)]'
-                        : 'bg-gradient-to-br from-brand-orange to-violet shadow-[0_8px_20px_-6px_rgba(249,115,22,0.5)]'
-                    }`}
-                  >
-                    <Icon size={18} />
-                  </span>
-                  <h3 className="mt-4 text-lg font-bold text-ink">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
-                </motion.div>
-                <p className="mt-4 text-center font-serif text-xl font-bold italic tracking-wide text-ink">{d.how.stepLabel} {i + 1}</p>
-              </div>
-            );
-          })}
+          {d.how.steps.map((step, i) => (
+            <StepCard key={i} step={step} index={i} Icon={ICONS[i] ?? FaUserPlus} />
+          ))}
         </motion.div>
       </div>
     </section>

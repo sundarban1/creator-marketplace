@@ -36,6 +36,8 @@ export const en = {
   },
 
   trust: {
+    eyebrow: 'Trusted by',
+    heading: "Nepal's creator economy, by the numbers",
     // fallback is shown only until the real /api/public/landing-stats count loads
     stats: [
       { fallback: 5000, label: 'Creators' },
@@ -181,7 +183,6 @@ export const en = {
     support: 'Support',
     contact: 'Contact',
     rights: 'All rights reserved.',
-    madeIn: 'Made in Nepal',
     contactForm: {
       heading: 'Get in touch',
       nameLabel: 'Name',
@@ -267,6 +268,15 @@ export const en = {
     blog: { badge: 'Blogging live', quote: '“Okay guys, today we’re unboxing…”', caption: 'Prakash Shrestha · Tech blogger' },
     payment: { badge: 'Payment released', amount: '+ Rs 15,000 received', caption: 'Escrow released · eSewa' },
     content: { recLabel: 'REC', badge: 'Making content' },
+  },
+
+  contentPage: {
+    home: 'Home',
+    faqHeading: 'Frequently asked questions',
+    exploreMore: 'Explore more',
+    whatYouGet: 'What you get on Kolab',
+    howItWorks: 'How it works',
+    verifiedSafe: 'Verified, safe collaborations',
   },
 };
 

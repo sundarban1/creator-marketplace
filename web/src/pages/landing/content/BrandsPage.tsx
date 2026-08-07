@@ -2,129 +2,243 @@ import { CheckCircle2, Filter, Megaphone, ShieldCheck, Users, XCircle } from 'lu
 import { ContentPageLayout } from './ContentPageLayout';
 import { ContentSection, BenefitGrid, ContentList } from '../components/ContentBlocks';
 import { organizationSchema, webPageSchema } from '../../../lib/seo/schema';
+import { LandingLanguageProvider, useLandingLanguage } from '../context/LanguageContext';
+
+// Icons/accents are language-invariant, zipped by index with the translated
+// title/desc pulled from COPY[lang] below.
+const FIND_CREATORS_ICONS = [Filter, Users, Megaphone];
+const VS_DMS_ICONS = [CheckCircle2, XCircle, ShieldCheck, Megaphone] as const;
+const VS_DMS_ACCENTS = ['violet', 'orange', 'violet', 'orange'] as const;
+
+const COPY = {
+  en: {
+    seo: {
+      title: 'Hire Influencers & Creators in Nepal | For Brands',
+      description: 'Kolab helps Nepali brands and businesses discover and hire verified content creators for paid campaigns. Post a campaign and collaborate with the right creators, fast.',
+    },
+    breadcrumbName: 'Brands',
+    eyebrow: 'For Brands',
+    heading: 'Hire Verified Creators in Nepal',
+    faqs: [
+      {
+        question: 'How do I hire a creator on Kolab?',
+        answer: 'Create a business account, post a paid campaign or a free open event with your budget, category, and platform requirements, then review the proposals creators submit and message the ones you want to work with directly in-app.',
+      },
+      {
+        question: 'How does Kolab protect my campaign budget?',
+        answer: "Paid campaigns use escrow-protected payments — your budget is held safely by Kolab and only released to the creator once you've reviewed and approved the completed work, so you never pay upfront for work that isn't delivered.",
+      },
+      {
+        question: 'How do I find the right creator for my brand?',
+        answer: 'Browse and filter creator profiles by category (fashion, food, tech, fitness, and more), platform (Instagram, TikTok, YouTube, Facebook, and others), and location anywhere in Nepal — from Kathmandu and Pokhara to Butwal and Biratnagar — so you can match a campaign to the right audience.',
+      },
+      {
+        question: 'Are creators on Kolab verified?',
+        answer: "Yes. Creator identity is confirmed through citizenship-document verification, and every account goes through email, phone, and document checks before it's active on the marketplace.",
+      },
+      {
+        question: 'What does it cost to post a campaign?',
+        answer: 'Kolab is a free download, and creating a business account is free. When you post a paid campaign, you set your own budget for the collaboration.',
+      },
+      {
+        question: 'Can I run a free collaboration instead of a paid one?',
+        answer: "Yes — alongside paid campaigns, you can post a free open event, where creators cover or attend in exchange for content and exposure rather than a fee.",
+      },
+    ],
+    related: [
+      { label: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal', description: "How Kolab connects Nepali brands and creators." },
+      { label: 'Influencer Marketing in Nepal', path: '/influencer-marketing-nepal', description: 'A guide to running influencer campaigns in Nepal.' },
+      { label: 'Brand Collaboration Nepal', path: '/brand-collaboration-nepal', description: 'How the collaboration process works end to end.' },
+      { label: 'UGC Creators', path: '/ugc-creators-nepal', description: 'Hire creators for authentic, ad-ready UGC content.' },
+      { label: 'For Content Creators', path: '/content-creators', description: 'See the creator side of the marketplace.' },
+    ],
+    cta: { heading: 'Ready to Hire Creators in Nepal?', sub: 'Download Kolab and post your first campaign.' },
+    sections: {
+      postCampaign: {
+        heading: 'Post a campaign in minutes',
+        paragraphs: [
+          "Hiring a creator in Nepal usually starts the same informal way: scroll Instagram, find someone with the right follower count, and send a DM asking if they'd be interested — with no real sense of their rates, availability, or whether they'll reply at all. Kolab replaces that guesswork with a structured posting flow built for brand collaboration in Nepal.",
+          "As a brand, you post either a paid campaign or a free open event. A paid campaign sets a budget and deliverables up front — what platform, what kind of content, what timeline — and creators who fit apply with a proposal. An open event works the same way but without a cash budget, useful for product launches, store openings, or experiences where creators attend or cover in exchange for content and exposure. Either way, the requirements are visible to every creator who might apply, so the proposals you receive are already pre-filtered by relevance instead of arriving as random cold outreach.",
+        ],
+      },
+      findCreators: {
+        heading: 'Find creators by category, platform, and city',
+        paragraph: 'Once a campaign is live, discovery works both ways. Creators browse and apply to campaigns that match their niche, but you can also search the creator marketplace directly — filtering by category (Food & Beverage, Travel, Fashion, Beauty, Fitness & Health, Gaming, Technology, Lifestyle, and more), by platform (Instagram, TikTok, YouTube, Facebook, Twitter/X, LinkedIn, Pinterest, Snapchat, Twitch), and by location anywhere in Nepal — Kathmandu, Pokhara, Lalitpur, Bhaktapur, Butwal, Biratnagar, Dharan, Chitwan, and Nepalgunj included.',
+        benefits: [
+          { title: 'Filter by category', desc: 'Narrow the marketplace to creators in the niche your campaign actually needs, from fashion to fitness to tech.' },
+          { title: 'Filter by platform', desc: 'Target Instagram, TikTok, YouTube, Facebook, or any of the other platforms creator profiles support.' },
+          { title: 'Filter by location', desc: 'Find creators in a specific Nepali city, or open a campaign to creators anywhere in the country.' },
+        ],
+      },
+      budgetProtected: {
+        heading: 'Your budget is protected until the work is approved',
+        paragraphs: [
+          "The biggest risk in informal creator hiring isn't finding someone — it's the payment itself. Pay upfront and the creator might disappear after posting nothing; pay after the fact and there's no guarantee they'll follow through either way. Kolab removes that risk with escrow-protected payments: when you post a paid campaign, your budget is held securely by Kolab, not sent directly to the creator, and only released once you've reviewed the completed deliverables and approved the work.",
+          "The same trust layer applies before a collaboration even starts. Every creator profile on Kolab goes through identity verification — confirmed with a citizenship document, plus email and phone checks — so you're hiring a real, accountable person, not an anonymous handle. And after the campaign wraps, both sides leave a transparent review, so a creator's track record on Kolab is something you can actually check before you commit your budget.",
+        ],
+      },
+      vsDms: {
+        heading: 'Kolab vs. hiring creators over DMs',
+        benefits: [
+          { title: 'Structured proposals', desc: 'Every applicant responds to your actual budget and deliverables, not a vague "what are your rates?" back-and-forth.' },
+          { title: 'No cold-DM guesswork', desc: 'Skip the scroll-and-message routine with no reply, no verified identity, and no visibility into whether the creator is even active.' },
+          { title: 'Escrow, not bank transfer', desc: 'Your budget stays protected until you approve the work, instead of hoping a wire transfer gets you a finished deliverable.' },
+          { title: 'One place for everything', desc: 'Proposals, messaging, deliverables, payment, and reviews live in one thread instead of scattered across Instagram, WhatsApp, and eSewa.' },
+        ],
+      },
+      builtForNepal: {
+        heading: 'Built for how Nepali brands actually work',
+        items: [
+          'Set your own budget for every campaign — there is no fixed pricing tier to work around.',
+          'Post as many paid campaigns or free open events as your marketing calendar needs.',
+          'Message matched creators directly in the app to align on deliverables and timelines.',
+          'Review proposals before committing, so you know exactly who you are hiring and why.',
+          'Reach creators across Nepal, not just the handful you already follow.',
+        ],
+      },
+    },
+  },
+  ne: {
+    seo: {
+      title: 'Hire Influencers & Creators in Nepal | For Brands',
+      description: 'Kolab helps Nepali brands and businesses discover and hire verified content creators for paid campaigns. Post a campaign and collaborate with the right creators, fast.',
+    },
+    breadcrumbName: 'ब्रान्डहरू',
+    eyebrow: 'ब्रान्डहरूका लागि',
+    heading: 'नेपालमा प्रमाणित क्रिएटरहरू भाडामा लिनुहोस्',
+    faqs: [
+      {
+        question: 'Kolab मा क्रिएटर कसरी भाडामा लिने?',
+        answer: 'व्यावसायिक खाता खोल्नुहोस्, आफ्नो बजेट, श्रेणी, र प्लेटफर्म आवश्यकताहरूसहित तलबसहितको क्याम्पेन वा निःशुल्क खुला इभेन्ट पोस्ट गर्नुहोस्, त्यसपछि क्रिएटरहरूले पेश गरेका प्रस्तावहरू समीक्षा गर्नुहोस् र काम गर्न चाहेकाहरूलाई सिधै एपभित्रै म्यासेज गर्नुहोस्।',
+      },
+      {
+        question: 'Kolab ले मेरो क्याम्पेन बजेट कसरी सुरक्षित गर्छ?',
+        answer: 'तलबसहितका क्याम्पेनहरूमा एस्क्रो-सुरक्षित भुक्तानी प्रयोग हुन्छ — तपाईंको बजेट Kolab ले सुरक्षित राख्छ र तपाईंले सम्पन्न काम समीक्षा र स्वीकृत गरेपछि मात्र क्रिएटरलाई रिलिज गरिन्छ, त्यसैले तपाईंले नबुझाइएको कामको लागि कहिल्यै अग्रिम भुक्तानी गर्नुपर्दैन।',
+      },
+      {
+        question: 'मेरो ब्रान्डका लागि उपयुक्त क्रिएटर कसरी फेला पार्ने?',
+        answer: 'श्रेणी (फेसन, खाना, प्रविधि, फिटनेस, र अरू धेरै), प्लेटफर्म (Instagram, TikTok, YouTube, Facebook, र अन्य), र नेपालभरि कुनै पनि स्थान — काठमाडौं र पोखराबाट बुटवल र विराटनगरसम्म — अनुसार क्रिएटर प्रोफाइलहरू ब्राउज र फिल्टर गर्नुहोस्, ताकि तपाईंले क्याम्पेनलाई सही दर्शकसँग मिलाउन सक्नुहुन्छ।',
+      },
+      {
+        question: 'के Kolab का क्रिएटरहरू प्रमाणित छन्?',
+        answer: 'हो। क्रिएटरको पहिचान नागरिकता-कागजात प्रमाणीकरणद्वारा पुष्टि गरिन्छ, र प्रत्येक खाता मार्केटप्लेसमा सक्रिय हुनुअघि इमेल, फोन, र कागजात जाँचबाट गुज्रन्छ।',
+      },
+      {
+        question: 'क्याम्पेन पोस्ट गर्न कति खर्च लाग्छ?',
+        answer: 'Kolab निःशुल्क डाउनलोड हो, र व्यावसायिक खाता बनाउनु पनि निःशुल्क छ। तपाईंले तलबसहितको क्याम्पेन पोस्ट गर्दा, सहकार्यको लागि आफ्नै बजेट तय गर्नुहुन्छ।',
+      },
+      {
+        question: 'के म तलबसहितको सट्टा निःशुल्क सहकार्य चलाउन सक्छु?',
+        answer: 'हो — तलबसहितका क्याम्पेनहरूसँगै, तपाईंले निःशुल्क खुला इभेन्ट पोस्ट गर्न सक्नुहुन्छ, जहाँ क्रिएटरहरूले शुल्कको सट्टा सामग्री र एक्सपोजरको बदलामा कभर गर्छन् वा उपस्थित हुन्छन्।',
+      },
+    ],
+    related: [
+      { label: 'Kolab क्रिएटर मार्केटप्लेस नेपाल', path: '/creator-marketplace-nepal', description: 'Kolab ले नेपाली ब्रान्ड र क्रिएटरहरूलाई कसरी जोड्छ।' },
+      { label: 'नेपालमा इन्फ्लुएन्सर मार्केटिङ', path: '/influencer-marketing-nepal', description: 'नेपालमा इन्फ्लुएन्सर क्याम्पेन चलाउने गाइड।' },
+      { label: 'ब्रान्ड सहकार्य नेपाल', path: '/brand-collaboration-nepal', description: 'सहकार्य प्रक्रिया सुरुदेखि अन्त्यसम्म कसरी काम गर्छ।' },
+      { label: 'UGC क्रिएटरहरू', path: '/ugc-creators-nepal', description: 'प्रामाणिक, विज्ञापन-तयार UGC सामग्रीका लागि क्रिएटरहरू भाडामा लिनुहोस्।' },
+      { label: 'कन्टेन्ट क्रिएटरहरूका लागि', path: '/content-creators', description: 'मार्केटप्लेसको क्रिएटर पक्ष हेर्नुहोस्।' },
+    ],
+    cta: { heading: 'नेपालमा क्रिएटरहरू भाडामा लिन तयार हुनुहुन्छ?', sub: 'Kolab डाउनलोड गर्नुहोस् र आफ्नो पहिलो क्याम्पेन पोस्ट गर्नुहोस्।' },
+    sections: {
+      postCampaign: {
+        heading: 'मिनेटमै क्याम्पेन पोस्ट गर्नुहोस्',
+        paragraphs: [
+          'नेपालमा क्रिएटर भाडामा लिने काम प्रायः एउटै अनौपचारिक तरिकाले सुरु हुन्छ: Instagram स्क्रोल गर्ने, सही फलोअर संख्या भएको कोही फेला पार्ने, र उनीहरू इच्छुक छन् कि छैनन् भनेर DM पठाउने — उनीहरूको दर, उपलब्धता, वा जवाफ दिन्छन् कि दिँदैनन् भन्ने कुनै वास्तविक अनुमान बिना। Kolab ले त्यो अनुमानलाई नेपालमा ब्रान्ड सहकार्यका लागि बनाइएको संरचित पोस्टिङ प्रवाहले प्रतिस्थापन गर्छ।',
+          'ब्रान्डको रूपमा, तपाईंले तलबसहितको क्याम्पेन वा निःशुल्क खुला इभेन्ट पोस्ट गर्नुहुन्छ। तलबसहितको क्याम्पेनले पहिले नै बजेट र डेलिभरेबल तय गर्छ — कुन प्लेटफर्म, कस्तो सामग्री, कस्तो समयसीमा — र मिल्ने क्रिएटरहरूले प्रस्तावसहित आवेदन दिन्छन्। खुला इभेन्टले उस्तै तरिकाले काम गर्छ तर नगद बजेट बिना, जुन प्रोडक्ट लन्च, स्टोर खोल्ने, वा क्रिएटरहरूले सामग्री र एक्सपोजरको बदलामा उपस्थित हुने वा कभर गर्ने अनुभवहरूका लागि उपयोगी हुन्छ। जुनसुकै भए पनि, आवश्यकताहरू आवेदन दिन सक्ने प्रत्येक क्रिएटरलाई देखिन्छन्, त्यसैले तपाईंले पाउने प्रस्तावहरू अनियमित चिसो सम्पर्कको सट्टा पहिले नै सान्दर्भिकताअनुसार फिल्टर गरिएका हुन्छन्।',
+        ],
+      },
+      findCreators: {
+        heading: 'श्रेणी, प्लेटफर्म, र सहर अनुसार क्रिएटरहरू फेला पार्नुहोस्',
+        paragraph: 'क्याम्पेन लाइभ भएपछि, खोज दुवैतर्फ काम गर्छ। क्रिएटरहरूले आफ्नो निचसँग मिल्ने क्याम्पेनहरू ब्राउज र आवेदन दिन्छन्, तर तपाईंले पनि क्रिएटर मार्केटप्लेस सिधै खोज्न सक्नुहुन्छ — श्रेणी (खाना र पेय, यात्रा, फेसन, ब्युटी, फिटनेस र स्वास्थ्य, गेमिङ, प्रविधि, जीवनशैली, र अरू), प्लेटफर्म (Instagram, TikTok, YouTube, Facebook, Twitter/X, LinkedIn, Pinterest, Snapchat, Twitch), र नेपालभरि कुनै पनि स्थान — काठमाडौं, पोखरा, ललितपुर, भक्तपुर, बुटवल, विराटनगर, धरान, चितवन, र नेपालगन्जसमेत — अनुसार फिल्टर गर्दै।',
+        benefits: [
+          { title: 'श्रेणी अनुसार फिल्टर गर्नुहोस्', desc: 'तपाईंको क्याम्पेनलाई वास्तवमा चाहिने निचका क्रिएटरहरूमा मार्केटप्लेस साँघुर्याउनुहोस्, फेसनदेखि फिटनेस र प्रविधिसम्म।' },
+          { title: 'प्लेटफर्म अनुसार फिल्टर गर्नुहोस्', desc: 'Instagram, TikTok, YouTube, Facebook, वा क्रिएटर प्रोफाइलहरूले समर्थन गर्ने अन्य कुनै पनि प्लेटफर्मलाई लक्षित गर्नुहोस्।' },
+          { title: 'स्थान अनुसार फिल्टर गर्नुहोस्', desc: 'कुनै निश्चित नेपाली सहरमा क्रिएटरहरू फेला पार्नुहोस्, वा देशभरि जहाँ पनि रहेका क्रिएटरहरूका लागि क्याम्पेन खोल्नुहोस्।' },
+        ],
+      },
+      budgetProtected: {
+        heading: 'काम स्वीकृत नभएसम्म तपाईंको बजेट सुरक्षित रहन्छ',
+        paragraphs: [
+          "अनौपचारिक क्रिएटर भाडामा लिने सबैभन्दा ठूलो जोखिम कोही फेला पार्नु होइन — भुक्तानी नै हो। अग्रिम भुक्तानी गर्नुभयो भने क्रिएटर केही पोस्ट नगरी हराउन सक्छ; पछि भुक्तानी गर्नुभयो भने उनीहरूले काम पूरा गर्छन् भन्ने कुनैग्यारेन्टी हुँदैन। Kolab ले एस्क्रो-सुरक्षित भुक्तानीले त्यो जोखिम हटाउँछ: तपाईंले तलबसहितको क्याम्पेन पोस्ट गर्दा, तपाईंको बजेट Kolab ले सुरक्षित राख्छ, सिधै क्रिएटरलाई पठाइँदैन, र तपाईंले सम्पन्न डेलिभरेबल समीक्षा र काम स्वीकृत गरेपछि मात्र रिलिज हुन्छ।",
+          "यही भरोसाको तह सहकार्य सुरु हुनुअघि नै लागू हुन्छ। Kolab मा प्रत्येक क्रिएटर प्रोफाइल पहिचान प्रमाणीकरणबाट गुज्रन्छ — नागरिकता कागजात, साथै इमेल र फोन जाँचद्वारा पुष्टि — त्यसैले तपाईंले साँचो, जवाफदेही व्यक्ति भाडामा लिइरहनुभएको हुन्छ, गुमनाम ह्यान्डल होइन। र क्याम्पेन सकिएपछि, दुवै पक्षले पारदर्शी समीक्षा छोड्छन्, त्यसैले Kolab मा क्रिएटरको ट्र्याक रेकर्ड तपाईंले आफ्नो बजेट प्रतिबद्ध गर्नुअघि नै जाँच्न सक्ने कुरा हो।",
+        ],
+      },
+      vsDms: {
+        heading: 'Kolab बनाम DM मार्फत क्रिएटर भाडामा लिने',
+        benefits: [
+          { title: 'संरचित प्रस्तावहरू', desc: 'प्रत्येक आवेदकले अस्पष्ट "तपाईंको दर के हो?" भन्ने आगोपिछो होइन, तपाईंको वास्तविक बजेट र डेलिभरेबलमा जवाफ दिन्छ।' },
+          { title: 'चिसो-DM अनुमान छैन', desc: 'कुनै जवाफ नआउने, कुनै प्रमाणित पहिचान नहुने, र क्रिएटर सक्रिय छ कि छैन भन्ने कुनै दृश्यता नभएको स्क्रोल-र-म्यासेज दिनचर्या छोड्नुहोस्।' },
+          { title: 'एस्क्रो, बैंक ट्रान्सफर होइन', desc: 'वायर ट्रान्सफरले तपाईंलाई सम्पन्न डेलिभरेबल दिन्छ भन्ने आशा गर्नुको सट्टा, तपाईंले काम स्वीकृत नगरेसम्म तपाईंको बजेट सुरक्षित रहन्छ।' },
+          { title: 'सबै कुरा एकै ठाउँमा', desc: 'प्रस्तावहरू, म्यासेजिङ, डेलिभरेबल, भुक्तानी, र समीक्षाहरू Instagram, WhatsApp, र eSewa मा छरिनुको सट्टा एउटै थ्रेडमा रहन्छन्।' },
+        ],
+      },
+      builtForNepal: {
+        heading: 'नेपाली ब्रान्डहरूले वास्तवमा काम गर्ने तरिकाका लागि बनाइएको',
+        items: [
+          'प्रत्येक क्याम्पेनका लागि आफ्नै बजेट तय गर्नुहोस् — काम गर्नुपर्ने कुनै निश्चित मूल्य तह छैन।',
+          'तपाईंको मार्केटिङ क्यालेन्डरलाई जति आवश्यक छ त्यति नै तलबसहित क्याम्पेन वा निःशुल्क खुला इभेन्टहरू पोस्ट गर्नुहोस्।',
+          'डेलिभरेबल र समयसीमामा सहमत हुन एपमा मिल्दा क्रिएटरहरूलाई सिधै म्यासेज गर्नुहोस्।',
+          'प्रतिबद्ध हुनुअघि प्रस्तावहरू समीक्षा गर्नुहोस्, ताकि तपाईंलाई ठ्याक्कै थाहा होस् तपाईंले कसलाई र किन भाडामा लिइरहनुभएको छ।',
+          'तपाईंले पहिले नै फलो गरिरहनुभएका थोरैमा मात्र होइन, नेपालभरिका क्रिएटरहरूसम्म पुग्नुहोस्।',
+        ],
+      },
+    },
+  },
+};
 
 export function BrandsPage() {
   return (
+    <LandingLanguageProvider>
+      <BrandsPageInner />
+    </LandingLanguageProvider>
+  );
+}
+
+function BrandsPageInner() {
+  const { lang, d } = useLandingLanguage();
+  const t = COPY[lang];
+
+  return (
     <ContentPageLayout
       seo={{
-        title: 'Hire Influencers & Creators in Nepal | For Brands',
-        description: 'Kolab helps Nepali brands and businesses discover and hire verified content creators for paid campaigns. Post a campaign and collaborate with the right creators, fast.',
+        title: t.seo.title,
+        description: t.seo.description,
         path: '/brands',
         keywords: ['hire creator Nepal', 'hire influencer Nepal', 'brand collaboration Nepal', 'creator marketing Nepal', 'influencer marketing Nepal', 'hire content creators Nepal', 'hire content creators in Nepal', 'hire influencers Nepal', 'find content creators Nepal', 'find influencers Nepal', 'influencer agency Nepal', 'UGC creators Nepal', 'hire UGC creators Nepal'],
-        jsonLd: [organizationSchema(), webPageSchema({ path: '/brands', title: 'Hire Influencers & Creators in Nepal | Kolab', description: 'Kolab helps Nepali brands discover and hire verified content creators for paid campaigns.' })],
+        jsonLd: [organizationSchema(), webPageSchema({ path: '/brands', title: t.seo.title, description: t.seo.description })],
       }}
-      breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Brands', path: '/brands' }]}
+      breadcrumb={[{ name: d.contentPage.home, path: '/' }, { name: t.breadcrumbName, path: '/brands' }]}
       icon={Megaphone}
-      eyebrow="For Brands"
-      heading="Hire Verified Creators in Nepal"
-      faqs={[
-        {
-          question: 'How do I hire a creator on Kolab?',
-          answer: 'Create a business account, post a paid campaign or a free open event with your budget, category, and platform requirements, then review the proposals creators submit and message the ones you want to work with directly in-app.',
-        },
-        {
-          question: 'How does Kolab protect my campaign budget?',
-          answer: "Paid campaigns use escrow-protected payments — your budget is held safely by Kolab and only released to the creator once you've reviewed and approved the completed work, so you never pay upfront for work that isn't delivered.",
-        },
-        {
-          question: 'How do I find the right creator for my brand?',
-          answer: 'Browse and filter creator profiles by category (fashion, food, tech, fitness, and more), platform (Instagram, TikTok, YouTube, Facebook, and others), and location anywhere in Nepal — from Kathmandu and Pokhara to Butwal and Biratnagar — so you can match a campaign to the right audience.',
-        },
-        {
-          question: 'Are creators on Kolab verified?',
-          answer: "Yes. Creator identity is confirmed through citizenship-document verification, and every account goes through email, phone, and document checks before it's active on the marketplace.",
-        },
-        {
-          question: 'What does it cost to post a campaign?',
-          answer: 'Kolab is a free download, and creating a business account is free. When you post a paid campaign, you set your own budget for the collaboration.',
-        },
-        {
-          question: 'Can I run a free collaboration instead of a paid one?',
-          answer: "Yes — alongside paid campaigns, you can post a free open event, where creators cover or attend in exchange for content and exposure rather than a fee.",
-        },
-      ]}
-      related={[
-        { label: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal', description: "How Kolab connects Nepali brands and creators." },
-        { label: 'Influencer Marketing in Nepal', path: '/influencer-marketing-nepal', description: 'A guide to running influencer campaigns in Nepal.' },
-        { label: 'Brand Collaboration Nepal', path: '/brand-collaboration-nepal', description: 'How the collaboration process works end to end.' },
-        { label: 'UGC Creators', path: '/ugc-creators-nepal', description: 'Hire creators for authentic, ad-ready UGC content.' },
-        { label: 'For Content Creators', path: '/content-creators', description: 'See the creator side of the marketplace.' },
-      ]}
-      cta={{ heading: 'Ready to Hire Creators in Nepal?', sub: 'Download Kolab and post your first campaign.' }}
+      eyebrow={t.eyebrow}
+      heading={t.heading}
+      faqs={t.faqs}
+      related={t.related}
+      cta={t.cta}
     >
-      <ContentSection heading="Post a campaign in minutes">
-        <p>
-          Hiring a creator in Nepal usually starts the same informal way: scroll Instagram, find someone with the
-          right follower count, and send a DM asking if they'd be interested — with no real sense of their rates,
-          availability, or whether they'll reply at all. Kolab replaces that guesswork with a structured posting
-          flow built for brand collaboration in Nepal.
-        </p>
-        <p>
-          As a brand, you post either a paid campaign or a free open event. A paid campaign sets a budget and
-          deliverables up front — what platform, what kind of content, what timeline — and creators who fit apply
-          with a proposal. An open event works the same way but without a cash budget, useful for product launches,
-          store openings, or experiences where creators attend or cover in exchange for content and exposure. Either
-          way, the requirements are visible to every creator who might apply, so the proposals you receive are
-          already pre-filtered by relevance instead of arriving as random cold outreach.
-        </p>
+      <ContentSection heading={t.sections.postCampaign.heading}>
+        {t.sections.postCampaign.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
       </ContentSection>
 
-      <ContentSection heading="Find creators by category, platform, and city">
-        <p>
-          Once a campaign is live, discovery works both ways. Creators browse and apply to campaigns that match
-          their niche, but you can also search the creator marketplace directly — filtering by category (Food &
-          Beverage, Travel, Fashion, Beauty, Fitness & Health, Gaming, Technology, Lifestyle, and more), by platform
-          (Instagram, TikTok, YouTube, Facebook, Twitter/X, LinkedIn, Pinterest, Snapchat, Twitch), and by location
-          anywhere in Nepal — Kathmandu, Pokhara, Lalitpur, Bhaktapur, Butwal, Biratnagar, Dharan, Chitwan, and
-          Nepalgunj included.
-        </p>
+      <ContentSection heading={t.sections.findCreators.heading}>
+        <p>{t.sections.findCreators.paragraph}</p>
         <BenefitGrid
-          items={[
-            { icon: Filter, title: 'Filter by category', desc: 'Narrow the marketplace to creators in the niche your campaign actually needs, from fashion to fitness to tech.' },
-            { icon: Users, title: 'Filter by platform', desc: 'Target Instagram, TikTok, YouTube, Facebook, or any of the other platforms creator profiles support.' },
-            { icon: Megaphone, title: 'Filter by location', desc: 'Find creators in a specific Nepali city, or open a campaign to creators anywhere in the country.' },
-          ]}
+          items={t.sections.findCreators.benefits.map((b, i) => ({ icon: FIND_CREATORS_ICONS[i], title: b.title, desc: b.desc }))}
         />
       </ContentSection>
 
-      <ContentSection heading="Your budget is protected until the work is approved">
-        <p>
-          The biggest risk in informal creator hiring isn't finding someone — it's the payment itself. Pay upfront
-          and the creator might disappear after posting nothing; pay after the fact and there's no guarantee they'll
-          follow through either way. Kolab removes that risk with escrow-protected payments: when you post a paid
-          campaign, your budget is held securely by Kolab, not sent directly to the creator, and only released once
-          you've reviewed the completed deliverables and approved the work.
-        </p>
-        <p>
-          The same trust layer applies before a collaboration even starts. Every creator profile on Kolab goes
-          through identity verification — confirmed with a citizenship document, plus email and phone checks — so
-          you're hiring a real, accountable person, not an anonymous handle. And after the campaign wraps, both
-          sides leave a transparent review, so a creator's track record on Kolab is something you can actually
-          check before you commit your budget.
-        </p>
+      <ContentSection heading={t.sections.budgetProtected.heading}>
+        {t.sections.budgetProtected.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
       </ContentSection>
 
-      <ContentSection heading="Kolab vs. hiring creators over DMs">
+      <ContentSection heading={t.sections.vsDms.heading}>
         <BenefitGrid
-          items={[
-            { icon: CheckCircle2, title: 'Structured proposals', desc: 'Every applicant responds to your actual budget and deliverables, not a vague "what are your rates?" back-and-forth.', accent: 'violet' },
-            { icon: XCircle, title: 'No cold-DM guesswork', desc: 'Skip the scroll-and-message routine with no reply, no verified identity, and no visibility into whether the creator is even active.', accent: 'orange' },
-            { icon: ShieldCheck, title: 'Escrow, not bank transfer', desc: 'Your budget stays protected until you approve the work, instead of hoping a wire transfer gets you a finished deliverable.', accent: 'violet' },
-            { icon: Megaphone, title: 'One place for everything', desc: 'Proposals, messaging, deliverables, payment, and reviews live in one thread instead of scattered across Instagram, WhatsApp, and eSewa.', accent: 'orange' },
-          ]}
+          items={t.sections.vsDms.benefits.map((b, i) => ({ icon: VS_DMS_ICONS[i], title: b.title, desc: b.desc, accent: VS_DMS_ACCENTS[i] }))}
         />
       </ContentSection>
 
-      <ContentSection heading="Built for how Nepali brands actually work">
-        <ContentList
-          items={[
-            'Set your own budget for every campaign — there is no fixed pricing tier to work around.',
-            'Post as many paid campaigns or free open events as your marketing calendar needs.',
-            'Message matched creators directly in the app to align on deliverables and timelines.',
-            'Review proposals before committing, so you know exactly who you are hiring and why.',
-            'Reach creators across Nepal, not just the handful you already follow.',
-          ]}
-        />
+      <ContentSection heading={t.sections.builtForNepal.heading}>
+        <ContentList items={t.sections.builtForNepal.items} />
       </ContentSection>
     </ContentPageLayout>
   );

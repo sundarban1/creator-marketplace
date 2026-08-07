@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { StandaloneHeader } from '../StandalonePageShell';
-import { LandingLanguageProvider } from '../context/LanguageContext';
+import { useLandingLanguage } from '../context/LanguageContext';
 import { LandingFooter } from '../nav/LandingFooter';
 import { Breadcrumb, type BreadcrumbItem } from '../components/Breadcrumb';
 import { FAQAccordion, type FAQItem } from '../components/FAQAccordion';
@@ -40,7 +40,12 @@ interface ContentPageLayoutProps {
 // FAQPage schema handled by the caller passing it into seo.jsonLd), a
 // related-pages grid for internal linking, and the standard closing CTA.
 // New pages should only need to supply content, not rebuild this scaffold.
+// Callers must render inside a <LandingLanguageProvider> ancestor (usually
+// the page component itself, so it can also pick EN/NE copy before this
+// ever mounts) — this only consumes the language, it doesn't provide it.
 export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, heading, intro, children, faqs, related, cta }: ContentPageLayoutProps) {
+  const { d } = useLandingLanguage();
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -51,7 +56,6 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
   ];
 
   return (
-    <LandingLanguageProvider>
     <div className="min-h-screen bg-paper font-display">
       <SEO {...seo} jsonLd={jsonLd} />
       <StandaloneHeader />
@@ -86,7 +90,7 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
         {faqs && faqs.length > 0 && (
           <motion.section initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-16">
             <motion.h2 variants={fadeUp} className="font-serif text-2xl font-medium text-ink sm:text-3xl">
-              Frequently asked questions
+              {d.contentPage.faqHeading}
             </motion.h2>
             <motion.div variants={fadeUp} className="mt-4">
               <FAQAccordion items={faqs} />
@@ -97,7 +101,7 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
         {related && related.length > 0 && (
           <motion.section initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-16">
             <motion.h2 variants={fadeUp} className="font-serif text-2xl font-medium text-ink sm:text-3xl">
-              Explore more
+              {d.contentPage.exploreMore}
             </motion.h2>
             <motion.div variants={fadeUp} className="mt-5 grid gap-4 sm:grid-cols-2">
               {related.map((r) => (
@@ -122,6 +126,5 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
 
       <LandingFooter />
     </div>
-    </LandingLanguageProvider>
   );
 }

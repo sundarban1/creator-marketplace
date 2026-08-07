@@ -4,6 +4,7 @@ import { useSuccessStories } from './hooks/useSuccessStories';
 import { LandingLanguageProvider } from './context/LanguageContext';
 import { CursorSparkles } from './components/CursorSparkles';
 import { ScrollProgress } from './components/ScrollProgress';
+import { CornerChrome } from './components/CornerChrome';
 import { ChatWidget } from './components/ChatWidget';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
@@ -61,6 +62,7 @@ function LandingPageInner() {
       />
       <CursorSparkles />
       <ScrollProgress />
+      <CornerChrome />
       <LandingNav />
       <Hero />
       <TrustStats stats={stats} />

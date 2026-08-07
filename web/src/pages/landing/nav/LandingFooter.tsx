@@ -57,9 +57,8 @@ export function LandingFooter() {
           </motion.nav>
         </motion.div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-ink/10 pt-6 md:flex-row">
-          <p className="text-xs text-ink/75">© {new Date().getFullYear()} Kolab. {d.footer.rights}</p>
-          <p className="text-xs text-ink/75">{d.footer.madeIn} 🇳🇵</p>
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 border-t border-ink/10 pt-6">
+          <p className="text-xs text-ink/75">© {new Date().getFullYear()} Kolab Technologies Pvt. Ltd. {d.footer.rights}</p>
         </div>
       </div>
     </footer>
