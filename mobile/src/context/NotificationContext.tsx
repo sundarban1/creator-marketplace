@@ -45,6 +45,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [badgeCount, setBadgeCount]         = useState(0);
   const [chatBadgeCount, setChatBadgeCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
+  const chatBadgeDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearBadge       = useCallback(() => setBadgeCount(0), []);
   const decrementBadge   = useCallback(() => setBadgeCount((n) => Math.max(0, n - 1)), []);
@@ -55,6 +56,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   function refreshChatBadge() {
     chatService.getBadgeCount().then((r) => setChatBadgeCount(r.count)).catch((err) => logger.warn('[notifications] refreshChatBadge failed', { err }));
+  }
+
+  // markSeen() (see useChatConversation.ts) fires messagingEvents.refresh() ~800ms
+  // after every single chat screen open — opening several chats in a short span
+  // (e.g. scrolling through a conversation list) previously fired one
+  // refreshChatBadge() REST call per chat, back to back, which the backend's
+  // rate limiter started rejecting with 429s, and each one's setChatBadgeCount
+  // re-renders every still-mounted tab screen (Tabs keeps them all mounted).
+  // Debouncing collapses a burst of these into a single trailing call.
+  function debouncedRefreshChatBadge() {
+    if (chatBadgeDebounceTimer.current) clearTimeout(chatBadgeDebounceTimer.current);
+    chatBadgeDebounceTimer.current = setTimeout(refreshChatBadge, 500);
   }
 
   // The OS app-icon badge is otherwise only ever set by an incoming push's payload
@@ -111,7 +124,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     socket.on('conversation:update', onConvUpdate);
 
     // Also wire to messaging events (fired by markSeen, respondToRequest, etc.)
-    const unsubMessaging = messagingEvents.subscribe(refreshChatBadge);
+    const unsubMessaging = messagingEvents.subscribe(debouncedRefreshChatBadge);
 
     // ── App foreground refresh ───────────────────────────────────────────────
     // Also re-attempts push token registration here: if the user denied the
@@ -165,6 +178,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       socket.off('message:new',         onMessageNew);
       socket.off('conversation:update', onConvUpdate);
       unsubMessaging();
+      if (chatBadgeDebounceTimer.current) clearTimeout(chatBadgeDebounceTimer.current);
       disconnectSocket();
       socketRef.current = null;
       sub.remove();

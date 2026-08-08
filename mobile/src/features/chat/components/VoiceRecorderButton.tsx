@@ -62,7 +62,14 @@ export function VoiceRecorderButton(props: Props) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const task = InteractionManager.runAfterInteractions(() => setReady(true));
+    // TEMP DIAGNOSTIC — measuring how long the InteractionManager queue takes
+    // to drain on first mount. Remove after.
+    const mountedAt = Date.now();
+    console.log('[VOICE-BTN]', 'placeholder mounted at', mountedAt);
+    const task = InteractionManager.runAfterInteractions(() => {
+      console.log('[VOICE-BTN]', 'ready swap after', Date.now() - mountedAt, 'ms');
+      setReady(true);
+    });
     return () => task.cancel();
   }, []);
 

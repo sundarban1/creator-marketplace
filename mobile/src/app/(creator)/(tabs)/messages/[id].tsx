@@ -3,7 +3,7 @@ import { messagingEvents } from '@/lib/messagingEvents';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -34,6 +34,7 @@ import { BackButton } from '@/components/BackButton';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import { useChatConversation } from '@/hooks/useChatConversation';
+import { chatScreenOpenEvents } from '@/lib/chatScreenOpenEvents';
 import type { Message } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -480,6 +481,11 @@ export default function CreatorChatRoomScreen() {
     allowVideo,
   });
 
+  useLayoutEffect(() => {
+    chatScreenOpenEvents.open();
+    return () => chatScreenOpenEvents.close();
+  }, []);
+
   // The native multiline TextInput doesn't shrink on its own when `text` is
   // cleared (send/edit-cancel/etc, all inside the hook) — collapse the
   // composer back to a single line whenever that happens.
@@ -725,7 +731,14 @@ export default function CreatorChatRoomScreen() {
                   <FontAwesome5 name={chat.editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
                 </Pressable>
               ) : (
-                <VoiceRecorderButton disabled={hasActiveUpload || chat.isSending.current} onRecorded={chat.handleSendVoiceAttachment} />
+                // TEMP TEST — static mic icon swapped in for VoiceRecorderButton to
+                // isolate whether its mount cost (useAudioRecorder/GestureDetector/
+                // Reanimated) is what's causing the composer blink. Revert after.
+                <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', backgroundColor: C.brinjal1 }}>
+                    <FontAwesome5 name="microphone" solid size={18} color="#fff" />
+                  </View>
+                </View>
               )}
             </View>
 

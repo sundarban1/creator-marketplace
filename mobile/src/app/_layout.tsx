@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider, useRouter, useSegments } from '
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Application from 'expo-application';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -229,6 +230,13 @@ function RootLayoutInner() {
 }
 
 function RootLayout() {
+  // FontAwesome5.font is spread in here (rather than left to @expo/vector-icons'
+  // own lazy per-icon Font.loadAsync) so every icon is already loaded before the
+  // app's first paint — otherwise each icon renders blank until its style's font
+  // finishes loading async, on whichever screen happens to use it first in a
+  // session (this is what caused chat's composer icons to intermittently pop in
+  // a beat after the message list, since it's the icons that were blank, not the
+  // surrounding layout — the message text uses Poppins, already preloaded here).
   const [fontsLoaded] = useFonts({
     'Poppins-Regular':    Poppins_400Regular,
     'Poppins-Medium':     Poppins_500Medium,
@@ -236,6 +244,7 @@ function RootLayout() {
     'Poppins-Bold':       Poppins_700Bold,
     'Poppins-BoldItalic': Poppins_700Bold_Italic,
     'Poppins-ExtraBold':  Poppins_800ExtraBold,
+    ...FontAwesome5.font,
   });
 
   if (!fontsLoaded) return null;

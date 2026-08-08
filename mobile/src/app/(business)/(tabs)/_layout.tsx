@@ -1,6 +1,6 @@
-import { router, Tabs, usePathname } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import {
   Pressable, StyleSheet, Text, View,
 } from 'react-native';
@@ -14,6 +14,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { COLORS, RADIUS, SHADOW } from '@/utilities/constants';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
+import { chatScreenOpenEvents } from '@/lib/chatScreenOpenEvents';
 
 type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
@@ -52,13 +53,13 @@ function CustomTabBar({
   // report 0 (physical home button / classic Android nav).
   const bottomInset = Math.max(insets.bottom, 8);
 
-  // Hides the tab bar while a chat conversation ([id]) is open, however it
-  // was reached — a pathname check is reliable regardless of navigator
-  // entry point, unlike introspecting the messages stack's nested tab state
-  // (which a deep push from outside the tabs navigator, e.g. the activity
-  // timeline's chat button, doesn't always populate the same way).
-  const pathname = usePathname();
-  if (pathname.startsWith('/messages/')) return null;
+  // Hides the tab bar while a chat conversation ([id]) is open. Each chat
+  // screen reports itself via chatScreenOpenEvents from a useLayoutEffect,
+  // so this updates synchronously before the frame paints — see that
+  // module's comment for why a usePathname()-based check (the previous
+  // approach) caused a visible one-frame jump.
+  const chatOpen = useSyncExternalStore(chatScreenOpenEvents.subscribe, chatScreenOpenEvents.isOpen, chatScreenOpenEvents.isOpen);
+  if (chatOpen) return null;
 
   const labelMap: Record<string, string> = {
     index:         t('business.tab.home'),

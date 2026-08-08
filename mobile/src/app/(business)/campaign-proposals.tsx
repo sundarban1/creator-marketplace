@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { campaignService } from '@/services/campaign';
 import { contractService, type Contract } from '@/services/contract';
 import { ContractModal } from '@/components/ContractModal';
@@ -413,6 +414,8 @@ export default function CampaignProposalsScreen() {
   }>();
 
   const { campaignId, campaignTitle, platform } = params;
+  const platformList = platform ? platform.split(',').map((p) => p.trim()).filter(Boolean) : [];
+  const { platforms: allPlatforms } = usePlatforms();
   const isFree     = params.campaignType === 'OPEN_EVENT';
   const accent     = isFree ? FREE_ACCENT : PAID_ACCENT;
   const accentBg   = isFree ? FREE_LIGHT  : PAID_LIGHT;
@@ -671,11 +674,18 @@ export default function CampaignProposalsScreen() {
                   {isFree ? t('campaignProposals.badgeFreeEvent') : t('campaignProposals.badgePaidEvent')}
                 </Text>
               </View>
-              {platform ? (
-                <View style={[styles.platformPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
-                  <Text style={[styles.platformText, { color: C.text }]}>{platform}</Text>
+              {platformList.length > 0 && (
+                <View style={styles.platformIconRow}>
+                  {platformList.map((p) => {
+                    const pMeta = getPlatformMeta(allPlatforms, p);
+                    return (
+                      <View key={p} style={[styles.platformIcon, { backgroundColor: pMeta.bg }]}>
+                        <FontAwesome5 name={pMeta.icon} size={11} color={pMeta.color} />
+                      </View>
+                    );
+                  })}
                 </View>
-              ) : null}
+              )}
             </View>
           </View>
 
@@ -864,8 +874,8 @@ const styles = StyleSheet.create({
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },
-  platformPill:  { borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
-  platformText:  { fontSize: 11, fontFamily: F.semibold },
+  platformIconRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  platformIcon:  { width: 24, height: 24, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
 
   statStrip: {
     flexDirection: 'row',

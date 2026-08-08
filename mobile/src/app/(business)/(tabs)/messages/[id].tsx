@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Animated,
   ActivityIndicator,
@@ -30,6 +30,7 @@ import { BackButton } from '@/components/BackButton';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import { useChatConversation } from '@/hooks/useChatConversation';
+import { chatScreenOpenEvents } from '@/lib/chatScreenOpenEvents';
 import type { Message } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -414,6 +415,11 @@ export default function BusinessChatRoomScreen() {
     urlStatus,
     participantUserId,
   });
+
+  useLayoutEffect(() => {
+    chatScreenOpenEvents.open();
+    return () => chatScreenOpenEvents.close();
+  }, []);
 
   function openParticipantProfile() {
     if (!participantId) return;
