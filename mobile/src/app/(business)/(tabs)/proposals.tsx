@@ -28,7 +28,7 @@ type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type Proposal = {
   id: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'expired';
   workStatus: WS;
   // The application's own payment status — distinct from campaign.paymentStatus below,
   // which tracks the campaign record and is never updated by the pay/release flow.
@@ -53,6 +53,7 @@ type CampaignCard = {
   pending: number;
   accepted: number;
   rejected: number;
+  expired: number;
   latestAt: string;
   acceptedWorkStatus: WS | null;
   acceptedPaymentStatus: PS;
@@ -73,7 +74,7 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
     if (!map.has(id)) {
       map.set(id, {
         id, title, platforms, campaignType,
-        total: 0, pending: 0, accepted: 0, rejected: 0,
+        total: 0, pending: 0, accepted: 0, rejected: 0, expired: 0,
         latestAt: p.createdAt,
         acceptedWorkStatus: null,
         acceptedPaymentStatus: 'UNPAID',

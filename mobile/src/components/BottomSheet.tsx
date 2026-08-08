@@ -11,6 +11,10 @@ type Props = {
   onClose: () => void;
   title?: string;
   subtitle?: string;
+  // Centers the title/subtitle within the header instead of the default
+  // left-aligned layout — opt-in so existing sheets (which pair the title
+  // with a left-aligned block plus a right-aligned headerRight) are unaffected.
+  centerTitle?: boolean;
   headerRight?: ReactNode;
   footer?: ReactNode;
   scrollable?: boolean;
@@ -37,6 +41,7 @@ export function BottomSheet({
   onClose,
   title,
   subtitle,
+  centerTitle = false,
   headerRight,
   footer,
   scrollable = true,
@@ -71,9 +76,9 @@ export function BottomSheet({
 
         {(title || headerRight) && (
           <View style={[s.header, { borderBottomColor: C.border }]}>
-            <View style={{ flex: 1 }}>
-              {title && <Text style={[s.title, { color: C.text }]} numberOfLines={2}>{title}</Text>}
-              {subtitle && <Text style={[s.subtitle, { color: C.textSecondary }]}>{subtitle}</Text>}
+            <View style={[{ flex: 1 }, centerTitle && s.headerCenter]}>
+              {title && <Text style={[s.title, { color: C.text }, centerTitle && s.textCenter]} numberOfLines={2}>{title}</Text>}
+              {subtitle && <Text style={[s.subtitle, { color: C.textSecondary }, centerTitle && s.textCenter]}>{subtitle}</Text>}
             </View>
             {headerRight}
           </View>
@@ -105,6 +110,8 @@ const s = StyleSheet.create({
   handleWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 6 },
   handlePill: { width: 40, height: 24, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   header:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  headerCenter: { alignItems: 'center' },
+  textCenter: { textAlign: 'center' },
   title:      { fontSize: 17, fontFamily: F.extrabold },
   subtitle:   { fontSize: 12.5, fontFamily: F.regular, marginTop: 2 },
   body:       { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 36 },

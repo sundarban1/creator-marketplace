@@ -70,6 +70,10 @@ const COPY = {
           { title: 'Filter by location', desc: 'Find creators in a specific Nepali city, or open a campaign to creators anywhere in the country.' },
         ],
       },
+      productDevelopment: {
+        heading: 'Loop creators into your branded product development',
+        paragraph: "Branded product development doesn't stop once something is manufactured — a launch only lands if the right audience actually sees it, tries it, and talks about it. Post the launch as a paid campaign or a free open event, and creators show up with real content: unboxings, first impressions, how-to's, and honest reviews that carry more weight than a paid ad ever could. It's a faster, more authentic way to put a new product in front of the people who'll actually buy it, instead of finding out how the market reacts only after it's already on shelves.",
+      },
       budgetProtected: {
         heading: 'Your budget is protected until the work is approved',
         paragraphs: [
@@ -157,6 +161,10 @@ const COPY = {
           { title: 'स्थान अनुसार फिल्टर गर्नुहोस्', desc: 'कुनै निश्चित नेपाली सहरमा क्रिएटरहरू फेला पार्नुहोस्, वा देशभरि जहाँ पनि रहेका क्रिएटरहरूका लागि क्याम्पेन खोल्नुहोस्।' },
         ],
       },
+      productDevelopment: {
+        heading: 'आफ्नो ब्रान्डेड उत्पादन विकासमा क्रिएटरहरूलाई सामेल गर्नुहोस्',
+        paragraph: 'ब्रान्डेड उत्पादन विकास उत्पादन बनेपछि नै सकिँदैन — लन्च तब मात्र सफल हुन्छ जब सही दर्शकले त्यो साँच्चै देख्छ, प्रयोग गर्छ, र त्यसको बारेमा कुरा गर्छ। आफ्नो लन्चलाई तलबसहितको क्याम्पेन वा निःशुल्क खुला इभेन्टको रूपमा पोस्ट गर्नुहोस्, र क्रिएटरहरू वास्तविक सामग्रीसहित आउँछन्: अनबक्सिङ, पहिलो प्रभाव, प्रयोग गर्ने तरिका, र इमानदार समीक्षाहरू जसले तलबसहितको विज्ञापनभन्दा बढी भरोसा बोक्छन्। यो नयाँ उत्पादनलाई साँच्चै किन्नेहरूसामु ल्याउने छिटो र बढी प्रामाणिक तरिका हो, बजारले कस्तो प्रतिक्रिया देखाउँछ भनेर उत्पादन पसलमा पुगिसकेपछि मात्र थाहा पाउनुको सट्टा।',
+      },
       budgetProtected: {
         heading: 'काम स्वीकृत नभएसम्म तपाईंको बजेट सुरक्षित रहन्छ',
         paragraphs: [
@@ -205,7 +213,7 @@ function BrandsPageInner() {
         title: t.seo.title,
         description: t.seo.description,
         path: '/brands',
-        keywords: ['hire creator Nepal', 'hire influencer Nepal', 'brand collaboration Nepal', 'creator marketing Nepal', 'influencer marketing Nepal', 'hire content creators Nepal', 'hire content creators in Nepal', 'hire influencers Nepal', 'find content creators Nepal', 'find influencers Nepal', 'influencer agency Nepal', 'UGC creators Nepal', 'hire UGC creators Nepal'],
+        keywords: ['hire creator Nepal', 'hire influencer Nepal', 'brand collaboration Nepal', 'creator marketing Nepal', 'influencer marketing Nepal', 'hire content creators Nepal', 'hire content creators in Nepal', 'hire influencers Nepal', 'find content creators Nepal', 'find influencers Nepal', 'influencer agency Nepal', 'UGC creators Nepal', 'hire UGC creators Nepal', 'branded product development Nepal'],
         jsonLd: [organizationSchema(), webPageSchema({ path: '/brands', title: t.seo.title, description: t.seo.description })],
       }}
       breadcrumb={[{ name: d.contentPage.home, path: '/' }, { name: t.breadcrumbName, path: '/brands' }]}
@@ -225,6 +233,10 @@ function BrandsPageInner() {
         <BenefitGrid
           items={t.sections.findCreators.benefits.map((b, i) => ({ icon: FIND_CREATORS_ICONS[i], title: b.title, desc: b.desc }))}
         />
+      </ContentSection>
+
+      <ContentSection heading={t.sections.productDevelopment.heading}>
+        <p>{t.sections.productDevelopment.paragraph}</p>
       </ContentSection>
 
       <ContentSection heading={t.sections.budgetProtected.heading}>

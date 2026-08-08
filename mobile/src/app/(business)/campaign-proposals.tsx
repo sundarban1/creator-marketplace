@@ -32,7 +32,7 @@ type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type Proposal = {
   id: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'expired';
   workStatus: WS;
   proposedRate: string;
   coverLetter: string;
@@ -58,7 +58,7 @@ function projectBtnConfig(ws: WS, paymentStatus: PS, t: TFn) {
   return                          { label: t('activityTimeline.statusWaitingPayment'),     icon: 'credit-card'          as const, color: '#EF4444' };
 }
 
-type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
+type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected' | 'expired';
 
 const PAID_ACCENT = '#4F46E5';
 const FREE_ACCENT = '#059669';
@@ -69,6 +69,7 @@ const STATUS_CFG = {
   pending:  { bg: '#FFF7ED', color: '#D97706', icon: 'clock'         as const, label: 'Pending'  },
   accepted: { bg: '#ECFDF5', color: '#16A34A', icon: 'check-circle'     as const, label: 'Accepted' },
   rejected: { bg: '#FEF2F2', color: '#EF4444', icon: 'times-circle' as const, label: 'Rejected' },
+  expired:  { bg: '#F3F4F6', color: '#6B7280', icon: 'hourglass-end' as const, label: 'Expired' },
 };
 
 function initials(name: string) {
@@ -94,6 +95,7 @@ function ProposalCard({
   onReject,
   acting,
   onStartProject,
+  campaignInactive,
 }: {
   proposal: Proposal;
   isFree: boolean;
@@ -102,6 +104,7 @@ function ProposalCard({
   onReject: (p: Proposal) => void;
   acting: boolean;
   onStartProject?: (p: Proposal) => void;
+  campaignInactive: boolean;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -134,7 +137,10 @@ function ProposalCard({
           <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
             <FontAwesome5 name={st.icon} size={12} color={st.color} />
             <Text style={[styles.statusText, { color: st.color }]}>
-              {p.status === 'pending' ? t('campaignProposals.statusPending') : p.status === 'accepted' ? t('campaignProposals.statusAccepted') : t('campaignProposals.statusRejected')}
+              {p.status === 'pending' ? t('campaignProposals.statusPending')
+                : p.status === 'accepted' ? t('campaignProposals.statusAccepted')
+                : p.status === 'expired' ? t('campaignProposals.statusExpired')
+                : t('campaignProposals.statusRejected')}
             </Text>
           </View>
           <Text style={[styles.timeText, { color: C.textSecondary }]}>{timeAgo(p.createdAt)}</Text>
@@ -190,34 +196,44 @@ function ProposalCard({
 
       {/* Actions for pending */}
       {p.status === 'pending' && (
-        <View style={styles.actions}>
-          <Pressable
-            style={[styles.declineBtn, { borderColor: C.border, backgroundColor: C.background }]}
-            disabled={acting}
-            onPress={() => onReject(p)}>
-            {acting ? (
-              <ActivityIndicator size="small" color="#EF4444" />
-            ) : (
-              <>
-                <FontAwesome5 name="times-circle" solid size={16} color="#EF4444" />
-                <Text style={[styles.actionText, { color: '#EF4444' }]}>{t('campaignProposals.declineBtn')}</Text>
-              </>
-            )}
-          </Pressable>
-          <Pressable
-            style={[styles.acceptBtn, { backgroundColor: accent }]}
-            disabled={acting}
-            onPress={() => onAccept(p)}>
-            {acting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <FontAwesome5 name="check-circle" solid size={16} color="#fff" />
-                <Text style={[styles.actionText, { color: '#fff' }]}>{acceptLabel}</Text>
-              </>
-            )}
-          </Pressable>
-        </View>
+        <>
+          <View style={styles.actions}>
+            <Pressable
+              style={[styles.declineBtn, { borderColor: C.border, backgroundColor: C.background }, campaignInactive && styles.actionBtnDisabled]}
+              disabled={acting || campaignInactive}
+              onPress={() => onReject(p)}>
+              {acting ? (
+                <ActivityIndicator size="small" color="#EF4444" />
+              ) : (
+                <>
+                  <FontAwesome5 name="times-circle" solid size={16} color="#EF4444" />
+                  <Text style={[styles.actionText, { color: '#EF4444' }]}>{t('campaignProposals.declineBtn')}</Text>
+                </>
+              )}
+            </Pressable>
+            <Pressable
+              style={[styles.acceptBtn, { backgroundColor: accent }, campaignInactive && styles.actionBtnDisabled]}
+              disabled={acting || campaignInactive}
+              onPress={() => onAccept(p)}>
+              {acting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <FontAwesome5 name="check-circle" solid size={16} color="#fff" />
+                  <Text style={[styles.actionText, { color: '#fff' }]}>{acceptLabel}</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+          {campaignInactive && (
+            <View style={styles.readOnlyNotice}>
+              <FontAwesome5 name="info-circle" size={12} color={C.textSecondary} />
+              <Text style={[styles.readOnlyNoticeText, { color: C.textSecondary }]}>
+                {t('campaignProposals.readOnlyEventEnded')}
+              </Text>
+            </View>
+          )}
+        </>
       )}
 
       {/* Dynamic project action button — paid campaigns only */}
@@ -276,7 +292,7 @@ function ConfirmModal({
   const willFill      = capacity != null && slotsAfter === capacity;
   const remainPending = willFill; // backend will auto-decline the rest
 
-  const iconName  = isAccept ? 'checkmark-circle' : 'close-circle';
+  const iconName  = isAccept ? 'check-circle' : 'times-circle';
   const iconColor = isAccept ? (isFree ? FREE_ACCENT : PAID_ACCENT) : '#EF4444';
   const iconBg    = isAccept ? (isFree ? FREE_LIGHT  : PAID_LIGHT)  : '#FEF2F2';
 
@@ -299,7 +315,7 @@ function ConfirmModal({
               },
             ]}
           >
-            <FontAwesome5 name={iconName} size={36} color={iconColor} />
+            <FontAwesome5 name={iconName} solid size={36} color={iconColor} />
           </View>
 
           {/* Title */}
@@ -369,7 +385,7 @@ function ConfirmModal({
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <FontAwesome5 name={iconName} size={16} color="#fff" />
+                  <FontAwesome5 name={iconName} solid size={16} color="#fff" />
                   <Text style={cm.confirmText}>
                     {isAccept ? (isFree ? 'Approve' : 'Accept') : 'Decline'}
                   </Text>
@@ -482,6 +498,7 @@ export default function CampaignProposalsScreen() {
   const onRefresh = useCallback(() => void load(true), [campaignId]);
 
   async function handleAccept(p: Proposal) {
+    if (campaignInactive) return;
     // Free events skip the contract step entirely — same confirm-and-approve
     // flow as before.
     if (isFree) {
@@ -490,6 +507,10 @@ export default function CampaignProposalsScreen() {
     }
     setActingId(p.id);
     try {
+      // Backend lazily creates the contract on first access if the application
+      // predates the contract feature (or a rare mid-flight failure left it
+      // missing) — so this always returns a contract to agree to, rather than
+      // ever needing to skip the agreement step.
       const contract = await contractService.getContractForApplication(p.id);
       setContractModal({ visible: true, contract, proposal: p, agreeing: false });
     } catch (e) {
@@ -535,6 +556,7 @@ export default function CampaignProposalsScreen() {
   }
 
   function handleReject(p: Proposal) {
+    if (campaignInactive) return;
     setModal({ visible: true, type: 'reject', proposal: p, loading: false });
   }
 
@@ -598,15 +620,24 @@ export default function CampaignProposalsScreen() {
     pending:  proposals.filter((p) => p.status === 'pending').length,
     accepted: proposals.filter((p) => p.status === 'accepted').length,
     rejected: proposals.filter((p) => p.status === 'rejected').length,
+    expired:  proposals.filter((p) => p.status === 'expired').length,
   };
 
-  // Every proposal must be resolved — declined, or accepted with the work
-  // marked COMPLETED — before the event can be manually closed. Once closed
-  // it drops out of the creator-facing (ACTIVE-only) browse listing.
+  // Every proposal must be resolved — declined, expired (the event closed
+  // before a decision was made — nobody actively rejected it, but it's just
+  // as terminal), or accepted with the work marked COMPLETED — before the
+  // event can be manually closed. Once closed it drops out of the
+  // creator-facing (ACTIVE-only) browse listing.
+  // Once an event has expired or been closed, a brand can no longer act on
+  // pending proposals — the backend already rejects accept/reject in this
+  // state (400 "no longer active"), so the buttons must reflect that up
+  // front instead of failing silently after a tap.
+  const campaignInactive = campaignStatus === 'expired' || campaignStatus === 'closed';
+
   const canClose =
     campaignStatus === 'active' &&
     proposals.length > 0 &&
-    proposals.every((p) => p.status === 'rejected' || (p.status === 'accepted' && p.workStatus === 'COMPLETED'));
+    proposals.every((p) => p.status === 'rejected' || p.status === 'expired' || (p.status === 'accepted' && p.workStatus === 'COMPLETED'));
 
   function handleCloseCampaign() {
     Alert.alert(
@@ -642,6 +673,7 @@ export default function CampaignProposalsScreen() {
     { key: 'pending',  label: t('campaignProposals.filterPending'),                                                count: counts.pending,  color: '#D97706' },
     { key: 'accepted', label: isFree ? t('campaignProposals.filterApproved') : t('campaignProposals.filterApproved'), count: counts.accepted, color: '#16A34A' },
     { key: 'rejected', label: t('campaignProposals.filterDeclined'),                                               count: counts.rejected, color: '#EF4444' },
+    { key: 'expired',  label: t('campaignProposals.filterExpired'),                                                count: counts.expired,  color: '#6B7280' },
   ];
 
   return (
@@ -807,6 +839,7 @@ export default function CampaignProposalsScreen() {
               onReject={handleReject}
               acting={actingId === item.id}
               onStartProject={handleStartProject}
+              campaignInactive={campaignInactive}
             />
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -943,7 +976,10 @@ const styles = StyleSheet.create({
   actions:    { flexDirection: 'row', gap: 10 },
   declineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: RADIUS.md, borderWidth: 1.5 },
   acceptBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: RADIUS.md },
+  actionBtnDisabled: { opacity: 0.45 },
   actionText: { fontSize: 13, fontFamily: F.bold },
+  readOnlyNotice:     { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8 },
+  readOnlyNoticeText: { flex: 1, fontSize: 11, fontFamily: F.regular, lineHeight: 15 },
 
   startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.full, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
   startProjectBtnTxt: { fontSize: 13, color: '#fff', fontFamily: F.bold },

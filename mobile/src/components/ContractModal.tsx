@@ -126,6 +126,7 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
       onClose={onClose}
       title={title}
       subtitle={subtitle}
+      centerTitle
       maxHeightPct={0.9}
       dismissOnBackdropPress={!agreeing}
       contentContainerStyle={s.body}

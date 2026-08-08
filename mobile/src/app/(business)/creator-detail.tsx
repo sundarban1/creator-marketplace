@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Image,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -332,8 +333,8 @@ export default function CreatorDetailScreen() {
                       style={[
                         s.socialIconWrap,
                         {
-                          backgroundColor: info.color, shadowColor: info.color,
-                          shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                          backgroundColor: info.color,
+                          ...Platform.select({ ios: { shadowColor: info.color, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } } }),
                         },
                       ]}
                     >

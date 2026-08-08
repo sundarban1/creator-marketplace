@@ -39,6 +39,7 @@ function LandingPageInner() {
           'hire TikTok influencers Nepal', 'hire Instagram influencers Nepal', 'hire YouTube creators Nepal',
           'find Nepali influencers', 'find content creators for business', 'influencer marketing platform Nepal',
           'creator platform Nepal', 'brand promotion Nepal', 'campaign management Nepal', 'brand ambassador Nepal',
+          'branded product development Nepal',
           // Creator-side
           'brand deals Nepal', 'sponsorship opportunities Nepal', 'get brand deals Nepal',
           'earn from social media Nepal', 'influencer jobs Nepal', 'content creator jobs Nepal',

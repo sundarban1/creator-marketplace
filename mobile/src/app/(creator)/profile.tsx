@@ -3,7 +3,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Image, Linking,
+  ActivityIndicator, Image, Linking, Platform,
   Pressable, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { useToast } from '@/components/Toast';
@@ -282,8 +282,8 @@ export default function CreatorProfileScreen() {
                     style={[
                       s.platformBubble,
                       {
-                        backgroundColor: acc.color + '18', shadowColor: acc.color,
-                        shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                        backgroundColor: acc.color + '18',
+                        ...Platform.select({ ios: { shadowColor: acc.color, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } } }),
                       },
                     ]}
                   >
@@ -358,8 +358,8 @@ export default function CreatorProfileScreen() {
                       style={[
                         s.platformBubble,
                         {
-                          backgroundColor: plat.color + '18', shadowColor: plat.color,
-                          shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                          backgroundColor: plat.color + '18',
+                          ...Platform.select({ ios: { shadowColor: plat.color, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } } }),
                         },
                       ]}
                     >

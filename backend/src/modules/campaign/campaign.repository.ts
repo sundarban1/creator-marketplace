@@ -926,6 +926,43 @@ export class CampaignRepository {
     });
   }
 
+  // Cascades a past-deadline campaign's expiry onto its still-undecided
+  // applications in one transaction — ACCEPTED/REJECTED applications are
+  // untouched, so an accepted collaboration keeps working normally even
+  // after its parent campaign expires (see CampaignService.expireCampaignsPastDeadline
+  // for the notification/activity-log fan-out this feeds).
+  async expireCampaignsPastDeadline(): Promise<{
+    campaigns: { id: string; title: string; campaignType: CampaignType; business: { userId: string; businessName: string | null } }[];
+    applications: { id: string; campaignId: string; creator: { userId: string } }[];
+  }> {
+    const campaigns = await prisma.campaign.findMany({
+      where: { status: 'ACTIVE', deadline: { lt: new Date() } },
+      select: { id: true, title: true, campaignType: true, business: { select: { userId: true, businessName: true } } },
+    });
+    if (campaigns.length === 0) return { campaigns: [], applications: [] };
+
+    const campaignIds = campaigns.map((c) => c.id);
+    const applications = await prisma.application.findMany({
+      where: { campaignId: { in: campaignIds }, status: 'PENDING' },
+      select: { id: true, campaignId: true, creator: { select: { userId: true } } },
+    });
+
+    const ops: Prisma.PrismaPromise<unknown>[] = [
+      prisma.campaign.updateMany({ where: { id: { in: campaignIds } }, data: { status: 'EXPIRED' } }),
+    ];
+    if (applications.length > 0) {
+      ops.push(
+        prisma.application.updateMany({
+          where: { id: { in: applications.map((a) => a.id) } },
+          data: { status: 'EXPIRED' },
+        })
+      );
+    }
+    await prisma.$transaction(ops);
+
+    return { campaigns, applications };
+  }
+
   // Every call site already gates its send on `if (email) { ... }` — omitting
   // opted-out users from the returned Map (rather than threading a separate
   // flag through all 7 call sites) makes that existing check double as the

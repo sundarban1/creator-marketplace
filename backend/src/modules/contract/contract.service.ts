@@ -274,11 +274,39 @@ export class ContractService {
   }
 
   async getByApplicationId(applicationId: string, userId: string, role: Role) {
-    const contract = await prisma.contract.findUnique({
+    let contract = await prisma.contract.findUnique({
       where: { applicationId },
       include: { creator: { select: { userId: true } }, business: { select: { userId: true } } },
     });
-    if (!contract) throw new AppError('Contract not found', 404);
+
+    if (!contract) {
+      // Applications created before the contract feature existed (or a rare
+      // failure mid-submission — see campaign.service.ts's apply()) have no
+      // contract row. Lazily create one now from the application's own frozen
+      // proposedRate/timeline rather than leaving the business permanently
+      // unable to see an agreement to accept.
+      const application = await prisma.application.findUnique({
+        where: { id: applicationId },
+        include: { campaign: { include: { business: true } }, creator: true },
+      });
+      if (!application) throw new AppError('Application not found', 404);
+      assertPaidCampaign(application.campaign.campaignType);
+
+      const created = await this.createForApplication({
+        applicationId,
+        campaign:     application.campaign,
+        business:     application.campaign.business,
+        creator:      application.creator,
+        proposedRate: application.proposedRate,
+        timeline:     application.timeline,
+      });
+      contract = {
+        ...created,
+        creator:  { userId: application.creator.userId },
+        business: { userId: application.campaign.business.userId },
+      };
+    }
+
     assertParty(contract, userId, role);
     return contract;
   }

@@ -27,7 +27,7 @@ import { TabColors } from '@/utilities/tabColors';
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
-type AppStatus = 'pending' | 'accepted' | 'rejected';
+type AppStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
 type TabKey = 'all' | AppStatus;
 
 type Proposal = {
@@ -53,6 +53,7 @@ const STATUS_CFG = {
   pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'clock'             as const, color: TabColors.brand.color,  bg: TabColors.brand.bg },
   accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'check-circle' as const, color: TabColors.positive.color, bg: TabColors.positive.bg },
   rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'times-circle'     as const, color: TabColors.danger.color,   bg: TabColors.danger.bg },
+  expired:  { labelKey: 'proposal.creator.statusExpired'  as const, icon: 'hourglass-end'     as const, color: TabColors.closed.color,   bg: TabColors.closed.bg },
 };
 
 const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof FontAwesome5.glyphMap; color: string; subKey: string }> = {
@@ -238,6 +239,20 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
             </View>
           </View>
         )}
+
+        {/* ── Expired footer — distinct from rejected: nobody declined this,
+            the event just closed before a decision was made. ── */}
+        {proposal.status === 'expired' && (
+          <View style={[styles.rejectedBanner, { borderColor: `${accentColor}40` }]}>
+            <View style={[styles.rejectedIcon, { backgroundColor: `${accentColor}18` }]}>
+              <FontAwesome5 name="hourglass-end" solid size={16} color={accentColor} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rejectedTitle, { color: accentColor }]}>{t('proposal.creator.expiredLabel')}</Text>
+              <Text style={[styles.rejectedSub, { color: C.textSecondary }]}>{t('proposal.creator.expiredSub')}</Text>
+            </View>
+          </View>
+        )}
       </Pressable>
     </View>
   );
@@ -250,15 +265,15 @@ const PAGE_SIZE = 10;
 type TabState = { items: Proposal[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
 const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
 
-const STATUS_PARAM: Record<TabKey, 'PENDING' | 'ACCEPTED' | 'REJECTED' | undefined> = {
-  all: undefined, pending: 'PENDING', accepted: 'ACCEPTED', rejected: 'REJECTED',
+const STATUS_PARAM: Record<TabKey, 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | undefined> = {
+  all: undefined, pending: 'PENDING', accepted: 'ACCEPTED', rejected: 'REJECTED', expired: 'EXPIRED',
 };
 
 export default function ProposalsScreen() {
   const { t } = useLanguage();
   const C = useAppColors();
   const [tabData, setTabData] = useState<Record<TabKey, TabState>>({
-    all: emptyTabState(), pending: emptyTabState(), accepted: emptyTabState(), rejected: emptyTabState(),
+    all: emptyTabState(), pending: emptyTabState(), accepted: emptyTabState(), rejected: emptyTabState(), expired: emptyTabState(),
   });
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -328,6 +343,7 @@ export default function ProposalsScreen() {
     { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'clock'             as const, color: TabColors.brand.color,  count: tabData.pending.total },
     { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'check-circle' as const, color: TabColors.positive.color, count: tabData.accepted.total },
     { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'times-circle'     as const, color: TabColors.danger.color,   count: tabData.rejected.total },
+    { key: 'expired',  label: t('proposal.creator.tabExpired'),  icon: 'hourglass-end'    as const, color: TabColors.closed.color,   count: tabData.expired.total },
   ];
 
   const current = tabData[activeTab];
@@ -337,6 +353,7 @@ export default function ProposalsScreen() {
     pending:  { faIcon: 'hourglass-half', title: t('proposal.creator.emptyPendingTitle'), sub: t('proposal.creator.emptyPendingSub') },
     accepted: { faIcon: 'check-circle',   title: t('proposal.creator.emptyAcceptedTitle'),sub: t('proposal.creator.emptyAcceptedSub')},
     rejected: { faIcon: 'times-circle',   title: t('proposal.creator.emptyRejectedTitle'),sub: t('proposal.creator.emptyRejectedSub')},
+    expired:  { faIcon: 'hourglass-end',  title: t('proposal.creator.emptyExpiredTitle'), sub: t('proposal.creator.emptyExpiredSub') },
   };
   const emptyMsg = emptyMessages[activeTab];
 

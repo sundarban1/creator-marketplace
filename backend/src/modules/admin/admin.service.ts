@@ -94,7 +94,7 @@ export class AdminService {
       // completed (workStatus COMPLETED) or its payment released — either
       // signals the engagement is actually done.
       const hasUnfinishedProposal = campaign.applications.some((a) =>
-        a.status !== 'REJECTED' && a.workStatus !== 'COMPLETED' && a.paymentStatus !== 'RELEASED'
+        a.status !== 'REJECTED' && a.status !== 'EXPIRED' && a.workStatus !== 'COMPLETED' && a.paymentStatus !== 'RELEASED'
       );
       if (hasUnfinishedProposal) {
         throw new AppError(

@@ -31,6 +31,7 @@ const STATUS_STYLE = {
   draft:  { bg: TabColors.warning.bg,  color: TabColors.warning.color,  statusKey: 'business.home.statusPaused' as const },
   closed: { bg: TabColors.closed.bg,   color: TabColors.closed.color,   statusKey: 'business.home.statusClosed' as const },
   pending_approval: { bg: TabColors.warning.bg, color: TabColors.warning.color, statusKey: 'business.home.statusPendingApproval' as const },
+  expired: { bg: TabColors.closed.bg, color: TabColors.closed.color, statusKey: 'business.home.statusExpired' as const },
 };
 
 // Tablet/iPad: two cards per row in Recent Events, matching the events tab's

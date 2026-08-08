@@ -191,7 +191,7 @@ export default function CampaignDetailScreen() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [hasApplied, setHasApplied]           = useState(false);
-  const [applicationStatus, setApplicationStatus] = useState<'pending' | 'accepted' | 'rejected' | null>(null);
+  const [applicationStatus, setApplicationStatus] = useState<'pending' | 'accepted' | 'rejected' | 'expired' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -401,7 +401,7 @@ export default function CampaignDetailScreen() {
         if (!isBusiness) {
           const myApp = (apps as { campaignId: string; status: string }[]).find((a) => a.campaignId === campaignId);
           setHasApplied(!!myApp);
-          setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' : null);
+          setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' | 'expired' : null);
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
@@ -416,7 +416,7 @@ export default function CampaignDetailScreen() {
         .then(({ proposals: apps }) => {
           const myApp = apps.find((a) => a.campaignId === campaignId);
           setHasApplied(!!myApp);
-          setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' : null);
+          setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' | 'expired' : null);
         })
         .catch(() => {});
     }, [campaignId, isBusiness])
@@ -989,14 +989,16 @@ export default function CampaignDetailScreen() {
                   colors={C}>
                   <ChipGroup
                     options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
-                    value={t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
+                    value={editForm.status === 'expired'
+                      ? t('campaignDetail.statusExpired')
+                      : t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
                     onChange={(label) => {
-                      if (hasProposals) return;
+                      if (hasProposals || editForm.status === 'expired') return;
                       const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
                       if (opt) updateEdit('status', opt.value);
                     }}
                     colors={C}
-                    disabled={hasProposals}
+                    disabled={hasProposals || editForm.status === 'expired'}
                   />
                 </SectionCard>
 

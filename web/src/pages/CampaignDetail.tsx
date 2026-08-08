@@ -32,6 +32,7 @@ function formatBudget(min: number, max: number) {
 function appStatusIcon(status: string) {
   if (status === 'ACCEPTED')  return <CheckCircle2 size={14} className="text-green-500" />;
   if (status === 'REJECTED')  return <XCircle      size={14} className="text-red-400"   />;
+  if (status === 'EXPIRED')   return <Clock        size={14} className="text-gray-400"  />;
   return                              <Hourglass    size={14} className="text-amber-500" />;
 }
 
@@ -39,6 +40,7 @@ function appStatusBadge(status: string): string {
   const s = status.toLowerCase();
   if (s === 'accepted') return 'active';
   if (s === 'rejected') return 'cancelled';
+  if (s === 'expired')  return 'expired';
   return 'pending';
 }
 
@@ -106,8 +108,10 @@ function buildTimeline(campaign: ApiCampaignDetail) {
     if (app.status !== 'PENDING') {
       events.push({
         date:  app.updatedAt,
-        label: `${name} ${app.status === 'ACCEPTED' ? 'accepted' : 'rejected'}`,
-        color: app.status === 'ACCEPTED' ? 'bg-green-500' : 'bg-red-400',
+        label: app.status === 'ACCEPTED' ? `${name} accepted`
+          : app.status === 'EXPIRED' ? `${name}'s proposal expired`
+          : `${name} rejected`,
+        color: app.status === 'ACCEPTED' ? 'bg-green-500' : app.status === 'EXPIRED' ? 'bg-gray-400' : 'bg-red-400',
       });
     }
     if (app.workStatus === 'IN_PROGRESS') {
@@ -457,6 +461,11 @@ export function CampaignDetail() {
                 <XCircle size={14} />
                 Reject
               </button>
+            </>
+          ) : campaign.status === 'EXPIRED' || campaign.status === 'CANCELLED' ? (
+            <>
+              <span className="text-xs text-gray-500">Status:</span>
+              <StatusBadge status={campaign.status.toLowerCase()} />
             </>
           ) : (
             <>

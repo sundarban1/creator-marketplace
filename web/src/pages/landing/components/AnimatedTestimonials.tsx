@@ -14,8 +14,27 @@ type Testimonial = {
   quote: string;
   name: string;
   designation: string;
-  src: string;
+  src?: string | null;
 };
+
+const PLACEHOLDER_BG = [
+  'bg-violet-500',
+  'bg-blue-500',
+  'bg-emerald-500',
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-cyan-500',
+];
+
+function initials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
 
 export function AnimatedTestimonials({
   testimonials,
@@ -70,12 +89,20 @@ export function AnimatedTestimonials({
                   transition={{ duration: 0.4, ease: 'easeInOut' }}
                   className="absolute inset-0 origin-bottom"
                 >
-                  <img
-                    src={testimonial.src}
-                    alt={testimonial.name}
-                    draggable={false}
-                    className="h-full w-full rounded-3xl border border-ink/10 object-cover object-center shadow-[0_20px_50px_-20px_rgba(20,17,16,0.25)]"
-                  />
+                  {testimonial.src ? (
+                    <img
+                      src={testimonial.src}
+                      alt={testimonial.name}
+                      draggable={false}
+                      className="h-full w-full rounded-3xl border border-ink/10 object-cover object-center shadow-[0_20px_50px_-20px_rgba(20,17,16,0.25)]"
+                    />
+                  ) : (
+                    <div
+                      className={`flex h-full w-full items-center justify-center rounded-3xl border border-ink/10 shadow-[0_20px_50px_-20px_rgba(20,17,16,0.25)] ${PLACEHOLDER_BG[index % PLACEHOLDER_BG.length]}`}
+                    >
+                      <span className="text-6xl font-semibold text-white">{initials(testimonial.name)}</span>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>

@@ -927,6 +927,7 @@ enum CampaignStatus {
   PAUSED
   CLOSED
   CANCELLED
+  EXPIRED
 }
 
 enum ConversationStatus {
@@ -968,6 +969,7 @@ enum ApplicationStatus {
   PENDING
   ACCEPTED
   REJECTED
+  EXPIRED
 }
 
 enum CampaignType {

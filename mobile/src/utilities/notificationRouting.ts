@@ -40,6 +40,13 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.type === 'campaign_invitation') {
     return n.refId ? { pathname: '/campaign-detail', params: { campaignId: n.refId } } : null;
   }
+  // Business-only: their own event's deadline passed. campaign-detail.tsx is
+  // shared by both roles, so this works whether the campaign was PAID_CAMPAIGN
+  // (refType 'campaign', reaches here) or OPEN_EVENT (refType 'event', already
+  // caught by the branch above).
+  if (n.type === 'event_expired') {
+    return n.refId ? { pathname: '/campaign-detail', params: { campaignId: n.refId } } : null;
+  }
   if (n.type === 'creator_saved') return null; // just acknowledge — no deep link needed
   if (n.type === 'message_request_accepted') {
     if (!n.refId) return null;
@@ -60,7 +67,7 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.type === 'new_message') {
     return isCreator ? '/(creator)/messages/' : '/(business)/messages/';
   }
-  if (['proposal_accepted', 'proposal_rejected', 'campaign_deadline'].includes(n.type)) {
+  if (['proposal_accepted', 'proposal_rejected', 'proposal_expired', 'campaign_deadline'].includes(n.type)) {
     return isCreator ? '/(creator)/proposals' : null;
   }
   return null;

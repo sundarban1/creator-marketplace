@@ -17,6 +17,8 @@ export const ActivityAction = {
   CONVERSATION_HIDDEN:        'conversation.hidden',
   CONVERSATION_DELETED_BY_ADMIN: 'conversation.deleted_by_admin',
   ACCOUNT_VERIFIED:           'account.verified',
+  CAMPAIGN_EXPIRED:           'campaign.expired',
+  APPLICATION_EXPIRED:        'application.expired',
 } as const;
 
 export const AuditAction = {

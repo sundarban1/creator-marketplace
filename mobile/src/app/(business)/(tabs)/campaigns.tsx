@@ -53,6 +53,9 @@ const STATUS_CFG = {
   draft:  { bg: TabColors.warning.bg,  color: TabColors.warning.color  },
   closed: { bg: TabColors.closed.bg,   color: TabColors.closed.color   },
   pending_approval: { bg: TabColors.warning.bg, color: TabColors.warning.color },
+  // Reuses "closed"'s neutral gray — expired vs. closed only needs to be
+  // distinguishable via label text here, not a separate color.
+  expired: { bg: TabColors.closed.bg, color: TabColors.closed.color },
 } as const;
 
 function timeAgo(iso: string) {
@@ -533,6 +536,7 @@ export default function CampaignsScreen() {
                             <Text style={[styles.tagBadgeText, { color: st.color }]}>
                               {c.status === 'active' ? t('campaigns.statusActive')
                                 : c.status === 'pending_approval' ? t('campaigns.statusPendingApproval')
+                                : c.status === 'expired' ? t('campaigns.statusExpired')
                                 : t('campaigns.statusClosed')}
                             </Text>
                           </View>

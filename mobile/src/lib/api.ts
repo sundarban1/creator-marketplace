@@ -99,7 +99,7 @@ export interface ApiCampaign {
   locationType?: 'ONSITE' | 'REMOTE';
   budgetMin:     number;
   budgetMax:     number;
-  status:        'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+  status:        'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'EXPIRED';
   isFeatured:    boolean;
   creatorsNeeded?: number;
   createdAt:     string;

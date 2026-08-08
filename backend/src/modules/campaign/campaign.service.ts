@@ -655,6 +655,7 @@ export class CampaignService {
     const campaign = await this.repo.findById(campaignId);
     if (!campaign) throw new AppError('Campaign not found', 404);
     if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
+    if (campaign.status !== 'ACTIVE') throw new AppError('This campaign is no longer active', 400);
 
     const application = await this.repo.findApplicationById(appId);
     if (!application) throw new AppError('Application not found', 404);
@@ -1294,5 +1295,57 @@ export class CampaignService {
     }).catch(() => {});
 
     return toCampaignDto(updated);
+  }
+
+  // Called by the campaign-expiry cron (see jobs/expireCampaigns.ts). Cascades
+  // a past-deadline campaign's expiry onto its still-PENDING applications only
+  // — ACCEPTED/REJECTED applications are untouched, so an accepted
+  // collaboration keeps working normally (submitWork/approveWork/requestRevision
+  // have no campaign-status guard) even after its parent campaign expires.
+  async expireCampaignsPastDeadline() {
+    const { campaigns, applications } = await this.repo.expireCampaignsPastDeadline();
+    if (campaigns.length === 0) return { campaignCount: 0, applicationCount: 0 };
+
+    const campaignById = new Map(campaigns.map((c) => [c.id, c]));
+
+    for (const campaign of campaigns) {
+      notificationService.createForAdmins({
+        type:    'campaign_expired',
+        title:   '⏰ Event Expired',
+        body:    `"${campaign.title}" by ${campaign.business.businessName} passed its deadline and was closed.`,
+        refId:   campaign.id,
+        refType: 'campaign',
+      }).catch(() => {});
+
+      notificationService.create({
+        userId:  campaign.business.userId,
+        type:    'event_expired',
+        title:   'Your event has expired',
+        body:    `"${campaign.title}" passed its deadline and was automatically closed.`,
+        refId:   campaign.id,
+        refType: campaign.campaignType === 'OPEN_EVENT' ? 'event' : 'campaign',
+      }).catch(() => {});
+
+      logActivity({ userId: null, action: ActivityAction.CAMPAIGN_EXPIRED, entityType: EntityType.CAMPAIGN, entityId: campaign.id, metadata: { title: campaign.title } });
+    }
+
+    if (applications.length > 0) {
+      notificationService.createMany(
+        applications.map((a) => ({
+          userId:  a.creator.userId,
+          type:    'proposal_expired' as const,
+          title:   'Your proposal expired',
+          body:    `"${campaignById.get(a.campaignId)?.title ?? 'This event'}" reached its deadline before a decision was made on your proposal.`,
+          refId:   a.campaignId,
+          refType: campaignById.get(a.campaignId)?.campaignType === 'OPEN_EVENT' ? 'event' : 'campaign',
+        }))
+      ).catch(() => {});
+
+      for (const app of applications) {
+        logActivity({ userId: null, action: ActivityAction.APPLICATION_EXPIRED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId } });
+      }
+    }
+
+    return { campaignCount: campaigns.length, applicationCount: applications.length };
   }
 }

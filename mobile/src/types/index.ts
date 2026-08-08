@@ -36,7 +36,7 @@ export type Campaign = {
   proposals: number;
   isNew: boolean;
   isFeatured: boolean;
-  status?: 'active' | 'draft' | 'closed' | 'pending_approval';
+  status?: 'active' | 'draft' | 'closed' | 'pending_approval' | 'expired';
   location?: string;
   locationLat?: number | null;
   locationLng?: number | null;
@@ -151,7 +151,9 @@ export type AppNotification = {
     | 'creator_saved'
     | 'campaign_invitation'
     | 'account_verified'
-    | 'verification_rejected';
+    | 'verification_rejected'
+    | 'proposal_expired'
+    | 'event_expired';
   title: string;
   body: string;
   timestamp: string;

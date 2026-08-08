@@ -92,10 +92,11 @@ function formatFollowers(n: number): string {
   return String(n);
 }
 
-function mapStatus(s: 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED'): Campaign['status'] {
+function mapStatus(s: 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'EXPIRED'): Campaign['status'] {
   if (s === 'ACTIVE') return 'active';
   if (s === 'CLOSED') return 'closed';
   if (s === 'PENDING_APPROVAL') return 'pending_approval';
+  if (s === 'EXPIRED') return 'expired';
   return 'draft'; // DRAFT and PAUSED both surface as 'draft' in the mobile UI
 }
 
@@ -371,12 +372,12 @@ export const campaignService = {
   async getBusinessProposals(params?: {
     page?: number;
     limit?: number;
-    status?: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+    status?: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
   }): Promise<{
     proposals: Array<{
       id: string;
-      status: 'pending' | 'accepted' | 'rejected';
+      status: 'pending' | 'accepted' | 'rejected' | 'expired';
       workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
       // The application's own payment status — distinct from campaign.paymentStatus,
       // which tracks the campaign record itself and isn't updated by the per-application
@@ -410,7 +411,7 @@ export const campaignService = {
     return {
       proposals: res.data.map((a) => ({
         id: a.id,
-        status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+        status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected' | 'expired',
         workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
         paymentStatus: (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
@@ -582,7 +583,7 @@ export const campaignService = {
 
   async getApplications(campaignId: string): Promise<Array<{
     id:              string;
-    status:          'pending' | 'accepted' | 'rejected';
+    status:          'pending' | 'accepted' | 'rejected' | 'expired';
     proposedRate:    string;
     proposedRateRaw: number;
     coverLetter:     string;
@@ -611,7 +612,7 @@ export const campaignService = {
     }>>('GET', `/api/campaigns/${campaignId}/applications`);
     return res.data.map((a) => ({
       id:              a.id,
-      status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+      status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected' | 'expired',
       proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
       proposedRateRaw: a.proposedRate,
       coverLetter:     a.coverLetter ?? '',
@@ -633,7 +634,7 @@ export const campaignService = {
   async getMyApplications(params?: {
     page?:   number;
     limit?:  number;
-    status?: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+    status?: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
   }): Promise<{
     proposals: Array<{
       id:               string;
@@ -641,7 +642,7 @@ export const campaignService = {
       campaignTitle:    string;
       brand:            string;
       businessId:       string;
-      status:           'pending' | 'accepted' | 'rejected';
+      status:           'pending' | 'accepted' | 'rejected' | 'expired';
       submittedAt:      string;
       workSubmittedAt:  string | null;
       coverLetter:      string;
@@ -693,7 +694,7 @@ export const campaignService = {
         campaignTitle:   a.campaign.title,
         brand:           a.campaign.business.businessName,
         businessId:      a.campaign.business.id,
-        status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+        status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected' | 'expired',
         submittedAt:     a.createdAt,
         workSubmittedAt: a.submittedAt ?? null,
         coverLetter:     a.coverLetter,

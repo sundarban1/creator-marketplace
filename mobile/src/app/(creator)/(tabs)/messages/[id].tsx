@@ -609,7 +609,14 @@ export default function CreatorChatRoomScreen() {
         </View>
       )}
 
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
+      {/* Android's AndroidManifest already sets windowSoftInputMode="adjustResize",
+          so the native window resizes for the keyboard on its own — giving
+          KeyboardAvoidingView a 'height' behavior on top of that double-resizes
+          the screen (RN measuring + re-applying an explicit height over a window
+          the OS is already resizing), which is what caused the composer to
+          visibly blink/reflow right after a chat screen mounted on Android. iOS
+          has no such native resize, so 'padding' still does real work there. */}
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
         {/* inverted=true → newest messages at bottom, scroll up for history (Instagram pattern) */}
         <FlatList
           ref={chat.listRef}
@@ -731,14 +738,7 @@ export default function CreatorChatRoomScreen() {
                   <FontAwesome5 name={chat.editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
                 </Pressable>
               ) : (
-                // TEMP TEST — static mic icon swapped in for VoiceRecorderButton to
-                // isolate whether its mount cost (useAudioRecorder/GestureDetector/
-                // Reanimated) is what's causing the composer blink. Revert after.
-                <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                  <View style={{ width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', backgroundColor: C.brinjal1 }}>
-                    <FontAwesome5 name="microphone" solid size={18} color="#fff" />
-                  </View>
-                </View>
+                <VoiceRecorderButton disabled={hasActiveUpload || chat.isSending.current} onRecorded={chat.handleSendVoiceAttachment} />
               )}
             </View>
 

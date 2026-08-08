@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, type ApiCampaignDetail } from '../lib/api';
+import { StatusBadge } from './StatusBadge';
 
 const PLATFORM_OPTIONS = ['Instagram', 'TikTok', 'YouTube', 'LinkedIn', 'Twitter'];
 const STATUS_OPTIONS = ['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED'];
@@ -182,10 +183,17 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Status</label>
-                  <select value={form.status} onChange={(e) => update('status', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition bg-white">
-                    {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  {form.status === 'EXPIRED' ? (
+                    <div className="w-full px-3 py-2">
+                      <StatusBadge status="expired" />
+                      <p className="text-xs text-gray-400 mt-1">Set automatically when the deadline passed — not editable.</p>
+                    </div>
+                  ) : (
+                    <select value={form.status} onChange={(e) => update('status', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition bg-white">
+                      {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  )}
                 </div>
               </div>
 
