@@ -208,7 +208,7 @@ export default function SubmitProposalScreen() {
     });
     toast.success(t('proposal.submitSuccessBody', { brand }), t('proposal.submitSuccessTitle'));
     setContractModalVisible(false);
-    setTimeout(() => router.back(), 1200);
+    setTimeout(() => router.replace('/(creator)/(tabs)/proposals'), 1200);
   }
 
   async function handleSubmit() {

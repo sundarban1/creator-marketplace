@@ -19,7 +19,7 @@ import {
 import { AuthProvider } from '@/context/AuthContext';
 import { useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
-import { AppThemeProvider, useIsDark } from '@/context/ThemeContext';
+import { AppThemeProvider, useAppColors, useIsDark } from '@/context/ThemeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { PlatformSettingsProvider, usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { SplashScreen } from '@/components/SplashScreen';
@@ -107,6 +107,7 @@ function RootNavigator() {
   const { flags } = usePlatformFlags();
   const segments = useSegments();
   const router = useRouter();
+  const C = useAppColors();
 
   function onboardingEnabledFor(role: UserRole): boolean {
     return role === 'CREATOR' ? flags.creatorOnboardingEnabled : flags.businessOnboardingEnabled;
@@ -192,7 +193,13 @@ function RootNavigator() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    // contentStyle here matters as much as the individual screens' own
+    // backgrounds — expo-router mounts the incoming screen's native container
+    // (this contentStyle) a beat before that screen's own root View paints,
+    // and its default is transparent/white. Without a themed backgroundColor
+    // here, every push/pop shows a one-frame white flash between screens
+    // (worse in dark mode, where it reads as a visible blink).
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.background } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="oauthredirect" />
       <Stack.Screen name="(auth)" />

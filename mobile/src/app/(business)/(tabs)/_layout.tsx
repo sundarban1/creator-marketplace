@@ -259,6 +259,7 @@ const tabS = StyleSheet.create({
 export default function BusinessTabsLayout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { chatBadgeCount, badgeCount } = useNotificationBadge();
 
@@ -267,7 +268,7 @@ export default function BusinessTabsLayout() {
       <View style={{ flex: 1 }}>
         <MaxWidthContainer>
           <Tabs
-            screenOptions={{ headerShown: false }}
+            screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: C.background } }}
             tabBar={(props) => (
               <CustomTabBar
                 state={props.state}

@@ -1,4 +1,5 @@
 import { FontAwesome5 } from '@expo/vector-icons';
+import * as Sentry from '@sentry/react-native';
 import {
   RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync,
   useAudioRecorder, useAudioRecorderState,
@@ -116,6 +117,15 @@ function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
     return () => {
       if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
       if (permissionErrorTimerRef.current) clearTimeout(permissionErrorTimerRef.current);
+      // Screen torn down mid-hold (navigating away while still recording,
+      // Activity recreated by a stricter OEM memory manager, etc.) — release
+      // the mic and the audio-mode flag rather than leaving allowsRecording
+      // stuck true and the native recorder object dangling.
+      if (isRecordingRef.current) {
+        isRecordingRef.current = false;
+        recorder.stop().catch(() => {});
+        setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      }
     };
   }, []);
 
@@ -160,9 +170,20 @@ function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
       // the user is still physically holding/locked with no other way to
       // know they've hit the limit.
       autoStopTimerRef.current = setTimeout(() => { void finishRecording(); }, MAX_RECORDING_MS);
-    } catch {
+    } catch (err) {
+      // Previously swallowed silently — on some Android devices (audio focus
+      // held by another app, vendor-specific MediaRecorder quirks, etc.)
+      // setAudioModeAsync/prepareToRecordAsync/record() can throw even after
+      // permission is granted. With no visible feedback this looked exactly
+      // like "the mic doesn't do anything": no meter, no error, no clip.
+      // Surface it like VoicePromptInput's handlePressIn does, and report it
+      // so device-specific failures are actually diagnosable from Sentry.
+      Sentry.captureException(err, { tags: { feature: 'chat-voice-recorder' } });
       isRecordingRef.current = false;
       setPhaseBoth('idle');
+      setPermissionError(t('messages.voiceRecordingFailed'));
+      if (permissionErrorTimerRef.current) clearTimeout(permissionErrorTimerRef.current);
+      permissionErrorTimerRef.current = setTimeout(() => setPermissionError(null), 3000);
     }
   }
 
@@ -172,7 +193,7 @@ function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
     if (autoStopTimerRef.current) { clearTimeout(autoStopTimerRef.current); autoStopTimerRef.current = null; }
     let uri: string | null = null;
     try { uri = recorder.uri; await recorder.stop(); } catch { /* already stopped */ }
-    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
     if (uri) FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
     translateX.value = withTiming(0);
     translateY.value = withTiming(0);
@@ -186,7 +207,7 @@ function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
     const heldMs = Date.now() - startedAtRef.current;
     const capturedLevels = levels.slice();
     try { await recorder.stop(); } catch { /* already stopped */ }
-    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
     translateX.value = withTiming(0);
     translateY.value = withTiming(0);
     const uri = recorder.uri;

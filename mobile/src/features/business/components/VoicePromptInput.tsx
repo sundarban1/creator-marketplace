@@ -1,4 +1,5 @@
 import { FontAwesome5 } from '@expo/vector-icons';
+import * as Sentry from '@sentry/react-native';
 import {
   RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync,
   useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState,
@@ -100,6 +101,15 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
     // throws NativeSharedObjectNotFoundException.
     return () => {
       if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+      // Screen torn down mid-hold (Android back-gesture, Activity recreated by
+      // a stricter OEM memory manager, split-screen resize, etc.) — release
+      // the mic and the audio-mode flag rather than leaving allowsRecording
+      // stuck true and the native recorder object dangling.
+      if (isRecordingRef.current) {
+        isRecordingRef.current = false;
+        recorder.stop().catch(() => {});
+        setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      }
     };
   }, []);
 
@@ -132,7 +142,12 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
       // still physically holding the button and has no other way to know
       // they've hit the 2-minute limit.
       autoStopTimerRef.current = setTimeout(() => { void finishRecording(); }, MAX_RECORDING_MS);
-    } catch {
+    } catch (err) {
+      // setAudioModeAsync/prepareToRecordAsync/record() can throw even after
+      // permission is granted — mic held by another app, OEM audio-focus
+      // quirks, etc. Report it so device-specific failures here are as
+      // diagnosable as chat's VoiceRecorderButton already are.
+      Sentry.captureException(err, { tags: { feature: 'create-event-voice-prompt' } });
       onError(t('createEvent.audioTryAgain'));
       setPhase('idle');
     }
@@ -143,29 +158,43 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
     isRecordingRef.current = false;
     if (autoStopTimerRef.current) { clearTimeout(autoStopTimerRef.current); autoStopTimerRef.current = null; }
     const heldMs = Date.now() - startedAtRef.current;
-    await recorder.stop();
-    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
-    const uri = recorder.uri;
-    if (!uri) { setPhase('idle'); return; }
-    if (heldMs < MIN_RECORDING_MS) {
-      onError(t('createEvent.audioTooShort'));
+    try {
+      // `recorder.stop()` itself can reject beyond the "already stopped" case
+      // this guards against — e.g. NativeSharedObjectNotFoundException if the
+      // recorder's native object was already released by a backgrounded/
+      // recreated Activity racing this call, which is far more common on
+      // Android's process lifecycle than iOS's.
+      try { await recorder.stop(); } catch { /* already stopped, or native object gone */ }
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      const uri = recorder.uri;
+      if (!uri) { setPhase('idle'); return; }
+      if (heldMs < MIN_RECORDING_MS) {
+        onError(t('createEvent.audioTooShort'));
+        setPhase('idle');
+        return;
+      }
+      if (heldMs >= MAX_RECORDING_MS) {
+        onError(t('createEvent.audioTooLong'));
+        setPhase('idle');
+        return;
+      }
+      const info = await FileSystem.getInfoAsync(uri).catch(() => null);
+      if (info?.exists && info.size > MAX_FILE_SIZE_BYTES) {
+        onError(t('createEvent.audioTooLong'));
+        setPhase('idle');
+        return;
+      }
+      try { player.replace({ uri }); } catch { /* player's native object not ready — playback just won't work */ }
+      setPhase('review');
+      onRecorded(uri);
+    } catch (err) {
+      // Guarantees the mic can never get stuck showing "recording" forever —
+      // without this, any unexpected throw in the stop path left the UI
+      // frozen mid-hold with no error and no way out except leaving the screen.
+      Sentry.captureException(err, { tags: { feature: 'create-event-voice-prompt' } });
+      onError(t('createEvent.audioTryAgain'));
       setPhase('idle');
-      return;
     }
-    if (heldMs >= MAX_RECORDING_MS) {
-      onError(t('createEvent.audioTooLong'));
-      setPhase('idle');
-      return;
-    }
-    const info = await FileSystem.getInfoAsync(uri).catch(() => null);
-    if (info?.exists && info.size > MAX_FILE_SIZE_BYTES) {
-      onError(t('createEvent.audioTooLong'));
-      setPhase('idle');
-      return;
-    }
-    try { player.replace({ uri }); } catch { /* player's native object not ready — playback just won't work */ }
-    setPhase('review');
-    onRecorded(uri);
   }
 
   async function handlePressOut() {

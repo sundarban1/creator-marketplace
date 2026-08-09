@@ -28,6 +28,7 @@ export function FilterSheet({ visible, title, resetLabel, applyLabel, onApply, o
       onClose={onClose}
       title={title}
       maxHeightPct={0.92}
+      closeOnScrollDown
       contentContainerStyle={s.body}
       headerRight={
         <Pressable onPress={onReset}>

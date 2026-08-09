@@ -499,11 +499,13 @@ export default function BusinessChatRoomScreen() {
           visibly blink/reflow right after a chat screen mounted on Android. iOS
           has no such native resize, so 'padding' still does real work there. */}
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
+        {/* Only the message list waits on initialLoading — the composer below
+            renders unconditionally so the input bar is never held hostage by
+            how long the messages fetch takes. */}
         {chat.initialLoading ? (
           <ChatLoadingView />
         ) : (
-        <>
-        {/* inverted=true → newest messages at bottom, scroll up for history (Instagram pattern) */}
+        /* inverted=true → newest messages at bottom, scroll up for history (Instagram pattern) */
         <FlatList
           ref={chat.listRef}
           style={[s.flex, { backgroundColor: C.background }]}
@@ -564,6 +566,7 @@ export default function BusinessChatRoomScreen() {
             )
           }
         />
+        )}
 
         {/* ── Input bar ── */}
         {chat.status === 'ACCEPTED' && !flags.messagingEnabled && (
@@ -636,8 +639,6 @@ export default function BusinessChatRoomScreen() {
               </View>
             )}
           </>
-        )}
-        </>
         )}
       </KeyboardAvoidingView>
       </MaxWidthContainer>

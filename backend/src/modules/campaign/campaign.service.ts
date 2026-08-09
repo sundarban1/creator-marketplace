@@ -28,7 +28,14 @@ import {
   sendCampaignCancelledEmail,
 } from '../../utils/email';
 
-const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'platforms', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
+// 'platforms' is deliberately excluded (unlike 'category', which keeps its
+// own untranslated 'categoryKey' alongside the translated display field) —
+// it's matched by exact string against the admin platform catalog on the
+// client (see mobile's getPlatformMeta) to resolve each platform's icon, and
+// is never itself shown to the user as label text. Translating it (e.g.
+// "Instagram" -> "इन्स्टाग्राम") broke that match, silently falling back to a
+// generic globe icon for every platform once the UI language was Nepali.
+const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered as MP4 via
 // videoPlaybackUrl. Mirrors messaging.service.ts's same allow-list.

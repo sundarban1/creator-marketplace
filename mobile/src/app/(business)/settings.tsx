@@ -89,9 +89,8 @@ const MOCK_SAVED_CREATORS = [
 ];
 
 const LANGUAGE_OPTIONS = [
-  { label: 'English', native: 'English', flag: '🇬🇧', desc: 'Default app language', future: false },
-  { label: 'Nepali',  native: 'नेपाली',  flag: '🇳🇵', desc: 'स्थानीय भाषा समर्थन', future: false },
-  { label: 'Hindi',   native: 'हिंदी',   flag: '🇮🇳', desc: 'Coming soon',         future: true  },
+  { label: 'English', native: 'English', flag: '🇬🇧', desc: 'Default app language' },
+  { label: 'Nepali',  native: 'नेपाली',  flag: '🇳🇵', desc: 'स्थानीय भाषा समर्थन' },
 ];
 
 // ── Helper components ─────────────────────────────────────────────────────────
@@ -2108,16 +2107,13 @@ export default function BusinessSettingsScreen() {
             return (
               <Pressable
                 key={lang.label}
-                disabled={lang.future}
                 onPress={() => {
-                  if (!lang.future) {
-                    setSelectedLang(lang.label);
-                    setLanguage(langLabelToCode(lang.label));
-                  }
+                  setSelectedLang(lang.label);
+                  setLanguage(langLabelToCode(lang.label));
                 }}
                 style={[
                   styles.langCard,
-                  { backgroundColor: C.surface, borderColor: active ? C.brinjal1 : C.border, opacity: lang.future ? 0.55 : 1 },
+                  { backgroundColor: C.surface, borderColor: active ? C.brinjal1 : C.border },
                 ]}>
                 <Text style={styles.langFlag}>{lang.flag}</Text>
                 <View style={{ flex: 1 }}>
@@ -2127,11 +2123,7 @@ export default function BusinessSettingsScreen() {
                   </View>
                   <Text style={[styles.langDesc, { color: C.textSecondary }]}>{lang.desc}</Text>
                 </View>
-                {lang.future ? (
-                  <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
-                    <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Soon</Text>
-                  </View>
-                ) : active ? (
+                {active ? (
                   <View style={[styles.activeLangCheck, { backgroundColor: C.brinjal1 }]}>
                     <FontAwesome5 name="check" solid size={13} color="#fff" />
                   </View>

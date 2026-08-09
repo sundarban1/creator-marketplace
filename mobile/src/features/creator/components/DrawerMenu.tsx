@@ -5,6 +5,7 @@ import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, V
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useCloseOnScrollDown } from '@/hooks/useCloseOnScrollDown';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { getAccountIdentityLine, isValidNepaliPhone } from '@/utilities/phone';
 
@@ -46,6 +47,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
   const slideAnim = useRef(new Animated.Value(SCREEN_H)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const [rendered, setRendered] = useState(false);
+  const { dragY, panHandlers, onScroll } = useCloseOnScrollDown(onClose);
 
   useEffect(() => {
     if (visible) {
@@ -76,7 +78,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity, flex: 1 }]} />
       </Pressable>
 
-      <Animated.View style={[styles.panel, { backgroundColor: C.surface, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[styles.panel, { backgroundColor: C.surface, transform: [{ translateY: Animated.add(slideAnim, dragY) }] }]}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: C.brinjal2 }]}>
           <Pressable style={styles.handleRow} onPress={onClose} hitSlop={10}>
@@ -99,7 +101,15 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
         </View>
 
         {/* Nav */}
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={styles.scrollContent}
+          {...panHandlers}
+        >
           <View style={styles.navGroup}>
             {ACCOUNT_ITEMS.map(({ iconName, faName, labelKey, route, color }) => (
               <Pressable

@@ -595,6 +595,7 @@ const en = {
     voiceSlideToLock: 'Slide up to lock',
     voiceReleaseToCancel: 'Release to cancel',
     voiceMicPermissionDenied: 'Please allow microphone access to send voice messages.',
+    voiceRecordingFailed: "Couldn't start recording. Please try again.",
     sendFailedTitle: 'Failed to send',
     sendFailedGeneric: 'Please try again.',
     deleteMessageTitle: 'Delete message?',

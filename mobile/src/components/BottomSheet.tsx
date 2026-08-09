@@ -3,6 +3,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
+import { useCloseOnScrollDown } from '@/hooks/useCloseOnScrollDown';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
@@ -25,6 +26,11 @@ type Props = {
   // screen they came from already caps its own content this way.
   maxWidth?: number;
   dismissOnBackdropPress?: boolean;
+  // Opt-in: dragging the scrollable body down once it's already at the top
+  // closes the sheet, like a native pull-to-dismiss. Off by default so this
+  // doesn't change behavior for every existing consumer of this shell —
+  // enable it deliberately per sheet (filter sheets do).
+  closeOnScrollDown?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
   children: ReactNode;
 };
@@ -48,11 +54,13 @@ export function BottomSheet({
   maxHeightPct = 0.9,
   maxWidth,
   dismissOnBackdropPress = true,
+  closeOnScrollDown = false,
   contentContainerStyle,
   children,
 }: Props) {
   const C = useAppColors();
   const keyboardOffset = useKeyboardOffset();
+  const { dragY, panHandlers, onScroll } = useCloseOnScrollDown(onClose);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -63,7 +71,7 @@ export function BottomSheet({
           {
             backgroundColor: C.surface,
             maxHeight: `${maxHeightPct * 100}%`,
-            transform: [{ translateY: keyboardOffset }],
+            transform: [{ translateY: Animated.add(keyboardOffset, dragY) }],
             ...(maxWidth != null ? { width: '100%' as const, maxWidth, alignSelf: 'center' as const } : null),
           },
         ]}
@@ -88,7 +96,10 @@ export function BottomSheet({
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            onScroll={closeOnScrollDown ? onScroll : undefined}
+            scrollEventThrottle={closeOnScrollDown ? 16 : undefined}
             contentContainerStyle={[s.body, contentContainerStyle]}
+            {...(closeOnScrollDown ? panHandlers : null)}
           >
             {children}
           </ScrollView>

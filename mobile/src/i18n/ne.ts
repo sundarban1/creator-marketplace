@@ -589,6 +589,7 @@ const ne = {
     voiceSlideToLock: 'लक गर्न माथि स्लाइड गर्नुहोस्',
     voiceReleaseToCancel: 'रद्द गर्न छोड्नुहोस्',
     voiceMicPermissionDenied: 'भ्वाइस म्यासेज पठाउन माइक्रोफोन प्रयोगको अनुमति दिनुहोस्।',
+    voiceRecordingFailed: 'रेकर्डिङ सुरु गर्न सकिएन। फेरि प्रयास गर्नुहोस्।',
     sendFailedTitle: 'पठाउन सकिएन',
     sendFailedGeneric: 'फेरि प्रयास गर्नुहोस्।',
     deleteMessageTitle: 'सन्देश मेटाउने?',

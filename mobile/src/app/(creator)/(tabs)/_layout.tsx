@@ -222,7 +222,7 @@ export default function CreatorTabsLayout() {
       <View style={{ flex: 1 }}>
         <MaxWidthContainer>
           <Tabs
-            screenOptions={{ headerShown: false }}
+            screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: C.background } }}
             tabBar={(props) => (
               <CustomTabBar
                 state={props.state}

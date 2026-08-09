@@ -5,6 +5,7 @@ import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, V
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useCloseOnScrollDown } from '@/hooks/useCloseOnScrollDown';
 import { profileService } from '@/services/profile';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { formatPhoneDisplay, isValidNepaliPhone } from '@/utilities/phone';
@@ -54,6 +55,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
   const [rendered, setRendered] = useState(false);
   const [businessName, setBusinessName] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const { dragY, panHandlers, onScroll } = useCloseOnScrollDown(onClose);
 
   useEffect(() => {
     // Re-fetches every time the drawer opens, not just once on mount — this
@@ -105,7 +107,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity, flex: 1 }]} />
       </Pressable>
 
-      <Animated.View style={[styles.panel, { backgroundColor: C.surface, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[styles.panel, { backgroundColor: C.surface, transform: [{ translateY: Animated.add(slideAnim, dragY) }] }]}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: C.brinjal2 }]}>
           <Pressable style={styles.handleRow} onPress={onClose} hitSlop={10}>
@@ -128,7 +130,15 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         </View>
 
         {/* Nav */}
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={styles.scrollContent}
+          {...panHandlers}
+        >
           {NAV_GROUPS.map((group) => (
             <View key={group.labelKey} style={styles.navGroup}>
               {group.items.map(({ iconName, faName, labelKey, route, color }) => (
