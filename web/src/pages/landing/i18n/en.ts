@@ -1,7 +1,8 @@
 export const en = {
   nav: {
     links: {
-      audience: 'Creators & Brands',
+      audience: 'How It Works',
+      journey: 'Campaign Flow',
       categories: 'Categories',
       security: 'Security',
       contact: 'Contact',

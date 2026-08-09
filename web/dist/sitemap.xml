@@ -6,207 +6,212 @@
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ourkolab.com/</loc>
+    <loc>https://www.ourkolab.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/creator-marketplace-nepal</loc>
+    <loc>https://www.ourkolab.com/creator-marketplace-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/content-creators</loc>
+    <loc>https://www.ourkolab.com/content-creators</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/brands</loc>
+    <loc>https://www.ourkolab.com/brands</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers</loc>
+    <loc>https://www.ourkolab.com/influencers</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/find-campaigns</loc>
+    <loc>https://www.ourkolab.com/find-campaigns</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencer-marketing-nepal</loc>
+    <loc>https://www.ourkolab.com/influencer-marketing-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/brand-collaboration-nepal</loc>
+    <loc>https://www.ourkolab.com/brand-collaboration-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/tiktok-creators</loc>
+    <loc>https://www.ourkolab.com/tiktok-creators</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/instagram-creators</loc>
+    <loc>https://www.ourkolab.com/instagram-creators</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/youtube-creators</loc>
+    <loc>https://www.ourkolab.com/youtube-creators</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/facebook-creators</loc>
+    <loc>https://www.ourkolab.com/facebook-creators</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/paid-collaborations-nepal</loc>
+    <loc>https://www.ourkolab.com/paid-collaborations-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/ugc-creators-nepal</loc>
+    <loc>https://www.ourkolab.com/ugc-creators-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/industries-nepal</loc>
+    <loc>https://www.ourkolab.com/ugc-creators-nepal</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ourkolab.com/industries-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/cities-nepal</loc>
+    <loc>https://www.ourkolab.com/cities-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/food-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/food-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/travel-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/travel-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/fashion-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/fashion-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/beauty-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/beauty-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/fitness-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/fitness-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/tech-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/tech-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/finance-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/finance-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/education-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/education-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/gaming-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/gaming-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/automobile-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/automobile-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/hotel-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/hotel-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/restaurant-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/restaurant-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/healthcare-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/healthcare-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/real-estate-influencers-nepal</loc>
+    <loc>https://www.ourkolab.com/real-estate-influencers-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers-kathmandu</loc>
+    <loc>https://www.ourkolab.com/influencers-kathmandu</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers-pokhara</loc>
+    <loc>https://www.ourkolab.com/influencers-pokhara</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers-lalitpur</loc>
+    <loc>https://www.ourkolab.com/influencers-lalitpur</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers-bhaktapur</loc>
+    <loc>https://www.ourkolab.com/influencers-bhaktapur</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers-chitwan</loc>
+    <loc>https://www.ourkolab.com/influencers-chitwan</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers-butwal</loc>
+    <loc>https://www.ourkolab.com/influencers-butwal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers-biratnagar</loc>
+    <loc>https://www.ourkolab.com/influencers-biratnagar</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/influencers-dharan</loc>
+    <loc>https://www.ourkolab.com/influencers-dharan</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/support</loc>
+    <loc>https://www.ourkolab.com/support</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/privacy</loc>
+    <loc>https://www.ourkolab.com/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://ourkolab.com/terms</loc>
+    <loc>https://www.ourkolab.com/terms</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>

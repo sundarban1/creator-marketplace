@@ -139,3 +139,29 @@ services:
         value: "543768819635-at5jjekqobcots66gl7lv0gufh8b6rp3.apps.googleusercontent.com"
       - key: GOOGLE_IOS_CLIENT_ID
         value: "543768819635-fuslrtr8mt6bmi2jslc3h3hcqg4drhdk.apps.googleusercontent.com"
+
+  # marketplace-web — added as a NEW service, deliberately separate from
+  # whatever dashboard-managed static site currently serves ourkolab.com.
+  # Its static-file fallback was serving dist/index.html (the homepage) for
+  # every path without an exact file match, including paths that have their
+  # own prerendered page (dist/terms/index.html, etc.) — Google saw that as
+  # duplicate/soft-404 content across the site. server.mjs replaces that
+  # opaque fallback with explicit routing (see web/server.mjs).
+  #
+  # This will NOT automatically start serving ourkolab.com — after this
+  # deploys and its own <service>.onrender.com URL is verified working,
+  # the ourkolab.com/www.ourkolab.com custom domains need to be moved to
+  # this service in the Render dashboard, then the old static site retired.
+  - type: web
+    name: marketplace-web
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./web/Dockerfile
+    dockerContext: ./web
+    healthCheckPath: /healthz
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - web/**
+        - render.yaml

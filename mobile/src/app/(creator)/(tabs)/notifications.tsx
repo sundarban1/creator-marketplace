@@ -139,6 +139,7 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const listRef = useRef<FlatList<{ group: string; items: AppNotification[] }>>(null);
+  const hasLoadedOnceRef = useRef(false);
   useScrollToTopOnTabPress('bell', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   function loadNotifications(showLoader = true) {
@@ -154,9 +155,14 @@ export default function NotificationsScreen() {
       .finally(() => setLoading(false));
   }
 
-  // Reload every time the screen gains focus so new notifications always appear
+  // Reload every time the screen gains focus so new notifications always appear.
+  // Only the very first load shows the skeleton — later refocuses (tab switch,
+  // back from a notification's detail screen) reload silently in the
+  // background so the list doesn't flash/blank on every navigation.
   useFocusEffect(useCallback(() => {
-    loadNotifications();
+    const showLoader = !hasLoadedOnceRef.current;
+    hasLoadedOnceRef.current = true;
+    loadNotifications(showLoader);
   }, []));
 
   // Auto-refresh the moment connectivity is restored after being offline.

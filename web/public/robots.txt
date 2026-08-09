@@ -25,4 +25,4 @@ Disallow: /conversations
 Disallow: /notifications
 Disallow: /settings
 
-Sitemap: https://ourkolab.com/sitemap.xml
+Sitemap: https://www.ourkolab.com/sitemap.xml

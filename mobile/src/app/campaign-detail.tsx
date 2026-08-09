@@ -615,7 +615,17 @@ export default function CampaignDetailScreen() {
           </View>
         )}
 
-        {/* 3. Event Details */}
+        {/* 3. Content Guidelines */}
+        {campaign.contentGuidelines && campaign.contentGuidelines.length > 0 && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionContentGuidelines')}</Text>
+            {campaign.contentGuidelines.map((g, i) => (
+              <ReqItem key={i} text={g} C={C} />
+            ))}
+          </View>
+        )}
+
+        {/* 4. Event Details */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDetails')}</Text>
           <View style={s.detailsGrid}>
@@ -660,7 +670,7 @@ export default function CampaignDetailScreen() {
           </View>
         ) : null}
 
-        {/* 4. Deliverables */}
+        {/* 5. Deliverables */}
         {campaign.deliverables ? (
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDeliverables')}</Text>
@@ -669,16 +679,6 @@ export default function CampaignDetailScreen() {
             ))}
           </View>
         ) : null}
-
-        {/* 5. Content Guidelines */}
-        {campaign.contentGuidelines && campaign.contentGuidelines.length > 0 && (
-          <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionContentGuidelines')}</Text>
-            {campaign.contentGuidelines.map((g, i) => (
-              <ReqItem key={i} text={g} C={C} />
-            ))}
-          </View>
-        )}
 
         {/* 6. Hashtags */}
         {campaign.hashtags && campaign.hashtags.length > 0 && (

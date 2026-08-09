@@ -3,7 +3,8 @@ import type { LandingDict } from './en';
 export const ne: LandingDict = {
   nav: {
     links: {
-      audience: 'क्रिएटर र ब्रान्ड',
+      audience: 'यसरी काम गर्छ',
+      journey: 'क्याम्पेन प्रक्रिया',
       categories: 'श्रेणीहरू',
       security: 'सुरक्षा',
       contact: 'सम्पर्क',

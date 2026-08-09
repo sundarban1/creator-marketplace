@@ -24,8 +24,9 @@ export const SECTION_IDS = {
   contact: 'contact',
 } as const;
 
-export const NAV_LINKS: { key: 'audience' | 'categories' | 'security' | 'contact'; id: string }[] = [
+export const NAV_LINKS: { key: 'audience' | 'journey' | 'categories' | 'security' | 'contact'; id: string }[] = [
   { key: 'audience', id: SECTION_IDS.audience },
+  { key: 'journey', id: SECTION_IDS.journey },
   { key: 'categories', id: SECTION_IDS.categories },
   { key: 'security', id: SECTION_IDS.security },
   { key: 'contact', id: SECTION_IDS.contact },

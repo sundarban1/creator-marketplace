@@ -35,7 +35,11 @@ import {
 // is never itself shown to the user as label text. Translating it (e.g.
 // "Instagram" -> "इन्स्टाग्राम") broke that match, silently falling back to a
 // generic globe icon for every platform once the UI language was Nepali.
-const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
+// 'title' is deliberately excluded too — it's the event/campaign name the
+// business chose (a proper noun, same category as a person's name), not
+// descriptive prose; translating it would show creators a name the business
+// never wrote.
+const CAMPAIGN_FIELDS = ['description', 'category', 'goals', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits', 'contentGuidelines'] as const;
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered as MP4 via
 // videoPlaybackUrl. Mirrors messaging.service.ts's same allow-list.

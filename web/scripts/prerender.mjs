@@ -40,6 +40,7 @@ const ROUTES = [
   '/brands',
   '/influencers',
   '/find-campaigns',
+  '/ugc-creators-nepal',
   '/influencer-marketing-nepal',
   '/brand-collaboration-nepal',
   '/tiktok-creators',
@@ -74,6 +75,11 @@ const ROUTES = [
   '/support',
   '/privacy',
   '/terms',
+  // Not a real route — no <Route> in src/App.tsx matches it, so it falls
+  // through to the catch-all `*` → NotFoundPage. Prerendering it gives
+  // server.mjs a real dist/404/index.html to serve with an actual HTTP 404
+  // status for genuinely unknown URLs.
+  '/404',
 ];
 
 function waitForServer(url, timeoutMs = 20_000) {
