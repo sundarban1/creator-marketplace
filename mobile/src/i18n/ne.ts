@@ -1075,6 +1075,7 @@ const ne = {
   // ── Business Detail (creator view) ───────────────────────────
   businessDetail: {
     loadError: 'बिजनेस लोड हुन सकेन',
+    loadErrorBody: 'यो बिजनेसको विवरण लोड गर्न सकिएन। कृपया आफ्नो इन्टरनेट जडान जाँच गरी फेरि प्रयास गर्नुहोस्।',
     goBack: 'पछाडि जानुहोस्',
     statActive: 'सक्रिय इभेन्ट',
     statJoined: 'जोडिएको',

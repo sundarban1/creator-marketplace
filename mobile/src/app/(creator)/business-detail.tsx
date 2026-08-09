@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -29,6 +30,7 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
+import { logger } from '@/utilities/logger';
 
 const PLATFORM_ICON: Record<string, { iconName: string; color: string }> = {
   Instagram: { iconName: 'instagram', color: '#E1306C' },
@@ -156,7 +158,7 @@ export default function BusinessDetailScreen() {
   const [business, setBusiness] = useState<BusinessDetailResult | null>(null);
   const [appliedCampaignIds, setAppliedCampaignIds] = useState<Set<string>>(new Set());
   const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
+  const [hasError, setHasError] = useState(false);
 
   // Message request state
   const [convId, setConvId]         = useState<string | null>(null);
@@ -165,9 +167,10 @@ export default function BusinessDetailScreen() {
   const [requestMsg, setRequestMsg]     = useState('');
   const [sendingMsg, setSendingMsg]     = useState(false);
 
-  useEffect(() => {
+  function loadBusiness() {
     if (!id) return;
     setLoading(true);
+    setHasError(false);
     Promise.all([
       businessService.getBusinessById(id),
       campaignService.getMyApplications().then((r) => r.proposals).catch(() => []),
@@ -181,8 +184,15 @@ export default function BusinessDetailScreen() {
           }).catch(() => {});
         }
       })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+      // Raw error text (AxiosError message, "Network request failed", etc.) never
+      // reaches the user — logger.error ships it to Sentry, the screen shows a
+      // sanitized, translated sentence instead.
+      .catch((e) => { logger.error('[business-detail] load failed', e); setHasError(true); })
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    loadBusiness();
   }, [id]);
 
   async function handleSendMessageRequest() {
@@ -233,11 +243,20 @@ export default function BusinessDetailScreen() {
     );
   }
 
-  if (error || !business) {
+  if (hasError) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <NavBar />
-        <EmptyState faIcon="exclamation-triangle" title={t('businessDetail.loadError')} subtitle={error || t('common.notFound')} action={{ label: t('businessDetail.goBack'), onPress: () => router.back() }} />
+        <ErrorState title={t('businessDetail.loadError')} message={t('businessDetail.loadErrorBody')} actionLabel={t('common.tryAgain')} onAction={loadBusiness} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!business) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+        <NavBar />
+        <EmptyState faIcon="exclamation-triangle" title={t('businessDetail.loadError')} subtitle={t('common.notFound')} action={{ label: t('businessDetail.goBack'), onPress: () => router.back() }} />
       </SafeAreaView>
     );
   }
@@ -306,7 +325,13 @@ export default function BusinessDetailScreen() {
           <View style={styles.topBar}>
             <BackButton variant="overlay" fallback="/(creator)/explore-businesses" />
             <View style={styles.topTitleRow} />
-            <Pressable style={styles.topIconBtn} hitSlop={10} onPress={handleToggleFavorite}>
+            <Pressable
+              style={styles.topIconBtn}
+              hitSlop={10}
+              onPress={handleToggleFavorite}
+              accessibilityRole="button"
+              accessibilityLabel={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+              accessibilityState={{ selected: isFavorited }}>
               <FontAwesome5
                 name="heart"
                 solid={isFavorited}

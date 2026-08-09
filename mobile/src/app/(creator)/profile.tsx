@@ -20,6 +20,7 @@ import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
+import { IconButton } from '@/components/IconButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { logger } from '@/utilities/logger';
 import { getCached, setCached } from '@/utilities/offlineCache';
@@ -177,11 +178,13 @@ export default function CreatorProfileScreen() {
           {/* Top bar */}
           <View style={s.topBar}>
             <BackButton variant="overlay" />
-            <Pressable style={s.topIconBtn} hitSlop={4} onPress={handleCoverPress} disabled={coverUploading}>
-              {coverUploading
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <FontAwesome5 name="camera" solid size={18} color="#fff" />}
-            </Pressable>
+            <IconButton
+              icon="camera"
+              variant="overlay"
+              onPress={handleCoverPress}
+              loading={coverUploading}
+              accessibilityLabel="Change cover photo"
+            />
           </View>
         </View>
 
@@ -432,7 +435,6 @@ const s = StyleSheet.create({
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
   topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
-  topIconBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
   // Profile card (floats over cover)
   profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6,

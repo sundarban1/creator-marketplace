@@ -19,6 +19,9 @@ export function TextInputWithLabel({
   const [hidden,  setHidden]  = useState(secureTextEntry ?? false);
   const [focused, setFocused] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;
+  // `editable={false}` previously had no visual treatment at all — a
+  // disabled field looked identical to an enabled one until tapped.
+  const isDisabled = rest.editable === false;
 
   function onFocus() {
     setFocused(true);
@@ -46,16 +49,18 @@ export function TextInputWithLabel({
         {label}
       </Text>
 
-      <Animated.View style={[styles.row, { borderColor, backgroundColor: bgColor }]}>
+      <Animated.View style={[styles.row, { borderColor, backgroundColor: bgColor }, isDisabled && { backgroundColor: C.border + '40', borderColor: C.border }]}>
         {leftIcon && (
           <FontAwesome5 name={leftIcon} size={17} color={focused ? C.brinjal1 : C.textSecondary} style={styles.leftIcon} />
         )}
         <TextInput
-          style={[styles.input, { color: C.text, fontFamily: F.regular }, style]}
+          style={[styles.input, { color: isDisabled ? C.textSecondary : C.text, fontFamily: F.regular }, style]}
           placeholderTextColor={C.textSecondary + '80'}
           secureTextEntry={hidden}
           onFocus={onFocus}
           onBlur={onBlur}
+          accessibilityLabel={label}
+          accessibilityState={{ disabled: isDisabled }}
           {...rest}
         />
         {secureToggle && (

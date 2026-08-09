@@ -1081,6 +1081,7 @@ const en = {
   // ── Business Detail (creator view) ───────────────────────────
   businessDetail: {
     loadError: "Couldn't load business",
+    loadErrorBody: "We couldn't load this business's details. Please check your connection and try again.",
     goBack: 'Go Back',
     statActive: 'Active Events',
     statJoined: 'Joined',

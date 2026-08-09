@@ -76,13 +76,19 @@ export function AppModal({
             <Pressable
               style={[s.cancelBtn, { borderColor: C.border, backgroundColor: C.background }]}
               onPress={onCancel}
-              disabled={loading}>
+              disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel={cancelLabel}
+              accessibilityState={{ disabled: loading }}>
               <Text style={[s.cancelText, { color: C.text }]}>{cancelLabel}</Text>
             </Pressable>
             <Pressable
               style={[s.confirmBtn, { backgroundColor: cfg.btnColor, opacity: loading ? 0.7 : 1 }]}
               onPress={onConfirm}
-              disabled={loading}>
+              disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel={confirmLabel}
+              accessibilityState={{ disabled: loading, busy: loading }}>
               {loading
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <Text style={s.confirmText}>{confirmLabel}</Text>}

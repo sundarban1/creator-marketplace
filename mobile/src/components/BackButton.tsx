@@ -2,6 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 type Props = {
   onPress?: () => void;
@@ -15,6 +16,7 @@ type Props = {
 
 export function BackButton({ onPress, fallback = '/', variant = 'solid', icon = 'chevron-left' }: Props) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const overlay = variant === 'overlay';
 
   function handlePress() {
@@ -31,7 +33,9 @@ export function BackButton({ onPress, fallback = '/', variant = 'solid', icon = 
         { opacity: pressed ? 0.7 : 1 },
       ]}
       onPress={handlePress}
-      hitSlop={8}>
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={t('common.back')}>
       <FontAwesome5 name={icon} size={overlay ? 22 : 20} color={overlay ? '#fff' : C.text} />
     </Pressable>
   );

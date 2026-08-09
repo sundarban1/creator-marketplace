@@ -101,6 +101,17 @@ export const MAX_CONTENT_WIDTH = 800;
 // it with a `hitSlop` that pads the tappable area out to this minimum.
 export const MIN_TOUCH_TARGET = 44;
 
+// Shared control-height scale for Button/IconButton — `small` sits exactly at
+// MIN_TOUCH_TARGET so it never needs a compensating hitSlop, `large` matches
+// the height every full-width primary CTA in the app already used before
+// this scale existed (kept as-is so introducing it doesn't shift any
+// existing screen).
+export const CONTROL_HEIGHT = {
+  small:  MIN_TOUCH_TARGET,
+  medium: 48,
+  large:  54,
+};
+
 export const USER_KEY               = 'ch_user';
 export const ACCESS_TOKEN_KEY       = 'ch_access_token';
 export const REFRESH_TOKEN_KEY      = 'ch_refresh_token';

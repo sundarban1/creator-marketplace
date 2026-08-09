@@ -118,7 +118,7 @@ export function AnimatedTestimonials({
           >
             <h3 className="text-2xl font-bold text-ink">{current.name}</h3>
             <p className="text-sm text-ink-soft">{current.designation}</p>
-            <motion.p className="mt-8 font-serif text-lg italic leading-relaxed text-ink-soft">
+            <motion.p className="mt-3 font-serif text-lg italic leading-relaxed text-ink-soft">
               {current.quote.split(' ').map((word, index) => (
                 <motion.span
                   key={index}

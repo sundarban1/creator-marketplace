@@ -3,6 +3,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useCloseOnScrollDown } from '@/hooks/useCloseOnScrollDown';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -59,6 +60,7 @@ export function BottomSheet({
   children,
 }: Props) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const keyboardOffset = useKeyboardOffset();
   const { dragY, panHandlers, onScroll } = useCloseOnScrollDown(onClose);
 
@@ -76,7 +78,12 @@ export function BottomSheet({
           },
         ]}
       >
-        <Pressable style={s.handleWrap} onPress={onClose} hitSlop={12}>
+        <Pressable
+          style={s.handleWrap}
+          onPress={onClose}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}>
           <View style={[s.handlePill, { backgroundColor: C.border }]}>
             <FontAwesome5 name="chevron-down" solid size={16} color={C.textSecondary} />
           </View>
