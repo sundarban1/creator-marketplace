@@ -24,6 +24,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { VoiceRecorderButton } from '@/features/chat/components/VoiceRecorderButton';
 import { VoiceBubblePlayer } from '@/features/chat/components/VoiceBubblePlayer';
+import { ChatLoadingView } from '@/features/chat/components/ChatLoadingView';
 import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
@@ -498,6 +499,10 @@ export default function BusinessChatRoomScreen() {
           visibly blink/reflow right after a chat screen mounted on Android. iOS
           has no such native resize, so 'padding' still does real work there. */}
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
+        {chat.initialLoading ? (
+          <ChatLoadingView />
+        ) : (
+        <>
         {/* inverted=true → newest messages at bottom, scroll up for history (Instagram pattern) */}
         <FlatList
           ref={chat.listRef}
@@ -631,6 +636,8 @@ export default function BusinessChatRoomScreen() {
               </View>
             )}
           </>
+        )}
+        </>
         )}
       </KeyboardAvoidingView>
       </MaxWidthContainer>

@@ -578,6 +578,7 @@ const ne = {
     loadFailedTitle: 'मेसेजहरू लोड हुन सकेन',
     loadFailedSub: 'इन्टरनेट चेक गरेर फेरि प्रयास गर्नुहोस्।',
     loadMessagesFailedTitle: 'यो कुराकानी लोड हुन सकेन',
+    loadingConversation: 'कुराकानी लोड हुँदैछ…',
     retry: 'फेरि प्रयास गर्नुहोस्',
     compressingVideo: 'भिडियो तयार गर्दै…',
     processingVideo: 'प्रशोधन गर्दै…',

@@ -67,6 +67,12 @@ export function useChatConversation({
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesError, setMessagesError] = useState('');
+  // Gates the whole screen behind a single loading state instead of letting
+  // the header/list/composer paint progressively across separate commits —
+  // only ever set on the conversation's first load per mount; a background
+  // reconnect-triggered loadMessages() re-run must not blank an already-
+  // visible conversation back to a spinner.
+  const [initialLoading, setInitialLoading] = useState(true);
   const [status, setStatus] = useState<ChatStatus>((urlStatus as ChatStatus) ?? 'ACCEPTED');
   const [text, setText] = useState('');
   // Mirrors `text` (see the effect below) so handleSend's deferred callback
@@ -114,7 +120,8 @@ export function useChatConversation({
         // across this same refresh.
         setMessages((prev) => [...msgs, ...prev.filter((m) => m.id.startsWith('temp-upload-'))]);
       })
-      .catch((e) => setMessagesError(e instanceof Error ? e.message : t('messages.loadFailedSub')));
+      .catch((e) => setMessagesError(e instanceof Error ? e.message : t('messages.loadFailedSub')))
+      .finally(() => setInitialLoading(false));
   }
 
   // Auto-refresh the moment connectivity is restored after being offline.
@@ -128,7 +135,8 @@ export function useChatConversation({
     clearComposer();
     const convStatus = (urlStatus as ChatStatus) ?? 'ACCEPTED';
     setStatus(convStatus);
-    if (!conversationId) { setMessages([]); return; }
+    setInitialLoading(true);
+    if (!conversationId) { setMessages([]); setInitialLoading(false); return; }
     // Reconstruct any video/voice upload(s) still running for this conversation
     // before wiping/refetching — otherwise a video sent, then navigated away
     // from mid-upload, would appear to vanish until it finishes.
@@ -677,7 +685,7 @@ export function useChatConversation({
   }
 
   return {
-    messages, setMessages, messagesError,
+    messages, setMessages, messagesError, initialLoading,
     status, setStatus,
     text, editingMessage,
     otherTyping, emojiOpen, setEmojiOpen, presence,

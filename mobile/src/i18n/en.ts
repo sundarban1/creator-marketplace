@@ -584,6 +584,7 @@ const en = {
     loadFailedTitle: "Couldn't load messages",
     loadFailedSub: 'Check your connection and try again.',
     loadMessagesFailedTitle: "Couldn't load this conversation",
+    loadingConversation: 'Loading conversation…',
     retry: 'Retry',
     compressingVideo: 'Preparing video…',
     processingVideo: 'Processing…',
