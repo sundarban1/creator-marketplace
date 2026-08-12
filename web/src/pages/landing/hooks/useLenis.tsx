@@ -43,21 +43,60 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     });
     gsap.ticker.lagSmoothing(0);
 
+    // Fraunces/Inter load with display=swap (index.html) — a late font swap
+    // after any section's ScrollTrigger has already measured itself (e.g.
+    // Showcase's pinned horizontal scroll) can shift layout height and desync
+    // its cached start/end. One shared refresh here covers every section.
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+
+    // Fonts aren't the only thing that loads late: the Collaboration section's
+    // Google Map, video posters, and other async content can also finish
+    // loading well after this and change the document's total height without
+    // firing any font/resize event. A stale ScrollTrigger cache after that
+    // makes a pinned section (e.g. Showcase's horizontal scroll) report the
+    // wrong absolute position — clicking a nav link into it from below can
+    // land mid-pin instead of at its true start. Keep the cache honest by
+    // refreshing whenever the page's actual height changes, for as long as
+    // the page lives, not just once at startup.
+    let resizeRaf = 0;
+    const heightObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => ScrollTrigger.refresh());
+    });
+    heightObserver.observe(document.documentElement);
+
     setReady(true);
 
     return () => {
+      heightObserver.disconnect();
+      cancelAnimationFrame(resizeRaf);
       lenis.destroy();
       lenisRef.current = null;
     };
   }, [reducedMotion]);
 
   function scrollTo(target: string | HTMLElement, opts?: { offset?: number }) {
+    let el = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target;
+
+    // A GSAP ScrollTrigger pin (e.g. Showcase's horizontal scroll) wraps its
+    // element in a `.pin-spacer` sized to the pin's full scroll range. Once
+    // scrolled past a pinned section, GSAP leaves a compensating transform on
+    // the pinned element itself so it visually "catches up" to where normal
+    // document flow would have put it — which makes that element's own
+    // getBoundingClientRect() report a position shifted by the entire pin
+    // distance when measured from below it (e.g. clicking a nav link from
+    // the footer would land mid-pin instead of at its true start). The
+    // spacer wrapper carries no such transform and is reliable from any
+    // scroll position, so target that instead when one wraps the element.
+    if (el?.parentElement?.classList.contains('pin-spacer')) {
+      el = el.parentElement;
+    }
+
     const lenis = lenisRef.current;
-    if (lenis) {
-      lenis.scrollTo(target, { offset: opts?.offset ?? 0 });
+    if (lenis && el) {
+      lenis.scrollTo(el, { offset: opts?.offset ?? 0 });
       return;
     }
-    const el = typeof target === 'string' ? document.querySelector(target) : target;
     el?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
   }
 

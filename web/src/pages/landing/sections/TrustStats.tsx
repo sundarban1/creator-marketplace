@@ -41,7 +41,7 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
         <div className="mesh-blob absolute right-[6%] bottom-0 h-[320px] w-[320px] rounded-full bg-brand-orange/[0.1] blur-[110px]" style={{ animationDelay: '2s' }} />
       </div>
 
-      <div className="relative mx-auto max-w-5xl px-6">
+      <div className="relative mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-16 max-w-2xl">
           <motion.p variants={fadeUp} className="font-serif text-base italic text-white/50">
             {d.trust.eyebrow}

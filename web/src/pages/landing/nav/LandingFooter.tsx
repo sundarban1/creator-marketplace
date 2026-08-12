@@ -31,7 +31,7 @@ export function LandingFooter() {
   return (
     <footer id={SECTION_IDS.contact} className="relative bg-ink py-16 text-white">
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-      <div className="mx-auto max-w-5xl px-5">
+      <div className="mx-auto max-w-6xl px-5">
         <div className="grid gap-12 md:grid-cols-2">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
             <motion.div variants={fadeUp} className="mb-3 flex w-fit items-center">

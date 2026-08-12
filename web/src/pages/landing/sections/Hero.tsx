@@ -114,10 +114,13 @@ export function Hero() {
                     <span className="animate-pulse">▏</span>
                   </span>
                 </em>{' '}
-                {/* Forces a clean "Where Brands" / "Meet Creators" 2-line split on phones —
-                    without it, the reserved-width word boxes below overflow mid-phrase
-                    and wrap word-by-word instead. */}
-                <br className="sm:hidden" aria-hidden="true" />
+                {/* Always forces a clean "Where Brands" / "Meet Creators" 2-line split —
+                    without it, the reserved-width word boxes below (sized to fit the
+                    widest word any headline pair ever cycles through) can overflow the
+                    text column at the larger desktop type sizes and wrap into an
+                    uneven 3rd line instead. Unconditional so it holds regardless of
+                    which pair — short or long — is currently typed in. */}
+                <br aria-hidden="true" />
                 {d.hero.headlineMiddle}{' '}
                 <em className="relative inline-grid align-baseline text-left text-brand-orange underline decoration-brand-orange/30 decoration-2 underline-offset-8">
                   {d.hero.headlinePairs.map((p, i) => (

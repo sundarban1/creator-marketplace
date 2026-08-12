@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { FaUser, FaPaperPlane } from 'react-icons/fa6';
-import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
+import { useEffect, useRef, useState } from 'react';
+import { GoogleMap, Marker, OverlayView, OVERLAY_MOUSE_TARGET, Polyline, useJsApiLoader } from '@react-google-maps/api';
+import { AnimatePresence, motion, useInView } from 'framer-motion';
+import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // Simplified, stylized silhouette evoking Nepal's elongated east-west shape —
 // a decorative watermark, not a precise cartographic boundary. Same low-opacity
@@ -12,46 +13,260 @@ import { TextReveal } from '../components/TextReveal';
 const NEPAL_OUTLINE =
   'M40 175c15-35 55-53 105-57 27-23 63-40 110-36 37-20 80-30 130-24 43-16 87-8 127-10 48-12 93 2 133 18 47 4 87 22 120 50 15 24 3 46-27 54-26 18-66 12-102 24-38 12-80 4-118 16-40 10-82 2-122 8-40 6-82-2-122 4-40 6-82-4-122-14-40-6-84-10-112-33z';
 
-const CITY_HOLD_MS = 2600;
+// Real coordinates for the handful of cities the connection map plots —
+// index into the language-specific `cities` array so labels stay translated,
+// coordinates stay language-agnostic.
+type MapCityKey = 'ilam' | 'dharan' | 'kathmandu' | 'pokhara' | 'biratnagar' | 'nepalgunj' | 'dhangadhi' | 'janakpur';
 
-// Cycles through `cities`, one entry at a time, fading out and back in on each
-// change — `offset` staggers which city a given label starts on so the two
-// side-by-side labels (see below) practically never show the same city at once.
-function CityLabel({ cities, offset, className }: { cities: string[]; offset: number; className: string }) {
-  const [tick, setTick] = useState(0);
+const MAP_CITY_POINTS: Record<MapCityKey, { cityIndex: number; lat: number; lng: number }> = {
+  dhangadhi: { cityIndex: 29, lat: 28.6939, lng: 80.5827 },
+  nepalgunj: { cityIndex: 4, lat: 28.05, lng: 81.6167 },
+  pokhara: { cityIndex: 3, lat: 28.2096, lng: 83.9856 },
+  kathmandu: { cityIndex: 2, lat: 27.7172, lng: 85.324 },
+  janakpur: { cityIndex: 18, lat: 26.7288, lng: 85.9247 },
+  dharan: { cityIndex: 1, lat: 26.8065, lng: 87.2846 },
+  biratnagar: { cityIndex: 0, lat: 26.4525, lng: 87.2718 },
+  ilam: { cityIndex: 43, lat: 26.9098, lng: 87.9309 },
+};
+
+// Ilam <-> Dharan shown first, then rotates through pairs spread across the
+// map so "creators discover each other anywhere in Nepal" reads visually.
+const MAP_PAIRS: [MapCityKey, MapCityKey][] = [
+  ['ilam', 'dharan'],
+  ['kathmandu', 'pokhara'],
+  ['biratnagar', 'nepalgunj'],
+  ['dhangadhi', 'janakpur'],
+];
+
+const MAP_PAIR_HOLD_MS = 3400;
+const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
+const NEPAL_CENTER = { lat: 28.1, lng: 84.0 };
+const GOOGLE_MAPS_LIBRARIES: 'marker'[] = [];
+
+// Full country extent (with a little margin beyond the actual border) —
+// fitBounds() on load frames all of Nepal inside the card regardless of its
+// pixel size, instead of a fixed zoom/center that can crop the north or
+// south edge on shorter containers.
+const NEPAL_BOUNDS: google.maps.LatLngBoundsLiteral = { north: 30.6, south: 26.2, west: 79.9, east: 88.4 };
+
+// Light custom tint (not a heavy reskin) so the map still reads as an
+// authentic Google Map — place names, roads, and default labels stay on,
+// only POI/transit icon clutter is trimmed and the palette leans toward the
+// site's paper/ink colors instead of stock Google green/yellow.
+const MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry', stylers: [{ color: '#f6f3ee' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#6b655f' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#fbf9f5' }] },
+  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#7C5CF0' }, { weight: 1.4 }] },
+  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#d8d2c8' }] },
+  // Google's own city/town-name labels would otherwise render right at each
+  // pin's coordinate — a second, unstyled "Ilam"/"Dharan" competing with our
+  // custom pin+pill for the exact same spot. Hiding locality/neighborhood
+  // text (but not country/province, water, or road labels) makes our pill
+  // the only city label anywhere, so there's nothing left for it to fail to cover.
+  { featureType: 'administrative.locality', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e6e1f5' }] },
+  { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#eee9e0' }] },
+];
+
+const MAP_OPTIONS: google.maps.MapOptions = {
+  styles: MAP_STYLES,
+  disableDefaultUI: true,
+  gestureHandling: 'none',
+  keyboardShortcuts: false,
+  clickableIcons: false,
+};
+
+// Classic teardrop pin (not a plain dot) — tip anchored exactly on the
+// coordinate. The pin is ~35px tall at this scale (22-unit path * 1.6), so
+// the pill label overlay below offsets itself by that much to clear the head.
+const PIN_PATH = 'M12,2C8.13,2,5,5.13,5,9c0,5.25,7,13,7,13s7-7.75,7-13C19,5.13,15.87,2,12,2z';
+const PIN_SCALE = 1.6;
+const PIN_HEIGHT_PX = 22 * PIN_SCALE;
+
+function pinIcon(color: string): google.maps.Symbol {
+  return {
+    path: PIN_PATH,
+    fillColor: color,
+    fillOpacity: 1,
+    strokeColor: '#ffffff',
+    strokeWeight: 1.5,
+    scale: PIN_SCALE,
+    anchor: new google.maps.Point(12, 22),
+  };
+}
+
+// White pill label floating above a pin — Marker's built-in `label` only
+// supports plain text with no background, so this is a real DOM node
+// projected onto the map via OverlayView instead, matching the pill chips
+// used elsewhere on the site (e.g. the nav's language switch).
+function PinPill({ lat, lng, text, color }: { lat: number; lng: number; text: string; color: string }) {
+  return (
+    <OverlayView
+      position={{ lat, lng }}
+      mapPaneName={OVERLAY_MOUSE_TARGET}
+      getPixelPositionOffset={(width, height) => ({ x: -width / 2, y: -(height + PIN_HEIGHT_PX + 6) })}
+    >
+      <div
+        // A plain shadow alone can vanish when the pill lands over the map's
+        // own light cream terrain fill (#f6f3ee is close to white) — the ring
+        // gives the pill a hard edge so it reads as an opaque card sitting on
+        // top of the map no matter what's directly underneath it.
+        className="whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs font-semibold leading-none ring-1 ring-ink/10 shadow-[0_8px_20px_-6px_rgba(20,17,16,0.4)]"
+        style={{ color }}
+      >
+        {text}
+      </div>
+    </OverlayView>
+  );
+}
+
+const CALLOUT_HOLD_MS = 4200;
+
+// Small feature-callout ticker pinned to the map's top-right corner — one
+// line slides in from the right at a time, replacing the previous line, so
+// it reads as a short list without needing space for all of them at once.
+function MapCallouts({ items, active }: { items: string[]; active: boolean }) {
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), CITY_HOLD_MS);
+    if (!active) return;
+    const id = setInterval(() => setIndex((i) => (i + 1) % items.length), CALLOUT_HOLD_MS);
     return () => clearInterval(id);
-  }, []);
-
-  const city = cities[(tick + offset) % cities.length];
+  }, [active, items.length]);
 
   return (
-    // Fixed width matters here — the only child is `absolute` (out of flow),
-    // so without an explicit width this box collapses to 0 and `overflow-hidden`
-    // clips the text into invisibility no matter what the child renders.
-    <span className={`relative block h-4 w-24 overflow-hidden ${className}`}>
+    <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 flex justify-end sm:left-5 sm:right-5 sm:top-5">
       <AnimatePresence mode="wait">
-        <motion.span
-          key={city}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-x-0 top-0 whitespace-nowrap text-center"
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, x: 28 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -12 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="flex max-w-full items-center gap-2.5 rounded-full border border-ink/10 bg-white/95 py-2.5 pl-3.5 pr-5 shadow-[0_10px_30px_-10px_rgba(20,17,16,0.3)] backdrop-blur-sm"
         >
-          {city}
-        </motion.span>
+          <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet/10 text-xs font-bold text-violet">
+            {index + 1}
+          </span>
+          <span className="truncate text-sm font-semibold text-ink">{items[index]}</span>
+        </motion.div>
       </AnimatePresence>
-    </span>
+    </div>
+  );
+}
+
+// A real Google Map of Nepal — two markers for the active creator pair, with
+// a dashed connecting line whose arrow symbols march along it (Google Maps
+// has no built-in path animation, so this is the standard recipe: nudge the
+// polyline icon's offset a little every tick).
+function NepalConnectionMap({ cities, callouts }: { cities: string[]; callouts: string[] }) {
+  const reducedMotion = useReducedMotion();
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const inView = useInView(mapRef, { amount: 0.5 });
+  const [pairIndex, setPairIndex] = useState(0);
+  const [dashOffset, setDashOffset] = useState(0);
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'kolab-google-maps',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
+    libraries: GOOGLE_MAPS_LIBRARIES,
+  });
+
+  function handleMapLoad(map: google.maps.Map) {
+    mapInstanceRef.current = map;
+    map.fitBounds(NEPAL_BOUNDS, 24);
+  }
+
+  // Google Maps snapshots its container's pixel size when it first loads and
+  // never notices later layout changes on its own (a breakpoint switching,
+  // a dev-server hot reload, fonts shifting layout) — it just keeps rendering
+  // tiles at the old size, leaving the rest of a since-grown container blank.
+  // Re-measure and re-fit whenever the card's actual box size changes.
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const observer = new ResizeObserver(() => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      google.maps.event.trigger(map, 'resize');
+      map.fitBounds(NEPAL_BOUNDS, 24);
+    });
+    observer.observe(mapRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!inView || reducedMotion) return;
+    const id = setInterval(() => setPairIndex((i) => (i + 1) % MAP_PAIRS.length), MAP_PAIR_HOLD_MS);
+    return () => clearInterval(id);
+  }, [inView, reducedMotion]);
+
+  useEffect(() => {
+    if (!inView || reducedMotion || !isLoaded) return;
+    const id = setInterval(() => setDashOffset((o) => (o + 2) % 100), 60);
+    return () => clearInterval(id);
+  }, [inView, reducedMotion, isLoaded]);
+
+  const [aKey, bKey] = MAP_PAIRS[pairIndex]!;
+  const a = MAP_CITY_POINTS[aKey];
+  const b = MAP_CITY_POINTS[bKey];
+
+  return (
+    <div
+      ref={mapRef}
+      className="relative w-full overflow-hidden rounded-3xl border border-ink/10 bg-paper shadow-[0_20px_60px_-24px_rgba(20,17,16,0.18)]"
+    >
+      <div className="h-[420px] w-full sm:h-[600px]">
+        {isLoaded ? (
+          <GoogleMap
+            mapContainerStyle={MAP_CONTAINER_STYLE}
+            center={NEPAL_CENTER}
+            zoom={7}
+            options={MAP_OPTIONS}
+            onLoad={handleMapLoad}
+          >
+            {/* No `key` on these — remounting a fresh Polyline/Marker per
+                pair left the previous instance's overlay behind on the map
+                instead of being cleaned up. Keeping one stable instance per
+                role and just updating its path/position/icon avoids that. */}
+            <Polyline
+              path={[
+                { lat: a.lat, lng: a.lng },
+                { lat: b.lat, lng: b.lng },
+              ]}
+              options={{
+                strokeOpacity: 0,
+                icons: [
+                  {
+                    icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.85, strokeColor: '#7C5CF0', scale: 3 },
+                    offset: `${dashOffset}%`,
+                    repeat: '16px',
+                  },
+                ],
+              }}
+            />
+            <Marker position={{ lat: a.lat, lng: a.lng }} icon={pinIcon('#7C5CF0')} zIndex={2} />
+            <Marker position={{ lat: b.lat, lng: b.lng }} icon={pinIcon('#F97316')} zIndex={2} />
+            <PinPill lat={a.lat} lng={a.lng} text={cities[a.cityIndex]!} color="#7C5CF0" />
+            <PinPill lat={b.lat} lng={b.lng} text={cities[b.cityIndex]!} color="#F97316" />
+          </GoogleMap>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-sm text-ink-soft">Loading map…</div>
+        )}
+      </div>
+
+      <MapCallouts items={callouts} active={inView && !reducedMotion} />
+    </div>
   );
 }
 
 export function Collaboration() {
   const { d } = useLandingLanguage();
   const cities = d.collaboration.cities;
-  const rightOffset = Math.floor(cities.length / 2);
 
   return (
     <section id={SECTION_IDS.collaboration} className="relative overflow-hidden bg-white py-24">
@@ -71,68 +286,36 @@ export function Collaboration() {
         whileInView="show"
         viewport={VP}
         variants={stagger()}
-        className="mx-auto max-w-3xl px-6 text-center"
+        className="mx-auto max-w-6xl px-6"
       >
-        <TextReveal
-          as="h2"
-          text={d.collaboration.heading}
-          delay={0.1}
-          className="text-balance font-serif text-3xl font-medium text-ink sm:text-4xl"
-        />
-        <motion.p variants={fadeUp} className="mx-auto mt-4 max-w-xl text-ink-soft">
-          {d.collaboration.sub}
-        </motion.p>
+        {/* Top-left eyebrow + heading, same corner placement as "Why Kolab"
+            in Showcase.tsx — kept consistent across the sections below it. */}
+        <div className="max-w-xl">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
+            {d.collaboration.eyebrow}
+          </motion.p>
 
-        {/* Creator-to-creator connection — one avatar on each side (each
-            labeled with a rotating city, so it reads as "a creator somewhere
-            in Nepal"), a message "ping" travels along the line between them. */}
-        <motion.div variants={fadeUp} className="mx-auto mt-12 flex max-w-sm items-center justify-between">
-          <div className="flex flex-shrink-0 flex-col items-center gap-2.5">
-            <CityLabel cities={cities} offset={0} className="text-[11px] font-semibold uppercase tracking-wide text-violet" />
-            <motion.span
-              whileHover={CARD_HOVER}
-              className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-violet/25 bg-white text-violet shadow-[0_10px_24px_-8px_rgba(123,92,245,0.35)]"
-            >
-              <FaUser size={20} />
-            </motion.span>
-            <span className="text-[11px] font-semibold text-ink-soft">{d.collaboration.creatorOneLabel}</span>
-          </div>
+          <TextReveal
+            as="h2"
+            text={d.collaboration.heading}
+            delay={0.1}
+            className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-4xl"
+          />
+        </div>
+      </motion.div>
 
-          <div className="relative mx-3 mt-[27px] h-px flex-1 bg-gradient-to-r from-violet/50 via-ink/15 to-brand-orange/50">
-            {/* Two messages in flight, one each direction, offset in time —
-                reads as a back-and-forth exchange rather than a one-way ping. */}
-            <motion.span
-              aria-hidden
-              className="absolute -top-[8px] flex h-4 w-4 items-center justify-center rounded-full bg-violet text-white shadow-[0_2px_6px_rgba(124,58,237,0.4)]"
-              style={{ marginLeft: '-8px' }}
-              animate={{ left: ['0%', '100%'] }}
-              transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 1.7, ease: 'easeInOut' }}
-            >
-              <FaPaperPlane size={8} />
-            </motion.span>
-            <motion.span
-              aria-hidden
-              className="absolute -top-[8px] flex h-4 w-4 items-center justify-center rounded-full bg-brand-orange text-white shadow-[0_2px_6px_rgba(249,115,22,0.4)]"
-              style={{ marginLeft: '-8px', transform: 'scaleX(-1)' }}
-              animate={{ left: ['100%', '0%'] }}
-              transition={{ duration: 2.2, repeat: Infinity, delay: 1.1, repeatDelay: 1.7, ease: 'easeInOut' }}
-            >
-              <FaPaperPlane size={8} />
-            </motion.span>
-          </div>
-
-          <div className="flex flex-shrink-0 flex-col items-center gap-2.5">
-            <CityLabel cities={cities} offset={rightOffset} className="text-[11px] font-semibold uppercase tracking-wide text-brand-orange" />
-            <motion.span
-              whileHover={CARD_HOVER}
-              className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-brand-orange/25 bg-white text-brand-orange shadow-[0_10px_24px_-8px_rgba(249,115,22,0.35)]"
-            >
-              <FaUser size={20} />
-            </motion.span>
-            <span className="text-[11px] font-semibold text-ink-soft">{d.collaboration.creatorTwoLabel}</span>
-          </div>
+      <motion.div
+        initial="hidden"
+        whileInView="show"
+        viewport={VP}
+        variants={stagger(0.15)}
+        className="mx-auto mt-12 max-w-6xl px-6"
+      >
+        <motion.div variants={fadeUp}>
+          <NepalConnectionMap cities={cities} callouts={d.collaboration.mapCallouts} />
         </motion.div>
       </motion.div>
+
     </section>
   );
 }

@@ -1,10 +1,12 @@
 export const en = {
   nav: {
     links: {
+      showcase: 'Why Kolab',
       audience: 'How It Works',
       journey: 'Campaign Flow',
-      categories: 'Categories',
-      security: 'Security',
+      // categories: 'Categories', // Categories section commented out on the landing page for now
+      // security: 'Security', // Security section commented out on the landing page for now
+      collaboration: 'How Creators Connect',
       contact: 'Contact',
     },
     cta: 'Get started',
@@ -33,6 +35,17 @@ export const en = {
     ctaBusiness: 'Hire Creators',
     scrollAriaLabel: 'Scroll to explore',
     scrollLabel: 'Scroll',
+  },
+
+  showcase: {
+    eyebrow: 'Why Kolab',
+    panels: [
+      { heading: 'Find the Right Match', sub: 'Discover creators, brands, and collaboration opportunities that actually fit your goals, niche, audience, and budget.' },
+      { heading: 'Everything in One Place', sub: 'Discover opportunities, send proposals, communicate, manage campaigns, submit deliverables, and track payments without jumping between platforms.' },
+      { heading: 'Real Opportunities, Less Hassle', sub: 'Skip endless DMs and cold outreach. Find genuine collaboration opportunities and connect directly with the right people.' },
+      { heading: 'Collaborate with Confidence', sub: 'Keep campaign requirements, communication, deliverables, deadlines, and agreements organized so everyone knows what to expect.' },
+      { heading: 'Get Paid Securely', sub: 'Make payments and receive earnings through a transparent process, reducing the stress of chasing payments, scams, or unclear deals.' },
+    ],
   },
 
   trust: {
@@ -105,10 +118,15 @@ export const en = {
   },
 
   collaboration: {
+    eyebrow: 'How creators connect',
     heading: 'Creators discover each other too',
-    sub: 'Search fellow creators collaboration request who match your interests — by location or category anywhere in Nepal — send a message request, and start the conversation, ready for your next collaboration.',
-    creatorOneLabel: 'Creator 1',
-    creatorTwoLabel: 'Creator 2',
+    mapCallouts: [
+      'Discover creators who match your interests, niche, and location across Nepal.',
+      'Explore creator profiles to find the right fit for your next collaboration.',
+      'Send a collaboration request and introduce yourself directly.',
+      'Start a conversation and discuss ideas, content, and collaboration opportunities.',
+      'Build meaningful creator connections and turn conversations into your next Kolab.',
+    ],
     cities: [
       'Biratnagar', 'Dharan', 'Kathmandu', 'Pokhara', 'Nepalgunj', 'Dang',
       'Butwal', 'Itahari', 'Dhankuta', 'Nagarkot', 'Dhulikhel', 'Bhaktapur',

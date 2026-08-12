@@ -88,7 +88,7 @@ export function LandingNav() {
         className="fixed left-0 right-0 top-0 z-50 border-b backdrop-blur-xl"
       >
         <div
-          className={`mx-auto flex max-w-5xl items-center justify-between px-6 transition-[padding] duration-300 ease-out ${scrolled ? 'py-3.5' : 'py-5'}`}
+          className={`mx-auto flex max-w-6xl items-center justify-between px-6 transition-[padding] duration-300 ease-out ${scrolled ? 'py-3.5' : 'py-5'}`}
         >
           <button onClick={() => go('hero')} className="group flex items-center transition-transform duration-300 ease-out hover:scale-[1.04]">
             <img src="/logo.png" alt="Kolab" className="h-9 w-auto object-contain" />

@@ -31,7 +31,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
 
   return (
     <section id={SECTION_IDS.categories} className="bg-paper py-28">
-      <div className="mx-auto mb-14 max-w-2xl px-6">
+      <div className="mx-auto mb-14 max-w-3xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
             {d.categories.eyebrow}
@@ -50,7 +50,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
         whileInView="show"
         viewport={VP}
         variants={stagger()}
-        className="mx-auto flex max-w-4xl flex-col items-center gap-3 px-6"
+        className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-6"
       >
         {rows.map((row, ri) => (
           <div key={ri} className="flex flex-wrap justify-center gap-2">

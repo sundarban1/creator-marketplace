@@ -11,13 +11,14 @@ import { LandingFooter } from './nav/LandingFooter';
 import { SEO } from '../../lib/seo/SEO';
 import { organizationSchema, websiteSchema } from '../../lib/seo/schema';
 import { Hero } from './sections/Hero';
+import { Showcase } from './sections/Showcase';
 import { TrustStats } from './sections/TrustStats';
-import { CampaignJourney } from './sections/CampaignJourney';
+// import { CampaignJourney } from './sections/CampaignJourney'; // Campaign Flow section commented out on the landing page for now
 import { Audience } from './sections/Audience';
-import { Categories } from './sections/Categories';
+// import { Categories } from './sections/Categories'; // Categories section commented out on the landing page for now
 import { Collaboration } from './sections/Collaboration';
 import { Partners } from './sections/Partners';
-import { Security } from './sections/Security';
+// import { Security } from './sections/Security'; // Security section commented out on the landing page for now
 import { Stories } from './sections/Stories';
 
 function LandingPageInner() {
@@ -65,13 +66,14 @@ function LandingPageInner() {
       <CornerChrome />
       <LandingNav />
       <Hero />
+      <Showcase />
       <TrustStats stats={stats} />
       <Partners />
       <Audience />
-      <Categories stats={stats} />
-      <CampaignJourney />
+      {/* <Categories stats={stats} /> Categories section commented out on the landing page for now */}
+      {/* <CampaignJourney /> Campaign Flow section commented out on the landing page for now */}
       <Collaboration />
-      <Security />
+      {/* <Security /> Security section commented out on the landing page for now */}
       <Stories stories={successStories} />
       <LandingFooter />
       <ChatWidget />

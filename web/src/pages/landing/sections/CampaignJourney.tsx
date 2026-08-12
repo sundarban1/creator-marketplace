@@ -1,44 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
-import confetti from 'canvas-confetti';
+import { AnimatePresence, motion, useInView } from 'framer-motion';
 import {
   FaBullhorn, FaPaperPlane, FaHandshake, FaCreditCard, FaBell, FaBolt, FaCloudArrowUp,
-  FaMagnifyingGlass, FaSackDollar, FaCheck,
+  FaMagnifyingGlass, FaSackDollar,
 } from 'react-icons/fa6';
 import { fadeUp, stagger, VP } from '../lib/motion';
-import { SECTION_IDS } from '../constants';
+import { EASE, SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { SectionWave } from '../components/SectionWave';
 import { TextReveal } from '../components/TextReveal';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
+// Positionally mapped to `journey.steps` in en.ts/ne.ts (icon[i] illustrates
+// step[i]) — reordering or adding a step there requires updating this array
+// in the same position, since nothing ties them together by key.
 const ICONS = [FaBullhorn, FaPaperPlane, FaHandshake, FaCreditCard, FaBell, FaBolt, FaCloudArrowUp, FaMagnifyingGlass, FaSackDollar];
 
-const CONFETTI_COLORS = ['#7b5cf5', '#f97316', '#10b981'];
-
-// Fires a brand-colored popper burst from wherever the given element sits on
-// screen right now — used to celebrate the last step ("Payment released")
-// completing, instead of a generic screen-center burst. `offsetY` nudges the
-// burst point down (px) without moving the actual element it's anchored to.
-function popConfettiFrom(el: HTMLElement | null, offsetY = 0) {
-  const rect = el?.getBoundingClientRect();
-  const origin = rect
-    ? { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2 + offsetY) / window.innerHeight }
-    : { x: 0.5, y: 0.5 };
-
-  confetti({ particleCount: 70, spread: 65, startVelocity: 42, gravity: 1.1, ticks: 200, origin, colors: CONFETTI_COLORS, scalar: 0.9 });
-  confetti({ particleCount: 40, spread: 100, startVelocity: 30, gravity: 1.1, ticks: 220, origin, colors: CONFETTI_COLORS, scalar: 0.7 });
-}
-
-// One step is "live" for this long before the timeline advances — long enough
-// to read the title + description, short enough that the loop stays engaging.
-const STEP_MS = 2100;
-// Extra beats the timeline holds on the fully-completed state before looping,
-// so "payment released" doesn't flash by and reset immediately.
-const HOLD_BEATS = 2;
-// Index of the "Creator notified" step (Kolab/system-badged) in d.journey.steps
-// — confetti bursts from this step's dot. Update this if the steps array is
-// ever reordered.
-const NOTIFIED_STEP_INDEX = 4;
+// One step is "live" for this long before auto-advancing to the next — long
+// enough to read the title + description, short enough the loop stays engaging.
+const STEP_MS = 4200;
 
 type Role = 'brand' | 'creator' | 'system';
 
@@ -47,105 +27,51 @@ const ROLE_STYLE: Record<Role, string> = {
   creator: 'bg-violet/15 text-violet',
   system: 'bg-white/10 text-white/60',
 };
+const BADGE_STYLE: Record<Role, string> = {
+  brand: 'bg-gradient-to-br from-brand-orange to-orange-700 shadow-[0_6px_16px_-4px_rgba(249,115,22,0.55)]',
+  creator: 'bg-gradient-to-br from-violet to-violet-dark shadow-[0_6px_16px_-4px_rgba(123,92,245,0.55)]',
+  system: 'bg-white/15 shadow-[0_6px_16px_-4px_rgba(255,255,255,0.15)]',
+};
+const PANEL_BG: Record<Role, string> = {
+  brand: 'bg-gradient-to-br from-brand-orange/25 via-ink to-ink',
+  creator: 'bg-gradient-to-br from-violet/25 via-ink to-ink',
+  system: 'bg-gradient-to-br from-white/10 via-ink to-ink',
+};
 
-type Status = 'pending' | 'current' | 'done';
-
-function StepDot({ Icon, status, ref }: { Icon: (typeof ICONS)[number]; status: Status; ref?: React.Ref<HTMLSpanElement> }) {
-  return (
-    <span
-      ref={ref}
-      className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-500 ${
-        status === 'done'
-          ? 'border-transparent bg-emerald-500 text-white'
-          : status === 'current'
-            ? 'border-transparent bg-gradient-to-br from-violet to-violet-dark text-white shadow-[0_6px_16px_-4px_rgba(123,92,245,0.55)]'
-            : 'border-white/15 bg-white/5 text-white/25'
-      }`}
-    >
-      {status === 'current' && (
-        <motion.span
-          aria-hidden
-          className="absolute inset-0 rounded-full bg-violet/50"
-          animate={{ scale: [1, 1.7], opacity: [0.55, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
-        />
-      )}
-      <AnimatePresence mode="wait" initial={false}>
-        {status === 'done' ? (
-          <motion.span key="check" initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
-            <FaCheck size={13} />
-          </motion.span>
-        ) : (
-          <motion.span key="icon" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} transition={{ duration: 0.25 }}>
-            <Icon size={13} />
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </span>
-  );
-}
+// Always moves forward (auto-play loops 0→1→…→n→0) — the outgoing panel
+// exits left, the next one enters from the right, so the whole stage reads
+// as a single timeline flowing left to right, not a random crossfade.
+const slideVariants = {
+  enter: { opacity: 0, x: 48 },
+  center: { opacity: 1, x: 0, transition: { duration: 0.5, ease: EASE.out } },
+  exit: { opacity: 0, x: -48, transition: { duration: 0.4, ease: EASE.out } },
+};
 
 export function CampaignJourney() {
   const { d } = useLandingLanguage();
   const steps = d.journey.steps;
-  const totalBeats = steps.length + HOLD_BEATS;
 
-  const cardRef = useRef<HTMLDivElement>(null);
-  const notifiedDotRef = useRef<HTMLSpanElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const stepRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const inView = useInView(cardRef, { amount: 0.5 });
-  const [beat, setBeat] = useState(0);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(sectionRef, { amount: 0.4 });
+  const reducedMotion = useReducedMotion();
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
 
+  // Autoplay only runs while the section is actually on screen, motion isn't
+  // reduced, and the visitor isn't hovering (see onMouseEnter/Leave below) —
+  // wraps back to step 0 after the last step so the timeline loops forever.
   useEffect(() => {
-    if (!inView) return;
-    const id = setInterval(() => setBeat((b) => (b + 1) % totalBeats), STEP_MS);
+    if (!inView || reducedMotion || paused) return;
+    const id = setInterval(() => setActive((a) => (a + 1) % steps.length), STEP_MS);
     return () => clearInterval(id);
-  }, [inView, totalBeats]);
+  }, [inView, reducedMotion, paused, steps.length]);
 
-  // Celebrate the instant the last step ("Payment released") flips from
-  // "current" to "done" — that's exactly when `beat` first reaches
-  // `steps.length` (the hold phase begins), once per loop. Fires from the
-  // "Creator notified" dot, nudged down a bit rather than dead-on-icon.
-  useEffect(() => {
-    if (beat === steps.length) popConfettiFrom(notifiedDotRef.current, 24);
-  }, [beat, steps.length]);
-
-  // -1 once the loop is holding on the "all done" beats — no step reads as current then.
-  const activeIndex = beat < steps.length ? beat : -1;
-
-  // Keep the horizontally-scrolling track (mobile) following the timeline: center
-  // whichever step is live so it never marches off-screen and looks "stuck". On the
-  // confetti beat, center the "Creator notified" dot instead — that's where the
-  // popper actually fires from, so the burst lands in the middle of the viewport.
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-    const targetIndex = beat === steps.length ? NOTIFIED_STEP_INDEX : activeIndex === -1 ? steps.length - 1 : activeIndex;
-    const target = stepRefs.current[targetIndex];
-    if (!target) return;
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const offset = targetRect.left + targetRect.width / 2 - containerRect.left - containerRect.width / 2;
-    if (Math.abs(offset) > 1) container.scrollBy({ left: offset, behavior: 'smooth' });
-  }, [beat, activeIndex, steps.length]);
-
-  function statusOf(i: number): Status {
-    if (activeIndex === -1) return 'done';
-    if (i < activeIndex) return 'done';
-    if (i === activeIndex) return 'current';
-    return 'pending';
-  }
-
-  const barSegment = Math.min(beat, steps.length - 1);
-
-  // Single continuous connector line under the dots — its fill grows one
-  // segment at a time as steps complete, instead of animating each gap
-  // between dots independently.
-  const totalGaps = Math.max(steps.length - 1, 1);
-  const filledGaps = activeIndex === -1 ? totalGaps : Math.min(activeIndex, totalGaps);
-  const fillPercent = (filledGaps / totalGaps) * 100;
-  const halfColumn = 50 / steps.length;
+  const step = steps[active];
+  const role = step.role as Role;
+  const Icon = ICONS[active] ?? FaHandshake;
+  // Rail fill as a % of steps completed, e.g. step 3 of 9 → 25% filled — the
+  // last step (active === steps.length - 1) always reads as 100%.
+  const fillPercent = steps.length > 1 ? (active / (steps.length - 1)) * 100 : 0;
 
   return (
     <section id={SECTION_IDS.journey} className="relative overflow-hidden bg-ink py-28 text-white">
@@ -155,8 +81,7 @@ export function CampaignJourney() {
         <div className="mesh-blob absolute left-[-8%] bottom-0 h-[320px] w-[320px] rounded-full bg-violet/[0.12] blur-[110px]" style={{ animationDelay: '2.4s' }} />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-6">
-        {/* ── Copy ── */}
+      <div ref={sectionRef} className="relative mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
           <motion.p variants={fadeUp} className="font-serif text-base italic text-white/50">
             {d.journey.eyebrow}
@@ -165,103 +90,90 @@ export function CampaignJourney() {
             as="h2"
             text={d.journey.heading}
             delay={0.1}
-            className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-white sm:text-2xl md:text-3xl lg:text-4xl"
+            className="mt-3 text-balance font-serif text-2xl font-medium text-white sm:text-3xl md:text-4xl"
           />
+          <motion.p variants={fadeUp} className="mt-4 text-white/60">
+            {d.journey.sub}
+          </motion.p>
         </motion.div>
 
-        {/* ── Animated horizontal timeline card ── */}
-        <motion.div ref={cardRef} initial="hidden" whileInView="show" viewport={VP} variants={fadeUp} className="mt-14">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
-            {/* Story-style progress bar mirroring the phone showcase up in Hero */}
-            <div className="mb-6 flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-white/50">
-                <motion.span
-                  className="h-1.5 w-1.5 rounded-full bg-emerald-500"
-                  animate={{ opacity: [1, 0.35, 1] }}
-                  transition={{ duration: 1.6, repeat: Infinity }}
-                />
-                {d.journey.liveBadge}
-              </span>
-            </div>
-            <div className="mb-10 flex gap-1.5">
+        <div
+          className="mt-16"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          {/* Background timeline rail — the "line" the flow moves along, filling left to right as steps advance */}
+          <div className="relative mb-12 h-2.5">
+            <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-white/10" />
+            <motion.div
+              animate={{ width: `${fillPercent}%` }}
+              transition={{ duration: 0.5, ease: EASE.out }}
+              className="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-violet to-brand-orange"
+            />
+            {/* Each dot also doubles as a manual step-select control — clicking
+                jumps `active` directly, independent of the autoplay interval. */}
+            <div className="absolute inset-0 flex items-center justify-between">
               {steps.map((_, i) => (
-                <div key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/10">
-                  {i === barSegment && activeIndex !== -1 && (
-                    <motion.div
-                      key={beat}
-                      initial={{ width: '0%' }}
-                      animate={{ width: '100%' }}
-                      transition={{ duration: STEP_MS / 1000, ease: 'linear' }}
-                      className="h-full bg-gradient-to-r from-violet to-brand-orange"
-                    />
-                  )}
-                  {(i < barSegment || activeIndex === -1) && <div className="h-full w-full bg-emerald-500" />}
-                </div>
+                <button
+                  key={i}
+                  aria-label={steps[i].title}
+                  onClick={() => setActive(i)}
+                  className={`h-2.5 w-2.5 rounded-full border-2 transition-all duration-500 ${
+                    i === active
+                      ? 'scale-125 border-transparent bg-gradient-to-br from-violet to-brand-orange' // current step
+                      : i < active
+                        ? 'border-transparent bg-white/40' // already passed
+                        : 'border-white/20 bg-ink hover:border-white/40' // upcoming
+                  }`}
+                />
               ))}
             </div>
+          </div>
 
-            {/* Step flow — stacked vertically on mobile, horizontal (scrolls on narrow tablet widths) from sm up */}
-            <div ref={scrollRef} className="overflow-visible sm:-mx-2 sm:overflow-x-auto sm:pb-1">
-              <div className="relative px-2 sm:min-w-[720px]">
-                {/* Connector track, centered on the dots — horizontal variant, sm and up only */}
-                <div
-                  aria-hidden
-                  className="absolute top-[18px] hidden h-[2px] overflow-hidden bg-white/10 sm:block"
-                  style={{ left: `${halfColumn}%`, right: `${halfColumn}%` }}
-                >
-                  <motion.div
-                    className="h-full origin-left bg-emerald-500"
-                    initial={false}
-                    animate={{ width: `${fillPercent}%` }}
-                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  />
+          <div className="relative overflow-hidden">
+            {/* `key={active}` swaps the whole panel on every step change, so
+                AnimatePresence treats it as exit-old/enter-new rather than an
+                update — `mode="wait"` keeps that sequential (no overlap),
+                `initial={false}` skips the enter animation on first mount. */}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={active}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16"
+              >
+                <div>
+                  <span className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${ROLE_STYLE[role]}`}>
+                    {role === 'brand' ? d.journey.legendBrand : role === 'creator' ? d.journey.legendCreator : d.journey.legendSystem}
+                  </span>
+                  <div className="mt-5 flex items-center gap-4">
+                    <span className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-white ${BADGE_STYLE[role]}`}>
+                      <Icon size={18} />
+                    </span>
+                    <span className="font-mono text-xs tracking-[0.3em] text-white/35">
+                      {String(active + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-balance font-serif text-3xl font-medium leading-tight tracking-tight text-white md:text-4xl">
+                    {step.title}
+                  </h3>
+                  <p className="mt-4 max-w-md text-base leading-relaxed text-white/60">{step.desc}</p>
                 </div>
 
-                <ol className="relative flex flex-col gap-6 sm:flex-row sm:gap-0">
-                  {steps.map((step, i) => {
-                    const status = statusOf(i);
-                    const role = step.role as Role;
-                    const isLast = i === steps.length - 1;
-                    return (
-                      <li key={i} ref={(el) => { stepRefs.current[i] = el; }} className="relative flex items-stretch gap-3 text-left sm:flex-1 sm:flex-col sm:items-center sm:gap-0 sm:px-1.5 sm:text-center">
-                        {/* Dot (+ its own connector segment down to the next step) — mobile only; sm+ the dot rejoins the row via `contents` and the shared horizontal connector above takes over */}
-                        <div className="flex flex-col items-center sm:contents">
-                          <StepDot ref={i === NOTIFIED_STEP_INDEX ? notifiedDotRef : undefined} Icon={ICONS[i] ?? FaHandshake} status={status} />
-                          {!isLast && (
-                            <div aria-hidden className="mt-1 w-[2px] flex-1 overflow-hidden rounded-full bg-white/10 sm:hidden">
-                              {i === barSegment && activeIndex !== -1 && (
-                                <motion.div
-                                  key={beat}
-                                  initial={{ height: '0%' }}
-                                  animate={{ height: '100%' }}
-                                  transition={{ duration: STEP_MS / 1000, ease: 'linear' }}
-                                  className="w-full bg-gradient-to-b from-violet to-brand-orange"
-                                />
-                              )}
-                              {(i < barSegment || activeIndex === -1) && <div className="h-full w-full bg-emerald-500" />}
-                            </div>
-                          )}
-                        </div>
-                        <motion.div
-                          animate={{ opacity: status === 'pending' ? 0.45 : 1 }}
-                          transition={{ duration: 0.4 }}
-                          className="pb-6 sm:mt-3 sm:pb-0"
-                        >
-                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${ROLE_STYLE[role]}`}>
-                            {role === 'brand' ? d.journey.legendBrand : role === 'creator' ? d.journey.legendCreator : d.journey.legendSystem}
-                          </span>
-                          <h3 className={`mt-1.5 text-sm font-bold ${status === 'pending' ? 'text-white/40' : 'text-white'}`}>
-                            {step.title}
-                          </h3>
-                        </motion.div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </div>
-            </div>
+                <div className={`relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl shadow-black/40 ${PANEL_BG[role]}`}>
+                  <Icon aria-hidden size={220} className="absolute -bottom-10 -right-10 text-white/[0.06]" />
+                  <div className="relative flex h-full items-center justify-center">
+                    <span className={`flex h-24 w-24 items-center justify-center rounded-3xl text-white ${BADGE_STYLE[role]}`}>
+                      <Icon size={40} />
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
