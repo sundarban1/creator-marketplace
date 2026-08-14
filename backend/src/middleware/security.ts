@@ -43,7 +43,13 @@ export function applySecurityMiddleware(app: Express): void {
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Timezone', 'X-Language'],
+      // 'X-Visitor-Token' is the anonymous landing-page chat widget's auth
+      // header (see middleware/auth.ts's verifyVisitorChat and
+      // pages/landing/lib/visitorChatApi.ts) — without it listed here, the
+      // browser's CORS preflight for any visitor-chat GET/POST rejects the
+      // request before it ever reaches the server, which is what was
+      // breaking both fetching chat history and sending visitor messages.
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Timezone', 'X-Language', 'X-Visitor-Token'],
     })
   );
 }

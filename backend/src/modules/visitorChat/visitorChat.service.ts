@@ -21,7 +21,19 @@ export class VisitorChatService {
   async startChat(input: StartVisitorChatInput) {
     const chat = await this.repo.createChat(input);
     const token = signVisitorChatToken({ chatId: chat.id });
+    // Auto-greeting — created as a normal ADMIN-sender message (no adminId,
+    // since no specific admin sent it) so it renders in the widget exactly
+    // like a real reply, no special-casing needed there. Persisted before
+    // the HTTP response returns, so the visitor's own initial GET /messages
+    // fetch picks it up even if their socket connects a moment later.
+    const greeting = await this.repo.createMessage({
+      chatId: chat.id,
+      sender: 'ADMIN',
+      content: `Hello ${input.name}, How can we help you?`,
+    });
     emitToRoom(ADMIN_VISITOR_CHATS_ROOM, 'visitor-chat:new', { chat });
+    emitToRoom(visitorChatRoom(chat.id), 'visitor-chat:message', { chatId: chat.id, message: greeting });
+    emitToRoom(ADMIN_VISITOR_CHATS_ROOM, 'visitor-chat:message', { chatId: chat.id, message: greeting });
     return { chat, token };
   }
 
