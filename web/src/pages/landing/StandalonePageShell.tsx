@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LandingLanguageProvider, useLandingLanguage } from './context/LanguageContext';
 import { LandingThemeProvider } from './context/ThemeContext';
+import { ThemeToggle } from './components/ThemeToggle';
 import { LandingFooter } from './nav/LandingFooter';
 
 // Lightweight header for standalone pages (Privacy, Terms, Support) — separate
@@ -15,16 +16,20 @@ export function StandaloneHeader() {
         <Link to="/" className="flex items-center">
           <img src="/logo.png" alt="Kolab" className="h-6 w-auto object-contain" />
         </Link>
-        <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white/50">
-          {(['en', 'ne'] as const).map((l) => (
-            <button
-              key={l}
-              onClick={() => setLang(l)}
-              className={lang === l ? 'text-ink underline underline-offset-4 dark:text-white' : 'opacity-60 hover:opacity-100'}
-            >
-              {l === 'en' ? 'EN' : 'ने'}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white/50">
+            {(['en', 'ne'] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                className={lang === l ? 'text-ink underline underline-offset-4 dark:text-white' : 'opacity-60 hover:opacity-100'}
+              >
+                {l === 'en' ? 'EN' : 'ने'}
+              </button>
+            ))}
+          </div>
+          <span aria-hidden className="h-4 w-px bg-ink/10 dark:bg-white/10" />
+          <ThemeToggle dark />
         </div>
       </div>
     </header>

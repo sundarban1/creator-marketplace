@@ -5,29 +5,9 @@ import { NAV_LINKS } from '../constants';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 const LANGUAGE_NAMES: Record<'en' | 'ne', string> = { en: 'English', ne: 'नेपाली' };
-
-// Compact icon toggle for the desktop bar — same pill shell as LanguageSwitch
-// so the two sit together as one visual unit.
-function ThemeToggle({ dark = false }: { dark?: boolean }) {
-  const { theme, toggleTheme } = useLandingTheme();
-  const isDark = theme === 'dark';
-  return (
-    <button
-      onClick={toggleTheme}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      aria-pressed={isDark}
-      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-300 ${
-        dark
-          ? 'border-ink/10 text-ink-soft hover:text-ink dark:border-white/10 dark:text-white/60 dark:hover:text-white'
-          : 'border-white/20 text-white/70 hover:text-white'
-      }`}
-    >
-      {isDark ? <Sun size={14} /> : <Moon size={14} />}
-    </button>
-  );
-}
 
 // Full-width row used in the mobile menu overlay — mirrors LanguageSwitchMobile's
 // segmented-control treatment so the two settings read as one family.
