@@ -22,6 +22,7 @@ import {
   Gauge,
   Quote,
   FileSignature,
+  Phone,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -70,8 +71,9 @@ const navGroups: NavGroup[] = [
   {
     label: 'System',
     items: [
-      { to: '/settings',    label: 'Settings',    icon: Settings },
-      { to: '/rate-limits', label: 'Rate Limits', icon: Gauge    },
+      { to: '/contact-info', label: 'Contact',     icon: Phone    },
+      { to: '/settings',     label: 'Settings',    icon: Settings },
+      { to: '/rate-limits',  label: 'Rate Limits', icon: Gauge    },
     ],
   },
 ];

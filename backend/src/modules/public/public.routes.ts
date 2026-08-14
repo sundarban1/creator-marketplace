@@ -10,5 +10,7 @@ router.get('/landing-stats', ctrl.landingStats.bind(ctrl));
 router.get('/coming-soon', ctrl.comingSoon.bind(ctrl));
 // Public — no auth. Safe subset of admin platform settings consumed by mobile/web at runtime.
 router.get('/platform-flags', ctrl.platformFlags.bind(ctrl));
+// Public — no auth. Contact details + social links for the landing page footer.
+router.get('/site-info', ctrl.siteInfo.bind(ctrl));
 
 export default router;

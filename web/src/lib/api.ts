@@ -462,6 +462,18 @@ export type ApiUserAnalytics =
 
 export type PlatformSettings = Record<string, boolean | string | number | string[]>;
 
+export interface SiteInfo {
+  address: string;
+  phone:   string;
+  email:   string;
+  social: {
+    facebook:  string;
+    instagram: string;
+    tiktok:    string;
+    youtube:   string;
+  };
+}
+
 export interface PlatformFlags {
   businessRegistrationEnabled: boolean;
   creatorRegistrationEnabled:  boolean;
@@ -864,6 +876,8 @@ export const api = {
       request<{ comingSoon: boolean }>('GET', '/api/public/coming-soon'),
     platformFlags: () =>
       request<PlatformFlags>('GET', '/api/public/platform-flags'),
+    siteInfo: () =>
+      request<SiteInfo>('GET', '/api/public/site-info'),
     legalDoc: (slug: 'privacy-policy' | 'terms' | 'guidelines') =>
       request<{ sections: LegalSection[]; lastUpdated: string | null }>('GET', `/api/legal/${slug}`),
     faqs: () =>

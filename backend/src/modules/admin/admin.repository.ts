@@ -34,6 +34,17 @@ const DEFAULTS: Record<string, unknown> = {
   // CampaignService.getFeaturedQuota. Lowercased on comparison.
   'featuredEvent.unlimitedEmails': [] as string[],
 
+  // ── Public contact info (landing page footer) ──────────────────────────
+  // Empty string = not set, so the landing footer hides that item entirely
+  // rather than showing a dead link. Contact email reuses
+  // 'platform.supportEmail' above rather than duplicating it.
+  'platform.address':          '',
+  'platform.phone':            '',
+  'platform.social.facebook':  '',
+  'platform.social.instagram': '',
+  'platform.social.tiktok':    '',
+  'platform.social.youtube':   '',
+
   // ── App version enforcement ─────────────────────────────────────────────
   // Empty string = no enforcement (mobile skips the force-update screen).
   // Compared against expo-application's nativeApplicationVersion, semver-style.

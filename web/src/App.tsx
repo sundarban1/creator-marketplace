@@ -38,6 +38,7 @@ import { Payments } from './pages/Payments';
 import { Referrals } from './pages/Referrals';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
+import { ContactInfo } from './pages/ContactInfo';
 import { RateLimits } from './pages/RateLimits';
 import { HelpCenter } from './pages/HelpCenter';
 import { FAQManager } from './pages/FAQManager';
@@ -138,6 +139,7 @@ export default function App() {
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/contact-info" element={<ContactInfo />} />
                 <Route path="/rate-limits" element={<RateLimits />} />
               </Route>
             </Route>

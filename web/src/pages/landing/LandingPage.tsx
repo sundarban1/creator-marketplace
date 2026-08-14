@@ -8,6 +8,7 @@ import { CursorSparkles } from './components/CursorSparkles';
 import { ScrollProgress } from './components/ScrollProgress';
 import { CornerChrome } from './components/CornerChrome';
 import { ChatWidget } from './components/ChatWidget';
+import { SocialRail } from './components/SocialRail';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
 import { SEO } from '../../lib/seo/SEO';
@@ -66,6 +67,7 @@ function LandingPageInner() {
       <CursorSparkles />
       <ScrollProgress />
       <CornerChrome />
+      <SocialRail />
       <LandingNav />
       <Hero />
       <Showcase />

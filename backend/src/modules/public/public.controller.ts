@@ -31,4 +31,13 @@ export class PublicController {
       next(err);
     }
   }
+
+  async siteInfo(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const info = await publicService.getSiteInfo();
+      success(res, info, 'Site info retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

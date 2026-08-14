@@ -35,4 +35,22 @@ export class PublicService {
       minVersionAndroid:           (s['app.minVersion.android'] as string) || '',
     };
   }
+
+  // Contact details + social links for the landing page footer — admin-
+  // managed via the "Contact" settings page. Empty string = not set, so the
+  // footer can just check truthiness to decide whether to render each item.
+  async getSiteInfo() {
+    const s = await this.adminRepo.getSettings();
+    return {
+      address: (s['platform.address'] as string) || '',
+      phone:   (s['platform.phone'] as string) || '',
+      email:   (s['platform.supportEmail'] as string) || '',
+      social: {
+        facebook:  (s['platform.social.facebook'] as string) || '',
+        instagram: (s['platform.social.instagram'] as string) || '',
+        tiktok:    (s['platform.social.tiktok'] as string) || '',
+        youtube:   (s['platform.social.youtube'] as string) || '',
+      },
+    };
+  }
 }
