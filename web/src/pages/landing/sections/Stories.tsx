@@ -40,7 +40,7 @@ export function Stories({ stories }: StoriesProps) {
             as="h2"
             text={d.stories.heading}
             delay={0.1}
-            className="mt-3 font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
+            className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
           />
         </div>
       </motion.div>

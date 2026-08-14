@@ -13,11 +13,14 @@
     <script>
       // Applied before first paint so the landing page never flashes the
       // wrong theme. Mirrors the logic in ThemeContext.tsx exactly — keep
-      // the two in sync if the storage key or fallback ever changes.
+      // the two in sync if the storage key or default ever changes.
+      // Defaults to dark for first-time visitors (no stored preference) —
+      // not driven by prefers-color-scheme, so it stays dark even for
+      // visitors whose OS is set to light.
       (function () {
         try {
           var stored = localStorage.getItem('kolab-landing-theme');
-          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var dark = stored ? stored === 'dark' : true;
           if (dark) document.documentElement.classList.add('dark');
         } catch (e) {}
       })();

@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { StandaloneHeader } from '../StandalonePageShell';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { LandingThemeProvider } from '../context/ThemeContext';
 import { LandingFooter } from '../nav/LandingFooter';
 import { Breadcrumb, type BreadcrumbItem } from '../components/Breadcrumb';
 import { FAQAccordion, type FAQItem } from '../components/FAQAccordion';
@@ -43,6 +44,9 @@ interface ContentPageLayoutProps {
 // Callers must render inside a <LandingLanguageProvider> ancestor (usually
 // the page component itself, so it can also pick EN/NE copy before this
 // ever mounts) — this only consumes the language, it doesn't provide it.
+// Theme is different: nothing above this needs to read it before mount, so
+// this component provides its own <LandingThemeProvider> around the whole
+// tree (LandingFooter below reads it) — callers don't need to wrap one.
 export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, heading, intro, children, faqs, related, cta }: ContentPageLayoutProps) {
   const { d } = useLandingLanguage();
 
@@ -56,75 +60,77 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
   ];
 
   return (
-    <div className="min-h-screen bg-paper font-display">
-      <SEO {...seo} jsonLd={jsonLd} />
-      <StandaloneHeader />
+    <LandingThemeProvider>
+      <div className="min-h-screen bg-paper font-display dark:bg-ink">
+        <SEO {...seo} jsonLd={jsonLd} />
+        <StandaloneHeader />
 
-      <main className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
-        <motion.div initial="hidden" animate="show" variants={stagger()}>
-          <motion.div variants={fadeUp}>
-            <Breadcrumb items={breadcrumb} />
+        <main className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
+          <motion.div initial="hidden" animate="show" variants={stagger()}>
+            <motion.div variants={fadeUp}>
+              <Breadcrumb items={breadcrumb} />
+            </motion.div>
+
+            <motion.span variants={fadeUp} className="mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-violet/10 text-violet shadow-[0_4px_12px_-4px_rgba(123,92,245,0.35)]">
+              <Icon size={22} />
+            </motion.span>
+
+            <motion.p variants={fadeUp} className="mt-5 font-serif text-base italic text-ink-soft dark:text-white/60">{eyebrow}</motion.p>
+
+            <motion.h1 variants={fadeUp} className="text-balance mt-3 font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl dark:text-white">
+              {heading}
+            </motion.h1>
+
+            {intro && (
+              <motion.p variants={fadeUp} className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft dark:text-white/60">
+                {intro}
+              </motion.p>
+            )}
           </motion.div>
 
-          <motion.span variants={fadeUp} className="mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-violet/10 text-violet shadow-[0_4px_12px_-4px_rgba(123,92,245,0.35)]">
-            <Icon size={22} />
-          </motion.span>
+          <div className="mt-14 space-y-14">
+            {children}
+          </div>
 
-          <motion.p variants={fadeUp} className="mt-5 font-serif text-base italic text-ink-soft">{eyebrow}</motion.p>
-
-          <motion.h1 variants={fadeUp} className="text-balance mt-3 font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl">
-            {heading}
-          </motion.h1>
-
-          {intro && (
-            <motion.p variants={fadeUp} className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
-              {intro}
-            </motion.p>
+          {faqs && faqs.length > 0 && (
+            <motion.section initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-16">
+              <motion.h2 variants={fadeUp} className="font-serif text-2xl font-medium text-ink sm:text-3xl dark:text-white">
+                {d.contentPage.faqHeading}
+              </motion.h2>
+              <motion.div variants={fadeUp} className="mt-4">
+                <FAQAccordion items={faqs} />
+              </motion.div>
+            </motion.section>
           )}
-        </motion.div>
 
-        <div className="mt-14 space-y-14">
-          {children}
-        </div>
+          {related && related.length > 0 && (
+            <motion.section initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-16">
+              <motion.h2 variants={fadeUp} className="font-serif text-2xl font-medium text-ink sm:text-3xl dark:text-white">
+                {d.contentPage.exploreMore}
+              </motion.h2>
+              <motion.div variants={fadeUp} className="mt-5 grid gap-4 sm:grid-cols-2">
+                {related.map((r) => (
+                  <Link
+                    key={r.path}
+                    to={r.path}
+                    className="group rounded-2xl border border-ink/10 bg-white p-5 transition-all duration-300 hover:border-violet/30 hover:shadow-[0_14px_28px_-14px_rgba(123,92,245,0.25)] dark:border-white/10 dark:bg-ink-elevated"
+                  >
+                    <span className="flex items-center gap-1.5 font-semibold text-ink group-hover:text-violet dark:text-white">
+                      {r.label}
+                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                    <p className="mt-1.5 text-sm text-ink-soft dark:text-white/60">{r.description}</p>
+                  </Link>
+                ))}
+              </motion.div>
+            </motion.section>
+          )}
 
-        {faqs && faqs.length > 0 && (
-          <motion.section initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-16">
-            <motion.h2 variants={fadeUp} className="font-serif text-2xl font-medium text-ink sm:text-3xl">
-              {d.contentPage.faqHeading}
-            </motion.h2>
-            <motion.div variants={fadeUp} className="mt-4">
-              <FAQAccordion items={faqs} />
-            </motion.div>
-          </motion.section>
-        )}
+          <CTASection heading={cta.heading} sub={cta.sub} />
+        </main>
 
-        {related && related.length > 0 && (
-          <motion.section initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-16">
-            <motion.h2 variants={fadeUp} className="font-serif text-2xl font-medium text-ink sm:text-3xl">
-              {d.contentPage.exploreMore}
-            </motion.h2>
-            <motion.div variants={fadeUp} className="mt-5 grid gap-4 sm:grid-cols-2">
-              {related.map((r) => (
-                <Link
-                  key={r.path}
-                  to={r.path}
-                  className="group rounded-2xl border border-ink/10 bg-white p-5 transition-all duration-300 hover:border-violet/30 hover:shadow-[0_14px_28px_-14px_rgba(123,92,245,0.25)]"
-                >
-                  <span className="flex items-center gap-1.5 font-semibold text-ink group-hover:text-violet">
-                    {r.label}
-                    <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-                  </span>
-                  <p className="mt-1.5 text-sm text-ink-soft">{r.description}</p>
-                </Link>
-              ))}
-            </motion.div>
-          </motion.section>
-        )}
-
-        <CTASection heading={cta.heading} sub={cta.sub} />
-      </main>
-
-      <LandingFooter />
-    </div>
+        <LandingFooter />
+      </div>
+    </LandingThemeProvider>
   );
 }

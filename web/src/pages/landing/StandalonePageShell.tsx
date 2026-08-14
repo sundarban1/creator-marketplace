@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LandingLanguageProvider, useLandingLanguage } from './context/LanguageContext';
+import { LandingThemeProvider } from './context/ThemeContext';
 import { LandingFooter } from './nav/LandingFooter';
 
 // Lightweight header for standalone pages (Privacy, Terms, Support) — separate
@@ -49,8 +50,10 @@ function StandalonePageShellInner({ children }: { children: React.ReactNode }) {
 
 export function StandalonePageShell({ children }: { children: React.ReactNode }) {
   return (
-    <LandingLanguageProvider>
-      <StandalonePageShellInner>{children}</StandalonePageShellInner>
-    </LandingLanguageProvider>
+    <LandingThemeProvider>
+      <LandingLanguageProvider>
+        <StandalonePageShellInner>{children}</StandalonePageShellInner>
+      </LandingLanguageProvider>
+    </LandingThemeProvider>
   );
 }

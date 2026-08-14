@@ -94,7 +94,7 @@ export function Audience() {
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/50">
             {d.audience.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-2xl font-medium sm:text-3xl md:text-5xl">
+          <motion.h2 variants={fadeUp} className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white">
             {d.audience.heading}
           </motion.h2>
         </motion.div>

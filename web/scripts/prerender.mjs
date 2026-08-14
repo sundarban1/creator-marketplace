@@ -127,6 +127,17 @@ async function main() {
     browser = await chromium.launch();
     const page = await browser.newPage();
 
+    // The landing page's Collaboration section loads the live Google Maps JS
+    // API (useJsApiLoader). If it's allowed to load here, page.content() below
+    // captures the post-load DOM — including Maps' injected custom-element
+    // definitions — baked into the static HTML. In production that snapshot
+    // gets served first, then the real client mounts and useJsApiLoader loads
+    // Maps a *second* time into a page that already has it, which throws
+    // "already defined" / "already loaded outside @googlemaps/js-api-loader"
+    // and cascading failures. Block the request so prerender never loads Maps
+    // at all — it's decorative here and irrelevant to the SEO snapshot.
+    await page.route('**maps.googleapis.com/**', (route) => route.abort());
+
     for (const route of ROUTES) {
       const url = `${ORIGIN}${route}`;
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30_000 });
@@ -135,6 +146,15 @@ async function main() {
       // that matters (crawlers don't care about opacity, but this also lets
       // any late API-driven content, e.g. FAQ schema on /support, resolve).
       await page.waitForTimeout(500);
+
+      // The Maps loader inserts its <script id="kolab-google-maps"> tag into
+      // the DOM synchronously, before the (blocked, see route() above) fetch
+      // even happens — so the stub tag itself still ends up in the snapshot.
+      // Left in, it would actually load for real once served in production,
+      // and @googlemaps/js-api-loader in that fresh page doesn't know it
+      // didn't create the tag, so it throws "already loaded outside
+      // @googlemaps/js-api-loader". Strip it before capturing.
+      await page.evaluate(() => document.getElementById('kolab-google-maps')?.remove());
 
       const html = await page.content();
       results.push({ route, html });
