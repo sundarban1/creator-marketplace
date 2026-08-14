@@ -4,11 +4,11 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Ported from Aceternity UI's "Animated Testimonials" (ui.aceternity.com) — the
 // original targets Next.js/shadcn (motion/react, @tabler/icons-react, a `cn()`
-// util, dark: variants). This project is Vite + framer-motion + lucide-react
-// with no dark-mode toggle on the landing page, so those are swapped for the
-// equivalents already in use elsewhere on this page, and colors are reskinned
-// to the site's own ink/paper/violet/brand-orange tokens instead of Tailwind's
-// default gray scale. Animation structure/timing is otherwise unchanged.
+// util). This project is Vite + framer-motion + lucide-react, so those are
+// swapped for the equivalents already in use elsewhere on this page, and
+// colors are reskinned to the site's own ink/paper/violet/brand-orange tokens
+// (incl. `dark:` variants for the landing page's theme toggle) instead of
+// Tailwind's default gray scale. Animation structure/timing is unchanged.
 
 type Testimonial = {
   quote: string;
@@ -94,11 +94,12 @@ export function AnimatedTestimonials({
                       src={testimonial.src}
                       alt={testimonial.name}
                       draggable={false}
-                      className="h-full w-full rounded-3xl border border-ink/10 object-cover object-center shadow-[0_20px_50px_-20px_rgba(20,17,16,0.25)]"
+                      loading="lazy"
+                      className="h-full w-full rounded-3xl border border-ink/10 object-cover object-center shadow-[0_20px_50px_-20px_rgba(20,17,16,0.25)] dark:border-white/10"
                     />
                   ) : (
                     <div
-                      className={`flex h-full w-full items-center justify-center rounded-3xl border border-ink/10 shadow-[0_20px_50px_-20px_rgba(20,17,16,0.25)] ${PLACEHOLDER_BG[index % PLACEHOLDER_BG.length]}`}
+                      className={`flex h-full w-full items-center justify-center rounded-3xl border border-ink/10 shadow-[0_20px_50px_-20px_rgba(20,17,16,0.25)] dark:border-white/10 ${PLACEHOLDER_BG[index % PLACEHOLDER_BG.length]}`}
                     >
                       <span className="text-6xl font-semibold text-white">{initials(testimonial.name)}</span>
                     </div>
@@ -116,9 +117,9 @@ export function AnimatedTestimonials({
             exit={{ y: -20, opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            <h3 className="text-2xl font-bold text-ink">{current.name}</h3>
-            <p className="text-sm text-ink-soft">{current.designation}</p>
-            <motion.p className="mt-3 font-serif text-lg italic leading-relaxed text-ink-soft">
+            <h3 className="text-2xl font-bold text-ink dark:text-white">{current.name}</h3>
+            <p className="text-sm text-ink-soft dark:text-white/50">{current.designation}</p>
+            <motion.p className="mt-3 font-serif text-lg italic leading-relaxed text-ink-soft dark:text-white/70">
               {current.quote.split(' ').map((word, index) => (
                 <motion.span
                   key={index}
@@ -136,16 +137,16 @@ export function AnimatedTestimonials({
             <button
               onClick={handlePrev}
               aria-label="Previous story"
-              className="group/button flex h-9 w-9 items-center justify-center rounded-full bg-ink/5 transition-colors duration-300 hover:bg-ink/10"
+              className="group/button flex h-9 w-9 items-center justify-center rounded-full bg-ink/5 transition-colors duration-300 hover:bg-ink/10 dark:bg-white/10 dark:hover:bg-white/20"
             >
-              <ArrowLeft size={18} className="text-ink transition-transform duration-300 group-hover/button:-translate-x-0.5" />
+              <ArrowLeft size={18} className="text-ink transition-transform duration-300 group-hover/button:-translate-x-0.5 dark:text-white" />
             </button>
             <button
               onClick={handleNext}
               aria-label="Next story"
-              className="group/button flex h-9 w-9 items-center justify-center rounded-full bg-ink/5 transition-colors duration-300 hover:bg-ink/10"
+              className="group/button flex h-9 w-9 items-center justify-center rounded-full bg-ink/5 transition-colors duration-300 hover:bg-ink/10 dark:bg-white/10 dark:hover:bg-white/20"
             >
-              <ArrowRight size={18} className="text-ink transition-transform duration-300 group-hover/button:translate-x-0.5" />
+              <ArrowRight size={18} className="text-ink transition-transform duration-300 group-hover/button:translate-x-0.5 dark:text-white" />
             </button>
           </div>
         </div>

@@ -28,19 +28,19 @@ export function Stories({ stories }: StoriesProps) {
   }));
 
   return (
-    <section id={SECTION_IDS.stories} className="bg-paper py-28">
+    <section id={SECTION_IDS.stories} className="bg-paper py-28 dark:bg-ink">
       <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-6xl px-6">
         {/* Top-left eyebrow + heading, same corner placement as "Why Kolab"
             in Showcase.tsx — kept consistent across the sections above it. */}
         <div className="max-w-xl">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/60">
             {d.stories.eyebrow}
           </motion.p>
           <TextReveal
             as="h2"
             text={d.stories.heading}
             delay={0.1}
-            className="mt-3 font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl"
+            className="mt-3 font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
           />
         </div>
       </motion.div>

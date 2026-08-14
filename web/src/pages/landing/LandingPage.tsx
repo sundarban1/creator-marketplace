@@ -1,7 +1,9 @@
+import { MotionConfig } from 'framer-motion';
 import { LenisProvider } from './hooks/useLenis';
 import { useLandingStats } from './hooks/useLandingStats';
 import { useSuccessStories } from './hooks/useSuccessStories';
 import { LandingLanguageProvider } from './context/LanguageContext';
+import { LandingThemeProvider } from './context/ThemeContext';
 import { CursorSparkles } from './components/CursorSparkles';
 import { ScrollProgress } from './components/ScrollProgress';
 import { CornerChrome } from './components/CornerChrome';
@@ -26,7 +28,7 @@ function LandingPageInner() {
   const successStories = useSuccessStories();
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white font-display">
+    <div className="min-h-screen overflow-x-hidden bg-white font-display dark:bg-ink">
       <SEO
         title="Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations"
         description="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations."
@@ -83,10 +85,21 @@ function LandingPageInner() {
 
 export function LandingPage() {
   return (
-    <LandingLanguageProvider>
-      <LenisProvider>
-        <LandingPageInner />
-      </LenisProvider>
-    </LandingLanguageProvider>
+    <LandingThemeProvider>
+      <LandingLanguageProvider>
+        {/* Covers every motion.* component's own whileInView/hover animation
+            (fadeUp, stagger, scaleIn, CARD_HOVER, iconPop, …) in one place —
+            most sections declare those directly via `variants`/`animate` props
+            without individually checking useReducedMotion themselves. Sections
+            with their own custom motion logic (GSAP, setInterval loops, CSS
+            keyframe classes) call useReducedMotion() directly for that, which
+            this doesn't touch — the two are complementary, not overlapping. */}
+        <MotionConfig reducedMotion="user">
+          <LenisProvider>
+            <LandingPageInner />
+          </LenisProvider>
+        </MotionConfig>
+      </LandingLanguageProvider>
+    </LandingThemeProvider>
   );
 }

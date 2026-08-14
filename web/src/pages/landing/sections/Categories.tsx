@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP, PILL_HOVER } from '../lib/motion';
-import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { getCategoryStyle } from '../lib/categoryIcons';
 import { getIconOption } from '../../../lib/iconOptions';
@@ -30,17 +29,17 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
   for (let i = 0; i < list.length; i += PER_ROW) rows.push(list.slice(i, i + PER_ROW));
 
   return (
-    <section id={SECTION_IDS.categories} className="bg-paper py-28">
+    <section id="categories" className="bg-paper py-28 dark:bg-ink">
       <div className="mx-auto mb-14 max-w-3xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/60">
             {d.categories.eyebrow}
           </motion.p>
           <TextReveal
             as="h2"
             text={d.categories.heading}
             delay={0.1}
-            className="mt-3 whitespace-nowrap font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl"
+            className="mt-3 whitespace-nowrap font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
           />
         </motion.div>
       </div>
@@ -60,7 +59,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
                   key={i}
                   variants={fadeUp}
                   whileHover={PILL_HOVER}
-                  className="group flex items-center gap-2 rounded-xl border border-ink/10 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)]"
+                  className="group flex items-center gap-2 rounded-xl border border-ink/10 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)] dark:border-white/10 dark:bg-ink-elevated"
                 >
                   <span
                     style={{ backgroundColor: `${color}1A`, color, boxShadow: `0 4px 10px -2px ${color}66` }}
@@ -68,7 +67,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
                   >
                     <Icon size={12} />
                   </span>
-                  <span className="whitespace-nowrap text-xs font-semibold text-ink">{name}</span>
+                  <span className="whitespace-nowrap text-xs font-semibold text-ink dark:text-white/80">{name}</span>
                 </motion.div>
               );
             })}

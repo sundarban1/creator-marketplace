@@ -356,7 +356,7 @@ export function PhoneShowcase() {
           ))}
         </div>
 
-        <div className="relative aspect-[9/19] w-full overflow-hidden rounded-[2.1rem] bg-paper">
+        <div className="relative aspect-[9/19] w-full overflow-hidden rounded-[2.1rem] bg-paper dark:bg-ink-elevated">
           <AnimatePresence mode="wait">
             <motion.div
               key={active}

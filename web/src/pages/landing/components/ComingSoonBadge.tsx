@@ -18,14 +18,14 @@ export function ComingSoonBadge({ variant = 'dark', className = '' }: ComingSoon
   return (
     <div
       className={`inline-flex items-center gap-3 rounded-full border px-5 py-3 ${
-        isDark ? 'border-ink/15 bg-ink/[0.03] text-ink-soft' : 'border-white/20 bg-white/5 text-white/70'
+        isDark ? 'border-ink/15 bg-ink/[0.03] text-ink-soft dark:border-white/15 dark:bg-white/[0.05] dark:text-white/60' : 'border-white/20 bg-white/5 text-white/70'
       } ${className}`}
     >
       <span className="flex items-center gap-2.5 opacity-70">
         <FaApple size={17} />
         <FaGooglePlay size={15} />
       </span>
-      <span className={`h-4 w-px ${isDark ? 'bg-ink/15' : 'bg-white/20'}`} />
+      <span className={`h-4 w-px ${isDark ? 'bg-ink/15 dark:bg-white/15' : 'bg-white/20'}`} />
       <span className="flex items-center gap-1.5 text-sm font-semibold">
         <motion.span
           className="h-1.5 w-1.5 rounded-full bg-brand-orange"

@@ -9,17 +9,17 @@ import { LandingFooter } from './nav/LandingFooter';
 export function StandaloneHeader() {
   const { lang, setLang } = useLandingLanguage();
   return (
-    <header className="border-b border-ink/10 bg-paper/80 backdrop-blur-md">
+    <header className="border-b border-ink/10 bg-paper/80 backdrop-blur-md dark:border-white/10 dark:bg-ink/80">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
         <Link to="/" className="flex items-center">
           <img src="/logo.png" alt="Kolab" className="h-6 w-auto object-contain" />
         </Link>
-        <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+        <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white/50">
           {(['en', 'ne'] as const).map((l) => (
             <button
               key={l}
               onClick={() => setLang(l)}
-              className={lang === l ? 'text-ink underline underline-offset-4' : 'opacity-60 hover:opacity-100'}
+              className={lang === l ? 'text-ink underline underline-offset-4 dark:text-white' : 'opacity-60 hover:opacity-100'}
             >
               {l === 'en' ? 'EN' : 'ने'}
             </button>
@@ -39,7 +39,7 @@ function StandalonePageShellInner({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-paper font-display">
+    <div className="min-h-screen bg-paper font-display dark:bg-ink">
       <StandaloneHeader />
       <main className="mx-auto max-w-3xl px-6 py-16 sm:py-20">{children}</main>
       <LandingFooter />

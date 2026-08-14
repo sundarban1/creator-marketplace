@@ -10,6 +10,18 @@
 
       gtag('config', 'G-R74M17YZQ6');
     </script>
+    <script>
+      // Applied before first paint so the landing page never flashes the
+      // wrong theme. Mirrors the logic in ThemeContext.tsx exactly — keep
+      // the two in sync if the storage key or fallback ever changes.
+      (function () {
+        try {
+          var stored = localStorage.getItem('kolab-landing-theme');
+          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

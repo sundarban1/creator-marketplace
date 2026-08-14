@@ -12,6 +12,7 @@ export const en = {
     cta: 'Get started',
     toggleMenuAriaLabel: 'Toggle menu',
     languageLabel: 'Language',
+    appearanceLabel: 'Appearance',
   },
 
   hero: {

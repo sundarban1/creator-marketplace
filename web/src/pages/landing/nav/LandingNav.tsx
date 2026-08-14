@@ -1,32 +1,79 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Sun, Moon } from 'lucide-react';
 import { NAV_LINKS } from '../constants';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { useLandingTheme } from '../context/ThemeContext';
 
 const LANGUAGE_NAMES: Record<'en' | 'ne', string> = { en: 'English', ne: 'नेपाली' };
 
-function LanguageSwitch({ dark = false }: { dark?: boolean }) {
-  const { lang, setLang } = useLandingLanguage();
+// Compact icon toggle for the desktop bar — same pill shell as LanguageSwitch
+// so the two sit together as one visual unit.
+function ThemeToggle({ dark = false }: { dark?: boolean }) {
+  const { theme, toggleTheme } = useLandingTheme();
+  const isDark = theme === 'dark';
   return (
-    <div className={`flex items-center gap-1 rounded-full border px-1 py-1 text-[11px] font-semibold uppercase tracking-wide ${dark ? 'border-ink/10' : 'border-white/20'}`}>
-      {(['en', 'ne'] as const).map((l) => (
+    <button
+      onClick={toggleTheme}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-pressed={isDark}
+      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-300 ${
+        dark
+          ? 'border-ink/10 text-ink-soft hover:text-ink dark:border-white/10 dark:text-white/60 dark:hover:text-white'
+          : 'border-white/20 text-white/70 hover:text-white'
+      }`}
+    >
+      {isDark ? <Sun size={14} /> : <Moon size={14} />}
+    </button>
+  );
+}
+
+// Full-width row used in the mobile menu overlay — mirrors LanguageSwitchMobile's
+// segmented-control treatment so the two settings read as one family.
+function ThemeToggleMobile() {
+  const { theme, toggleTheme } = useLandingTheme();
+  return (
+    <div className="flex items-center gap-1.5 rounded-2xl border border-ink/10 bg-white p-1.5 shadow-[0_8px_24px_-12px_rgba(20,17,16,0.15)] dark:border-white/10 dark:bg-ink-elevated">
+      {(['light', 'dark'] as const).map((t) => (
         <button
-          key={l}
-          onClick={() => setLang(l)}
-          className={`rounded-full px-2.5 py-1 transition-all duration-300 ${
-            lang === l
+          key={t}
+          onClick={() => t !== theme && toggleTheme()}
+          aria-pressed={theme === t}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-center font-serif text-base font-bold italic transition-all duration-300 ${
+            theme === t
               ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm'
-              : dark
-                ? 'text-ink-soft hover:text-ink'
-                : 'text-white/70 hover:text-white'
+              : 'text-ink-soft hover:text-ink dark:text-white/60 dark:hover:text-white'
           }`}
         >
-          {l === 'en' ? 'EN' : 'ने'}
+          {t === 'light' ? <Sun size={16} /> : <Moon size={16} />}
+          {t === 'light' ? 'Light' : 'Dark'}
         </button>
       ))}
     </div>
+  );
+}
+
+// Single toggle, same shell as ThemeToggle (h-7 circle, matching border
+// treatment) so the two sit together as one visual unit — and same
+// convention: like ThemeToggle shows the Sun icon (the target) while dark
+// rather than the Moon (current state), this shows the language you'll
+// *switch to* on click, not the one currently active.
+function LanguageSwitch({ dark = false }: { dark?: boolean }) {
+  const { lang, setLang } = useLandingLanguage();
+  const other = lang === 'en' ? 'ne' : 'en';
+  return (
+    <button
+      onClick={() => setLang(other)}
+      aria-label={`Switch to ${LANGUAGE_NAMES[other]}`}
+      className={`flex h-7 min-w-7 items-center justify-center rounded-full border px-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-300 ${
+        dark
+          ? 'border-ink/10 text-ink-soft hover:text-ink dark:border-white/10 dark:text-white/60 dark:hover:text-white'
+          : 'border-white/20 text-white/70 hover:text-white'
+      }`}
+    >
+      {other === 'en' ? 'EN' : 'ने'}
+    </button>
   );
 }
 
@@ -36,14 +83,14 @@ function LanguageSwitch({ dark = false }: { dark?: boolean }) {
 function LanguageSwitchMobile() {
   const { lang, setLang } = useLandingLanguage();
   return (
-    <div className="flex items-center gap-1.5 rounded-2xl border border-ink/10 bg-white p-1.5 shadow-[0_8px_24px_-12px_rgba(20,17,16,0.15)]">
+    <div className="flex items-center gap-1.5 rounded-2xl border border-ink/10 bg-white p-1.5 shadow-[0_8px_24px_-12px_rgba(20,17,16,0.15)] dark:border-white/10 dark:bg-ink-elevated">
       {(['en', 'ne'] as const).map((l) => (
         <button
           key={l}
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
           className={`flex-1 rounded-xl px-4 py-3 text-center font-serif text-base font-bold italic transition-all duration-300 ${
-            lang === l ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm' : 'text-ink-soft hover:text-ink'
+            lang === l ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm' : 'text-ink-soft hover:text-ink dark:text-white/60 dark:hover:text-white'
           }`}
         >
           {LANGUAGE_NAMES[l]}
@@ -56,6 +103,7 @@ function LanguageSwitchMobile() {
 export function LandingNav() {
   const { scrollTo } = useLenisScroll();
   const { d } = useLandingLanguage();
+  const { theme } = useLandingTheme();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -79,11 +127,19 @@ export function LandingNav() {
     <>
       <motion.header
         initial={false}
-        animate={{
-          backgroundColor: scrolled ? 'rgba(251,249,245,0.85)' : 'rgba(251,249,245,0)',
-          borderColor: scrolled ? 'rgba(20,17,16,0.08)' : 'rgba(20,17,16,0)',
-          boxShadow: scrolled ? '0 10px 30px -10px rgba(20,17,16,0.12)' : '0 0 0 rgba(0,0,0,0)',
-        }}
+        animate={
+          theme === 'dark'
+            ? {
+                backgroundColor: scrolled ? 'rgba(20,17,16,0.85)' : 'rgba(20,17,16,0)',
+                borderColor: scrolled ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0)',
+                boxShadow: scrolled ? '0 10px 30px -10px rgba(0,0,0,0.4)' : '0 0 0 rgba(0,0,0,0)',
+              }
+            : {
+                backgroundColor: scrolled ? 'rgba(251,249,245,0.85)' : 'rgba(251,249,245,0)',
+                borderColor: scrolled ? 'rgba(20,17,16,0.08)' : 'rgba(20,17,16,0)',
+                boxShadow: scrolled ? '0 10px 30px -10px rgba(20,17,16,0.12)' : '0 0 0 rgba(0,0,0,0)',
+              }
+        }
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="fixed left-0 right-0 top-0 z-50 border-b backdrop-blur-xl"
       >
@@ -99,7 +155,7 @@ export function LandingNav() {
               <button
                 key={l.id}
                 onClick={() => go(l.id)}
-                className="group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet"
+                className="group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white/60 dark:hover:text-white"
               >
                 {d.nav.links[l.key]}
                 <span
@@ -110,15 +166,16 @@ export function LandingNav() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-5 lg:flex">
-            <span aria-hidden className="h-5 w-px bg-ink/10" />
+          <div className="hidden items-center gap-3 lg:flex">
             <LanguageSwitch dark />
+            <span aria-hidden className="h-5 w-px bg-ink/10 dark:bg-white/10" />
+            <ThemeToggle dark />
           </div>
 
           <button
             onClick={() => setOpen((v) => !v)}
             aria-label={d.nav.toggleMenuAriaLabel}
-            className="rounded-full p-1.5 text-ink transition-colors duration-300 hover:bg-ink/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet lg:hidden"
+            className="rounded-full p-1.5 text-ink transition-colors duration-300 hover:bg-ink/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet dark:text-white dark:hover:bg-white/5 lg:hidden"
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -132,7 +189,7 @@ export function LandingNav() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 flex flex-col justify-center bg-paper px-8"
+            className="fixed inset-0 z-40 flex flex-col justify-center bg-paper px-8 dark:bg-ink"
           >
             <div className="flex flex-col gap-1">
               {NAV_LINKS.map((l, i) => (
@@ -142,7 +199,7 @@ export function LandingNav() {
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.08 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="group relative w-fit rounded py-2.5 text-left font-serif text-4xl font-bold italic text-ink/85 transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet"
+                  className="group relative w-fit rounded py-2.5 text-left font-serif text-4xl font-bold italic text-ink/85 transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white/85 dark:hover:text-white"
                 >
                   {d.nav.links[l.key]}
                   <span
@@ -155,14 +212,21 @@ export function LandingNav() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.08 + NAV_LINKS.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-10 w-full max-w-xs border-t border-ink/10 pt-6"
+                className="mt-10 w-full max-w-xs border-t border-ink/10 pt-6 dark:border-white/10"
               >
-                <p className="flex items-center gap-2 font-serif text-sm italic text-ink-soft">
+                <p className="flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white/50">
                   <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
                   {d.nav.languageLabel}
                 </p>
                 <div className="mt-3">
                   <LanguageSwitchMobile />
+                </div>
+                <p className="mt-5 flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white/50">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
+                  {d.nav.appearanceLabel}
+                </p>
+                <div className="mt-3">
+                  <ThemeToggleMobile />
                 </div>
               </motion.div>
             </div>

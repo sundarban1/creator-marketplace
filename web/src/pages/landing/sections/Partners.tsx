@@ -35,7 +35,7 @@ function LogoBadge({ item }: { item: LogoItem }) {
   return (
     <motion.div
       whileHover={PILL_HOVER}
-      className="group flex flex-shrink-0 items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)]"
+      className="group flex flex-shrink-0 items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)] dark:border-white/10 dark:bg-ink-elevated"
     >
       <span
         style={{ backgroundColor: `${color}1A`, color, boxShadow: `0 4px 10px -2px ${color}66` }}
@@ -43,7 +43,7 @@ function LogoBadge({ item }: { item: LogoItem }) {
       >
         {item.type === 'icon' ? <item.Icon size={16} /> : <span className="text-sm font-bold">{item.name[0]}</span>}
       </span>
-      <span className="whitespace-nowrap text-sm font-semibold text-ink">{item.name}</span>
+      <span className="whitespace-nowrap text-sm font-semibold text-ink dark:text-white/80">{item.name}</span>
     </motion.div>
   );
 }
@@ -53,16 +53,16 @@ export function Partners() {
   const scrollRef = useAutoScroll<HTMLDivElement>(0.35);
 
   return (
-    <section id={SECTION_IDS.partners} className="border-y border-ink/10 bg-white py-16">
-      <motion.p
+    <section id={SECTION_IDS.partners} className="border-y border-ink/10 bg-white py-16 dark:border-white/10 dark:bg-ink">
+      <motion.h2
         initial="hidden"
         whileInView="show"
         viewport={VP}
         variants={fadeUp}
-        className="mb-10 text-center font-serif text-lg italic text-ink-soft"
+        className="mb-10 text-center font-serif text-lg italic font-normal text-ink-soft dark:text-white/60"
       >
         {d.partners.heading}
-      </motion.p>
+      </motion.h2>
 
       <div
         ref={scrollRef}

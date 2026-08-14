@@ -114,7 +114,7 @@ export function Showcase() {
     <section
       ref={rootRef}
       id={SECTION_IDS.showcase}
-      className="relative overflow-hidden bg-ink text-white lg:h-screen"
+      className="relative overflow-hidden bg-paper text-ink lg:h-screen dark:bg-ink dark:text-white"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-[6%] top-[10%] h-[420px] w-[420px] rounded-full bg-violet/[0.14] blur-[120px]" />
@@ -126,7 +126,7 @@ export function Showcase() {
         whileInView="show"
         viewport={VP}
         variants={fadeUp}
-        className="absolute left-6 top-10 z-10 font-serif text-base italic text-white/50 sm:left-10"
+        className="absolute left-6 top-10 z-10 font-serif text-base italic text-ink-soft sm:left-10 dark:text-white/50"
       >
         {d.showcase.eyebrow}
       </motion.p>
@@ -149,9 +149,10 @@ export function Showcase() {
           <path
             ref={pathRef}
             d={buildSquigglePath(panels.length)}
-            stroke="rgba(255,255,255,0.15)"
+            stroke="currentColor"
             strokeWidth="1"
             fill="none"
+            className="text-ink/15 dark:text-white/15"
           />
         </svg>
 
@@ -174,7 +175,7 @@ export function Showcase() {
                 >
                   {panel.heading}
                 </motion.h3>
-                <motion.p variants={fadeUp} className="mt-5 max-w-md text-lg text-white/60">
+                <motion.p variants={fadeUp} className="mt-5 max-w-md text-lg text-ink-soft dark:text-white/60">
                   {panel.sub}
                 </motion.p>
               </motion.div>
@@ -184,7 +185,7 @@ export function Showcase() {
                 whileInView="show"
                 viewport={VP}
                 variants={scaleIn}
-                className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl shadow-black/40"
+                className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-ink/10 shadow-2xl shadow-ink/10 dark:border-white/10 dark:shadow-black/40"
               >
                 <video
                   className="h-full w-full object-cover"

@@ -36,6 +36,12 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
   });
   const { status } = useEvent(player, 'statusChange', { status: player.status });
 
+  function handleRetry() {
+    if (!url) return;
+    player.replace(url);
+    player.play();
+  }
+
   async function handleDownload() {
     if (!url) return;
     setDownloading(true);
@@ -73,7 +79,16 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
 
           <View style={s.playerWrap}>
             {url && <VideoView player={player} style={s.player} nativeControls contentFit="contain" />}
-            {status !== 'readyToPlay' && (
+            {status === 'error' ? (
+              <View style={s.loadingOverlay}>
+                <FontAwesome5 name="exclamation-triangle" solid size={26} color="#fff" />
+                <Text style={s.errorTxt}>Couldn&apos;t play this video</Text>
+                <Pressable onPress={handleRetry} style={s.retryBtn} hitSlop={8}>
+                  <FontAwesome5 name="redo" solid size={13} color="#fff" />
+                  <Text style={s.downloadTxt}>Retry</Text>
+                </Pressable>
+              </View>
+            ) : status !== 'readyToPlay' && (
               <View style={s.loadingOverlay} pointerEvents="none">
                 <ActivityIndicator size="large" color="#fff" />
               </View>
@@ -106,7 +121,9 @@ const s = StyleSheet.create({
   iconBtn:   { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
   playerWrap: { flex: 1, justifyContent: 'center' },
   player:     { flex: 1 },
-  loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
+  loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', gap: 10 },
+  errorTxt:  { color: '#fff', fontSize: 14, fontFamily: F.semibold },
+  retryBtn:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.15)' },
   footer:    { padding: 16 },
   downloadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: RADIUS.md, backgroundColor: 'rgba(255,255,255,0.12)' },
   downloadTxt: { color: '#fff', fontSize: 14, fontFamily: F.semibold },

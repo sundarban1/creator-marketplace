@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { CheckCircle2, Send } from 'lucide-react';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { api } from '../../../lib/api';
+import { Button } from './Button';
 
 type ContactField = 'name' | 'email' | 'message';
 type ContactErrors = Partial<Record<ContactField, string>>;
@@ -112,16 +113,21 @@ export function ContactForm({ dark = true }: { dark?: boolean }) {
         {errors.message && <p className={`mt-1 text-xs ${errorTextClass}`}>{errors.message}</p>}
       </div>
       {status === 'error' && <p className={`text-xs ${errorTextClass} sm:col-span-2`}>{t.errorGeneric}</p>}
-      <button
+      {/* `dark` here is this form's own surface prop (which color of ink/paper
+          card it's sitting on) — independent of the page's light/dark theme,
+          so the colors are forced with `!` rather than left to Button's own
+          `dark:` page-theme classes, which would react to the wrong toggle. */}
+      <Button
         type="submit"
+        variant="outline"
         disabled={status === 'submitting'}
-        className={`mt-2 flex items-center justify-center gap-2 rounded-md border px-5 py-2.5 text-xs font-semibold uppercase tracking-wide transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet disabled:opacity-60 sm:col-span-2 ${
-          dark ? 'border-white/30 text-white hover:border-white' : 'border-ink/30 text-ink hover:border-ink'
+        className={`col-span-full mt-2 gap-2 normal-case ${
+          dark ? 'border-white/30! text-white! hover:border-white!' : 'border-ink/30! text-ink! hover:border-ink!'
         }`}
       >
         <Send size={13} />
         {status === 'submitting' ? t.submittingBtn : t.submitBtn}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkle } from 'lucide-react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { COLORS } from '../constants';
 
 interface Spark {
   id: number;
@@ -12,7 +13,13 @@ interface Spark {
   color: string;
 }
 
-const COLORS = ['#5B2ED6', '#4C1D95', '#9A3412', '#3A1E86'];
+// Mid-tone, saturated brand colors rather than the near-black shades this
+// used before — this overlay is fixed across the whole page, drifting over
+// both light sections and the permanently-dark ones (Showcase, Audience,
+// TrustStats…), and now over either theme of the light sections too. A very
+// dark sparkle color reads fine on paper but nearly vanishes on ink; these
+// hold up on both.
+const SPARK_COLORS = [COLORS.violet, COLORS.violetDark, COLORS.orange, '#C4B5FD'];
 const MIN_DISTANCE = 24;
 const MIN_INTERVAL = 70;
 const MAX_SPARKS = 14;
@@ -44,7 +51,7 @@ export function CursorSparkles() {
         y: e.clientY,
         size: 10 + Math.random() * 10,
         rotate: Math.random() * 360,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)]!,
+        color: SPARK_COLORS[Math.floor(Math.random() * SPARK_COLORS.length)]!,
       };
       setSparks((prev) => [...prev.slice(-(MAX_SPARKS - 1)), spark]);
       setTimeout(() => {

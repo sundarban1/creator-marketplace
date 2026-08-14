@@ -32,7 +32,21 @@ export function VoiceBubblePlayer({ url, waveform, durationSec, isSent, activeCo
   const position = status.currentTime ?? 0;
   const progressFraction = total > 0 ? Math.min(1, position / total) : 0;
 
+  // expo-audio can report `playing: true` (progress bar advancing, button
+  // showing pause) while `error` is set and no audio is actually coming out —
+  // e.g. a stale CDN response or a decode failure on the remote stream. Treat
+  // a non-null error as "not really playing" and offer a tap-to-retry instead
+  // of leaving the bubble stuck looking like silent playback.
+  const hasError = status.error != null;
+
   function togglePlayback() {
+    if (hasError) {
+      try {
+        player.replace({ uri: url });
+        player.play();
+      } catch { /* native object not ready — nothing to retry */ }
+      return;
+    }
     try {
       if (status.playing) {
         player.pause();
@@ -64,7 +78,12 @@ export function VoiceBubblePlayer({ url, waveform, durationSec, isSent, activeCo
         onPress={togglePlayback}
         hitSlop={8}
         style={[s.playBtn, { backgroundColor: isSent ? 'rgba(255,255,255,0.22)' : `${activeColor}1A` }]}>
-        <FontAwesome5 name={status.playing ? 'pause' : 'play'} solid size={13} color={playedColor} />
+        <FontAwesome5
+          name={hasError ? 'redo' : status.playing ? 'pause' : 'play'}
+          solid
+          size={13}
+          color={hasError ? (isSent ? '#fff' : mutedColor) : playedColor}
+        />
       </Pressable>
       <Pressable
         style={s.track}

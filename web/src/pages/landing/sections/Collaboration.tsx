@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { GoogleMap, Marker, OverlayView, OVERLAY_MOUSE_TARGET, Polyline, useJsApiLoader } from '@react-google-maps/api';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
-import { SECTION_IDS } from '../constants';
+import { SECTION_IDS, COLORS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { useLandingTheme } from '../context/ThemeContext';
 import { TextReveal } from '../components/TextReveal';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
@@ -57,7 +58,7 @@ const MAP_STYLES: google.maps.MapTypeStyle[] = [
   { elementType: 'geometry', stylers: [{ color: '#f6f3ee' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#6b655f' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#fbf9f5' }] },
-  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#7C5CF0' }, { weight: 1.4 }] },
+  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: COLORS.violet }, { weight: 1.4 }] },
   { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#d8d2c8' }] },
   // Google's own city/town-name labels would otherwise render right at each
   // pin's coordinate — a second, unstyled "Ilam"/"Dharan" competing with our
@@ -72,13 +73,29 @@ const MAP_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#eee9e0' }] },
 ];
 
-const MAP_OPTIONS: google.maps.MapOptions = {
-  styles: MAP_STYLES,
+// Same tint recipe as MAP_STYLES above, remapped onto the site's dark
+// palette (--color-ink/-elevated/-elevated-2) so the map reads as part of
+// the dark section instead of a stray light rectangle in the middle of it.
+const MAP_STYLES_DARK: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry', stylers: [{ color: '#1e1a18' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#9c9691' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#141110' }] },
+  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: COLORS.violet }, { weight: 1.4 }] },
+  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#35302c' }] },
+  { featureType: 'administrative.locality', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#1f1a30' }] },
+  { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#262120' }] },
+];
+
+const MAP_OPTIONS_BASE = {
   disableDefaultUI: true,
   gestureHandling: 'none',
   keyboardShortcuts: false,
   clickableIcons: false,
-};
+} as const;
 
 // Classic teardrop pin (not a plain dot) — tip anchored exactly on the
 // coordinate. The pin is ~35px tall at this scale (22-unit path * 1.6), so
@@ -115,7 +132,7 @@ function PinPill({ lat, lng, text, color }: { lat: number; lng: number; text: st
         // own light cream terrain fill (#f6f3ee is close to white) — the ring
         // gives the pill a hard edge so it reads as an opaque card sitting on
         // top of the map no matter what's directly underneath it.
-        className="whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs font-semibold leading-none ring-1 ring-ink/10 shadow-[0_8px_20px_-6px_rgba(20,17,16,0.4)]"
+        className="whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs font-semibold leading-none ring-1 ring-ink/10 shadow-[0_8px_20px_-6px_rgba(20,17,16,0.4)] dark:bg-ink-elevated-2 dark:ring-white/10"
         style={{ color }}
       >
         {text}
@@ -147,12 +164,12 @@ function MapCallouts({ items, active }: { items: string[]; active: boolean }) {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="flex max-w-full items-center gap-2.5 rounded-full border border-ink/10 bg-white/95 py-2.5 pl-3.5 pr-5 shadow-[0_10px_30px_-10px_rgba(20,17,16,0.3)] backdrop-blur-sm"
+          className="flex max-w-full items-center gap-2.5 rounded-full border border-ink/10 bg-white/95 py-2.5 pl-3.5 pr-5 shadow-[0_10px_30px_-10px_rgba(20,17,16,0.3)] backdrop-blur-sm dark:border-white/10 dark:bg-ink-elevated-2/95"
         >
           <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet/10 text-xs font-bold text-violet">
             {index + 1}
           </span>
-          <span className="truncate text-sm font-semibold text-ink">{items[index]}</span>
+          <span className="truncate text-sm font-semibold text-ink dark:text-white">{items[index]}</span>
         </motion.div>
       </AnimatePresence>
     </div>
@@ -165,6 +182,7 @@ function MapCallouts({ items, active }: { items: string[]; active: boolean }) {
 // polyline icon's offset a little every tick).
 function NepalConnectionMap({ cities, callouts }: { cities: string[]; callouts: string[] }) {
   const reducedMotion = useReducedMotion();
+  const { theme } = useLandingTheme();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const inView = useInView(mapRef, { amount: 0.5 });
@@ -214,11 +232,12 @@ function NepalConnectionMap({ cities, callouts }: { cities: string[]; callouts: 
   const [aKey, bKey] = MAP_PAIRS[pairIndex]!;
   const a = MAP_CITY_POINTS[aKey];
   const b = MAP_CITY_POINTS[bKey];
+  const mapOptions: google.maps.MapOptions = { ...MAP_OPTIONS_BASE, styles: theme === 'dark' ? MAP_STYLES_DARK : MAP_STYLES };
 
   return (
     <div
       ref={mapRef}
-      className="relative w-full overflow-hidden rounded-3xl border border-ink/10 bg-paper shadow-[0_20px_60px_-24px_rgba(20,17,16,0.18)]"
+      className="relative w-full overflow-hidden rounded-3xl border border-ink/10 bg-paper shadow-[0_20px_60px_-24px_rgba(20,17,16,0.18)] dark:border-white/10 dark:bg-ink-elevated"
     >
       <div className="h-[420px] w-full sm:h-[600px]">
         {isLoaded ? (
@@ -226,7 +245,7 @@ function NepalConnectionMap({ cities, callouts }: { cities: string[]; callouts: 
             mapContainerStyle={MAP_CONTAINER_STYLE}
             center={NEPAL_CENTER}
             zoom={7}
-            options={MAP_OPTIONS}
+            options={mapOptions}
             onLoad={handleMapLoad}
           >
             {/* No `key` on these — remounting a fresh Polyline/Marker per
@@ -242,20 +261,20 @@ function NepalConnectionMap({ cities, callouts }: { cities: string[]; callouts: 
                 strokeOpacity: 0,
                 icons: [
                   {
-                    icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.85, strokeColor: '#7C5CF0', scale: 3 },
+                    icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.85, strokeColor: COLORS.violet, scale: 3 },
                     offset: `${dashOffset}%`,
                     repeat: '16px',
                   },
                 ],
               }}
             />
-            <Marker position={{ lat: a.lat, lng: a.lng }} icon={pinIcon('#7C5CF0')} zIndex={2} />
-            <Marker position={{ lat: b.lat, lng: b.lng }} icon={pinIcon('#F97316')} zIndex={2} />
-            <PinPill lat={a.lat} lng={a.lng} text={cities[a.cityIndex]!} color="#7C5CF0" />
-            <PinPill lat={b.lat} lng={b.lng} text={cities[b.cityIndex]!} color="#F97316" />
+            <Marker position={{ lat: a.lat, lng: a.lng }} icon={pinIcon(COLORS.violet)} zIndex={2} />
+            <Marker position={{ lat: b.lat, lng: b.lng }} icon={pinIcon(COLORS.orange)} zIndex={2} />
+            <PinPill lat={a.lat} lng={a.lng} text={cities[a.cityIndex]!} color={COLORS.violet} />
+            <PinPill lat={b.lat} lng={b.lng} text={cities[b.cityIndex]!} color={COLORS.orange} />
           </GoogleMap>
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-ink-soft">Loading map…</div>
+          <div className="flex h-full w-full items-center justify-center text-sm text-ink-soft dark:text-white/50">Loading map…</div>
         )}
       </div>
 
@@ -269,7 +288,7 @@ export function Collaboration() {
   const cities = d.collaboration.cities;
 
   return (
-    <section id={SECTION_IDS.collaboration} className="relative overflow-hidden bg-white py-24">
+    <section id={SECTION_IDS.collaboration} className="relative overflow-hidden bg-white py-24 dark:bg-ink">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-1/2 top-0 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-violet/[0.08] blur-[110px]" />
         <svg
@@ -291,7 +310,7 @@ export function Collaboration() {
         {/* Top-left eyebrow + heading, same corner placement as "Why Kolab"
             in Showcase.tsx — kept consistent across the sections below it. */}
         <div className="max-w-xl">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/60">
             {d.collaboration.eyebrow}
           </motion.p>
 
@@ -299,7 +318,7 @@ export function Collaboration() {
             as="h2"
             text={d.collaboration.heading}
             delay={0.1}
-            className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-4xl"
+            className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-4xl dark:text-white"
           />
         </div>
       </motion.div>

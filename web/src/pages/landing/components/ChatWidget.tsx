@@ -5,6 +5,7 @@ import type { Socket } from 'socket.io-client';
 import { visitorChatApi, type VisitorMessage } from '../lib/visitorChatApi';
 import { connectVisitorSocket, disconnectVisitorSocket } from '../lib/visitorSocket';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { Button } from './Button';
 
 const STORAGE_KEY = 'kolab_visitor_chat';
 
@@ -142,7 +143,7 @@ export function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="flex h-[min(480px,70vh)] w-[min(340px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-2xl sm:w-[min(380px,calc(100vw-2.5rem))]"
+            className="flex h-[min(480px,70vh)] w-[min(340px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-2xl dark:border-white/10 dark:bg-ink-elevated sm:w-[min(380px,calc(100vw-2.5rem))]"
           >
             <div className="flex items-center justify-between bg-ink px-5 py-4 text-white">
               <div>
@@ -156,39 +157,35 @@ export function ChatWidget() {
 
             {!session ? (
               <form onSubmit={handleStart} className="flex flex-1 flex-col justify-center gap-3 p-6">
-                <p className="mb-1 text-sm text-ink-soft">{d.chatWidget.introText}</p>
+                <p className="mb-1 text-sm text-ink-soft dark:text-white/60">{d.chatWidget.introText}</p>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder={d.chatWidget.namePlaceholder}
-                  className="rounded-xl border border-ink/15 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none"
+                  className="rounded-xl border border-ink/15 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none dark:border-white/15 dark:text-white dark:placeholder:text-white/40"
                 />
                 <input
                   value={form.contact}
                   onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
                   placeholder={d.chatWidget.contactPlaceholder}
-                  className="rounded-xl border border-ink/15 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none"
+                  className="rounded-xl border border-ink/15 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none dark:border-white/15 dark:text-white dark:placeholder:text-white/40"
                 />
                 {formError && <p className="text-xs text-red-500">{formError}</p>}
-                <button
-                  type="submit"
-                  disabled={starting}
-                  className="mt-1 rounded-xl bg-gradient-to-r from-violet to-brand-orange py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet disabled:opacity-60"
-                >
-                  {starting ? d.chatWidget.starting : d.chatWidget.startChat}
-                </button>
+                <Button type="submit" loading={starting} className="mt-1 w-full rounded-xl! normal-case">
+                  {d.chatWidget.startChat}
+                </Button>
               </form>
             ) : (
               <>
                 <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto p-4">
                   {messages.length === 0 && (
-                    <p className="mt-6 text-center text-xs text-ink-soft/60">{d.chatWidget.emptyMessages}</p>
+                    <p className="mt-6 text-center text-xs text-ink-soft/60 dark:text-white/40">{d.chatWidget.emptyMessages}</p>
                   )}
                   {messages.map((m) => (
                     <div key={m.id} className={`flex ${m.sender === 'VISITOR' ? 'justify-end' : 'justify-start'}`}>
                       <span
                         className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
-                          m.sender === 'VISITOR' ? 'bg-gradient-to-br from-violet to-violet-dark text-white' : 'bg-paper-dim text-ink'
+                          m.sender === 'VISITOR' ? 'bg-gradient-to-br from-violet to-violet-dark text-white' : 'bg-paper-dim text-ink dark:bg-white/10 dark:text-white'
                         }`}
                       >
                         {m.content}
@@ -196,21 +193,22 @@ export function ChatWidget() {
                     </div>
                   ))}
                 </div>
-                <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-ink/10 p-3">
+                <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-ink/10 p-3 dark:border-white/10">
                   <input
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder={d.chatWidget.messagePlaceholder}
-                    className="flex-1 rounded-full border border-ink/15 px-4 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none"
+                    className="flex-1 rounded-full border border-ink/15 px-4 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none dark:border-white/15 dark:text-white dark:placeholder:text-white/40"
                   />
-                  <button
+                  <Button
                     type="submit"
-                    disabled={sending || !draft.trim()}
+                    size="icon"
+                    loading={sending}
+                    disabled={!draft.trim()}
                     aria-label={d.chatWidget.sendAriaLabel}
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet to-brand-orange text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet disabled:opacity-50"
                   >
                     <Send size={15} />
-                  </button>
+                  </Button>
                 </form>
               </>
             )}
