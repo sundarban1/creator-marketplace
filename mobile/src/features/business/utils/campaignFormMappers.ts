@@ -39,6 +39,8 @@ export function mapAiRequirementsToForm(
       format:      [],
       deliverables: { ...DEFAULT_DELIVERABLES, ...r.deliverables },
       description: r.description ?? '',
+      completionType:   r.completionType,
+      completionReason: r.completionReason,
     };
   });
 }
@@ -68,6 +70,8 @@ export function mapAiCampaignDraftToForm(draft: AiCampaignDraft, aiPrompt: strin
     needsInput:            draft.needsInput,
     aiBudgetMin: draft.budgetMin,
     aiBudgetMax: draft.budgetMax,
+    completionType:   draft.completionType,
+    completionReason: draft.completionReason,
     requirements: mapAiRequirementsToForm(draft.requirements, providerCategoryOptions),
   };
 }
@@ -94,6 +98,8 @@ export function mapAiEventDraftToForm(draft: AiEventDraft, aiPrompt: string, pre
     aiPrompt,
     aiSuggestedCategories: draft.aiSuggestedCategories,
     aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
+    completionType:   draft.completionType,
+    completionReason: draft.completionReason,
     needsInput:            draft.needsInput,
   };
 }

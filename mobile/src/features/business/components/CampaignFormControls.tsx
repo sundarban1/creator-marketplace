@@ -498,3 +498,64 @@ const ft = StyleSheet.create({
   switch:      { width: 44, height: 26, borderRadius: RADIUS.full, position: 'relative' },
   switchThumb: { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: RADIUS.full, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 });
+
+// ─── CompletionTypePicker (§9-11 — AI-determined, business can override) ──────
+// Two-option radio list, not a ChipGroup — each option needs its own
+// explanatory line ("Provide the service..."/"Submit files...") so the
+// business understands what they're choosing, not just a label.
+
+export function CompletionTypePicker({
+  value, reason, onChange, colors, t,
+}: {
+  value: 'SERVICE' | 'DELIVERABLE' | null;
+  // The AI's own one-sentence explanation for its pick — shown as a caption
+  // under the currently-selected option, cleared once the business overrides it.
+  reason: string;
+  onChange: (v: 'SERVICE' | 'DELIVERABLE') => void;
+  colors: ReturnType<typeof useAppColors>;
+  t: (key: string) => string;
+}) {
+  const C = colors;
+  const OPTIONS: { key: 'SERVICE' | 'DELIVERABLE'; icon: string; titleKey: string; descKey: string }[] = [
+    { key: 'SERVICE',     icon: 'handshake',        titleKey: 'createOpportunity.completionServiceTitle',     descKey: 'createOpportunity.completionServiceDesc' },
+    { key: 'DELIVERABLE', icon: 'cloud-upload-alt', titleKey: 'createOpportunity.completionDeliverableTitle', descKey: 'createOpportunity.completionDeliverableDesc' },
+  ];
+  return (
+    <View style={{ gap: 10 }}>
+      {OPTIONS.map((opt) => {
+        const sel = value === opt.key;
+        return (
+          <Pressable
+            key={opt.key}
+            style={[ctp.option, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
+            onPress={() => onChange(opt.key)}>
+            <View style={[ctp.radio, { borderColor: sel ? C.brinjal1 : C.border }]}>
+              {sel && <View style={[ctp.radioDot, { backgroundColor: C.brinjal1 }]} />}
+            </View>
+            <FontAwesome5 name={opt.icon} solid size={16} color={sel ? C.brinjal1 : C.textSecondary} style={{ width: 20 }} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[ctp.optionTitle, { color: C.text }]}>{t(opt.titleKey)}</Text>
+              <Text style={[ctp.optionDesc, { color: C.textSecondary }]}>{t(opt.descKey)}</Text>
+            </View>
+          </Pressable>
+        );
+      })}
+      {!!reason && (
+        <View style={[ctp.reasonBox, { backgroundColor: C.primaryLight, borderColor: C.border }]}>
+          <FontAwesome5 name="magic" solid size={12} color={C.brinjal1} />
+          <Text style={[ctp.reasonText, { color: C.textSecondary }]}>{reason}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const ctp = StyleSheet.create({
+  option:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: RADIUS.lg, padding: 14, borderWidth: 1.5 },
+  radio:      { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  radioDot:   { width: 9, height: 9, borderRadius: RADIUS.full },
+  optionTitle: { fontSize: 14, fontFamily: F.bold },
+  optionDesc:  { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+  reasonBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: RADIUS.md, padding: 10, borderWidth: 1 },
+  reasonText: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: F.regular, fontStyle: 'italic' },
+});

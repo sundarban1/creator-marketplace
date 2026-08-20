@@ -26,7 +26,7 @@ import { TabColors } from '@/utilities/tabColors';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
 type AppStatus = 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
 type TabKey = 'all' | AppStatus;
 
@@ -75,6 +75,9 @@ const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof FontAwesome5.
   // (pending release, awaiting verification, or fully complete).
   APPROVED:    { labelKey: 'proposal.creator.trackApprovedLabel',    icon: 'trophy',         color: '#16A34A', subKey: 'proposal.creator.trackApprovedSub'    },
   COMPLETED:   { labelKey: 'proposal.creator.trackCompletedLabel',   icon: 'check-double', color: '#16A34A', subKey: 'proposal.creator.trackCompletedSub'   },
+  // A reported issue (see reportIssue) parks the job until Kolab support
+  // resolves it — nothing for the creator to do but open it and read the note.
+  DISPUTED:    { labelKey: 'proposal.creator.trackDisputedLabel',     icon: 'exclamation-triangle', color: '#EF4444', subKey: 'proposal.creator.trackDisputedSub' },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -102,17 +105,20 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   // Mirrors the same stage logic as activity-timeline.tsx's statusLabel() and
   // campaign-proposals.tsx's projectBtnConfig() — the NONE stage alone doesn't
   // say whether the creator is still waiting on payment or free to start, so
-  // pull that from paymentStatus the same way those screens do.
-  const trackCfg   = proposal.workStatus === 'APPROVED' && proposal.paymentStatus === 'RELEASED'
-    ? { ...TRACK_CFG.APPROVED, labelKey: 'proposal.creator.trackApprovedReleasedLabel', subKey: 'proposal.creator.trackApprovedReleasedSub' }
-    : proposal.workStatus === 'APPROVED'
-    ? { ...TRACK_CFG.APPROVED, labelKey: 'proposal.creator.trackApprovedPendingLabel', subKey: 'proposal.creator.trackApprovedPendingSub' }
-    : proposal.workStatus === 'NONE' && proposal.paymentStatus !== 'UNPAID'
-    ? { ...TRACK_CFG.NONE, labelKey: 'proposal.creator.trackReadyToStartLabel', subKey: 'proposal.creator.trackReadyToStartSub' }
-    : proposal.workStatus === 'NONE'
-    ? { ...TRACK_CFG.NONE, labelKey: 'proposal.creator.trackWaitingPaymentLabel', subKey: 'proposal.creator.trackWaitingPaymentSub' }
-    : TRACK_CFG[proposal.workStatus];
+  // pull that from paymentStatus the same way those screens do. Paid campaigns
+  // only: a free event's accepted card is terminal and shows no workspace CTA.
   const isFree     = proposal.campaignType === 'OPEN_EVENT';
+  const trackCfg   = (() => {
+    if (proposal.workStatus === 'APPROVED' && proposal.paymentStatus === 'RELEASED')
+      return { ...TRACK_CFG.APPROVED, labelKey: 'proposal.creator.trackApprovedReleasedLabel', subKey: 'proposal.creator.trackApprovedReleasedSub' };
+    if (proposal.workStatus === 'APPROVED')
+      return { ...TRACK_CFG.APPROVED, labelKey: 'proposal.creator.trackApprovedPendingLabel', subKey: 'proposal.creator.trackApprovedPendingSub' };
+    if (proposal.workStatus === 'NONE' && proposal.paymentStatus !== 'UNPAID')
+      return { ...TRACK_CFG.NONE, labelKey: 'proposal.creator.trackReadyToStartLabel', subKey: 'proposal.creator.trackReadyToStartSub' };
+    if (proposal.workStatus === 'NONE')
+      return { ...TRACK_CFG.NONE, labelKey: 'proposal.creator.trackWaitingPaymentLabel', subKey: 'proposal.creator.trackWaitingPaymentSub' };
+    return TRACK_CFG[proposal.workStatus];
+  })();
   const accentColor = cfg.color;
 
   return (
@@ -182,45 +188,49 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </View>
         </View>
 
-        {/* ── Accepted: workspace CTA or invited banner ── */}
-        {proposal.status === 'accepted' && (
-          isFree ? (
-            <View style={[styles.invitedBanner, { borderColor: `${accentColor}40` }]}>
-              <View style={[styles.invitedIcon, { backgroundColor: `${accentColor}18` }]}>
-                <FontAwesome5 name="check-circle" solid size={20} color={accentColor} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.invitedTitle, { color: accentColor }]}>{t('proposal.creator.invitedTitle')}</Text>
-                <Text style={[styles.invitedSub, { color: C.textSecondary }]}>{t('proposal.creator.invitedSub')}</Text>
-              </View>
+        {/* ── Accepted ──
+            A free event ends here: being accepted is itself the final step,
+            with nothing to start and no deliverable to submit, so the banner
+            stands alone and no workspace CTA follows it. Paid campaigns keep
+            the start → complete → confirm workspace flow below. ── */}
+        {proposal.status === 'accepted' && isFree && (
+          <View style={[styles.invitedBanner, { borderColor: `${accentColor}40` }]}>
+            <View style={[styles.invitedIcon, { backgroundColor: `${accentColor}18` }]}>
+              <FontAwesome5 name="check-circle" solid size={20} color={accentColor} />
             </View>
-          ) : (
-            <Pressable
-              style={[styles.trackBtn, { backgroundColor: `${trackCfg.color}14`, borderWidth: 1, borderColor: `${trackCfg.color}30` }]}
-              onPress={(e) => {
-                e.stopPropagation();
-                router.push({
-                  pathname: '/(business)/activity-timeline',
-                  params: {
-                    campaignId:    proposal.campaignId,
-                    campaignTitle: proposal.campaignTitle,
-                    role:          'CREATOR',
-                    businessId:    proposal.businessId,
-                    brand:         proposal.brand,
-                  },
-                });
-              }}>
-              <View style={[styles.trackBtnIcon, { backgroundColor: `${trackCfg.color}1F` }]}>
-                <FontAwesome5 name={trackCfg.icon} size={17} color={trackCfg.color} />
-              </View>
-              <View style={styles.trackBtnText}>
-                <Text style={[styles.trackBtnLabel, { color: trackCfg.color }]}>{t(trackCfg.labelKey)}</Text>
-                <Text style={[styles.trackBtnSub, { color: C.textSecondary }]}>{t(trackCfg.subKey)}</Text>
-              </View>
-              <FontAwesome5 name="chevron-right" solid size={15} color={trackCfg.color} />
-            </Pressable>
-          )
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.invitedTitle, { color: accentColor }]}>{t('proposal.creator.invitedTitle')}</Text>
+              <Text style={[styles.invitedSub, { color: C.textSecondary }]}>{t('proposal.creator.freeConfirmedSub')}</Text>
+            </View>
+          </View>
         )}
+
+        {proposal.status === 'accepted' && !isFree && (<>
+          <Pressable
+            style={[styles.trackBtn, { backgroundColor: `${trackCfg.color}14`, borderWidth: 1, borderColor: `${trackCfg.color}30` }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              router.push({
+                pathname: '/(business)/activity-timeline',
+                params: {
+                  campaignId:    proposal.campaignId,
+                  campaignTitle: proposal.campaignTitle,
+                  role:          'CREATOR',
+                  businessId:    proposal.businessId,
+                  brand:         proposal.brand,
+                },
+              });
+            }}>
+            <View style={[styles.trackBtnIcon, { backgroundColor: `${trackCfg.color}1F` }]}>
+              <FontAwesome5 name={trackCfg.icon} size={17} color={trackCfg.color} />
+            </View>
+            <View style={styles.trackBtnText}>
+              <Text style={[styles.trackBtnLabel, { color: trackCfg.color }]}>{t(trackCfg.labelKey)}</Text>
+              <Text style={[styles.trackBtnSub, { color: C.textSecondary }]}>{t(trackCfg.subKey)}</Text>
+            </View>
+            <FontAwesome5 name="chevron-right" solid size={15} color={trackCfg.color} />
+          </Pressable>
+        </>)}
 
         {/* ── Pending: awaiting-response — same icon-box + title + sub shape
             as the accepted/rejected footers below, not a CTA (there's

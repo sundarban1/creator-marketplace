@@ -115,9 +115,18 @@ export interface ApiCampaign {
   aiGenerated?:           boolean;
   aiSuggestedCategories?: string[];
   aiSuggestedPlatforms?:  string[];
+  // AI-determined (or business-corrected) job-completion type for the simple
+  // single-category case — null until classified. Multi-requirement
+  // campaigns use each ApiCampaignRequirement's own fields instead.
+  completionType?:   'SERVICE' | 'DELIVERABLE' | null;
+  completionReason?: string | null;
   distanceKm?:   number;
   business:      { businessName: string; logoUrl: string | null };
   _count:        { applications: number };
+  // Applications received in the last 72h — the velocity signal the Discover
+  // feed's Trending tab ranks on. Only the list/nearby endpoints compute it;
+  // absent (not 0) elsewhere. See CampaignRepository.countRecentApplications.
+  recentProposals?: number;
   // Present only for multi-role campaigns — undefined for the simple
   // single-category case every campaign used before CampaignRequirement.
   requirements?: ApiCampaignRequirement[];
@@ -134,6 +143,8 @@ export interface ApiCampaignRequirement {
   budgetMax: number | null;
   deliverables: string | null;
   deadline: string | null;
+  completionType?:   'SERVICE' | 'DELIVERABLE' | null;
+  completionReason?: string | null;
   acceptedCount: number;
 }
 

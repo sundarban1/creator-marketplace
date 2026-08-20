@@ -341,6 +341,40 @@ export default function CampaignDetailScreen() {
           </View>
         ) : null}
 
+        {/* How this job is completed — the one thing a provider can't infer
+            from the brief. A free event is always the same answer (turn up
+            and post about it), so it skips the SERVICE/DELIVERABLE split
+            entirely; a paid campaign gets classified, and a multi-role one
+            lists each role, since roles can differ. */}
+        {isOpenEvent ? (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCompletion')}</Text>
+            <ShareCompletionNote platforms={campaign.platforms} C={C} t={t} />
+          </View>
+        ) : campaign.requirements && campaign.requirements.length > 0
+          ? campaign.requirements.some((r) => r.completionType) && (
+            <View style={[s.card, { backgroundColor: C.surface }]}>
+              <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCompletion')}</Text>
+              <View style={{ gap: 12 }}>
+                {campaign.requirements.filter((r) => r.completionType).map((r) => (
+                  <CompletionNote
+                    key={r.id}
+                    role={r.category.name}
+                    type={r.completionType as 'SERVICE' | 'DELIVERABLE'}
+                    C={C}
+                    t={t}
+                  />
+                ))}
+              </View>
+            </View>
+          )
+          : campaign.completionType ? (
+            <View style={[s.card, { backgroundColor: C.surface }]}>
+              <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCompletion')}</Text>
+              <CompletionNote type={campaign.completionType} C={C} t={t} />
+            </View>
+          ) : null}
+
         {/* 5. Deliverables — multi-role campaigns each collect their own
             deliverables at creation, so list every role's under its own
             name in one card instead of the single flattened campaign-level
@@ -508,6 +542,76 @@ function DetailRow({ icon, label, value, C }: { icon: string; label: string; val
   );
 }
 
+// One "how this job ends" line — an icon + plain-language sentence, not a
+// bare "SERVICE"/"DELIVERABLE" label, since the whole point is telling a
+// provider whether they'll be asked to upload anything. `role` is set only
+// on multi-role campaigns, where each role can differ.
+// A free event's completion note. There is no deliverable to upload and no
+// work stage to run (acceptance is final, see CampaignService), so attending
+// and posting about it IS the whole ask — stated once, the same way for every
+// free event, rather than classified per role like a paid campaign.
+const DEFAULT_SHARE_PLATFORMS = ['Facebook', 'Instagram', 'TikTok', 'YouTube'];
+
+function ShareCompletionNote({ platforms, C, t }: {
+  platforms: string[];
+  C: any;
+  t: (key: string) => string;
+}) {
+  // The business picks the platforms it cares about at creation; fall back to
+  // the big four when an older event didn't record any.
+  const list = platforms && platforms.length > 0 ? platforms : DEFAULT_SHARE_PLATFORMS;
+  return (
+    <View style={{ gap: 10 }}>
+      <View style={s.completionRow}>
+        <View style={[s.completionIcon, { backgroundColor: 'rgba(5,150,105,0.08)' }]}>
+          <FontAwesome5 name="share-alt" solid size={14} color="#059669" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.completionTitle, { color: C.text }]}>{t('campaignDetail.freeCompletionTitle')}</Text>
+          <Text style={[s.completionDesc, { color: C.textSecondary }]}>{t('campaignDetail.freeCompletionDesc')}</Text>
+        </View>
+      </View>
+      <View style={s.benefitsWrap}>
+        {list.map((p) => (
+          <View key={p} style={[s.benefitChip, { backgroundColor: '#F0FDF4', borderColor: '#A7F3D0' }]}>
+            <Text style={[s.benefitChipTxt, { color: '#065F46' }]}>{p}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function CompletionNote({ role, type, C, t }: {
+  role?: string;
+  type: 'SERVICE' | 'DELIVERABLE';
+  C: any;
+  t: (key: string) => string;
+}) {
+  const isService = type === 'SERVICE';
+  const tint = isService ? '#4F46E5' : '#059669';
+  return (
+    <View style={s.completionRow}>
+      <View style={[s.completionIcon, { backgroundColor: `${tint}14` }]}>
+        <FontAwesome5 name={isService ? 'handshake' : 'cloud-upload-alt'} solid size={14} color={tint} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[s.completionTitle, { color: C.text }]}>
+          {role ? `${role} · ` : ''}
+          {isService
+            ? t('createOpportunity.completionServiceTitle')
+            : t('createOpportunity.completionDeliverableTitle')}
+        </Text>
+        <Text style={[s.completionDesc, { color: C.textSecondary }]}>
+          {isService
+            ? t('createOpportunity.completionServiceDesc')
+            : t('createOpportunity.completionDeliverableDesc')}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function ReqItem({ text, C }: { text: string; C: any }) {
   return (
     <View style={s.reqItem}>
@@ -573,6 +677,10 @@ const s = StyleSheet.create({
   detailLabel: { fontSize: 11, fontFamily: F.medium },
   detailValue: { fontSize: 14, marginTop: 1, fontFamily: F.semibold },
   description: { fontSize: 15, lineHeight: 22, fontFamily: F.regular },
+  completionRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  completionIcon:  { width: 32, height: 32, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  completionTitle: { fontSize: 14, fontFamily: F.semibold },
+  completionDesc:  { fontSize: 12, lineHeight: 17, fontFamily: F.regular, marginTop: 2 },
   reqItem:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 4 },
   reqDot:      { width: 6, height: 6, borderRadius: RADIUS.full, marginTop: 7, flexShrink: 0 },
   reqText:     { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },

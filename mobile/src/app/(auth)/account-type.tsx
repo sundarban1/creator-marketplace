@@ -45,9 +45,9 @@ export default function AccountTypeScreen() {
   const initialRole: Role | null = params.role === 'CREATOR' || params.role === 'BUSINESS' ? params.role : null;
   const [selected, setSelected] = useState<Role | null>(initialRole);
 
-  function handleContinue() {
-    if (!selected) return;
-    router.replace({ pathname: '/login', params: { tab: 'signup', role: selected } });
+  function handleSelect(role: Role) {
+    setSelected(role);
+    router.replace({ pathname: '/login', params: { tab: 'signup', role } });
   }
 
   return (
@@ -77,7 +77,7 @@ export default function AccountTypeScreen() {
             return (
               <Pressable
                 key={r.key}
-                onPress={() => setSelected(r.key)}
+                onPress={() => handleSelect(r.key)}
                 style={({ pressed }) => [
                   s.card,
                   { borderColor: active ? tint : C.border, backgroundColor: cardBg },
@@ -87,6 +87,10 @@ export default function AccountTypeScreen() {
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={cardTitle}>
+
+                <View style={s.chevronWrap}>
+                  <FontAwesome5 name="chevron-right" solid size={14} color={active ? tint : C.textSecondary} />
+                </View>
 
                 <View style={s.imageWrap}>
                   <ExpoImage source={CARD_IMAGE[r.key]} style={s.cardArt} contentFit="cover" />
@@ -123,18 +127,6 @@ export default function AccountTypeScreen() {
           })}
         </View>
         </ScrollView>
-
-        <Pressable
-          onPress={handleContinue}
-          disabled={!selected}
-          style={({ pressed }) => [
-            s.continueBtn,
-            { backgroundColor: C.brinjal1 },
-            !selected && s.continueBtnDisabled,
-            { opacity: pressed && selected ? 0.92 : 1 },
-          ]}>
-          <Text style={s.continueBtnText}>{t('accountType.continueBtn')}</Text>
-        </Pressable>
       </MaxWidthContainer>
     </SafeAreaView>
   );
@@ -155,6 +147,10 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
       borderRadius: RADIUS.xl, borderWidth: 1.5, overflow: 'hidden',
       position: 'relative',
     },
+    chevronWrap: {
+      position: 'absolute', top: '50%', right: SPACING.lg, marginTop: -10,
+      zIndex: 2,
+    },
 
     imageWrap: { height: 108, position: 'relative' },
     cardArt: { width: '100%', height: '100%' },
@@ -164,7 +160,7 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
       width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
     },
 
-    cardBody: { padding: SPACING.lg, gap: 6 },
+    cardBody: { padding: SPACING.lg, paddingRight: SPACING.xxl, gap: 6 },
     cardTitle: { fontSize: FONT_SIZE.md, fontFamily: F.bold, letterSpacing: 0.1 },
     cardDesc: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: 19 },
 
@@ -174,9 +170,5 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
 
     exampleTag: { marginTop: 4, alignSelf: 'flex-start', borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs },
     exampleText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium },
-
-    continueBtn: { marginHorizontal: SPACING.xl, marginTop: SPACING.md, marginBottom: SPACING.sm, height: 54, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
-    continueBtnDisabled: { opacity: 0.4 },
-    continueBtnText: { fontSize: FONT_SIZE.md, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
   });
 }

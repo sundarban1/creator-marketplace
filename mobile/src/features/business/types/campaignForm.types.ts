@@ -47,6 +47,14 @@ export type FormData = {
   needsInput: string[];
   aiBudgetMin: number;
   aiBudgetMax: number;
+  // AI-determined (or business-corrected) completion type — see
+  // CompletionTypePicker. Null only before the AI draft has ever populated
+  // it (e.g. a brand-new, not-yet-generated form).
+  completionType: 'SERVICE' | 'DELIVERABLE' | null;
+  // The AI's explanation for its pick — shown as a caption, cleared once the
+  // business manually overrides the type (no auto-generated reason for a
+  // human's own choice).
+  completionReason: string;
   // Multi-role campaigns (§ CampaignRequirement) — empty for the default
   // single-role flow every existing campaign uses. See requirementMode state.
   requirements: RequirementFormItem[];
@@ -74,4 +82,10 @@ export type RequirementFormItem = {
   // Free-text brief of what this role should do — shown/edited in place of
   // `deliverables` for every category except 'Content Creator'.
   description: string;
+  // Per-role completion type — a multi-role campaign can mix e.g. a DJ
+  // (SERVICE) and a Photographer (DELIVERABLE) requirement. Read-only here
+  // for V1 (see CompletionTypePicker — only the top-level/single-role case
+  // has an override UI so far).
+  completionType: 'SERVICE' | 'DELIVERABLE' | null;
+  completionReason: string;
 };

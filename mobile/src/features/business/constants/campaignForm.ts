@@ -39,6 +39,25 @@ export function summarizeDeliverables(deliverables: Record<string, number>, fall
   return parts.length > 0 ? parts.join(', ') : fallback.join(', ');
 }
 
+// SERVICE roles (a DJ performing, an MC hosting) never upload anything;
+// DELIVERABLE roles (edited photos, a reel) submit a digital output for
+// review. Shared so the create flow, the edit flow and the creator-facing
+// detail screen all label the distinction identically. Undefined when the
+// role hasn't been classified yet (campaigns predating completionType).
+export function completionLabel(
+  type: 'SERVICE' | 'DELIVERABLE' | null | undefined,
+  t: TFn,
+): { label: string; isService: boolean } | undefined {
+  if (type !== 'SERVICE' && type !== 'DELIVERABLE') return undefined;
+  const isService = type === 'SERVICE';
+  return {
+    label: isService
+      ? t('createOpportunity.completionServiceTitle')
+      : t('createOpportunity.completionDeliverableTitle'),
+    isService,
+  };
+}
+
 export const BUDGET_TIERS = [
   { key: 'SMALL',  min: 5000,  max: 10000 },
   { key: 'MEDIUM', min: 10000, max: 25000 },

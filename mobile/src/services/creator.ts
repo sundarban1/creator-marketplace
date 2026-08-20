@@ -71,6 +71,25 @@ export interface ApiCampaignInvitation {
   business: { id: string; businessName: string | null; logoUrl: string | null };
 }
 
+// One row of a campaign's invitation list as the business sees it — the
+// mirror of ApiCampaignInvitation above, which is the creator's view of the
+// same record (creator side carries the campaign/business, business side
+// carries the creator).
+export interface CampaignInvitee {
+  id: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  message: string | null;
+  createdAt: string;
+  respondedAt: string | null;
+  creator: {
+    id: string;
+    userId: string;
+    fullName: string;
+    avatarUrl: string | null;
+    location: string | null;
+  };
+}
+
 export interface FacebookPageOption {
   id: string;
   name: string;
@@ -405,6 +424,13 @@ export const creatorService = {
 
   async inviteCreators(campaignId: string, creatorIds: string[], message?: string): Promise<{ invited: number }> {
     const res = await request<{ invited: number }>('POST', `/api/business/campaigns/${campaignId}/invite`, { creatorIds, message });
+    return res.data;
+  },
+
+  // Business-side view of one campaign's invitations — who was invited and how
+  // they responded. Backs the "Invited" tab on a free event's proposals screen.
+  async listCampaignInvitations(campaignId: string): Promise<CampaignInvitee[]> {
+    const res = await request<CampaignInvitee[]>('GET', `/api/business/campaigns/${campaignId}/invitations`);
     return res.data;
   },
 

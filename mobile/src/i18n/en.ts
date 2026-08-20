@@ -460,9 +460,9 @@ const en = {
       enableLocationSub: 'Turn on location access, or set a home location in your profile.',
       noEventsWithinKm: 'No events within {{km}} km',
       expandToKm: 'Expand to {{km}} km',
-      tabAll: 'All',
       tabNew: 'New',
       tabTrending: 'Trending',
+      tabFree: 'Free',
       tabEndingSoon: 'Ending Soon',
       sortDateLatest: 'Date (Latest)',
       sortDateOldest: 'Date (Oldest)',
@@ -928,10 +928,19 @@ const en = {
       trackApprovedReleasedSub: 'Verify your payment to complete the project',
       trackApprovedPendingLabel: 'Project Approved',
       trackApprovedPendingSub: 'Approved — admin will release payment',
+      // Free events (OPEN_EVENT) — no payment step, so acceptance lets the
+      // creator start and the business's confirmation is the final stage
+      trackFreeReadyToStartSub: "You're accepted — begin your work",
+      trackFreeCompleteLabel: 'Collaboration Complete',
+      trackFreeCompleteSub: 'The business confirmed your work',
+      trackDisputedLabel: 'Issue Reported',
+      trackDisputedSub: 'Kolab support is reviewing this job',
       seeMore: 'See more',
       seeLess: 'See less',
       invitedTitle: "You're invited!",
       invitedSub: 'The business accepted your application',
+      // Free events end at acceptance — no work stage, no deliverables.
+      freeConfirmedSub: "You're confirmed for this event — nothing further to do.",
     },
     business: {
       headerTitle: 'Proposals',
@@ -962,6 +971,16 @@ const en = {
       workspaceInProgressLabel: 'Creator is Working',
       workspaceInProgressSub: 'Content creation in progress',
       workspaceDefaultLabel: 'Track the project status',
+      // Free events end at confirmation (no payment release); a disputed job
+      // waits on Kolab support
+      workspaceFreeCompleteLabel: 'Collaboration Complete',
+      workspaceFreeCompleteSub: 'You confirmed the work — nothing else needed',
+      // Free events: approving is the whole flow, so the card's button just
+      // opens the approved list instead of a work-progress stage.
+      workspaceFreeApprovedLabel: 'Approved Creators',
+      workspaceFreeApprovedSub: 'See who is confirmed for this event',
+      workspaceIssueLabel: 'Issue Reported',
+      workspaceIssueSub: 'Kolab support is reviewing this job',
     },
   },
 
@@ -1089,9 +1108,22 @@ const en = {
     filterApproved: 'Approved',
     filterDeclined: 'Declined',
     filterExpired: 'Expired',
+    // Free events only — Request / Approved / Declined / Invited
+    filterRequest: 'Request',
+    filterInvited: 'Invited',
     statPending: 'Pending',
     statApproved: 'Approved',
     statDeclined: 'Declined',
+    statRequest: 'Requests',
+    statInvited: 'Invited',
+    sectionLabelFree: 'Manage Event Participants',
+    freeConfirmedTitle: 'Confirmed for this event',
+    freeConfirmedSub: 'Nothing further is needed — free events have no deliverables to submit or approve.',
+    inviteStatusPending: 'Invited',
+    inviteStatusAccepted: 'Accepted',
+    inviteStatusDeclined: 'Declined',
+    emptyNoInvites: 'No creators invited yet',
+    emptyNoInvitesHint: 'Creators you invite to this event will appear here with their response.',
     badgeFreeEvent: 'Free Event',
     badgePaidEvent: 'Paid Event',
     freeParticipation: 'Free Participation',
@@ -1107,6 +1139,7 @@ const en = {
     alertFailed: 'Failed',
     emptyNoApplications: 'No applications yet',
     emptyNoFiltered: 'No {{filter}} applications',
+    emptyNoFilteredFree: 'Nothing under {{filter}} yet',
     emptyAllHint: 'Creators who apply to this event will appear here.',
     emptyFilterHint: 'Try a different filter above.',
     statusPending: 'Pending',
@@ -1120,6 +1153,10 @@ const en = {
     awaitingPaymentRelease: 'Awaiting Payment Release',
     reviewDeliverables:     'Review Deliverables',
     creatorIsWorking:       'Creator is Working',
+    // Free events end at confirmation (no payment release); a disputed job
+    // sits outside the flow until support resolves it
+    collaborationComplete:  'Collaboration Complete',
+    issueReported:          'Issue Reported',
     startTheProject:        'Start the Project',
     closeCampaignBtn:      'Close Event',
     closeCampaignTitle:    'Close this event?',
@@ -1207,6 +1244,12 @@ const en = {
     sectionDetails: 'Event Details',
     sectionAbout: 'About this Event',
     sectionDeliverables: 'Deliverables',
+    // "How you complete this job" — SERVICE vs DELIVERABLE, see completionType
+    sectionCompletion: 'How You Complete This',
+    // Free events: one fixed answer — attend and post about it. No
+    // SERVICE/DELIVERABLE split, nothing to upload here.
+    freeCompletionTitle: 'Share about this event on your social media',
+    freeCompletionDesc:  'Join the event and post about your experience — a story, reel, post or video is all it takes. Nothing needs to be uploaded or submitted here.',
     detailDeadline: 'Deadline',
     detailBudget: 'Budget',
     detailLocation: 'Location',
@@ -2543,6 +2586,8 @@ const en = {
     reqDescriptionPlaceholder: "Describe what this person should do, e.g. \"Model outfits and pose for photo and short social clips per the brand's direction; available for the full shoot duration and wardrobe changes.\"",
     reqFormatLabel:    'Expected file format',
     reqAddRole:        'Add another role',
+    reqAddRoleTitle:   'Add role',
+    reqAddRoleConfirm: 'Add role',
     errNoRequirements: 'Add at least one role.',
     errRequirementCategory: 'Choose a provider type for every role.',
     errRequirementBudget:   'Set a valid budget for every role.',
@@ -2626,6 +2671,7 @@ const en = {
     errMaxPlatform:   'You can select up to 3 platforms.',
     errNoDeadline:    'Please select an application deadline.',
     errBudgetMin:     'Minimum budget is Rs. 500 per creator.',
+    errBudgetMinMax:  'Maximum budget must be at least the minimum.',
     errNoEventDate:   'Please select an event date.',
     errNoRegDeadline: 'Please select a registration deadline.',
     errDeadlineOrder: 'Registration deadline must be before the event date.',
@@ -2670,6 +2716,12 @@ const en = {
 
     publishHeading:   'Your opportunity is ready',
     peopleNeededTitle: 'People Needed',
+    // Completion type (§9-11) — AI-determined, business can override.
+    completionLabel:            'Completion',
+    completionServiceTitle:     'Service',
+    completionServiceDesc:      'Provide the service or attend the event. No file upload required.',
+    completionDeliverableTitle: 'Digital Deliverable',
+    completionDeliverableDesc:  'Submit files, content, or a digital output for review.',
     featuredLabel:    'Feature this Opportunity',
     featuredLockedSub: 'Free features used up — Rs. {{price}} to feature this opportunity',
     publishBtn:       'Publish Opportunity',
@@ -2706,7 +2758,7 @@ const en = {
     offerOther:        'Other',
     continueBtn:       'Continue',
 
-    describeHeadline: 'Tell Kolab about the experience',
+    describeHeadline: 'What is your event about?',
     describeSub:      'Describe it in your own words — type or speak naturally.',
     promptPlaceholder: 'e.g. "We are launching our new restaurant in Kathmandu. We want to invite 15 food creators for a free dinner and drinks. We\'d like them to share their experience on Instagram or TikTok."',
     examplesLabel:    'Quick examples',
@@ -2784,11 +2836,18 @@ const en = {
     progressReview:    'Review',
     progressApproved:  'Approved',
     progressReleased:  'Released',
+    // SERVICE-job variants (no file upload — see completionType)
+    progressServiceStarted:   'Started',
+    progressServiceCompleted: 'Completed',
+    progressConfirming:       'Confirming',
+    progressConfirmed:        'Confirmed',
 
     // Header / status badge
     statusApproved:         'Approved',
     statusReleased:         'Released',
     statusUnderReview:      'Under Review',
+    statusAwaitingConfirmation: 'Awaiting Confirmation',
+    statusConfirmed:        'Confirmed',
     statusInProgress:       'In Progress',
     statusWaitingOnCreator: 'Waiting on Creator',
     statusWaitingPayment:   'Waiting Payment',
@@ -2800,6 +2859,8 @@ const en = {
     footerPayment:        'Payment',
  footerPaymentPaid: 'Paid',
     footerPaymentPending: 'Pending',
+    // Free events (OPEN_EVENT) never involve money — see isFreeEvent
+    footerPaymentFree:    'Free event',
     footerCampaignId:     'Event ID',
     footerCreatorLabel:   'Creator: {{name}}',
     footerBrandLabel:     'by {{name}}',
@@ -2849,6 +2910,21 @@ const en = {
     tlWorkApproved:                    'Work Approved',
     tlWorkApprovedDescCreator:         'Payment will be released by admin now on your wallet.',
     tlWorkApprovedDescBusiness:        'Event approved. Admin will release the payment now.',
+    // SERVICE-job variants (no file upload — see completionType)
+    tlServiceStarted:                   'Service Started',
+    tlServiceCompleted:                 'Service Completed',
+    tlServiceCompletedDescCreator:      'You marked the service as completed.',
+    tlServiceCompletedDescBusiness:     'Creator marked the service as completed. Please confirm.',
+    tlCompletionConfirmed:              'Completion Confirmed',
+    tlCompletionConfirmedDescCreator:   'Payment will be released by admin now on your wallet.',
+    tlCompletionConfirmedDescBusiness:  'You confirmed the service was completed. Admin will release the payment now.',
+    tlIssueReported:                    'Issue Reported',
+    tlIssueReportedDescCreator:         'The business reported an issue with this job.',
+    tlIssueReportedDescBusiness:        'You reported an issue. Kolab support will review and follow up.',
+    // Free-event variants — approval is the end of the collaboration here,
+    // there is no payment release step to point at (see isFreeEvent)
+    tlFreeCompletedDescCreator:         'The business confirmed everything was done. This collaboration is complete.',
+    tlFreeCompletedDescBusiness:        'You confirmed the work. This collaboration is complete.',
 
     // Action card states
     acPaymentRequiredTitle:  'Payment Required',
@@ -2877,6 +2953,23 @@ const en = {
     acAwaitingReviewTitle:   'Awaiting Review',
     acAwaitingReviewSub:     'Business is reviewing your work. Auto-approved in 5 days if no response.',
     acViewSubmissionBtn:     'View My Submission',
+    // SERVICE-job variants (no file upload — see completionType)
+    acServiceInProgressTitle: 'Provide the Service',
+    acServiceInProgressSub:   'Once the service is complete, mark it as done to notify the business.',
+    acMarkCompletedBtn:       'Mark as Completed',
+    acServiceCompletedTitle:  'Service Marked Completed',
+    acServiceCompletedSub:    'Creator says the service is complete. Confirm it was done as agreed, or report an issue.',
+    acReportIssueBtn:         'Report an Issue',
+    acConfirmCompletionBtn:   'Confirm Completion',
+    acAwaitingConfirmationTitle: 'Awaiting Confirmation',
+    acAwaitingConfirmationSub:   "You marked the service as completed. Waiting for the business to confirm.",
+    acIssueReportedTitle:      'Issue Reported',
+    acIssueReportedSubBusiness: "You reported an issue. Kolab support will review and follow up.",
+    acIssueReportedSubCreator:  'The business reported an issue with this job. Kolab support will review and follow up.',
+    // Free-event terminal card — no payment release to wait for
+    acFreeCompleteTitle:       'Collaboration Complete!',
+    acFreeCompleteCreatorSub:  'The business confirmed everything was done. Thanks for taking part!',
+    acFreeCompleteBizSub:      'You confirmed the work. Nothing else is needed here.',
  acApprovedBizTitle: 'Event Approved!',
     acApprovedBizSub:        'Admin will release the payment now.',
  acApprovedCreatorTitle: 'Work Approved!',
@@ -2935,6 +3028,13 @@ const en = {
     modalRevisionVideoNotice:      "Submitting this will remove the creator's currently uploaded video(s). They'll get a copy in chat so they can download it first.",
     modalRevisionSendBtn:          'Send Revision Request',
 
+    // Report an Issue modal (SERVICE jobs — see completionType)
+    modalIssueTitle:            'Report an Issue',
+    modalIssueSub:              "Let the creator know what wasn't completed as agreed.",
+    modalIssueNotesLabel:       'What happened? *',
+    modalIssueNotesPlaceholder: 'The service was incomplete... The provider did not show up...',
+    modalIssueSendBtn:          'Send Report',
+
     // Cancel modal
     modalCancelTitle:          'Cancel Event',
     modalCancelSub:            'Are you sure you want to cancel this event?',
@@ -2959,8 +3059,10 @@ const en = {
     // Toast messages
  toastPaySuccess: 'Payment successful! Creator has been notified.',
  toastWorkSubmitted: 'Work submitted! Business will review within 5 days.',
+ toastServiceCompleted: 'Marked as completed! Business will be notified to confirm.',
  toastWorkApproved: 'Work approved! Admin will release the payment to the creator.',
     toastRevisionRequested:  'Revision requested. Creator has been notified.',
+    toastIssueReported:      'Issue reported. Kolab support will follow up.',
     toastCampaignCancelled:  'Event cancelled. Creator has been notified.',
     toastPayFailed:          'Payment failed. Please try again.',
     toastStartFailed:        'Failed to start. Please try again.',
@@ -3061,11 +3163,10 @@ const en = {
     offerBenefit3: 'Get paid securely for your work',
     seekTitle: 'Looking for services',
     seekDesc: 'I need people, teams or agencies for my projects and campaigns.',
-    seekExample: 'e.g. brands, businesses, organizations',
+    seekExample: 'e.g. brands, businesses, agencies, organizations',
     seekBenefit1: 'Post campaigns and reach verified talent',
     seekBenefit2: 'Browse profiles, portfolios and reviews',
     seekBenefit3: 'Manage contracts and payments in one place',
-    continueBtn: 'Continue',
   },
 
   // ── Filter Modal ──────────────────────────────────────────────

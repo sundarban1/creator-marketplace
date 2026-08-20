@@ -71,6 +71,16 @@ export default function BusinessHomeScreen() {
   // a real one — never show that in the header (as text, or as the avatar's
   // first-letter fallback initial, which would render a bare "+").
   const displayName = businessName || (user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Business');
+  // Header shows just the city, not the full saved Places address (e.g.
+  // "Thamel, Kathmandu 44600, Nepal") — the country segment is always last
+  // (search is scoped to Nepal, see LocationSearchModal), so the city is the
+  // segment right before it; a 2-segment "City, Nepal" address is just the
+  // city itself. Postal codes ride along in that segment, so strip them too.
+  const cityFromLocation = (() => {
+    const parts = businessLocation.split(',').map((s) => s.trim()).filter(Boolean);
+    const city = parts.length >= 2 ? parts[parts.length - 2] : (parts[0] ?? '');
+    return city.replace(/\s*\d{4,6}\s*$/, '').trim();
+  })();
   const hour = new Date().getHours();
   const greetingKey = hour < 12 ? 'home.greetingMorning' : hour < 17 ? 'home.greetingAfternoon' : 'home.greetingEvening';
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -223,10 +233,10 @@ export default function BusinessHomeScreen() {
       <View style={[styles.header, { backgroundColor: C.background }]}>
         <View style={styles.headerText}>
           <Text style={[styles.greeting, { color: C.text }]} numberOfLines={1}>{t(greetingKey, { name: displayName })}</Text>
-          {businessLocation ? (
+          {cityFromLocation ? (
             <View style={styles.locationRow}>
               <FontAwesome5 name="map-marker-alt" solid size={11} color={C.textSecondary} />
-              <Text style={[styles.locationText, { color: C.textSecondary }]} numberOfLines={1}>{businessLocation}</Text>
+              <Text style={[styles.locationText, { color: C.textSecondary }]} numberOfLines={1}>{cityFromLocation}</Text>
             </View>
           ) : null}
         </View>
@@ -335,24 +345,6 @@ export default function BusinessHomeScreen() {
               </Pressable>
             </View>
           ) : null}
-
-          {/* ── Refer a business banner — shared PromoBanner component, see
-              creator home for the identical pattern on that side. ── */}
-          {!referralBannerDismissed && (() => {
-            const [prefix, suffix] = t('businessReferral.homeBannerSub').split('{{amount}}');
-            return (
-              <PromoBanner
-                icon="gift"
-                title={t('businessReferral.homeBannerTitle')}
-                subtitlePrefix={prefix}
-                subtitleAmount={t('businessReferral.homeBannerAmount')}
-                subtitleSuffix={suffix}
-                onPress={() => router.push('/(business)/refer')}
-                onDismiss={() => setReferralBannerDismissed(true)}
-                style={{ marginHorizontal: 0, marginTop: 0 }}
-              />
-            );
-          })()}
 
         </View>
 
@@ -593,6 +585,31 @@ export default function BusinessHomeScreen() {
             </ScrollView>
           </View>
         )}
+
+        {/* ── Refer a business banner — last block on the page: it's the one
+            section here that isn't the business's own events or a provider
+            they might book, so it trails the feed rather than interrupting
+            it between the CTA and the content. Shared PromoBanner component
+            — see creator home for the identical pattern, in the identical
+            position, on that side. marginHorizontal: 0 drops the component's
+            own inset (sized for a parent without padding); `scroll` already
+            supplies the gutter, and marginTop matches the xxl step every
+            other top-level row on this screen uses. ── */}
+        {!referralBannerDismissed && (() => {
+          const [prefix, suffix] = t('businessReferral.homeBannerSub').split('{{amount}}');
+          return (
+            <PromoBanner
+              icon="gift"
+              title={t('businessReferral.homeBannerTitle')}
+              subtitlePrefix={prefix}
+              subtitleAmount={t('businessReferral.homeBannerAmount')}
+              subtitleSuffix={suffix}
+              onPress={() => router.push('/(business)/refer')}
+              onDismiss={() => setReferralBannerDismissed(true)}
+              style={{ marginHorizontal: 0, marginTop: SPACING.xxl }}
+            />
+          );
+        })()}
 
       </ScrollView>
       {tabFilterStuck && (

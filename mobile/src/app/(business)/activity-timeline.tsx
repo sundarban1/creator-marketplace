@@ -44,11 +44,16 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type AppInfo = {
   id: string;
+  // Which role of a multi-role campaign this application is for — null for
+  // the simple single-category campaigns every existing campaign uses. Used
+  // to look up this job's own completionType from campaign.requirements
+  // rather than the campaign-level one.
+  requirementId: string | null;
   workStatus: WS;
   paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
   proposedRateRaw: number;
@@ -74,22 +79,47 @@ type AppInfo = {
 
 type TFn = (key: string, params?: Record<string, string | number>) => string;
 
-function getProgressLabels(t: TFn): string[] {
+function getProgressLabels(t: TFn, isService: boolean, isFree: boolean): string[] {
+  // A free event has no money in the flow at all — the Payment/Secured/
+  // Released steps would sit permanently greyed out, so they're dropped
+  // rather than shown as steps that can never complete. Confirmation by the
+  // business is the terminal step instead of payment release.
+  if (isFree) {
+    return [
+      t('activityTimeline.progressAccepted'),
+      t('activityTimeline.progressWaiting'),
+      isService ? t('activityTimeline.progressServiceStarted') : t('activityTimeline.progressStarted'),
+      isService ? t('activityTimeline.progressServiceCompleted') : t('activityTimeline.progressSubmitted'),
+      isService ? t('activityTimeline.progressConfirming') : t('activityTimeline.progressReview'),
+      isService ? t('activityTimeline.progressConfirmed') : t('activityTimeline.progressApproved'),
+    ];
+  }
   return [
     t('activityTimeline.progressAccepted'),
     t('activityTimeline.progressPayment'),
     t('activityTimeline.progressSecured'),
     t('activityTimeline.progressWaiting'),
-    t('activityTimeline.progressStarted'),
-    t('activityTimeline.progressSubmitted'),
-    t('activityTimeline.progressReview'),
-    t('activityTimeline.progressApproved'),
+    isService ? t('activityTimeline.progressServiceStarted') : t('activityTimeline.progressStarted'),
+    isService ? t('activityTimeline.progressServiceCompleted') : t('activityTimeline.progressSubmitted'),
+    isService ? t('activityTimeline.progressConfirming') : t('activityTimeline.progressReview'),
+    isService ? t('activityTimeline.progressConfirmed') : t('activityTimeline.progressApproved'),
     t('activityTimeline.progressReleased'),
   ];
 }
 
-function progressIdx(ws: WS, paid: boolean, paymentStatus?: PS): number {
+function progressIdx(ws: WS, paid: boolean, paymentStatus?: PS, isFree?: boolean): number {
+  // Indices into the 6-label free-event set above — approval is terminal
+  // there (nothing to release), so it returns one past the last step to
+  // render every step as done.
+  if (isFree) {
+    if (ws === 'APPROVED' || ws === 'COMPLETED') return 6;
+    if (ws === 'DISPUTED')    return 4;
+    if (ws === 'SUBMITTED')   return 3;
+    if (ws === 'IN_PROGRESS') return 2;
+    return 1;
+  }
   if (paymentStatus === 'RELEASED') return 9; // final stage — every step shows done
+  if (ws === 'DISPUTED')   return 6; // stuck at the review/confirmation step, unresolved
   if (ws === 'APPROVED')   return 7;
   if (ws === 'SUBMITTED')  return 5;
   if (ws === 'IN_PROGRESS') return 4;
@@ -171,11 +201,11 @@ function validateSubmission(hasDeliverable: boolean, raw: string, t: TFn): strin
   return '';
 }
 
-function statusLabel(ws: WS, paid: boolean, t: TFn, paymentStatus?: PS) {
+function statusLabel(ws: WS, paid: boolean, t: TFn, paymentStatus?: PS, isService?: boolean) {
   if (ws === 'COMPLETED')   return t('activityTimeline.statusReleased');
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED') return t('activityTimeline.statusReleased');
-  if (ws === 'APPROVED')    return t('activityTimeline.statusApproved');
-  if (ws === 'SUBMITTED')   return t('activityTimeline.statusUnderReview');
+  if (ws === 'APPROVED')    return isService ? t('activityTimeline.statusConfirmed') : t('activityTimeline.statusApproved');
+  if (ws === 'SUBMITTED')   return isService ? t('activityTimeline.statusAwaitingConfirmation') : t('activityTimeline.statusUnderReview');
   if (ws === 'IN_PROGRESS') return t('activityTimeline.statusInProgress');
   if (paid)                 return t('activityTimeline.statusWaitingOnCreator');
   return t('activityTimeline.statusWaitingPayment');
@@ -192,9 +222,15 @@ function statusColor(ws: WS, paid: boolean, paymentStatus?: PS) {
 
 type TLEvent = { icon: string; title: string; desc: string; time: string; done: boolean; isCurrent: boolean };
 
-function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: AppInfo | null, isCreator: boolean, t: TFn): TLEvent[] {
+function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: AppInfo | null, isCreator: boolean, t: TFn, isService: boolean, isFree: boolean): TLEvent[] {
   const base = campaign?.createdAt ?? new Date().toISOString();
   const events: TLEvent[] = [];
+  // COMPLETED is the same "work is done" point as APPROVED for timeline
+  // purposes — a paid campaign gets there via the admin's payment release, a
+  // free event lands on it the moment the business confirms. Without this,
+  // every work-stage row below (started/submitted/approved) would disappear
+  // from a completed job's timeline.
+  const workDone = ws === 'APPROVED' || ws === 'COMPLETED';
 
   events.push({
     icon: 'check-circle', title: t('activityTimeline.tlProposalAccepted'),
@@ -212,7 +248,9 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
     });
   }
 
-  if (paid || ws !== 'NONE') {
+  // No escrow on a free event — nothing was ever secured, so this step is
+  // dropped instead of claiming a payment that doesn't exist.
+  if (!isFree && (paid || ws !== 'NONE')) {
     events.unshift({
       icon: 'lock', title: t('activityTimeline.tlPaymentSecured'),
       desc: isCreator ? t('activityTimeline.tlPaymentSecuredDescCreator') : t('activityTimeline.tlPaymentSecuredDescBusiness'),
@@ -232,29 +270,55 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
     });
   }
 
-  if (ws === 'IN_PROGRESS' || ws === 'SUBMITTED' || ws === 'APPROVED') {
+  if (ws === 'IN_PROGRESS' || ws === 'SUBMITTED' || workDone) {
     events.unshift({
-      icon: 'play-circle', title: t('activityTimeline.tlWorkStarted'),
+      icon: 'play-circle', title: isService ? t('activityTimeline.tlServiceStarted') : t('activityTimeline.tlWorkStarted'),
       desc: isCreator ? t('activityTimeline.tlWorkStartedDescCreator') : t('activityTimeline.tlWorkStartedDescBusiness'),
       time: fmtNPT(campaign?.paidAt ?? base),
-      done: ws === 'SUBMITTED' || ws === 'APPROVED',
+      done: ws === 'SUBMITTED' || workDone,
       isCurrent: ws === 'IN_PROGRESS',
     });
   }
 
-  if (ws === 'SUBMITTED' || ws === 'APPROVED') {
-    events.unshift({
+  if (ws === 'SUBMITTED' || workDone) {
+    events.unshift(isService ? {
+      icon: 'check-circle', title: t('activityTimeline.tlServiceCompleted'),
+      desc: isCreator ? t('activityTimeline.tlServiceCompletedDescCreator') : t('activityTimeline.tlServiceCompletedDescBusiness'),
+      time: fmtNPT(app?.submittedAt ?? base),
+      done: workDone, isCurrent: ws === 'SUBMITTED',
+    } : {
       icon: 'cloud-upload-alt', title: t('activityTimeline.tlDeliverablesUploaded'),
       desc: isCreator ? t('activityTimeline.tlDeliverablesUploadedDescCreator') : t('activityTimeline.tlDeliverablesUploadedDescBusiness'),
       time: fmtNPT(app?.submittedAt ?? base),
-      done: ws === 'APPROVED', isCurrent: ws === 'SUBMITTED',
+      done: workDone, isCurrent: ws === 'SUBMITTED',
     });
   }
 
-  if (ws === 'APPROVED') {
+  if (ws === 'DISPUTED') {
     events.unshift({
+      icon: 'exclamation-triangle', title: t('activityTimeline.tlIssueReported'),
+      desc: isCreator ? t('activityTimeline.tlIssueReportedDescCreator') : t('activityTimeline.tlIssueReportedDescBusiness'),
+      time: fmtNPT(app?.revisionRequestedAt ?? base), done: true, isCurrent: true,
+    });
+  }
+
+  if (workDone) {
+    // The paid variants of these descriptions all talk about the admin
+    // releasing payment — on a free event approval is simply the end of the
+    // collaboration, so both roles get their own copy.
+    events.unshift(isService ? {
+      icon: 'check-double', title: t('activityTimeline.tlCompletionConfirmed'),
+      desc: isFree
+        ? (isCreator ? t('activityTimeline.tlFreeCompletedDescCreator') : t('activityTimeline.tlFreeCompletedDescBusiness'))
+        : isCreator
+        ? t('activityTimeline.tlCompletionConfirmedDescCreator')
+        : t('activityTimeline.tlCompletionConfirmedDescBusiness'),
+      time: fmtNPT(app?.submittedAt ?? base), done: true, isCurrent: false,
+    } : {
       icon: 'check-double', title: t('activityTimeline.tlWorkApproved'),
-      desc: isCreator
+      desc: isFree
+        ? (isCreator ? t('activityTimeline.tlFreeCompletedDescCreator') : t('activityTimeline.tlFreeCompletedDescBusiness'))
+        : isCreator
         ? t('activityTimeline.tlWorkApprovedDescCreator')
         : t('activityTimeline.tlWorkApprovedDescBusiness'),
       time: fmtNPT(app?.submittedAt ?? base), done: true, isCurrent: false,
@@ -303,9 +367,9 @@ function ProgressTracker({ current, scrollRef, labels }: { current: number; scro
 
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
-function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, onPay, onStartWork, onUpload, onReview, onApprove, onRevision, onViewSubmission }: {
-  ws: WS; paid: boolean; paymentStatus: PS; isCreator: boolean; isFree: boolean; submitting: boolean;
-  onPay: () => void; onStartWork: () => void; onUpload: () => void;
+function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, submitting, onPay, onStartWork, onUpload, onMarkComplete, onReview, onApprove, onRevision, onViewSubmission }: {
+  ws: WS; paid: boolean; paymentStatus: PS; isCreator: boolean; isFree: boolean; isService: boolean; submitting: boolean;
+  onPay: () => void; onStartWork: () => void; onUpload: () => void; onMarkComplete: () => void;
   onReview: () => void; onApprove: () => void; onRevision: () => void; onViewSubmission: () => void;
 }) {
   const C = useAppColors();
@@ -375,7 +439,24 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
     </View>
   );
 
-  // Creator: upload deliverables
+  // Creator: SERVICE jobs skip the upload step entirely — no file/link UI,
+  // just a direct "mark as completed" action (§24 — no upload screen).
+  if (ws === 'IN_PROGRESS' && isCreator && isService) return (
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-circle" solid size={20} color="#7C3AED" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acServiceInProgressTitle')}</Text>
+      </View>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acServiceInProgressSub')}</Text>
+      <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onMarkComplete} disabled={submitting}>
+        {submitting
+          ? <ActivityIndicator size="small" color="#fff" />
+          : <><FontAwesome5 name="check-circle" solid size={16} color="#fff" /><Text style={ac.btnTxt}>{t('activityTimeline.acMarkCompletedBtn')}</Text></>}
+      </Pressable>
+    </View>
+  );
+
+  // Creator: upload deliverables (DELIVERABLE jobs only)
   if (ws === 'IN_PROGRESS' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
       <View style={ac.headerRow}>
@@ -390,7 +471,31 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
     </View>
   );
 
-  // Business: review submitted work
+  // Business: SERVICE job marked complete by the provider — confirm or
+  // report an issue, no file review section (§27 — nothing was submitted).
+  if (ws === 'SUBMITTED' && !isCreator && isService) return (
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-circle" solid size={20} color="#D97706" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acServiceCompletedTitle')}</Text>
+      </View>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acServiceCompletedSub')}</Text>
+      <View style={ac.btnRow}>
+        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onRevision}>
+          <FontAwesome5 name="exclamation-triangle" solid size={15} color="#fff" />
+          <Text style={ac.btnTxt}>{t('activityTimeline.acReportIssueBtn')}</Text>
+        </Pressable>
+        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onApprove} disabled={submitting}>
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
+            <FontAwesome5 name="check-double" solid size={15} color="#fff" />
+            <Text style={ac.btnTxt}>{t('activityTimeline.acConfirmCompletionBtn')}</Text>
+          </>}
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  // Business: review submitted work (DELIVERABLE jobs only)
   if (ws === 'SUBMITTED' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
       <View style={ac.headerRow}>
@@ -417,7 +522,18 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
     </View>
   );
 
-  // Creator: awaiting review
+  // Creator: SERVICE job awaiting the client's confirmation — nothing to view.
+  if (ws === 'SUBMITTED' && isCreator && isService) return (
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingConfirmationTitle')}</Text>
+      </View>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingConfirmationSub')}</Text>
+    </View>
+  );
+
+  // Creator: awaiting review (DELIVERABLE jobs only)
   if (ws === 'SUBMITTED' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
       <View style={ac.headerRow}>
@@ -429,6 +545,33 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
         <FontAwesome5 name="eye" solid size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acViewSubmissionBtn')}</Text>
       </Pressable>
+    </View>
+  );
+
+  // Disputed (§40) — no further self-service action for either side; Kolab
+  // support reviews it. Shown before the payment-released check since a
+  // disputed job never reaches that state on its own.
+  if (ws === 'DISPUTED') return (
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#EF4444' }]}>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#FEF2F2', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="exclamation-triangle" solid size={18} color="#EF4444" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acIssueReportedTitle')}</Text>
+      </View>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{isCreator ? t('activityTimeline.acIssueReportedSubCreator') : t('activityTimeline.acIssueReportedSubBusiness')}</Text>
+    </View>
+  );
+
+  // Free event, approved/completed — terminal. Checked before the two
+  // APPROVED cards below, which both promise an admin payment release that
+  // will never come for a free event (paymentStatus stays UNPAID forever;
+  // approving one flips it straight to COMPLETED server-side).
+  if (isFree && (ws === 'APPROVED' || ws === 'COMPLETED')) return (
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acFreeCompleteTitle')}</Text>
+      </View>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{isCreator ? t('activityTimeline.acFreeCompleteCreatorSub') : t('activityTimeline.acFreeCompleteBizSub')}</Text>
     </View>
   );
 
@@ -729,6 +872,7 @@ export default function CampaignWorkspaceScreen() {
         if (myApp) {
           setApp({
             id:               myApp.id,
+            requirementId:    myApp.requirementId,
             workStatus:       myApp.workStatus,
             paymentStatus:    (myApp.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
             proposedRateRaw:  myApp.proposedRateRaw,
@@ -764,6 +908,7 @@ export default function CampaignWorkspaceScreen() {
         if (accepted) {
           setApp({
             id:               accepted.id,
+            requirementId:    accepted.requirementId,
             workStatus:       accepted.workStatus,
             paymentStatus:    (accepted.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
             proposedRateRaw:  accepted.proposedRateRaw,
@@ -896,12 +1041,32 @@ export default function CampaignWorkspaceScreen() {
     }
   }
 
+  // SERVICE jobs skip the upload modal entirely — reuses the same submitWork
+  // endpoint as the DELIVERABLE flow (it already accepts an empty body), just
+  // with no file/link payload and its own toast copy.
+  async function handleMarkComplete() {
+    if (!app) return;
+    setSubmitting(true);
+    try {
+      await campaignService.submitWork(app.id, {});
+      setApp(a => a ? { ...a, workStatus: 'SUBMITTED', submittedAt: new Date().toISOString() } : a);
+      showToast(t('activityTimeline.toastServiceCompleted'));
+    } catch (e: any) {
+      showToast(e?.message ?? t('activityTimeline.toastSubmitFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleApprove() {
     if (!app) return;
     setSubmitting(true);
     try {
       await campaignService.approveWork(app.id);
-      setApp(a => a ? { ...a, workStatus: 'APPROVED' } : a);
+      // Approving a free event completes it outright server-side (there's no
+      // payment release left to wait on) — mirror that locally so a refetch
+      // doesn't change what this screen shows.
+      setApp(a => a ? { ...a, workStatus: campaign?.campaignType === 'OPEN_EVENT' ? 'COMPLETED' : 'APPROVED' } : a);
       showToast(t('activityTimeline.toastWorkApproved'));
     } catch (e: any) {
       showToast(e?.message ?? t('activityTimeline.toastApproveFailed'));
@@ -918,6 +1083,24 @@ export default function CampaignWorkspaceScreen() {
       setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS' } : a);
       setRevisionNote(''); setShowRevision(false);
       showToast(t('activityTimeline.toastRevisionRequested'));
+    } catch (e: any) {
+      showToast(e?.message ?? t('activityTimeline.toastRevisionFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // §40 dispute flow — reuses the same "revision" BottomSheet UI (title/copy
+  // already branch on isService), but calls the dedicated report-issue
+  // endpoint so the job flags DISPUTED instead of silently reopening.
+  async function handleReportIssue() {
+    if (!app || !revisionNote.trim()) return;
+    setSubmitting(true);
+    try {
+      await campaignService.reportIssue(app.id, revisionNote);
+      setApp(a => a ? { ...a, workStatus: 'DISPUTED' } : a);
+      setRevisionNote(''); setShowRevision(false);
+      showToast(t('activityTimeline.toastIssueReported'));
     } catch (e: any) {
       showToast(e?.message ?? t('activityTimeline.toastRevisionFailed'));
     } finally {
@@ -992,8 +1175,18 @@ export default function CampaignWorkspaceScreen() {
   const ws   = app?.workStatus ?? 'NONE';
   const isFreeEvent = campaign?.campaignType === 'OPEN_EVENT';
   const paid = isFreeEvent || app?.paymentStatus === 'PAID' || app?.paymentStatus === 'RELEASED';
-  const pIdx = progressIdx(ws, paid, app?.paymentStatus);
-  const progressLabels = getProgressLabels(t);
+  const pIdx = progressIdx(ws, paid, app?.paymentStatus, isFreeEvent);
+  // A multi-role campaign's own requirement carries its own completionType
+  // (a photographer role can be DELIVERABLE while a DJ role on the same
+  // campaign is SERVICE); the simple single-category case falls back to the
+  // campaign-level field. Null (not yet classified) behaves exactly like the
+  // existing DELIVERABLE flow — no behavior change for campaigns predating
+  // completionType.
+  const jobCompletionType = app?.requirementId
+    ? (campaign?.requirements?.find(r => r.id === app.requirementId)?.completionType ?? null)
+    : (campaign?.completionType ?? null);
+  const isService = jobCompletionType === 'SERVICE';
+  const progressLabels = getProgressLabels(t, isService, isFreeEvent);
 
   const crFee = app?.proposedRateRaw ?? 0;
   const pfFee = Math.round(crFee * 0.05);
@@ -1002,7 +1195,7 @@ export default function CampaignWorkspaceScreen() {
 
   const deliverables   = parseDeliverables(campaign?.deliverables);
   const submittedUrls  = parseUrls(app?.deliverableUrls);
-  const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator, t);
+  const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator, t, isService, isFreeEvent);
 
   const summaryImage = campaign?.featureImageUrl
     || getTemplateImage(campaign?.template, campaign?.categoryKey ?? campaign?.category)
@@ -1041,8 +1234,13 @@ export default function CampaignWorkspaceScreen() {
           onChange={(k) => setActiveTab(k as typeof activeTab)}
           tabs={[
             { key: 'overview',     label: t('activityTimeline.tabOverview') },
-            { key: 'deliverables', label: t('activityTimeline.tabDeliverables') },
-            { key: 'payment',      label: t('activityTimeline.tabPayment') },
+            // SERVICE jobs have no files/links to review — the tab has
+            // nothing to show (§24 — no upload screen for these roles).
+            ...(isService ? [] : [{ key: 'deliverables', label: t('activityTimeline.tabDeliverables') }]),
+            // Free events have no payment at all — the tab would only ever
+            // show a Rs. 0 breakdown (same reason Agreement shows a
+            // not-applicable note instead of a contract).
+            ...(isFreeEvent ? [] : [{ key: 'payment', label: t('activityTimeline.tabPayment') }]),
             { key: 'agreement',    label: t('activityTimeline.tabAgreement') },
             { key: 'activity',     label: t('activityTimeline.tabActivity') },
           ]}
@@ -1100,7 +1298,9 @@ export default function CampaignWorkspaceScreen() {
           <View style={[s.summaryFooter, { borderTopColor: '#F3F4F6' }]}>
             {[
               { label: t('activityTimeline.footerProposalDate'), value: fmtDate(campaign?.createdAt) },
-              { label: t('activityTimeline.footerPayment'),       value: paid ? t('activityTimeline.footerPaymentPaid') : t('activityTimeline.footerPaymentPending'), color: paid ? '#16A34A' : '#EF4444' },
+              // `paid` is forced true for a free event (nothing to pay), so
+              // it would otherwise read "Paid" — say what it actually is.
+              { label: t('activityTimeline.footerPayment'),       value: isFreeEvent ? t('activityTimeline.footerPaymentFree') : paid ? t('activityTimeline.footerPaymentPaid') : t('activityTimeline.footerPaymentPending'), color: isFreeEvent ? '#059669' : paid ? '#16A34A' : '#EF4444' },
               { label: t('activityTimeline.footerCampaignId'),   value: (campaignId ?? '').slice(0, 8) + '…' },
             ].map((item, idx) => (
               <View key={idx} style={s.footerItem}>
@@ -1128,10 +1328,11 @@ export default function CampaignWorkspaceScreen() {
 
         {/* ── Current Action Card ── */}
         <ActionCard
-          ws={ws} paid={paid} paymentStatus={app?.paymentStatus ?? 'UNPAID'} isCreator={isCreator} isFree={isFreeEvent} submitting={submitting}
+          ws={ws} paid={paid} paymentStatus={app?.paymentStatus ?? 'UNPAID'} isCreator={isCreator} isFree={isFreeEvent} isService={isService} submitting={submitting}
           onPay={() => setShowPay(true)}
           onStartWork={handleStartWork}
           onUpload={() => setShowUpload(true)}
+          onMarkComplete={handleMarkComplete}
           onReview={() => setShowReview(true)}
           onApprove={handleApprove}
           onRevision={() => setShowRevision(true)}
@@ -1765,9 +1966,9 @@ export default function CampaignWorkspaceScreen() {
       </BottomSheet>
 
       {/* ── Request Revision Modal ── */}
-      <BottomSheet visible={showRevision} onClose={() => setShowRevision(false)} title={t('activityTimeline.modalRevisionTitle')}>
-        <Text style={sh.sub}>{t('activityTimeline.modalRevisionSub')}</Text>
-        {(app?.deliverableVideos ?? []).length > 0 && (
+      <BottomSheet visible={showRevision} onClose={() => setShowRevision(false)} title={isService ? t('activityTimeline.modalIssueTitle') : t('activityTimeline.modalRevisionTitle')}>
+        <Text style={sh.sub}>{isService ? t('activityTimeline.modalIssueSub') : t('activityTimeline.modalRevisionSub')}</Text>
+        {!isService && (app?.deliverableVideos ?? []).length > 0 && (
           <View style={[sh.infoBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA', marginTop: 12 }]}>
             <FontAwesome5 name="info-circle" solid size={15} color="#D97706" />
             <Text style={[sh.infoTxt, { color: '#D97706' }]}>{t('activityTimeline.modalRevisionVideoNotice')}</Text>
@@ -1775,15 +1976,15 @@ export default function CampaignWorkspaceScreen() {
         )}
         <View style={{ marginVertical: 14 }}>
           <TextInputWithLabel
-            label={t('activityTimeline.modalRevisionNotesLabel')}
-            placeholder={t('activityTimeline.modalRevisionNotesPlaceholder')}
+            label={isService ? t('activityTimeline.modalIssueNotesLabel') : t('activityTimeline.modalRevisionNotesLabel')}
+            placeholder={isService ? t('activityTimeline.modalIssueNotesPlaceholder') : t('activityTimeline.modalRevisionNotesPlaceholder')}
             value={revisionNote}
             onChangeText={setRevisionNote}
             multiline
           />
         </View>
-        <Pressable style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1, shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleRevision} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalRevisionSendBtn')}</Text>}
+        <Pressable style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1, shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={isService ? handleReportIssue : handleRevision} disabled={submitting}>
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{isService ? t('activityTimeline.modalIssueSendBtn') : t('activityTimeline.modalRevisionSendBtn')}</Text>}
         </Pressable>
       </BottomSheet>
 

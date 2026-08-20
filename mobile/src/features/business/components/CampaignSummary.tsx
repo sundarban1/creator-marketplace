@@ -172,10 +172,12 @@ export function PreviewRow({
   value: string;
   colors: ReturnType<typeof useAppColors>;
   last?: boolean;
-  // Optional — when set, the row becomes tappable (a trailing chevron
-  // appears) for the "Create Opportunity" draft screen's tap-to-edit
-  // fields. Every other caller (legacy Confirm, etc.) leaves this unset and
-  // gets the original plain, read-only row.
+  // Optional — when set, the row becomes tappable (a trailing pencil
+  // appears) for the create/edit screens' tap-to-edit fields. Every other
+  // caller (legacy Confirm, etc.) leaves this unset and gets the original
+  // plain, read-only row. Every tappable row here opens an edit sheet or
+  // picker rather than navigating away, so the affordance is always a
+  // pencil — a chevron would promise a screen transition that never happens.
   onPress?: () => void;
 }) {
   const C = colors;
@@ -188,7 +190,7 @@ export function PreviewRow({
         <Text style={[s.summaryLabel, { width: undefined, color: C.textSecondary }]}>{label}</Text>
       </View>
       <Text style={[s.summaryValue, { color: C.text, flex: onPress ? 1 : undefined }]} numberOfLines={3}>{value}</Text>
-      {onPress && <FontAwesome5 name="chevron-right" solid size={12} color={C.textSecondary} />}
+      {onPress && <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />}
     </View>
   );
   return onPress ? <Pressable onPress={onPress} hitSlop={4}>{content}</Pressable> : content;

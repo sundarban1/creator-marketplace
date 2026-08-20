@@ -25,11 +25,11 @@ import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import {
-  DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
+  DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables, completionLabel,
 } from '@/features/business/constants/campaignForm';
 import {
   SectionCard, ChipGroup, ChipMultiGroup, BudgetTierPicker, Stepper,
-  DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
+  DeliverablesCounterList, HashtagEditor, FeaturedToggle, CompletionTypePicker, sc,
 } from '@/features/business/components/CampaignFormControls';
 import { ListingHeroCard, PreviewRow } from '@/features/business/components/CampaignSummary';
 
@@ -142,6 +142,10 @@ type EditForm = {
   location: string;
   locationType: 'ONSITE' | 'REMOTE';
   isFeatured: boolean;
+  // Whether the provider completes the job in person (SERVICE — a DJ, an MC)
+  // or by submitting a digital output for review (DELIVERABLE). Null on
+  // campaigns created before this field existed. Locked once proposals exist.
+  completionType: 'SERVICE' | 'DELIVERABLE' | null;
   // OPEN_EVENT fields
   eventDate: Date | null;
   venue: string;
@@ -177,10 +181,10 @@ export default function EditCampaignScreen() {
   // Location/Venue use LocationSearchModal above instead; Deadline/Event Date
   // use the existing calOpen/eventCalOpen sheets below — same split as
   // create-campaign.tsx's Publish screen.
-  const [editingField, setEditingField] = useState<'title' | 'description' | 'image' | 'category' | 'hashtags' | 'people' | 'capacity' | 'benefits' | null>(null);
+  const [editingField, setEditingField] = useState<'title' | 'description' | 'image' | 'category' | 'hashtags' | 'people' | 'budget' | 'capacity' | 'benefits' | 'completionType' | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
     title: '', description: '', featureImageUrl: null, template: '',
-    deliverables: DEFAULT_DELIVERABLES, hashtags: [], creatorsNeeded: '1',
+    deliverables: DEFAULT_DELIVERABLES, hashtags: [], creatorsNeeded: '1', completionType: null,
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', locationType: 'ONSITE', isFeatured: false,
     eventDate: null, venue: '', capacity: '20', benefits: [],
@@ -264,6 +268,7 @@ export default function EditCampaignScreen() {
           location:     c.location ?? '',
           locationType: c.locationType ?? 'ONSITE',
           isFeatured:   c.isFeatured,
+          completionType: c.completionType ?? null,
           eventDate:    c.eventDate ? new Date(c.eventDate) : null,
           venue:        c.venue ?? '',
           capacity:     String(c.capacity ?? 20),
@@ -332,7 +337,10 @@ export default function EditCampaignScreen() {
           // Locked by the backend once proposals exist — see the PAID_CAMPAIGN
           // branch below for the full explanation of why this has to be
           // conditionally omitted rather than sent as false/unchanged.
-          ...(hasProposals ? {} : { isFeatured: editForm.isFeatured }),
+          ...(hasProposals ? {} : {
+            isFeatured: editForm.isFeatured,
+            ...(editForm.completionType ? { completionType: editForm.completionType } : {}),
+          }),
         });
       } else {
         await campaignService.update(campaign!.id, {
@@ -355,6 +363,7 @@ export default function EditCampaignScreen() {
             location:     editForm.locationType === 'REMOTE' ? null : editForm.location.trim(),
             locationType: editForm.locationType,
             isFeatured:   editForm.isFeatured,
+            ...(editForm.completionType ? { completionType: editForm.completionType } : {}),
           }),
         });
       }
@@ -417,24 +426,15 @@ export default function EditCampaignScreen() {
         />
         {editErrors.title ? <Text style={s.errTxt}>{editErrors.title}</Text> : null}
 
-        <SectionCard
-          title={t('campaignDetail.fieldStatus')}
-          sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
-          colors={C}>
-          <ChipGroup
-            options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
-            value={editForm.status === 'expired'
-              ? t('campaignDetail.statusExpired')
-              : t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
-            onChange={(label) => {
-              if (hasProposals || editForm.status === 'expired') return;
-              const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
-              if (opt) updateEdit('status', opt.value);
-            }}
-            colors={C}
-            disabled={hasProposals || editForm.status === 'expired'}
-          />
-        </SectionCard>
+        <Pressable
+          style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 6 }]}
+          onPress={() => setEditingField('description')}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[sc.title, { color: C.text }]}>{t('campaignDetail.fieldDescription')}</Text>
+            <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />
+          </View>
+          <Text style={[s.pillCardBody, { color: C.textSecondary }]} numberOfLines={4}>{editForm.description || '—'}</Text>
+        </Pressable>
 
         {isOpenEvent ? (
           <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 2 }]}>
@@ -459,6 +459,15 @@ export default function EditCampaignScreen() {
               value={editForm.deadline ? fmtDate(editForm.deadline) : '—'}
               colors={C}
               onPress={() => setCalOpen(true)}
+            />
+            {/* Fixed for every free event — attend and post about it — so
+                there is nothing to choose or edit here, unlike the paid
+                campaign's Service/Deliverable classification below. */}
+            <PreviewRow
+              icon="share-alt"
+              label={t('createOpportunity.completionLabel')}
+              value={t('campaignDetail.freeCompletionTitle')}
+              colors={C}
             />
             <PreviewRow
               icon="users"
@@ -491,6 +500,20 @@ export default function EditCampaignScreen() {
               label={t('createEvent.confirmSectionBudget')}
               value={`Rs. ${(Number(editForm.budgetMin) || 0).toLocaleString()} – ${(Number(editForm.budgetMax) || 0).toLocaleString()}`}
               colors={C}
+              // Multi-role campaigns show this as an aggregate across
+              // per-role budgets (locked, same as the roles list below) —
+              // only single-role campaigns without proposals can edit it here.
+              onPress={hasProposals || (campaign.requirements && campaign.requirements.length > 0) ? undefined : () => setEditingField('budget')}
+            />
+            <PreviewRow
+              icon={editForm.completionType === 'SERVICE' ? 'handshake' : 'cloud-upload-alt'}
+              label={t('createOpportunity.completionLabel')}
+              value={completionLabel(editForm.completionType, t)?.label ?? '—'}
+              colors={C}
+              // Same lock as budget/location: changing this after providers
+              // have applied would move the goalposts on what they signed up
+              // to hand over, so the backend rejects it once proposals exist.
+              onPress={hasProposals ? undefined : () => setEditingField('completionType')}
             />
             <PreviewRow
               icon="calendar-alt"
@@ -506,16 +529,6 @@ export default function EditCampaignScreen() {
           <Text style={s.errTxt}>{editErrors.eventDate || editErrors.deadline || editErrors.venue || editErrors.location || editErrors.budgetMin || editErrors.budgetMax}</Text>
         ) : null}
         {!isOpenEvent && hasProposals && <Text style={s.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
-
-        <Pressable
-          style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 6 }]}
-          onPress={() => setEditingField('description')}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={[sc.title, { color: C.text }]}>{t('campaignDetail.fieldDescription')}</Text>
-            <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />
-          </View>
-          <Text style={[s.pillCardBody, { color: C.textSecondary }]} numberOfLines={4}>{editForm.description || '—'}</Text>
-        </Pressable>
 
         {isOpenEvent ? (
           <Pressable
@@ -598,6 +611,25 @@ export default function EditCampaignScreen() {
           </>
         )}
 
+        <SectionCard
+          title={t('campaignDetail.fieldStatus')}
+          sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
+          colors={C}>
+          <ChipGroup
+            options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
+            value={editForm.status === 'expired'
+              ? t('campaignDetail.statusExpired')
+              : t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
+            onChange={(label) => {
+              if (hasProposals || editForm.status === 'expired') return;
+              const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
+              if (opt) updateEdit('status', opt.value);
+            }}
+            colors={C}
+            disabled={hasProposals || editForm.status === 'expired'}
+          />
+        </SectionCard>
+
         {/* ── Featured ── */}
         <View>
           <FeaturedToggle
@@ -649,6 +681,8 @@ export default function EditCampaignScreen() {
           : editingField === 'category' ? t('campaignDetail.fieldCategory')
           : editingField === 'hashtags' ? t('campaignDetail.sectionHashtags')
           : editingField === 'people' ? t('createOpportunity.peopleNeededTitle')
+          : editingField === 'budget' ? t('createEvent.confirmSectionBudget')
+          : editingField === 'completionType' ? t('createOpportunity.completionLabel')
           : editingField === 'capacity' ? t('campaignDetail.fieldCapacity')
           : editingField === 'benefits' ? t('campaignDetail.sectionWhatYouGet')
           : ''
@@ -709,6 +743,27 @@ export default function EditCampaignScreen() {
             />
             <Text style={[s.label, { color: C.text }]}>{t('createEvent.secDeliverablesTitle')}</Text>
             <DeliverablesCounterList value={editForm.deliverables} onChange={(v) => updateEdit('deliverables', v)} colors={C} t={t} disabled={hasProposals} />
+            {hasProposals && <Text style={s.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
+          </View>
+        )}
+        {editingField === 'budget' && (
+          <BudgetTierPicker
+            budgetMin={Number(editForm.budgetMin) || 0}
+            budgetMax={Number(editForm.budgetMax) || 0}
+            onChange={(min, max) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); }}
+            colors={C}
+            error={editErrors.budgetMin || editErrors.budgetMax}
+          />
+        )}
+        {editingField === 'completionType' && (
+          <View style={{ gap: 10 }}>
+            <CompletionTypePicker
+              value={editForm.completionType}
+              reason=""
+              onChange={(v) => updateEdit('completionType', v)}
+              colors={C}
+              t={t}
+            />
             {hasProposals && <Text style={s.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
           </View>
         )}

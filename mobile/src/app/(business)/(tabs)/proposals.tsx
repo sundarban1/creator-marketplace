@@ -23,7 +23,7 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type Proposal = {
@@ -98,7 +98,14 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
 // Mirrors the stage logic in activity-timeline.tsx so the card's status always
 // agrees with the timeline (workStatus alone isn't enough — APPROVED needs
 // paymentStatus to tell "awaiting release" from "released" from "completed").
-function workspaceBtnConfig(ws: WS | null, paymentStatus: PS, t: TFn) {
+function workspaceBtnConfig(ws: WS | null, paymentStatus: PS, t: TFn, isFree: boolean) {
+  // A reported issue (see reportIssue) parks the job outside the normal flow
+  // until Kolab support resolves it.
+  if (ws === 'DISPUTED') return { label: t('proposal.business.workspaceIssueLabel'), sub: t('proposal.business.workspaceIssueSub'), color: '#EF4444', icon: 'exclamation-triangle' as const };
+  // A free event has no work stage at all — approving a creator is the whole
+  // flow — so it never reaches any of the progress/payment stages below. The
+  // button is just a way into the approved list.
+  if (isFree) return { label: t('proposal.business.workspaceFreeApprovedLabel'), sub: t('proposal.business.workspaceFreeApprovedSub'), color: '#16A34A', icon: 'users' as const };
   if (ws === 'COMPLETED') return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'money-bill-alt' as const };
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED')
                           return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'money-bill-alt' as const };
@@ -190,7 +197,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
 
       {/* Dynamic project status button for accepted campaigns */}
       {item.accepted > 0 && (() => {
-        const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus, t);
+        const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus, t, isFree);
         return (
           <Pressable
             style={({ pressed }) => [

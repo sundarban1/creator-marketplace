@@ -45,6 +45,8 @@ export interface AiRequirementDraft {
   // Free-text brief of what this role should do — only meaningful for
   // non-Content-Creator roles (Content Creator roles use `deliverables` instead).
   description: string;
+  completionType: 'SERVICE' | 'DELIVERABLE';
+  completionReason: string;
 }
 
 export interface AiCampaignDraft {
@@ -66,6 +68,8 @@ export interface AiCampaignDraft {
   sampleCaption: string;
   approvalRequirements: string;
   location: string | null;
+  completionType: 'SERVICE' | 'DELIVERABLE';
+  completionReason: string;
   needsInput: string[];
   aiSuggestedCategories: string[];
   aiSuggestedPlatforms: string[];
@@ -86,6 +90,8 @@ export interface AiEventDraft {
   expectedContent: string;
   capacity: number;
   location: string | null;
+  completionType: 'SERVICE' | 'DELIVERABLE';
+  completionReason: string;
   needsInput: string[];
   aiSuggestedCategories: string[];
   aiSuggestedPlatforms: string[];
@@ -151,6 +157,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     deadline:     api.deadline,
     contentType:  api.contentType,
     proposals:    api._count?.applications ?? 0,
+    recentProposals: api.recentProposals,
     isNew:        isNewCampaign(api.createdAt),
     isFeatured:   api.isFeatured,
     status:       mapStatus(api.status),
@@ -179,6 +186,8 @@ export function toCampaign(api: ApiCampaign): Campaign {
     aiSuggestedPlatforms:  api.aiSuggestedPlatforms ?? [],
     distanceKm:            api.distanceKm,
     requirements:          api.requirements,
+    completionType:   api.completionType ?? null,
+    completionReason: api.completionReason ?? null,
   };
 }
 
@@ -412,6 +421,11 @@ export const campaignService = {
     venue?: string | null;
     benefits?: string[];
     eventStatus?: 'OPEN' | 'FULL' | 'CLOSED';
+    // Locked by the backend once proposals exist (it decides whether the
+    // provider is ever asked to upload anything) — only send it while the
+    // edit screen still allows changing it.
+    completionType?: 'SERVICE' | 'DELIVERABLE';
+    completionReason?: string;
   }): Promise<void> {
     await request('PUT', `/api/campaigns/${id}`, {
       ...data,
@@ -428,7 +442,7 @@ export const campaignService = {
     proposals: Array<{
       id: string;
       status: 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
-      workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+      workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
       // The application's own payment status — distinct from campaign.paymentStatus,
       // which tracks the campaign record itself and isn't updated by the per-application
       // pay/release flow. Use this one to know if THIS creator's payment was released.
@@ -462,7 +476,7 @@ export const campaignService = {
       proposals: res.data.map((a) => ({
         id: a.id,
         status: a.status.toLowerCase() as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired',
-        workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
+        workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED',
         paymentStatus: (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
         coverLetter: a.coverLetter ?? '',
@@ -627,6 +641,10 @@ export const campaignService = {
     await request('PUT', `/api/campaigns/applications/${appId}/request-revision`, { note });
   },
 
+  async reportIssue(appId: string, reason: string): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/report-issue`, { reason });
+  },
+
   async startWork(appId: string): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/start`);
   },
@@ -657,7 +675,7 @@ export const campaignService = {
     proposedRateRaw: number;
     coverLetter:     string;
     createdAt:       string;
-    workStatus:      'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+    workStatus:      'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
     submittedAt:     string | null;
     deliverableUrls: string | null;
     deliverableVideos: DeliverableVideo[];
@@ -668,6 +686,9 @@ export const campaignService = {
     workNote:        string | null;
     revisionRequestedAt: string | null;
     revisionNotes:   { note: string; createdAt: string }[];
+    // Which role of a multi-role campaign this application is for — null
+    // for the simple single-category campaigns every existing campaign uses.
+    requirementId:   string | null;
   }>> {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
@@ -678,6 +699,7 @@ export const campaignService = {
       creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
       workNote?: string | null; revisionRequestedAt?: string | null;
       revisionNotes?: { note: string; createdAt: string }[];
+      requirementId?: string | null;
     }>>('GET', `/api/campaigns/${campaignId}/applications`);
     return res.data.map((a) => ({
       id:              a.id,
@@ -686,7 +708,7 @@ export const campaignService = {
       proposedRateRaw: a.proposedRate,
       coverLetter:     a.coverLetter ?? '',
       createdAt:       a.createdAt,
-      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
+      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED',
       submittedAt:     a.submittedAt ?? null,
       deliverableUrls: a.deliverableUrls ?? null,
       deliverableVideos: a.deliverableVideos ?? [],
@@ -697,6 +719,7 @@ export const campaignService = {
       workNote:        a.workNote ?? null,
       revisionRequestedAt: a.revisionRequestedAt ?? null,
       revisionNotes:   a.revisionNotes ?? [],
+      requirementId:   a.requirementId ?? null,
     }));
   },
 
@@ -717,7 +740,7 @@ export const campaignService = {
       coverLetter:      string;
       proposedRate:     string;
       proposedRateRaw:  number;
-      workStatus:       'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+      workStatus:       'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
       campaignType:     'PAID_CAMPAIGN' | 'OPEN_EVENT';
       paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
       paidAt:           string | null;
@@ -773,7 +796,7 @@ export const campaignService = {
         coverLetter:     a.coverLetter,
         proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
         proposedRateRaw: a.proposedRate,
-        workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
+        workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED',
         campaignType:    (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
         paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,

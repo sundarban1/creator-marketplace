@@ -59,7 +59,7 @@ export default function HomeScreen() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
-  const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }>>([]);
+  const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work'; title: string }>>([]);
 
   // ── Nearby Opportunities ──
   const [nearbyCampaigns, setNearbyCampaigns] = useState<Campaign[]>([]);
@@ -168,7 +168,7 @@ export default function HomeScreen() {
 
       // Same `status: 'ACCEPTED'` fetch above already has everything needed
       // to flag actions actually waiting on the creator — no separate call.
-      const actions: Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }> = [];
+      const actions: Array<{ type: 'start_work' | 'upload_work'; title: string }> = [];
       for (const app of applications.proposals) {
         if (app.campaignType === 'PAID_CAMPAIGN') {
           if (app.paymentStatus === 'PAID' && app.workStatus === 'NONE') {
@@ -176,11 +176,9 @@ export default function HomeScreen() {
           } else if (app.paymentStatus === 'PAID' && app.workStatus === 'IN_PROGRESS') {
             actions.push({ type: 'upload_work', title: app.campaignTitle });
           }
-        } else if (app.campaignType === 'OPEN_EVENT') {
-          if (app.workStatus === 'NONE' || app.workStatus === 'IN_PROGRESS') {
-            actions.push({ type: 'event_pending', title: app.campaignTitle });
-          }
         }
+        // Free events (OPEN_EVENT) never wait on the creator: being accepted
+        // is the end of that flow — nothing to start, nothing to submit.
       }
       setPendingActions(actions);
 
@@ -203,7 +201,16 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greetingKey = hour < 12 ? 'home.greetingMorning' : hour < 17 ? 'home.greetingAfternoon' : 'home.greetingEvening';
   const displayName = (user?.name && !/^\+?\d+$/.test(user.name)) ? user.name.split(' ')[0] : '';
-  const location = profile?.city || profile?.location || '';
+  // Prefer the structured `city` field; fall back to deriving the city from
+  // the saved Places address (e.g. "Thamel, Kathmandu 44600, Nepal") rather
+  // than showing that full string — country is always the last segment
+  // (search is scoped to Nepal, see LocationSearchModal), so city is the
+  // segment right before it, with any trailing postal code stripped.
+  const location = profile?.city || (() => {
+    const parts = (profile?.location ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+    const city = parts.length >= 2 ? parts[parts.length - 2] : (parts[0] ?? '');
+    return city.replace(/\s*\d{4,6}\s*$/, '').trim();
+  })();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -245,10 +252,14 @@ export default function HomeScreen() {
           contentContainerStyle={styles.scroll}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.brinjal1} />}>
 
-          {/* Action zone — search, alerts, primary CTA and the promo banner
-              are all things demanding the creator's attention right now, so
-              they're clustered tightly (gap: md) to read as one connected
-              group rather than a stack of evenly-spaced, unrelated cards. */}
+          {/* Action zone — search, alerts and the primary CTA are all things
+              demanding the creator's attention right now, so they're
+              clustered tightly (gap: md) to read as one connected group
+              rather than a stack of evenly-spaced, unrelated cards. The
+              referral promo deliberately does NOT live here — it's the one
+              block on the page that isn't the creator's own work, so it
+              sits at the very bottom of the feed instead of wedging between
+              the CTA and the content below. */}
           <View style={styles.heroGroup}>
             {/* Search — deliberately read-only here, tapping hands off to the
                 full-screen Search page (recent/popular searches + suggestions,
@@ -279,9 +290,7 @@ export default function HomeScreen() {
                   pendingActions.length === 1
                     ? pendingActions[0]!.type === 'start_work'
                       ? t('creator.home.actionStartWork', { title: pendingActions[0]!.title })
-                      : pendingActions[0]!.type === 'upload_work'
-                        ? t('creator.home.actionUploadWork', { title: pendingActions[0]!.title })
-                        : t('creator.home.actionSubmitContent', { title: pendingActions[0]!.title })
+                      : t('creator.home.actionUploadWork', { title: pendingActions[0]!.title })
                     : t('creator.home.actionMultiple', { n: pendingActions.length })
                 }
                 onPress={() => router.push('/(creator)/(tabs)/proposals')}
@@ -317,26 +326,6 @@ export default function HomeScreen() {
               </LinearGradient>
             </Pressable>
 
-            {/* Refer a friend banner — reward/growth nudge, deliberately a
-                different color family (pink) than the attention banner above.
-                Shared PromoBanner component — see business home for the
-                identical pattern on that side. Same flush-margin override as
-                the AttentionBanner above, and for the same reason. */}
-            {!referralBannerDismissed && (() => {
-              const [prefix, suffix] = t('referral.homeBannerSub').split('{{amount}}');
-              return (
-                <PromoBanner
-                  icon="gift"
-                  title={t('referral.homeBannerTitle')}
-                  subtitlePrefix={prefix}
-                  subtitleAmount={t('referral.homeBannerAmount')}
-                  subtitleSuffix={suffix}
-                  onPress={() => router.push('/(creator)/referral')}
-                  onDismiss={() => setReferralBannerDismissed(true)}
-                  style={{ marginHorizontal: 0, marginTop: 0 }}
-                />
-              );
-            })()}
           </View>
 
           {/* Quick Actions — each tile gets its own icon color/tint (a small
@@ -514,6 +503,32 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
+
+          {/* Refer a friend banner — reward/growth nudge, deliberately a
+              different color family (pink) than the attention banner up top.
+              Last block on the page: it's the only section here that isn't
+              the creator's own work or a listing they might act on, so it
+              trails the feed rather than interrupting it. Shared PromoBanner
+              component — see business home for the identical pattern, in the
+              identical position, on that side. marginHorizontal: 0 drops the
+              component's own inset (sized for a parent without padding);
+              `scroll` already supplies the gutter, and marginTop matches the
+              xxl step every other top-level row on this screen uses. */}
+          {!referralBannerDismissed && (() => {
+            const [prefix, suffix] = t('referral.homeBannerSub').split('{{amount}}');
+            return (
+              <PromoBanner
+                icon="gift"
+                title={t('referral.homeBannerTitle')}
+                subtitlePrefix={prefix}
+                subtitleAmount={t('referral.homeBannerAmount')}
+                subtitleSuffix={suffix}
+                onPress={() => router.push('/(creator)/referral')}
+                onDismiss={() => setReferralBannerDismissed(true)}
+                style={{ marginHorizontal: 0, marginTop: SPACING.xxl }}
+              />
+            );
+          })()}
         </ScrollView>
       </MaxWidthContainer>
 

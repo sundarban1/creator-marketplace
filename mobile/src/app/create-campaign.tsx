@@ -37,11 +37,11 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabSlider } from '@/components/TabSlider';
 import { TabColors } from '@/utilities/tabColors';
 import {
-  GOAL_OPTIONS, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
+  GOAL_OPTIONS, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables, completionLabel,
 } from '@/features/business/constants/campaignForm';
 import {
   SectionCard, ChipGroup, ChipMultiGroup, BudgetTierPicker, Stepper,
-  DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
+  DeliverablesCounterList, HashtagEditor, FeaturedToggle, CompletionTypePicker, sc,
 } from '@/features/business/components/CampaignFormControls';
 import type { FormData, RequirementFormItem } from '@/features/business/types/campaignForm.types';
 import {
@@ -599,6 +599,19 @@ function RequirementCard({
         </View>
       )}
 
+      {/* Per-role completion type — a "1 DJ + 1 photographer" campaign mixes
+          SERVICE and DELIVERABLE roles, and the AI's per-role guess is exactly
+          what a brand needs to be able to correct: a DJ wrongly marked
+          DELIVERABLE would be asked to upload files that don't exist. */}
+      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createOpportunity.completionLabel')}</Text>
+      <CompletionTypePicker
+        value={item.completionType}
+        reason={item.completionReason}
+        onChange={(v) => onChange({ ...item, completionType: v, completionReason: v === item.completionType ? item.completionReason : '' })}
+        colors={C}
+        t={t}
+      />
+
       {/* Only a "Content Creator" role gets the content-piece counter — every
           other role (Model, Photographer, DJ, ...) gets a free-text brief of
           what they should actually do instead. See RequirementRoleEditor for
@@ -716,6 +729,19 @@ function RequirementRoleEditor({
         </View>
       )}
 
+      {/* Per-role completion type — a "1 DJ + 1 photographer" campaign mixes
+          SERVICE and DELIVERABLE roles, and the AI's per-role guess is exactly
+          what a brand needs to be able to correct: a DJ wrongly marked
+          DELIVERABLE would be asked to upload files that don't exist. */}
+      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createOpportunity.completionLabel')}</Text>
+      <CompletionTypePicker
+        value={item.completionType}
+        reason={item.completionReason}
+        onChange={(v) => onChange({ ...item, completionType: v, completionReason: v === item.completionType ? item.completionReason : '' })}
+        colors={C}
+        t={t}
+      />
+
       {item.categoryName === 'Content Creator' ? (
         <>
           <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqDeliverablesLabel')}</Text>
@@ -753,13 +779,16 @@ const rq = StyleSheet.create({
   budgetRangeRow: { flexDirection: 'row', gap: 10 },
   addBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 12 },
   addBtnText: { fontSize: 14, fontFamily: F.semibold },
+  // Solid confirm button that commits a drafted role from the add sheet.
+  commitBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, height: 48, marginTop: 6 },
+  commitBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
   errorText:  { fontSize: 12, color: '#EF4444', fontFamily: F.regular },
 });
 
 // ─── PeopleNeededRow (Publish-step recap — one row per role, tap to edit) ──────
 
 function PeopleNeededRow({
-  label, budget, work, onEdit, onRemove, colors, last,
+  label, budget, work, completion, onEdit, onRemove, colors, last,
 }: {
   label: string;
   budget: string;
@@ -767,6 +796,9 @@ function PeopleNeededRow({
   // description for non-Content-Creator roles, or a deliverables summary for
   // Content Creator roles. Omitted when there's nothing to show yet.
   work?: string;
+  // "Service" / "Submits deliverables" — see completionLabel. Undefined until
+  // the AI (or the business) has classified this role.
+  completion?: { label: string; isService: boolean };
   onEdit: () => void;
   onRemove?: () => void;
   colors: ReturnType<typeof useAppColors>;
@@ -779,6 +811,12 @@ function PeopleNeededRow({
         <Text style={[pn.roleLabel, { color: C.text }]} numberOfLines={1}>{label}</Text>
         <Text style={[pn.metaLabel, { color: C.textSecondary }]} numberOfLines={1}>{budget}</Text>
         {work ? <Text style={[pn.workLabel, { color: C.textSecondary }]} numberOfLines={2}>{work}</Text> : null}
+        {completion ? (
+          <View style={[pn.completionChip, { backgroundColor: completion.isService ? '#EEF2FF' : '#F0FDF4' }]}>
+            <FontAwesome5 name={completion.isService ? 'handshake' : 'cloud-upload-alt'} solid size={10} color={completion.isService ? '#4F46E5' : '#059669'} />
+            <Text style={[pn.completionChipTxt, { color: completion.isService ? '#4F46E5' : '#059669' }]}>{completion.label}</Text>
+          </View>
+        ) : null}
       </Pressable>
       {onRemove && (
         <Pressable hitSlop={8} onPress={onRemove} style={[pn.editBtn, { backgroundColor: `${C.textSecondary}1A` }]}>
@@ -797,6 +835,8 @@ const pn = StyleSheet.create({
   roleLabel: { fontSize: 14, fontFamily: F.semibold },
   metaLabel: { fontSize: 12, fontFamily: F.regular },
   workLabel: { fontSize: 12, fontFamily: F.regular, lineHeight: 16, marginTop: 1 },
+  completionChip:   { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 3, marginTop: 3 },
+  completionChipTxt:{ fontSize: 11, fontFamily: F.semibold },
   editBtn:  { width: 28, height: 28, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 });
 
@@ -1026,6 +1066,8 @@ export default function CreateCampaignScreen() {
     needsInput: [],
     aiBudgetMin: 0,
     aiBudgetMax: 0,
+    completionType: null,
+    completionReason: '',
     requirements: [],
   });
 
@@ -1123,12 +1165,17 @@ export default function CreateCampaignScreen() {
   // screens — null means none. Location uses the LocationSearchModal above
   // instead (already built, no need for a second picker); Paid's per-role
   // editing uses its own sheet instead (see editingRequirementKey below).
-  const [editingField, setEditingField] = useState<'title' | 'description' | 'category' | 'budget' | 'roles' | 'deliverables' | 'image' | 'hashtags' | 'offerings' | 'exchangeType' | 'expectedContent' | 'roleTypes' | null>(null);
+  const [editingField, setEditingField] = useState<'title' | 'description' | 'category' | 'budget' | 'roles' | 'deliverables' | 'image' | 'hashtags' | 'offerings' | 'exchangeType' | 'expectedContent' | 'roleTypes' | 'completionType' | null>(null);
   // Publish step's "People Needed" card — tap a role's pencil icon to edit
   // just its budget + content in a sheet, without leaving the summary.
   // '__single__' edits the single-role form.aiBudgetMin/Max + form.deliverables
   // instead of a specific requirements[] entry.
   const [editingRequirementKey, setEditingRequirementKey] = useState<string | '__single__' | null>(null);
+  // A role being composed by "Add another role" — it lives here, NOT in
+  // form.requirements, until the sheet's "Add role" button commits it. Adding
+  // it up-front meant dismissing the sheet (swipe-down/backdrop) left a blank
+  // default role like "Actor/Actress ×1" stuck in the campaign.
+  const [draftRequirement, setDraftRequirement] = useState<RequirementFormItem | null>(null);
 
   function handleLocationSelect(address: string, lat: number, lng: number) {
     setLocationModalOpen(false);
@@ -1199,6 +1246,8 @@ export default function CreateCampaignScreen() {
       needsInput: [],
       aiBudgetMin: 0,
       aiBudgetMax: 0,
+      completionType: null,
+      completionReason: '',
       requirements: [],
     }));
     setRequirementMode('single');
@@ -1537,6 +1586,8 @@ export default function CreateCampaignScreen() {
       aiPrompt:              form.aiGenerated ? form.aiPrompt : undefined,
       aiSuggestedCategories: form.aiGenerated ? form.aiSuggestedCategories : undefined,
       aiSuggestedPlatforms:  form.aiGenerated ? form.aiSuggestedPlatforms : undefined,
+      completionType:   form.completionType ?? undefined,
+      completionReason: form.completionType ? (form.completionReason || undefined) : undefined,
       requirements: isMultiRole
         ? form.requirements.map((r) => ({
             categoryId:  r.categoryId,
@@ -1548,6 +1599,8 @@ export default function CreateCampaignScreen() {
             format:      r.format,
             deliverables: summarizeDeliverables(r.deliverables, [], t),
             description: r.description || undefined,
+            completionType:   r.completionType ?? undefined,
+            completionReason: r.completionType ? (r.completionReason || undefined) : undefined,
           }))
         : undefined,
     };
@@ -1584,6 +1637,8 @@ export default function CreateCampaignScreen() {
       venue:          form.locationType === 'REMOTE' ? undefined : (form.venue.trim() || undefined),
       benefits:       form.benefits,
       targetAudience: form.roleTypes,
+      completionType:   form.completionType ?? undefined,
+      completionReason: form.completionType ? (form.completionReason || undefined) : undefined,
     };
   }
 
@@ -1626,6 +1681,10 @@ export default function CreateCampaignScreen() {
     if (!form.deadline)     errs.deadline = t('createEvent.errNoDeadline');
     if (requirementMode === 'single') {
       if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) errs.budget = t('createEvent.errBudgetMin');
+      // The Publish screen's Budget row opens BudgetTierPicker's custom
+      // inputs, where the two numbers are typed independently — nothing else
+      // stops a max below the min, which would publish an inverted range.
+      else if (form.aiBudgetMax < form.aiBudgetMin) errs.budget = t('createEvent.errBudgetMinMax');
     }
     return errs;
   }
@@ -1718,6 +1777,10 @@ export default function CreateCampaignScreen() {
         work: r.categoryName === 'Content Creator'
           ? summarizeDeliverables(r.deliverables, [], t)
           : (r.description || undefined),
+        // Which roles hand over files vs. just show up and perform — the
+        // single most consequential per-role setting, since it decides
+        // whether that provider is ever asked to upload anything.
+        completion: completionLabel(r.completionType, t),
         onEdit: () => setEditingRequirementKey(r.key),
         onRemove: () => update('requirements', form.requirements.filter((req) => req.key !== r.key)),
       }))
@@ -1726,6 +1789,7 @@ export default function CreateCampaignScreen() {
         label: form.template ? `${form.template} ×${form.creatorsNeeded}` : String(form.creatorsNeeded),
         budget: `Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}`,
         work: summarizeDeliverables(form.deliverables, form.goals, t) || undefined,
+        completion: completionLabel(form.completionType, t),
         onEdit: () => setEditingRequirementKey('__single__'),
         onRemove: undefined as (() => void) | undefined,
       }];
@@ -1739,13 +1803,16 @@ export default function CreateCampaignScreen() {
   // secondary — silently accepted). Location also gets a defensive local
   // check, since the Describe screen has no location field for the AI to
   // anchor a confident guess against.
-  const draftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'deadline' || f === 'location')
+  const draftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'deadline' || f === 'location' || f === 'completionType')
     || (form.locationType === 'ONSITE' && !form.location.trim());
 
   // Open Event's needsInput vocabulary is narrower (no 'deadline' — see
   // EVENT_NEEDS_INPUT_FIELDS on the backend) — category/location are the
   // "what/where" required tier here; venue is the defensive local check
   // (inviteDescribe has no venue field, mirroring the Paid flow's location check).
+  // 'completionType' is deliberately absent: a free event always completes the
+  // same way (attend + share), so the flow never asks the business for it even
+  // when the AI flags it as uncertain.
   const inviteDraftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'location')
     || (form.locationType === 'ONSITE' && !form.venue.trim());
 
@@ -2037,6 +2104,16 @@ export default function CreateCampaignScreen() {
                 onImagePress={() => setEditingField('image')}
               />
 
+              <Pressable
+                style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 6 }]}
+                onPress={() => setEditingField('description')}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[sc.title, { color: C.text }]}>{t('createOpportunity.purposeLabel')}</Text>
+                  <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />
+                </View>
+                <Text style={[s.optionDesc, { color: C.textSecondary }]}>{form.description || '—'}</Text>
+              </Pressable>
+
               {draftNeedsAttention && (
                 <Pressable
                   style={[s.remoteCard, { backgroundColor: '#FFF8E8', borderColor: '#F59E0B' }]}
@@ -2065,26 +2142,41 @@ export default function CreateCampaignScreen() {
                   colors={C}
                   onPress={form.locationType === 'REMOTE' ? undefined : () => setLocationModalOpen(true)}
                 />
-                <PreviewRow icon="money-bill-alt" label={t('createEvent.confirmSectionBudget')} value={`Rs. ${confirmBudgetRange.min.toLocaleString()} – ${confirmBudgetRange.max.toLocaleString()}`} colors={C} />
+                <PreviewRow
+                  icon="money-bill-alt"
+                  label={t('createEvent.confirmSectionBudget')}
+                  value={`Rs. ${confirmBudgetRange.min.toLocaleString()} – ${confirmBudgetRange.max.toLocaleString()}`}
+                  colors={C}
+                  // Multi-role campaigns show an aggregate spanning every
+                  // role's budget (see confirmBudgetRange) — there's no single
+                  // number to edit here, so those edit each role's own budget
+                  // from the People Needed card below instead.
+                  onPress={requirementMode === 'multiple' && form.requirements.length > 0
+                    ? undefined
+                    : () => setEditingField('budget')}
+                />
                 <PreviewRow
                   icon="calendar-alt"
                   label={t('createEvent.confirmSectionCloses')}
                   value={form.deadline ? fmtDate(form.deadline) : '—'}
                   colors={C}
                   onPress={() => setDeadlinePickerOpen(true)}
+                />
+                <PreviewRow
+                  icon={form.completionType === 'SERVICE' ? 'handshake' : 'cloud-upload-alt'}
+                  label={t('createOpportunity.completionLabel')}
+                  value={form.completionType === 'SERVICE' ? t('createOpportunity.completionServiceTitle')
+                    : form.completionType === 'DELIVERABLE' ? t('createOpportunity.completionDeliverableTitle')
+                    : '—'}
+                  colors={C}
+                  onPress={() => setEditingField('completionType')}
                   last
                 />
+                {/* Publish silently refuses on a below-minimum budget
+                    otherwise — the sheet that sets it is already closed by
+                    then, so the reason has to surface on the row itself. */}
+                {reviewErrors.budget ? <Text style={[s.errorText, { marginTop: 6 }]}>{reviewErrors.budget}</Text> : null}
               </View>
-
-              <Pressable
-                style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 6 }]}
-                onPress={() => setEditingField('description')}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[sc.title, { color: C.text }]}>{t('createOpportunity.purposeLabel')}</Text>
-                  <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />
-                </View>
-                <Text style={[s.optionDesc, { color: C.textSecondary }]}>{form.description || '—'}</Text>
-              </Pressable>
 
               {/* People Needed — one row per role: role × qty, budget, edit
                   + delete. Tap the pencil to edit category/quantity/budget/
@@ -2098,6 +2190,7 @@ export default function CreateCampaignScreen() {
                         label={row.label}
                         budget={row.budget}
                         work={row.work}
+                        completion={row.completion}
                         onEdit={row.onEdit}
                         onRemove={row.onRemove}
                         colors={C}
@@ -2127,9 +2220,13 @@ export default function CreateCampaignScreen() {
                               format: [],
                               deliverables: { ...DEFAULT_DELIVERABLES },
                               description: '',
+                              completionType: null,
+                              completionReason: '',
                             };
-                            update('requirements', [...form.requirements, next]);
-                            if (reviewErrors.requirements) setReviewErrors((e) => ({ ...e, requirements: undefined }));
+                            // Held as a draft until the sheet's "Add role"
+                            // button commits it — dismissing the sheet
+                            // discards it instead of leaving a blank role.
+                            setDraftRequirement(next);
                           }}>
                           <FontAwesome5 name="plus" size={13} color={C.brinjal1} />
                           <Text style={[rq.addBtnText, { color: C.brinjal1 }]}>{t('createEvent.reqAddRole')}</Text>
@@ -2500,6 +2597,15 @@ export default function CreateCampaignScreen() {
                   value={form.exchangeType.join(', ') || '—'}
                   colors={C}
                   onPress={() => setEditingField('exchangeType')}
+                />
+                {/* Free events complete one way only — attend and post about
+                    it — so this states the expectation instead of offering
+                    the paid flow's Service/Deliverable choice. */}
+                <PreviewRow
+                  icon="share-alt"
+                  label={t('createOpportunity.completionLabel')}
+                  value={t('campaignDetail.freeCompletionTitle')}
+                  colors={C}
                 />
                 <PreviewRow
                   icon="map-marker-alt"
@@ -2983,6 +3089,8 @@ export default function CreateCampaignScreen() {
                             format: [],
                             deliverables: { ...DEFAULT_DELIVERABLES },
                             description: '',
+                            completionType: null,
+                            completionReason: '',
                           };
                           update('requirements', [...form.requirements, next]);
                           if (reviewErrors.requirements) setReviewErrors((e) => ({ ...e, requirements: undefined }));
@@ -3396,7 +3504,16 @@ export default function CreateCampaignScreen() {
                 )}
                 <PreviewRow icon="film" label={t('createEvent.confirmSectionDeliverables')} value={summarizeDeliverables(form.deliverables, form.goals, t)} colors={C} />
                 <PreviewRow icon="money-bill-alt" label={t('createEvent.confirmSectionBudget')} value={`Rs. ${confirmBudgetRange.min.toLocaleString()} – ${confirmBudgetRange.max.toLocaleString()}`} colors={C} />
-                <PreviewRow icon="calendar-alt" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} last />
+                <PreviewRow icon="calendar-alt" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} />
+                <PreviewRow
+                  icon={form.completionType === 'SERVICE' ? 'handshake' : 'cloud-upload-alt'}
+                  label={t('createOpportunity.completionLabel')}
+                  value={form.completionType === 'SERVICE' ? t('createOpportunity.completionServiceTitle')
+                    : form.completionType === 'DELIVERABLE' ? t('createOpportunity.completionDeliverableTitle')
+                    : '—'}
+                  colors={C}
+                  last
+                />
               </View>
 
               {/* Featured toggle */}
@@ -3590,6 +3707,7 @@ export default function CreateCampaignScreen() {
           : editingField === 'exchangeType' ? t('createInvitation.exchangeLabel')
           : editingField === 'expectedContent' ? t('createInvitation.contentDetailsLabel')
           : editingField === 'roleTypes' ? t('createInvitation.invitingLabel')
+          : editingField === 'completionType' ? t('createOpportunity.completionLabel')
           : ''
         }>
         {editingField === 'title' && (
@@ -3632,8 +3750,16 @@ export default function CreateCampaignScreen() {
           <BudgetTierPicker
             budgetMin={form.aiBudgetMin}
             budgetMax={form.aiBudgetMax}
-            onChange={(min, max) => { update('aiBudgetMin', min); update('aiBudgetMax', max); }}
+            onChange={(min, max) => {
+              update('aiBudgetMin', min);
+              update('aiBudgetMax', max);
+              // Publishing re-runs validatePaidReview, which rejects a
+              // below-minimum budget — clear the stale error as soon as the
+              // number changes rather than leaving it under the row.
+              if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
+            }}
             colors={C}
+            error={reviewErrors.budget}
           />
         )}
         {editingField === 'roles' && (
@@ -3683,16 +3809,27 @@ export default function CreateCampaignScreen() {
         {editingField === 'roleTypes' && (
           <ChipMultiGroup options={ROLE_TYPE_OPTIONS} values={form.roleTypes} onChange={(v) => update('roleTypes', v)} colors={C} />
         )}
+        {editingField === 'completionType' && (
+          <CompletionTypePicker
+            value={form.completionType}
+            reason={form.completionReason}
+            onChange={(v) => setForm((f) => ({ ...f, completionType: v, completionReason: v === f.completionType ? f.completionReason : '' }))}
+            colors={C}
+            t={t}
+          />
+        )}
       </BottomSheet>
 
       {/* Publish step's "People Needed" pencil icons — edit one role's budget
           + content at a time, without leaving the summary. */}
       <BottomSheet
-        visible={editingRequirementKey !== null}
-        onClose={() => setEditingRequirementKey(null)}
-        title={editingRequirement
-          ? (editingRequirement.categoryName ? `${editingRequirement.categoryName} ×${editingRequirement.quantity}` : t('createEvent.reqRoleLabel', { n: 1 }))
-          : t('createEvent.secCreatorsNeededTitle')}>
+        visible={editingRequirementKey !== null || draftRequirement !== null}
+        onClose={() => { setEditingRequirementKey(null); setDraftRequirement(null); }}
+        title={draftRequirement
+          ? t('createEvent.reqAddRoleTitle')
+          : editingRequirement
+            ? (editingRequirement.categoryName ? `${editingRequirement.categoryName} ×${editingRequirement.quantity}` : t('createEvent.reqRoleLabel', { n: 1 }))
+            : t('createEvent.secCreatorsNeededTitle')}>
         {editingRequirementKey === '__single__' && (
           <View style={{ gap: 8 }}>
             <Text style={[rq.fieldLabel, { color: C.textSecondary, marginTop: 0 }]}>{t('createEvent.secBudgetTitle')}</Text>
@@ -3711,7 +3848,7 @@ export default function CreateCampaignScreen() {
             />
           </View>
         )}
-        {editingRequirement && (
+        {editingRequirement && !draftRequirement && (
           <RequirementRoleEditor
             item={editingRequirement}
             providerCategoryOptions={providerCategoryOptions}
@@ -3719,6 +3856,31 @@ export default function CreateCampaignScreen() {
             colors={C}
             t={t}
           />
+        )}
+        {/* Add flow — the draft only joins form.requirements when this button
+            is tapped, so a swipe-down dismiss leaves the campaign untouched. */}
+        {draftRequirement && (
+          <View style={{ gap: 8 }}>
+            <RequirementRoleEditor
+              item={draftRequirement}
+              providerCategoryOptions={providerCategoryOptions}
+              onChange={setDraftRequirement}
+              colors={C}
+              t={t}
+            />
+            <Pressable
+              style={[rq.commitBtn, { backgroundColor: C.brinjal1 }]}
+              accessibilityRole="button"
+              accessibilityLabel={t('createEvent.reqAddRoleConfirm')}
+              onPress={() => {
+                update('requirements', [...form.requirements, draftRequirement]);
+                if (reviewErrors.requirements) setReviewErrors((e) => ({ ...e, requirements: undefined }));
+                setDraftRequirement(null);
+              }}>
+              <FontAwesome5 name="plus" size={13} color="#fff" />
+              <Text style={rq.commitBtnText}>{t('createEvent.reqAddRoleConfirm')}</Text>
+            </Pressable>
+          </View>
         )}
       </BottomSheet>
 

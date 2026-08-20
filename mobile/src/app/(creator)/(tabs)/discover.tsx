@@ -28,6 +28,7 @@ import { getCached, setCached } from '@/utilities/offlineCache';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
 import { F, FONT_SIZE, RADIUS, SHADOW, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
+import { trendingScores } from '@/features/creator/data/trending';
 import type { Campaign } from '@/types';
 import ExploreBusinessesScreen, { type BusinessesExploreHandle } from '@/app/(creator)/explore-businesses';
 import ExploreCreatorPeersScreen, { type PeopleExploreHandle } from '@/app/(creator)/explore-creators';
@@ -90,7 +91,7 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
 
   const [activeSearch, setActiveSearch] = useState('');
   const [activeCategories, setActiveCategories] = useState<string[]>([]);
-  const [activeFilterTab, setActiveFilterTab] = useState('all');
+  const [activeFilterTab, setActiveFilterTab] = useState('new');
   const [sortBy, setSortBy] = useState<SortOption>('date-latest');
   const [eventType, setEventType] = useState<EventTypeFilter[]>(DEFAULT_EVENT_TYPES);
   const [tempEventType, setTempEventType] = useState<EventTypeFilter[]>(DEFAULT_EVENT_TYPES);
@@ -442,7 +443,7 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     setLocationTypeFilter('ONSITE');
     setActiveCategories([]);
     setActivePlatforms([]);
-    setActiveFilterTab('all');
+    setActiveFilterTab('new');
     void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: DEFAULT_EVENT_TYPES });
     refreshNearbyWithFilters({ category: [], platform: [] });
   }
@@ -478,6 +479,14 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
   const visibleNearbyCampaigns = nearbyCampaigns.filter((c) => (c.locationType ?? 'ONSITE') === locationTypeFilter);
 
   // Category, budget, deadline, and search are filtered server-side.
+  // Trending is a ranking, not a flag — score the whole feed once here, then
+  // the filter below keeps whatever qualified and the sort orders by it. See
+  // features/creator/data/trending.ts for the algorithm. Scored once per feed
+  // rather than per comparison, so the ordering also stays stable while the
+  // list is scrolled (it refreshes with the feed, on focus or pull-to-refresh).
+
+  const trending = trendingScores(campaigns);
+
   // Client-side: location and quick-tab filters only.
   const filteredList = campaigns.filter((c) => {
     const matchLocation =
@@ -494,7 +503,12 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
       const daysSinceCreated = (Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24);
       matchTab = daysSinceCreated <= 7;
     }
-    else if (activeFilterTab === 'trending') matchTab = c.proposals >= 3;
+    // Anything the scorer rejected (closed, full, past deadline, or nobody
+    // applying) isn't in the map at all.
+    else if (activeFilterTab === 'trending') matchTab = trending.has(c.id);
+    // "Free" == the open/free events (no payout, open sign-up) as opposed to
+    // paid campaigns — same PAID_CAMPAIGN/OPEN_EVENT split the filter sheet uses.
+    else if (activeFilterTab === 'free') matchTab = c.campaignType === 'OPEN_EVENT';
     else if (activeFilterTab === 'ending-soon') {
       const deadline = c.deadline ? new Date(c.deadline) : null;
       if (deadline && !isNaN(deadline.getTime())) {
@@ -510,6 +524,9 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     // "New" always leads with the most recently posted events regardless of
     // the Sort dropdown — that's the whole point of the tab.
     if (activeFilterTab === 'new') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    // Same reasoning for Trending: the ranking IS the tab, so it overrides the
+    // Sort dropdown rather than being re-sorted by date underneath it.
+    if (activeFilterTab === 'trending') return (trending.get(b.id) ?? 0) - (trending.get(a.id) ?? 0);
     switch (sortBy) {
       case 'date-oldest': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       case 'price-low':   return a.budgetRaw - b.budgetRaw;
@@ -558,9 +575,9 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
   }
 
   const FILTER_TABS = [
-    { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layer-group'   as const, color: TabColors.neutral.color },
     { key: 'new',          label: t('creator.home.tabNew'),         icon: 'bolt'     as const, color: TabColors.info.color },
     { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'fire'    as const, color: TabColors.danger.color },
+    { key: 'free',         label: t('creator.home.tabFree'),        icon: 'gift'    as const, color: TabColors.brand.color },
     { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'stopwatch'    as const, color: TabColors.warning.color },
   ];
 
@@ -645,9 +662,7 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
               return (
                 <View style={styles.sectionHeader}>
                   <Text style={[styles.sectionTitle, { color: C.text }]}>
-                    {activeFilterTab === 'all' ? 'All Events' :
-                     activeFilterTab === 'new' ? 'New' :
-                     activeFilterTab === 'trending' ? 'Trending' : 'Ending Soon'}
+                    {FILTER_TABS.find((tab) => tab.key === activeFilterTab)?.label ?? ''}
                     {filteredList.length > 0 ? `  ·  ${filteredList.length}` : ''}
                   </Text>
                   <RangeDropdown
