@@ -80,6 +80,16 @@ export class CampaignController {
     }
   }
 
+  async getRecommended(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const campaigns = await campaignService.getRecommendedForCreator(req.user!.id, limit, req.language);
+      paginated(res, campaigns, campaigns.length, 1, campaigns.length);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.getById(req.params.id, req.language);
@@ -174,6 +184,19 @@ export class CampaignController {
         req.user!.id
       );
       success(res, application, 'Application rejected');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async shortlistApplication(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const application = await campaignService.shortlistApplication(
+        req.params.id,
+        req.params.appId,
+        req.user!.id
+      );
+      success(res, application, 'Application shortlist status updated');
     } catch (err) {
       next(err);
     }
@@ -366,6 +389,18 @@ export class CampaignController {
       const { rating, comment } = req.body as SubmitReviewInput;
       const result = await analyticsService.submitReview(req.params.appId, req.user!.id, rating, comment);
       success(res, result, 'Review submitted', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Lets the client show "Leave a review" vs. the already-submitted review
+  // without a blind POST-then-409 — returns null rather than 404 when the
+  // caller hasn't reviewed yet, since "not reviewed" is a normal state here.
+  async getMyReview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const review = await analyticsService.getMyReview(req.params.appId, req.user!.id);
+      success(res, review, 'Review fetched');
     } catch (err) {
       next(err);
     }

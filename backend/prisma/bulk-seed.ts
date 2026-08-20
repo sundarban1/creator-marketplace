@@ -1,17 +1,17 @@
 /**
  * Bulk data generator for local load testing — NOT part of the demo seed contract.
  * Unlike loadtest-seed.ts (which only adds campaigns to existing businesses),
- * this creates everything from scratch: N creators, N businesses, and N events
- * (one per business, mixed paid campaigns / open events) so every event belongs
- * to a distinct brand. Names, bios, business names, and event copy are generated
- * from word banks so the data reads like real profiles rather than "Test #123"
- * placeholders.
+ * this creates everything from scratch: creators, businesses, and events
+ * (mixed paid campaigns / open events), distributed round-robin across
+ * businesses so the event count can exceed the business count. Names, bios,
+ * business names, and event copy are generated from word banks so the data
+ * reads like real profiles rather than "Test #123" placeholders.
  *
- * Not idempotent — re-running with the same count creates a second batch of
+ * Not idempotent — re-running with the same counts creates a second batch of
  * users with fresh emails/phones (a per-run tag is embedded in both), so it's
  * safe to re-run, it just adds more rows rather than upserting.
  *
- * Usage: npx tsx prisma/bulk-seed.ts [count=1000]
+ * Usage: npx tsx prisma/bulk-seed.ts [creators=1000] [businesses=creators] [events=businesses]
  */
 import { PrismaClient, Role } from '@prisma/client';
 import { randomUUID } from 'crypto';
@@ -164,7 +164,9 @@ const PAID_CAMPAIGN_DESC_TEMPLATES = [
 ];
 
 async function main() {
-  const N = parseInt(process.argv[2] ?? '1000', 10);
+  const creatorCount = parseInt(process.argv[2] ?? '1000', 10);
+  const businessCount = parseInt(process.argv[3] ?? String(creatorCount), 10);
+  const eventCount = parseInt(process.argv[4] ?? String(businessCount), 10);
   const runTag = Date.now();
 
   // Categories are admin-owned (see backend/prisma/seeds/categories.ts and the
@@ -181,7 +183,7 @@ async function main() {
     throw new Error('No active categories found — seed the categories table first (npx tsx prisma/seeds/categories.ts).');
   }
 
-  console.log(`Bulk-seeding ${N} creators, ${N} businesses, ${N} events (run ${runTag})...`);
+  console.log(`Bulk-seeding ${creatorCount} creators, ${businessCount} businesses, ${eventCount} events (run ${runTag})...`);
   console.log(`Using ${creatorCategories.length} creator-facing and ${businessCategories.length} business-facing categories from the database.`);
 
   const creatorPw  = await bcrypt.hash('Creator@123', 12);
@@ -197,7 +199,7 @@ async function main() {
 
   // ── Creators ──────────────────────────────────────────────────────────────
   console.log('Creating creator users...');
-  const creatorNames = Array.from({ length: N }, () => fullName());
+  const creatorNames = Array.from({ length: creatorCount }, () => fullName());
   const creatorUsers = creatorNames.map((name, i) => ({
     id: randomUUID(),
     email: `${slugify(name)}.${runTag}.${i}@example.com`,
@@ -232,7 +234,7 @@ async function main() {
 
   // ── Businesses ────────────────────────────────────────────────────────────
   console.log('Creating business users...');
-  const businessCategoryPicks = Array.from({ length: N }, () => rand(businessCategories));
+  const businessCategoryPicks = Array.from({ length: businessCount }, () => rand(businessCategories));
   const businessNames = businessCategoryPicks.map((cat) => businessName(cat));
   const businessUsers = businessNames.map((name, i) => ({
     id: randomUUID(),
@@ -263,12 +265,14 @@ async function main() {
   });
   await createManyChunked(prisma.businessProfile, businessProfiles);
 
-  // ── Events — one per business (mixed paid campaign / open event), so all N
-  //    events are posted by N distinct brands ─────────────────────────────────
+  // ── Events — distributed round-robin across businesses (mixed paid
+  //    campaign / open event), so eventCount can exceed businessCount ────────
   console.log('Creating events...');
-  const campaigns = businessProfiles.map((biz, i) => {
+  const campaigns = Array.from({ length: eventCount }, (_, i) => {
+    const bizIdx = i % businessProfiles.length;
+    const biz = businessProfiles[bizIdx]!;
     const isOpenEvent = Math.random() < 0.4;
-    const category = businessCategoryPicks[i]!;
+    const category = businessCategoryPicks[bizIdx]!;
     const brand = biz.businessName!;
     const hasCoords = Math.random() < 0.7;
     const locationLat = hasCoords ? randFloat(LAT_MIN, LAT_MAX) : null;
@@ -333,9 +337,9 @@ async function main() {
 
   const openCount = campaigns.filter((c) => c.campaignType === 'OPEN_EVENT').length;
   console.log('\nDone.');
-  console.log(`  Creators:   ${N}`);
-  console.log(`  Businesses: ${N}`);
-  console.log(`  Events:     ${N}  (${openCount} open events, ${N - openCount} paid campaigns — one per business)`);
+  console.log(`  Creators:   ${creatorCount}`);
+  console.log(`  Businesses: ${businessCount}`);
+  console.log(`  Events:     ${eventCount}  (${openCount} open events, ${eventCount - openCount} paid campaigns, across ${businessProfiles.length} businesses)`);
   console.log('  Seeded logins use password Creator@123 / Business@123 (emails are name-based, e.g. aarav.sharma.<run>.<n>@example.com)');
   process.exit(0);
 }

@@ -8,7 +8,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { BottomSheet } from '@/components/BottomSheet';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { F } from '@/utilities/constants';
 
@@ -129,15 +129,13 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
                 })}
               </View>
 
-              <Text style={[styles.label, { color: C.textSecondary, marginTop: 16 }]}>{t('wallet.amountLabel')}</Text>
-              <View style={[styles.amountRow, { backgroundColor: C.background, borderColor: C.border }]}>
-                <Text style={[styles.currencyPrefix, { color: C.textSecondary }]}>Rs.</Text>
-                <TextInput
-                  style={[styles.amountInput, { color: C.text }]}
+              <View style={{ marginTop: 16 }}>
+                <TextInputWithLabel
+                  label={`${t('wallet.amountLabel')} (Rs.)`}
+                  leftIcon="wallet"
                   value={amountText}
                   onChangeText={(v) => { setAmountText(v.replace(/[^0-9.]/g, '')); setError(''); }}
                   placeholder={t('wallet.amountPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
                   keyboardType="decimal-pad"
                   returnKeyType="done"
                   onSubmitEditing={() => Keyboard.dismiss()}
@@ -175,9 +173,6 @@ const styles = StyleSheet.create({
   methodChip: { flex: 1, alignItems: 'center', gap: 4, borderRadius: 12, borderWidth: 1.5, paddingVertical: 12 },
   methodLabel: { fontSize: 12, fontFamily: F.semibold },
 
-  amountRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 52, gap: 8 },
-  currencyPrefix: { fontSize: 15, fontFamily: F.semibold },
-  amountInput: { flex: 1, fontSize: 18, fontFamily: F.bold },
   availableHint: { fontSize: 12, fontFamily: F.regular, marginTop: 6 },
   errorText: { fontSize: 12, color: '#EF4444', fontFamily: F.medium, marginTop: 8 },
 

@@ -8,6 +8,10 @@ export const createCategorySchema = z.object({
   key:    z.string().min(1, 'Key is required').regex(/^[a-z0-9-]+$/, 'Key must be lowercase letters, numbers, and dashes only'),
   scope:  z.enum(['CREATOR', 'BUSINESS', 'BOTH']).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+  // Provider-type sub-grouping for the CREATOR taxonomy (e.g. "Content &
+  // Media", "Talent & Appearance") — not meaningful for BUSINESS-scope rows,
+  // so left optional rather than required for every category.
+  group:  z.string().max(50).optional(),
 });
 
 export const updateCategorySchema = createCategorySchema;

@@ -31,8 +31,15 @@ export const updateBusinessProfileSchema = z.object({
   locationLat: z.number().optional().nullable(),
   locationLng: z.number().optional().nullable(),
   phone: businessPhoneField,
+  province: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
+  city:     z.string().optional().nullable(),
+  area:     z.string().optional().nullable(),
+  address:  z.string().optional().nullable(),
+  locationVisibility:  z.enum(['EXACT', 'CITY', 'DISTRICT']).optional(),
   showPublicProfile:   z.boolean().optional(),
   hideContactDetails:  z.boolean().optional(),
+  hideSocialLinks:     z.boolean().optional(),
   allowDirectMessages: z.boolean().optional(),
   socialLinks: z.object({
     facebook:  z.string().optional(),
@@ -45,6 +52,14 @@ export const updateBusinessProfileSchema = z.object({
   defaultPlatforms:         z.array(z.string()).optional(),
   defaultCreatorCategories: z.array(z.string()).optional(),
   defaultBudgetRange:       z.string().optional().nullable(),
+  // "Who are you representing?" — first step of business onboarding.
+  representingType: z.enum(['ORGANIZATION', 'INDIVIDUAL']).optional(),
+  // "What is this for?" — last step of business onboarding, alongside
+  // defaultCreatorCategories.
+  purpose: z.enum(['BRAND_MARKETING', 'CONTENT_CREATION', 'EVENT', 'WEDDING', 'PHOTOSHOOT', 'PERFORMANCE', 'COLLABORATION', 'OTHER']).optional(),
+  // §26 — how big the business is, distinct from representingType (who's
+  // behind the account) and purpose (what they're here to do).
+  businessSize: z.enum(['SOLO', 'SMALL', 'MEDIUM', 'LARGE', 'AGENCY', 'ENTERPRISE']).optional(),
 });
 
 export type UpdateBusinessProfileInput = z.infer<typeof updateBusinessProfileSchema>;

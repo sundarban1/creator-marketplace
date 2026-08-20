@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,16 +15,66 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
-import { F, FONT_SIZE, RADIUS, SHADOW } from '@/utilities/constants';
+import { StepIndicator } from '@/components/StepIndicator';
+import { GroupedCategoryPicker } from '@/components/GroupedCategoryPicker';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { BackButton } from '@/components/BackButton';
 
-const TOTAL_STEPS = 2;
+// Four required steps, mirroring provider onboarding's structure: who they're
+// representing, business info (name, location), what kind of providers
+// they're looking for, then what it's for (+ industry, only when relevant) —
+// matching what's actually needed before a business can use Kolab. Everything
+// else (description, logo, socials, PAN, verification docs, ...) is collected
+// progressively later via Settings/edit-profile.
+const TOTAL_STEPS = 4;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com'];
+const MAX_INTEREST_CATEGORIES = 5;
+
+// "What are you looking for?" (interestOptions, below) widens to "CREATOR or
+// BOTH" like every useCategories('CREATOR') call, but per product decision
+// only the BOTH-scope industry rows belong on this step (not provider-type
+// rows like Photographer/Dancer). BOTH-scope is the only scope left ungrouped
+// (see the `group` field comment on the Category model), so filtering to
+// ungrouped rows is equivalent to filtering to scope === 'BOTH' without the
+// API exposing scope on ApiCategory.
+
+// Initial focus is ORGANIZATION — that's where the paid-campaign use case
+// lives — but INDIVIDUAL (sourcing providers for a personal project) is
+// offered too.
+const REPRESENTING_TYPE_OPTIONS = [
+  { key: 'ORGANIZATION' as const, icon: 'building' as const, titleKey: 'businessOnboarding.representingTypeOrganizationTitle', descKey: 'businessOnboarding.representingTypeOrganizationDesc' },
+  { key: 'INDIVIDUAL'   as const, icon: 'user'     as const, titleKey: 'businessOnboarding.representingTypeIndividualTitle',   descKey: 'businessOnboarding.representingTypeIndividualDesc' },
+];
+
+// §26 — optional, shown on the same step as representingType rather than as
+// its own step: a lightweight classifier, not worth a whole extra screen.
+type BusinessSizeKey = 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE';
+const BUSINESS_SIZE_OPTIONS: { key: BusinessSizeKey; labelKey: string }[] = [
+  { key: 'SOLO',       labelKey: 'businessOnboarding.sizeSolo' },
+  { key: 'SMALL',      labelKey: 'businessOnboarding.sizeSmall' },
+  { key: 'MEDIUM',     labelKey: 'businessOnboarding.sizeMedium' },
+  { key: 'LARGE',      labelKey: 'businessOnboarding.sizeLarge' },
+  { key: 'AGENCY',     labelKey: 'businessOnboarding.sizeAgency' },
+  { key: 'ENTERPRISE', labelKey: 'businessOnboarding.sizeEnterprise' },
+];
+
+type PurposeKey = 'BRAND_MARKETING' | 'CONTENT_CREATION' | 'EVENT' | 'WEDDING' | 'PHOTOSHOOT' | 'PERFORMANCE' | 'COLLABORATION' | 'OTHER';
+
+const PURPOSE_OPTIONS: { key: PurposeKey; icon: keyof typeof FontAwesome5.glyphMap; labelKey: string }[] = [
+  { key: 'BRAND_MARKETING',  icon: 'bullhorn',      labelKey: 'businessOnboarding.purposeBrandMarketing' },
+  { key: 'CONTENT_CREATION', icon: 'video',         labelKey: 'businessOnboarding.purposeContentCreation' },
+  { key: 'EVENT',            icon: 'calendar-alt',  labelKey: 'businessOnboarding.purposeEvent' },
+  { key: 'WEDDING',          icon: 'ring',          labelKey: 'businessOnboarding.purposeWedding' },
+  { key: 'PHOTOSHOOT',       icon: 'camera',        labelKey: 'businessOnboarding.purposePhotoshoot' },
+  { key: 'PERFORMANCE',      icon: 'theater-masks', labelKey: 'businessOnboarding.purposePerformance' },
+  { key: 'COLLABORATION',    icon: 'handshake',     labelKey: 'businessOnboarding.purposeCollaboration' },
+  { key: 'OTHER',            icon: 'ellipsis-h',    labelKey: 'businessOnboarding.purposeOther' },
+];
 
 export default function BusinessOnboardingScreen() {
   const { user, updateUser } = useAuth();
@@ -37,7 +86,14 @@ export default function BusinessOnboardingScreen() {
   // isEmailVerified: false until they add a real one — collect it here.
   const needsEmail = !user?.isEmailVerified;
 
-  // Step 1
+  // Step 1 — who they're representing (Organization / Individual)
+  const [representingType, setRepresentingType] = useState<'ORGANIZATION' | 'INDIVIDUAL' | null>(null);
+  const [representingTypeSubmitted, setRepresentingTypeSubmitted] = useState(false);
+  const [representingTypeLoading,   setRepresentingTypeLoading]   = useState(false);
+  const [representingTypeError,     setRepresentingTypeError]     = useState('');
+  const [businessSize, setBusinessSize] = useState<BusinessSizeKey | null>(null);
+
+  // Step 2 — business info (name, conditional email, location)
   const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [emailFocused, setEmailFocused] = useState(false);
@@ -54,12 +110,19 @@ export default function BusinessOnboardingScreen() {
   const [step1Submitted, setStep1Submitted] = useState(false);
   const step1ScrollRef = useRef<ScrollView>(null);
 
-  // Step 2
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [categorySubmitted, setCategorySubmitted] = useState(false);
-  const [step2Loading, setStep2Loading] = useState(false);
-  const [step2Error, setStep2Error] = useState('');
-  const { categories } = useCategories('BUSINESS');
+  // Step 3 — what kind of providers they're looking for
+  const [interestCategories, setInterestCategories] = useState<string[]>([]);
+  const [step3Submitted, setStep3Submitted] = useState(false);
+  const [step3Loading, setStep3Loading] = useState(false);
+  const [step3Error, setStep3Error] = useState('');
+  const { categories: interestOptions } = useCategories('CREATOR');
+  const visibleInterestOptions = interestOptions.filter((c) => !c.group);
+
+  // Step 4 — what this is for (industry is already collected in step 3)
+  const [purpose, setPurpose] = useState<PurposeKey | null>(null);
+  const [purposeSubmitted, setPurposeSubmitted] = useState(false);
+  const [step4Loading, setStep4Loading] = useState(false);
+  const [step4Error, setStep4Error] = useState('');
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -94,25 +157,52 @@ export default function BusinessOnboardingScreen() {
     }, 400);
   }
 
+  function toggleInterest(name: string) {
+    setInterestCategories((prev) => {
+      if (prev.includes(name)) return prev.filter((c) => c !== name);
+      if (prev.length >= MAX_INTEREST_CATEGORIES) return prev;
+      return [...prev, name];
+    });
+  }
+
   function handleLocationSelect(address: string, lat: number, lng: number) {
     setLocation(address);
     setLocationLat(lat || null);
     setLocationLng(lng || null);
     setLocationModalOpen(false);
+    setStep1Error('');
   }
 
-  function toggleCategory(label: string) {
-    setSelectedCategories((prev) => {
-      if (prev.includes(label)) return prev.filter((c) => c !== label);
-      if (prev.length >= 3) return prev;
-      return [...prev, label];
-    });
+  const businessNameError = step1Submitted && !businessName.trim() ? t('businessOnboarding.nameRequired') : undefined;
+  const emailError = !needsEmail || !step1Submitted ? undefined
+    : !email.trim()                    ? t('businessOnboarding.emailRequired')
+    : !EMAIL_REGEX.test(email.trim())  ? t('businessOnboarding.emailInvalid')
+    : emailAvailable === false         ? t('businessOnboarding.emailTaken')
+    : undefined;
+  const locationError = step1Submitted && !location.trim() ? t('businessOnboarding.locationRequired') : undefined;
+  const step1Valid =
+    businessName.trim().length > 0 &&
+    (!needsEmail || (email.trim().length > 0 && EMAIL_REGEX.test(email.trim()))) &&
+    location.trim().length > 0;
+
+  async function handleRepresentingTypeContinue() {
+    setRepresentingTypeSubmitted(true);
+    if (!representingType) return;
+    setRepresentingTypeLoading(true);
+    setRepresentingTypeError('');
+    try {
+      await profileService.updateBusinessProfile({ representingType, businessSize: businessSize ?? undefined });
+      setStep(2);
+    } catch (e: any) {
+      setRepresentingTypeError(e.message ?? 'Failed to save. Please try again.');
+    } finally {
+      setRepresentingTypeLoading(false);
+    }
   }
 
   async function handleStep1Continue() {
     setStep1Submitted(true);
-    if (!businessName.trim() || !location.trim()) return;
-    if (needsEmail && (!email.trim() || !EMAIL_REGEX.test(email.trim()))) return;
+    if (!step1Valid) return;
     setStep1Loading(true);
     setStep1Error('');
     try {
@@ -120,9 +210,11 @@ export default function BusinessOnboardingScreen() {
         businessName: businessName.trim(),
         email: needsEmail ? email.trim() : undefined,
         location: location.trim() || null,
+        locationLat: locationLat ?? undefined,
+        locationLng: locationLng ?? undefined,
       });
       updateUser({ name: businessName.trim(), ...(needsEmail ? { email: email.trim() } : {}) });
-      setStep(2);
+      setStep(3);
     } catch (e: any) {
       setStep1Error(e.message ?? 'Failed to save. Please try again.');
     } finally {
@@ -130,20 +222,38 @@ export default function BusinessOnboardingScreen() {
     }
   }
 
-  async function handleFinish() {
-    setCategorySubmitted(true);
-    if (selectedCategories.length === 0) return;
-    setStep2Loading(true);
-    setStep2Error('');
+  async function handleStep3Continue() {
+    setStep3Submitted(true);
+    if (interestCategories.length === 0) return;
+    setStep3Loading(true);
+    setStep3Error('');
     try {
-      await profileService.updateBusinessProfile({ categories: selectedCategories });
+      // Also written to `categories` — the same field edit-categories.tsx and the
+      // profile page's "Industries" card use — so this selection shows up there too
+      // instead of only driving campaign-AI/search defaults via defaultCreatorCategories.
+      await profileService.updateBusinessProfile({ defaultCreatorCategories: interestCategories, categories: interestCategories });
+      setStep(4);
+    } catch (e: any) {
+      setStep3Error(e.message ?? 'Failed to save. Please try again.');
+    } finally {
+      setStep3Loading(false);
+    }
+  }
+
+  async function handleStep4Finish() {
+    setPurposeSubmitted(true);
+    if (!purpose) return;
+    setStep4Loading(true);
+    setStep4Error('');
+    try {
+      await profileService.updateBusinessProfile({ purpose });
       await authService.completeOnboarding();
       updateUser({ isFirstLogin: false });
       setFinished(true);
     } catch (e: any) {
-      setStep2Error(e.message ?? 'Failed to save. Please try again.');
+      setStep4Error(e.message ?? 'Failed to save. Please try again.');
     } finally {
-      setStep2Loading(false);
+      setStep4Loading(false);
     }
   }
 
@@ -171,17 +281,11 @@ export default function BusinessOnboardingScreen() {
     );
   }
 
-  const businessNameError = step1Submitted && !businessName.trim() ? t('businessOnboarding.nameRequired') : undefined;
-  const emailError = !needsEmail || !step1Submitted ? undefined
-    : !email.trim()                    ? t('businessOnboarding.emailRequired')
-    : !EMAIL_REGEX.test(email.trim())  ? t('businessOnboarding.emailInvalid')
-    : emailAvailable === false         ? t('businessOnboarding.emailTaken')
-    : undefined;
-  const locationError     = step1Submitted && !location.trim() ? t('businessOnboarding.locationRequired') : undefined;
-
   const STEP_CONFIG = [
+    { title: t('businessOnboarding.representingTypeTitle'), subtitle: t('businessOnboarding.representingTypeSubtitle') },
     { title: t('businessOnboarding.step1Title'), subtitle: t('businessOnboarding.step1Subtitle') },
-    { title: t('businessOnboarding.step2Title'), subtitle: t('businessOnboarding.step2Subtitle') },
+    { title: t('businessOnboarding.step3Title'), subtitle: t('businessOnboarding.step3Subtitle') },
+    { title: t('businessOnboarding.purposeTitle'), subtitle: t('businessOnboarding.purposeSubtitle') },
   ];
   const { title, subtitle } = STEP_CONFIG[step - 1];
 
@@ -193,30 +297,89 @@ export default function BusinessOnboardingScreen() {
       <KeyboardAvoidingView style={styles.flex}>
       <MaxWidthContainer>
 
-      {/* ── Top bar ── */}
-      <View style={styles.topBar}>
-        {step > 1 ? (
-          <BackButton onPress={() => setStep((s) => s - 1)} />
-        ) : (
-          <View style={styles.backBtnPlaceholder} />
-        )}
-        <View style={styles.progressRow}>
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <View key={i} style={[styles.progressSegment, { backgroundColor: i + 1 <= step ? C.brinjal1 : C.border }]} />
-          ))}
-        </View>
-        <View style={{ width: 40 }} />
-      </View>
+      <StepIndicator
+        step={step} total={TOTAL_STEPS}
+        stepLabel={t('businessOnboarding.stepIndicator', { n: step, total: TOTAL_STEPS })}
+        title={title} subtitle={subtitle}
+        onBack={() => setStep((s) => s - 1)}
+      />
 
-      {/* ── Step header ── */}
-      <View style={styles.stepHeader}>
-        <Text style={[styles.stepNum, { color: C.brinjal1 }]}>Step {step} of {TOTAL_STEPS}</Text>
-        <Text style={[styles.stepTitle, { color: C.text }]}>{title}</Text>
-        <Text style={[styles.stepSubtitle, { color: C.textSecondary }]}>{subtitle}</Text>
-      </View>
-
-        {/* ────────── Step 1: Business basics ────────── */}
+        {/* ────────── Step 1: Who are you representing? (Organization/Individual) ────────── */}
         {step === 1 && (
+          <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+            {representingTypeSubmitted && !representingType && (
+              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{t('businessOnboarding.representingTypeError')}</Text>
+              </View>
+            )}
+
+            {representingTypeError ? (
+              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{representingTypeError}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.choiceCards}>
+              {REPRESENTING_TYPE_OPTIONS.map((opt) => {
+                const active = representingType === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => { setRepresentingType(opt.key); setRepresentingTypeError(''); }}
+                    style={[styles.choiceCard, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}>
+                    <View style={[styles.choiceIcon, { backgroundColor: active ? C.brinjal1 : C.primaryLight }]}>
+                      <FontAwesome5 name={opt.icon} size={18} color={active ? '#fff' : C.brinjal1} solid />
+                    </View>
+                    <View style={styles.choiceText}>
+                      <Text style={[styles.choiceTitle, { color: C.text }]}>{t(opt.titleKey)}</Text>
+                      <Text style={[styles.choiceDesc, { color: C.textSecondary }]}>{t(opt.descKey)}</Text>
+                    </View>
+                    <FontAwesome5 name={active ? 'check-circle' : 'circle'} solid={active} size={20} color={active ? C.brinjal1 : C.border} />
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={[styles.sizeLabel, { color: C.textSecondary }]}>{t('businessOnboarding.sizeLabel')}</Text>
+            <View style={styles.sizeChipsRow}>
+              {BUSINESS_SIZE_OPTIONS.map((opt) => {
+                const active = businessSize === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => setBusinessSize(active ? null : opt.key)}
+                    style={[styles.sizeChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]}>
+                    <Text style={[styles.sizeChipText, { color: active ? C.brinjal1 : C.textSecondary }]}>{t(opt.labelKey)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Pressable
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, (!representingType || representingTypeLoading) && styles.primaryBtnDisabled]}
+              onPress={handleRepresentingTypeContinue}
+              disabled={representingTypeLoading}>
+              {representingTypeLoading ? (
+                <View style={styles.loadingRow}>
+                  <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
+                  <Text style={styles.primaryBtnText}>{t('businessOnboarding.saving')}</Text>
+                </View>
+              ) : (
+                <View style={styles.loadingRow}>
+                  <Text style={styles.primaryBtnText}>{t('businessOnboarding.continueBtn')}</Text>
+                  <FontAwesome5 name="arrow-right" solid size={16} color="#fff" />
+                </View>
+              )}
+            </Pressable>
+
+          </ScrollView>
+        )}
+
+        {/* ────────── Step 2: Business info (name) ────────── */}
+        {step === 2 && (
           <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step1Error ? (
@@ -227,43 +390,34 @@ export default function BusinessOnboardingScreen() {
 
             {/* Business Name */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
-                {t('businessOnboarding.businessNameLabel')} <Text style={{ color: C.error }}>*</Text>
-              </Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: C.surface, borderColor: businessNameError ? C.error : C.border, color: C.text }]}
+              <TextInputWithLabel
+                label={`${t('businessOnboarding.businessNameLabel')} *`}
+                leftIcon="building"
                 value={businessName}
-                onChangeText={(t) => { setStep1Error(''); setBusinessName(t); }}
+                onChangeText={(v) => { setStep1Error(''); setBusinessName(v); }}
                 placeholder={t('businessOnboarding.businessNamePlaceholder')}
-                placeholderTextColor={C.textSecondary}
                 autoCapitalize="words"
+                error={businessNameError}
+                hint={t('businessOnboarding.nameHint')}
               />
-              {businessNameError ? (
-                <Text style={[styles.fieldError, { color: C.error }]}>{businessNameError}</Text>
-              ) : (
-                <Text style={[styles.inputHint, { color: C.textSecondary }]}>
-                  {t('businessOnboarding.nameHint')}
-                </Text>
-              )}
             </View>
 
             {/* Email — only for phone-signup accounts, which start without a real one */}
             {needsEmail && (
               <View style={styles.fieldGroup}>
-                <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
-                  {t('businessOnboarding.emailLabel')} <Text style={{ color: C.error }}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: C.surface, borderColor: emailError ? C.error : C.border, color: C.text }]}
+                <TextInputWithLabel
+                  label={`${t('businessOnboarding.emailLabel')} *`}
+                  leftIcon="envelope"
                   value={email}
                   onChangeText={handleEmailChange}
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => { setTimeout(() => setEmailFocused(false), 150); }}
                   placeholder={t('businessOnboarding.emailPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="email-address"
+                  error={emailError}
+                  hint={emailChecking ? t('businessOnboarding.emailChecking') : emailAvailable === true ? t('businessOnboarding.emailAvailable') : undefined}
                 />
                 {emailFocused && (() => {
                   const atIndex = email.indexOf('@');
@@ -288,17 +442,10 @@ export default function BusinessOnboardingScreen() {
                     </View>
                   );
                 })()}
-                {emailError ? (
-                  <Text style={[styles.fieldError, { color: C.error }]}>{emailError}</Text>
-                ) : emailChecking ? (
-                  <Text style={[styles.inputHint, { color: C.textSecondary }]}>{t('businessOnboarding.emailChecking')}</Text>
-                ) : emailAvailable === true ? (
-                  <Text style={[styles.inputHint, { color: C.active }]}>{t('businessOnboarding.emailAvailable')}</Text>
-                ) : null}
               </View>
             )}
 
-            {/* Location */}
+            {/* Where is your business? */}
             <View style={styles.fieldGroup}>
               <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
                 {t('businessOnboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text>
@@ -306,6 +453,7 @@ export default function BusinessOnboardingScreen() {
               <Pressable
                 style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
                 onPress={() => setLocationModalOpen(true)}>
+                <FontAwesome5 name="map-marker-alt" size={16} color={C.textSecondary} />
                 <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
                   {location || t('businessOnboarding.locationPlaceholder')}
                 </Text>
@@ -315,19 +463,19 @@ export default function BusinessOnboardingScreen() {
                 <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>
               ) : (
                 <Text style={[styles.inputHint, { color: C.textSecondary }]}>
-                  Creators will use this as a default location for your events.
+                  {t('businessOnboarding.locationHint')}
                 </Text>
               )}
             </View>
 
             <Pressable
-              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, step1Loading && styles.primaryBtnDisabled]}
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, (!step1Valid || step1Loading) && styles.primaryBtnDisabled]}
               onPress={handleStep1Continue}
               disabled={step1Loading}>
               {step1Loading ? (
                 <View style={styles.loadingRow}>
                   <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                  <Text style={styles.primaryBtnText}>Saving…</Text>
+                  <Text style={styles.primaryBtnText}>{t('businessOnboarding.saving')}</Text>
                 </View>
               ) : (
                 <View style={styles.loadingRow}>
@@ -347,59 +495,81 @@ export default function BusinessOnboardingScreen() {
           onClose={() => setLocationModalOpen(false)}
         />
 
-        {/* ────────── Step 2: Business Category ────────── */}
-        {step === 2 && (
-          <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+        {/* ────────── Step 3: What are you looking for? ────────── */}
+        {step === 3 && (
+          <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-            {step2Error ? (
+            {step3Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step2Error}</Text>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step3Error}</Text>
               </View>
             ) : null}
 
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
                 <Text style={[styles.fieldLabel, { color: C.text }]}>
-                  {t('businessOnboarding.selectCategoriesLabel')} <Text style={{ color: C.error }}>*</Text>
+                  {t('businessOnboarding.interestsLabel')} <Text style={{ color: C.error }}>*</Text>
                 </Text>
-                <View style={[styles.countBadge, { backgroundColor: selectedCategories.length > 0 ? C.primaryLight : C.border }]}>
-                  <Text style={[styles.countBadgeText, { color: selectedCategories.length > 0 ? C.brinjal1 : C.textSecondary }]}>
-                    {selectedCategories.length} / 3
+                <View style={[styles.countBadge, { backgroundColor: interestCategories.length > 0 ? C.primaryLight : C.border }]}>
+                  <Text style={[styles.countBadgeText, { color: interestCategories.length > 0 ? C.brinjal1 : C.textSecondary }]}>
+                    {t('businessOnboarding.interestsCounter', { n: interestCategories.length })}
                   </Text>
                 </View>
               </View>
-              {selectedCategories.length === 3 && (
-                <View style={[styles.maxBanner, { backgroundColor: C.primaryLight }]}>
-                  <FontAwesome5 name="check-circle" solid size={14} color={C.brinjal1} />
-                  <Text style={[styles.maxBannerText, { color: C.brinjal1 }]}>{t('businessOnboarding.maxCategoriesReached')}</Text>
+              {step3Submitted && interestCategories.length === 0 && (
+                <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{t('businessOnboarding.interestsError')}</Text>
+              )}
+              <GroupedCategoryPicker categories={visibleInterestOptions} selected={interestCategories} onToggle={toggleInterest} max={MAX_INTEREST_CATEGORIES} />
+            </View>
+
+            <Pressable
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, (interestCategories.length === 0 || step3Loading) && styles.primaryBtnDisabled]}
+              onPress={handleStep3Continue}
+              disabled={step3Loading}>
+              {step3Loading ? (
+                <View style={styles.loadingRow}>
+                  <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
+                  <Text style={styles.primaryBtnText}>{t('businessOnboarding.saving')}</Text>
+                </View>
+              ) : (
+                <View style={styles.loadingRow}>
+                  <Text style={styles.primaryBtnText}>{t('businessOnboarding.continueBtn')}</Text>
+                  <FontAwesome5 name="arrow-right" solid size={16} color="#fff" />
                 </View>
               )}
-              {categorySubmitted && selectedCategories.length === 0 && (
-                <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{t('businessOnboarding.categoryError')}</Text>
+            </Pressable>
+
+          </ScrollView>
+        )}
+
+        {/* ────────── Step 4: What is this for? (+ Industry, only if relevant) ────────── */}
+        {step === 4 && (
+          <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+            {step4Error ? (
+              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step4Error}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.fieldGroup}>
+              {purposeSubmitted && !purpose && (
+                <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{t('businessOnboarding.purposeError')}</Text>
               )}
-              <View style={styles.categoryGrid}>
-                {/* Sorted shortest-name-first (display only) — the grid wraps
-                    greedily in list order, so without this a long label early
-                    in the alphabetical list forces its row to end early even
-                    when a short label later on would've fit right next to it. */}
-                {[...categories].sort((a, b) => a.name.length - b.name.length).map((cat) => {
-                  const isSelected = selectedCategories.includes(cat.name);
-                  const isDisabled = !isSelected && selectedCategories.length >= 3;
+              <View style={styles.purposeGrid}>
+                {PURPOSE_OPTIONS.map((opt) => {
+                  const active = purpose === opt.key;
                   return (
                     <Pressable
-                      key={cat.id}
-                      style={[
-                        styles.categoryChip,
-                        { borderColor: C.border, backgroundColor: C.surface },
-                        isSelected && { borderColor: C.brinjal1, backgroundColor: C.primaryLight },
-                        isDisabled && styles.chipDisabled,
-                      ]}
-                      onPress={() => { if (!isDisabled) toggleCategory(cat.name); }}>
-                      <FontAwesome5 name={cat.icon} size={14} color={isSelected ? cat.color : C.textSecondary} />
-                      <Text style={[styles.chipLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
-                        {cat.name}
-                      </Text>
-                      {isSelected && <FontAwesome5 name="check-circle" solid size={14} color={C.brinjal1} />}
+                      key={opt.key}
+                      onPress={() => { setPurpose(opt.key); setPurposeSubmitted(false); }}
+                      style={[styles.purposeTile, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}>
+                      <View style={[styles.purposeIcon, { backgroundColor: active ? C.brinjal1 : C.primaryLight }]}>
+                        <FontAwesome5 name={opt.icon} size={16} color={active ? '#fff' : C.brinjal1} solid />
+                      </View>
+                      <Text style={[styles.purposeLabel, { color: C.text }]}>{t(opt.labelKey)}</Text>
                     </Pressable>
                   );
                 })}
@@ -407,13 +577,13 @@ export default function BusinessOnboardingScreen() {
             </View>
 
             <Pressable
-              style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active }, step2Loading && styles.primaryBtnDisabled]}
-              onPress={handleFinish}
-              disabled={step2Loading}>
-              {step2Loading ? (
+              style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active }, (!purpose || step4Loading) && styles.primaryBtnDisabled]}
+              onPress={handleStep4Finish}
+              disabled={step4Loading}>
+              {step4Loading ? (
                 <View style={styles.loadingRow}>
                   <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                  <Text style={styles.primaryBtnText}>Saving…</Text>
+                  <Text style={styles.primaryBtnText}>{t('businessOnboarding.saving')}</Text>
                 </View>
               ) : (
                 <View style={styles.loadingRow}>
@@ -422,7 +592,6 @@ export default function BusinessOnboardingScreen() {
                 </View>
               )}
             </Pressable>
-            <Text style={[styles.finishNote, { color: C.textSecondary }]}>{t('businessOnboarding.categoryRequired')}</Text>
 
           </ScrollView>
         )}
@@ -436,46 +605,52 @@ export default function BusinessOnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, gap: 12 },
-  backBtnPlaceholder: { width: 40, height: 40 },
-  progressRow: { flex: 1, flexDirection: 'row', gap: 6 },
-  progressSegment: { flex: 1, height: 4, borderRadius: 2 },
-  stepHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 4 },
-  stepNum: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4, fontFamily: F.bold },
-  stepTitle: { fontSize: 24, fontFamily: F.bold },
-  stepSubtitle: { fontSize: 14, lineHeight: 20, marginTop: 4, fontFamily: F.regular },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 48 },
   errorBanner: { borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
   errorBannerText: { fontSize: 13, fontFamily: F.semibold },
+
+  // Step 1's Organization/Individual picker — a row-card per option (icon,
+  // title + description, trailing check), matching provider onboarding's
+  // equivalent Individual/Team/Agency picker.
+  choiceCards: { gap: 12, marginBottom: 28 },
+  choiceCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14 },
+  sizeLabel: { fontSize: 13, fontFamily: F.medium, marginBottom: 10 },
+  sizeChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 28 },
+  sizeChip: { borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 8 },
+  sizeChipText: { fontSize: 13, fontFamily: F.medium },
+  choiceIcon:  { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  choiceText:  { flex: 1, gap: 2 },
+  choiceTitle: { fontSize: 15, fontFamily: F.bold },
+  choiceDesc:  { fontSize: 12.5, fontFamily: F.regular, lineHeight: 17 },
+
   fieldGroup: { marginBottom: 24 },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   fieldLabel: { fontSize: 14, fontFamily: F.bold },
   fieldError: { fontSize: 12, fontFamily: F.medium },
-  input: { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
   locationBtn: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, gap: 8 },
   locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: F.regular },
   locationArrow: { fontSize: 20, color: '#9CA3AF' },
-  textarea: { minHeight: 120, paddingTop: 13, textAlignVertical: 'top' },
   inputHint: { fontSize: 11, marginTop: 5, fontFamily: F.regular },
   domainSuggestBox: { marginTop: 6, borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden' },
   domainSuggestItem: { paddingHorizontal: 14, paddingVertical: 10 },
   domainSuggestText: { fontSize: 14, fontFamily: F.regular },
-  charRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  charCount: { fontSize: 11, alignSelf: 'flex-end', fontFamily: F.regular },
   countBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 3 },
   countBadgeText: { fontSize: 12, fontFamily: F.bold },
+
+  // Step 5's "What is this for?" picker — a compact 2-column icon+label tile
+  // grid (single-select) rather than choiceCards' row-with-description layout,
+  // since there are 8 options here instead of 2-3.
+  purposeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  purposeTile: { width: '47%', borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14, alignItems: 'flex-start', gap: 10 },
+  purposeIcon: { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  purposeLabel: { fontSize: 13, fontFamily: F.semibold, lineHeight: 17 },
   maxBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
   maxBannerText: { fontSize: 13, fontFamily: F.semibold },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 6, borderRadius: RADIUS.full, borderWidth: 1.5 },
-  chipDisabled: { opacity: 0.35 },
-  chipLabel: { fontSize: FONT_SIZE.xs, fontFamily: F.medium },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 16, height: 16, borderRadius: RADIUS.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
   primaryBtn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 12 },
   primaryBtnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   primaryBtnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
-  finishNote: { textAlign: 'center', fontSize: 12, fontFamily: F.regular },
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },
   checkCircle: { width: 110, height: 110, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', ...SHADOW.floating, marginBottom: 8 },

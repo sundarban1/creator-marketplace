@@ -349,7 +349,7 @@ export class MessagingRepository {
     conversationId: string;
     senderId: string;
     content: string;
-    type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
+    type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE' | 'SYSTEM';
     attachmentUrl?: string;
     attachmentName?: string;
     attachmentThumbnailUrl?: string;

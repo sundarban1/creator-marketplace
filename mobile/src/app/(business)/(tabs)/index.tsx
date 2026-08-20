@@ -2,7 +2,11 @@ import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { SearchInput } from '@/components/SearchInput';
+import { AttentionBanner } from '@/components/AttentionBanner';
+import { PromoBanner } from '@/components/PromoBanner';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { TabSlider } from '@/components/TabSlider';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
@@ -11,18 +15,19 @@ import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { profileService } from '@/services/profile';
+import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import type { Campaign } from '@/types';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
+import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { EntityCard } from '@/components/EntityCard';
 import { TabColors } from '@/utilities/tabColors';
 import { getCached, setCached } from '@/utilities/offlineCache';
 
@@ -43,12 +48,12 @@ export default function BusinessHomeScreen() {
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
   const { categories: allCategories } = useAllCategories();
-  const { platforms: allPlatforms } = usePlatforms();
+  const { categories: serviceCategories } = useCategories('CREATOR');
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
   const name = user?.name?.split(' ')[0] ?? 'there';
 
-  const { setBadgeCount } = useNotificationBadge();
+  const { badgeCount, setBadgeCount } = useNotificationBadge();
   const { openDrawer } = useContext(DrawerContext);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +61,8 @@ export default function BusinessHomeScreen() {
   const [fetchError, setFetchError] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [businessName, setBusinessName] = useState('');
+  const [businessLocation, setBusinessLocation] = useState('');
+  const [recommendedProviders, setRecommendedProviders] = useState<ApiCreatorListItem[]>([]);
   // Count of accepted applications actually waiting on a business action
   // (payment due, or submitted work awaiting review) — not the raw
   // applications total, which includes proposals nothing is blocked on.
@@ -64,6 +71,8 @@ export default function BusinessHomeScreen() {
   // a real one — never show that in the header (as text, or as the avatar's
   // first-letter fallback initial, which would render a bare "+").
   const displayName = businessName || (user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Business');
+  const hour = new Date().getHours();
+  const greetingKey = hour < 12 ? 'home.greetingMorning' : hour < 17 ? 'home.greetingAfternoon' : 'home.greetingEvening';
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -128,6 +137,7 @@ export default function BusinessHomeScreen() {
     profileService.getBusinessProfile()
       .then((profile) => {
         setBusinessName(profile.businessName);
+        setBusinessLocation(profile.location ?? '');
         const missing: string[] = [];
         if (!profile.logoUrl)            missing.push(t('business.home.fieldLogo'));
         if (!profile.description)        missing.push(t('business.home.fieldDescription'));
@@ -135,6 +145,18 @@ export default function BusinessHomeScreen() {
         if (!profile.categories?.length) missing.push(t('business.home.fieldCategories'));
         if (!profile.website)            missing.push(t('business.home.fieldWebsite'));
         setMissingFields(missing);
+
+        // "What do you usually need help with?" — first entry only (the API
+        // takes one category, not a list) is enough for a "recommended for
+        // your next hire" hint; a real multi-category blend can come later.
+        const category = profile.defaultCreatorCategories?.[0];
+        if (category) {
+          creatorService.getRecommendedCreators({ category, limit: 5 })
+            .then(setRecommendedProviders)
+            .catch(() => setRecommendedProviders([]));
+        } else {
+          setRecommendedProviders([]);
+        }
       })
       .catch(() => {});
   }, [languageVersion]));
@@ -195,11 +217,28 @@ export default function BusinessHomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
-      {/* ── Header: avatar, centered name, menu button — kept outside the
-          ScrollView so it stays floating/pinned above the content instead of
-          scrolling away. ── */}
-      <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        <Pressable style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]} onPress={() => router.push('/(business)/profile')}>
+      {/* ── Header: greeting, bell, avatar (opens drawer) — matches the
+          creator home header layout. Kept outside the ScrollView so it
+          stays floating/pinned above the content instead of scrolling away. ── */}
+      <View style={[styles.header, { backgroundColor: C.background }]}>
+        <View style={styles.headerText}>
+          <Text style={[styles.greeting, { color: C.text }]} numberOfLines={1}>{t(greetingKey, { name: displayName })}</Text>
+          {businessLocation ? (
+            <View style={styles.locationRow}>
+              <FontAwesome5 name="map-marker-alt" solid size={11} color={C.textSecondary} />
+              <Text style={[styles.locationText, { color: C.textSecondary }]} numberOfLines={1}>{businessLocation}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <Pressable hitSlop={8} onPress={() => router.push('/(business)/(tabs)/notifications')} style={styles.iconBtn}>
+          <FontAwesome5 name="bell" size={20} color={C.text} />
+          {badgeCount > 0 && (
+            <View style={styles.notifBadge}><Text style={styles.notifBadgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text></View>
+          )}
+        </Pressable>
+
+        <Pressable style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]} onPress={openDrawer}>
           {/* Clipping lives on its own layer — Android's elevation shadow doesn't
               composite correctly with overflow:hidden + a translucent child background
               on the same view. */}
@@ -213,114 +252,79 @@ export default function BusinessHomeScreen() {
             )}
           </View>
         </Pressable>
-
-        <Text style={[styles.brandName, { color: C.brinjal1 }]} numberOfLines={1}>{displayName}</Text>
-
-        <Pressable style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-          <View
-            style={[
-              styles.menuBtnInner,
-              { backgroundColor: C.surface },
-              SHADOW.card,
-            ]}
-          >
-            <FontAwesome5 name="bars" solid size={22} color={C.text} />
-          </View>
-        </Pressable>
       </View>
-      <View style={[styles.headerDivider, { backgroundColor: C.border }]} />
 
       {/* Sticky tab filter — hand-rolled (see useStickyBelowHeader), not
           stickyHeaderIndices, which reliably crashes Android on this app's
           RN/Fabric setup. This wrapper is the positioning context the
           overlay below is anchored to (`top: 0` here lands right below the
-          header divider above). */}
+          header above). */}
       <View style={{ flex: 1 }}>
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
         onScroll={tabFilterOnScroll}
         scrollEventThrottle={16}>
 
-        <View>
-          {/* ── Attention banner (shown when a business action is actually pending) ── */}
-          {!loading && attentionCount > 0 && (
-            <Pressable style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
-              <View
-                style={[
-                  styles.attentionIconWrap,
-                  { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-                ]}
-              >
-                <FontAwesome5 name="exclamation-circle" solid size={18} color="#D97706" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.attentionTitle}>{t('business.home.attentionTitle')}</Text>
-                <Text style={styles.attentionSub}>
-                  {attentionCount === 1
-                    ? t('business.home.attentionProposalsSingular', { n: attentionCount })
-                    : t('business.home.attentionProposalsPlural', { n: attentionCount })}
-                </Text>
-              </View>
-              <FontAwesome5 name="chevron-right" solid size={16} color="#D97706" />
-            </Pressable>
+        <View style={styles.heroGroup}>
+          {/* ── Search — read-only, hands off to Explore Creators (which owns the
+              real search/filter experience), mirroring the creator home's
+              tap-through-to-Discover pattern. ── */}
+          <SearchInput
+            placeholder={t('business.home.searchPlaceholder')}
+            onPress={() => router.push('/(business)/explore-creators')}
+          />
+
+          {/* One "needs your attention" banner, shown at most once — pending
+              proposals and an incomplete profile are both the same kind of
+              nudge, so stacking two boxes for both would just be redundant.
+              Pending proposals always win since they're the more
+              time-sensitive of the two. Shared AttentionBanner component —
+              see creator home for the identical pattern on that side. */}
+          {!loading && attentionCount > 0 ? (
+            <AttentionBanner
+              icon="exclamation-circle"
+              title={t('business.home.attentionTitle')}
+              subtitle={
+                attentionCount === 1
+                  ? t('business.home.attentionProposalsSingular', { n: attentionCount })
+                  : t('business.home.attentionProposalsPlural', { n: attentionCount })
+              }
+              onPress={() => router.push('/(business)/proposals')}
+              style={{ marginHorizontal: 0, marginTop: 0 }}
+            />
+          ) : !bannerDismissed && missingFields.length > 0 && (
+            <AttentionBanner
+              icon="building"
+              title={t('business.home.completeProfile')}
+              subtitle={t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
+              numberOfLines={2}
+              onPress={() => router.push('/(business)/edit-profile' as never)}
+              onDismiss={() => setBannerDismissed(true)}
+              style={{ marginHorizontal: 0, marginTop: 0 }}
+            />
           )}
 
-          {/* ── Quick Actions ── */}
-          <View style={styles.quickActionsRow}>
-            {([
-              { icon: 'plus-circle' as const,  label: t('business.home.quickActionCreate'),    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
-              { icon: 'users' as const,       label: t('business.home.quickActionCreators'),      bg: '#DCFCE7', color: '#059669', route: '/(business)/explore-creators' },
-              { icon: 'comments'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
-              { icon: 'briefcase'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
-            ]).map(({ icon, label, bg, color, route }) => (
-              <Pressable key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => router.push(route as never)}>
-                <View
-                  style={[
-                    styles.quickActionIcon,
-                    {
-                      backgroundColor: bg, shadowColor: color,
-                      shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
-                    },
-                  ]}
-                >
-                  <FontAwesome5 name={icon} size={20} color={color} />
+          {/* ── Primary CTA ── */}
+          <Pressable onPress={() => router.push('/create-campaign')}>
+            <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaCard}>
+              <View style={styles.ctaTop}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.ctaTitle}>{t('business.home.heroCtaTitle')}</Text>
+                  <Text style={styles.ctaSub}>{t('business.home.heroCtaSub')}</Text>
                 </View>
-                <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {/* ── Profile completion banner ── */}
-          {!bannerDismissed && missingFields.length > 0 && (
-            <Pressable
-              style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
-              onPress={() => router.push('/(business)/edit-profile' as never)}>
-              <View
-                style={[
-                  styles.bannerIconBox,
-                  {
-                    backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
-                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                  },
-                ]}
-              >
-                <FontAwesome5 name="building" solid size={20} color={C.brinjal1} />
+                <View style={styles.ctaIconWrap}>
+                  <FontAwesome5 name="clipboard-list" solid size={22} color="#fff" />
+                </View>
               </View>
-              <View style={styles.bannerText}>
-                <Text style={[styles.bannerTitle, { color: C.text }]}>{t('business.home.completeProfile')}</Text>
-                <Text style={[styles.bannerSub, { color: C.error }]} numberOfLines={2}>
-                  {t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
-                </Text>
+              <View style={styles.ctaBtn}>
+                <Text style={[styles.ctaBtnText, { color: C.brinjal2 }]}>{t('business.home.heroCtaBtn')}</Text>
+                <FontAwesome5 name="plus" solid size={13} color={C.brinjal2} />
               </View>
-              <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
-                <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
-              </Pressable>
-            </Pressable>
-          )}
+            </LinearGradient>
+          </Pressable>
 
           {/* ── Error ── */}
           {fetchError ? (
@@ -332,46 +336,51 @@ export default function BusinessHomeScreen() {
             </View>
           ) : null}
 
-          {/* ── Refer a business banner ── */}
-          {!referralBannerDismissed && (
-            <Pressable
-              style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
-              onPress={() => router.push('/(business)/refer')}>
-              <View
-                style={[
-                  styles.bannerIconBox,
-                  {
-                    backgroundColor: '#FCE7F3', shadowColor: '#EC4899',
-                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                  },
-                ]}
-              >
-                <FontAwesome5 name="gift" solid size={20} color="#EC4899" />
-              </View>
-              <View style={styles.bannerText}>
-                <Text style={[styles.bannerTitle, { color: C.text }]}>{t('businessReferral.homeBannerTitle')}</Text>
-                <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>
-                  {(() => {
-                    const [prefix, suffix] = t('businessReferral.homeBannerSub').split('{{amount}}');
-                    return (
-                      <>
-                        {prefix}
-                        <Text style={styles.bannerSubAmount}>{t('businessReferral.homeBannerAmount')}</Text>
-                        {suffix}
-                      </>
-                    );
-                  })()}
-                </Text>
-              </View>
-              <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
-                <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
-              </Pressable>
-            </Pressable>
-          )}
+          {/* ── Refer a business banner — shared PromoBanner component, see
+              creator home for the identical pattern on that side. ── */}
+          {!referralBannerDismissed && (() => {
+            const [prefix, suffix] = t('businessReferral.homeBannerSub').split('{{amount}}');
+            return (
+              <PromoBanner
+                icon="gift"
+                title={t('businessReferral.homeBannerTitle')}
+                subtitlePrefix={prefix}
+                subtitleAmount={t('businessReferral.homeBannerAmount')}
+                subtitleSuffix={suffix}
+                onPress={() => router.push('/(business)/refer')}
+                onDismiss={() => setReferralBannerDismissed(true)}
+                style={{ marginHorizontal: 0, marginTop: 0 }}
+              />
+            );
+          })()}
+
         </View>
 
+        {/* ── Find People ── */}
+        {serviceCategories.length > 0 && (
+          <View style={styles.findPeopleSection}>
+            <Text style={[styles.sectionTitle, { color: C.text }]}>{t('business.home.findPeople')}</Text>
+            <View style={styles.serviceGrid}>
+              {serviceCategories.slice(0, 4).map((cat) => (
+                <Pressable key={cat.id} style={styles.serviceTile} onPress={() => router.push('/(business)/explore-creators')}>
+                  <View style={[styles.serviceIconWrap, { backgroundColor: cat.iconBg }, SHADOW.card]}>
+                    <FontAwesome5 name={cat.icon as any} size={18} color={cat.color} />
+                  </View>
+                  <Text style={[styles.serviceLabel, { color: C.text }]} numberOfLines={1}>{cat.name}</Text>
+                </Pressable>
+              ))}
+              <Pressable style={styles.serviceTile} onPress={() => router.push('/(business)/explore-creators')}>
+                <View style={[styles.serviceIconWrap, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }, SHADOW.card]}>
+                  <FontAwesome5 name="th-large" solid size={18} color={C.textSecondary} />
+                </View>
+                <Text style={[styles.serviceLabel, { color: C.text }]} numberOfLines={1}>{t('business.home.allServicesTile')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
         {/* ── Recent Events ── */}
-        <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeader, { marginTop: SPACING.xxl }]}>
           <Text style={[styles.sectionTitle, { color: C.text }]}>{t('business.home.recentEvents')}</Text>
           <Pressable onPress={() => router.push('/(business)/campaigns')}>
             <Text style={[styles.viewAll, { color: C.brinjal1 }]}>{t('business.home.viewAll')}</Text>
@@ -398,11 +407,11 @@ export default function BusinessHomeScreen() {
 
         {loading ? (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color="#7c3aed" />
+            <ActivityIndicator size="large" color={C.brinjal1} />
             <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('business.home.loading')}</Text>
           </View>
         ) : recent.length === 0 ? (
-          <View style={styles.emptyWrap}>
+          <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
             <FontAwesome5 name="file-alt" solid size={48} color={C.textSecondary} />
             <Text style={[styles.emptyTitle, { color: C.text }]}>{t('business.home.noEventsTitle')}</Text>
             <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('business.home.noEventsSub')}</Text>
@@ -457,22 +466,44 @@ export default function BusinessHomeScreen() {
                     </View>
                   </View>
 
-                  {/* Details — budget on the left, platform icons on the right of the same row */}
-                  <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
+                  {/* Per-requirement progress — only for multi-role campaigns
+                      (CampaignRequirement); simple campaigns render exactly as
+                      they always have, nothing below this block changes for them. */}
+                  {c.requirements && c.requirements.length > 0 && (() => {
+                    const totalQuantity = c.requirements!.reduce((sum, r) => sum + r.quantity, 0);
+                    const totalAccepted = c.requirements!.reduce((sum, r) => sum + r.acceptedCount, 0);
+                    const totalApplications = c.proposals ?? 0;
+                    const pct = totalQuantity > 0 ? Math.round((totalAccepted / totalQuantity) * 100) : 0;
+                    return (
+                      <View style={styles.requirementsBlock}>
+                        <Text style={[styles.requirementsSummary, { color: C.textSecondary }]}>
+                          {t('business.home.requirementsSummary', { n: c.requirements!.length, apps: totalApplications })}
+                        </Text>
+                        <View style={styles.progressRow}>
+                          <View style={[styles.progressTrack, { backgroundColor: C.border }]}>
+                            <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: C.brinjal1 }]} />
+                          </View>
+                          <Text style={[styles.progressPct, { color: C.brinjal1 }]}>{pct}%</Text>
+                        </View>
+                        <View style={styles.requirementPillsRow}>
+                          {c.requirements!.map((r) => (
+                            <View key={r.id} style={[styles.requirementPill, { backgroundColor: C.background, borderColor: C.border }]}>
+                              <FontAwesome5 name={r.category.icon as any} solid size={11} color={r.category.color} />
+                              <Text style={[styles.requirementPillText, { color: C.text }]}>{r.acceptedCount}/{r.quantity}</Text>
+                              <Text style={[styles.requirementPillLabel, { color: C.textSecondary }]} numberOfLines={1}>{r.category.name}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })()}
+
+                  {/* Details — budget */}
+                  <View style={styles.detailsSection}>
                     <View style={styles.cardFooter}>
                       <View style={styles.detailRow}>
                         <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
                         <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
-                      </View>
-                      <View style={styles.socialPlatforms}>
-                        {c.platforms.map((p) => {
-                          const pMeta = getPlatformMeta(allPlatforms, p);
-                          return (
-                            <View key={p} style={[styles.socialIcon, { backgroundColor: pMeta.bg }]}>
-                              <FontAwesome5 name={pMeta.icon} size={12} color={pMeta.color} />
-                            </View>
-                          );
-                        })}
                       </View>
                     </View>
                   </View>
@@ -493,7 +524,6 @@ export default function BusinessHomeScreen() {
                           campaignId:    c.id,
                           campaignTitle: c.title,
                           campaignType:  c.campaignType ?? 'PAID_CAMPAIGN',
-                          platform:      c.platforms.join(', '),
                         },
                       })}>
                       <FontAwesome5 name="file-alt" solid size={12} color={c.proposals ? C.brinjal1 : C.textSecondary} />
@@ -517,6 +547,53 @@ export default function BusinessHomeScreen() {
           </View>
         )}
 
+        {/* ── Recommended for you — based on "What do you usually need help
+            with?" from onboarding (BusinessProfile.defaultCreatorCategories).
+            Hidden entirely if that wasn't set. Horizontal rail reusing
+            EntityCard (shared with explore-creators/explore-businesses)
+            instead of a bespoke card. ── */}
+        {recommendedProviders.length > 0 && (
+          <View style={styles.recommendedSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('business.home.recommendedProviders')}</Text>
+              <Pressable onPress={() => router.push('/(business)/explore-creators')}>
+                <Text style={[styles.viewAll, { color: C.brinjal1 }]}>{t('business.home.viewAll')}</Text>
+              </Pressable>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railScroll}>
+              {recommendedProviders.map((p) => {
+                const meta = getCategoryMeta(allCategories, p.categories[0] ?? '');
+                return (
+                  <View key={p.id} style={styles.recommendedCardWrap}>
+                    <EntityCard
+                      avatarUrl={p.avatarUrl}
+                      avatarBg={C.primaryLight}
+                      initials={(p.fullName ?? '?').trim().charAt(0).toUpperCase()}
+                      circularAvatar
+                      ringColor={C.brinjal1}
+                      name={p.fullName ?? 'Provider'}
+                      verified={p.fullyVerified || p.isVerified}
+                      locationText={[p.location, p.distanceKm != null ? `${p.distanceKm.toFixed(1)} km away` : null].filter(Boolean).join(' · ')}
+                      categoryLabel={p.categories[0]}
+                      categoryIcon={meta.icon}
+                      categoryColor={meta.color}
+                      categoryBg={meta.bg}
+                      stat={p.averageRating != null ? {
+                        icon: 'star',
+                        text: `${p.averageRating.toFixed(1)}${p.completedEvents ? ` (${p.completedEvents})` : ''}`,
+                        color: '#F59E0B',
+                      } : undefined}
+                      ctaLabel={t('business.home.viewProfileBtn')}
+                      ctaStyle="chevron"
+                      onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: p.id } })}
+                    />
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
       </ScrollView>
       {tabFilterStuck && (
         <View style={[styles.typeFilterWrap, styles.stickyOverlay, { backgroundColor: C.background }]}>
@@ -535,65 +612,83 @@ export default function BusinessHomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingBottom: 40 },
+  scroll: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 0, paddingBottom: SPACING.xxxl },
 
-  // Header — avatar, centered business name, and menu button all in one row.
-  // Avatar and the menu button are both 44×44, so the name's flex:1 +
-  // textAlign:'center' lands it on the row's true center, not just the
-  // midpoint of the leftover space. Lives outside the ScrollView (see render)
-  // so it stays pinned at the top instead of scrolling away. Same background
-  // as the page and no border/shadow — reads as part of the page, not a
-  // separate bar; pinning is purely structural, not a visual layer.
+  // Header — avatar, greeting + location, notification bell, and menu button
+  // all in one row, mirroring the creator home's header structure. Lives
+  // outside the ScrollView (see render) so it stays pinned at the top instead
+  // of scrolling away. Same background as the page and no border/shadow —
+  // reads as part of the page, not a separate bar; pinning is purely
+  // structural, not a visual layer.
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
+    paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.lg,
   },
-  // Inset divider (not a full-bleed border) separating the header from the
-  // scrolling content — matches the gap-at-the-corners divider style used
-  // elsewhere (e.g. SavedListCard, campaigns footer).
-  headerDivider: { height: 1, marginHorizontal: 20 },
-  menuBtn: { padding: 0 },
-  menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  brandName: { flex: 1, textAlign: 'center', fontSize: 20, fontFamily: F.bold, letterSpacing: -0.3 },
+  headerText: { flex: 1, gap: 3 },
+  greeting: { fontSize: 17, fontFamily: F.bold },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  locationText: { fontSize: 12, fontFamily: F.medium },
+  iconBtn: { padding: 4 },
+  notifBadge: {
+    position: 'absolute', top: -2, right: -2, minWidth: 16, height: 16, borderRadius: RADIUS.full,
+    backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3,
+  },
+  notifBadgeText: { fontSize: 9, color: '#fff', fontFamily: F.bold },
   avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   avatarImage: { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   avatarInitial:  { fontSize: 18, fontFamily: F.extrabold },
 
-  // Quick actions
-  // paddingBottom is 0 here (and on every block below) on purpose — each block
-  // only contributes its own *leading* gap via marginTop/paddingTop. That way
-  // whichever optional cards happen to render (banner / attentionBanner /
-  // errorCard, any combination, any order) always sit the same distance apart,
-  // instead of gaps compounding or collapsing depending on what's visible.
-  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 0, gap: 10 },
-  quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 14, gap: 8, borderWidth: 1, ...SHADOW.card },
-  quickActionIcon:  { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
-  quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
+  // Action zone — search, alerts, primary CTA, error retry and the referral
+  // banner are all things demanding the business's attention right now, so
+  // they're clustered tightly (gap: md) to read as one connected group —
+  // mirrors creator home's heroGroup. Whichever optional cards happen to
+  // render (banner / attentionBanner / errorCard, any combination, any
+  // order) always sit the same distance apart via the shared gap, instead of
+  // per-block margins compounding or collapsing depending on what's visible.
+  heroGroup: { gap: SPACING.md },
 
-  // Profile completion banner
-  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 16, marginBottom: 0, padding: 14, gap: 10, ...SHADOW.card, borderLeftWidth: 4 },
-  bannerIconBox: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  bannerText:    { flex: 1, gap: 2 },
-  bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
-  bannerSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
-  bannerSubAmount: { fontSize: 15, fontFamily: F.extrabold, color: '#059669' },
-  bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
+  // Primary CTA — uses the theme's brinjal1/brinjal2 (green for the BUSINESS
+  // role, see useAppColors) rather than a hardcoded hex, so it stays the
+  // single source of truth and adapts correctly in dark mode. Generous
+  // padding (SPACING.xl) since this is the single most important action on
+  // the screen — hero-level, not standard-card.
+  ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, ...SHADOW.floating },
+  ctaTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff', lineHeight: 21 },
+  ctaSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 18 },
+  ctaIconWrap: { width: 48, height: 48, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  ctaBtn: {
+    flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm,
+    backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: 11,
+  },
+  ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
-  // Attention banner
-  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, marginHorizontal: 20, marginTop: 16, marginBottom: 0, padding: 14, gap: 10, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
-  attentionIconWrap: { width: 36, height: 36, borderRadius: RADIUS.md, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
-  attentionTitle: { fontSize: 13, color: '#92400E', fontFamily: F.bold },
-  attentionSub: { fontSize: 11, color: '#B45309', fontFamily: F.regular, marginTop: 1 },
+  // Section headers — margin-free (spacing supplied by the surrounding
+  // block, e.g. an explicit marginTop override or the parent section's own
+  // marginTop), mirroring creator home's sectionHeader.
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
+  sectionTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold },
+  viewAll: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, opacity: 0.7 },
 
-  // Section headers
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12, marginTop: 20 },
-  sectionTitle: { fontSize: 16, fontFamily: F.bold },
-  viewAll: { fontSize: 13, fontFamily: F.semibold, opacity: 0.7 },
+  // Find People — dynamic category grid, mirrors the creator home's Explore Services
+  // (Quick Actions) row. marginTop: xxl steps away from heroGroup's tightly-clustered
+  // action items, same gap used by every other row on the page (Recent Events,
+  // Recommended) so the whole page reads on one consistent rhythm.
+  findPeopleSection: { marginTop: SPACING.xxl, gap: SPACING.md },
+  serviceGrid: { flexDirection: 'row', gap: 8 },
+  serviceTile: { flex: 1, alignItems: 'center', gap: 6 },
+  serviceIconWrap: { width: 52, height: 52, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center' },
+  serviceLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
+
+  // Recommended for you — horizontal EntityCard rail.
+  recommendedSection: { marginTop: SPACING.xxl },
+  railScroll: { gap: SPACING.md, paddingRight: SPACING.xs },
+  recommendedCardWrap: { width: 300 },
 
   // Error
-  errorCard: { backgroundColor: '#FEE2E2', marginHorizontal: 20, marginTop: 16, marginBottom: 0, borderRadius: RADIUS.md, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
+  errorCard: { backgroundColor: '#FEE2E2', borderRadius: RADIUS.md, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText: { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 
@@ -604,7 +699,7 @@ const styles = StyleSheet.create({
   // Padding (not margin) so the opaque background set at the call site spans
   // the full width when this block is pinned (see useStickyBelowHeader) — a
   // transparent side margin would let scrolled-under content peek through.
-  typeFilterWrap: { paddingHorizontal: 17, paddingBottom: 12 },
+  typeFilterWrap: { paddingHorizontal: SCREEN_GUTTER - 3, paddingBottom: SPACING.md },
   stickyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, ...SHADOW.card },
 
   // Campaign cards
@@ -615,7 +710,7 @@ const styles = StyleSheet.create({
   typeBadgeTextPaid: { color: TabColors.brand.color },
   typeBadgeTextFree: { color: TabColors.info.color },
 
-  campaignList: { paddingHorizontal: 20, gap: 12 },
+  campaignList: { gap: SPACING.md },
   // Tablet/iPad two-per-row grid — mirrors the events tab's listGrid/cardWrapHalf.
   campaignListGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   // Shadow (unclipped) and rounded-corner clip are split across two views —
@@ -633,21 +728,36 @@ const styles = StyleSheet.create({
   statusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
   statusText: { fontSize: 11, fontFamily: F.bold },
 
-  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 14, gap: 10 },
+  // No border here on purpose — the budget row separates itself from the
+  // header/status area above with spacing alone (see user feedback: the
+  // top/bottom rule lines around this single row read as visual clutter).
+  detailsSection: { marginBottom: 14, gap: 10 },
+
+  requirementsBlock: { gap: 8, marginBottom: 14 },
+  requirementsSummary: { fontSize: 12, fontFamily: F.medium },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  progressTrack: { flex: 1, height: 6, borderRadius: RADIUS.full, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: RADIUS.full },
+  progressPct: { fontSize: 12, fontFamily: F.bold, width: 36, textAlign: 'right' },
+  requirementPillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  requirementPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 5, maxWidth: 140 },
+  requirementPillText: { fontSize: 11, fontFamily: F.bold },
+  requirementPillLabel: { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   detailText: { fontSize: 13, fontFamily: F.regular },
   budgetText: { fontFamily: F.bold },
 
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
-  socialPlatforms: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, flexShrink: 1 },
-  socialIcon: { width: 24, height: 24, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   viewDetailsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6 },
   viewDetailsText: { fontSize: 12, fontFamily: F.semibold },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
-  emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 10, paddingHorizontal: 32 },
+  // Bordered box (dashed, rounded) — matches the "no results" card style used
+  // for Featured/Nearby Events on the creator side, instead of floating
+  // unbounded on the page.
+  emptyWrap: { alignItems: 'center', paddingVertical: SPACING.xxl, gap: 10, paddingHorizontal: SPACING.xl, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed' },
   emptyTitle: { fontSize: 17, fontFamily: F.bold },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   emptyBtn: { borderRadius: RADIUS.full, paddingHorizontal: 28, paddingVertical: 13, marginTop: 8 },

@@ -2,11 +2,15 @@ import { CategoryScope, CategoryStatus } from '@prisma/client';
 import prisma from '../../prisma';
 
 export class CategoryRepository {
-  async findManyPublic(scope?: CategoryScope) {
+  // `strict` opts out of the default "scope OR BOTH" widening — e.g. the
+  // provider-Service category picker needs exactly CREATOR-scope rows
+  // (provider types), never BOTH-scope rows (content niches), even though
+  // most other CREATOR-scoped pickers in the app do want niches included.
+  async findManyPublic(scope?: CategoryScope, strict = false) {
     return prisma.category.findMany({
       where: {
         status: 'ACTIVE',
-        ...(scope ? { OR: [{ scope: 'BOTH' }, { scope }] } : {}),
+        ...(scope ? (strict ? { scope } : { OR: [{ scope: 'BOTH' }, { scope }] }) : {}),
       },
       orderBy: { name: 'asc' },
     });
@@ -24,11 +28,11 @@ export class CategoryRepository {
     return prisma.category.findUnique({ where: { key } });
   }
 
-  async create(data: { icon: string; iconBg: string; name: string; key: string; scope?: CategoryScope; status?: CategoryStatus }) {
+  async create(data: { icon: string; iconBg: string; name: string; key: string; scope?: CategoryScope; status?: CategoryStatus; group?: string }) {
     return prisma.category.create({ data });
   }
 
-  async update(id: string, data: { icon: string; iconBg: string; name: string; key: string; scope?: CategoryScope; status?: CategoryStatus }) {
+  async update(id: string, data: { icon: string; iconBg: string; name: string; key: string; scope?: CategoryScope; status?: CategoryStatus; group?: string }) {
     return prisma.category.update({ where: { id }, data });
   }
 

@@ -13,7 +13,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +24,7 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { ApiCategory } from '@/services/category';
 
@@ -168,6 +168,24 @@ export default function CreatorPeerDetailScreen() {
           <FontAwesome5 name="user-slash" size={40} color={C.textSecondary} style={s.errorEmoji} />
           <Text style={[s.errorTitle, { color: C.text }]}>{t('creatorDetailExtra.notFound')}</Text>
           <Text style={[s.errorHint, { color: C.textSecondary }]}>{error || t('creatorDetailExtra.notFoundSub')}</Text>
+          <Pressable onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
+            <Text style={[s.retryText, { color: C.brinjal1 }]}>{t('creatorDetailExtra.goBack')}</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Creator has disabled showPublicProfile — the backend only sends
+  // id/fullName/avatarUrl in that case, so bail before reading any other field.
+  if (profile.isPrivate) {
+    return (
+      <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+        <PageHeader title={t('creatorDetailExtra.topTitle')} backFallback="/(creator)/explore-creators" />
+        <View style={s.centered}>
+          <FontAwesome5 name="lock" solid size={40} color={C.textSecondary} style={s.errorEmoji} />
+          <Text style={[s.errorTitle, { color: C.text }]}>{t('creatorDetailExtra.isPrivateTitle')}</Text>
+          <Text style={[s.errorHint, { color: C.textSecondary }]}>{t('creatorDetailExtra.isPrivateSub')}</Text>
           <Pressable onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
             <Text style={[s.retryText, { color: C.brinjal1 }]}>{t('creatorDetailExtra.goBack')}</Text>
           </Pressable>
@@ -450,12 +468,11 @@ export default function CreatorPeerDetailScreen() {
             <Text style={rm.sendTxt}>{sending ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
           </Pressable>
         }>
-        <TextInput
-          style={[rm.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+        <TextInputWithLabel
+          label="Message"
           value={requestMsg}
           onChangeText={setRequestMsg}
           placeholder={t('creatorDetailExtra.messageRequestPlaceholder')}
-          placeholderTextColor={C.textSecondary}
           multiline
           maxLength={500}
         />
@@ -549,7 +566,6 @@ const msgBtn = StyleSheet.create({
 
 // Request modal
 const rm = StyleSheet.create({
-  input:   { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   counter: { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
   sendBtn: { borderRadius: RADIUS.full, height: 52, justifyContent: 'center', alignItems: 'center' },
   sendTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },

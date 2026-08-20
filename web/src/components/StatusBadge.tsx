@@ -4,6 +4,7 @@ type Status =
   | 'suspended'
   | 'banned'
   | 'pending'
+  | 'shortlisted'
   | 'unverified'
   | 'paused'
   | 'closed'
@@ -18,14 +19,19 @@ type Status =
   | 'resolved'
   | 'dismissed'
   | 'approved'
-  | 'unapproved';
+  | 'unapproved'
+  | 'new'
+  | 'under_review'
+  | 'action_taken'
+  | 'deleted';
 
 const styles: Record<Status, string> = {
   active:     'bg-emerald-100 text-emerald-700',
   inactive:   'bg-gray-100 text-gray-600',
   suspended:  'bg-orange-100 text-orange-700',
   banned:     'bg-red-100 text-red-700',
-  pending:    'bg-amber-100 text-amber-700',
+  pending:     'bg-amber-100 text-amber-700',
+  shortlisted: 'bg-blue-100 text-blue-700',
   unverified: 'bg-gray-100 text-gray-500',
   paused:     'bg-orange-100 text-orange-700',
   closed:     'bg-gray-100 text-gray-600',
@@ -41,6 +47,10 @@ const styles: Record<Status, string> = {
   dismissed:  'bg-gray-100 text-gray-600',
   approved:   'bg-emerald-100 text-emerald-700',
   unapproved: 'bg-amber-100 text-amber-700',
+  new:            'bg-amber-100 text-amber-700',
+  under_review:   'bg-blue-100 text-blue-700',
+  action_taken:   'bg-emerald-100 text-emerald-700',
+  deleted:        'bg-red-100 text-red-700',
 };
 
 interface StatusBadgeProps {
@@ -52,7 +62,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${styles[status as Status] ?? 'bg-gray-100 text-gray-600'}`}
     >
-      {status}
+      {String(status).replace(/_/g, ' ')}
     </span>
   );
 }

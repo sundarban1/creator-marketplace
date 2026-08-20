@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { AppModal } from '@/components/AppModal';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { formatPhoneDisplay, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
@@ -41,6 +42,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 import { useGoogleAccessToken } from '@/hooks/useGoogleAccessToken';
 import { useFacebookAccessToken } from '@/hooks/useFacebookAccessToken';
+import { BottomSheet } from '@/components/BottomSheet';
 import {
   authenticate as authenticateBiometric,
   getBiometricLabel,
@@ -273,8 +275,6 @@ export default function BusinessSettingsScreen() {
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [pwSubmitted, setPwSubmitted] = useState(false);
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
 
   // Biometric login toggle
@@ -602,6 +602,9 @@ export default function BusinessSettingsScreen() {
   const [showProfilePublic, setShowProfilePublic] = useState(true);
   const [hideContactDetails, setHideContactDetails] = useState(false);
   const [allowDirectMessages, setAllowDirectMessages] = useState(true);
+  const [hideSocialLinksPriv, setHideSocialLinksPriv] = useState(false);
+  const [locationVisibility, setLocationVisibility] = useState<'EXACT' | 'CITY' | 'DISTRICT'>('CITY');
+  const [showLocationVisibilityPicker, setShowLocationVisibilityPicker] = useState(false);
 
   // ── Confirmation modal ──
   const [appModal, setAppModal] = useState({ visible: false, title: '', body: '', confirmLabel: '', type: 'danger' as 'danger' | 'warning', warning: undefined as string | undefined, onConfirm: () => {} });
@@ -612,6 +615,8 @@ export default function BusinessSettingsScreen() {
       setShowProfilePublic(p.showPublicProfile);
       setHideContactDetails(p.hideContactDetails);
       setAllowDirectMessages(p.allowDirectMessages);
+      setHideSocialLinksPriv(p.hideSocialLinks);
+      setLocationVisibility(p.locationVisibility);
     }).catch(() => {});
     notificationService.getSettings().then((s) => {
       setPushNotifEnabled(s.pushNotificationsEnabled);
@@ -928,18 +933,15 @@ export default function BusinessSettingsScreen() {
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.messageLabel')}</Text>
-              <TextInput
-                style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              <TextInputWithLabel
+                label={t('businessSettings.messageLabel')}
                 value={supportMsg}
                 onChangeText={setSupportMsg}
                 onFocus={() => { bottomFieldFocusedRef.current = true; }}
                 onBlur={() => { bottomFieldFocusedRef.current = false; }}
                 placeholder={t('businessSettings.messagePlaceholder')}
-                placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={5}
-                textAlignVertical="top"
               />
             </View>
             <View style={styles.formField}>
@@ -989,18 +991,15 @@ export default function BusinessSettingsScreen() {
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.descriptionLabel')}</Text>
-              <TextInput
-                style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              <TextInputWithLabel
+                label={t('businessSettings.descriptionLabel')}
                 value={reportDesc}
                 onChangeText={setReportDesc}
                 onFocus={() => { bottomFieldFocusedRef.current = true; }}
                 onBlur={() => { bottomFieldFocusedRef.current = false; }}
                 placeholder={t('businessSettings.reportDescPlaceholder')}
-                placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={5}
-                textAlignVertical="top"
               />
             </View>
             <View style={styles.formField}>
@@ -1068,13 +1067,12 @@ export default function BusinessSettingsScreen() {
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessNameLabel')}</Text>
-              <TextInput
-                style={[styles.formInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              <TextInputWithLabel
+                label={t('businessSettings.businessNameLabel')}
                 value={bizName}
                 onChangeText={setBizName}
                 placeholder={t('businessSettings.businessNamePlaceholder')}
-                placeholderTextColor={C.textSecondary}
+                leftIcon="building"
               />
             </View>
             <View style={styles.formField}>
@@ -1106,16 +1104,13 @@ export default function BusinessSettingsScreen() {
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessDescLabel')}</Text>
-              <TextInput
-                style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              <TextInputWithLabel
+                label={t('businessSettings.businessDescLabel')}
                 value={bizDescription}
                 onChangeText={setBizDescription}
                 placeholder={t('businessSettings.businessDescPlaceholder')}
-                placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={4}
-                textAlignVertical="top"
               />
             </View>
           </View>
@@ -1126,20 +1121,19 @@ export default function BusinessSettingsScreen() {
         <Card>
           <View style={styles.inlineForm}>
             {[
-              { label: t('businessSettings.contactNameLabel'), value: contactName, set: setContactName, placeholder: t('businessSettings.contactNamePlaceholder'), keyboard: 'default' as const },
-              { label: t('businessSettings.contactEmailLabel'), value: contactEmail, set: setContactEmail, placeholder: t('businessSettings.contactEmailPlaceholder'), keyboard: 'email-address' as const },
-              { label: t('businessSettings.phoneNumberLabel'), value: contactPhone, set: setContactPhone, placeholder: t('businessSettings.contactPhonePlaceholder'), keyboard: 'phone-pad' as const },
+              { label: t('businessSettings.contactNameLabel'), value: contactName, set: setContactName, placeholder: t('businessSettings.contactNamePlaceholder'), keyboard: 'default' as const, icon: 'user' as const },
+              { label: t('businessSettings.contactEmailLabel'), value: contactEmail, set: setContactEmail, placeholder: t('businessSettings.contactEmailPlaceholder'), keyboard: 'email-address' as const, icon: 'envelope' as const },
+              { label: t('businessSettings.phoneNumberLabel'), value: contactPhone, set: setContactPhone, placeholder: t('businessSettings.contactPhonePlaceholder'), keyboard: 'phone-pad' as const, icon: 'phone' as const },
             ].map((f) => (
               <View key={f.label} style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{f.label}</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                <TextInputWithLabel
+                  label={f.label}
                   value={f.value}
                   onChangeText={f.set}
                   placeholder={f.placeholder}
-                  placeholderTextColor={C.textSecondary}
                   keyboardType={f.keyboard}
                   autoCapitalize="none"
+                  leftIcon={f.icon}
                 />
               </View>
             ))}
@@ -1204,47 +1198,35 @@ export default function BusinessSettingsScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.newPasswordLabel')}</Text>
-                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: pwError ? C.error : C.border }]}>
-                  <TextInput
-                    style={[styles.pwInput, { color: C.text }]}
-                    value={newPw}
-                    onChangeText={(pw) => { setNewPw(pw); setPwSubmitted(false); }}
-                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
-                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
-                    secureTextEntry={!showNewPw}
-                    placeholder={t('businessSettings.newPasswordPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                    numberOfLines={1}
-                  />
-                  <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
-                    <FontAwesome5 name={showNewPw ? 'eye-slash' : 'eye'} size={20} color={C.textSecondary} />
-                  </Pressable>
-                </View>
-                {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
+                <TextInputWithLabel
+                  label={t('businessSettings.newPasswordLabel')}
+                  value={newPw}
+                  onChangeText={(pw) => { setNewPw(pw); setPwSubmitted(false); }}
+                  onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                  onBlur={() => { bottomFieldFocusedRef.current = false; }}
+                  secureToggle
+                  secureTextEntry
+                  placeholder={t('businessSettings.newPasswordPlaceholder')}
+                  autoCapitalize="none"
+                  error={pwError}
+                  leftIcon="lock"
+                />
               </View>
 
               <View style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.confirmPasswordLabel')}</Text>
-                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: cPwError ? C.error : C.border }]}>
-                  <TextInput
-                    style={[styles.pwInput, { color: C.text }]}
-                    value={confirmPw}
-                    onChangeText={(pw) => { setConfirmPw(pw); setPwSubmitted(false); }}
-                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
-                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
-                    secureTextEntry={!showConfirmPw}
-                    placeholder={t('businessSettings.confirmPasswordPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                    numberOfLines={1}
-                  />
-                  <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
-                    <FontAwesome5 name={showConfirmPw ? 'eye-slash' : 'eye'} size={20} color={C.textSecondary} />
-                  </Pressable>
-                </View>
-                {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
+                <TextInputWithLabel
+                  label={t('businessSettings.confirmPasswordLabel')}
+                  value={confirmPw}
+                  onChangeText={(pw) => { setConfirmPw(pw); setPwSubmitted(false); }}
+                  onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                  onBlur={() => { bottomFieldFocusedRef.current = false; }}
+                  secureToggle
+                  secureTextEntry
+                  placeholder={t('businessSettings.confirmPasswordPlaceholder')}
+                  autoCapitalize="none"
+                  error={cPwError}
+                  leftIcon="lock"
+                />
               </View>
 
               <Pressable
@@ -1342,17 +1324,17 @@ export default function BusinessSettingsScreen() {
                   <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
-              <TextInput
-                style={[styles.phoneField, { flex: 0, color: C.text, borderColor: emailError ? C.error : C.border, backgroundColor: C.background }]}
+              <TextInputWithLabel
+                label={t('businessSettings.emailAddressLabel')}
                 placeholder={t('businessSettings.emailPlaceholder')}
-                placeholderTextColor={C.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={emailInput}
                 onChangeText={(v) => { setEmailInput(v); setEmailError(''); }}
+                error={emailError}
+                leftIcon="envelope"
               />
-              {!!emailError && <Text style={[styles.phoneError, { color: C.error }]}>{emailError}</Text>}
               <Pressable
                 style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: emailLoading ? 0.7 : 1 }]}
                 onPress={handleSendEmailOtp}
@@ -1485,15 +1467,15 @@ export default function BusinessSettingsScreen() {
                   <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
-              <TextInput
-                style={[styles.phoneField, { flex: 0, color: C.text, borderColor: phoneError ? C.error : C.border, backgroundColor: C.background }]}
+              <TextInputWithLabel
+                label={t('businessSettings.phoneNumberLabel')}
                 placeholder="98XXXXXXXX"
-                placeholderTextColor={C.textSecondary}
                 keyboardType="phone-pad"
                 value={phoneInput}
                 onChangeText={(v) => { setPhoneInput(v.replace(/[^0-9+]/g, '')); setPhoneError(''); }}
+                error={phoneError}
+                leftIcon="phone"
               />
-              {!!phoneError && <Text style={[styles.phoneError, { color: C.error }]}>{phoneError}</Text>}
               <Pressable
                 style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: phoneLoading ? 0.7 : 1 }]}
                 onPress={handleSendPhoneOtp}
@@ -1788,14 +1770,14 @@ export default function BusinessSettingsScreen() {
 
               {isEditingNote ? (
                 <View style={[styles.noteEditRow, { backgroundColor: C.background }]}>
-                  <TextInput
-                    style={[styles.noteInput, { color: C.text, borderColor: C.border }]}
-                    value={noteText}
-                    onChangeText={setNoteText}
-                    placeholder={t('businessSettings.notePlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoFocus
-                  />
+                  <View style={{ flex: 1 }}>
+                    <TextInputWithLabel
+                      label={t('businessSettings.notePlaceholder')}
+                      value={noteText}
+                      onChangeText={setNoteText}
+                      autoFocus
+                    />
+                  </View>
                   <Pressable style={[styles.noteSaveBtn, { backgroundColor: C.brinjal1 }]} onPress={() => saveNote(creator.id)}>
                     <Text style={styles.noteSaveBtnText}>{t('businessSettings.noteSaveBtnLabel')}</Text>
                   </Pressable>
@@ -2025,13 +2007,22 @@ export default function BusinessSettingsScreen() {
 
   // ── Section: Privacy Settings ─────────────────────────────────
 
-  async function savePrivacy(patch: { showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean }) {
+  async function savePrivacy(patch: {
+    showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean;
+    hideSocialLinks?: boolean; locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
+  }) {
     try {
       await businessService.updatePrivacy(patch);
     } catch {
       toast.error(t('businessSettings.privacySaveFailed'));
     }
   }
+
+  const LOCATION_VISIBILITY_LABEL: Record<'EXACT' | 'CITY' | 'DISTRICT', string> = {
+    EXACT:    t('businessSettings.locationVisExact'),
+    CITY:     t('businessSettings.locationVisCity'),
+    DISTRICT: t('businessSettings.locationVisDistrict'),
+  };
 
   function renderPrivacy() {
     return (
@@ -2061,6 +2052,17 @@ export default function BusinessSettingsScreen() {
             }}
           />
           <SwitchRow
+            iconNode={<FontAwesome5 name="share-alt" solid size={20} color={C.brinjal1} />}
+            label={t('businessSettings.hideSocialLabel')}
+            sub={t('businessSettings.hideSocialSub')}
+            value={hideSocialLinksPriv}
+            onChange={() => {
+              const next = !hideSocialLinksPriv;
+              setHideSocialLinksPriv(next);
+              savePrivacy({ hideSocialLinks: next });
+            }}
+          />
+          <SwitchRow
             iconNode={<FontAwesome5 name="comment" solid size={20} color={C.brinjal1} />}
             label={t('businessSettings.allowMessagesLabel')}
             sub={t('businessSettings.allowMessagesSub')}
@@ -2073,6 +2075,42 @@ export default function BusinessSettingsScreen() {
             isLast
           />
         </Card>
+
+        <SectionHeader title={t('businessSettings.locationVisSection')} />
+        <Card>
+          <NavRow
+            faIcon="map-marker-alt"
+            label={t('businessSettings.locationVisLabel')}
+            sub={t('businessSettings.locationVisSub')}
+            value={LOCATION_VISIBILITY_LABEL[locationVisibility]}
+            onPress={() => setShowLocationVisibilityPicker(true)}
+            isLast
+          />
+        </Card>
+
+        <BottomSheet
+          visible={showLocationVisibilityPicker}
+          onClose={() => setShowLocationVisibilityPicker(false)}
+          title={t('businessSettings.locationVisLabel')}
+          scrollable={false}
+        >
+          {(['EXACT', 'CITY', 'DISTRICT'] as const).map((opt) => (
+            <Pressable
+              key={opt}
+              style={[styles.row, { borderBottomWidth: opt !== 'DISTRICT' ? 1 : 0, borderBottomColor: C.border }]}
+              onPress={() => {
+                setLocationVisibility(opt);
+                savePrivacy({ locationVisibility: opt });
+                setShowLocationVisibilityPicker(false);
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{LOCATION_VISIBILITY_LABEL[opt]}</Text>
+              </View>
+              {locationVisibility === opt && <FontAwesome5 name="check" solid size={16} color={C.brinjal1} />}
+            </Pressable>
+          ))}
+        </BottomSheet>
       </>
     );
   }
@@ -2308,9 +2346,12 @@ const styles = StyleSheet.create({
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
   topTitle: { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
 
+  // marginHorizontal matches card/hintCard's 16 below — this used to be a
+  // stray 20 (same copy-pasted mismatch as edit-profile.tsx and the creator
+  // settings screen), so the section label sat 4px further in than the card.
   sectionHeader: {
     fontSize: 11, letterSpacing: 0,
-    marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
+    marginTop: 20, marginBottom: 6, marginHorizontal: 16, fontFamily: F.bold,
   },
   card: {
     marginHorizontal: 16, borderRadius: RADIUS.md,
@@ -2367,11 +2408,6 @@ const styles = StyleSheet.create({
   formField: { gap: 5 },
   formFieldLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   formInput: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
-  formTextarea: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, minHeight: 110, fontFamily: F.regular },
-  fieldError: { fontSize: 12, fontFamily: F.medium },
-  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, height: 46 },
-  pwInput: { flex: 1, height: 44, fontSize: 14, fontFamily: F.regular, textAlignVertical: 'center', letterSpacing: 0 },
-  eyeBtn: { padding: 6 },
 
   paymentIcon: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   checkboxOuter: { width: 22, height: 22, borderRadius: RADIUS.sm, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
@@ -2412,7 +2448,6 @@ const styles = StyleSheet.create({
   addNoteBtn: { paddingTop: 10 },
   addNoteText: { fontSize: 13, fontFamily: F.semibold },
   noteEditRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, borderRadius: RADIUS.sm, padding: 8 },
-  noteInput: { flex: 1, fontSize: 13, borderWidth: 1, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 6, fontFamily: F.regular },
   noteSaveBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 6 },
   noteSaveBtnText: { color: '#fff', fontSize: 12, fontFamily: F.bold },
 
@@ -2440,7 +2475,6 @@ const styles = StyleSheet.create({
 
   otpCloseBtn: { width: 30, height: 30, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
-  phoneField: { flex: 1, borderWidth: 1.5, borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
   phoneError: { fontSize: 12, fontFamily: F.regular, marginTop: -4 },
   phoneActionBtn: { flex: 1, borderRadius: RADIUS.sm, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
   phoneActionBtnText: { fontSize: 14, fontFamily: F.semibold },

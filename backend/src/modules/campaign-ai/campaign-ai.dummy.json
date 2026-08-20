@@ -57,7 +57,44 @@
       "needsInput": [
         "location"
       ],
-      "goal": "More Customers"
+      "goal": "More Customers",
+      "requirements": [
+        {
+          "category": "Content Creator",
+          "quantity": 2,
+          "budgetType": "RANGE",
+          "budgetMin": 3000,
+          "budgetMax": 6000,
+          "deliverables": {
+            "REEL": 1,
+            "STORY": 2,
+            "PHOTO_POST": 0,
+            "VISIT_STORE": 0,
+            "PRODUCT_REVIEW_VIDEO": 0,
+            "EVENT_COVERAGE_VIDEO": 0,
+            "MENTION_IN_CAPTION": 0,
+            "TAG_BUSINESS": 0,
+            "GOOGLE_REVIEW": 0
+          }
+        },
+        {
+          "category": "Photographer",
+          "quantity": 1,
+          "budgetType": "FIXED",
+          "budgetFixed": 8000,
+          "deliverables": {
+            "REEL": 0,
+            "STORY": 0,
+            "PHOTO_POST": 5,
+            "VISIT_STORE": 0,
+            "PRODUCT_REVIEW_VIDEO": 0,
+            "EVENT_COVERAGE_VIDEO": 0,
+            "MENTION_IN_CAPTION": 0,
+            "TAG_BUSINESS": 0,
+            "GOOGLE_REVIEW": 0
+          }
+        }
+      ]
     },
     {
       "keywords": [
@@ -374,9 +411,15 @@
         "TikTok"
       ],
       "benefits": [
-        "Freebies & PR Packages",
-        "Community & Culture"
+        "Food & Drinks",
+        "Free Products / Gifts"
       ],
+      "exchangeType": [
+        "Reel / short video",
+        "Story mention",
+        "Mention / tag the business"
+      ],
+      "expectedContent": "1 Reel + 2 Instagram Stories tagging the business within 3 days of the event",
       "capacity": 20,
       "location": null,
       "needsInput": [
@@ -404,9 +447,15 @@
         "TikTok"
       ],
       "benefits": [
-        "Brand Networking",
-        "Freebies & PR Packages"
+        "Free Products / Gifts",
+        "Product Launch / Preview"
       ],
+      "exchangeType": [
+        "Photos",
+        "Story mention",
+        "Mention / tag the business"
+      ],
+      "expectedContent": "3-5 styled photos and 1 Instagram Story tagging the business",
       "capacity": 15,
       "location": null,
       "needsInput": [
@@ -434,9 +483,14 @@
         "YouTube"
       ],
       "benefits": [
-        "Skill Workshops",
-        "Community & Culture"
+        "Free Service / Experience",
+        "Free Event Access"
       ],
+      "exchangeType": [
+        "Honest review",
+        "Social media post"
+      ],
+      "expectedContent": "1 honest social media post about the workout experience within a week of attending",
       "capacity": 15,
       "location": null,
       "needsInput": [
@@ -463,9 +517,15 @@
         "TikTok"
       ],
       "benefits": [
-        "Freebies & PR Packages",
-        "Brand Networking"
+        "Free Service / Experience",
+        "Free Products / Gifts"
       ],
+      "exchangeType": [
+        "Reel / short video",
+        "Honest review",
+        "Mention / tag the business"
+      ],
+      "expectedContent": "1 Reel sharing an honest first impression of the treatment, tagging the business",
       "capacity": 15,
       "location": null,
       "needsInput": [
@@ -483,10 +543,13 @@
         "TikTok"
       ],
       "benefits": [
-        "Community & Culture",
-        "Brand Networking",
-        "Freebies & PR Packages"
+        "Free Event Access",
+        "Free Products / Gifts"
       ],
+      "exchangeType": [
+        "Just attend & share organically"
+      ],
+      "expectedContent": "",
       "capacity": 20,
       "location": null,
       "needsInput": [

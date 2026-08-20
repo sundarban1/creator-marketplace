@@ -1,12 +1,7 @@
-import { FontAwesome5 } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
 import { LocationSearchPicker, type LocationFilter } from '@/components/LocationSearchPicker';
-import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { F, RADIUS } from '@/utilities/constants';
-import { useCategories } from '@/hooks/useCategories';
-import { usePlatforms } from '@/hooks/usePlatforms';
 
 // Shared Platform / Category / Location filter sheet for browsing businesses —
 // used by both the "Explore Businesses" and "Saved Brands" (favorites) screens
@@ -37,10 +32,7 @@ export function BusinessFilterModal({
   onReset,
   onClose,
 }: Props) {
-  const C = useAppColors();
   const { t } = useLanguage();
-  const { categories: businessCategories } = useCategories('BUSINESS');
-  const { platforms: allPlatforms } = usePlatforms();
 
   const activeChips: ActiveFilterChip[] = [];
   if (tempPlatform) activeChips.push({ key: 'platform', label: tempPlatform, onClear: () => setTempPlatform('') });
@@ -69,44 +61,6 @@ export function BusinessFilterModal({
     >
       <ActiveFilterChips chips={activeChips} />
 
-      {/* Platform */}
-      <View>
-        <FilterSectionHeader icon="mobile-alt" label={t('explore.businesses.filterPlatform')} />
-        <View style={s.chipGrid}>
-          {allPlatforms.map((p) => {
-            const active = tempPlatform === p.name;
-            return (
-              <Pressable
-                key={p.id}
-                onPress={() => setTempPlatform(active ? '' : p.name)}
-                style={[s.filterChip, { borderColor: active ? p.color : C.border, backgroundColor: active ? p.iconBg : C.background }]}>
-                <FontAwesome5 name={p.icon} size={12} color={active ? p.color : C.textSecondary} />
-                <Text style={[s.filterChipText, { color: active ? p.color : C.text, fontWeight: active ? '700' : '400' }]}>{p.name}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Category */}
-      <View>
-        <FilterSectionHeader icon="tag" label={t('explore.businesses.filterCategory')} />
-        <View style={s.chipGrid}>
-          {businessCategories.map((cat) => {
-            const active = tempCategory === cat.name;
-            return (
-              <Pressable
-                key={cat.id}
-                onPress={() => setTempCategory(active ? '' : cat.name)}
-                style={[s.filterChip, { borderColor: active ? cat.color : C.border, backgroundColor: active ? cat.iconBg : C.background }]}>
-                <FontAwesome5 name={cat.icon} size={12} color={active ? cat.color : C.textSecondary} />
-                <Text style={[s.filterChipText, { color: active ? cat.color : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
       {/* Location */}
       <View>
         <FilterSectionHeader
@@ -119,9 +73,3 @@ export function BusinessFilterModal({
     </FilterSheet>
   );
 }
-
-const s = StyleSheet.create({
-  chipGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  filterChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 9 },
-  filterChipText: { fontSize: 13, fontFamily: F.medium },
-});

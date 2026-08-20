@@ -9,7 +9,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +18,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
@@ -130,7 +130,7 @@ export default function EditBusinessProfileScreen() {
       <MaxWidthContainer>
       <View style={{ backgroundColor: C.surface }}>
         <View style={styles.topBar}>
-          <BackButton fallback="/(business)/profile" />
+          <BackButton fallback="/(business)/(tabs)/profile" />
           <Text style={[styles.topTitle, { color: C.text }]}>{t('profile.editBusiness.headerTitle')}</Text>
           <View style={{ width: 38 }} />
         </View>
@@ -148,36 +148,30 @@ export default function EditBusinessProfileScreen() {
         <View style={[styles.card, { backgroundColor: C.surface }]}>
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.nameLabel')}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+            <TextInputWithLabel
+              label={t('profile.editBusiness.nameLabel')}
               value={businessName}
               onChangeText={setBusinessName}
               placeholder={t('profile.editBusiness.namePlaceholder')}
-              placeholderTextColor={C.textSecondary}
+              leftIcon="building"
             />
           </View>
 
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.descriptionLabel')}</Text>
-              {categories.length > 0 && (
+            <TextInputWithLabel
+              label={t('profile.editBusiness.descriptionLabel')}
+              rightSlot={categories.length > 0 ? (
                 <Pressable onPress={handleRegenerateDescription} style={[styles.regenerateBtn, { backgroundColor: C.primaryLight }]}>
                   <Text style={[styles.regenerateBtnText, { color: C.brinjal1 }]}>{t('profile.editBusiness.regenerateBtn')}</Text>
                 </Pressable>
-              )}
-            </View>
-            <TextInput
-              style={[styles.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              ) : undefined}
               value={description}
-              onChangeText={(t) => { setDescription(t.slice(0, 600)); setDescriptionManuallyEdited(true); }}
+              onChangeText={(txt) => { setDescription(txt.slice(0, 600)); setDescriptionManuallyEdited(true); }}
               placeholder={t('profile.editBusiness.descriptionPlaceholder')}
-              placeholderTextColor={C.textSecondary}
               multiline
               numberOfLines={4}
-              textAlignVertical="top"
             />
             <Text style={[styles.charCount, { color: C.textSecondary }]}>{t('profile.editBusiness.charCount', { n: description.length })}</Text>
           </View>
@@ -185,16 +179,15 @@ export default function EditBusinessProfileScreen() {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.websiteLabel')}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+            <TextInputWithLabel
+              label={t('profile.editBusiness.websiteLabel')}
               value={website}
               onChangeText={setWebsite}
               placeholder={t('profile.editBusiness.websitePlaceholder')}
-              placeholderTextColor={C.textSecondary}
               keyboardType="url"
               autoCapitalize="none"
               autoCorrect={false}
+              leftIcon="globe"
             />
           </View>
 
@@ -255,16 +248,15 @@ const styles = StyleSheet.create({
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
   topTitle:      { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
   content:       { paddingBottom: 24 },
-  sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
+  // marginHorizontal matches card/topBar/saveBtn's 16 below — this used to be
+  // a stray 20, so the section label sat 4px further in than the card under it.
+  sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 16, fontFamily: F.bold },
   card:          { marginHorizontal: 16, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },
   field:         { padding: 16, gap: 8 },
   divider:       { height: 1 },
   label:         { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
-  labelRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   regenerateBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   regenerateBtnText: { fontSize: 11, fontFamily: F.semibold },
-  input:         { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
-  textarea:      { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
   charCount:     { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
   suggestBox:    { borderRadius: RADIUS.sm, borderWidth: 1.5, marginTop: 4, overflow: 'hidden' },
   suggestItem:   { paddingHorizontal: 12, paddingVertical: 11 },

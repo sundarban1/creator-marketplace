@@ -2,15 +2,17 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppColors } from '@/context/ThemeContext';
+import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { authService } from '@/services/auth';
+import { withAlpha } from '@/utilities/color';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 
 type Channel = 'email' | 'phone';
@@ -19,6 +21,7 @@ function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.tr
 
 export default function ForgotPasswordScreen() {
   const C = useAppColors();
+  const { isDark } = useIsDark();
   const { t } = useLanguage();
   const toast = useToast();
   const [channel, setChannel] = useState<Channel>('email');
@@ -56,35 +59,38 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.brinjal1 }]} edges={['top']}>
-      <StatusBar style="light" />
-      {/* ── Header ── */}
-      <View style={styles.hero}>
-        <View style={styles.bubble1} />
-        <View style={styles.bubble2} />
-        <View style={styles.back}>
-          <BackButton variant="overlay" fallback="/login" />
-        </View>
-        <View style={styles.heroContent}>
-          <View style={styles.iconWrap}>
-            <FontAwesome5 name="lock" size={22} color="#fff" solid />
-          </View>
-          <Text style={styles.heroTitle}>{t('auth.forgotPassword.title')}</Text>
-          <Text style={styles.heroSub}>{t('auth.forgotPassword.subtitle')}</Text>
-        </View>
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* ── Card ── */}
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <MaxWidthContainer>
         <ScrollView
-          style={[styles.card, { backgroundColor: C.preLoginBackground }]}
-          contentContainerStyle={styles.cardContent}
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
+          <View style={styles.header}>
+            <BackButton fallback="/login" />
+          </View>
+
+          {/* ── Illustration ── */}
+          <View style={styles.illustrationWrap}>
+            <View style={[styles.blob, { backgroundColor: withAlpha(C.brinjal1, 0.1) }]} />
+            <View style={[styles.sparkle, styles.sparkleTL, { backgroundColor: withAlpha(C.accent, 0.5) }]} />
+            <View style={[styles.sparkle, styles.sparkleBR, { backgroundColor: withAlpha(C.brinjal1, 0.4) }]} />
+            <View style={[styles.lockCircle, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}>
+              <FontAwesome5 name="lock" size={30} color="#fff" solid />
+            </View>
+          </View>
+
+          <View style={styles.heroContent}>
+            <Text style={[styles.heroTitle, { color: C.text }]}>{t('auth.forgotPassword.title')}</Text>
+            <Text style={[styles.heroSub, { color: C.textSecondary }]}>{t('auth.forgotPassword.subtitle')}</Text>
+          </View>
+
           {/* Email / Phone toggle */}
-          <View style={[styles.channelToggle, { backgroundColor: C.surface }]}>
+          <View style={[styles.channelToggle, { backgroundColor: C.primaryLight }]}>
             {(['email', 'phone'] as const).map((c) => {
               const active = channel === c;
               return (
@@ -92,7 +98,7 @@ export default function ForgotPasswordScreen() {
                   key={c}
                   onPress={() => { setChannel(c); setError(''); }}
                   style={[styles.channelTab, active && { backgroundColor: C.brinjal1 }]}>
-                  <FontAwesome5 name={c === 'email' ? 'envelope' : 'phone'} size={14} color={active ? '#fff' : C.brinjal1} />
+                  <FontAwesome5 name={c === 'email' ? 'envelope' : 'phone'} size={13} color={active ? '#fff' : C.brinjal1} />
                   <Text style={[styles.channelTabText, { color: active ? '#fff' : C.brinjal1 }]}>
                     {c === 'email' ? t('auth.login.emailLabel') : t('creatorSettings.phoneNumberLabel')}
                   </Text>
@@ -101,32 +107,30 @@ export default function ForgotPasswordScreen() {
             })}
           </View>
 
-          <Text style={[styles.label, { color: C.text }]}>
-            {channel === 'email' ? t('auth.forgotPassword.emailLabel') : t('auth.forgotPassword.phoneLabel')}
-          </Text>
           {channel === 'email' ? (
-            <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: error ? C.error : C.border, color: C.text }]}
+            <TextInputWithLabel
+              label={t('auth.forgotPassword.emailLabel')}
+              leftIcon="envelope"
+              error={error || undefined}
               value={email}
               onChangeText={(v) => { setEmail(v); setError(''); }}
               placeholder={t('auth.forgotPassword.emailPlaceholder')}
-              placeholderTextColor={C.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
               autoFocus
             />
           ) : (
-            <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: error ? C.error : C.border, color: C.text }]}
+            <TextInputWithLabel
+              label={t('auth.forgotPassword.phoneLabel')}
+              leftIcon="phone"
+              error={error || undefined}
               value={phone}
               onChangeText={(v) => { setPhone(v.replace(/[^0-9+]/g, '')); setError(''); }}
               placeholder={t('auth.forgotPassword.phonePlaceholder')}
-              placeholderTextColor={C.textSecondary}
               keyboardType="phone-pad"
               autoFocus
             />
           )}
-          {error ? <Text style={[styles.errorText, { color: C.error }]}>{error}</Text> : null}
 
           <Text style={[styles.hint, { color: C.textSecondary }]}>
             {channel === 'email' ? t('auth.forgotPassword.emailHint') : t('auth.forgotPassword.phoneHint')}
@@ -147,8 +151,9 @@ export default function ForgotPasswordScreen() {
           </Pressable>
 
           <Pressable onPress={() => router.replace('/login')} style={styles.backToLogin}>
+            <FontAwesome5 name="arrow-left" size={12} color={C.brinjal1} />
             <Text style={[styles.backToLoginText, { color: C.textSecondary }]}>
-              {t('auth.forgotPassword.backTo')} <Text style={{ color: C.brinjal1, fontWeight: '700' }}>{t('auth.forgotPassword.signIn')}</Text>
+              {t('auth.forgotPassword.backTo')} <Text style={{ color: C.brinjal1, fontFamily: F.bold }}>{t('auth.forgotPassword.signIn')}</Text>
             </Text>
           </Pressable>
 
@@ -162,28 +167,32 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
-  hero: { paddingBottom: 36, overflow: 'hidden' },
-  bubble1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.07)', top: -60, right: -50 },
-  bubble2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.06)', bottom: 0, left: -30 },
-  back: { margin: 16, alignSelf: 'flex-start' },
-  heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
-  iconWrap: { width: 68, height: 68, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  heroTitle: { fontSize: 20, color: '#fff', textAlign: 'center', fontFamily: F.bold },
-  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
-  card: { flex: 1, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl },
-  cardContent: { padding: 28, paddingBottom: 40 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 },
+  header: { paddingTop: 8, marginBottom: 8 },
+
+  illustrationWrap: { alignSelf: 'center', width: 140, height: 140, justifyContent: 'center', alignItems: 'center', marginTop: 12, marginBottom: 8 },
+  blob: { position: 'absolute', width: 140, height: 140, borderRadius: 40, transform: [{ rotate: '18deg' }] },
+  sparkle: { position: 'absolute', borderRadius: RADIUS.full },
+  sparkleTL: { width: 14, height: 14, top: 6, left: 10 },
+  sparkleBR: { width: 10, height: 10, bottom: 10, right: 8 },
+  lockCircle: {
+    width: 76, height: 76, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
+    shadowOpacity: 0.28, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8,
+  },
+
+  heroContent: { alignItems: 'center', paddingHorizontal: 8, gap: 8, marginBottom: 28 },
+  heroTitle: { fontSize: 22, textAlign: 'center', fontFamily: F.bold },
+  heroSub: { fontSize: 14, textAlign: 'center', lineHeight: 21, fontFamily: F.regular },
+
   channelToggle: { flexDirection: 'row', gap: 6, borderRadius: RADIUS.md, padding: 4, marginBottom: 20 },
   channelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: RADIUS.sm },
   channelTabText: { fontSize: 13, fontFamily: F.bold },
-  label: { fontSize: 14, marginBottom: 8, fontFamily: F.bold },
-  input: { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 6, fontFamily: F.regular },
-  errorText: { fontSize: 12, marginBottom: 4, fontFamily: F.medium },
-  hint: { fontSize: 12, marginBottom: 24, lineHeight: 18, fontFamily: F.regular },
-  btn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 16 },
+  hint: { fontSize: 12, marginTop: 8, marginBottom: 24, lineHeight: 18, fontFamily: F.regular },
+  btn: { borderRadius: RADIUS.full, paddingVertical: 16, alignItems: 'center', ...SHADOW.raised, marginBottom: 20 },
   btnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   btnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 18, height: 18, borderRadius: 9, borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.35)' },
-  backToLogin: { alignItems: 'center', paddingVertical: 8 },
+  backToLogin: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 8 },
   backToLoginText: { fontSize: 14, fontFamily: F.regular },
 });

@@ -18,14 +18,21 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 // ── Tab config ────────────────────────────────────────────────────────────────
 
-// `color` is omitted for `index` (Home) — it uses the theme's brinjal accent instead, resolved at render time.
-// The header's menu button (see index.tsx) opens the drawer; `notifications`
-// is this tab's real destination screen.
+// `color` is omitted for `index` (Home) and `discover` — they use the theme's
+// brinjal accent instead, resolved at render time. The header's bell button
+// (see index.tsx) is `notifications`' real entry point now that it's off the
+// bar. `discover` holds all the search/filter/browse/nearby functionality
+// that used to live on Home directly (see discover.tsx) — Home itself is now
+// a lightweight "next best action" dashboard.
+// "proposals" (Applications) and "notifications" (Activity) are intentionally
+// absent here — both are still real, routable screens (see the <Tabs.Screen>
+// entries below), reached from Home's quick actions / header bell rather than
+// a bottom tab bar icon.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home',          iconActive: 'home',          label: 'Home' },
-  proposals:     { icon: 'file-alt', iconActive: 'file-alt', label: 'Proposals',  color: '#7C3AED' },
+  discover:      { icon: 'search',        iconActive: 'search',        label: 'Discover' },
   messages:      { icon: 'comment',    iconActive: 'comment',    label: 'Messages',   color: '#2563EB' },
-  notifications: { icon: 'bell', iconActive: 'bell', label: 'Notifications' },
+  profile:       { icon: 'user', iconActive: 'user', label: 'Profile' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
@@ -34,12 +41,10 @@ function CustomTabBar({
   state,
   navigation,
   chatBadge,
-  notifBadge,
 }: {
   state: any;
   navigation: any;
   chatBadge: number;
-  notifBadge: number;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -61,14 +66,15 @@ function CustomTabBar({
 
   const labelMap: Record<string, string> = {
     index:         t('creator.tab.home'),
+    discover:      t('creator.tab.discover'),
     proposals:     t('creator.tab.proposals'),
     messages:      t('creator.tab.messages'),
     notifications: t('creator.tab.activity'),
+    profile:       t('creator.tab.profile'),
   };
 
   const badgeMap: Record<string, number> = {
     messages:      chatBadge,
-    notifications: notifBadge,
   };
 
   const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
@@ -215,7 +221,7 @@ export default function CreatorTabsLayout() {
   const { t } = useLanguage();
   const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { chatBadgeCount, badgeCount } = useNotificationBadge();
+  const { chatBadgeCount } = useNotificationBadge();
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
@@ -228,11 +234,11 @@ export default function CreatorTabsLayout() {
                 state={props.state}
                 navigation={props.navigation}
                 chatBadge={chatBadgeCount}
-                notifBadge={badgeCount}
               />
             )}
           >
             <Tabs.Screen name="index"    options={{ title: t('creator.tab.home') }} />
+            <Tabs.Screen name="discover" options={{ title: t('creator.tab.discover') }} />
             <Tabs.Screen name="proposals" options={{ title: t('creator.tab.proposals') }} />
             <Tabs.Screen
               name="messages"
@@ -245,6 +251,7 @@ export default function CreatorTabsLayout() {
               options={{ title: t('creator.tab.messages') }}
             />
             <Tabs.Screen name="notifications" options={{ title: t('creator.tab.activity') }} />
+            <Tabs.Screen name="profile" options={{ title: t('creator.tab.profile') }} />
           </Tabs>
         </MaxWidthContainer>
 

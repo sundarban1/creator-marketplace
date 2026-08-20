@@ -33,6 +33,20 @@ export interface DeliverableFile {
   uploadedAt:       string;
 }
 
+export interface AiRequirementDraft {
+  category: string;
+  categoryId: string;
+  quantity: number;
+  budgetType: 'FIXED' | 'RANGE' | 'NEGOTIABLE';
+  budgetFixed?: number;
+  budgetMin?: number;
+  budgetMax?: number;
+  deliverables: Record<string, number>;
+  // Free-text brief of what this role should do — only meaningful for
+  // non-Content-Creator roles (Content Creator roles use `deliverables` instead).
+  description: string;
+}
+
 export interface AiCampaignDraft {
   title: string;
   description: string;
@@ -55,6 +69,9 @@ export interface AiCampaignDraft {
   needsInput: string[];
   aiSuggestedCategories: string[];
   aiSuggestedPlatforms: string[];
+  // Empty for the common single-role case — populated only when the AI
+  // detected the brief clearly asks for multiple distinct provider types.
+  requirements: AiRequirementDraft[];
 }
 
 export interface AiEventDraft {
@@ -63,6 +80,10 @@ export interface AiEventDraft {
   category: string;
   platforms: string[];
   benefits: string[];
+  // What the business wants back from attendees — ['Just attend & share
+  // organically'] alone means no content is expected (expectedContent stays '').
+  exchangeType: string[];
+  expectedContent: string;
   capacity: number;
   location: string | null;
   needsInput: string[];
@@ -157,6 +178,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     aiSuggestedCategories: api.aiSuggestedCategories ?? [],
     aiSuggestedPlatforms:  api.aiSuggestedPlatforms ?? [],
     distanceKm:            api.distanceKm,
+    requirements:          api.requirements,
   };
 }
 
@@ -219,6 +241,17 @@ export const campaignService = {
     };
   },
 
+  // Backend-scored fit against the creator's own categories/platforms/budget/
+  // location (see CampaignService.getRecommendedForCreator) — for the
+  // creator home page's "Recommended Opportunities" rail. Not paginated,
+  // just a fixed-size best-match list, so no `page`/`total` in the return.
+  async recommended(params?: { limit?: number }): Promise<{ campaigns: Campaign[] }> {
+    const res = await request<ApiCampaign[]>('GET', '/api/campaigns/recommended', undefined, {
+      limit: params?.limit ?? 10,
+    });
+    return { campaigns: res.data.map(toCampaign) };
+  },
+
   async nearby(params: {
     lat: number;
     lng: number;
@@ -258,6 +291,9 @@ export const campaignService = {
     timeline:     string;
     socialHandles?: Record<string, string>;
     portfolioUrl?:  string;
+    // Which role on a multi-role campaign this application is for — omit
+    // for the simple single-category campaigns every existing campaign uses.
+    requirementId?: string;
   }): Promise<void> {
     await request('POST', `/api/campaigns/${campaignId}/apply`, payload);
   },
@@ -304,6 +340,19 @@ export const campaignService = {
     aiPrompt?:              string;
     aiSuggestedCategories?: string[];
     aiSuggestedPlatforms?:  string[];
+    // Omit for the single-role campaigns every existing campaign uses — see
+    // CampaignRequirement. When present, category/budgetMin/budgetMax/
+    // creatorsNeeded above are still sent as an informational summary.
+    requirements?: {
+      categoryId: string;
+      quantity: number;
+      budgetType: 'FIXED' | 'RANGE' | 'NEGOTIABLE';
+      budgetFixed?: number;
+      budgetMin?: number;
+      budgetMax?: number;
+      deliverables?: string;
+      deadline?: string;
+    }[];
   }): Promise<Campaign> {
     const res = await request<ApiCampaign>('POST', '/api/campaigns', data);
     return toCampaign(res.data);
@@ -335,6 +384,7 @@ export const campaignService = {
     title?: string;
     description?: string;
     featureImageUrl?: string | null;
+    template?: string;
     category?: string;
     goals?: string[];
     platforms?: string[];
@@ -372,12 +422,12 @@ export const campaignService = {
   async getBusinessProposals(params?: {
     page?: number;
     limit?: number;
-    status?: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+    status?: 'PENDING' | 'SHORTLISTED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
   }): Promise<{
     proposals: Array<{
       id: string;
-      status: 'pending' | 'accepted' | 'rejected' | 'expired';
+      status: 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
       workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
       // The application's own payment status — distinct from campaign.paymentStatus,
       // which tracks the campaign record itself and isn't updated by the per-application
@@ -411,7 +461,7 @@ export const campaignService = {
     return {
       proposals: res.data.map((a) => ({
         id: a.id,
-        status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected' | 'expired',
+        status: a.status.toLowerCase() as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired',
         workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
         paymentStatus: (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
@@ -561,6 +611,18 @@ export const campaignService = {
     await request('PUT', `/api/campaigns/applications/${appId}/approve`);
   },
 
+  // Only callable once the application is COMPLETED — one review per rater
+  // per application (backend returns 409 on a second attempt).
+  async submitReview(appId: string, rating: number, comment?: string): Promise<void> {
+    await request('POST', `/api/campaigns/applications/${appId}/review`, { rating, comment: comment || undefined });
+  },
+
+  // Null when the caller hasn't reviewed this application yet — not an error.
+  async getMyReview(appId: string): Promise<{ id: string; rating: number; comment: string | null; createdAt: string } | null> {
+    const res = await request<{ id: string; rating: number; comment: string | null; createdAt: string } | null>('GET', `/api/campaigns/applications/${appId}/review`);
+    return res.data;
+  },
+
   async requestRevision(appId: string, note: string): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/request-revision`, { note });
   },
@@ -581,9 +643,16 @@ export const campaignService = {
     await request('PUT', `/api/campaigns/${campaignId}/applications/${appId}/reject`);
   },
 
+  // §49 — toggles PENDING <-> SHORTLISTED; returns the updated status so the
+  // caller can apply it optimistically without a second round-trip.
+  async shortlistProposal(campaignId: string, appId: string): Promise<{ status: string }> {
+    const res = await request<{ status: string }>('PUT', `/api/campaigns/${campaignId}/applications/${appId}/shortlist`);
+    return res.data;
+  },
+
   async getApplications(campaignId: string): Promise<Array<{
     id:              string;
-    status:          'pending' | 'accepted' | 'rejected' | 'expired';
+    status:          'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
     proposedRate:    string;
     proposedRateRaw: number;
     coverLetter:     string;
@@ -612,7 +681,7 @@ export const campaignService = {
     }>>('GET', `/api/campaigns/${campaignId}/applications`);
     return res.data.map((a) => ({
       id:              a.id,
-      status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected' | 'expired',
+      status:          a.status.toLowerCase() as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired',
       proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
       proposedRateRaw: a.proposedRate,
       coverLetter:     a.coverLetter ?? '',
@@ -634,7 +703,7 @@ export const campaignService = {
   async getMyApplications(params?: {
     page?:   number;
     limit?:  number;
-    status?: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+    status?: 'PENDING' | 'SHORTLISTED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
   }): Promise<{
     proposals: Array<{
       id:               string;
@@ -642,7 +711,7 @@ export const campaignService = {
       campaignTitle:    string;
       brand:            string;
       businessId:       string;
-      status:           'pending' | 'accepted' | 'rejected' | 'expired';
+      status:           'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
       submittedAt:      string;
       workSubmittedAt:  string | null;
       coverLetter:      string;
@@ -658,6 +727,9 @@ export const campaignService = {
       workNote:         string | null;
       revisionRequestedAt: string | null;
       revisionNotes:    { note: string; createdAt: string }[];
+      // Which role of a multi-role campaign this application is for — null
+      // for the simple single-category campaigns every existing campaign uses.
+      requirementId:    string | null;
     }>;
     total: number;
   }> {
@@ -676,6 +748,7 @@ export const campaignService = {
       workNote?:       string | null;
       revisionRequestedAt?: string | null;
       revisionNotes?:  { note: string; createdAt: string }[];
+      requirementId?:  string | null;
       campaign:     {
         id: string; title: string; campaignType?: string;
         paymentStatus?: string; paidAt?: string | null; featureImageUrl?: string | null;
@@ -694,7 +767,7 @@ export const campaignService = {
         campaignTitle:   a.campaign.title,
         brand:           a.campaign.business.businessName,
         businessId:      a.campaign.business.id,
-        status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected' | 'expired',
+        status:          a.status.toLowerCase() as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired',
         submittedAt:     a.createdAt,
         workSubmittedAt: a.submittedAt ?? null,
         coverLetter:     a.coverLetter,
@@ -710,6 +783,7 @@ export const campaignService = {
         workNote:        a.workNote ?? null,
         revisionRequestedAt: a.revisionRequestedAt ?? null,
         revisionNotes:   a.revisionNotes ?? [],
+        requirementId:   a.requirementId ?? null,
       })),
       total: res.pagination?.total ?? res.data.length,
     };

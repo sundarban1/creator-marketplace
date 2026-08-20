@@ -1,152 +1,67 @@
+import { useCallback, useContext, useState } from 'react';
+import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, LayoutAnimation, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
-import { Image } from 'expo-image';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SearchInput } from '@/components/SearchInput';
+import { AttentionBanner } from '@/components/AttentionBanner';
+import { PromoBanner } from '@/components/PromoBanner';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
+import { useNotificationBadge } from '@/context/NotificationContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { CampaignCard } from '@/features/creator/components/CampaignCard';
 import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCardSkeleton';
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
-import { FilterModal, DEFAULT_EVENT_TYPES } from '@/features/creator/components/FilterModal';
-import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
-import { displayCategory } from '@/features/creator/data/filterOptions';
-import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
-import { EmptyState } from '@/components/EmptyState';
-import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { isValidNepaliPhone } from '@/utilities/phone';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
-import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
-import { TabSlider } from '@/components/TabSlider';
-import { RangeDropdown } from '@/components/RangeDropdown';
+import { creatorService, type ApiCreatorProfile } from '@/services/creator';
 import { campaignService } from '@/services/campaign';
-import { creatorService } from '@/services/creator';
-import { getSocket } from '@/lib/socket';
-import { storage } from '@/utilities/storage';
-import { getCached, setCached } from '@/utilities/offlineCache';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
-import { ACCESS_TOKEN_KEY, F, RADIUS, SHADOW } from '@/utilities/constants';
-import { TabColors } from '@/utilities/tabColors';
 import type { Campaign } from '@/types';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
-const SLIDER_MAX = 100000;
-
-// Android needs this explicitly enabled before LayoutAnimation does anything —
-// iOS has it on by default. Used below so the avatar/menu button sliding out
-// as the search bar expands (and back in on blur) animates instead of jump-cutting.
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-type SortOption = 'date-latest' | 'date-oldest' | 'price-low' | 'price-high';
-
-// The tab filter + "count · sort" header are rendered as synthetic rows at
-// the front of the FlatList's `data` (instead of inside ListHeaderComponent)
-// so they scroll as part of the virtualized list rather than being forced
-// to stay mounted with the rest of the (much heavier) header content above.
-//
-// NOT using `stickyHeaderIndices` to pin the tab filter to the top on scroll,
-// even though that'd be the obvious way to do it: on this RN/Fabric version
-// it reliably crashes on Android with "addViewAt: failed to insert view ...
-// into parent ... index=N count=1" — sticky headers work by detaching that
-// item's native view from the list's content and reattaching it into a
-// separate overlay container outside normal React reconciliation, which was
-// consistently reproducible (100% of cold launches) until removed. Confirmed
-// via a live emulator + logcat trace pointing at
-// SurfaceMountingManager.addViewAt. If revisiting pinned-tab-filter UX later,
-// implement it by hand (an overlay View synced to this FlatList's onScroll)
-// rather than re-enabling stickyHeaderIndices.
-type ListRow =
-  | { kind: 'tabFilter' }
-  | { kind: 'countSort' }
-  | { kind: 'empty' }
-  | { kind: 'campaign'; campaign: Campaign }
-  | { kind: 'campaignRow'; campaigns: Campaign[] };
-
-// Tablet/iPad: two cards per row in the All/Recommended/etc. list, matching
-// the grid used on the business events tab. Phones stay single-column.
-const TABLET_BREAKPOINT = 768;
+// One color per Quick Action tile — chosen for the concept, not the brand
+// (purple/work, amber/needs-a-response, blue/discover, teal/organizations,
+// pink/people) — so five different icon shapes also read as five different
+// colors instead of one repeated brand tint.
+const QUICK_ACTION_COLORS = {
+  myCampaigns:     { icon: '#7C3AED', bg: '#F3E8FF' },
+  serviceRequests: { icon: '#D97706', bg: '#FEF3C7' },
+  campaigns:       { icon: '#0369A1', bg: '#E0F2FE' },
+  businesses:      { icon: '#0D9488', bg: '#CCFBF1' },
+  people:          { icon: '#DB2777', bg: '#FCE7F3' },
+} as const;
 
 function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '';
-  const first = words[0][0];
-  const last = words.length > 1 ? words[words.length - 1][0] : '';
-  return (first + last).toUpperCase();
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 }
 
-export default function HomeScreen() {
-  const { user } = useAuth();
-  // Phone-only signups default `name` to the raw phone number until the user sets
-  // a real one — never show that in the header (as text, or as the avatar's
-  // first-letter fallback initial, which would render a bare "+").
-  const displayName = user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Creator';
-  const { openDrawer } = useContext(DrawerContext);
-  const { t, languageVersion } = useLanguage();
-  const C = useAppColors();
-  const { width: windowWidth } = useWindowDimensions();
-  const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
+type WorkItem = Awaited<ReturnType<typeof campaignService.getMyApplications>>['proposals'][number];
 
-  const { categories: adminCategories } = useCategories('CREATOR');
-  const { platforms: adminPlatforms } = usePlatforms();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [activePlatforms, setActivePlatforms] = useState<string[]>([]);
+export default function HomeScreen() {
+  const C = useAppColors();
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const { openDrawer } = useContext(DrawerContext);
+  const { badgeCount } = useNotificationBadge();
+
+  const [profile, setProfile] = useState<ApiCreatorProfile | null>(null);
+  const [yourWork, setYourWork] = useState<WorkItem[]>([]);
+  const [recommended, setRecommended] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [fetchError, setFetchError] = useState('');
-
-  const [search, setSearch] = useState('');
-  const [activeSearch, setActiveSearch] = useState('');
-  const [activeCategories, setActiveCategories] = useState<string[]>([]);
-  const [activeFilterTab, setActiveFilterTab] = useState('all');
-  const [sortBy, setSortBy] = useState<SortOption>('date-latest');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }>>([]);
-  const [eventType, setEventType] = useState<EventTypeFilter[]>(DEFAULT_EVENT_TYPES);
-  const [tempEventType, setTempEventType] = useState<EventTypeFilter[]>(DEFAULT_EVENT_TYPES);
-  const [priceMin, setPriceMin] = useState(0);
-  const [priceMax, setPriceMax] = useState(SLIDER_MAX);
-  const [locationFilter, setLocationFilter] = useState<LocationFilter>([]);
-  const [locationTypeFilter, setLocationTypeFilter] = useState<'ONSITE' | 'REMOTE'>('ONSITE');
-  const [tempLocationTypeFilter, setTempLocationTypeFilter] = useState<'ONSITE' | 'REMOTE'>('ONSITE');
-  const [dateFrom, setDateFrom] = useState<Date | null>(null);
-  const [dateTo, setDateTo] = useState<Date | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const searchInputRef  = useRef<TextInput>(null);
-  const listRef         = useRef<FlatList<ListRow>>(null);
-  const searchDebounce  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Y-offset of the Categories section within the list content, captured via
-  // onLayout — lets us auto-scroll there while searching (see effect below).
-  const categoriesYRef  = useRef(0);
-  // True only while the list is actually sitting in the "scrolled down to
-  // Categories" position because of a focus/search that hasn't been snapped
-  // back yet — set when that scroll fires, cleared the moment the snap-back
-  // runs. Without this, the outside-tap handler below would re-trigger
-  // scrollToOffset(0) on *every* tap anywhere on the screen forever, not just
-  // the one tap that actually dismisses an active search.
-  const pendingSnapBackRef = useRef(false);
-  const [tempPriceMin, setTempPriceMin] = useState(0);
-  const [tempPriceMax, setTempPriceMax] = useState(SLIDER_MAX);
-  const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
-  const [tempDateFrom, setTempDateFrom] = useState<Date | null>(null);
-  const [tempDateTo, setTempDateTo] = useState<Date | null>(null);
 
-  const PAGE_SIZE = 10;
-  const [featuredVisibleCount, setFeaturedVisibleCount] = useState(PAGE_SIZE);
-  const [listVisibleCount, setListVisibleCount] = useState(PAGE_SIZE);
-
-  // ── Nearby Events ──
+  // ── Nearby Opportunities ──
   const [nearbyCampaigns, setNearbyCampaigns] = useState<Campaign[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(true);
   const [nearbySource, setNearbySource] = useState<NearbySource>('current');
@@ -159,80 +74,11 @@ export default function HomeScreen() {
   const [nearbyLocationDenied, setNearbyLocationDenied] = useState(false);
   const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
 
-  async function fetchCampaigns(
-    overrides: {
-      search?: string;
-      category?: string[];
-      platform?: string[];
-      priceMin?: number;
-      priceMax?: number;
-      dateFrom?: Date | null;
-      dateTo?: Date | null;
-      eventType?: EventTypeFilter[];
-      showLoader?: boolean;
-    } = {},
-  ) {
-    const showLoader = overrides.showLoader !== false;
-    if (showLoader) setLoading(true);
-    setFetchError('');
-
-    const q    = overrides.search    !== undefined ? overrides.search    : activeSearch;
-    const cat   = overrides.category  !== undefined ? overrides.category  : activeCategories;
-    const plat  = overrides.platform  !== undefined ? overrides.platform  : activePlatforms;
-    const pMin  = overrides.priceMin  !== undefined ? overrides.priceMin  : priceMin;
-    const pMax  = overrides.priceMax  !== undefined ? overrides.priceMax  : priceMax;
-    const df    = overrides.dateFrom  !== undefined ? overrides.dateFrom  : dateFrom;
-    const dt    = overrides.dateTo    !== undefined ? overrides.dateTo    : dateTo;
-    const et    = overrides.eventType !== undefined ? overrides.eventType : eventType;
-
-    try {
-      const { campaigns: data } = await campaignService.list({
-        search:       q || undefined,
-        category:     cat,
-        platform:     plat,
-        minBudget:    pMin > 0 ? pMin : undefined,
-        maxBudget:    pMax < SLIDER_MAX ? pMax : undefined,
-        dateFrom:     df ?? undefined,
-        dateTo:       dt ?? undefined,
-        // Both types selected == no filter (backend has no "either of these
-        // two" query shape, just a single optional campaignType).
-        campaignType: et.length === 1 ? et[0] : undefined,
-        limit: 50,
-      });
-      setCampaigns(data);
-      void setCached('creator_feed_campaigns', data);
-    } catch (e) {
-      // Offline or request failed — fall back to the last-known feed instead
-      // of leaving the screen blank/erroring, so it stays usable offline.
-      const cached = await getCached<Campaign[]>('creator_feed_campaigns');
-      if (cached && cached.length > 0) {
-        setCampaigns(cached);
-      } else {
-        setFetchError(e instanceof Error ? e.message : 'Failed to load events');
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
-
-  async function fetchNearby(
-    coords: LatLng,
-    radiusKm: number,
-    opts: { silent?: boolean; search?: string; category?: string[]; platform?: string[] } = {},
-  ) {
-    const { silent = false, search, category, platform } = opts;
+  async function fetchNearby(coords: LatLng, radiusKm: number, opts: { silent?: boolean } = {}) {
+    const { silent = false } = opts;
     if (!silent) setNearbyLoading(true);
     try {
-      const { campaigns: data } = await campaignService.nearby({
-        lat: coords.lat,
-        lng: coords.lng,
-        radiusKm,
-        search:   search   !== undefined ? search   : activeSearch,
-        category: category !== undefined ? category : activeCategories,
-        platform: platform !== undefined ? platform : activePlatforms,
-        limit: 10,
-      });
+      const { campaigns: data } = await campaignService.nearby({ lat: coords.lat, lng: coords.lng, radiusKm, limit: 6 });
       setNearbyCampaigns(data);
     } catch {
       if (!silent) setNearbyCampaigns([]);
@@ -241,35 +87,25 @@ export default function HomeScreen() {
     }
   }
 
-  // Re-fetches nearby with the same search/category/platform filters just
-  // applied to the main list — mirrors resolveNearbyCoords() + nearbyRadiusKm
-  // so "Nearby Events" never drifts out of sync with the active filters.
-  function refreshNearbyWithFilters(overrides: { search?: string; category?: string[]; platform?: string[] } = {}) {
-    const coords = resolveNearbyCoords();
-    if (coords) void fetchNearby(coords, nearbyRadiusKm, overrides);
+  function resolveNearbyCoords(): LatLng | null {
+    if (nearbySource === 'home')   return nearbyHomeCoords   ?? nearbyCurrentCoords;
+    if (nearbySource === 'custom') return nearbyCustomCoords ?? nearbyCurrentCoords;
+    return nearbyCurrentCoords;
   }
 
-  async function initNearby(
-    profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null },
-    opts: { silent?: boolean } = {},
-  ) {
-    const radius = profile.nearbyRadiusKm ?? 25;
+  async function initNearby(p: ApiCreatorProfile, opts: { silent?: boolean } = {}) {
+    const radius = p.nearbyRadiusKm ?? 25;
     setNearbyRadiusKm(radius);
-    setNearbyHomeLabel(
-      profile.location
-        ?.split(',')[0]
-        ?.replace(/\s*\d{4,6}\s*$/, '')
-        ?.trim() ?? null,
-    );
-    setNearbyHomeAddress(profile.location ?? null);
+    setNearbyHomeLabel(p.location?.split(',')[0]?.replace(/\s*\d{4,6}\s*$/, '')?.trim() ?? null);
+    setNearbyHomeAddress(p.location ?? null);
 
     const [current, home] = await Promise.all([
       getCurrentLocation(),
-      profile.locationLat != null && profile.locationLng != null
-        ? Promise.resolve<LatLng>({ lat: profile.locationLat, lng: profile.locationLng })
+      p.locationLat != null && p.locationLng != null
+        ? Promise.resolve<LatLng>({ lat: p.locationLat, lng: p.locationLng })
         // Profiles that only ever saved location as free text (no Places picker used)
         // have no coordinates — geocode the text so "Home" is still selectable.
-        : profile.location ? geocodeAddress(profile.location) : Promise.resolve(null),
+        : p.location ? geocodeAddress(p.location) : Promise.resolve(null),
     ]);
     setNearbyCurrentCoords(current);
     setNearbyHomeCoords(home);
@@ -290,903 +126,396 @@ export default function HomeScreen() {
     setNearbyRadiusKm(radiusKm);
     creatorService.updateProfile({ nearbyRadiusKm: radiusKm, nearbyUseHomeLocation: source === 'home' }).catch(() => {});
 
-    // Dragging the map to a custom point is remembered for this session so
-    // reopening the sheet starts from where the creator left off — it never
-    // overwrites the real GPS "current" coords, which always stay fresh.
     if (source === 'custom') setNearbyCustomCoords(coords);
-    // The sheet re-requests a fresh GPS fix when "Current Location" is tapped —
-    // propagate it here so later actions (radius expand, socket refresh) use it too.
     if (source === 'current') setNearbyCurrentCoords(coords);
 
     void fetchNearby(coords, radiusKm);
-  }
-
-  function resolveNearbyCoords(): LatLng | null {
-    if (nearbySource === 'home')   return nearbyHomeCoords   ?? nearbyCurrentCoords;
-    if (nearbySource === 'custom') return nearbyCustomCoords ?? nearbyCurrentCoords;
-    return nearbyCurrentCoords;
   }
 
   function handleExpandNearbyRadius() {
     const next = RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100;
     setNearbyRadiusKm(next);
     const coords = resolveNearbyCoords();
-    // Silent: a non-silent fetch drops nearbyCampaigns back to the skeleton
-    // row first, then swaps in results — two separate height changes on the
-    // Nearby Events section, each one shoving the Recommended/Trending/
-    // Ending Soon list below it (same ListHeaderComponent/FlatList flow) up
-    // or down. The radius label above already updates immediately via
-    // setNearbyRadiusKm, so the tap still gets instant feedback without the
-    // extra skeleton flash and layout jump.
     if (coords) void fetchNearby(coords, next, { silent: true });
   }
 
-  useEffect(() => {
-    // Show the last-known feed immediately (e.g. cold launch while offline)
-    // while the real fetch below runs and replaces it once it resolves.
-    void getCached<Campaign[]>('creator_feed_campaigns').then((cached) => {
-      if (cached && cached.length > 0) {
-        setCampaigns(cached);
-        setLoading(false);
-      }
-    });
-    void fetchCampaigns();
-    creatorService.getProfile()
-      .then((profile) => {
-        // Photo and social links matter most for a creator's discoverability,
-        // so they're checked first and lead the list. Work portfolio is a
-        // secondary nudge — it only appears once the creator has added a
-        // photo or a social link, so a brand-new profile isn't overwhelmed.
-        const missing: string[] = [];
-        const hasPhoto = !!profile.avatarUrl;
-        if (!hasPhoto) missing.push(t('creator.home.fieldProfilePhoto'));
-        const hasLink = profile.socialLinks &&
-          Object.values(profile.socialLinks).some((v) => !!v);
-        if (!hasLink) missing.push(t('creator.home.fieldSocialLinks'));
-        if (!profile.bio)                  missing.push(t('creator.home.fieldBio'));
-        if (!profile.location)             missing.push(t('creator.home.fieldLocation'));
-        if (!profile.categories?.length)   missing.push(t('creator.home.fieldCategories'));
-        if ((hasPhoto || hasLink) && !profile.portfolioLinks?.length) missing.push(t('creator.home.fieldPortfolio'));
-        setMissingFields(missing);
-        void initNearby(profile);
-      })
-      .catch(() => { setNearbyLoading(false); });
-  }, [languageVersion]);
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    try {
+      const p = await creatorService.getProfile();
+      setProfile(p);
 
-  // Re-sync "Home location" whenever this tab regains focus (e.g. returning from
-  // Edit Profile after changing location, or just popping back from campaign
-  // detail). The mount effect above only runs once (or on language change), so
-  // without this the Nearby Events sheet keeps showing whatever location was
-  // fetched at first load. Silent because this fires on *every* re-focus
-  // (including a plain back-navigation where nothing changed) — a non-silent
-  // fetch would drop nearbyCampaigns back to the skeleton loader every time,
-  // flickering the whole row for no reason.
-  const skipNextNearbyFocusRef = useRef(true);
-  useFocusEffect(useCallback(() => {
-    if (skipNextNearbyFocusRef.current) { skipNextNearbyFocusRef.current = false; return; }
-    creatorService.getProfile()
-      .then((profile) => { void initNearby(profile, { silent: true }); })
-      .catch(() => {});
-  }, []));
+      // Photo and social links matter most for a creator's discoverability, so
+      // they're checked first and lead the list. Work portfolio is a
+      // secondary nudge — it only appears once the creator has added a photo
+      // or a social link, so a brand-new profile isn't overwhelmed.
+      const missing: string[] = [];
+      const hasPhoto = !!p.avatarUrl;
+      if (!hasPhoto) missing.push(t('creator.home.fieldProfilePhoto'));
+      const hasLink = p.socialLinks && Object.values(p.socialLinks).some((v) => !!v);
+      if (!hasLink) missing.push(t('creator.home.fieldSocialLinks'));
+      if (!p.bio)                missing.push(t('creator.home.fieldBio'));
+      if (!p.location)           missing.push(t('creator.home.fieldLocation'));
+      if (!p.categories?.length) missing.push(t('creator.home.fieldCategories'));
+      if ((hasPhoto || hasLink) && !p.portfolioLinks?.length) missing.push(t('creator.home.fieldPortfolio'));
+      setMissingFields(missing);
 
-  // Keep a stable ref to the latest fetch so the socket handler never captures stale state
-  const fetchRef = useRef(fetchCampaigns);
-  useEffect(() => { fetchRef.current = fetchCampaigns; });
+      const [applications, recs] = await Promise.all([
+        campaignService.getMyApplications({ status: 'ACCEPTED', limit: 10 }).catch(() => ({ proposals: [], total: 0 })),
+        campaignService.recommended({ limit: 5 }).catch(() => ({ campaigns: [] })),
+      ]);
+      setYourWork(applications.proposals.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED'));
 
-  // Auto-refresh the moment connectivity is restored after being offline.
-  const { reconnectedAt } = useNetworkStatus();
-  useEffect(() => {
-    if (reconnectedAt) void fetchRef.current({ showLoader: false });
-  }, [reconnectedAt]);
-
-  useScrollToTopOnTabPress('index', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
-  const {
-    stuck:             tabFilterStuck,
-    setOffsetY:        tabFilterSetOffsetY,
-    onRowLayout:       tabFilterOnRowLayout,
-    onScroll:          tabFilterOnScroll,
-    placeholderHeight: tabFilterPlaceholderHeight,
-  } = useStickyBelowHeader();
-
-  const refreshNearbyRef = useRef(() => {});
-  useEffect(() => {
-    refreshNearbyRef.current = () => {
-      const coords = resolveNearbyCoords();
-      if (coords) void fetchNearby(coords, nearbyRadiusKm, { silent: true });
-    };
-  });
-
-  // Subscribe to real-time campaign updates while this screen is focused
-  useFocusEffect(useCallback(() => {
-    const socket = getSocket();
-    if (!socket) return;
-    const handler = () => {
-      void fetchRef.current({ showLoader: false });
-      refreshNearbyRef.current();
-    };
-    socket.on('campaign:new', handler);
-    return () => { socket.off('campaign:new', handler); };
-  }, []));
-
-  // Check for pending creator actions on every focus
-  useFocusEffect(useCallback(() => {
-    if (!storage.get(ACCESS_TOKEN_KEY)) return;
-    campaignService.getMyApplications()
-      .then(({ proposals: apps }) => {
-        const actions: Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }> = [];
-        for (const app of apps) {
-          if (app.status !== 'accepted') continue;
-          if (app.campaignType === 'PAID_CAMPAIGN') {
-            if (app.paymentStatus === 'PAID' && app.workStatus === 'NONE') {
-              actions.push({ type: 'start_work', title: app.campaignTitle });
-            } else if (app.paymentStatus === 'PAID' && app.workStatus === 'IN_PROGRESS') {
-              actions.push({ type: 'upload_work', title: app.campaignTitle });
-            }
-          } else if (app.campaignType === 'OPEN_EVENT') {
-            if (app.workStatus === 'NONE' || app.workStatus === 'IN_PROGRESS') {
-              actions.push({ type: 'event_pending', title: app.campaignTitle });
-            }
+      // Same `status: 'ACCEPTED'` fetch above already has everything needed
+      // to flag actions actually waiting on the creator — no separate call.
+      const actions: Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }> = [];
+      for (const app of applications.proposals) {
+        if (app.campaignType === 'PAID_CAMPAIGN') {
+          if (app.paymentStatus === 'PAID' && app.workStatus === 'NONE') {
+            actions.push({ type: 'start_work', title: app.campaignTitle });
+          } else if (app.paymentStatus === 'PAID' && app.workStatus === 'IN_PROGRESS') {
+            actions.push({ type: 'upload_work', title: app.campaignTitle });
+          }
+        } else if (app.campaignType === 'OPEN_EVENT') {
+          if (app.workStatus === 'NONE' || app.workStatus === 'IN_PROGRESS') {
+            actions.push({ type: 'event_pending', title: app.campaignTitle });
           }
         }
-        setPendingActions(actions);
-      })
-      .catch(() => {});
-  }, []));
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    void fetchCampaigns({ showLoader: false });
-  }, [activeCategories, priceMin, priceMax, dateFrom, dateTo]);
-
-  const filterActiveCount = [
-    eventType.length === 1, // both selected == no real filter
-    priceMin > 0 || priceMax < SLIDER_MAX,
-    locationFilter.length > 0,
-    !!dateFrom,
-    locationTypeFilter === 'REMOTE', // ONSITE is the default (no real filter)
-  ].filter(Boolean).length;
-  const isFilterActive = filterActiveCount > 0;
-
-  function openFilter() {
-    setTempEventType(eventType);
-    setTempPriceMin(priceMin);
-    setTempPriceMax(priceMax);
-    setTempLocation(locationFilter);
-    setTempDateFrom(dateFrom);
-    setTempDateTo(dateTo);
-    setTempLocationTypeFilter(locationTypeFilter);
-    setFilterOpen(true);
-  }
-
-  function applyFilter() {
-    setEventType(tempEventType);
-    setPriceMin(tempPriceMin);
-    setPriceMax(tempPriceMax);
-    setLocationFilter(tempLocation);
-    setDateFrom(tempDateFrom);
-    setDateTo(tempDateTo);
-    setLocationTypeFilter(tempLocationTypeFilter);
-    setFilterOpen(false);
-
-    // Re-fetch with the new committed values (don't wait for state to flush)
-    void fetchCampaigns({
-      eventType: tempEventType,
-      priceMin:  tempPriceMin,
-      priceMax:  tempPriceMax,
-      dateFrom:  tempDateFrom,
-      dateTo:    tempDateTo,
-    });
-
-    // Persist first non-Remote location's lat/lng to creator profile
-    const geoLoc = tempLocation.find((l) => l.label !== 'Remote' && l.lat !== null);
-    if (geoLoc && geoLoc.lat !== null && geoLoc.lng !== null) {
-      creatorService.updateProfile({
-        location: geoLoc.label,
-        locationLat: geoLoc.lat,
-        locationLng: geoLoc.lng,
-      }).catch(() => {});
-    }
-  }
-
-  function resetFilter() {
-    setTempEventType(DEFAULT_EVENT_TYPES);
-    setTempPriceMin(0);
-    setTempPriceMax(SLIDER_MAX);
-    setTempLocation([]);
-    setTempDateFrom(null);
-    setTempDateTo(null);
-    setTempLocationTypeFilter('ONSITE');
-  }
-
-  function resetAllFilters() {
-    setEventType(DEFAULT_EVENT_TYPES);
-    setPriceMin(0);
-    setPriceMax(SLIDER_MAX);
-    setLocationFilter([]);
-    setDateFrom(null);
-    setDateTo(null);
-    setLocationTypeFilter('ONSITE');
-    setActiveCategories([]);
-    setActivePlatforms([]);
-    setActiveFilterTab('all');
-    void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: DEFAULT_EVENT_TYPES });
-    refreshNearbyWithFilters({ category: [], platform: [] });
-  }
-
-  const visibleCategories = adminCategories.map((cat) => ({
-    label: cat.name,
-    ...getCategoryMeta(adminCategories, cat.name),
-  }));
-
-  const featured = campaigns.filter((c) => c.isFeatured && (c.locationType ?? 'ONSITE') === locationTypeFilter);
-
-  // Remote events have no lat/lng, so they'd never turn up in a geo "nearby"
-  // query anyway — filtering here just means Nearby correctly goes empty
-  // instead of silently ignoring the Onsite/Remote choice when Remote is picked.
-  const visibleNearbyCampaigns = nearbyCampaigns.filter((c) => (c.locationType ?? 'ONSITE') === locationTypeFilter);
-
-  // Category, budget, deadline, and search are filtered server-side.
-  // Client-side: location and quick-tab filters only.
-  const filteredList = campaigns.filter((c) => {
-    const matchLocation =
-      locationFilter.length === 0 ||
-      locationFilter.some((l) =>
-        l.label === 'Remote'
-          ? c.locationType === 'REMOTE'
-          : c.location?.toLowerCase().includes(l.label.toLowerCase()),
-      );
-    const matchLocationType = (c.locationType ?? 'ONSITE') === locationTypeFilter;
-
-    let matchTab = true;
-    if (activeFilterTab === 'recommended') matchTab = !c.isFeatured;
-    else if (activeFilterTab === 'trending') matchTab = c.proposals >= 3;
-    else if (activeFilterTab === 'ending-soon') {
-      const deadline = c.deadline ? new Date(c.deadline) : null;
-      if (deadline && !isNaN(deadline.getTime())) {
-        const daysLeft = (deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-        matchTab = daysLeft >= 0 && daysLeft <= 7;
-      } else {
-        matchTab = false;
       }
+      setPendingActions(actions);
+
+      setRecommended(recs.campaigns);
+      void initNearby(p, { silent: isRefresh });
+    } catch {
+      // Dashboard sections degrade to empty rather than blocking the whole
+      // screen on one failed fetch — each section already has its own empty
+      // state, and this is a low-stakes landing screen, not a form.
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
+  // `t` changes reference on every language switch (see LanguageContext) — depending
+  // on it here re-runs the missing-fields check so those labels stay translated.
+  }, [t]);
 
-    return matchLocation && matchLocationType && matchTab;
-  }).sort((a, b) => {
-    switch (sortBy) {
-      case 'date-oldest': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case 'price-low':   return a.budgetRaw - b.budgetRaw;
-      case 'price-high':  return b.budgetRaw - a.budgetRaw;
-      case 'date-latest':
-      default:            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-  });
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  const visibleFeatured = featured.slice(0, featuredVisibleCount);
-  const visibleList     = filteredList.slice(0, listVisibleCount);
-
-  // Tablet/iPad: pair campaigns up into two-per-row grid rows. Phones keep
-  // one campaign per row (numColumns === 1) exactly as before.
-  const campaignRows: ListRow[] = numColumns === 2
-    ? visibleList.reduce<ListRow[]>((rows, c, i) => {
-        if (i % 2 === 0) rows.push({ kind: 'campaignRow', campaigns: [c] });
-        else (rows[rows.length - 1] as { kind: 'campaignRow'; campaigns: Campaign[] }).campaigns.push(c);
-        return rows;
-      }, [])
-    : visibleList.map((c): ListRow => ({ kind: 'campaign', campaign: c }));
-
-  const listRows: ListRow[] = loading ? [] : [
-    { kind: 'tabFilter' },
-    { kind: 'countSort' },
-    ...(filteredList.length === 0
-      ? [{ kind: 'empty' } as const]
-      : campaignRows),
-  ];
-
-  useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns]);
-  useEffect(() => { setListVisibleCount(PAGE_SIZE); }, [campaigns, activeFilterTab, locationFilter, locationTypeFilter, sortBy]);
-  useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns, locationTypeFilter]);
-
-  // While the search bar is focused, or a search filter is actively applied,
-  // keep the list scrolled down to Categories so it's ready to refine results.
-  // This only scrolls *down* — snapping back to the top on blur would also
-  // fire when a category/platform pill steals focus from the input (native
-  // blur-on-tap-elsewhere), which should just select the pill, not scroll.
-  // The "snap back to top" side is handled explicitly by the outside-tap
-  // dismiss handler below instead.
-  useEffect(() => {
-    if (searchFocused || activeSearch.trim().length > 0) {
-      listRef.current?.scrollToOffset({ offset: categoriesYRef.current, animated: true });
-      pendingSnapBackRef.current = true;
-    }
-  }, [searchFocused, activeSearch]);
-
-  function handleFeaturedScroll(e: { nativeEvent: { contentOffset: { x: number }; contentSize: { width: number }; layoutMeasurement: { width: number } } }) {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    if (contentOffset.x + layoutMeasurement.width >= contentSize.width - 80) {
-      setFeaturedVisibleCount((n) => Math.min(n + PAGE_SIZE, featured.length));
-    }
-  }
-
-
-  // Dismisses the keyboard and snaps the list back to the top — used both by
-  // the fixed header (wrapped in a Pressable, safe since it isn't scrollable)
-  // and by the list itself via onScrollBeginDrag. Deliberately NOT a
-  // TouchableWithoutFeedback wrapping the FlatList: a JS-responder touchable
-  // ancestor around a scrollable view swallows drags that start on plain
-  // background content (no nested Pressable to claim the touch first),
-  // leaving cards/pills/buttons scrollable but empty space stuck.
-  function handleOutsideDismiss() {
-    Keyboard.dismiss();
-    // Only snap back once, for the interaction that actually dismisses a
-    // focused/active search — anything after that is just normal use of the
-    // page, not another dismissal.
-    if (pendingSnapBackRef.current && !activeSearch.trim()) {
-      listRef.current?.scrollToOffset({ offset: 0, animated: true });
-      pendingSnapBackRef.current = false;
-    }
-  }
-
-  const FILTER_TABS = [
-    { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layer-group'   as const, color: TabColors.neutral.color },
-    { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star'     as const, color: TabColors.info.color },
-    { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'fire'    as const, color: TabColors.danger.color },
-    { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'stopwatch'    as const, color: TabColors.warning.color },
-  ];
-
+  const hour = new Date().getHours();
+  const greetingKey = hour < 12 ? 'home.greetingMorning' : hour < 17 ? 'home.greetingAfternoon' : 'home.greetingEvening';
+  const displayName = (user?.name && !/^\+?\d+$/.test(user.name)) ? user.name.split(' ')[0] : '';
+  const location = profile?.city || profile?.location || '';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={{ flex: 1 }}>
       <MaxWidthContainer>
-      {/* ── Header: avatar, search bar, menu button — kept outside the list so it
-          stays floating/pinned above the content instead of scrolling away. ── */}
-      <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        {!searchFocused && (
-          <Pressable
-            style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]}
-            onPress={() => router.push('/(creator)/profile')}>
+        {/* Header — kept outside the ScrollView so it stays pinned at the top
+            instead of scrolling away, matching the business/service-taker
+            home's header (see that screen's `styles.header` comment). */}
+        <View style={[styles.headerRow, { backgroundColor: C.background }]}>
+          <View style={styles.headerText}>
+            <Text style={[styles.greeting, { color: C.text }]} numberOfLines={1}>
+              {displayName ? t(greetingKey, { name: displayName }) : t('home.greetingGeneric')}
+            </Text>
+            {location ? (
+              <View style={styles.locationRow}>
+                <FontAwesome5 name="map-marker-alt" solid size={11} color={C.textSecondary} />
+                <Text style={[styles.locationText, { color: C.textSecondary }]} numberOfLines={1}>{location}</Text>
+              </View>
+            ) : null}
+          </View>
+          <Pressable hitSlop={8} onPress={() => router.push('/(creator)/(tabs)/notifications')} style={styles.iconBtn}>
+            <FontAwesome5 name="bell" size={20} color={C.text} />
+            {badgeCount > 0 && (
+              <View style={styles.badge}><Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text></View>
+            )}
+          </Pressable>
+          <Pressable onPress={openDrawer} hitSlop={8} style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]}>
             <View style={styles.avatarClip}>
               {user?.avatar ? (
                 <Image source={{ uri: user.avatar }} style={styles.avatarImage} contentFit="cover" />
               ) : (
-                <View style={styles.avatarFallback}>
-                  <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{getInitials(displayName)}</Text>
-                </View>
+                <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{getInitials(displayName || 'Creator')}</Text>
               )}
             </View>
           </Pressable>
-        )}
+        </View>
 
-        <Pressable
-          style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
-          onPress={() => searchInputRef.current?.focus()}>
-          <FontAwesome5 name="search" solid size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
-          <TextInput
-            ref={searchInputRef}
-            style={[styles.searchInput, { color: C.text }]}
-            placeholder={t('creator.browse.searchPlaceholder')}
-            placeholderTextColor={C.textSecondary}
-            value={search}
-            onChangeText={(text) => {
-              setSearch(text);
-              if (searchDebounce.current) clearTimeout(searchDebounce.current);
-              if (text.length >= 3) {
-                searchDebounce.current = setTimeout(() => {
-                  setActiveSearch(text);
-                  void fetchCampaigns({ search: text });
-                  refreshNearbyWithFilters({ search: text });
-                }, 400);
-              } else if (!text && activeSearch) {
-                setActiveSearch('');
-                void fetchCampaigns({ search: '' });
-                refreshNearbyWithFilters({ search: '' });
-              }
-            }}
-            onFocus={() => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              setSearchFocused(true);
-            }}
-            onBlur={() => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              setSearchFocused(false);
-            }}
-            returnKeyType="search"
-            onSubmitEditing={() => {
-              searchInputRef.current?.blur();
-              if (searchDebounce.current) clearTimeout(searchDebounce.current);
-              setActiveSearch(search);
-              void fetchCampaigns({ search });
-              refreshNearbyWithFilters({ search });
-            }}
-          />
-          <Pressable
-            style={[
-              styles.filterBtn,
-              { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
-              isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-            ]}
-            onPress={openFilter}
-            hitSlop={6}>
-            <FontAwesome5 name="sliders-h" solid size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
-            {isFilterActive && (
-              <View style={styles.filterCountBadge}>
-                <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
-              </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.brinjal1} />}>
+
+          {/* Action zone — search, alerts, primary CTA and the promo banner
+              are all things demanding the creator's attention right now, so
+              they're clustered tightly (gap: md) to read as one connected
+              group rather than a stack of evenly-spaced, unrelated cards. */}
+          <View style={styles.heroGroup}>
+            {/* Search — deliberately read-only here, tapping hands off to the
+                full-screen Search page (recent/popular searches + suggestions,
+                see search.tsx) rather than duplicating that logic here. */}
+            <SearchInput
+              placeholder={t('home.searchPlaceholder')}
+              onPress={() => router.push('/(creator)/search')}
+            />
+
+            {/* One "needs your attention" banner, shown at most once — pending
+                work and an incomplete profile are both the same kind of nudge,
+                so stacking two identically-styled boxes would just be
+                redundant clutter. Pending work always wins since it's the more
+                time-sensitive of the two. Shared AttentionBanner component —
+                see business home for the identical pattern on that side.
+                style={{ marginHorizontal: 0, marginTop: 0 }} overrides the
+                component's own defaults (sized for business home, whose
+                ScrollView has no horizontal padding of its own) — here
+                heroGroup/scroll already supply both, so the banner's
+                defaults would otherwise double the horizontal inset (making
+                it narrower than the search bar above, and misaligned) and
+                stack an extra top margin on top of heroGroup's own gap. */}
+            {pendingActions.length > 0 ? (
+              <AttentionBanner
+                icon="exclamation-circle"
+                title={t('creator.home.actionRequired')}
+                subtitle={
+                  pendingActions.length === 1
+                    ? pendingActions[0]!.type === 'start_work'
+                      ? t('creator.home.actionStartWork', { title: pendingActions[0]!.title })
+                      : pendingActions[0]!.type === 'upload_work'
+                        ? t('creator.home.actionUploadWork', { title: pendingActions[0]!.title })
+                        : t('creator.home.actionSubmitContent', { title: pendingActions[0]!.title })
+                    : t('creator.home.actionMultiple', { n: pendingActions.length })
+                }
+                onPress={() => router.push('/(creator)/(tabs)/proposals')}
+                style={{ marginHorizontal: 0, marginTop: 0 }}
+              />
+            ) : !bannerDismissed && missingFields.length > 0 && (
+              <AttentionBanner
+                icon="user"
+                title={t('creator.home.completeProfile')}
+                subtitle={t('creator.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
+                onPress={() => router.push('/(creator)/(tabs)/profile')}
+                onDismiss={() => setBannerDismissed(true)}
+                style={{ marginHorizontal: 0, marginTop: 0 }}
+              />
             )}
-          </Pressable>
-        </Pressable>
 
-        {!searchFocused && (
-          <Pressable style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-            <View
-              style={[
-                styles.menuBtnInner,
-                { backgroundColor: C.surface },
-                SHADOW.card,
-              ]}
-            >
-              <FontAwesome5 name="bars" solid size={22} color={C.text} />
-            </View>
-          </Pressable>
-        )}
-      </View>
-      <View style={[styles.headerDivider, { backgroundColor: C.border }]} />
+            {/* Primary CTA */}
+            <Pressable onPress={() => router.push('/(creator)/(tabs)/discover')}>
+              <LinearGradient colors={[C.brinjal1, '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaCard}>
+                <View style={styles.ctaTop}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.ctaTitle}>{t('home.ctaTitle')}</Text>
+                    <Text style={styles.ctaSub}>{t('home.ctaSub')}</Text>
+                  </View>
+                  <View style={styles.ctaIconWrap}>
+                    <FontAwesome5 name="briefcase" solid size={22} color="#fff" />
+                  </View>
+                </View>
+                <View style={styles.ctaBtn}>
+                  <Text style={[styles.ctaBtnText, { color: C.brinjal1 }]}>{t('home.ctaBtn')}</Text>
+                  <FontAwesome5 name="arrow-right" solid size={13} color={C.brinjal1} />
+                </View>
+              </LinearGradient>
+            </Pressable>
 
-      {/* Sticky tab filter — hand-rolled (see useStickyBelowHeader), not
-          stickyHeaderIndices: that reliably crashes Android on this app's
-          RN/Fabric setup (see the ListRow comment above). This wrapper is the
-          positioning context the overlay below is anchored to (`top: 0` here
-          lands right below the header divider above). */}
-      <View style={{ flex: 1 }}>
-      <FlatList
-        ref={listRef}
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        keyboardDismissMode="on-drag"
-        onScrollBeginDrag={handleOutsideDismiss}
-        onScroll={tabFilterOnScroll}
-        scrollEventThrottle={16}
-        onEndReached={() => setListVisibleCount((n) => Math.min(n + PAGE_SIZE, filteredList.length))}
-        onEndReachedThreshold={0.4}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
-        windowSize={7}
-        removeClippedSubviews={Platform.OS === 'android'}
-        data={listRows}
-        keyExtractor={(row, i) => (
-          row.kind === 'campaign' ? row.campaign.id :
-          row.kind === 'campaignRow' ? row.campaigns.map((c) => c.id).join('-') :
-          `${row.kind}-${i}`
-        )}
-        renderItem={({ item: row }) => {
-          switch (row.kind) {
-            case 'tabFilter':
-              return tabFilterStuck ? (
-                <View style={{ height: tabFilterPlaceholderHeight }} onLayout={tabFilterOnRowLayout} />
-              ) : (
-                <View style={[styles.filterTabsWrap, { backgroundColor: C.background }]} onLayout={tabFilterOnRowLayout}>
-                  <TabSlider
-                    tabs={FILTER_TABS}
-                    active={activeFilterTab}
-                    onChange={setActiveFilterTab}
-                  />
-                </View>
-              );
-            case 'countSort':
+            {/* Refer a friend banner — reward/growth nudge, deliberately a
+                different color family (pink) than the attention banner above.
+                Shared PromoBanner component — see business home for the
+                identical pattern on that side. Same flush-margin override as
+                the AttentionBanner above, and for the same reason. */}
+            {!referralBannerDismissed && (() => {
+              const [prefix, suffix] = t('referral.homeBannerSub').split('{{amount}}');
               return (
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: C.text }]}>
-                    {activeFilterTab === 'all' ? 'All Events' :
-                     activeFilterTab === 'recommended' ? 'Recommended' :
-                     activeFilterTab === 'trending' ? 'Trending' : 'Ending Soon'}
-                    {filteredList.length > 0 ? `  ·  ${filteredList.length}` : ''}
-                  </Text>
-                  <RangeDropdown
-                    value={sortBy}
-                    options={[
-                      { value: 'date-latest', label: t('creator.home.sortDateLatest') },
-                      { value: 'date-oldest', label: t('creator.home.sortDateOldest') },
-                      { value: 'price-low',   label: t('creator.home.sortPriceLow') },
-                      { value: 'price-high',  label: t('creator.home.sortPriceHigh') },
-                    ]}
-                    onChange={setSortBy}
-                  />
-                </View>
-              );
-            case 'empty':
-              return (
-                <EmptyState
-                  faIcon={campaigns.length === 0 ? 'calendar-times' : 'filter'}
-                  title={t('creator.home.noEventsFound')}
-                  subtitle={campaigns.length === 0
-                    ? t('creator.home.noActiveEvents')
-                    : t('creator.home.tryAdjustFilters')}
-                  action={campaigns.length > 0 ? { label: t('creator.home.clearFilters'), onPress: resetAllFilters } : undefined}
+                <PromoBanner
+                  icon="gift"
+                  title={t('referral.homeBannerTitle')}
+                  subtitlePrefix={prefix}
+                  subtitleAmount={t('referral.homeBannerAmount')}
+                  subtitleSuffix={suffix}
+                  onPress={() => router.push('/(creator)/referral')}
+                  onDismiss={() => setReferralBannerDismissed(true)}
+                  style={{ marginHorizontal: 0, marginTop: 0 }}
                 />
               );
-            case 'campaign':
-              return (
-                <View style={styles.campaignItemWrap}>
-                  <CampaignListItem campaign={row.campaign} />
-                </View>
-              );
-            case 'campaignRow':
-              return (
-                <View style={styles.campaignRowWrap}>
-                  {row.campaigns.map((c) => (
-                    <View key={c.id} style={styles.campaignRowItem}>
-                      <CampaignListItem campaign={c} />
-                    </View>
-                  ))}
-                </View>
-              );
-          }
-        }}
-        ListFooterComponent={
-          !loading && listVisibleCount < filteredList.length ? (
-            <View style={styles.listLoadingMore}>
-              <ActivityIndicator size="small" color={C.brinjal1} />
-            </View>
-          ) : null
-        }
-        ListHeaderComponent={
-          // A real View (not a Fragment) so onLayout can report its rendered
-          // height — since `tabFilter` is the very first row in `data`, that
-          // height is exactly its content-offset within the full scrollable
-          // content (see useStickyBelowHeader's usage note on measuring a
-          // FlatList row's position via what precedes it, not the row itself).
-          <View onLayout={(e) => tabFilterSetOffsetY(e.nativeEvent.layout.height)}>
-        {/* ── Pending action attention banner ── */}
-        {pendingActions.length > 0 && (
-          <Pressable
-            style={styles.attentionBanner}
-            onPress={() => router.push('/(creator)/(tabs)/proposals')}>
-            <View
-              style={[
-                styles.attentionIconWrap,
-                { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-              ]}
-            >
-              <FontAwesome5 name="exclamation-circle" solid size={18} color="#D97706" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.attentionTitle}>{t('creator.home.actionRequired')}</Text>
-              <Text style={styles.attentionSub} numberOfLines={1}>
-                {pendingActions.length === 1
-                  ? pendingActions[0]!.type === 'start_work'
-                    ? t('creator.home.actionStartWork', { title: pendingActions[0]!.title })
-                    : pendingActions[0]!.type === 'upload_work'
-                      ? t('creator.home.actionUploadWork', { title: pendingActions[0]!.title })
-                      : t('creator.home.actionSubmitContent', { title: pendingActions[0]!.title })
-                  : t('creator.home.actionMultiple', { n: pendingActions.length })}
-              </Text>
-            </View>
-            <FontAwesome5 name="chevron-right" solid size={16} color="#D97706" />
-          </Pressable>
-        )}
-
-        {/* ── Quick Actions ── */}
-        <View style={styles.quickActionsRow}>
-          {([
-            { icon: 'store',    label: 'Businesses', bg: '#DCFCE7', color: '#059669', route: '/(creator)/explore-businesses' },
-            { icon: 'users',        label: 'Creators',  bg: '#DBEAFE', color: '#2563EB', route: '/(creator)/explore-creators' },
-            { icon: 'heart',         label: 'Saved',     bg: '#FEE2E2', color: '#DC2626', route: '/(creator)/favorite-businesses' },
-            { icon: 'file-alt', label: 'Proposals', bg: '#EDE9FE', color: '#7C3AED', route: '/(creator)/(tabs)/proposals' },
-          ] as const).map(({ icon, label, bg, color, route }) => (
-            <Pressable
-              key={label}
-              style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push(route as never)}>
-              <View
-                style={[
-                  styles.quickActionIcon,
-                  {
-                    backgroundColor: bg, shadowColor: color,
-                    shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
-                  },
-                ]}
-              >
-                <FontAwesome5 name={icon} size={20} color={color} />
-              </View>
-              <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* ── Profile completion banner ── */}
-        {!bannerDismissed && missingFields.length > 0 && (
-          <Pressable
-            style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
-            onPress={() => router.push('/(creator)/profile')}>
-            <View
-              style={[
-                styles.bannerIconBox,
-                {
-                  backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                },
-              ]}
-            >
-              <FontAwesome5 name="user" solid size={20} color={C.brinjal1} />
-            </View>
-            <View style={styles.bannerText}>
-              <Text style={[styles.bannerTitle, { color: C.text }]}>{t('creator.home.completeProfile')}</Text>
-              <Text style={[styles.bannerSub, { color: C.error }]} numberOfLines={2}>
-                {t('creator.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
-              </Text>
-            </View>
-            <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
-              <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
-            </Pressable>
-          </Pressable>
-        )}
-
-        {/* ── Refer a friend banner ── */}
-        {!referralBannerDismissed && (
-          <Pressable
-            style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
-            onPress={() => router.push('/(creator)/referral')}>
-            <View
-              style={[
-                styles.bannerIconBox,
-                {
-                  backgroundColor: '#FCE7F3', shadowColor: '#EC4899',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                },
-              ]}
-            >
-              <FontAwesome5 name="gift" solid size={20} color="#EC4899" />
-            </View>
-            <View style={styles.bannerText}>
-              <Text style={[styles.bannerTitle, { color: C.text }]}>{t('referral.homeBannerTitle')}</Text>
-              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>
-                {(() => {
-                  const [prefix, suffix] = t('referral.homeBannerSub').split('{{amount}}');
-                  return (
-                    <>
-                      {prefix}
-                      <Text style={styles.bannerSubAmount}>{t('referral.homeBannerAmount')}</Text>
-                      {suffix}
-                    </>
-                  );
-                })()}
-              </Text>
-            </View>
-            <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
-              <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
-            </Pressable>
-          </Pressable>
-        )}
-
-        {/* ── Error ── */}
-        {fetchError ? (
-          <View style={[styles.errorCard, { backgroundColor: '#FEE2E2' }]}>
-            <Text style={styles.errorText}>{fetchError}</Text>
-            <Pressable onPress={() => fetchCampaigns()}>
-              <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('creator.home.retry')}</Text>
-            </Pressable>
+            })()}
           </View>
-        ) : null}
 
-        {/* ── Categories ── */}
-        <View style={styles.sectionHeader} onLayout={(e) => { categoriesYRef.current = e.nativeEvent.layout.y; }}>
-          <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.categories')}</Text>
-        </View>
-        <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
-          {visibleCategories.map((cat) => {
-            const isActive = activeCategories.includes(cat.label);
-            return (
+          {/* Quick Actions — each tile gets its own icon color/tint (a small
+              fixed palette below, not the app's brand purple repeated five
+              times) so the shapes are distinguishable at a glance instead of
+              blurring into one same-colored row. No card/border around each
+              tile — just the icon-circle (with a soft SHADOW.card lift) +
+              label. All five stay on screen at once (flex: 1 each, no
+              scrolling) — icon size/gap are tuned down slightly from the old
+              4-tile row so a fifth tile fits without crowding. Sits its own
+              step (marginTop: xl) below the action zone above — a distinct
+              row of shortcuts, not part of that cluster. */}
+          <View style={styles.quickActionsRow}>
+            {[
+              { key: 'myCampaigns',      icon: 'briefcase'      as const, label: t('home.qaMyCampaigns'),     color: QUICK_ACTION_COLORS.myCampaigns,     onPress: () => router.push({ pathname: '/(creator)/(tabs)/proposals', params: { tab: 'accepted' } }) },
+              { key: 'serviceRequests',  icon: 'clipboard-list' as const, label: t('home.qaServiceRequests'), color: QUICK_ACTION_COLORS.serviceRequests, onPress: () => router.push('/(creator)/service-requests') },
+              { key: 'campaigns',        icon: 'search'         as const, label: t('home.qaFindCampaigns'),   color: QUICK_ACTION_COLORS.campaigns,       onPress: () => router.push({ pathname: '/(creator)/(tabs)/discover', params: { tab: 'campaigns' } }) },
+              { key: 'businesses',       icon: 'building'       as const, label: t('home.qaFindBusinesses'),  color: QUICK_ACTION_COLORS.businesses,      onPress: () => router.push({ pathname: '/(creator)/(tabs)/discover', params: { tab: 'businesses' } }) },
+              { key: 'people',           icon: 'user-friends'   as const, label: t('home.qaFindPeople'),      color: QUICK_ACTION_COLORS.people,          onPress: () => router.push({ pathname: '/(creator)/(tabs)/discover', params: { tab: 'people' } }) },
+            ].map((qa) => (
               <Pressable
-                key={cat.label}
-                style={[
-                  styles.catPill,
-                  {
-                    backgroundColor: isActive ? cat.color : C.surface,
-                    borderColor: isActive ? cat.color : C.border,
-                  },
-                ]}
-                onPress={() => {
-                  const next = activeCategories.includes(cat.label)
-                    ? activeCategories.filter((c) => c !== cat.label)
-                    : [...activeCategories, cat.label];
-                  setActiveCategories(next);
-                  void fetchCampaigns({ category: next });
-                  refreshNearbyWithFilters({ category: next });
-                }}>
-                <FontAwesome5 name={cat.icon} size={13} color={isActive ? '#fff' : cat.color} />
-                <Text
-                  style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]}
-                  numberOfLines={1}>
-                  {displayCategory(cat.label)}
-                </Text>
+                key={qa.key}
+                style={({ pressed }) => [styles.quickActionTile, pressed && styles.quickActionTilePressed]}
+                onPress={qa.onPress}>
+                <View style={[styles.quickActionIconWrap, { backgroundColor: qa.color.bg }, SHADOW.card]}>
+                  <FontAwesome5 name={qa.icon} solid size={18} color={qa.color.icon} />
+                </View>
+                <Text style={[styles.quickActionLabel, { color: C.text }]} numberOfLines={2}>{qa.label}</Text>
               </Pressable>
-            );
-          })}
-        </ScrollView>
+            ))}
+          </View>
 
-        {/* ── Platform Filter ── */}
-        {adminPlatforms.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.platforms')}</Text>
-            </View>
-            <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsRow}>
-              {adminPlatforms.map((p) => {
-                const meta = getPlatformMeta(adminPlatforms, p.name);
-                const isActive = activePlatforms.includes(p.name);
-                return (
-                  <Pressable
-                    key={p.id}
-                    style={[
-                      styles.catPill,
-                      {
-                        backgroundColor: isActive ? meta.color : C.surface,
-                        borderColor: isActive ? meta.color : C.border,
-                      },
-                    ]}
-                    onPress={() => {
-                      const next = activePlatforms.includes(p.name)
-                        ? activePlatforms.filter((x) => x !== p.name)
-                        : [...activePlatforms, p.name];
-                      setActivePlatforms(next);
-                      void fetchCampaigns({ platform: next });
-                      refreshNearbyWithFilters({ platform: next });
-                    }}>
-                    <FontAwesome5 name={meta.icon} size={13} color={isActive ? '#fff' : meta.color} />
-                    <Text style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]} numberOfLines={1}>{p.name}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </>
-        )}
-
-        {/* ── Featured / Loading ── */}
-        {loading ? (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.featuredEvents')}</Text>
-            </View>
-            <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-              {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
-            </ScrollView>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.nearbyEvents')}</Text>
-            </View>
-            <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-              {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
-            </ScrollView>
-          </>
-        ) : (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.featuredEvents')}</Text>
-            </View>
-            {featured.length > 0 ? (
-              <ScrollView
-                horizontal
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.featuredRow}
-                onScroll={handleFeaturedScroll}
-                scrollEventThrottle={16}>
-                {visibleFeatured.map((c) => <CampaignCard key={c.id} campaign={c} variant="featured" />)}
-                {featuredVisibleCount < featured.length && (
-                  <View style={styles.featuredLoadingMore}>
-                    <ActivityIndicator size="small" color={C.brinjal1} />
+          {/* Content feed — the biggest gap on the screen (marginTop: xxl)
+              marks the shift from "actions" above to "browse your feed"
+              below; sections within it get the same xxl gap from each other
+              since each is its own distinct content block. */}
+          <View style={styles.sectionsGroup}>
+            {loading ? (
+              <View style={{ gap: SPACING.md }}>
+                <ListRowSkeleton />
+                <ListRowSkeleton />
+              </View>
+            ) : (
+              <View style={{ gap: SPACING.xxl }}>
+                {/* Your Work */}
+                {yourWork.length > 0 && (
+                  <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionTitle, { color: C.text }]}>{t('home.yourWork')}</Text>
+                      <Pressable onPress={() => router.push('/(creator)/(tabs)/proposals')}>
+                        <Text style={[styles.seeAll, { color: C.brinjal1 }]}>{t('home.seeAll')}</Text>
+                      </Pressable>
+                    </View>
+                    {yourWork.slice(0, 3).map((w) => (
+                      <Pressable
+                        key={w.id}
+                        style={[styles.workCard, { backgroundColor: C.surface, borderColor: C.border }, SHADOW.raised]}
+                        onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: w.campaignId } })}>
+                        <View style={[styles.workThumb, { backgroundColor: C.primaryLight }]}>
+                          {w.featureImageUrl ? (
+                            <Image source={{ uri: w.featureImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                          ) : (
+                            <FontAwesome5 name="briefcase" solid size={18} color={C.brinjal1} />
+                          )}
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.workTitle, { color: C.text }]} numberOfLines={1}>{w.campaignTitle}</Text>
+                          <Text style={[styles.workBrand, { color: C.textSecondary }]} numberOfLines={1}>{w.brand}</Text>
+                        </View>
+                        <View style={[styles.workStatusBadge, { backgroundColor: C.primaryLight }]}>
+                          <Text style={[styles.workStatusText, { color: C.brinjal1 }]}>
+                            {w.workStatus === 'SUBMITTED' ? t('home.workSubmitted') : t('home.workInProgress')}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
                   </View>
                 )}
-              </ScrollView>
-            ) : (
-              <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <FontAwesome5 name="star" size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noFeaturedEvents')}</Text>
-                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>{t('creator.home.noFeaturedEventsHint')}</Text>
+
+                {/* Recommended Opportunities */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: C.text }]}>{t('home.recommended')}</Text>
+                    <Pressable onPress={() => router.push('/(creator)/(tabs)/discover')}>
+                      <Text style={[styles.seeAll, { color: C.brinjal1 }]}>{t('home.seeAll')}</Text>
+                    </Pressable>
+                  </View>
+                  {profile && profile.categories.length > 0 && recommended.length > 0 && (
+                    <Text style={[styles.recommendedHint, { color: C.textSecondary }]}>
+                      {t('home.becauseYouOffer', { categories: profile.categories.slice(0, 3).join(', ') })}
+                    </Text>
+                  )}
+                  {recommended.length > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railScroll}>
+                      {recommended.map((c) => <CampaignCard key={c.id} campaign={c} variant="featured" />)}
+                    </ScrollView>
+                  ) : (
+                    <View style={[styles.cardEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
+                      <FontAwesome5 name="star" size={28} color={C.textSecondary} />
+                      <Text style={[styles.cardEmptyTitle, { color: C.text }]}>{t('creator.home.noRecommendedOpportunities')}</Text>
+                      <Pressable
+                        style={[
+                          styles.expandRadiusBtn,
+                          {
+                            backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                            shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                          },
+                        ]}
+                        onPress={() => router.push('/(creator)/(tabs)/discover')}>
+                        <Text style={styles.expandRadiusBtnText}>{t('creator.home.discoverBtn')}</Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+
+                {/* Nearby Opportunities */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <View style={styles.nearbyTitleRow}>
+                      <Text style={[styles.sectionTitle, { color: C.text }]}>{t('home.nearby')}</Text>
+                      <Pressable
+                        style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
+                        onPress={() => setNearbySheetOpen(true)}>
+                        <FontAwesome5
+                          name={nearbySource === 'current' ? 'location-arrow' : nearbySource === 'home' ? 'home' : 'map-pin'}
+                          solid
+                          size={11} color={C.brinjal1}
+                        />
+                        <Text style={[styles.nearbyChipText, { color: C.brinjal1 }]} numberOfLines={1}>
+                          {nearbySource === 'current'
+                            ? 'Current Location'
+                            : nearbySource === 'home'
+                              ? `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''}`
+                              : 'Custom Location'}
+                        </Text>
+                        <FontAwesome5 name="chevron-down" solid size={11} color={C.brinjal1} />
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  {nearbyLoading ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railScroll}>
+                      {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
+                    </ScrollView>
+                  ) : nearbyCampaigns.length > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railScroll}>
+                      {nearbyCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} variant="nearby" />)}
+                    </ScrollView>
+                  ) : nearbyLocationDenied && !nearbyHomeCoords ? (
+                    <View style={[styles.cardEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
+                      <FontAwesome5 name="map-marker-alt" solid size={28} color={C.textSecondary} />
+                      <Text style={[styles.cardEmptyTitle, { color: C.text }]}>{t('creator.home.enableLocationTitle')}</Text>
+                      <Text style={[styles.cardEmptySub, { color: C.textSecondary }]}>{t('creator.home.enableLocationSub')}</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.cardEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
+                      <FontAwesome5 name="location-arrow" solid size={28} color={C.textSecondary} />
+                      <Text style={[styles.cardEmptyTitle, { color: C.text }]}>{t('creator.home.noEventsWithinKm', { km: nearbyRadiusKm })}</Text>
+                      {nearbyRadiusKm < 100 && (
+                        <Pressable
+                          style={[
+                            styles.expandRadiusBtn,
+                            {
+                              backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                              shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                            },
+                          ]}
+                          onPress={handleExpandNearbyRadius}>
+                          <Text style={styles.expandRadiusBtnText}>{t('creator.home.expandToKm', { km: RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100 })}</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
+                </View>
               </View>
             )}
-
-            {/* ── Nearby Events ── */}
-            <View style={styles.sectionHeader}>
-              <View style={styles.nearbyTitleRow}>
-                <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.nearbyEvents')}</Text>
-                <Pressable
-                  style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
-                  onPress={() => setNearbySheetOpen(true)}>
-                  <FontAwesome5
-                    name={nearbySource === 'current' ? 'location-arrow' : nearbySource === 'home' ? 'home' : 'map-pin'}
-                    solid
-                    size={11} color={C.brinjal1}
-                  />
-                  <Text style={[styles.nearbyChipText, { color: C.brinjal1 }]} numberOfLines={1}>
-                    {nearbySource === 'current'
-                      ? 'Current Location'
-                      : nearbySource === 'home'
-                        ? `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''}`
-                        : 'Custom Location'}
-                  </Text>
-                  <FontAwesome5 name="chevron-down" solid size={11} color={C.brinjal1} />
-                </Pressable>
-              </View>
-            </View>
-
-            {nearbyLoading ? (
-              <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-                {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
-              </ScrollView>
-            ) : visibleNearbyCampaigns.length > 0 ? (
-              <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-                {visibleNearbyCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} variant="nearby" />)}
-              </ScrollView>
-            ) : nearbyLocationDenied && !nearbyHomeCoords ? (
-              <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <FontAwesome5 name="map-marker-alt" solid size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.enableLocationTitle')}</Text>
-                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>{t('creator.home.enableLocationSub')}</Text>
-              </View>
-            ) : (
-              <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <FontAwesome5 name="location-arrow" solid size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noEventsWithinKm', { km: nearbyRadiusKm })}</Text>
-                {nearbyRadiusKm < 100 && (
-                  <Pressable
-                    style={[
-                      styles.expandRadiusBtn,
-                      {
-                        backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-                        shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-                      },
-                    ]}
-                    onPress={handleExpandNearbyRadius}>
-                    <Text style={styles.expandRadiusBtnText}>{t('creator.home.expandToKm', { km: RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100 })}</Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
-          </>
-        )}
           </View>
-        }
-      />
-      {tabFilterStuck && (
-        // marginTop: 0 overrides filterTabsWrap's usual 8px top margin — that
-        // margin creates the right breathing room when sitting in-flow below
-        // the "Recent Events"-style content above it, but here (pinned via
-        // `top: 0`) it would just push this away from the header divider,
-        // leaving a gap.
-        <View style={[styles.filterTabsWrap, styles.stickyOverlay, { backgroundColor: C.background, marginTop: 0 }]}>
-          <TabSlider
-            tabs={FILTER_TABS}
-            active={activeFilterTab}
-            onChange={setActiveFilterTab}
-          />
-        </View>
-      )}
-      </View>
+        </ScrollView>
       </MaxWidthContainer>
-      </View>
-
-      <FilterModal
-        visible={filterOpen}
-        tempEventType={tempEventType}
-        tempPriceMin={tempPriceMin}
-        tempPriceMax={tempPriceMax}
-        tempLocation={tempLocation}
-        tempDateFrom={tempDateFrom}
-        tempDateTo={tempDateTo}
-        tempLocationType={tempLocationTypeFilter}
-        setTempEventType={setTempEventType}
-        setTempPriceMin={setTempPriceMin}
-        setTempPriceMax={setTempPriceMax}
-        setTempLocation={setTempLocation}
-        setTempDateFrom={setTempDateFrom}
-        setTempDateTo={setTempDateTo}
-        setTempLocationType={setTempLocationTypeFilter}
-        onApply={applyFilter}
-        onReset={resetFilter}
-        onClose={() => setFilterOpen(false)}
-      />
 
       <NearbyLocationSheet
         visible={nearbySheetOpen}
@@ -1206,127 +535,86 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 40 },
+  // paddingTop 0 — the header above now supplies its own bottom padding
+  // instead, so the two don't stack into a double gap.
+  // Horizontal gutter comes from the app's shared scale (SCREEN_GUTTER) so
+  // this screen lines up edge-to-edge with every other screen. No top-level
+  // `gap` here — spacing between the three groups below (heroGroup,
+  // quickActionsRow, sectionsGroup) is deliberately tiered (see each group's
+  // own comment), not a flat repeated value.
+  scroll: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 0, paddingBottom: SPACING.xxxl },
 
-  // ── Header ──
-  // Avatar, search bar, and the menu button all share this one row —
-  // avatar and menu button are fixed-width, the search bar stretches (flex:1)
-  // to fill whatever's left between them. Lives outside the FlatList (rendered
-  // as a sibling, not ListHeaderComponent) so it stays pinned at the top
-  // instead of scrolling away with the content. Same background as the page
-  // and no border/shadow — reads as part of the page, not a separate bar;
-  // pinning is purely structural (it just doesn't scroll), not a visual layer.
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10,
+  // ── Layout rhythm ──
+  // Two tiers: heroGroup clusters tightly-related action items (md=12);
+  // every row below that — quickActionsRow, sectionsGroup, and the gap
+  // between sectionsGroup's own sections — steps away with the same
+  // gap (xxl=32), so every row on the page reads as equally distinct.
+  heroGroup: { gap: SPACING.md },
+  sectionsGroup: { marginTop: SPACING.xxl },
+
+  // No longer a child of `scroll` (see render) — carries its own padding
+  // instead of inheriting the ScrollView's, matching business home's `header`.
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.lg },
+  headerText: { flex: 1, gap: 3 },
+  greeting: { fontSize: FONT_SIZE.xl, fontFamily: F.bold },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  locationText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium },
+  iconBtn: { padding: 4 },
+  badge: {
+    position: 'absolute', top: -2, right: -2, minWidth: 16, height: 16, borderRadius: RADIUS.full,
+    backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3,
   },
-  // Inset divider (not a full-bleed border) separating the header from the
-  // scrolling content — matches the gap-at-the-corners divider style used
-  // elsewhere (e.g. SavedListCard, campaigns footer).
-  headerDivider: { height: 1, marginHorizontal: 20 },
-  menuBtn:      { padding: 0 },
-  menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
-  avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
-  avatarImage:  { width: '100%', height: '100%' },
-  avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
-  avatarInitial:  { fontSize: 18, fontFamily: F.extrabold },
+  badgeText: { fontSize: 9, color: '#fff', fontFamily: F.bold },
+  // Shadow lives on this outer circle, unclipped — overflow:hidden on the
+  // same view as a shadow silently clips the shadow away, same fix as the
+  // business-home avatar and the campaign card thumb/shadow split.
+  avatarCircle: { width: 40, height: 40, borderRadius: RADIUS.full },
+  avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  avatarImage: { width: '100%', height: '100%' },
+  avatarInitial: { fontSize: FONT_SIZE.md, fontFamily: F.bold },
 
-  // ── Search ──
-  searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, paddingHorizontal: 14, height: 44, borderWidth: 1.5 },
-  searchCardFocused: {
-    borderColor: '#7C3AED', borderWidth: 2,
-    shadowColor: '#7C3AED', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
+  // Primary CTA — the single most important action on the screen, so it
+  // gets the most generous padding here (hero-level, not standard-card).
+  ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, ...SHADOW.floating },
+  ctaTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff' },
+  ctaSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 18 },
+  ctaIconWrap: { width: 48, height: 48, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  ctaBtn: {
+    flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm,
+    backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: 11,
   },
-  searchIcon:      { marginRight: 8 },
-  searchInput:     { flex: 1, fontSize: 14, fontFamily: F.regular },
-  filterBtn:       { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
-  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
-  filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
+  ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
-  // ── Quick Actions ──
-  // paddingBottom is 0 here (and on every block below) on purpose — each block
-  // only contributes its own *leading* gap via marginTop/paddingTop. That way
-  // whichever optional cards happen to render (banner / attentionBanner /
-  // errorCard, any combination, any order) always sit SECTION_GAP apart,
-  // instead of gaps compounding or collapsing depending on what's visible.
-  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 0, gap: 10 },
-  quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 14, gap: 8, borderWidth: 1, ...SHADOW.card },
-  quickActionIcon:  { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
-  quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
+  quickActionsRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xxl },
+  // flex: 1 (not a fixed width) — five equal-width columns that always sum
+  // to the full row, on any screen size, with no scrolling.
+  quickActionTile: { flex: 1, alignItems: 'center', gap: SPACING.sm },
+  quickActionTilePressed: { opacity: 0.7 },
+  quickActionIconWrap: { width: 52, height: 52, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center' },
+  quickActionLabel: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, textAlign: 'center', lineHeight: 15 },
 
-  // ── Banner ──
-  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 16, marginBottom: 0, padding: 14, gap: 10, ...SHADOW.card, borderLeftWidth: 4 },
-  bannerIconBox: { width: 38, height: 38, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  bannerText:    { flex: 1, gap: 2 },
-  bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
-  bannerSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
-  bannerSubAmount: { fontSize: 15, fontFamily: F.extrabold, color: '#059669', opacity: 1 },
-  bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
+  section: { gap: SPACING.md },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold },
+  seeAll: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
+  recommendedHint: { fontSize: FONT_SIZE.xs, fontFamily: F.regular, marginTop: -4 },
+  railScroll: { gap: SPACING.md, paddingRight: SPACING.xs },
 
-  // ── Error ──
-  errorCard: { marginHorizontal: 20, marginTop: 16, marginBottom: 0, borderRadius: RADIUS.sm, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  errorText:  { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
-  retryText:  { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
+  workCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.md },
+  workThumb: { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 },
+  workTitle: { fontSize: FONT_SIZE.md, fontFamily: F.semibold },
+  workBrand: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, marginTop: 2 },
+  workStatusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 5 },
+  workStatusText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
 
-  // ── Section headers ──
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 12 },
-  sectionTitle:  { fontSize: 16, fontFamily: F.bold },
+  cardEmpty: { borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: SPACING.xl, alignItems: 'center', gap: SPACING.sm },
+  cardEmptyTitle: { fontSize: FONT_SIZE.md, fontFamily: F.bold, textAlign: 'center' },
+  cardEmptySub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
 
-  // ── Categories (pills) ──
-  categoriesRow: { paddingHorizontal: 20, gap: 8, marginBottom: 0 },
-  catPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    height: 38, borderRadius: RADIUS.full, paddingHorizontal: 12,
-    borderWidth: 1,
-    ...SHADOW.card,
-  },
-  catLabel: { fontSize: 12, fontFamily: F.semibold, lineHeight: 16 },
-
-  // ── Platforms (pills) ──
-  platformsRow: { paddingHorizontal: 20, gap: 8, marginBottom: 0 },
-
-  // ── Loading ──
-  loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
-  loadingText: { fontSize: 14, fontFamily: F.regular },
-
-  // ── Featured ──
-  featuredRow:       { paddingHorizontal: 20, gap: 8, marginTop: 16, marginBottom: 16 },
-  featuredEmpty:     { marginHorizontal: 20, marginBottom: 16, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
-  featuredEmptyTitle:{ fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
-  featuredEmptySub:  { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
-  featuredLoadingMore: { width: 60, justifyContent: 'center', alignItems: 'center' },
-
-  // ── Nearby ──
-  nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flex: 1 },
-  nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
-  nearbyChipText: { fontSize: 11, fontFamily: F.bold, flexShrink: 1 },
-  expandRadiusBtn: { borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 10, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
-  expandRadiusBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
-
-  // ── Attention banner ──
-  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 16, marginBottom: 0, padding: 14, gap: 10, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
-  attentionIconWrap: { width: 36, height: 36, borderRadius: RADIUS.sm, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
-  attentionTitle: { fontSize: 13, color: '#92400E', fontFamily: F.bold },
-  attentionSub: { fontSize: 11, color: '#B45309', fontFamily: F.regular, marginTop: 1 },
-
-  // ── Tab filter ──
-  // No background/shadow here — matches the proposals page's tab bar, which
-  // lets TabSlider (already self-contained: page-background wrapper, shadow
-  // only on the animated active pill) sit directly on the page.
-  filterTabsWrap: { marginTop: 8, marginBottom: 4 },
-  stickyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, ...SHADOW.card },
-
-  // ── Campaign list ──
-  // Matches featuredRow's horizontal padding above — without this, cards here
-  // ran full-bleed edge-to-edge while every other section on this screen
-  // (including Featured Events) keeps a 20px margin from the screen edges.
-  // marginBottom (not a separator) so every card — including the last one
-  // before the footer/end of list — gets the same breathing room below it.
-  campaignItemWrap: { paddingHorizontal: 20, marginBottom: 14 },
-  // Tablet/iPad two-per-row grid — mirrors the events tab's cardWrapHalf.
-  campaignRowWrap: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 14 },
-  campaignRowItem: { width: '48%' },
-  listLoadingMore: { paddingVertical: 16, alignItems: 'center' },
+  nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, flex: 1 },
+  nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: 5, flexShrink: 1 },
+  nearbyChipText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold, flexShrink: 1 },
+  expandRadiusBtn: { borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
+  expandRadiusBtnText: { color: '#fff', fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 });

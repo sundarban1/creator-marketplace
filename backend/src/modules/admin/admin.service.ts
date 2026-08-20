@@ -55,12 +55,32 @@ export class AdminService {
     return this.repo.getAllCampaigns(page, limit, status, search);
   }
 
-  getActivityLogs(page: number, limit: number, filters: { userId?: string; action?: string; from?: Date; to?: Date }) {
-    return this.repo.getAllActivityLogs(page, limit, filters);
+  async getActivityLogs(page: number, limit: number, filters: { userId?: string; action?: string; from?: Date; to?: Date }) {
+    const { logs, total } = await this.repo.getAllActivityLogs(page, limit, filters);
+    const ids = Array.from(new Set(logs.map((l) => l.userId).filter((id): id is string => !!id)));
+    const users = await this.repo.getUserEmailsByIds(ids);
+    const emailById = new Map(users.map((u) => [u.id, u.email]));
+    return {
+      logs: logs.map((l) => ({ ...l, userEmail: l.userId ? emailById.get(l.userId) ?? null : null })),
+      total,
+    };
   }
 
-  getAuditLogs(page: number, limit: number, filters: { userId?: string; action?: string; from?: Date; to?: Date }) {
-    return this.repo.getAllAuditLogs(page, limit, filters);
+  async getAuditLogs(page: number, limit: number, filters: { userId?: string; action?: string; from?: Date; to?: Date }) {
+    const { logs, total } = await this.repo.getAllAuditLogs(page, limit, filters);
+    const ids = Array.from(new Set(
+      logs.flatMap((l) => [l.userId, l.performedBy]).filter((id): id is string => !!id)
+    ));
+    const users = await this.repo.getUserEmailsByIds(ids);
+    const emailById = new Map(users.map((u) => [u.id, u.email]));
+    return {
+      logs: logs.map((l) => ({
+        ...l,
+        userEmail:        l.userId      ? emailById.get(l.userId)      ?? null : null,
+        performedByEmail: l.performedBy ? emailById.get(l.performedBy) ?? null : null,
+      })),
+      total,
+    };
   }
 
   verifyUser(userId: string, verified: boolean) {
@@ -148,6 +168,34 @@ export class AdminService {
     }).catch(() => {});
 
     return updated;
+  }
+
+  // Force-delete — no status guard (unlike setCampaignStatus('CLOSED')
+  // above), by design: an admin removing an event should work regardless of
+  // whether proposals are pending, accepted, paid, or in progress.
+  async deleteCampaign(campaignId: string) {
+    const campaign = await this.repo.findCampaignForDeletion(campaignId);
+    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (campaign.deletedAt) throw new AppError('Event is already deleted', 400);
+
+    const affectedUserIds = campaign.applications.map((a) => a.creator.userId);
+
+    const result = await this.repo.softDeleteCampaignCascade(campaignId);
+
+    if (affectedUserIds.length > 0) {
+      notificationService.createMany(
+        affectedUserIds.map((userId) => ({
+          userId,
+          type:    'campaign_deleted',
+          title:   'Event removed',
+          body:    `"${campaign.title}" was removed by an admin. Any accepted proposals or work for it were removed too.`,
+          refId:   campaignId,
+          refType: 'campaign',
+        })),
+      ).catch(() => {});
+    }
+
+    return { ...result, title: campaign.title };
   }
 
   removeUser(userId: string) {
@@ -291,6 +339,12 @@ export class AdminService {
       refType: 'campaign',
     }).catch(() => {});
 
+    // Posted before the possible reset-to-PENDING below, so it always lands
+    // in the still-open conversation rather than racing a fresh accept.
+    await this.messagingService
+      .sendSystemMessage(app.creator.id, app.campaign.business.id, app.campaignId, businessUserId, 'BUSINESS', 'Payment released.')
+      .catch(() => {});
+
     // A conversation that was only ever auto-accepted (never a real chat request/accept)
     // pauses back to PENDING now that the project is done and paid — a genuinely-accepted
     // conversation is left open as-is.
@@ -361,6 +415,39 @@ export class AdminService {
         refType: 'business',
       }).catch(() => {});
       sendAccountVerifiedEmail(updated.user.email, name, 'business').catch(() => {});
+    }
+    return updated;
+  }
+
+  getProviderVerificationQueue(page: number, limit: number) {
+    return this.repo.getProviderVerificationQueue(page, limit);
+  }
+
+  getBusinessVerificationQueue(page: number, limit: number) {
+    return this.repo.getBusinessVerificationQueue(page, limit);
+  }
+
+  async rejectCreator(creatorId: string, reason: string, adminUserId: string) {
+    const updated = await this.repo.rejectCreatorVerification(creatorId, reason);
+
+    logAudit({
+      userId:      updated.userId,
+      action:      AuditAction.VERIFICATION_REJECTED,
+      performedBy: adminUserId,
+      newValue:    { profileId: updated.id, profileType: 'creator', reason },
+    });
+
+    if (updated.user) {
+      const name = updated.fullName ?? 'there';
+      notificationService.create({
+        userId:  updated.userId,
+        type:    'verification_rejected',
+        title:   'Verification not approved',
+        body:    `Your verification was not approved: ${reason}`,
+        refId:   updated.id,
+        refType: 'creator',
+      }).catch(() => {});
+      sendVerificationRejectedEmail(updated.user.email, name, reason, 'creator').catch(() => {});
     }
     return updated;
   }

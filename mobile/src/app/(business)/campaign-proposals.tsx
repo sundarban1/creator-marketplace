@@ -20,7 +20,6 @@ import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { campaignService } from '@/services/campaign';
 import { contractService, type Contract } from '@/services/contract';
 import { ContractModal } from '@/components/ContractModal';
@@ -32,7 +31,7 @@ type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type Proposal = {
   id: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  status: 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
   workStatus: WS;
   proposedRate: string;
   coverLetter: string;
@@ -58,7 +57,7 @@ function projectBtnConfig(ws: WS, paymentStatus: PS, t: TFn) {
   return                          { label: t('activityTimeline.statusWaitingPayment'),     icon: 'credit-card'          as const, color: '#EF4444' };
 }
 
-type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected' | 'expired';
+type StatusFilter = 'all' | 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
 
 const PAID_ACCENT = '#4F46E5';
 const FREE_ACCENT = '#059669';
@@ -66,10 +65,11 @@ const PAID_LIGHT  = '#EEF2FF';
 const FREE_LIGHT  = '#F0FDF4';
 
 const STATUS_CFG = {
-  pending:  { bg: '#FFF7ED', color: '#D97706', icon: 'clock'         as const, label: 'Pending'  },
-  accepted: { bg: '#ECFDF5', color: '#16A34A', icon: 'check-circle'     as const, label: 'Accepted' },
-  rejected: { bg: '#FEF2F2', color: '#EF4444', icon: 'times-circle' as const, label: 'Rejected' },
-  expired:  { bg: '#F3F4F6', color: '#6B7280', icon: 'hourglass-end' as const, label: 'Expired' },
+  pending:     { bg: '#FFF7ED', color: '#D97706', icon: 'clock'         as const, label: 'Pending'     },
+  shortlisted: { bg: '#EFF6FF', color: '#0369A1', icon: 'star'          as const, label: 'Shortlisted' },
+  accepted:    { bg: '#ECFDF5', color: '#16A34A', icon: 'check-circle'  as const, label: 'Accepted'    },
+  rejected:    { bg: '#FEF2F2', color: '#EF4444', icon: 'times-circle'  as const, label: 'Rejected'    },
+  expired:     { bg: '#F3F4F6', color: '#6B7280', icon: 'hourglass-end' as const, label: 'Expired'     },
 };
 
 function initials(name: string) {
@@ -93,6 +93,7 @@ function ProposalCard({
   acceptLabel,
   onAccept,
   onReject,
+  onShortlist,
   acting,
   onStartProject,
   campaignInactive,
@@ -102,6 +103,7 @@ function ProposalCard({
   acceptLabel: string;
   onAccept: (p: Proposal) => void;
   onReject: (p: Proposal) => void;
+  onShortlist: (p: Proposal) => void;
   acting: boolean;
   onStartProject?: (p: Proposal) => void;
   campaignInactive: boolean;
@@ -138,6 +140,7 @@ function ProposalCard({
             <FontAwesome5 name={st.icon} size={12} color={st.color} />
             <Text style={[styles.statusText, { color: st.color }]}>
               {p.status === 'pending' ? t('campaignProposals.statusPending')
+                : p.status === 'shortlisted' ? t('campaignProposals.statusShortlisted')
                 : p.status === 'accepted' ? t('campaignProposals.statusAccepted')
                 : p.status === 'expired' ? t('campaignProposals.statusExpired')
                 : t('campaignProposals.statusRejected')}
@@ -194,10 +197,23 @@ function ProposalCard({
         </View>
       )}
 
-      {/* Actions for pending */}
-      {p.status === 'pending' && (
+      {/* Actions for pending/shortlisted — shortlist toggles between the two,
+          accept/reject work from either (backend never checked prior status). */}
+      {(p.status === 'pending' || p.status === 'shortlisted') && (
         <>
           <View style={styles.actions}>
+            <Pressable
+              style={[
+                styles.shortlistBtn,
+                { borderColor: p.status === 'shortlisted' ? '#0369A1' : C.border, backgroundColor: p.status === 'shortlisted' ? '#EFF6FF' : C.background },
+                campaignInactive && styles.actionBtnDisabled,
+              ]}
+              disabled={acting || campaignInactive}
+              hitSlop={4}
+              onPress={() => onShortlist(p)}
+              accessibilityLabel={t('campaignProposals.shortlistBtn')}>
+              <FontAwesome5 name="star" solid={p.status === 'shortlisted'} size={16} color={p.status === 'shortlisted' ? '#0369A1' : C.textSecondary} />
+            </Pressable>
             <Pressable
               style={[styles.declineBtn, { borderColor: C.border, backgroundColor: C.background }, campaignInactive && styles.actionBtnDisabled]}
               disabled={acting || campaignInactive}
@@ -426,12 +442,9 @@ export default function CampaignProposalsScreen() {
     campaignId: string;
     campaignTitle: string;
     campaignType: string;
-    platform: string;
   }>();
 
-  const { campaignId, campaignTitle, platform } = params;
-  const platformList = platform ? platform.split(',').map((p) => p.trim()).filter(Boolean) : [];
-  const { platforms: allPlatforms } = usePlatforms();
+  const { campaignId, campaignTitle } = params;
   const isFree     = params.campaignType === 'OPEN_EVENT';
   const accent     = isFree ? FREE_ACCENT : PAID_ACCENT;
   const accentBg   = isFree ? FREE_LIGHT  : PAID_LIGHT;
@@ -560,6 +573,22 @@ export default function CampaignProposalsScreen() {
     setModal({ visible: true, type: 'reject', proposal: p, loading: false });
   }
 
+  // §49 — instant toggle, no confirmation modal (low-stakes, reversible,
+  // unlike accept/reject above which commit to something real).
+  async function handleShortlist(p: Proposal) {
+    if (campaignInactive || actingId) return;
+    setActingId(p.id);
+    try {
+      const { status } = await campaignService.shortlistProposal(campaignId, p.id);
+      const nextStatus = status.toLowerCase() as Proposal['status'];
+      setProposals((prev) => prev.map((x) => (x.id === p.id ? { ...x, status: nextStatus } : x)));
+    } catch {
+      // silently no-op — proposal stays in its current status on screen
+    } finally {
+      setActingId(null);
+    }
+  }
+
   function closeModal() {
     setModal((m) => ({ ...m, visible: false, loading: false }));
   }
@@ -616,11 +645,12 @@ export default function CampaignProposalsScreen() {
   }
 
   const counts = {
-    all:      proposals.length,
-    pending:  proposals.filter((p) => p.status === 'pending').length,
-    accepted: proposals.filter((p) => p.status === 'accepted').length,
-    rejected: proposals.filter((p) => p.status === 'rejected').length,
-    expired:  proposals.filter((p) => p.status === 'expired').length,
+    all:         proposals.length,
+    pending:     proposals.filter((p) => p.status === 'pending').length,
+    shortlisted: proposals.filter((p) => p.status === 'shortlisted').length,
+    accepted:    proposals.filter((p) => p.status === 'accepted').length,
+    rejected:    proposals.filter((p) => p.status === 'rejected').length,
+    expired:     proposals.filter((p) => p.status === 'expired').length,
   };
 
   // Every proposal must be resolved — declined, expired (the event closed
@@ -670,8 +700,9 @@ export default function CampaignProposalsScreen() {
   type FilterOpt = { key: StatusFilter; label: string; count: number; color: string };
   const FILTERS: FilterOpt[] = [
     { key: 'all',      label: t('campaignProposals.filterAll'),                                                    count: counts.all,      color: accent    },
-    { key: 'pending',  label: t('campaignProposals.filterPending'),                                                count: counts.pending,  color: '#D97706' },
-    { key: 'accepted', label: isFree ? t('campaignProposals.filterApproved') : t('campaignProposals.filterApproved'), count: counts.accepted, color: '#16A34A' },
+    { key: 'pending',     label: t('campaignProposals.filterPending'),                                                count: counts.pending,     color: '#D97706' },
+    { key: 'shortlisted', label: t('campaignProposals.filterShortlisted'),                                            count: counts.shortlisted, color: '#0369A1' },
+    { key: 'accepted',    label: isFree ? t('campaignProposals.filterApproved') : t('campaignProposals.filterApproved'), count: counts.accepted, color: '#16A34A' },
     { key: 'rejected', label: t('campaignProposals.filterDeclined'),                                               count: counts.rejected, color: '#EF4444' },
     { key: 'expired',  label: t('campaignProposals.filterExpired'),                                                count: counts.expired,  color: '#6B7280' },
   ];
@@ -706,18 +737,6 @@ export default function CampaignProposalsScreen() {
                   {isFree ? t('campaignProposals.badgeFreeEvent') : t('campaignProposals.badgePaidEvent')}
                 </Text>
               </View>
-              {platformList.length > 0 && (
-                <View style={styles.platformIconRow}>
-                  {platformList.map((p) => {
-                    const pMeta = getPlatformMeta(allPlatforms, p);
-                    return (
-                      <View key={p} style={[styles.platformIcon, { backgroundColor: pMeta.bg }]}>
-                        <FontAwesome5 name={pMeta.icon} size={11} color={pMeta.color} />
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
             </View>
           </View>
 
@@ -837,6 +856,7 @@ export default function CampaignProposalsScreen() {
               acceptLabel={acceptLabel}
               onAccept={handleAccept}
               onReject={handleReject}
+              onShortlist={handleShortlist}
               acting={actingId === item.id}
               onStartProject={handleStartProject}
               campaignInactive={campaignInactive}
@@ -907,8 +927,6 @@ const styles = StyleSheet.create({
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },
-  platformIconRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  platformIcon:  { width: 24, height: 24, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
 
   statStrip: {
     flexDirection: 'row',
@@ -974,6 +992,7 @@ const styles = StyleSheet.create({
   freeTagText: { fontSize: 13, fontFamily: F.bold },
 
   actions:    { flexDirection: 'row', gap: 10 },
+  shortlistBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.md, borderWidth: 1.5 },
   declineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: RADIUS.md, borderWidth: 1.5 },
   acceptBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: RADIUS.md },
   actionBtnDisabled: { opacity: 0.45 },

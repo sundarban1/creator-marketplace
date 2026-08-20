@@ -133,6 +133,13 @@ export function Businesses() {
       ),
     },
     {
+      key:    'location',
+      header: 'Location',
+      render: (row: ApiBusiness) => (
+        <span className="text-sm text-gray-600">{[row.city, row.district].filter(Boolean).join(', ') || '—'}</span>
+      ),
+    },
+    {
       key:    'status',
       header: 'Status',
       render: (row: ApiBusiness) => <StatusBadge status={businessStatus(row)} />,
@@ -246,6 +253,8 @@ export function Businesses() {
               heading: 'Profile',
               fields: [
                 { label: 'Website', value: viewing.website ? <a href={viewing.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{viewing.website}</a> : '—' },
+                { label: 'Location', value: [viewing.area, viewing.city, viewing.district, viewing.province].filter(Boolean).join(', ') || '—' },
+                { label: 'Business size', value: viewing.businessSize ? viewing.businessSize.charAt(0) + viewing.businessSize.slice(1).toLowerCase() : '—' },
                 { label: 'Events posted', value: viewing._count.campaigns },
                 { label: 'Description', value: viewing.description ?? '—' },
                 {

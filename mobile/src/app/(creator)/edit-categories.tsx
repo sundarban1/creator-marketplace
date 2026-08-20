@@ -1,5 +1,4 @@
 import { router } from 'expo-router';
-import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import {
@@ -16,6 +15,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
 import { useCategories } from '@/hooks/useCategories';
+import { CategoryChipGrid } from '@/components/CategoryChipGrid';
 import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
@@ -39,14 +39,11 @@ export default function EditCategoriesScreen() {
   }, []);
 
   function toggle(cat: string) {
-    setCategories((prev) => {
-      if (prev.includes(cat)) return prev.filter((c) => c !== cat);
-      if (prev.length >= MAX) {
-        toast.warning(t('editCategories.maxWarning', { max: MAX }));
-        return prev;
-      }
-      return [...prev, cat];
-    });
+    setCategories((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
+  }
+
+  function handleMaxReached() {
+    toast.warning(t('editCategories.maxWarning', { max: MAX }));
   }
 
   async function handleSave() {
@@ -81,7 +78,7 @@ export default function EditCategoriesScreen() {
       <MaxWidthContainer>
       <PageHeader
         title={t('editCategories.title')}
-        backFallback="/(creator)/profile"
+        backFallback="/(creator)/(tabs)/profile"
         rightSlot={
           <Pressable
             style={[s.saveBtn, { backgroundColor: saving ? C.brinjal1 + 'AA' : C.brinjal1 }]}
@@ -107,29 +104,16 @@ export default function EditCategoriesScreen() {
           </Text>
         </View>
 
-        <View style={s.chips}>
-          {Array.from(new Set([...catOptions.map((c) => c.name), ...categories])).map((cat) => {
-            const active = categories.includes(cat);
-            const disabled = !active && categories.length >= MAX;
-            const meta = catOptions.find((c) => c.name === cat);
-            return (
-              <Pressable
-                key={cat}
-                onPress={() => toggle(cat)}
-                disabled={disabled}
-                style={[
-                  s.chip,
-                  { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface },
-                  disabled && { opacity: 0.35 },
-                ]}>
-                {meta && <FontAwesome5 name={meta.icon} size={12} color={active ? meta.color : C.textSecondary} />}
-                <Text style={[s.chipTxt, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '500' }]}>
-                  {cat}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <CategoryChipGrid
+          categories={Array.from(new Set([...catOptions.map((c) => c.name), ...categories])).map(
+            (name) => catOptions.find((c) => c.name === name) ?? { id: name, name }
+          )}
+          selected={categories}
+          onToggle={toggle}
+          onMaxReached={handleMaxReached}
+          max={MAX}
+          variant="pill"
+        />
       </ScrollView>
       </MaxWidthContainer>
     </SafeAreaView>
@@ -145,7 +129,4 @@ const s = StyleSheet.create({
   hint:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   hintTxt:   { fontSize: 13, flex: 1, fontFamily: F.regular },
   counter:   { fontSize: 13, marginLeft: 8, fontFamily: F.bold },
-  chips:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip:      { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, minHeight: 40, borderRadius: RADIUS.full, borderWidth: 1.5 },
-  chipTxt:   { fontSize: 14, fontFamily: F.medium },
 });

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
 import { EntityCard } from '@/components/EntityCard';
@@ -13,21 +13,22 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SearchInput } from '@/components/SearchInput';
 import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
 import { LocationSearchPicker, type LocationEntry } from '@/components/LocationSearchPicker';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, useCategories } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
+import { CategoryPillRow } from '@/components/CategoryPillRow';
 
 const PAGE_SIZE = 10;
 const MAX_LOCS = 3;
@@ -80,20 +81,18 @@ function isFilterActive(f: FilterState) {
 // ─── Filter Modal ─────────────────────────────────────────────────────────────
 
 function ExploreFilterModal({
-  visible, temp, setTemp, availableCategories,
+  visible, temp, setTemp,
   onApply, onReset, onClose,
 }: {
   visible: boolean;
   temp: FilterState;
   setTemp: (f: FilterState) => void;
-  availableCategories: string[];
   onApply: () => void;
   onReset: () => void;
   onClose: () => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
 
   function set<K extends keyof FilterState>(key: K, val: FilterState[K]) {
@@ -112,9 +111,6 @@ function ExploreFilterModal({
     const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
     activeChips.push({ key: `plat-${p}`, label, onClear: () => set('platforms', temp.platforms.filter((x) => x !== p)) });
   }
-  for (const cat of temp.categories) {
-    activeChips.push({ key: `cat-${cat}`, label: cat, onClear: () => set('categories', temp.categories.filter((x) => x !== cat)) });
-  }
 
   const applyLabel = activeChips.length > 0
     ? t('explore.applyFiltersCount', { n: activeChips.length })
@@ -132,31 +128,9 @@ function ExploreFilterModal({
     >
       <ActiveFilterChips chips={activeChips} />
 
-      {/* Category */}
-      {availableCategories.length > 0 && (
-        <View>
-          <FilterSectionHeader
-            icon="tag"
-            label={t('explore.category')}
-            hint={temp.categories.length > 0 ? t('filterModal.selectedCount', { count: temp.categories.length }) : undefined}
-          />
-          <View style={fm.chips}>
-            {availableCategories.map((cat) => {
-              const meta = getCategoryMeta(allCategories, cat);
-              const sel = temp.categories.includes(cat);
-              return (
-                <Pressable
-                  key={cat}
-                  onPress={() => set('categories', toggle(temp.categories, cat))}
-                  style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                  <FontAwesome5 name={meta.icon} size={12} color={sel ? meta.color : C.textSecondary} />
-                  <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{cat}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
+      {/* Category filtering lives on the screen itself (CategoryPillRow),
+          not in this modal — keeping it in one place avoids two disagreeing
+          controls for the same filter. */}
 
       {/* Platform — sourced from the admin platform catalog so every supported
           platform is always selectable, not just ones a creator already connected. */}
@@ -207,7 +181,7 @@ const fm = StyleSheet.create({
 
 // ─── Creator Card ─────────────────────────────────────────────────────────────
 
-function CreatorCard({ creator }: { creator: ApiCreatorListItem }) {
+function CreatorCard({ creator, chevronOnly }: { creator: ApiCreatorListItem; /** Discover tab's cards use a plain trailing chevron instead of a full CTA button. */ chevronOnly?: boolean }) {
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
@@ -235,12 +209,14 @@ function CreatorCard({ creator }: { creator: ApiCreatorListItem }) {
       categoryColor={meta.color}
       categoryBg={meta.bg}
       extraCount={extraCats}
+      rating={creator.averageRating}
       stat={topAccount && topPlatform ? {
         icon: topPlatform.icon,
         color: topPlatform.color,
         text: formatFollowers(topAccount.followers),
       } : undefined}
       ctaLabel={t('explore.viewProfile')}
+      ctaStyle={chevronOnly ? 'chevron' : 'button'}
       onPress={() => router.push({ pathname: '/(creator)/creator-detail', params: { id: creator.id } })}
     />
   );
@@ -248,10 +224,18 @@ function CreatorCard({ creator }: { creator: ApiCreatorListItem }) {
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-export default function ExploreCreatorPeersScreen() {
+// `embedded` renders just the content (no SafeAreaView/MaxWidthContainer/
+// BackButton/search bar) so this same screen can be reused as the "People"
+// tab inside the unified Discover shell — which owns a single shared search
+// bar + filter button for every tab and drives this screen's search/filter
+// via the exposed ref — while the standalone route (/(creator)/explore-creators)
+// keeps its own search bar and works exactly as before.
+export type PeopleExploreHandle = { setSearchText: (text: string) => void; openFilter: () => void };
+
+const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: boolean; onFilterCountChange?: (count: number) => void }>(
+  function ExploreCreatorPeersScreen({ embedded = false, onFilterCountChange }, ref) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
 
   const [creators, setCreators] = useState<ApiCreatorListItem[]>([]);
@@ -269,10 +253,26 @@ export default function ExploreCreatorPeersScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterState>(DEFAULT_FILTER);
   const [tempFilter, setTempFilter] = useState<FilterState>(DEFAULT_FILTER);
   const { categories: adminCategories } = useCategories('CREATOR');
-  const availableCategories = adminCategories.map((c) => c.name);
 
   const filterActive = isFilterActive(activeFilter);
   const filterCount  = filterActiveCount(activeFilter);
+
+  // See explore-businesses.tsx's identical effect for why onFilterCountChange
+  // is deliberately left out of the deps array (a fresh closure every parent
+  // render would otherwise re-fire this on every render, looping forever).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { onFilterCountChange?.(filterCount); }, [filterCount]);
+
+  function toggleCategory(label: string) {
+    const next = activeFilter.categories.includes(label)
+      ? activeFilter.categories.filter((c) => c !== label)
+      : [...activeFilter.categories, label];
+    setActiveFilter({ ...activeFilter, categories: next });
+  }
+
+  function clearCategories() {
+    setActiveFilter({ ...activeFilter, categories: [] });
+  }
 
   // Ref (not state) so the guard is synchronous — FlatList's onEndReached can
   // fire multiple times before a state update commits, otherwise triggering
@@ -334,6 +334,8 @@ export default function ExploreCreatorPeersScreen() {
     setFilterVisible(true);
   }
 
+  useImperativeHandle(ref, () => ({ setSearchText: setSearch, openFilter }));
+
   function applyFilter() {
     setFilterVisible(false);
     setActiveFilter(tempFilter);
@@ -353,51 +355,61 @@ export default function ExploreCreatorPeersScreen() {
     }
   }
 
-  return (
-    <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <MaxWidthContainer>
-      {/* Back button + search, same row */}
-      <View style={[s.topRow, { backgroundColor: C.surface }]} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
-        <BackButton fallback="/(creator)/(tabs)" />
-        <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-          <FontAwesome5 name="search" solid size={18} color={C.textSecondary} />
-          <TextInput
-            style={[s.searchInput, { color: C.text }]}
-            placeholder={t('explore.searchCreators')}
-            placeholderTextColor={C.textSecondary}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')} hitSlop={10}>
-              <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
-            </Pressable>
-          )}
-          <Pressable
-            style={[
-              s.filterBtn,
-              { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight },
-              filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-            ]}
-            onPress={openFilter}
-            hitSlop={6}>
-            <FontAwesome5 name="sliders-h" solid size={18} color={filterActive ? '#fff' : C.brinjal1} />
-            {filterActive && (
-              <View style={s.filterCountBadge}>
-                <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
+  const content = (
+    <>
+      {/* Back button + search, same row — hidden when embedded, since the
+          Discover shell owns one shared search bar + filter button for
+          every tab and drives this screen's search/filter via its ref. */}
+      {!embedded && (
+        <>
+          <View style={[s.topRow, { backgroundColor: C.surface }]} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
+            <BackButton fallback="/(creator)/(tabs)" />
+            <View style={[s.searchCard, { flex: 1 }]}>
+              <View style={{ flex: 1 }}>
+                <SearchInput
+                  placeholder={t('explore.searchPeople')}
+                  value={search}
+                  onChangeText={setSearch}
+                  autoCorrect={false}
+                />
               </View>
-            )}
-          </Pressable>
-        </View>
-      </View>
-      <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
+              <Pressable
+                style={[
+                  s.filterBtn,
+                  { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight },
+                  filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+                ]}
+                onPress={openFilter}
+                hitSlop={6}>
+                <FontAwesome5 name="sliders-h" solid size={18} color={filterActive ? '#fff' : C.brinjal1} />
+                {filterActive && (
+                  <View style={s.filterCountBadge}>
+                    <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
+          </View>
+          <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
+        </>
+      )}
+
+      {/* Category pills — single scrollable row through every category,
+          matching Discover's Opportunities/Businesses tabs (no label text). */}
+      <CategoryPillRow
+        categories={adminCategories}
+        activeLabels={activeFilter.categories}
+        onToggle={toggleCategory}
+        showAll
+        onAllPress={clearCategories}
+      />
 
       {/* Active filter chips — wraps to multiple lines, doesn't scroll, so the
           row's height is deterministic and the content below it never gets
-          pushed around unpredictably. */}
-      {filterActive && (
+          pushed around unpredictably. Categories are deliberately excluded
+          here since the CategoryPillRow above already highlights the
+          selected ones; repeating them as chips+Clear-all was redundant. */}
+      {(activeFilter.locations.length > 0 || activeFilter.platforms.length > 0) && (
         <View style={s.chipRow}>
           {activeFilter.locations.map((loc) => (
             <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
@@ -417,83 +429,89 @@ export default function ExploreCreatorPeersScreen() {
               </Pressable>
             );
           })}
-          {activeFilter.categories.map((cat) => {
-            const meta = getCategoryMeta(allCategories, cat);
-            return (
-              <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-                <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
-                <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
-              </Pressable>
-            );
-          })}
           <Pressable onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
             <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>
         </View>
       )}
 
-      {/* Result count */}
-      {!loading && creators.length > 0 && (
-        <Text style={[s.countText, { color: C.textSecondary }]}>
-          {total !== 1 ? t('explore.creatorsFoundPlural', { count: total }) : t('explore.creatorsFound', { count: total })}
-        </Text>
-      )}
+      {/* Always a stable flex:1 region below the pills, so the list/empty
+          state gets a well-defined box instead of collapsing/overlapping
+          the pill row above it — matches explore-businesses.tsx's identical
+          wrapper. */}
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <View style={s.list}>
+            {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
+          </View>
+        ) : error ? (
+          <EmptyState
+            icon="exclamation-circle"
+            title={t('common.error')}
+            subtitle={error}
+            action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}
+          />
+        ) : creators.length === 0 ? (
+          <EmptyState
+            faIcon="users"
+            title={t('explore.noCreators')}
+            subtitle={filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
+            action={(filterActive || search) ? { label: t('explore.clearFilters'), onPress: () => { setSearch(''); setActiveFilter(DEFAULT_FILTER); } } : undefined}
+          />
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={creators}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={s.list}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+            renderItem={({ item }) => <CreatorCard creator={item} chevronOnly={embedded} />}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.3}
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS === 'android'}
+            ListFooterComponent={
+              <View>
+                {!loading && creators.length > 0 && (
+                  <Text style={[s.countText, { color: C.textSecondary }]}>
+                    {total !== 1 ? t('explore.peopleFoundPlural', { count: total }) : t('explore.peopleFound', { count: total })}
+                  </Text>
+                )}
+                {loadingMore && <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />}
+              </View>
+            }
+          />
+        )}
+      </View>
+    </>
+  );
 
-      {/* Content */}
-      {loading ? (
-        <View style={s.list}>
-          {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
-        </View>
-      ) : error ? (
-        <EmptyState
-          icon="exclamation-circle"
-          title={t('common.error')}
-          subtitle={error}
-          action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}
-        />
-      ) : creators.length === 0 ? (
-        <EmptyState
-          faIcon="users"
-          title={t('explore.noCreators')}
-          subtitle={filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
-          action={(filterActive || search) ? { label: t('explore.clearFilters'), onPress: () => { setSearch(''); setActiveFilter(DEFAULT_FILTER); } } : undefined}
-        />
+  return (
+    <>
+      {embedded ? (
+        <MaxWidthContainer>{content}</MaxWidthContainer>
       ) : (
-        <FlatList
-          data={creators}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={s.list}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
-          renderItem={({ item }) => <CreatorCard creator={item} />}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.3}
-          initialNumToRender={8}
-          maxToRenderPerBatch={8}
-          windowSize={7}
-          removeClippedSubviews={Platform.OS === 'android'}
-          ListFooterComponent={
-            loadingMore ? (
-              <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />
-            ) : null
-          }
-        />
+        <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+          <MaxWidthContainer>{content}</MaxWidthContainer>
+        </SafeAreaView>
       )}
-      </MaxWidthContainer>
 
       <ExploreFilterModal
         visible={filterVisible}
         temp={tempFilter}
         setTemp={setTempFilter}
-        availableCategories={availableCategories}
         onApply={applyFilter}
         onReset={resetFilter}
         onClose={() => setFilterVisible(false)}
       />
-    </SafeAreaView>
+    </>
   );
-}
+});
+
+export default ExploreCreatorPeersScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -503,19 +521,20 @@ const s = StyleSheet.create({
 
   topRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16, marginBottom: 8 },
-  searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
-  searchInput: { flex: 1, fontSize: 15, fontFamily: F.regular },
+  searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
-  chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
+  chipRow: { paddingHorizontal: SCREEN_GUTTER, paddingBottom: 8, gap: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
-  countText: { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 20, marginTop: 8, marginBottom: 4, textAlign: 'right' },
+  countText: { fontSize: 12, fontFamily: F.semibold, textAlign: 'center', marginTop: 8, marginBottom: 4 },
 
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
-  list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
+  // paddingTop — without it the first card sat flush against the category
+  // pill row above with zero gap, reading as the card overlapping it.
+  list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 14, paddingBottom: 40, gap: 14 },
 });

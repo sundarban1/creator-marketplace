@@ -11,7 +11,6 @@ import {
   Share,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +20,7 @@ import { useToast } from '@/components/Toast';
 import { businessReferralService, type ApiBusinessReferralOverview } from '@/services/business-referral';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 
 const STATUS_META: Record<string, { bg: string; text: string }> = {
   PENDING:   { bg: '#FEF3C7', text: '#92400E' },
@@ -142,17 +142,17 @@ export default function BusinessReferralScreen() {
             </View>
           ) : (
             <View style={[styles.card, { backgroundColor: C.surface }]}>
-              <Text style={[styles.cardTitle, { color: C.text }]}>{t('businessReferral.haveCodeTitle')}</Text>
               <View style={styles.applyCodeRow}>
-                <TextInput
-                  style={[styles.applyCodeInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                  value={codeInput}
-                  onChangeText={(v) => setCodeInput(v.toUpperCase())}
-                  placeholder={t('businessReferral.haveCodePlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                />
+                <View style={{ flex: 1 }}>
+                  <TextInputWithLabel
+                    label={t('businessReferral.haveCodeTitle')}
+                    value={codeInput}
+                    onChangeText={(v) => setCodeInput(v.toUpperCase())}
+                    placeholder={t('businessReferral.haveCodePlaceholder')}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+                </View>
                 <Pressable
                   style={[styles.applyCodeBtn, { backgroundColor: C.brinjal1, opacity: applying || !codeInput.trim() ? 0.6 : 1 }]}
                   disabled={applying || !codeInput.trim()}
@@ -237,7 +237,6 @@ const styles = StyleSheet.create({
   referredByText: { fontSize: 13, fontFamily: F.regular },
 
   applyCodeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  applyCodeInput: { flex: 1, borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, letterSpacing: 1, fontFamily: F.regular },
   applyCodeBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
   applyCodeBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 

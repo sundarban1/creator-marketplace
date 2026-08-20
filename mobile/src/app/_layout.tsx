@@ -145,7 +145,7 @@ function RootNavigator() {
     // the actual runtime shape being checked for here — cast around the mismatch.
     const onSplash     = (segments as readonly string[]).length === 0;
 
-    if (!user && !inAuthGroup && !isPublic) {
+    if (!user && !inAuthGroup && !isPublic && !onSplash) {
       router.replace('/login');
     } else if (user && inAuthGroup) {
       if (user.isFirstLogin === true && onboardingEnabledFor(user.role)) {

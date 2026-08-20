@@ -133,7 +133,7 @@ export function LandingNav() {
           <nav className="hidden items-center gap-9 lg:flex">
             {NAV_LINKS.map((l) => (
               <button
-                key={l.id}
+                key={l.key}
                 onClick={() => go(l.id)}
                 className="group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white/60 dark:hover:text-white"
               >
@@ -146,7 +146,7 @@ export function LandingNav() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-3 lg:flex">
+          <div className="hidden items-center gap-4 lg:flex">
             <LanguageSwitch dark />
             <span aria-hidden className="h-5 w-px bg-ink/10 dark:bg-white/10" />
             <ThemeToggle dark />
@@ -174,7 +174,7 @@ export function LandingNav() {
             <div className="flex flex-col gap-1">
               {NAV_LINKS.map((l, i) => (
                 <motion.button
-                  key={l.id}
+                  key={l.key}
                   onClick={() => go(l.id)}
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}

@@ -38,6 +38,76 @@ export interface StoredUser {
   name:  string;
 }
 
+export interface ApiActivityLog {
+  id:          string;
+  userId:      string | null;
+  userEmail:   string | null;
+  action:      string;
+  entityType:  string | null;
+  entityId:    string | null;
+  description: string | null;
+  metadata:    Record<string, unknown> | null;
+  ipAddress:   string | null;
+  device:      string | null;
+  platform:    string | null;
+  createdAt:   string;
+}
+
+export interface ApiVerificationQueueProvider {
+  id: string;
+  userId: string;
+  fullName: string | null;
+  avatarUrl: string | null;
+  citizenshipDocUrl: string | null;
+  citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  panDocUrl: string | null;
+  panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  updatedAt: string;
+  user: { email: string; phone: string | null } | null;
+}
+
+export interface ApiVerificationQueueBusiness {
+  id: string;
+  userId: string;
+  businessName: string | null;
+  logoUrl: string | null;
+  panDocUrl: string | null;
+  panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUrl: string | null;
+  companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  updatedAt: string;
+  user: { email: string; phone: string | null } | null;
+}
+
+export interface ApiAuditLog {
+  id:               string;
+  userId:           string | null;
+  userEmail:        string | null;
+  action:           string;
+  oldValue:         Record<string, unknown> | null;
+  newValue:         Record<string, unknown> | null;
+  performedBy:      string | null;
+  performedByEmail: string | null;
+  ipAddress:        string | null;
+  createdAt:        string;
+}
+
+export interface ApiReport {
+  id:          string;
+  targetType:  'USER' | 'BUSINESS' | 'SERVICE' | 'OPPORTUNITY' | 'POST' | 'MESSAGE' | 'REVIEW';
+  targetId:    string;
+  reason:      'SPAM' | 'SCAM' | 'FRAUD' | 'HARASSMENT' | 'INAPPROPRIATE_CONTENT' | 'FAKE_PROFILE' | 'PAYMENT_ISSUE' | 'OTHER';
+  description: string | null;
+  status:      'NEW' | 'UNDER_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED';
+  reviewedBy:  string | null;
+  reviewedAt:  string | null;
+  actionNote:  string | null;
+  createdAt:   string;
+  reporter:    { id: string; email: string; role: string };
+}
+
 export interface Pagination {
   total:      number;
   page:       number;
@@ -97,7 +167,13 @@ export interface ApiCreator {
   panDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt:   string;
   user:  { id: string; email: string; phone?: string | null; isEmailVerified: boolean; isActive: boolean; createdAt: string };
-  _count: { applications: number };
+  // Provider marketplace additions — empty for providers who haven't listed
+  // a service/portfolio item yet, not specific to any campaign.
+  services: {
+    id: string; name: string; pricingModel: string; startingPrice: number | null;
+    status: string; category: { name: string };
+  }[];
+  _count: { applications: number; services: number; portfolioItems: number };
 }
 
 export interface ApiReferral {
@@ -150,6 +226,9 @@ export interface ApiCategory {
   key: string;
   scope: 'CREATOR' | 'BUSINESS' | 'BOTH';
   status: 'ACTIVE' | 'INACTIVE';
+  // Provider-type sub-grouping for the CREATOR taxonomy (e.g. "Content &
+  // Media") — not meaningful for BUSINESS-scope rows, so null there.
+  group?: string | null;
   createdAt: string;
   itemCount?: number;
 }
@@ -222,6 +301,13 @@ export interface ApiBusiness {
   companyRegDocUrl?:   string | null;
   companyRegDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   verificationRejectReason?: string | null;
+  // Provider marketplace additions — all optional since they postdate every
+  // business that signed up before this was added; null/undefined for those.
+  province?:    string | null;
+  district?:    string | null;
+  city?:        string | null;
+  area?:        string | null;
+  businessSize?: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE' | null;
   user:  { id: string; email: string; phone?: string | null; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { campaigns: number };
 }
@@ -272,6 +358,10 @@ export interface ApiCampaign {
   createdAt: string;
   business:  { businessName: string; logoUrl?: string | null };
   _count:    { applications: number };
+  // Set once an admin force-deletes the event (see api.admin.deleteCampaign)
+  // — the row itself is kept for audit, only its applications/requirements/
+  // invitations are actually removed. Absent/null for every normal event.
+  deletedAt?: string | null;
 }
 
 export interface ApiPaymentTransaction {
@@ -322,6 +412,11 @@ export interface ApiDeliverableFile {
 
 export interface ApiApplication {
   id:            string;
+  // Which role of a multi-role campaign this targets (§ CampaignRequirement)
+  // — null/undefined for the simple single-category campaigns every existing
+  // campaign uses. This endpoint returns the raw Prisma row, so it's present
+  // as a plain scalar on every application already.
+  requirementId?: string | null;
   coverLetter:   string;
   proposedRate:  number;
   platformFee?:  number;
@@ -390,6 +485,25 @@ export interface ApiCampaignDetail {
   };
   applications:   ApiApplication[];
   _count:         { applications: number };
+  // Multi-role campaigns (§ CampaignRequirement) — undefined/empty for the
+  // simple single-category campaigns every existing campaign uses. This
+  // endpoint returns the raw Prisma row (no DTO layer), so acceptedCount
+  // arrives nested as _count.applications rather than a flat field.
+  requirements?: ApiCampaignRequirementAdmin[];
+}
+
+export interface ApiCampaignRequirementAdmin {
+  id:           string;
+  categoryId:   string;
+  category:     { id: string; name: string; icon: string; color: string };
+  quantity:     number;
+  budgetType:   'FIXED' | 'RANGE' | 'NEGOTIABLE';
+  budgetFixed:  number | null;
+  budgetMin:    number | null;
+  budgetMax:    number | null;
+  deliverables: string | null;
+  deadline:     string | null;
+  _count:       { applications: number };
 }
 
 export type AnalyticsRange = '7d' | '30d' | '90d' | '12mo' | 'all';
@@ -664,6 +778,21 @@ export const api = {
       request<ApiCampaign[]>('GET', '/api/admin/campaigns', undefined,
         params as Record<string, string | number | undefined>),
 
+    reports: (params?: { page?: number; limit?: number; status?: string; targetType?: string }) =>
+      request<{ items: ApiReport[]; total: number }>('GET', '/api/admin/reports', undefined,
+        params as Record<string, string | number | undefined>),
+
+    auditLogs: (params?: { page?: number; limit?: number; userId?: string; action?: string; from?: string; to?: string }) =>
+      request<ApiAuditLog[]>('GET', '/api/admin/audit-logs', undefined,
+        params as Record<string, string | number | undefined>),
+
+    activityLogs: (params?: { page?: number; limit?: number; userId?: string; action?: string; from?: string; to?: string }) =>
+      request<ApiActivityLog[]>('GET', '/api/admin/activity-logs', undefined,
+        params as Record<string, string | number | undefined>),
+
+    updateReportStatus: (id: string, status: 'UNDER_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED', actionNote?: string) =>
+      request<ApiReport>('PUT', `/api/admin/reports/${id}/status`, { status, actionNote }),
+
     campaignDetail: (id: string) =>
       request<ApiCampaignDetail>('GET', `/api/admin/campaigns/${id}`),
 
@@ -690,6 +819,12 @@ export const api = {
 
     rejectCampaign: (id: string, reason: string) =>
       request<ApiCampaign>('POST', `/api/admin/campaigns/${id}/reject`, { reason }),
+
+    // Soft delete — the event row is kept (audit trail) but every proposal/
+    // requirement/invitation tied to it is force-deleted regardless of
+    // status. See backend AdminService.deleteCampaign.
+    deleteCampaign: (id: string) =>
+      request<ApiCampaign>('DELETE', `/api/admin/campaigns/${id}`),
 
     getSettings: () =>
       request<PlatformSettings>('GET', '/api/admin/settings'),
@@ -728,6 +863,17 @@ export const api = {
     rejectBusiness: (id: string, reason: string) =>
       request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/reject`, { reason }),
 
+    rejectCreator: (id: string, reason: string) =>
+      request<{ id: string; fullName: string | null; isVerified: boolean }>('PATCH', `/api/admin/creators/${id}/reject`, { reason }),
+
+    verificationProviders: (params?: { page?: number; limit?: number }) =>
+      request<ApiVerificationQueueProvider[]>('GET', '/api/admin/verification/providers', undefined,
+        params as Record<string, string | number | undefined>),
+
+    verificationBusinesses: (params?: { page?: number; limit?: number }) =>
+      request<ApiVerificationQueueBusiness[]>('GET', '/api/admin/verification/businesses', undefined,
+        params as Record<string, string | number | undefined>),
+
     businessReferrals: (status?: string) =>
       request<ApiBusinessReferral[]>('GET', '/api/admin/business-referrals', undefined, status ? { status } : undefined),
 
@@ -747,10 +893,10 @@ export const api = {
     categories: () =>
       request<ApiCategory[]>('GET', '/api/admin/categories'),
 
-    createCategory: (data: { icon: string; iconBg: string; color: string; name: string; key: string; scope: string; status: string }) =>
+    createCategory: (data: { icon: string; iconBg: string; color: string; name: string; key: string; scope: string; status: string; group?: string }) =>
       request<ApiCategory>('POST', '/api/admin/categories', data),
 
-    updateCategory: (id: string, data: { icon: string; iconBg: string; color: string; name: string; key: string; scope: string; status: string }) =>
+    updateCategory: (id: string, data: { icon: string; iconBg: string; color: string; name: string; key: string; scope: string; status: string; group?: string }) =>
       request<ApiCategory>('PUT', `/api/admin/categories/${id}`, data),
 
     toggleCategoryStatus: (id: string, status: string) =>

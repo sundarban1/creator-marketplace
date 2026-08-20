@@ -22,7 +22,7 @@ export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBad
   const badgeClass = isDark
     ? 'bg-ink text-white hover:bg-ink/85 dark:bg-white dark:text-ink dark:hover:bg-white/85'
     : 'bg-transparent text-white border border-white/30 hover:border-white/60';
-  const linkClass = `flex items-center gap-2.5 rounded-md px-5 py-3 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet ${badgeClass}`;
+  const linkClass = `flex w-44 items-center justify-center gap-2.5 rounded-md px-4 py-3 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet ${badgeClass}`;
 
   return (
     <div className={`flex flex-wrap items-center justify-center gap-3 ${className}`}>

@@ -13,6 +13,9 @@ export interface Category {
   key: string;
   scope: CategoryScope;
   status: CategoryStatus;
+  // Provider-type sub-grouping for the CREATOR taxonomy (e.g. "Content &
+  // Media") — not meaningful for BUSINESS-scope rows, so null there.
+  group: string | null;
   createdAt: string;
   itemCount: number;
 }
@@ -59,6 +62,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
       key: c.key,
       scope: fromScopeApi(c.scope),
       status: fromStatusApi(c.status),
+      group: c.group ?? null,
       createdAt: c.createdAt.slice(0, 10),
       itemCount: c.itemCount ?? 0,
     })));
@@ -72,7 +76,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
   async function addCategory(data: CategoryInput) {
     await api.admin.createCategory({
       icon: data.icon, iconBg: data.iconBg, color: data.color, name: data.name, key: data.key,
-      scope: toScopeApi(data.scope), status: toStatusApi(data.status),
+      scope: toScopeApi(data.scope), status: toStatusApi(data.status), group: data.group ?? undefined,
     });
     await refetch();
   }
@@ -80,7 +84,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
   async function updateCategory(id: string, data: CategoryInput) {
     await api.admin.updateCategory(id, {
       icon: data.icon, iconBg: data.iconBg, color: data.color, name: data.name, key: data.key,
-      scope: toScopeApi(data.scope), status: toStatusApi(data.status),
+      scope: toScopeApi(data.scope), status: toStatusApi(data.status), group: data.group ?? undefined,
     });
     await refetch();
   }

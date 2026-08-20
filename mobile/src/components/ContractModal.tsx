@@ -83,16 +83,18 @@ function fmtDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-// Full-screen "review & sign" modal for a contract — shown when a creator
-// submits a proposal (preview, no contractId yet) and again when a business
-// accepts one (persisted contract, PDF available). Modeled on FilterSheet's
-// bottom-sheet shell (backdrop + handle + scroll body + sticky footer).
-export function ContractModal({ visible, title, subtitle, filledBody, terms, contractId, agreeLabel, agreeing, onAgree, onClose }: Props) {
+// Terms card + markdown body + optional PDF download — the read-only core of
+// a contract, extracted so it can be shown both inside ContractModal's
+// one-time "review & sign" sheet and, unchanged, in the Collaboration
+// screen's persistent Agreement tab (§52) once already signed.
+export function ContractBody({ filledBody, terms, contractId, downloadTitle }: {
+  filledBody: string; terms: ContractTerms; contractId?: string; downloadTitle?: string;
+}) {
   const C = useAppColors();
-  const [agreed, setAgreed] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   const rows: [string, string][] = [
+    ...(terms.role ? ([['Role', terms.role]] as [string, string][]) : []),
     ['Price', terms.price],
     ['Deadline', fmtDate(terms.deadline)],
     ['Timeline', terms.timeline],
@@ -105,7 +107,7 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
     setDownloading(true);
     try {
       const url = await contractService.getContractPdfUrl(contractId);
-      const filename = `${title.replace(/[^a-z0-9]+/gi, '_')}.pdf`;
+      const filename = `${(downloadTitle ?? 'contract').replace(/[^a-z0-9]+/gi, '_')}.pdf`;
       const dest = `${FileSystem.cacheDirectory}${filename}`;
       const { uri } = await FileSystem.downloadAsync(url, dest);
       if (await Sharing.isAvailableAsync()) {
@@ -119,6 +121,42 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
       setDownloading(false);
     }
   }
+
+  return (
+    <View style={{ gap: 16 }}>
+      <View style={[s.termsCard, { backgroundColor: C.background, borderColor: C.border }]}>
+        {rows.map(([label, value], i) => (
+          <View key={label} style={[s.termRow, i < rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+            <Text style={[s.termLabel, { color: C.textSecondary }]}>{label}</Text>
+            <Text style={[s.termValue, { color: C.text }]} numberOfLines={3}>{value}</Text>
+          </View>
+        ))}
+      </View>
+
+      <MarkdownBody text={filledBody} colors={C} />
+
+      {contractId && (
+        <Pressable
+          style={[s.pdfBtn, { borderColor: C.brinjal1, opacity: downloading ? 0.6 : 1 }]}
+          onPress={handleDownload}
+          disabled={downloading}>
+          {downloading
+            ? <ActivityIndicator size="small" color={C.brinjal1} />
+            : <FontAwesome5 name="download" solid size={16} color={C.brinjal1} />}
+          <Text style={[s.pdfBtnText, { color: C.brinjal1 }]}>{downloading ? 'Preparing PDF…' : 'Download Contract'}</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+// Full-screen "review & sign" modal for a contract — shown when a creator
+// submits a proposal (preview, no contractId yet) and again when a business
+// accepts one (persisted contract, PDF available). Modeled on FilterSheet's
+// bottom-sheet shell (backdrop + handle + scroll body + sticky footer).
+export function ContractModal({ visible, title, subtitle, filledBody, terms, contractId, agreeLabel, agreeing, onAgree, onClose }: Props) {
+  const C = useAppColors();
+  const [agreed, setAgreed] = useState(false);
 
   return (
     <BottomSheet
@@ -149,28 +187,7 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
           </Pressable>
         </View>
       }>
-        <View style={[s.termsCard, { backgroundColor: C.background, borderColor: C.border }]}>
-          {rows.map(([label, value], i) => (
-            <View key={label} style={[s.termRow, i < rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-              <Text style={[s.termLabel, { color: C.textSecondary }]}>{label}</Text>
-              <Text style={[s.termValue, { color: C.text }]} numberOfLines={3}>{value}</Text>
-            </View>
-          ))}
-        </View>
-
-        <MarkdownBody text={filledBody} colors={C} />
-
-        {contractId && (
-          <Pressable
-            style={[s.pdfBtn, { borderColor: C.brinjal1, opacity: downloading ? 0.6 : 1 }]}
-            onPress={handleDownload}
-            disabled={downloading}>
-            {downloading
-              ? <ActivityIndicator size="small" color={C.brinjal1} />
-              : <FontAwesome5 name="download" solid size={16} color={C.brinjal1} />}
-            <Text style={[s.pdfBtnText, { color: C.brinjal1 }]}>{downloading ? 'Preparing PDF…' : 'Download Contract'}</Text>
-          </Pressable>
-        )}
+        <ContractBody filledBody={filledBody} terms={terms} contractId={contractId} downloadTitle={title} />
     </BottomSheet>
   );
 }

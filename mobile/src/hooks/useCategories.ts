@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { categoryService, type ApiCategory } from '@/services/category';
 
-type CacheKey = 'CREATOR' | 'BUSINESS' | 'ALL';
+type CacheKey = 'CREATOR' | 'BUSINESS' | 'CREATOR:strict' | 'ALL';
 
 // How long a fetched list is trusted before the next mount silently refetches
 // in the background — without this, a long-running app session would never
@@ -16,10 +16,10 @@ function isFresh(key: CacheKey) {
   return cache[key] !== undefined && Date.now() - (cachedAt[key] ?? 0) < CACHE_TTL_MS;
 }
 
-function fetchScoped(key: CacheKey, scope?: 'CREATOR' | 'BUSINESS'): Promise<ApiCategory[]> {
+function fetchScoped(key: CacheKey, scope?: 'CREATOR' | 'BUSINESS', strict?: boolean): Promise<ApiCategory[]> {
   if (isFresh(key)) return Promise.resolve(cache[key]!);
   if (!inflight[key]) {
-    inflight[key] = categoryService.getCategories(scope)
+    inflight[key] = categoryService.getCategories(scope, strict)
       .then((cats) => { cache[key] = cats; cachedAt[key] = Date.now(); return cats; })
       .finally(() => { delete inflight[key]; });
   }
@@ -27,23 +27,27 @@ function fetchScoped(key: CacheKey, scope?: 'CREATOR' | 'BUSINESS'): Promise<Api
 }
 
 /** Admin-created categories scoped to CREATOR or BUSINESS — for picker/selection
- *  screens (onboarding, create-campaign, edit-categories, filters). */
-export function useCategories(scope: 'CREATOR' | 'BUSINESS') {
-  const [categories, setCategories] = useState<ApiCategory[]>(cache[scope] ?? []);
-  const [loading, setLoading] = useState(!cache[scope]);
+ *  screens (onboarding, create-campaign, edit-categories, filters). Pass
+ *  `strict` for CREATOR to opt out of the default "+ BOTH" widening — BOTH-scope
+ *  rows are content niches (e.g. "Hotels", "Restaurants") with no group/parent,
+ *  which are wrong to mix into a provider-*type* picker. */
+export function useCategories(scope: 'CREATOR' | 'BUSINESS', strict?: boolean) {
+  const key: CacheKey = strict ? 'CREATOR:strict' : scope;
+  const [categories, setCategories] = useState<ApiCategory[]>(cache[key] ?? []);
+  const [loading, setLoading] = useState(!cache[key]);
 
   useEffect(() => {
     let cancelled = false;
-    if (isFresh(scope)) { setCategories(cache[scope]!); setLoading(false); return; }
+    if (isFresh(key)) { setCategories(cache[key]!); setLoading(false); return; }
     // Stale (or missing) cache — show whatever we have (if anything) without a
     // loading flash, and quietly refetch underneath it.
-    if (cache[scope]) setCategories(cache[scope]!);
-    setLoading(!cache[scope]);
-    fetchScoped(scope, scope)
+    if (cache[key]) setCategories(cache[key]!);
+    setLoading(!cache[key]);
+    fetchScoped(key, scope, strict)
       .then((cats) => { if (!cancelled) setCategories(cats); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [scope]);
+  }, [key, scope, strict]);
 
   return { categories, loading };
 }

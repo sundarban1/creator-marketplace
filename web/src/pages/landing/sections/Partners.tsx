@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { FaInstagram, FaTiktok, FaYoutube, FaFacebook } from 'react-icons/fa6';
 import { fadeUp, VP, PILL_HOVER } from '../lib/motion';
-import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useAutoScroll } from '../hooks/useAutoScroll';
+import { useLandingTheme } from '../context/ThemeContext';
 
 type LogoItem =
   | { type: 'icon'; Icon: typeof FaInstagram; name: string; color: string }
@@ -27,11 +27,20 @@ const LOGOS: LogoItem[] = [
   { type: 'text', name: 'Bagmati Textiles' },
 ];
 
+// TikTok's brand color is pure black, which vanishes against the dark-theme
+// badge background (bg-ink-elevated). Swap in a plain white alternative in
+// dark mode rather than picking a second brand color.
+const DARK_MODE_COLOR_OVERRIDE: Record<string, string> = {
+  TikTok: '#FFFFFF',
+};
+
 // Same rounded-card-in-a-marquee treatment as the Categories section (colored
 // icon badge + label, white card, soft shadow) instead of the old plain
 // grayscale-wordmark row — reads as one consistent "chip" language site-wide.
 function LogoBadge({ item }: { item: LogoItem }) {
-  const color = item.color ?? '#6B6560'; // falls back to ink-soft for uncolored placeholder brands
+  const { theme } = useLandingTheme();
+  const brandColor = item.color ?? '#6B6560'; // falls back to ink-soft for uncolored placeholder brands
+  const color = theme === 'dark' ? (DARK_MODE_COLOR_OVERRIDE[item.name] ?? brandColor) : brandColor;
   return (
     <motion.div
       whileHover={PILL_HOVER}
@@ -53,7 +62,7 @@ export function Partners() {
   const scrollRef = useAutoScroll<HTMLDivElement>(0.35);
 
   return (
-    <section id={SECTION_IDS.partners} className="border-y border-ink/10 bg-white py-16 dark:border-white/10 dark:bg-ink">
+    <section id="partners" className="border-y border-ink/10 bg-white py-16 dark:border-white/10 dark:bg-ink">
       <motion.h2
         initial="hidden"
         whileInView="show"

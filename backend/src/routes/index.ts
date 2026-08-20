@@ -28,6 +28,13 @@ import supportRoutes      from '../modules/support/support.routes';
 import legalRoutes        from '../modules/legal/legal.routes';
 import notificationRoutes from '../modules/notifications/notification.routes';
 import contractRoutes     from '../modules/contract/contract.routes';
+import serviceRoutes        from '../modules/service/service.routes';
+import servicePublicRoutes  from '../modules/service/service.public.routes';
+import serviceAdminRoutes   from '../modules/service/service.admin.routes';
+import portfolioRoutes      from '../modules/portfolio/portfolio.routes';
+import serviceRequestRoutes from '../modules/service-request/service-request.routes';
+import reportRoutes         from '../modules/report/report.routes';
+import reportAdminRoutes    from '../modules/report/report.admin.routes';
 
 export function registerApiRoutes(app: Express): void {
   app.use('/api/auth', authRoutes);
@@ -39,6 +46,8 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/creator', creatorRoutes);
   app.use('/api/creator/referral', referralRoutes);
   app.use('/api/creator/wallet', walletRoutes);
+  app.use('/api/creator/services', serviceRoutes);
+  app.use('/api/creator/portfolio-items', portfolioRoutes);
   app.use('/api/business/referral', businessReferralRoutes);
   app.use('/api/business', businessRoutes);
   app.use('/api/campaigns/ai', campaignAiRoutes);
@@ -49,9 +58,14 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/admin/platforms', platformAdminRoutes);
   app.use('/api/admin/success-stories', successStoryAdminRoutes);
   app.use('/api/admin/visitor-chats', visitorChatAdminRoutes);
+  app.use('/api/admin/services', serviceAdminRoutes);
+  app.use('/api/admin/reports', reportAdminRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/platforms', platformRoutes);
+  app.use('/api/services', servicePublicRoutes);
+  app.use('/api/service-requests', serviceRequestRoutes);
+  app.use('/api/reports', reportRoutes);
   app.use('/api/success-stories', successStoryRoutes);
   app.use('/api/public', publicRoutes);
   app.use('/api/visitor-chat', visitorChatRoutes);

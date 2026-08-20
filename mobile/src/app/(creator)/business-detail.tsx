@@ -11,13 +11,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { ReviewsList } from '@/components/ReviewsList';
+import { ReportModal } from '@/components/ReportModal';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -25,21 +26,14 @@ import { businessService, type BusinessDetailResult, type BusinessActiveCampaign
 import { campaignService } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { logger } from '@/utilities/logger';
-
-const PLATFORM_ICON: Record<string, { iconName: string; color: string }> = {
-  Instagram: { iconName: 'instagram', color: '#E1306C' },
-  TikTok:    { iconName: 'tiktok',    color: '#010101' },
-  YouTube:   { iconName: 'youtube',   color: '#FF0000' },
-  Facebook:  { iconName: 'facebook',  color: '#1877F2' },
-  Twitter:   { iconName: 'twitter',   color: '#1DA1F2' },
-  LinkedIn:  { iconName: 'linkedin',  color: '#0A66C2' },
-};
 
 const CATEGORY_BG: Record<string, string> = {
   Fashion: '#F2DCF0', Beauty: '#DCF2E6', Tech: '#DCE6F2', Food: '#F2E6DC',
@@ -77,7 +71,8 @@ function BusinessAvatar({ name, logoUrl, size = 88 }: { name: string; logoUrl: s
 function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaign; isApplied: boolean }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const platformIcon = PLATFORM_ICON[campaign.platform] ?? { iconName: 'mobile-alt', color: '#888' };
+  const { categories } = useAllCategories();
+  const catMeta = getCategoryMeta(categories, campaign.category);
   const catBg = CATEGORY_BG[campaign.category] ?? '#F2F0DC';
   const deadline = daysLeft(campaign.deadline);
 
@@ -92,7 +87,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
 
       {/* Category thumbnail */}
       <View style={[styles.campaignThumb, { backgroundColor: catBg }]}>
-        <FontAwesome5 name={platformIcon.iconName as any} size={32} color={platformIcon.color} />
+        <FontAwesome5 name={catMeta.icon as any} size={32} color={catMeta.color} />
         {campaign.isFeatured && (
           <View style={styles.featuredDot}>
             <FontAwesome5 name="star" size={9} color="#fff" solid />
@@ -103,7 +98,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
       <View style={styles.campaignBody}>
         <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
         <Text style={[styles.campaignMeta, { color: C.textSecondary }]}>
-          {campaign.platform} · {campaign.category} · {campaign.contentType}
+          {campaign.category} · {campaign.contentType}
         </Text>
         <View style={styles.campaignFooter}>
           <Text style={[styles.campaignBudget, { color: C.brinjal1 }]}>
@@ -141,8 +136,6 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
 
       <View style={styles.campaignRight}>
         <FontAwesome5 name="chevron-right" solid size={18} color={C.border} />
-        <Text style={[styles.appliedCount, { color: C.textSecondary }]}>{campaign._count.applications}</Text>
-        <Text style={[styles.appliedLabel, { color: C.textSecondary }]}>{t('businessDetail.appliedCount')}</Text>
       </View>
     </Pressable>
   );
@@ -164,6 +157,7 @@ export default function BusinessDetailScreen() {
   const [convId, setConvId]         = useState<string | null>(null);
   const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
   const [showMsgModal, setShowMsgModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [requestMsg, setRequestMsg]     = useState('');
   const [sendingMsg, setSendingMsg]     = useState(false);
 
@@ -325,20 +319,30 @@ export default function BusinessDetailScreen() {
           <View style={styles.topBar}>
             <BackButton variant="overlay" fallback="/(creator)/explore-businesses" />
             <View style={styles.topTitleRow} />
-            <Pressable
-              style={styles.topIconBtn}
-              hitSlop={10}
-              onPress={handleToggleFavorite}
-              accessibilityRole="button"
-              accessibilityLabel={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-              accessibilityState={{ selected: isFavorited }}>
-              <FontAwesome5
-                name="heart"
-                solid={isFavorited}
-                size={18}
-                color={isFavorited ? '#EF4444' : '#9CA3AF'}
-              />
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                style={styles.topIconBtn}
+                hitSlop={10}
+                onPress={() => setShowReportModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('reportModal.title')}>
+                <FontAwesome5 name="flag" size={16} color="#9CA3AF" />
+              </Pressable>
+              <Pressable
+                style={styles.topIconBtn}
+                hitSlop={10}
+                onPress={handleToggleFavorite}
+                accessibilityRole="button"
+                accessibilityLabel={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                accessibilityState={{ selected: isFavorited }}>
+                <FontAwesome5
+                  name="heart"
+                  solid={isFavorited}
+                  size={18}
+                  color={isFavorited ? '#EF4444' : '#9CA3AF'}
+                />
+              </Pressable>
+            </View>
           </View>
         </View>
 
@@ -424,6 +428,27 @@ export default function BusinessDetailScreen() {
                   <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('analytics.responseTime')}</Text>
                 </View>
               </View>
+            </View>
+          )}
+
+          {/* Reviews (§36) — from providers who worked with this business */}
+          {!!business.reviews?.length && (
+            <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
+              <View style={styles.infoCardHeader}>
+                <View
+                  style={[
+                    styles.infoIconBox,
+                    {
+                      backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
+                  <FontAwesome5 name="star" solid size={15} color={C.brinjal1} />
+                </View>
+                <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionReviews')}</Text>
+              </View>
+              <ReviewsList reviews={business.reviews} />
             </View>
           )}
 
@@ -588,17 +613,23 @@ export default function BusinessDetailScreen() {
             <Text style={styles.modalSendText}>{sendingMsg ? t('businessDetail.sendingLabel') : t('businessDetail.sendRequestBtn')}</Text>
           </Pressable>
         }>
-        <TextInput
-          style={[styles.modalInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+        <TextInputWithLabel
+          label="Message"
           value={requestMsg}
           onChangeText={setRequestMsg}
           placeholder={t('businessDetail.messageRequestPlaceholder')}
-          placeholderTextColor={C.textSecondary}
           multiline
           maxLength={500}
         />
         <Text style={[styles.modalCounter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
       </BottomSheet>
+
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType="BUSINESS"
+        targetId={business.userId}
+      />
     </SafeAreaView>
   );
 }
@@ -667,22 +698,20 @@ const styles = StyleSheet.create({
   campaignCard:          { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.card },
   campaignThumb:         { width: 72, alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' },
   featuredDot:           { position: 'absolute', top: 6, right: 4, backgroundColor: '#F59E0B', borderRadius: RADIUS.full, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
-  campaignBody:          { flex: 1, padding: 12, gap: 4 },
-  campaignTitle:         { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
-  campaignMeta:          { fontSize: 11, marginTop: 1, fontFamily: F.regular },
-  campaignFooter:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
+  campaignBody:          { flex: 1, padding: 10, gap: 3 },
+  campaignTitle:         { fontSize: 14, lineHeight: 18, fontFamily: F.bold },
+  campaignMeta:          { fontSize: 11, marginTop: 0, fontFamily: F.regular },
+  campaignFooter:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' },
   campaignBudget:        { fontSize: 13, fontFamily: F.bold },
-  deadlinePill:          { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
+  deadlinePill:          { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2 },
   deadlineText:          { fontSize: 11, fontFamily: F.bold },
-  locationRow:           { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
+  locationRow:           { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 },
   campaignLocation:      { fontSize: 11, fontFamily: F.regular },
-  campaignRight:         { paddingVertical: 12, paddingRight: 12, alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 },
-  appliedCount:          { fontSize: 13, fontFamily: F.bold },
-  appliedLabel:          { fontSize: 9, textTransform: 'uppercase', fontFamily: F.semibold },
+  campaignRight:         { paddingVertical: 10, paddingRight: 12, alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 },
 
-  appliedPill:           { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', marginTop: 4 },
+  appliedPill:           { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginTop: 2 },
   appliedPillText:       { fontSize: 11, color: '#059669', fontFamily: F.bold },
-  applyNowBtn:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start', marginTop: 4 },
+  applyNowBtn:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginTop: 2 },
   applyNowBtnText:       { fontSize: 11, color: '#fff', fontFamily: F.bold },
 
   // Sticky message bar
@@ -691,7 +720,6 @@ const styles = StyleSheet.create({
   msgBtnText:            { color: '#fff', fontSize: 16, fontFamily: F.bold },
 
   // Request modal
-  modalInput:            { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   modalCounter:          { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
   modalSendBtn:          { borderRadius: RADIUS.full, height: 52, justifyContent: 'center', alignItems: 'center' },
   modalSendText:         { color: '#fff', fontSize: 16, fontFamily: F.bold },

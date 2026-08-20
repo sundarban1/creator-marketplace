@@ -1,5 +1,27 @@
 import { z } from 'zod';
 
+// One role-slot for a multi-requirement campaign (§ CampaignRequirement).
+// Optional on createCampaignSchema — omitting `requirements` entirely keeps
+// a campaign in the simple single-category mode every existing campaign uses.
+export const campaignRequirementSchema = z.object({
+  categoryId: z.string().min(1, 'Category is required'),
+  quantity:   z.number().int().positive().default(1),
+  budgetType: z.enum(['FIXED', 'RANGE', 'NEGOTIABLE']).default('FIXED'),
+  budgetFixed: z.number().positive().optional(),
+  budgetMin:   z.number().min(0).optional(),
+  budgetMax:   z.number().min(0).optional(),
+  deliverables: z.string().max(1000).optional(),
+  description:  z.string().max(1000).optional(),
+  format:       z.array(z.string().max(20)).max(10).default([]),
+  deadline:     z.string().datetime().optional(),
+}).refine((r) => r.budgetType !== 'FIXED' || (r.budgetFixed != null && r.budgetFixed > 0), {
+  message: 'budgetFixed is required and must be > 0 when budgetType is FIXED',
+  path: ['budgetFixed'],
+}).refine((r) => r.budgetType !== 'RANGE' || (r.budgetMin != null && r.budgetMax != null && r.budgetMax >= r.budgetMin), {
+  message: 'budgetMin and budgetMax are required when budgetType is RANGE, with budgetMax >= budgetMin',
+  path: ['budgetMax'],
+});
+
 export const createCampaignSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().default(''),
@@ -38,6 +60,12 @@ export const createCampaignSchema = z.object({
   aiSuggestedCategories: z.array(z.string()).default([]),
   aiSuggestedPlatforms:  z.array(z.string()).default([]),
   aiNeedsInputFields:    z.array(z.string()).default([]),
+  // Omit for the simple single-category flow every existing campaign uses.
+  // When present, requirements are the source of truth for "what providers
+  // are needed" — category/budgetMin/budgetMax/creatorsNeeded above still
+  // get saved (so old clients reading a campaign don't see blank fields) but
+  // become informational summaries rather than what applicants apply against.
+  requirements: z.array(campaignRequirementSchema).max(10, 'At most 10 requirements').optional(),
 }).refine((data) => data.budgetMax >= data.budgetMin, {
   message: 'Budget maximum must be greater than or equal to budget minimum',
   path: ['budgetMax'],
@@ -121,6 +149,9 @@ export const applyToCampaignSchema = z.object({
   timeline: z.string().min(1, 'Timeline is required'),
   socialHandles: z.record(z.string()).default({}),
   portfolioUrl: z.string().url('Invalid portfolio URL').optional(),
+  // Set only when applying to one role of a multi-requirement campaign —
+  // omitted entirely for the simple single-category case (the common one).
+  requirementId: z.string().optional(),
 });
 
 export const submitReviewSchema = z.object({

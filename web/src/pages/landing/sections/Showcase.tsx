@@ -1,7 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { fadeUp, scaleIn, stagger, VP } from '../lib/motion';
-import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { ensureGsapRegistered, gsap } from '../lib/gsap';
 
@@ -113,7 +112,7 @@ export function Showcase() {
   return (
     <section
       ref={rootRef}
-      id={SECTION_IDS.showcase}
+      id="showcase"
       className="relative overflow-hidden bg-paper text-ink lg:h-screen dark:bg-ink dark:text-white"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">

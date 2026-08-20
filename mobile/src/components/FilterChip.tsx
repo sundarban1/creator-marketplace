@@ -13,12 +13,15 @@ type ChipProps = {
   selected: boolean;
   onPress: () => void;
   flex?: boolean;
+  /** Show a trailing check-circle once selected — off by default so existing
+   *  filter sheets keep their current look; opt in per screen. */
+  showCheck?: boolean;
 };
 
 // Single selectable chip — the one "selected" visual language shared by every
 // filter modal in the app (event-type, platform, category, etc.), so it can't
 // silently drift between screens again.
-export function FilterChip({ label, icon, selected, onPress, flex }: ChipProps) {
+export function FilterChip({ label, icon, selected, onPress, flex, showCheck }: ChipProps) {
   const C = useAppColors();
   return (
     <Pressable
@@ -32,6 +35,7 @@ export function FilterChip({ label, icon, selected, onPress, flex }: ChipProps) 
       <Text style={[s.chipTxt, { color: selected ? C.brinjal1 : C.textSecondary, fontWeight: selected ? '700' : '500' }]}>
         {label}
       </Text>
+      {showCheck && selected && <FontAwesome5 name="check-circle" solid size={13} color={C.brinjal1} />}
     </Pressable>
   );
 }
@@ -42,12 +46,13 @@ type GroupProps = {
   onToggle: (values: string[]) => void;
   multi?: boolean;
   equalWidth?: boolean;
+  showCheck?: boolean;
 };
 
 // Row of FilterChips. `multi` allows several selections at once (platform,
 // category); single-select mode (event type) toggles exclusively and allows
 // de-selecting back to "none" by tapping the active chip again.
-export function FilterChipGroup({ options, selected, onToggle, multi = false, equalWidth = false }: GroupProps) {
+export function FilterChipGroup({ options, selected, onToggle, multi = false, equalWidth = false, showCheck = false }: GroupProps) {
   function handlePress(value: string) {
     if (multi) {
       onToggle(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
@@ -66,6 +71,7 @@ export function FilterChipGroup({ options, selected, onToggle, multi = false, eq
           selected={selected.includes(opt.value)}
           onPress={() => handlePress(opt.value)}
           flex={equalWidth}
+          showCheck={showCheck}
         />
       ))}
     </View>

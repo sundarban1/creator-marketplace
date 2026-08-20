@@ -4,6 +4,7 @@ import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
+import { BottomSheet } from '@/components/BottomSheet';
 import { creatorService } from '@/services/creator';
 import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
@@ -37,6 +38,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 import { AppModal } from '@/components/AppModal';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { useGoogleAccessToken } from '@/hooks/useGoogleAccessToken';
@@ -144,7 +146,9 @@ const LANGUAGE_OPTIONS = [
 const SECTION_TITLES: Record<string, string> = {
   social:        'creatorSettings.sectionSocial',
   earnings:      'creatorSettings.sectionEarnings',
-  'past-work':   'creatorSettings.sectionPastWork',
+  // Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display).
+  // 'past-work':   'creatorSettings.sectionPastWork',
+  privacy:       'creatorSettings.sectionPrivacy',
   security:      'creatorSettings.sectionSecurity',
   notifications: 'creatorSettings.sectionNotifications',
   support:       'creatorSettings.sectionSupport',
@@ -506,8 +510,6 @@ export default function CreatorSettingsScreen() {
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [pwSubmitted, setPwSubmitted] = useState(false);
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   // Support forms
   const [supportTopic, setSupportTopic] = useState('');
@@ -1084,18 +1086,15 @@ export default function CreatorSettingsScreen() {
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.messageLabel')}</Text>
-              <TextInput
-                style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              <TextInputWithLabel
+                label={t('creatorSettings.messageLabel')}
                 value={supportMsg}
                 onChangeText={setSupportMsg}
                 onFocus={() => { bottomFieldFocusedRef.current = true; }}
                 onBlur={() => { bottomFieldFocusedRef.current = false; }}
                 placeholder={t('creatorSettings.supportMsgPlaceholder')}
-                placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={5}
-                textAlignVertical="top"
               />
             </View>
             <View style={styles.formField}>
@@ -1145,18 +1144,15 @@ export default function CreatorSettingsScreen() {
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.descriptionLabel')}</Text>
-              <TextInput
-                style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              <TextInputWithLabel
+                label={t('creatorSettings.descriptionLabel')}
                 value={reportDesc}
                 onChangeText={setReportDesc}
                 onFocus={() => { bottomFieldFocusedRef.current = true; }}
                 onBlur={() => { bottomFieldFocusedRef.current = false; }}
                 placeholder={t('creatorSettings.reportDescPlaceholder')}
-                placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={5}
-                textAlignVertical="top"
               />
             </View>
             <View style={styles.formField}>
@@ -1484,209 +1480,195 @@ export default function CreatorSettingsScreen() {
 
   // ── Section: Past Work ────────────────────────────────────────
 
-  function renderPastWork() {
-    return (
-      <>
-        {/* Portfolio bottom-sheet modal */}
-        <Modal visible={showPortfolioSheet} transparent animationType="none" onRequestClose={resetPortfolioSheet}>
-          <Pressable style={styles.sheetBackdrop} onPress={resetPortfolioSheet} />
-          <Animated.View style={[
-            styles.socialSheet,
-            {
-              backgroundColor: C.surface,
-              transform: [
-                { translateY: portfolioSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }) },
-                { translateY: keyboardOffset },
-              ],
-            },
-          ]}>
-            {/* Header */}
-            <View style={[
-              styles.sheetHeader,
-              { backgroundColor: portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color : '#6366F1' },
-            ]}>
-              <View style={styles.sheetHeaderInner}>
-                {portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] && (
-                  <View style={styles.sheetPlatformIcon}>
-                    <PlatformIcon iconName={PORTFOLIO_CONFIG[portfolioForm.type].iconName} iconLib={PORTFOLIO_CONFIG[portfolioForm.type].iconLib} size={28} color="#fff" />
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.sheetTitle}>
-                    {editingPortfolioId
-                      ? t('creatorSettings.editPastWorkModalTitle', { type: PORTFOLIO_CONFIG[portfolioForm.type]?.label ?? 'Work' })
-                      : portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type]
-                        ? PORTFOLIO_CONFIG[portfolioForm.type].label
-                        : t('creatorSettings.addPastWorkModalTitle')}
-                  </Text>
-                  <Text style={styles.sheetSubtitle}>
-                    {editingPortfolioId ? t('creatorSettings.updateWorkSub') : t('creatorSettings.showBrandsBest')}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.sheetHandle} />
-            </View>
-
-            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <View style={styles.sheetBody}>
-
-                {/* Content type grid */}
-                {!editingPortfolioId && (
-                  <View style={styles.sheetSection}>
-                    <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.contentTypeLabel')}</Text>
-                    {portfolioFormErrors.type ? (
-                      <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{portfolioFormErrors.type}</Text>
-                    ) : null}
-                    <View style={styles.platformGrid}>
-                      {PORTFOLIO_TYPES.map((p) => {
-                        const isSelected = portfolioForm.type === p.id;
-                        return (
-                          <Pressable
-                            key={p.id}
-                            style={[
-                              styles.platformGridItem,
-                              { borderColor: isSelected ? p.color : C.border, backgroundColor: isSelected ? p.color + '15' : C.background },
-                            ]}
-                            onPress={() => {
-                              const prefix = PORTFOLIO_URL_PREFIX[p.id] ?? '';
-                              setPortfolioForm((f) => {
-                                // Preserve whatever the user typed after the previous platform's
-                                // prefix, so switching platforms swaps the prefix shown in the box
-                                // instead of leaving the old one stuck in place.
-                                const oldPrefix = PORTFOLIO_URL_PREFIX[f.type] ?? '';
-                                const handle = f.url.startsWith(oldPrefix) ? f.url.slice(oldPrefix.length) : '';
-                                return { ...f, type: p.id, url: prefix + handle };
-                              });
-                              setPortfolioFormErrors((e) => ({ ...e, type: '' }));
-                            }}>
-                            <PlatformIcon iconName={p.iconName} iconLib={p.iconLib} size={24} color={isSelected ? p.color : '#888'} />
-                            <Text style={[styles.platformGridLabel, { color: isSelected ? p.color : C.text }]}>{p.label}</Text>
-                            {isSelected && <View style={[styles.platformGridSelectedDot, { backgroundColor: p.color }]} />}
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                )}
-
-                {/* URL input — always shown (or only after type is picked) */}
-                {(editingPortfolioId || portfolioForm.type) && (
-                  <>
-                    <View style={styles.sheetSection}>
-                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>
-                        {portfolioForm.type && PORTFOLIO_URL_PREFIX[portfolioForm.type] ? t('creatorSettings.linkIdLabel') : t('creatorSettings.linkUrlLabel')}
-                      </Text>
-                      <View style={[
-                        styles.sheetInputWrap,
-                        { borderColor: portfolioFormErrors.url ? C.error : (portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color + '60' : C.border), backgroundColor: C.background },
-                      ]}>
-                        {portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] && (
-                          <PlatformIcon iconName={PORTFOLIO_CONFIG[portfolioForm.type].iconName} iconLib={PORTFOLIO_CONFIG[portfolioForm.type].iconLib} size={14} color={PORTFOLIO_CONFIG[portfolioForm.type].color} style={styles.sheetInputPrefix} />
-                        )}
-                        <TextInput
-                          style={[styles.sheetInput, { color: C.text }]}
-                          value={portfolioForm.url}
-                          onChangeText={(t) => { setPortfolioForm((f) => ({ ...f, url: t })); setPortfolioFormErrors((e) => ({ ...e, url: '' })); }}
-                          placeholder={portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].urlHint : 'https://...'}
-                          autoCapitalize="none"
-                          keyboardType="url"
-                          autoCorrect={false}
-                          placeholderTextColor={C.textSecondary}
-                        />
-                      </View>
-                      {portfolioFormErrors.url
-                        ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{portfolioFormErrors.url}</Text>
-                        : portfolioForm.type && PORTFOLIO_URL_PREFIX[portfolioForm.type]
-                          ? <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkIdHint')}</Text>
-                          : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkUrlHint')}</Text>}
-                    </View>
-
-                    <View style={styles.sheetActions}>
-                      <Pressable
-                        style={[
-                          styles.sheetSaveBtn,
-                          { backgroundColor: portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color : '#6366F1', opacity: portfolioLoading ? 0.6 : 1 },
-                        ]}
-                        onPress={savePortfolio}
-                        disabled={portfolioLoading}>
-                        {portfolioLoading ? (
-                          <View style={styles.sheetSaveBtnRow}>
-                            <View style={styles.sheetSpinner} />
-                            <Text style={styles.sheetSaveBtnText}>{t('creatorSettings.savingLabel')}</Text>
-                          </View>
-                        ) : (
-                          <Text style={styles.sheetSaveBtnText}>
-                            {editingPortfolioId ? t('creatorSettings.saveChangesBtn') : t('creatorSettings.addWorkBtn', { type: PORTFOLIO_CONFIG[portfolioForm.type]?.label ?? 'Work' })}
-                          </Text>
-                        )}
-                      </Pressable>
-                      <Pressable style={[styles.sheetCancelBtn, { borderColor: C.border }]} onPress={resetPortfolioSheet}>
-                        <Text style={[styles.sheetCancelBtnText, { color: C.textSecondary }]}>{t('common.cancel')}</Text>
-                      </Pressable>
-                    </View>
-                  </>
-                )}
-              </View>
-            </ScrollView>
-          </Animated.View>
-        </Modal>
-
-        {/* Empty state */}
-        {portfolio.length === 0 && (
-          <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <FontAwesome5 name="images" solid size={32} color={C.textSecondary} style={{ marginBottom: 4 }} />
-            <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noPastWorkTitle')}</Text>
-            <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
-              {t('creatorSettings.noPastWorkSub')}
-            </Text>
-          </View>
-        )}
-
-        {/* Portfolio list */}
-        {portfolio.length > 0 && (
-          <Card>
-            {portfolio.map((item, idx) => {
-              const cfg = PORTFOLIO_CONFIG[item.label] ?? { iconName: 'link', iconLib: 'ion' as const, label: item.label || 'Link', color: '#6366F1' };
-              const isLast = idx === portfolio.length - 1;
-              return (
-                <View key={item.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                  <View
-                    style={[
-                      styles.socialIconWrap,
-                      {
-                        backgroundColor: cfg.color + '18',
-                      },
-                    ]}
-                  >
-                    <PlatformIcon iconName={cfg.iconName} iconLib={cfg.iconLib} size={20} color={cfg.color} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.socialPlatformName, { color: C.text }]}>{cfg.label}</Text>
-                    <Text style={[styles.socialUrl, { color: C.textSecondary }]} numberOfLines={1}>{item.url}</Text>
-                  </View>
-                  <View style={styles.socialActions}>
-                    <Pressable style={[styles.socialEditBtn, { backgroundColor: cfg.color + '15' }]} onPress={() => openPortfolioSheet(item)}>
-                      <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
-                    </Pressable>
-                    <Pressable style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deletePortfolio(item)}>
-                      <FontAwesome5 name="times" solid size={14} color={C.error} />
-                    </Pressable>
-                  </View>
-                </View>
-              );
-            })}
-          </Card>
-        )}
-
-        {/* Add button */}
-        <Pressable
-          style={[styles.addSocialBtn, { borderColor: '#6366F1', backgroundColor: '#6366F115' }]}
-          onPress={() => openPortfolioSheet()}>
-          <Text style={[styles.addSocialBtnText, { color: '#6366F1' }]}>{t('creatorSettings.addPastWorkBtn')}</Text>
-        </Pressable>
-      </>
-    );
-  }
+  // function renderPastWork() {
+    // return (
+      // <>
+        // {/* Portfolio bottom-sheet modal */}
+        // <Modal visible={showPortfolioSheet} transparent animationType="none" onRequestClose={resetPortfolioSheet}>
+          // <Pressable style={styles.sheetBackdrop} onPress={resetPortfolioSheet} />
+          // <Animated.View style={[
+            // styles.socialSheet,
+            // {
+              // backgroundColor: C.surface,
+              // transform: [
+                // { translateY: portfolioSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }) },
+                // { translateY: keyboardOffset },
+              // ],
+            // },
+          // ]}>
+            // {/* Header */}
+            // <View style={[
+              // styles.sheetHeader,
+              // { backgroundColor: portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color : '#6366F1' },
+            // ]}>
+              // <View style={styles.sheetHeaderInner}>
+                // {portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] && (
+                  // <View style={styles.sheetPlatformIcon}>
+                    // <PlatformIcon iconName={PORTFOLIO_CONFIG[portfolioForm.type].iconName} iconLib={PORTFOLIO_CONFIG[portfolioForm.type].iconLib} size={28} color="#fff" />
+                  // </View>
+                // )}
+                // <View style={{ flex: 1 }}>
+                  // <Text style={styles.sheetTitle}>
+                    // {editingPortfolioId
+                      // ? t('creatorSettings.editPastWorkModalTitle', { type: PORTFOLIO_CONFIG[portfolioForm.type]?.label ?? 'Work' })
+                      // : portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type]
+                        // ? PORTFOLIO_CONFIG[portfolioForm.type].label
+                        // : t('creatorSettings.addPastWorkModalTitle')}
+                  // </Text>
+                  // <Text style={styles.sheetSubtitle}>
+                    // {editingPortfolioId ? t('creatorSettings.updateWorkSub') : t('creatorSettings.showBrandsBest')}
+                  // </Text>
+                // </View>
+              // </View>
+              // <View style={styles.sheetHandle} />
+            // </View>
+// 
+            // <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              // <View style={styles.sheetBody}>
+// 
+                // {/* Content type grid */}
+                // {!editingPortfolioId && (
+                  // <View style={styles.sheetSection}>
+                    // <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.contentTypeLabel')}</Text>
+                    // {portfolioFormErrors.type ? (
+                      // <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{portfolioFormErrors.type}</Text>
+                    // ) : null}
+                    // <View style={styles.platformGrid}>
+                      // {PORTFOLIO_TYPES.map((p) => {
+                        // const isSelected = portfolioForm.type === p.id;
+                        // return (
+                          // <Pressable
+                            // key={p.id}
+                            // style={[
+                              // styles.platformGridItem,
+                              // { borderColor: isSelected ? p.color : C.border, backgroundColor: isSelected ? p.color + '15' : C.background },
+                            // ]}
+                            // onPress={() => {
+                              // const prefix = PORTFOLIO_URL_PREFIX[p.id] ?? '';
+                              // setPortfolioForm((f) => {
+                                // // Preserve whatever the user typed after the previous platform's
+                                // // prefix, so switching platforms swaps the prefix shown in the box
+                                // // instead of leaving the old one stuck in place.
+                                // const oldPrefix = PORTFOLIO_URL_PREFIX[f.type] ?? '';
+                                // const handle = f.url.startsWith(oldPrefix) ? f.url.slice(oldPrefix.length) : '';
+                                // return { ...f, type: p.id, url: prefix + handle };
+                              // });
+                              // setPortfolioFormErrors((e) => ({ ...e, type: '' }));
+                            // }}>
+                            // <PlatformIcon iconName={p.iconName} iconLib={p.iconLib} size={24} color={isSelected ? p.color : '#888'} />
+                            // <Text style={[styles.platformGridLabel, { color: isSelected ? p.color : C.text }]}>{p.label}</Text>
+                            // {isSelected && <View style={[styles.platformGridSelectedDot, { backgroundColor: p.color }]} />}
+                          // </Pressable>
+                        // );
+                      // })}
+                    // </View>
+                  // </View>
+                // )}
+// 
+                // {/* URL input — always shown (or only after type is picked) */}
+                // {(editingPortfolioId || portfolioForm.type) && (
+                  // <>
+                    // <View style={styles.sheetSection}>
+                      // <TextInputWithLabel
+                        // label={portfolioForm.type && PORTFOLIO_URL_PREFIX[portfolioForm.type] ? t('creatorSettings.linkIdLabel') : t('creatorSettings.linkUrlLabel')}
+                        // value={portfolioForm.url}
+                        // onChangeText={(t) => { setPortfolioForm((f) => ({ ...f, url: t })); setPortfolioFormErrors((e) => ({ ...e, url: '' })); }}
+                        // placeholder={portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].urlHint : 'https://...'}
+                        // autoCapitalize="none"
+                        // keyboardType="url"
+                        // autoCorrect={false}
+                        // leftIcon="link"
+                        // error={portfolioFormErrors.url}
+                        // hint={portfolioForm.type && PORTFOLIO_URL_PREFIX[portfolioForm.type] ? t('creatorSettings.linkIdHint') : t('creatorSettings.linkUrlHint')}
+                      // />
+                    // </View>
+// 
+                    // <View style={styles.sheetActions}>
+                      // <Pressable
+                        // style={[
+                          // styles.sheetSaveBtn,
+                          // { backgroundColor: portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color : '#6366F1', opacity: portfolioLoading ? 0.6 : 1 },
+                        // ]}
+                        // onPress={savePortfolio}
+                        // disabled={portfolioLoading}>
+                        // {portfolioLoading ? (
+                          // <View style={styles.sheetSaveBtnRow}>
+                            // <View style={styles.sheetSpinner} />
+                            // <Text style={styles.sheetSaveBtnText}>{t('creatorSettings.savingLabel')}</Text>
+                          // </View>
+                        // ) : (
+                          // <Text style={styles.sheetSaveBtnText}>
+                            // {editingPortfolioId ? t('creatorSettings.saveChangesBtn') : t('creatorSettings.addWorkBtn', { type: PORTFOLIO_CONFIG[portfolioForm.type]?.label ?? 'Work' })}
+                          // </Text>
+                        // )}
+                      // </Pressable>
+                      // <Pressable style={[styles.sheetCancelBtn, { borderColor: C.border }]} onPress={resetPortfolioSheet}>
+                        // <Text style={[styles.sheetCancelBtnText, { color: C.textSecondary }]}>{t('common.cancel')}</Text>
+                      // </Pressable>
+                    // </View>
+                  // </>
+                // )}
+              // </View>
+            // </ScrollView>
+          // </Animated.View>
+        // </Modal>
+// 
+        // {/* Empty state */}
+        // {portfolio.length === 0 && (
+          // <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
+            // <FontAwesome5 name="images" solid size={32} color={C.textSecondary} style={{ marginBottom: 4 }} />
+            // <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noPastWorkTitle')}</Text>
+            // <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
+              // {t('creatorSettings.noPastWorkSub')}
+            // </Text>
+          // </View>
+        // )}
+// 
+        // {/* Portfolio list */}
+        // {portfolio.length > 0 && (
+          // <Card>
+            // {portfolio.map((item, idx) => {
+              // const cfg = PORTFOLIO_CONFIG[item.label] ?? { iconName: 'link', iconLib: 'ion' as const, label: item.label || 'Link', color: '#6366F1' };
+              // const isLast = idx === portfolio.length - 1;
+              // return (
+                // <View key={item.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+                  // <View
+                    // style={[
+                      // styles.socialIconWrap,
+                      // {
+                        // backgroundColor: cfg.color + '18',
+                      // },
+                    // ]}
+                  // >
+                    // <PlatformIcon iconName={cfg.iconName} iconLib={cfg.iconLib} size={20} color={cfg.color} />
+                  // </View>
+                  // <View style={{ flex: 1 }}>
+                    // <Text style={[styles.socialPlatformName, { color: C.text }]}>{cfg.label}</Text>
+                    // <Text style={[styles.socialUrl, { color: C.textSecondary }]} numberOfLines={1}>{item.url}</Text>
+                  // </View>
+                  // <View style={styles.socialActions}>
+                    // <Pressable style={[styles.socialEditBtn, { backgroundColor: cfg.color + '15' }]} onPress={() => openPortfolioSheet(item)}>
+                      // <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
+                    // </Pressable>
+                    // <Pressable style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deletePortfolio(item)}>
+                      // <FontAwesome5 name="times" solid size={14} color={C.error} />
+                    // </Pressable>
+                  // </View>
+                // </View>
+              // );
+            // })}
+          // </Card>
+        // )}
+// 
+        // {/* Add button */}
+        // <Pressable
+          // style={[styles.addSocialBtn, { borderColor: '#6366F1', backgroundColor: '#6366F115' }]}
+          // onPress={() => openPortfolioSheet()}>
+          // <Text style={[styles.addSocialBtnText, { color: '#6366F1' }]}>{t('creatorSettings.addPastWorkBtn')}</Text>
+        // </Pressable>
+      // </>
+    // );
+  // }
 
   // ── Section: Earnings & Payments ──────────────────────────────
 
@@ -1861,6 +1843,123 @@ export default function CreatorSettingsScreen() {
     );
   }
 
+  // ── Section: Privacy ──────────────────────────────────────────
+  // Providers had zero privacy controls until now — parity with the
+  // business-side section of the same name (§61).
+
+  const [showProfilePublic, setShowProfilePublic] = useState(true);
+  const [hideContactDetails, setHideContactDetails] = useState(false);
+  const [hideSocialLinksPriv, setHideSocialLinksPriv] = useState(false);
+  const [locationVisibility, setLocationVisibility] = useState<'EXACT' | 'CITY' | 'DISTRICT'>('CITY');
+  const [showLocationVisibilityPicker, setShowLocationVisibilityPicker] = useState(false);
+
+  useEffect(() => {
+    if (section !== 'privacy') return;
+    creatorService.getProfile().then((p) => {
+      setShowProfilePublic(p.showPublicProfile);
+      setHideContactDetails(p.hideContactDetails);
+      setHideSocialLinksPriv(p.hideSocialLinks);
+      setLocationVisibility(p.locationVisibility);
+    }).catch(() => {});
+  }, [section]);
+
+  async function savePrivacy(patch: {
+    showPublicProfile?: boolean; hideContactDetails?: boolean; hideSocialLinks?: boolean;
+    locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
+  }) {
+    try {
+      await creatorService.updatePrivacy(patch);
+    } catch {
+      showToast(t('creatorSettings.privacySaveFailed'), true);
+    }
+  }
+
+  const LOCATION_VISIBILITY_LABEL: Record<'EXACT' | 'CITY' | 'DISTRICT', string> = {
+    EXACT:    t('creatorSettings.locationVisExact'),
+    CITY:     t('creatorSettings.locationVisCity'),
+    DISTRICT: t('creatorSettings.locationVisDistrict'),
+  };
+
+  function renderPrivacy() {
+    return (
+      <>
+        <SectionHeader title={t('creatorSettings.visibilitySection')} />
+        <Card>
+          <SwitchRow
+            faIcon="eye" faIconColor="#0D9488"
+            label={t('creatorSettings.showProfileLabel')}
+            sub={t('creatorSettings.showProfileSub')}
+            value={showProfilePublic}
+            onChange={() => {
+              const next = !showProfilePublic;
+              setShowProfilePublic(next);
+              savePrivacy({ showPublicProfile: next });
+            }}
+          />
+          <SwitchRow
+            faIcon="lock" faIconColor="#0D9488"
+            label={t('creatorSettings.hideContactLabel')}
+            sub={t('creatorSettings.hideContactSub')}
+            value={hideContactDetails}
+            onChange={() => {
+              const next = !hideContactDetails;
+              setHideContactDetails(next);
+              savePrivacy({ hideContactDetails: next });
+            }}
+          />
+          <SwitchRow
+            faIcon="share-alt" faIconColor="#0D9488"
+            label={t('creatorSettings.hideSocialLabel')}
+            sub={t('creatorSettings.hideSocialSub')}
+            value={hideSocialLinksPriv}
+            onChange={() => {
+              const next = !hideSocialLinksPriv;
+              setHideSocialLinksPriv(next);
+              savePrivacy({ hideSocialLinks: next });
+            }}
+            isLast
+          />
+        </Card>
+
+        <SectionHeader title={t('creatorSettings.locationVisSection')} />
+        <Card>
+          <NavRow
+            faIcon="map-marker-alt" faIconColor="#0D9488"
+            label={t('creatorSettings.locationVisLabel')}
+            value={LOCATION_VISIBILITY_LABEL[locationVisibility]}
+            onPress={() => setShowLocationVisibilityPicker(true)}
+            isLast
+          />
+        </Card>
+        <SubLabel title={t('creatorSettings.locationVisSub')} />
+
+        <BottomSheet
+          visible={showLocationVisibilityPicker}
+          onClose={() => setShowLocationVisibilityPicker(false)}
+          title={t('creatorSettings.locationVisLabel')}
+          scrollable={false}
+        >
+          {(['EXACT', 'CITY', 'DISTRICT'] as const).map((opt) => (
+            <Pressable
+              key={opt}
+              style={[styles.row, { borderBottomWidth: opt !== 'DISTRICT' ? 1 : 0, borderBottomColor: C.border }]}
+              onPress={() => {
+                setLocationVisibility(opt);
+                savePrivacy({ locationVisibility: opt });
+                setShowLocationVisibilityPicker(false);
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{LOCATION_VISIBILITY_LABEL[opt]}</Text>
+              </View>
+              {locationVisibility === opt && <FontAwesome5 name="check" solid size={16} color={C.brinjal1} />}
+            </Pressable>
+          ))}
+        </BottomSheet>
+      </>
+    );
+  }
+
   // ── Section: Security ─────────────────────────────────────────
 
   function renderSecurity() {
@@ -1940,47 +2039,33 @@ export default function CreatorSettingsScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.newPasswordLabel')}</Text>
-                <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: pwError ? C.error : C.border }]}>
-                  <TextInput
-                    style={[styles.pwInput, { color: C.text }]}
-                    value={newPw}
-                    onChangeText={(v) => { setNewPw(v); setPwSubmitted(false); }}
-                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
-                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
-                    secureTextEntry={!showNewPw}
-                    placeholder={t('creatorSettings.newPasswordPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                    numberOfLines={1}
-                  />
-                  <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
-                    <FontAwesome5 name={showNewPw ? 'eye-slash' : 'eye'} size={17} color={C.textSecondary} />
-                  </Pressable>
-                </View>
-                {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
+                <TextInputWithLabel
+                  label={t('creatorSettings.newPasswordLabel')}
+                  value={newPw}
+                  onChangeText={(v) => { setNewPw(v); setPwSubmitted(false); }}
+                  onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                  onBlur={() => { bottomFieldFocusedRef.current = false; }}
+                  placeholder={t('creatorSettings.newPasswordPlaceholder')}
+                  autoCapitalize="none"
+                  secureToggle
+                  secureTextEntry
+                  error={pwError}
+                />
               </View>
 
               <View style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.confirmPasswordLabel')}</Text>
-                <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: cPwError ? C.error : C.border }]}>
-                  <TextInput
-                    style={[styles.pwInput, { color: C.text }]}
-                    value={confirmPw}
-                    onChangeText={(v) => { setConfirmPw(v); setPwSubmitted(false); }}
-                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
-                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
-                    secureTextEntry={!showConfirmPw}
-                    placeholder={t('creatorSettings.confirmPasswordPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                    numberOfLines={1}
-                  />
-                  <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
-                    <FontAwesome5 name={showConfirmPw ? 'eye-slash' : 'eye'} size={17} color={C.textSecondary} />
-                  </Pressable>
-                </View>
-                {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
+                <TextInputWithLabel
+                  label={t('creatorSettings.confirmPasswordLabel')}
+                  value={confirmPw}
+                  onChangeText={(v) => { setConfirmPw(v); setPwSubmitted(false); }}
+                  onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                  onBlur={() => { bottomFieldFocusedRef.current = false; }}
+                  placeholder={t('creatorSettings.confirmPasswordPlaceholder')}
+                  autoCapitalize="none"
+                  secureToggle
+                  secureTextEntry
+                  error={cPwError}
+                />
               </View>
 
               <Pressable
@@ -2143,18 +2228,16 @@ export default function CreatorSettingsScreen() {
                   <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
-              <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <TextInput
-                  style={[styles.pwInput, { color: C.text }]}
-                  value={phoneNumber}
-                  onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9+]/g, ''))}
-                  placeholder={t('creatorSettings.phonePlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  keyboardType="phone-pad"
-                  autoCorrect={false}
-                  autoFocus
-                />
-              </View>
+              <TextInputWithLabel
+                label={t('creatorSettings.phoneNumberLabel')}
+                value={phoneNumber}
+                onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9+]/g, ''))}
+                placeholder={t('creatorSettings.phonePlaceholder')}
+                keyboardType="phone-pad"
+                autoCorrect={false}
+                autoFocus
+                leftIcon="phone"
+              />
               <Pressable
                 style={[
                   styles.saveBtn,
@@ -2471,7 +2554,9 @@ export default function CreatorSettingsScreen() {
           {!subPage && !section && renderMainSettings()}
           {!subPage && section === 'social'     && renderSocialAccounts()}
           {!subPage && section === 'earnings'   && renderEarnings()}
-          {!subPage && section === 'past-work'  && renderPastWork()}
+          {/* Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display). */}
+          {/* {!subPage && section === 'past-work'  && renderPastWork()} */}
+          {!subPage && section === 'privacy'    && renderPrivacy()}
           {!subPage && section === 'security'      && renderSecurity()}
           {!subPage && section === 'notifications' && renderNotifications()}
           {!subPage && section === 'support'    && renderSupport()}
@@ -2594,9 +2679,12 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingTop: 16, paddingBottom: 24 },
 
+  // marginHorizontal matches card/hintCard/saveHint's 16 below — this used to
+  // be a stray 20 (same copy-pasted mismatch as edit-profile.tsx), so the
+  // section label sat 4px further in than the card under it.
   sectionHeader: {
     fontSize: 11,
-    letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
+    letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 16, fontFamily: F.bold,
   },
   card: {
     marginHorizontal: 16, borderRadius: RADIUS.lg,
@@ -2723,8 +2811,6 @@ const styles = StyleSheet.create({
   sheetBody: { padding: 20, paddingBottom: 36 },
   sheetSection: { marginBottom: 20 },
   sheetLabel: { fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8, fontFamily: F.bold },
-  sheetFieldError: { fontSize: 12, marginTop: 5, fontFamily: F.medium },
-  sheetFieldHint: { fontSize: 11, marginTop: 5, fontFamily: F.regular },
 
   // Platform grid
   platformGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -2738,9 +2824,6 @@ const styles = StyleSheet.create({
   platformGridSelectedDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: RADIUS.full },
 
   // Inputs inside sheet
-  sheetInputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.sm, paddingHorizontal: 14, minHeight: 50 },
-  sheetInputPrefix: { fontSize: 18, marginRight: 6 },
-  sheetInput: { flex: 1, fontSize: 15, paddingVertical: 12, fontFamily: F.regular },
   sheetCountBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
   sheetCountBadgeText: { fontSize: 13, fontFamily: F.bold },
 
@@ -2774,7 +2857,6 @@ const styles = StyleSheet.create({
   formField: { gap: 4 },
   formFieldLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   formInput: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
-  formTextarea: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 120, fontFamily: F.regular },
   fieldError: { fontSize: 12, fontFamily: F.medium },
   formActions: { flexDirection: 'row', gap: 8 },
   saveBtn: { borderRadius: RADIUS.full, paddingVertical: 11, alignItems: 'center' },
@@ -2789,7 +2871,6 @@ const styles = StyleSheet.create({
 
   pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, height: 46 },
   pwInput: { flex: 1, height: 44, fontSize: 14, fontFamily: F.regular, textAlignVertical: 'center', letterSpacing: 0 },
-  eyeBtn: { padding: 6 },
   eyeIcon: { fontSize: 18 },
 
   portfolioType: { fontSize: 14, fontFamily: F.semibold },

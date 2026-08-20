@@ -35,6 +35,18 @@ export const COLORS = {
   badgeNew:      '#064E3B',
 };
 
+// Single source of truth for the BUSINESS-role primary color. `useAppColors()`
+// (@/context/ThemeContext) swaps `brinjal1`/`brinjal2`/`primaryLight` to this
+// green for any authenticated BUSINESS user — every screen/component that
+// reads its color from `useAppColors()` retheme automatically. Change the
+// three hex values below to retheme the whole business side in one place.
+export const BUSINESS_COLORS: typeof COLORS = {
+  ...COLORS,
+  brinjal1:     '#15803D', // primary buttons/accents — readable white-on-green
+  brinjal2:     '#14532D', // pressed states, drawer/header backgrounds
+  primaryLight: '#F0FDF4', // light tint for chips/highlighted rows on white
+};
+
 // Poppins font families — loaded globally in src/app/_layout.tsx
 export const F = {
   regular:    'Poppins-Regular',
@@ -78,6 +90,15 @@ export const SPACING = {
   xxxl: 48,
 };
 
+// The app's de facto "content starts this far from the screen edge" gutter —
+// already used as a bare `paddingHorizontal: 20` across most list/section
+// screens (outside the SPACING scale above, which tops out lg=16/xl=24 either
+// side of it). Named here so screens with several independently-styled rows
+// that must share one left edge (e.g. Discover's search bar/tab slider/
+// category pills) reference one source instead of three copies of the
+// literal 20 silently drifting apart.
+export const SCREEN_GUTTER = 20;
+
 // Shared type scale. Floor is 11 — iOS HIG's smallest practical size
 // ("Caption 2"); anything below that stops being reliably legible once a
 // user has bumped up their system text-size accessibility setting.
@@ -116,6 +137,7 @@ export const USER_KEY               = 'ch_user';
 export const ACCESS_TOKEN_KEY       = 'ch_access_token';
 export const REFRESH_TOKEN_KEY      = 'ch_refresh_token';
 export const BIOMETRIC_ENABLED_KEY  = 'ch_biometric_enabled';
+export const RECENT_SEARCHES_KEY    = 'ch_recent_searches';
 
 // User roles — use these instead of the bare 'CREATOR'/'BUSINESS' string literals
 export const ROLE = {

@@ -19,6 +19,7 @@ import {
   updateCampaignStatus,
   approveCampaign,
   rejectCampaign,
+  deleteCampaign,
   getSettings,
   updateSettings,
   getConversationStats,
@@ -29,9 +30,12 @@ import {
   releasePayment,
   verifyCreator,
   setCreatorDocumentStatus,
+  rejectCreator,
   verifyBusiness,
   setBusinessDocumentStatus,
   rejectBusiness,
+  getProviderVerificationQueue,
+  getBusinessVerificationQueue,
   getBusinessReferrals,
   releaseBusinessReferral,
   getUserAnalytics,
@@ -55,10 +59,14 @@ router.delete('/users/:id', deleteUser);
 router.get('/creators',  getCreators);
 router.patch('/creators/:id/verify', verifyCreator);
 router.patch('/creators/:id/documents/:doc', setCreatorDocumentStatus);
+router.patch('/creators/:id/reject', rejectCreator);
 router.get('/businesses', getBusinesses);
 router.patch('/businesses/:id/verify', verifyBusiness);
 router.patch('/businesses/:id/documents/:doc', setBusinessDocumentStatus);
 router.patch('/businesses/:id/reject', rejectBusiness);
+
+router.get('/verification/providers', getProviderVerificationQueue);
+router.get('/verification/businesses', getBusinessVerificationQueue);
 
 router.get('/activity-logs', getActivityLogs);
 router.get('/audit-logs',    getAuditLogs);
@@ -69,6 +77,7 @@ router.put('/campaigns/:id', validate(updateCampaignSchema), updateCampaign);
 router.patch('/campaigns/:id/status', updateCampaignStatus);
 router.post('/campaigns/:id/approve', approveCampaign);
 router.post('/campaigns/:id/reject', rejectCampaign);
+router.delete('/campaigns/:id', deleteCampaign);
 router.patch('/applications/:id/release-payment', releasePayment);
 
 router.get('/analytics/:userId', getUserAnalytics);

@@ -40,6 +40,9 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { ContactInfo } from './pages/ContactInfo';
 import { RateLimits } from './pages/RateLimits';
+import { AuditLogs } from './pages/AuditLogs';
+import { VerificationDashboard } from './pages/VerificationDashboard';
+import { ActivityLogs } from './pages/ActivityLogs';
 import { HelpCenter } from './pages/HelpCenter';
 import { FAQManager } from './pages/FAQManager';
 import { SupportInbox } from './pages/SupportInbox';
@@ -141,6 +144,9 @@ export default function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/contact-info" element={<ContactInfo />} />
                 <Route path="/rate-limits" element={<RateLimits />} />
+                <Route path="/audit-logs" element={<AuditLogs />} />
+                <Route path="/verification" element={<VerificationDashboard />} />
+                <Route path="/activity-logs" element={<ActivityLogs />} />
               </Route>
             </Route>
           </Route>

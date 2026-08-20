@@ -161,6 +161,13 @@ export function Creators() {
       ),
     },
     {
+      key:    'services',
+      header: 'Services',
+      render: (row: ApiCreator) => (
+        <span className={`font-medium ${row._count.services > 0 ? 'text-gray-800' : 'text-gray-400'}`}>{row._count.services}</span>
+      ),
+    },
+    {
       key:    'joinedAt',
       header: 'Joined',
       render: (row: ApiCreator) => (
@@ -266,6 +273,21 @@ export function Creators() {
                 },
               ],
             },
+            ...(viewing.services.length
+              ? [{
+                  heading: `Services (${viewing.services.length})`,
+                  fields: viewing.services.map((svc) => ({
+                    label: svc.name,
+                    value: (
+                      <span className="flex items-center gap-2">
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{svc.category.name}</span>
+                        <span>{svc.startingPrice != null ? `NPR ${svc.startingPrice.toLocaleString()}` : 'No price set'} · {svc.pricingModel.replace(/_/g, ' ').toLowerCase()}</span>
+                        {svc.status !== 'ACTIVE' && <StatusBadge status={svc.status.toLowerCase()} />}
+                      </span>
+                    ),
+                  })),
+                }]
+              : []),
             ...(viewing.citizenshipDocUrl || viewing.panDocUrl
               ? [{
                   heading: 'Documents',

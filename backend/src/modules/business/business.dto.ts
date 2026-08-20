@@ -1,5 +1,8 @@
 import { Prisma } from '@prisma/client';
 import { isBusinessFullyVerified } from '../../utils/verification';
+import { maskLocationByVisibility } from '../../utils/geo';
+
+export type BusinessPurpose = 'BRAND_MARKETING' | 'CONTENT_CREATION' | 'EVENT' | 'WEDDING' | 'PHOTOSHOOT' | 'PERFORMANCE' | 'COLLABORATION' | 'OTHER';
 
 export interface BusinessProfileDto {
   id: string;
@@ -15,10 +18,17 @@ export interface BusinessProfileDto {
   locationLat: number | null;
   locationLng: number | null;
   phone: string | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  area: string | null;
+  address: string | null;
+  locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
   isVerified: boolean;
   fullyVerified: boolean;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
+  hideSocialLinks: boolean;
   allowDirectMessages: boolean;
   socialLinks: Record<string, string>;
   presenceServices: string[];
@@ -31,6 +41,9 @@ export interface BusinessProfileDto {
   companyRegDocUrl: string | null;
   companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   verificationRejectReason: string | null;
+  representingType: 'ORGANIZATION' | 'INDIVIDUAL' | null;
+  purpose: BusinessPurpose | null;
+  businessSize: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE' | null;
   createdAt: string;
   updatedAt: string;
   favoritedByCount: number;
@@ -52,11 +65,16 @@ export interface PublicBusinessDto {
   logoUrl: string | null;
   website: string | null;
   phone: string | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  socialLinks: Record<string, string>;
   categories: string[];
   isVerified: boolean;
   fullyVerified: boolean;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
+  hideSocialLinks: boolean;
   allowDirectMessages: boolean;
   createdAt: string;
   campaigns: Array<{
@@ -86,6 +104,8 @@ export interface BusinessListItemDto {
   categories: string[];
   isVerified: boolean;
   fullyVerified: boolean;
+  city: string | null;
+  district: string | null;
   _count: { campaigns: number };
 }
 
@@ -103,9 +123,16 @@ type RawBusinessProfile = {
   locationLat?: number | null;
   locationLng?: number | null;
   phone?: string | null;
+  province?: string | null;
+  district?: string | null;
+  city?: string | null;
+  area?: string | null;
+  address?: string | null;
+  locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
   isVerified: boolean;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
+  hideSocialLinks?: boolean;
   allowDirectMessages: boolean;
   socialLinks?: Prisma.JsonValue;
   presenceServices?: string[];
@@ -118,6 +145,9 @@ type RawBusinessProfile = {
   companyRegDocUrl?: string | null;
   companyRegDocStatus?: string;
   verificationRejectReason?: string | null;
+  representingType?: 'ORGANIZATION' | 'INDIVIDUAL' | null;
+  purpose?: BusinessPurpose | null;
+  businessSize?: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE' | null;
   createdAt: Date;
   updatedAt: Date;
   _count?: { favoritedBy: number };
@@ -139,10 +169,17 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     locationLat:         b.locationLat ?? null,
     locationLng:         b.locationLng ?? null,
     phone:               b.phone ?? null,
+    province:            b.province ?? null,
+    district:            b.district ?? null,
+    city:                b.city ?? null,
+    area:                b.area ?? null,
+    address:             b.address ?? null,
+    locationVisibility:  b.locationVisibility ?? 'CITY',
     isVerified:          b.isVerified,
     fullyVerified:       b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
     showPublicProfile:   b.showPublicProfile,
     hideContactDetails:  b.hideContactDetails,
+    hideSocialLinks:     b.hideSocialLinks ?? false,
     allowDirectMessages: b.allowDirectMessages,
     socialLinks:         (b.socialLinks ?? {}) as Record<string, string>,
     presenceServices:         b.presenceServices ?? [],
@@ -155,6 +192,9 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     companyRegDocUrl:    b.companyRegDocUrl ?? null,
     companyRegDocStatus: (b.companyRegDocStatus ?? 'NONE') as BusinessProfileDto['companyRegDocStatus'],
     verificationRejectReason: b.verificationRejectReason ?? null,
+    representingType:    b.representingType ?? null,
+    purpose:             b.purpose ?? null,
+    businessSize:        b.businessSize ?? null,
     createdAt:           b.createdAt.toISOString(),
     updatedAt:           b.updatedAt.toISOString(),
     favoritedByCount:    b._count?.favoritedBy ?? 0,
@@ -170,12 +210,20 @@ type RawPublicBusiness = {
   logoUrl: string | null;
   website: string | null;
   phone: string | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  area: string | null;
+  address: string | null;
+  locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
+  socialLinks?: Prisma.JsonValue;
   categories: string[];
   isVerified: boolean;
   panDocStatus?: string;
   companyRegDocStatus?: string;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
+  hideSocialLinks: boolean;
   allowDirectMessages: boolean;
   createdAt: Date;
   campaigns: Array<{
@@ -196,6 +244,7 @@ type RawPublicBusiness = {
 };
 
 export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
+  const loc = maskLocationByVisibility(b, b.locationVisibility);
   return {
     id:                  b.id,
     userId:              b.userId,
@@ -203,12 +252,20 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
     description:         b.description,
     logoUrl:             b.logoUrl,
     website:             b.website,
-    phone:               b.phone,
+    // hideContactDetails previously had nothing to gate — phone was always
+    // shown regardless of the flag. Now that the flag actually has an effect,
+    // hiding contact details this way is intended, not a regression.
+    phone:               b.hideContactDetails ? null : b.phone,
+    province:            loc.province,
+    district:            loc.district,
+    city:                loc.city,
+    socialLinks:         b.hideSocialLinks ? {} : ((b.socialLinks ?? {}) as Record<string, string>),
     categories:          b.categories,
     isVerified:          b.isVerified,
     fullyVerified:       b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
     showPublicProfile:   b.showPublicProfile,
     hideContactDetails:  b.hideContactDetails,
+    hideSocialLinks:     b.hideSocialLinks,
     allowDirectMessages: b.allowDirectMessages,
     createdAt:           b.createdAt.toISOString(),
     campaigns:           b.campaigns.map((c) => ({ ...c, deadline: c.deadline.toISOString() })),
@@ -232,11 +289,18 @@ type RawBusinessListItem = {
   isVerified: boolean;
   panDocStatus?: string;
   companyRegDocStatus?: string;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  area: string | null;
+  address: string | null;
+  locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
   _count: { campaigns: number };
   user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
 export function toBusinessListItemDto(b: RawBusinessListItem): BusinessListItemDto {
+  const loc = maskLocationByVisibility(b, b.locationVisibility ?? 'CITY');
   return {
     id:           b.id,
     businessName: b.businessName,
@@ -246,6 +310,8 @@ export function toBusinessListItemDto(b: RawBusinessListItem): BusinessListItemD
     categories:   b.categories,
     isVerified:   b.isVerified,
     fullyVerified: b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
+    city:         loc.city,
+    district:     loc.district,
     _count:       b._count,
   };
 }

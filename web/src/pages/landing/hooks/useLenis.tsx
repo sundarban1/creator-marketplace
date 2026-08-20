@@ -110,3 +110,11 @@ export function useLenisScroll(): LenisContextValue {
   if (!ctx) throw new Error('useLenisScroll must be used within LenisProvider');
   return ctx;
 }
+
+/** Same context, but `null` outside a LenisProvider instead of throwing —
+ *  for components like LandingFooter that render both on the single-page
+ *  home route (inside the provider, in-page anchors make sense) and on
+ *  standalone/content routes (no provider, no in-page anchors to scroll to). */
+export function useLenisScrollOptional(): LenisContextValue | null {
+  return useContext(LenisContext);
+}

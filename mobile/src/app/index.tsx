@@ -1,250 +1,165 @@
-import { FontAwesome5 } from '@expo/vector-icons';
-import { useEffect, useRef } from 'react';
-import { Animated, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Image, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
-import { F, RADIUS } from '@/utilities/constants';
+import { COLORS, F, FONT_SIZE, RADIUS, SPACING } from '@/utilities/constants';
 
-// The doodle layer below was laid out against this reference screen size (a
-// common iPhone size) — every hardcoded top/left/right/bottom/size is scaled
-// from it at render time so the icons don't overlap the center logo on a
-// narrower/shorter screen (iPhone SE) or leave a sparse ring around it on a
-// wider/taller one (15 Pro Max, tablets).
-const DOODLE_BASE_WIDTH = 375;
-const DOODLE_BASE_HEIGHT = 812;
+// One illustration per slide, each matched to that slide's message: a creator
+// filming content (slide 1), a business discovering creators/photographers
+// across social platforms (slide 2), and the two sides collaborating (slide 3).
+const SLIDES = [
+  {
+    image: require('@/assets/images/login/creator.png'),
+    headlineKey: 'welcome.slide1Headline',
+    highlightKey: 'welcome.slide1HeadlineHighlight',
+    subtitleKey: 'welcome.slide1Subtitle',
+  },
+  {
+    image: require('@/assets/images/login/creator2.jpg'),
+    headlineKey: 'welcome.slide2Headline',
+    highlightKey: 'welcome.slide2HeadlineHighlight',
+    subtitleKey: 'welcome.slide2Subtitle',
+  },
+  {
+    image: require('@/assets/images/login/creator3.png'),
+    headlineKey: 'welcome.slide3Headline',
+    highlightKey: 'welcome.slide3HeadlineHighlight',
+    subtitleKey: 'welcome.slide3Subtitle',
+  },
+] as const;
+const LAST_SLIDE = SLIDES.length - 1;
 
-const PINK    = '#E8527A';
-const TEAL    = '#2EC4C4';
+// Brinjal is the same brand purple the native splash screen uses (app.json → expo-splash-screen.backgroundColor).
+const BACKGROUND = '#FFFFFF';
+const HIGHLIGHT  = COLORS.brinjal1;
+const TEXT       = '#171321';
+const MUTED      = '#6B7280';
 
-// ─── Scattered icon ────────────────────────────────────────────────────────────
+// ─── Welcome Screen ───────────────────────────────────────────────────────────
 
-type IconProps = {
-  icon: keyof typeof FontAwesome5.glyphMap;
-  size?: number;
-  top?: number;
-  left?: number;
-  right?: number;
-  bottom?: number;
-  rotate?: string;
-  color?: string;
-  opacity?: number;
-};
-
-function FIcon({
-  icon, size = 32, top, left, right, bottom,
-  rotate = '0deg', color = TEAL, opacity = 0.72,
-}: IconProps) {
-  return (
-    <View style={{ position: 'absolute', top, left, right, bottom, opacity, transform: [{ rotate }] }}>
-      <FontAwesome5 name={icon} size={size} color={color} />
-    </View>
-  );
-}
-
-// ─── Scattered text label ──────────────────────────────────────────────────────
-
-type LabelProps = {
-  text: string;
-  top?: number;
-  left?: number;
-  right?: number;
-  bottom?: number;
-  rotate?: string;
-  color?: string;
-  fontSize?: number;
-  opacity?: number;
-  weight?: '600' | '700' | '900';
-};
-
-function FLabel({
-  text, top, left, right, bottom,
-  rotate = '0deg', color = PINK, fontSize = 14, opacity = 0.82, weight = '700',
-}: LabelProps) {
-  return (
-    <View style={{ position: 'absolute', top, left, right, bottom, opacity, transform: [{ rotate }] }}>
-      <Text style={{ color, fontSize, fontWeight: weight, fontStyle: 'italic' }}>{text}</Text>
-    </View>
-  );
-}
-
-// ─── Pill block label (FOLLOW / Social Media style) ───────────────────────────
-
-function FBlock({
-  lines, top, left, right, bottom, rotate = '0deg', color = PINK,
-}: { lines: string[]; top?: number; left?: number; right?: number; bottom?: number; rotate?: string; color?: string }) {
-  return (
-    <View style={{ position: 'absolute', top, left, right, bottom, backgroundColor: color, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5, transform: [{ rotate }], opacity: 0.88 }}>
-      {lines.map((l, i) => (
-        <Text key={i} style={{ color: '#fff', fontSize: i === 0 ? 16 : 20, fontWeight: '900', fontStyle: 'italic', lineHeight: i === 0 ? 20 : 24 }}>{l}</Text>
-      ))}
-    </View>
-  );
-}
-
-// ─── Pulse dot ────────────────────────────────────────────────────────────────
-
-function PulseDot({ delay, color }: { delay: number; color: string }) {
-  const scale   = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(0.5)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(scale,   { toValue: 1.45, duration: 500, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 1,    duration: 500, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(scale,   { toValue: 1,   duration: 500, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.5, duration: 500, useNativeDriver: true }),
-        ]),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, []);
-
-  return <Animated.View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, transform: [{ scale }], opacity }} />;
-}
-
-// ─── Splash Screen ────────────────────────────────────────────────────────────
-
-// Pure splash visual — navigation away from here is entirely owned by RootNavigator
-// (src/app/_layout.tsx), which already redirects based on auth state including the
-// isFirstLogin -> onboarding case. This screen used to also run its own redirect
-// effect that ignored isFirstLogin entirely, so a first-time user would briefly land
-// on onboarding (via RootNavigator) and then get yanked back to the main app by this
-// screen's own delayed timer a moment later — the "double slide" bug.
-export default function SplashScreen() {
+// Three-slide intro carousel + entry CTAs. Navigation away from here (once the
+// user taps Get Started, or once RootNavigator (src/app/_layout.tsx)
+// determines they're already signed in) is entirely owned by RootNavigator —
+// this screen itself never redirects on a timer. It used to auto-redirect
+// unauthenticated users straight to /login the instant auth-loading resolved,
+// which meant this screen was never actually seen; RootNavigator now leaves
+// unauthenticated users parked here until they choose Get Started or Log in.
+export default function WelcomeScreen() {
   const { t } = useLanguage();
-  const { width, height } = useWindowDimensions();
-  const scaleX = width / DOODLE_BASE_WIDTH;
-  const scaleY = height / DOODLE_BASE_HEIGHT;
-  const sx = (v: number) => v * scaleX;
-  const sy = (v: number) => v * scaleY;
-  // Icon/text sizes scale more conservatively than position (average of both
-  // axes, clamped) so doodles grow a bit on bigger screens without
-  // ballooning out of proportion on tablets.
-  const scaleSize = Math.min(Math.max((scaleX + scaleY) / 2, 0.85), 1.3);
-  const ss = (v: number) => Math.round(v * scaleSize);
-  const logoScale   = useRef(new Animated.Value(0.35)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const tagOpacity  = useRef(new Animated.Value(0)).current;
-  const dotsOpacity = useRef(new Animated.Value(0)).current;
+  const { width } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
+  const [slideIndex, setSlideIndex] = useState(0);
+  const contentOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const sequence = Animated.sequence([
-      Animated.parallel([
-        Animated.spring(logoScale, { toValue: 1, useNativeDriver: true, tension: 55, friction: 8 }),
-        Animated.timing(logoOpacity, { toValue: 1, duration: 480, useNativeDriver: true }),
-      ]),
-      Animated.timing(textOpacity, { toValue: 1, duration: 360, useNativeDriver: true }),
-      Animated.timing(tagOpacity,  { toValue: 1, duration: 300, useNativeDriver: true }),
-      Animated.timing(dotsOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
-    ]);
-    sequence.start();
-    return () => sequence.stop();
+    Animated.timing(contentOpacity, { toValue: 1, duration: 420, useNativeDriver: true }).start();
   }, []);
+
+  const goToSlide = (index: number) => {
+    scrollRef.current?.scrollTo({ x: index * width, animated: true });
+    setSlideIndex(index);
+  };
+
+  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setSlideIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+  };
 
   return (
     <View style={styles.root}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <Animated.View style={{ flex: 1, width: '100%', opacity: contentOpacity, justifyContent: 'center' }}>
 
-      {/* ─── Doodle layer ─── */}
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onScrollEnd}
+            style={styles.carousel}>
+            {SLIDES.map((slide, i) => (
+              <View key={i} style={[styles.slide, { width }]}>
 
-      {/* Top row */}
-      <FIcon  icon="camera"             size={ss(52)}  top={sy(66)}  left={sx(24)}   rotate="-10deg" color={TEAL} />
-      <FLabel text="wow"                              top={sy(52)}  left={sx(104)}  rotate="5deg"  color={TEAL}  fontSize={ss(17)} />
-      <FIcon  icon="desktop"    size={ss(50)}  top={sy(62)}  right={sx(20)}  rotate="7deg"  color={PINK} />
-      <FLabel text="http://"                          top={sy(66)}  right={sx(76)}  rotate="-4deg" color="#444"  fontSize={ss(11)} opacity={0.4} />
-      <FLabel text="like"                             top={sy(52)}  left={sx(170)}  rotate="-4deg" color={PINK}  fontSize={ss(14)} />
-      <FIcon  icon="at"          size={ss(38)}  top={sy(128)} left={sx(14)}   rotate="12deg" color={PINK}  opacity={0.6} />
-      <FIcon  icon="heart"              size={ss(22)}  top={sy(140)} right={sx(56)}  rotate="14deg" color={PINK}  opacity={0.8} />
-      <FLabel text="REPOST"                           top={sy(196)} left={sx(120)}  rotate="-3deg" color={PINK}  fontSize={ss(12)} weight="900" opacity={0.7} />
+                {/* ─── Illustration ─── */}
+                <View style={styles.photoWrap}>
+                  <Image source={slide.image} style={styles.heroImage} resizeMode="contain" />
+                </View>
 
-      {/* Upper-mid */}
-      <FIcon  icon="arrow-up"           size={ss(28)}  top={sy(192)} left={sx(18)}   rotate="-30deg" color={TEAL} opacity={0.6} />
-      <FIcon  icon="wifi"               size={ss(34)}  top={sy(230)} left={sx(72)}   rotate="-5deg"  color={TEAL} opacity={0.62} />
-      <FIcon  icon="laptop"     size={ss(50)}  top={sy(196)} right={sx(10)}  rotate="6deg"   color={TEAL} />
-      <FIcon  icon="dot-circle"    size={ss(24)}  top={sy(252)} right={sx(66)}  rotate="0deg"   color={TEAL} opacity={0.55} />
+                {/* ─── Headline ─── */}
+                <Text style={styles.headline}>
+                  {t(slide.headlineKey)}{'\n'}
+                  <Text style={{ color: HIGHLIGHT }}>{t(slide.highlightKey)}</Text>
+                </Text>
+                <Text style={styles.subtitle}>{t(slide.subtitleKey)}</Text>
+              </View>
+            ))}
+          </ScrollView>
 
-      {/* FOLLOW block */}
-      <FBlock lines={['FOLLOW']} top={sy(290)} left={sx(10)} rotate="-6deg" color={PINK} />
-
-      {/* Mid */}
-      <FIcon  icon="mobile-alt" size={ss(38)} top={sy(360)} left={sx(12)}  rotate="9deg"  color={PINK} opacity={0.65} />
-      <FLabel text="HELLO"                              top={sy(374)} right={sx(52)} rotate="-5deg" color={TEAL} fontSize={ss(20)} weight="900" opacity={0.8} />
-      <FIcon  icon="headset"    size={ss(44)}  top={sy(416)} right={sx(12)}  rotate="8deg"   color={TEAL} opacity={0.68} />
-      <FLabel text="online"                             top={sy(470)} right={sx(64)} rotate="-6deg" color={PINK} fontSize={ss(15)} opacity={0.82} />
-      <FIcon  icon="arrow-down"         size={ss(26)}  top={sy(510)} left={sx(22)}   rotate="18deg"  color={PINK} opacity={0.58} />
-      <FIcon  icon="star"               size={ss(20)}  top={sy(490)} left={sx(90)}   rotate="12deg"  color={TEAL} opacity={0.6} />
-
-      {/* Social Media block */}
-      <FBlock lines={['Social', 'Media']} bottom={sy(220)} left={sx(0)} rotate="-2deg" color={TEAL} />
-
-      <FLabel text="online"                             bottom={sy(218)} left={sx(14)}  rotate="-5deg" color={TEAL} fontSize={ss(11)} opacity={0.65} />
-      <FIcon  icon="arrow-left"         size={ss(28)}  bottom={sy(262)} left={sx(96)}  rotate="170deg" color={TEAL} opacity={0.55} />
-      <FLabel text=".com"                               bottom={sy(204)} left={sx(134)} rotate="5deg"  color="#444" fontSize={ss(14)} opacity={0.45} />
-
-      {/* Bottom */}
-      <FIcon  icon="headset"            size={ss(40)}  bottom={sy(152)} left={sx(52)}  rotate="6deg"   color={TEAL} opacity={0.62} />
-      <FIcon  icon="envelope"               size={ss(42)}  bottom={sy(164)} right={sx(14)} rotate="-9deg"  color={PINK} opacity={0.68} />
-      <FLabel text="LIKE"                              bottom={sy(118)} left={sx(114)} rotate="-8deg" color={PINK}  fontSize={ss(20)} weight="900" opacity={0.82} />
-      <FLabel text="Hi!"                                bottom={sy(128)} right={sx(46)} rotate="10deg" color="#D94F5C" fontSize={ss(24)} weight="900" opacity={0.85} />
-      <FIcon  icon="tablet-alt" size={ss(36)} bottom={sy(76)} left={sx(14)} rotate="-12deg" color={PINK} opacity={0.6} />
-      <FIcon  icon="mobile-alt"     size={ss(22)}  bottom={sy(60)}  left={sx(56)}  rotate="6deg"   color={TEAL} opacity={0.55} />
-
-      {/* ─── Center content ─── */}
-      <View style={styles.center}>
-
-        {/* Role chips */}
-        <View style={styles.roleRow}>
-          <View style={[styles.chip, { backgroundColor: `${PINK}1A`, borderColor: `${PINK}50` }]}>
-            <FontAwesome5 name="camera" solid size={12} color={PINK} />
-            <Text style={[styles.chipText, { color: PINK }]}>{t('splash.roleCreator')}</Text>
+          <View style={styles.dots}>
+            {SLIDES.map((_, i) => (
+              <Pressable key={i} onPress={() => goToSlide(i)} hitSlop={8}>
+                <View style={[styles.dot, i === slideIndex && styles.dotActive]} />
+              </Pressable>
+            ))}
           </View>
-          <View style={styles.chipDivider} />
-          <View style={[styles.chip, { backgroundColor: `${TEAL}1A`, borderColor: `${TEAL}50` }]}>
-            <FontAwesome5 name="briefcase" solid size={12} color={TEAL} />
-            <Text style={[styles.chipText, { color: TEAL }]}>{t('splash.roleBusiness')}</Text>
-          </View>
-        </View>
 
-        {/* Logo */}
-        <Animated.View style={{ transform: [{ scale: logoScale }], opacity: Animated.multiply(logoOpacity, textOpacity) }}>
-          <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} resizeMode="contain" />
+          {/* ─── Entry CTAs ─── */}
+          <View style={styles.ctaBlock}>
+            {slideIndex === LAST_SLIDE ? (
+              <Pressable
+                onPress={() => router.push('/account-type')}
+                style={({ pressed }) => [styles.primaryBtn, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
+                <Text style={styles.primaryBtnText}>{t('welcome.getStarted')}</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => goToSlide(slideIndex + 1)}
+                style={({ pressed }) => [styles.primaryBtn, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
+                <Text style={styles.primaryBtnText}>{t('welcome.next')}</Text>
+              </Pressable>
+            )}
+
+            <Pressable onPress={() => router.push('/login')} hitSlop={8} style={styles.loginRow}>
+              <Text style={styles.loginPrompt}>{t('welcome.alreadyHaveAccount')} </Text>
+              <Text style={styles.loginLink}>{t('welcome.logIn')}</Text>
+            </Pressable>
+          </View>
+
         </Animated.View>
-
-        {/* Tagline */}
-        <Animated.Text style={[styles.tagline, { opacity: tagOpacity }]}>
-          {t('splash.tagline')}
-        </Animated.Text>
-      </View>
-
-      {/* ─── Loading dots ─── */}
-      <Animated.View style={[styles.dotsRow, { opacity: dotsOpacity }]}>
-        <PulseDot delay={0}   color={PINK} />
-        <PulseDot delay={180} color={TEAL} />
-        <PulseDot delay={360} color={PINK} />
-      </Animated.View>
-
+      </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F7F8FC', alignItems: 'center', justifyContent: 'center' },
+  root: { flex: 1, backgroundColor: BACKGROUND },
+  safe: { flex: 1, alignItems: 'center' },
 
-  center: { alignItems: 'center', zIndex: 10 },
+  carousel: { flexGrow: 0 },
+  slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.xl },
 
-  roleRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: 'rgba(0,0,0,0.03)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
-  chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.full, borderWidth: 1 },
-  chipText:    { fontSize: 12, letterSpacing: 0.3, fontFamily: F.bold },
-  chipDivider: { width: 1, height: 14, backgroundColor: 'rgba(0,0,0,0.12)' },
+  photoWrap: { width: 260, height: 240, alignItems: 'center', justifyContent: 'center' },
+  heroImage: { width: '100%', height: '100%' },
 
-  logoImage: { width: 220, height: 220 / (1740 / 620) },
+  headline: {
+    marginTop: SPACING.lg, textAlign: 'center', color: TEXT,
+    fontSize: 26, lineHeight: 32, fontFamily: F.bold,
+  },
+  subtitle: {
+    marginTop: SPACING.sm, textAlign: 'center', color: MUTED,
+    fontSize: FONT_SIZE.sm, lineHeight: 20, fontFamily: F.medium,
+  },
 
-  tagline:  { fontSize: 14, color: '#888', marginTop: 8, letterSpacing: 0.4, fontFamily: F.medium },
+  dots: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: SPACING.xl },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(23,19,33,0.15)' },
+  dotActive: { width: 20, backgroundColor: HIGHLIGHT },
 
-  dotsRow: { position: 'absolute', bottom: 56, flexDirection: 'row', gap: 9, alignItems: 'center' },
+  ctaBlock: { width: '100%', paddingHorizontal: SPACING.xl, marginTop: SPACING.xxl, gap: SPACING.md },
+
+  primaryBtn:     { height: 54, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', backgroundColor: HIGHLIGHT },
+  primaryBtnText: { fontSize: FONT_SIZE.md, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
+
+  loginRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: SPACING.sm },
+  loginPrompt: { fontSize: FONT_SIZE.sm, color: MUTED, fontFamily: F.medium },
+  loginLink:   { fontSize: FONT_SIZE.sm, fontFamily: F.bold, color: HIGHLIGHT },
 });

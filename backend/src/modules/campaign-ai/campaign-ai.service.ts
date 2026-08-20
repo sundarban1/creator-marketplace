@@ -8,7 +8,8 @@ import { PlatformRepository } from '../platform/platform.repository';
 import { BusinessRepository } from '../business/business.repository';
 import {
   aiCampaignDraftSchema, aiEventDraftSchema, BENEFIT_OPTIONS, BENEFIT_DESCRIPTIONS,
-  type AiCampaignDraft, type AiEventDraft, type SuggestDescriptionInput,
+  EXCHANGE_OPTIONS, EXCHANGE_DESCRIPTIONS,
+  type AiCampaignDraft, type AiEventDraft, type AiRequirementDraft, type SuggestDescriptionInput,
 } from './campaign-ai.schema';
 import dummyData from './campaign-ai.dummy.json';
 
@@ -112,13 +113,16 @@ function buildBusinessContextBlock(business: { businessName: string | null; cate
   return `\nBUSINESS PROFILE (use this to fill gaps the brand's prompt doesn't cover — never ask the brand to repeat something already listed here):\n${lines.join('\n')}\n`;
 }
 
-function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
-  return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for paid promotional campaigns.
+function buildSystemPrompt(categoryNames: string[], providerCategoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
+  return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting businesses with providers (content creators, photographers, videographers, models, and other service providers) for paid opportunities.
 
 Given a brand's short description of what they want to promote, generate a complete campaign brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
 
 Existing categories in the app (prefer one of these for "category" if it fits; otherwise suggest the closest real-world category name):
 ${categoryNames.map((c) => `- ${c}`).join('\n')}
+
+Provider types available on the platform (use ONLY these for each requirements[] entry's "category" — this is a different, more specific list than the categories above):
+${providerCategoryNames.map((c) => `- ${c}`).join('\n')}
 
 Known platforms: ${platformNames.join(', ')} (prefer one of these for "platform").
 ${businessContext}
@@ -144,6 +148,10 @@ Respond with a JSON object with EXACTLY these keys:
 - approvalRequirements: string, one sentence about whether/how the brand wants to review content before it's posted
 - location: string or null, a city/area if inferable, otherwise null
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
+- requirements: array (0-10 items) — ONLY populate this when the brief clearly names multiple DISTINCT provider types and/or explicit counts for each (e.g. "two TikTok creators and a photographer", "1 photographer and 2 content creators", "5 content creators, 2 photographers and 1 DJ"). Each item: { "category": one of the exact Provider types listed above, "quantity": integer count needed for that role, "budgetType": "FIXED"|"RANGE"|"NEGOTIABLE", "budgetFixed": number (required if budgetType is FIXED), "budgetMin"/"budgetMax": numbers (required if budgetType is RANGE), "deliverables": object, "description": string }. budgetFixed/budgetMin/budgetMax for a role are the amount paid to EACH INDIVIDUAL creator filling that role (same per-person convention as deliverables above), NOT a pool split across that role's quantity. If the brief gives ONE total budget for the whole brief (e.g. "budget is 10000" for "5 content creators, 2 photographers and 1 DJ"), do NOT copy that total into every role or divide it evenly per head — first allocate the total across roles by typical relative cost per role type (e.g. a DJ or photographer usually costs more per person than a content creator), THEN divide each role's allocated share by that role's quantity to land on a realistic per-person figure, such that summing (budgetFixed × quantity) across all roles lands close to the brief's stated total. If unclear or no total was given, use "NEGOTIABLE". If the brief describes only ONE general need (even if creatorsNeeded > 1, e.g. "3 food creators"), leave requirements as an empty array [] — do not invent a multi-role breakdown the brief doesn't support. Never leave requirements populated with a single item; use the top-level category/creatorsNeeded/budget/deliverables fields for that case instead.
+  For "deliverables" and "description", exactly ONE of the two is meaningful per role, based on category:
+  - category is "Content Creator" (or an equally general content-creation role): fill "deliverables" with the SAME exact keys/rules as the top-level deliverables field above, scoped to what THIS role should produce (lean on REEL/STORY/PHOTO_POST as fits the brief). Leave "description" as "".
+  - any other category (Model, Photographer, Videographer, DJ, Dancer, Event Planner, etc.): leave "deliverables" all-zero, and instead fill "description" with a concise, specific, actionable 1-2 sentence brief of what that role should actually do — e.g. a Model: "Model outfits and pose for photo and short social clips per the brand's direction; available for the full shoot duration and wardrobe changes." A Photographer: "Capture high-resolution event photography and short video clips, deliver an edited gallery within 3 days." Never leave description empty for a non-Content-Creator role.
 
 ${buildLanguageInstruction(language, inputSource)}
 
@@ -153,7 +161,7 @@ Whenever campaignIntentDetected is true, fill in every field above with your bes
 }
 
 function buildEventSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
-  return `You are an event-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for FREE (non-monetary) in-person events. Creators attend and post content in exchange for perks — not cash.
+  return `You are an event-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for FREE (non-monetary) in-person events. Creators attend in exchange for perks — not cash — and may be asked to post content about the experience, though some events are simply organic/no-content-ask invites where attending and enjoying the experience is enough.
 
 Given a brand's short description of the event they want to host, generate a complete event brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
 
@@ -171,6 +179,9 @@ Respond with a JSON object with EXACTLY these keys:
 - secondaryPlatforms: string[] (0-3), other platforms worth considering
 - benefits: string[] (1-4 items) — what the brand is offering creators in return for attending, EXACTLY from this list only:
 ${BENEFIT_OPTIONS.map((b) => `  - "${b}": ${BENEFIT_DESCRIPTIONS[b]}`).join('\n')}
+- exchangeType: string[] (1-6 items) — what the business wants attendees/creators to do in return for the free experience, EXACTLY from this list only:
+${EXCHANGE_OPTIONS.map((e) => `  - "${e}": ${EXCHANGE_DESCRIPTIONS[e]}`).join('\n')}
+- expectedContent: string (0-300 chars) — a short free-text description of the specific content ask, e.g. "1 Instagram Reel + 2 Stories within 3 days of the event". Populate this ONLY when exchangeType includes anything other than "Just attend & share organically". Leave it as an empty string "" when "Just attend & share organically" is the only or dominant selection.
 - capacity: number, how many creators the venue can realistically host (typically 5-50)
 - location: string or null, a city/area if inferable, otherwise null
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","capacity","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
@@ -227,19 +238,24 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
-    const [realCategories, realPlatforms, businessContext] = await Promise.all([
+  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
+    const [realCategories, realProviderCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
+      // strict:true — requirements need real provider TYPES (Photographer,
+      // Content Creator...), never BOTH-scope content-niche rows, same rule
+      // the Service category picker follows (see CategoryRepository comment).
+      this.categoryRepo.findManyPublic(CategoryScope.CREATOR, true),
       this.platformRepo.findManyPublic(),
       this.loadBusinessContext(userId),
     ]);
     const categoryNames = realCategories.map((c) => c.name);
+    const providerCategoryNames = realProviderCategories.map((c) => c.name);
     const platformNames = realPlatforms.map((p) => p.name);
 
     let draft: AiCampaignDraft;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language, businessContext, inputSource), prompt);
+      const raw = await this.callModel(buildSystemPrompt(categoryNames, providerCategoryNames, platformNames, language, businessContext, inputSource), prompt);
       this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response');
     } catch (err) {
@@ -247,7 +263,29 @@ export class CampaignAiService {
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy campaign draft');
       draft = pickDummyDraft(prompt);
     }
-    return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
+    const matched = this.matchToRealTaxonomy(draft, categoryNames, platformNames);
+    return { ...matched, requirements: this.resolveRequirements(draft.requirements, realProviderCategories) };
+  }
+
+  // Matches each AI-guessed requirement category name to a real CREATOR
+  // category and attaches its id — mirrors matchToRealTaxonomy's fuzzy-match
+  // for the top-level category/platform, but drops (rather than falls back
+  // on) any entry that can't be matched at all, since a wrong provider type
+  // silently attached to a real category id is worse than just omitting that
+  // role and letting the business add it manually in the review step.
+  private resolveRequirements(
+    requirements: AiRequirementDraft[],
+    realProviderCategories: { id: string; name: string }[],
+  ): (AiRequirementDraft & { categoryId: string })[] {
+    return requirements.flatMap((r) => {
+      const matched = fuzzyMatch(r.category, realProviderCategories.map((c) => c.name));
+      const category = matched != null ? realProviderCategories.find((c) => c.name === matched) : undefined;
+      if (!category) {
+        logger.warn({ guess: r.category }, 'AI requirement category did not match any real provider category, dropping requirement');
+        return [];
+      }
+      return [{ ...r, category: category.name, categoryId: category.id }];
+    });
   }
 
   async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {

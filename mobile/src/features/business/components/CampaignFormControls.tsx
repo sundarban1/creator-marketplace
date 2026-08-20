@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { BUDGET_TIERS, DELIVERABLE_TYPES } from '../constants/campaignForm';
 
@@ -237,9 +238,9 @@ export function BudgetTierPicker({
       {isCustom && (
         <View style={bt.budgetRow}>
           <View style={bt.budgetInputWrap}>
-            <Text style={[bt.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMinLabel')}</Text>
-            <TextInput
-              style={[bt.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
+            <TextInputWithLabel
+              label={t('createEvent.aiBudgetMinLabel')}
+              leftIcon="dollar-sign"
               value={String(budgetMin)}
               onChangeText={(v) => onChange(parseInt(v.replace(/[^0-9]/g, ''), 10) || 0, budgetMax)}
               keyboardType="number-pad"
@@ -247,9 +248,9 @@ export function BudgetTierPicker({
             />
           </View>
           <View style={bt.budgetInputWrap}>
-            <Text style={[bt.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMaxLabel')}</Text>
-            <TextInput
-              style={[bt.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+            <TextInputWithLabel
+              label={t('createEvent.aiBudgetMaxLabel')}
+              leftIcon="dollar-sign"
               value={String(budgetMax)}
               onChangeText={(v) => onChange(budgetMin, parseInt(v.replace(/[^0-9]/g, ''), 10) || 0)}
               keyboardType="number-pad"
@@ -271,8 +272,6 @@ const bt = StyleSheet.create({
   cardFull:  { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12 },
   budgetRow:    { flexDirection: 'row', gap: 10 },
   budgetInputWrap: { flex: 1, gap: 4 },
-  budgetLabel:  { fontSize: 11, fontFamily: F.medium },
-  input:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
   errorText: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 });
 
@@ -435,7 +434,7 @@ const ht = StyleSheet.create({
 // (existing event) so both show the same remaining-quota pill and lock state
 // instead of the edit path silently omitting it.
 
-export function FeaturedToggle({ value, onChange, quota, colors, t }: {
+export function FeaturedToggle({ value, onChange, quota, colors, t, labelKey = 'createEvent.featuredLabel', lockedSubKey = 'createEvent.featuredLockedSub' }: {
   value: boolean;
   onChange: (v: boolean) => void;
   // Pass null to render with no pill and no lock — used on the edit screen
@@ -444,6 +443,11 @@ export function FeaturedToggle({ value, onChange, quota, colors, t }: {
   quota: { remaining: number; price: number; unlimited: boolean } | null;
   colors: ReturnType<typeof useAppColors>;
   t: (key: string, vars?: Record<string, string | number>) => string;
+  // Overridable so the "Create Opportunity" flow can swap in its own copy
+  // ("...this Opportunity") without duplicating the whole component —
+  // every other caller relies on the createEvent.* defaults.
+  labelKey?: string;
+  lockedSubKey?: string;
 }) {
   const C = colors;
   const locked = quota !== null && !quota.unlimited && quota.remaining <= 0;
@@ -461,7 +465,7 @@ export function FeaturedToggle({ value, onChange, quota, colors, t }: {
         <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
         <View style={{ flex: 1, gap: 3 }}>
           <View style={ft.labelRow}>
-            <Text style={[ft.label, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
+            <Text style={[ft.label, { color: C.text }]}>{t(labelKey)}</Text>
             {quota && (
               <View style={[ft.pill, { backgroundColor: locked ? C.border : '#FEF3C7' }]}>
                 <Text style={[ft.pillText, { color: locked ? C.textSecondary : '#92400E' }]}>
@@ -471,7 +475,7 @@ export function FeaturedToggle({ value, onChange, quota, colors, t }: {
             )}
           </View>
           <Text style={[ft.sub, { color: C.textSecondary }]}>
-            {locked ? t('createEvent.featuredLockedSub', { price: quota!.price }) : t('createEvent.featuredSub')}
+            {locked ? t(lockedSubKey, { price: quota!.price }) : t('createEvent.featuredSub')}
           </Text>
         </View>
       </View>

@@ -120,6 +120,7 @@ export function CategoriesPage() {
                 {/* Name */}
                 <td className="px-4 py-3">
                   <span className="font-medium text-gray-900">{cat.name}</span>
+                  {cat.group && <span className="block text-xs text-gray-400">{cat.group}</span>}
                 </td>
 
                 {/* Key */}

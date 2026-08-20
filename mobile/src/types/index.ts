@@ -61,6 +61,8 @@ export type Campaign = {
   aiSuggestedCategories?: string[];
   aiSuggestedPlatforms?:  string[];
   distanceKm?:            number;
+  // Present only for multi-role campaigns — see ApiCampaignRequirement.
+  requirements?: import('@/lib/api').ApiCampaignRequirement[];
 };
 
 export type Proposal = {
@@ -102,7 +104,7 @@ export type Message = {
   // chunks landed at Cloudinary, but the backend's complete-call (which
   // verifies + creates the real message row) is still in flight.
   status: 'sending' | 'sent' | 'delivered' | 'read' | 'compressing' | 'uploading' | 'finalizing' | 'failed';
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE' | 'SYSTEM';
   attachmentUrl?: string | null;
   attachmentName?: string | null;
   attachmentThumbnailUrl?: string | null;

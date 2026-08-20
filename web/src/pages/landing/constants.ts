@@ -15,24 +15,22 @@ export const EASE = {
 
 export const SECTION_IDS = {
   hero: 'hero',
-  showcase: 'showcase',
-  trust: 'trust',
-  // journey: 'journey', // Campaign Flow section commented out on the landing page for now
+  possibilities: 'possibilities',
   audience: 'audience',
-  // categories: 'categories', // Categories section commented out on the landing page for now
-  collaboration: 'collaboration',
-  partners: 'partners',
-  // security: 'security', // Security section commented out on the landing page for now
+  aiDiscovery: 'ai-discovery',
+  opportunities: 'opportunities',
+  categories: 'categories',
   stories: 'stories',
+  howItWorks: 'how-it-works',
+  security: 'security',
+  finalCta: 'get-started',
   contact: 'contact',
 } as const;
 
-export const NAV_LINKS: { key: 'showcase' | 'audience' | 'journey' | 'collaboration' | 'contact'; id: string }[] = [
-  { key: 'showcase', id: SECTION_IDS.showcase },
-  { key: 'audience', id: SECTION_IDS.audience },
-  // { key: 'journey', id: SECTION_IDS.journey }, // Campaign Flow section commented out on the landing page for now
-  // { key: 'categories', id: SECTION_IDS.categories }, // Categories section commented out on the landing page for now
-  // { key: 'security', id: SECTION_IDS.security }, // Security section commented out on the landing page for now
-  { key: 'collaboration', id: SECTION_IDS.collaboration },
-  { key: 'contact', id: SECTION_IDS.contact },
+export const NAV_LINKS: { key: 'discover' | 'services' | 'opportunities' | 'events' | 'howItWorks'; id: string }[] = [
+  { key: 'discover', id: SECTION_IDS.possibilities },
+  { key: 'services', id: SECTION_IDS.categories },
+  { key: 'opportunities', id: SECTION_IDS.opportunities },
+  { key: 'events', id: SECTION_IDS.opportunities },
+  { key: 'howItWorks', id: SECTION_IDS.howItWorks },
 ];

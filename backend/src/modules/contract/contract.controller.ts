@@ -6,8 +6,8 @@ import type { PreviewContractInput, UpdateContractTemplateInput } from './contra
 export class ContractController {
   async preview(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { campaignId, proposedRate, timeline } = req.body as PreviewContractInput;
-      const draft = await contractService.previewForCampaign(campaignId, req.user!.id, proposedRate, timeline);
+      const { campaignId, proposedRate, timeline, requirementId } = req.body as PreviewContractInput;
+      const draft = await contractService.previewForCampaign(campaignId, req.user!.id, proposedRate, timeline, requirementId);
       success(res, draft, 'Contract preview generated');
     } catch (err) {
       next(err);

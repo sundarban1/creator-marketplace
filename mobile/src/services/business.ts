@@ -1,6 +1,6 @@
 import { request } from '@/lib/api';
 import type { ApiSocialAccount } from '@/lib/api';
-import type { FacebookPageOption } from '@/services/creator';
+import type { FacebookPageOption, ApiReviewReceived } from '@/services/creator';
 
 export type BusinessListItem = {
   id:           string;
@@ -11,6 +11,8 @@ export type BusinessListItem = {
   categories:   string[];
   isVerified:   boolean;
   fullyVerified: boolean;
+  city:         string | null;
+  district:     string | null;
   _count:       { campaigns: number };
 };
 
@@ -46,6 +48,8 @@ export type BusinessDetail = BusinessListItem & {
   favoritedByCount:    number;
   savedCreatorsCount:  number;
   isPrivate?:          false;
+  // Absent on older cached responses — treat as empty, not an error.
+  reviews?: ApiReviewReceived[];
 };
 
 export type PrivateBusinessDetail = {
@@ -89,18 +93,27 @@ export const businessService = {
     return res.data;
   },
 
-  async getMyProfile(): Promise<{ showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean }> {
-    const res = await request<{ showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean }>(
-      'GET', '/api/business/profile'
-    );
+  async getMyProfile(): Promise<{
+    showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean;
+    hideSocialLinks: boolean; locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
+  }> {
+    const res = await request<{
+      showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean;
+      hideSocialLinks?: boolean; locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
+    }>('GET', '/api/business/profile');
     return {
       showPublicProfile:   res.data.showPublicProfile   ?? true,
       hideContactDetails:  res.data.hideContactDetails  ?? false,
       allowDirectMessages: res.data.allowDirectMessages ?? true,
+      hideSocialLinks:     res.data.hideSocialLinks     ?? false,
+      locationVisibility:  res.data.locationVisibility  ?? 'CITY',
     };
   },
 
-  async updatePrivacy(data: { showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean }): Promise<void> {
+  async updatePrivacy(data: {
+    showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean;
+    hideSocialLinks?: boolean; locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
+  }): Promise<void> {
     await request('PUT', '/api/business/profile', data);
   },
 

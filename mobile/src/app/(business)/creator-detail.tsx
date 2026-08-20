@@ -2,6 +2,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { ReviewsList } from '@/components/ReviewsList';
+import { ReportModal } from '@/components/ReportModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
 import {
@@ -13,17 +15,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
+import { creatorService, type ApiCreatorPublicProfile, type ApiPublicService } from '@/services/creator';
 import { chatService } from '@/services/chat';
+import { serviceRequestService } from '@/services/serviceRequest';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BottomSheet } from '@/components/BottomSheet';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { ApiCategory } from '@/services/category';
 
@@ -72,6 +75,12 @@ function SectionTitle({ label, color }: { label: string; color: string }) {
   return <Text style={[s.sectionTitle, { color }]}>{label}</Text>;
 }
 
+// Mirrors toLabelKey in (creator)/service-form.tsx — kept local since that
+// helper isn't exported.
+const PRICING_LABEL_KEY: Record<ApiPublicService['pricingModel'], string> = {
+  PER_PROJECT: 'PerProject', PER_HOUR: 'PerHour', PER_DAY: 'PerDay', PER_CAMPAIGN: 'PerCampaign', CUSTOM_QUOTE: 'CustomQuote',
+};
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CreatorDetailScreen() {
@@ -91,6 +100,16 @@ export default function CreatorDetailScreen() {
   const [showModal, setShowModal] = useState(false);
   const [requestMsg, setRequestMsg] = useState('');
   const [sending, setSending]     = useState(false);
+
+  // Service request state (§33/34) — distinct from the message-request flow
+  // above; requestingService is which service the sheet is open for (null = closed).
+  const [requestingService, setRequestingService] = useState<ApiPublicService | null>(null);
+  const [serviceReqMessage, setServiceReqMessage] = useState('');
+  const [serviceReqBudget, setServiceReqBudget]   = useState('');
+  const [sendingServiceReq, setSendingServiceReq] = useState(false);
+  const [serviceReqError, setServiceReqError]     = useState('');
+  const [sentServiceReqIds, setSentServiceReqIds] = useState<Set<string>>(new Set());
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -133,6 +152,32 @@ export default function CreatorDetailScreen() {
       setRequestMsg(t('creatorDetailExtra.messageRequestDefault', { firstName }));
     }
     setShowModal(true);
+  }
+
+  function openServiceRequestModal(service: ApiPublicService) {
+    setServiceReqMessage('');
+    setServiceReqBudget('');
+    setServiceReqError('');
+    setRequestingService(service);
+  }
+
+  async function handleSendServiceRequest() {
+    if (!requestingService || serviceReqMessage.trim().length < 10) return;
+    setSendingServiceReq(true);
+    setServiceReqError('');
+    try {
+      await serviceRequestService.create(
+        requestingService.id,
+        serviceReqMessage.trim(),
+        serviceReqBudget.trim() ? Number(serviceReqBudget) : undefined
+      );
+      setSentServiceReqIds((prev) => new Set(prev).add(requestingService.id));
+      setRequestingService(null);
+    } catch (e) {
+      setServiceReqError(e instanceof Error ? e.message : t('creatorDetailExtra.serviceRequestFailed'));
+    } finally {
+      setSendingServiceReq(false);
+    }
   }
 
   function openChat() {
@@ -185,6 +230,29 @@ export default function CreatorDetailScreen() {
     );
   }
 
+  // Creator has disabled showPublicProfile — the backend only sends
+  // id/fullName/avatarUrl in that case, so bail before reading any other field.
+  if (profile.isPrivate) {
+    return (
+      <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+        <View style={{ backgroundColor: C.surface }}>
+          <View style={s.topBar}>
+            <BackButton fallback="/(business)/explore-creators" />
+          </View>
+          <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
+        </View>
+        <View style={s.centered}>
+          <FontAwesome5 name="lock" solid size={40} color={C.textSecondary} style={s.errorEmoji} />
+          <Text style={[s.errorTitle, { color: C.text }]}>{t('creatorDetailExtra.isPrivateTitle')}</Text>
+          <Text style={[s.errorHint, { color: C.textSecondary }]}>{t('creatorDetailExtra.isPrivateSub')}</Text>
+          <Pressable onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
+            <Text style={[s.retryText, { color: C.brinjal1 }]}>{t('creatorDetailExtra.goBack')}</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const initials = (profile.fullName ?? 'C').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
   const avatarBg = getAvatarBg(allCategories, profile.categories);
   const portfolioLinks = (profile.portfolioLinks ?? []) as { id: string; label: string; url: string }[];
@@ -226,7 +294,13 @@ export default function CreatorDetailScreen() {
           <View style={s.coverTopBar}>
             <BackButton variant="overlay" fallback="/(business)/explore-creators" />
             <View style={s.coverTopTitleRow} />
-            <View style={s.topIconSpacer} />
+            <Pressable
+              style={s.topIconSpacer}
+              onPress={() => setShowReportModal(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t('reportModal.title')}>
+              <FontAwesome5 name="flag" solid size={16} color="#fff" />
+            </Pressable>
           </View>
         </View>
 
@@ -295,6 +369,50 @@ export default function CreatorDetailScreen() {
                 <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.completionRate')}</Text>
               </View>
             </View>
+          </View>
+        )}
+
+        {/* ── Services (§33/34) ── */}
+        {!!profile.services?.length && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionServices')} color={C.textSecondary} />
+            <View style={{ gap: 10 }}>
+              {profile.services.map((svc) => {
+                const requested = sentServiceReqIds.has(svc.id);
+                return (
+                  <View key={svc.id} style={[sv.card, { borderColor: C.border, backgroundColor: C.background }]}>
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <View style={[sv.catChip, { backgroundColor: `${svc.category.color}1A` }]}>
+                          <FontAwesome5 name={svc.category.icon as any} solid size={10} color={svc.category.color} />
+                        </View>
+                        <Text style={[sv.name, { color: C.text }]} numberOfLines={1}>{svc.name}</Text>
+                      </View>
+                      <Text style={[sv.price, { color: C.textSecondary }]}>
+                        {svc.startingPrice != null ? `Rs. ${svc.startingPrice.toLocaleString()}` : t('creatorDetailExtra.servicePriceNegotiable')}
+                        {' · '}{t(`servicesScreen.pricing${PRICING_LABEL_KEY[svc.pricingModel]}`)}
+                      </Text>
+                    </View>
+                    <Pressable
+                      style={[sv.reqBtn, requested ? { backgroundColor: C.background, borderWidth: 1, borderColor: C.border } : { backgroundColor: C.brinjal1 }]}
+                      disabled={requested}
+                      onPress={() => openServiceRequestModal(svc)}>
+                      <Text style={[sv.reqBtnTxt, { color: requested ? C.textSecondary : '#fff' }]}>
+                        {requested ? t('creatorDetailExtra.serviceRequested') : t('creatorDetailExtra.serviceRequestBtn')}
+                      </Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* ── Reviews (§60) — from businesses this provider has worked with ── */}
+        {!!profile.reviews?.length && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionReviews')} color={C.textSecondary} />
+            <ReviewsList reviews={profile.reviews} />
           </View>
         )}
 
@@ -461,17 +579,62 @@ export default function CreatorDetailScreen() {
             <Text style={rm.sendTxt}>{sending ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
           </Pressable>
         }>
-        <TextInput
-          style={[rm.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+        <TextInputWithLabel
+          label={t('creatorDetailExtra.messageRequestPlaceholder')}
           value={requestMsg}
           onChangeText={setRequestMsg}
-          placeholder={t('creatorDetailExtra.messageRequestPlaceholder')}
-          placeholderTextColor={C.textSecondary}
           multiline
           maxLength={500}
         />
         <Text style={[rm.counter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
       </BottomSheet>
+
+      {/* Service request modal (§33/34) */}
+      <BottomSheet
+        visible={!!requestingService}
+        onClose={() => setRequestingService(null)}
+        title={t('creatorDetailExtra.serviceRequestTitle')}
+        subtitle={requestingService?.name}
+        footer={
+          <Pressable
+            style={[
+              rm.sendBtn,
+              { backgroundColor: (sendingServiceReq || serviceReqMessage.trim().length < 10) ? C.border : C.brinjal1 },
+            ]}
+            onPress={handleSendServiceRequest}
+            disabled={sendingServiceReq || serviceReqMessage.trim().length < 10}>
+            <Text style={rm.sendTxt}>{sendingServiceReq ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
+          </Pressable>
+        }>
+        <TextInputWithLabel
+          label={t('creatorDetailExtra.serviceRequestPlaceholder')}
+          value={serviceReqMessage}
+          onChangeText={setServiceReqMessage}
+          multiline
+          maxLength={1000}
+        />
+        <Text style={[rm.counter, { color: C.textSecondary }]}>{serviceReqMessage.length}/1000</Text>
+        <View style={{ marginTop: 12 }}>
+          <TextInputWithLabel
+            label={t('creatorDetailExtra.serviceRequestBudgetLabel')}
+            value={serviceReqBudget}
+            onChangeText={(v) => setServiceReqBudget(v.replace(/[^0-9]/g, ''))}
+            placeholder={t('creatorDetailExtra.serviceRequestBudgetPlaceholder')}
+            keyboardType="number-pad"
+            leftIcon="dollar-sign"
+          />
+        </View>
+        {!!serviceReqError && <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 8 }}>{serviceReqError}</Text>}
+      </BottomSheet>
+
+      {profile && (
+        <ReportModal
+          visible={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          targetType="USER"
+          targetId={profile.userId}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -497,7 +660,7 @@ const s = StyleSheet.create({
   bubble3:    { width: 60,  height: 60,  top: 20,   left: -20  },
   coverTopBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
   coverTopTitleRow: { flex: 1, marginHorizontal: 8 },
-  topIconSpacer: { width: 38, height: 38 },
+  topIconSpacer: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
 
   // Avatar card (floats over cover)
   profileCard: { marginHorizontal: 16, marginTop: -72, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6, ...SHADOW.floating },
@@ -564,8 +727,16 @@ const msgBtn = StyleSheet.create({
 
 // Request modal
 const rm = StyleSheet.create({
-  input:   { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   counter: { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
   sendBtn: { borderRadius: RADIUS.full, height: 52, justifyContent: 'center', alignItems: 'center' },
   sendTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
+});
+
+const sv = StyleSheet.create({
+  card:      { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, padding: 12 },
+  catChip:   { width: 22, height: 22, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  name:      { fontSize: 14, fontFamily: F.semibold, flexShrink: 1 },
+  price:     { fontSize: 12, fontFamily: F.regular, marginTop: 2 },
+  reqBtn:    { borderRadius: RADIUS.sm, paddingHorizontal: 14, paddingVertical: 9 },
+  reqBtnTxt: { fontSize: 13, fontFamily: F.bold },
 });

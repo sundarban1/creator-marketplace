@@ -14,12 +14,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorProfile } from '@/services/creator';
+import { portfolioService, type ApiPortfolioItem } from '@/services/portfolio';
 import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { BackButton } from '@/components/BackButton';
 import { IconButton } from '@/components/IconButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { logger } from '@/utilities/logger';
@@ -50,22 +50,23 @@ function fmtFollowers(n: number): string {
   return n.toString();
 }
 
-function detectPlatform(url: string) {
-  const low = url.toLowerCase();
-  if (low.includes('instagram.com')) return PLATFORM_MAP.instagram;
-  if (low.includes('tiktok.com'))    return PLATFORM_MAP.tiktok;
-  if (low.includes('youtube.com') || low.includes('youtu.be')) return PLATFORM_MAP.youtube;
-  if (low.includes('facebook.com')) return PLATFORM_MAP.facebook;
-  if (low.includes('twitter.com') || low.includes('x.com')) return PLATFORM_MAP.twitter;
-  if (low.includes('linkedin.com')) return PLATFORM_MAP.linkedin;
-  if (low.includes('pinterest.com')) return PLATFORM_MAP.pinterest;
-  if (low.includes('twitch.tv'))    return PLATFORM_MAP.twitch;
-  return { iconName: 'link', color: '#6366F1', platform: 'Link' };
-}
+// Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display).
+// function detectPlatform(url: string) {
+//   const low = url.toLowerCase();
+//   if (low.includes('instagram.com')) return PLATFORM_MAP.instagram;
+//   if (low.includes('tiktok.com'))    return PLATFORM_MAP.tiktok;
+//   if (low.includes('youtube.com') || low.includes('youtu.be')) return PLATFORM_MAP.youtube;
+//   if (low.includes('facebook.com')) return PLATFORM_MAP.facebook;
+//   if (low.includes('twitter.com') || low.includes('x.com')) return PLATFORM_MAP.twitter;
+//   if (low.includes('linkedin.com')) return PLATFORM_MAP.linkedin;
+//   if (low.includes('pinterest.com')) return PLATFORM_MAP.pinterest;
+//   if (low.includes('twitch.tv'))    return PLATFORM_MAP.twitch;
+//   return { iconName: 'link', color: '#6366F1', platform: 'Link' };
+// }
 
-function shortenUrl(url: string): string {
-  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
-}
+// function shortenUrl(url: string): string {
+//   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
+// }
 
 export default function CreatorProfileScreen() {
   const { user, updateUser, logout } = useAuth();
@@ -78,6 +79,7 @@ export default function CreatorProfileScreen() {
   const [avatarUploading, setUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   const [eventCounts, setEventCounts]   = useState({ completed: 0 });
+  const [portfolioItems, setPortfolioItems] = useState<ApiPortfolioItem[]>([]);
 
   useFocusEffect(useCallback(() => {
     // Show the last-known profile immediately (e.g. offline) without
@@ -97,6 +99,9 @@ export default function CreatorProfileScreen() {
           completed: proposals.filter((p) => p.workStatus === 'COMPLETED' && p.paymentStatus === 'RELEASED').length,
         });
       })
+      .catch(() => {});
+    portfolioService.listMine()
+      .then(setPortfolioItems)
       .catch(() => {});
   }, []));
 
@@ -149,7 +154,8 @@ export default function CreatorProfileScreen() {
           handle: extractHandle(url!), url: url!, followers: 0,
         }));
 
-  const portfolioLinks = profile?.portfolioLinks ?? [];
+  // Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display).
+  // const portfolioLinks = profile?.portfolioLinks ?? [];
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -177,7 +183,6 @@ export default function CreatorProfileScreen() {
 
           {/* Top bar */}
           <View style={s.topBar}>
-            <BackButton variant="overlay" />
             <IconButton
               icon="camera"
               variant="overlay"
@@ -252,15 +257,17 @@ export default function CreatorProfileScreen() {
 
           {/* Stats strip */}
           <View style={[s.statsStrip, { borderTopColor: C.border }]}>
-            <View style={s.statItem}>
+            <Pressable
+              style={s.statItem}
+              onPress={() => router.push({ pathname: '/(creator)/proposals', params: { tab: 'accepted' } } as never)}>
               <Text style={[s.statValue, { color: C.text }]}>{eventCounts.completed}</Text>
               <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.completedEvents')}</Text>
-            </View>
+            </Pressable>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
-            <View style={s.statItem}>
+            <Pressable style={s.statItem} onPress={() => router.push('/(creator)/favorite-businesses' as never)}>
               <Text style={[s.statValue, { color: C.text }]}>{favoriteIds.size}</Text>
               <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.savedBrands')}</Text>
-            </View>
+            </Pressable>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
             <View style={s.statItem}>
               <Text style={[s.statValue, { color: C.text }]}>{profile?.savedByBusinessCount ?? 0}</Text>
@@ -268,6 +275,33 @@ export default function CreatorProfileScreen() {
             </View>
           </View>
         </View>
+
+        {/* ── Categories ── */}
+        <SectionCard
+          title={t('profile.contentCategories')}
+          action={{ label: profile?.categories?.length ? t('common.edit') : t('profile.addBtn'), onPress: () => router.push('/(creator)/edit-categories') }}
+          C={C}>
+          {profile?.categories?.length ? (
+            <View style={s.chipWrap}>
+              {profile.categories.map((cat) => {
+                const meta = getCategoryMeta(allCategories, cat);
+                return (
+                  <View key={cat} style={[s.chip, { backgroundColor: C.primaryLight }]}>
+                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                    <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <SectionEmptyState
+              icon="th-large"
+              title={t('profile.noCategoriesYet')}
+              hint={t('profile.categoriesHint')}
+              cta={t('profile.addContentCategories')}
+              onPress={() => router.push('/(creator)/edit-categories')} />
+          )}
+        </SectionCard>
 
         {/* ── Social Accounts ── */}
         <SectionCard
@@ -316,35 +350,53 @@ export default function CreatorProfileScreen() {
           )}
         </SectionCard>
 
-        {/* ── Categories ── */}
+        {/* ── My Portfolio ── */}
         <SectionCard
-          title={t('profile.contentCategories')}
-          action={{ label: profile?.categories?.length ? t('common.edit') : t('profile.addBtn'), onPress: () => router.push('/(creator)/edit-categories') }}
+          title={t('portfolioScreen.title')}
+          action={{
+            label: portfolioItems.length > 0 ? t('profile.manage') : t('portfolioScreen.addItem'),
+            onPress: () => router.push((portfolioItems.length > 0 ? '/(creator)/portfolio' : '/(creator)/portfolio-form') as never),
+          }}
           C={C}>
-          {profile?.categories?.length ? (
-            <View style={s.chipWrap}>
-              {profile.categories.map((cat) => {
-                const meta = getCategoryMeta(allCategories, cat);
-                return (
-                  <View key={cat} style={[s.chip, { backgroundColor: C.primaryLight }]}>
-                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                    <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
-                  </View>
-                );
-              })}
-            </View>
+          {portfolioItems.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.portfolioScroll}>
+              {portfolioItems.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={[s.portfolioTile, { backgroundColor: C.background, borderColor: C.border }]}
+                  onPress={() => router.push('/(creator)/portfolio' as never)}>
+                  {item.mediaUrl ? (
+                    <Image source={{ uri: item.mediaUrl }} style={s.portfolioImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[s.portfolioImage, s.portfolioFallback, { backgroundColor: C.primaryLight }]}>
+                      <FontAwesome5 name="external-link-alt" solid size={18} color={C.brinjal1} />
+                    </View>
+                  )}
+                  {item.mediaType === 'VIDEO' && (
+                    <View style={s.portfolioPlayBadge}>
+                      <FontAwesome5 name="play" solid size={9} color="#fff" />
+                    </View>
+                  )}
+                </Pressable>
+              ))}
+              <Pressable
+                style={[s.portfolioTile, s.portfolioAddTile, { borderColor: C.brinjal1 + '55' }]}
+                onPress={() => router.push('/(creator)/portfolio-form' as never)}>
+                <FontAwesome5 name="plus" solid size={18} color={C.brinjal1} />
+              </Pressable>
+            </ScrollView>
           ) : (
             <SectionEmptyState
-              icon="th-large"
-              title={t('profile.noCategoriesYet')}
-              hint={t('profile.categoriesHint')}
-              cta={t('profile.addContentCategories')}
-              onPress={() => router.push('/(creator)/edit-categories')} />
+              icon="images"
+              title={t('portfolioScreen.emptyTitle')}
+              hint={t('portfolioScreen.emptySub')}
+              cta={t('portfolioScreen.addItem')}
+              onPress={() => router.push('/(creator)/portfolio-form' as never)} />
           )}
         </SectionCard>
 
-        {/* ── Past Work ── */}
-        <SectionCard
+        {/* Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display). */}
+        {/* <SectionCard
           title={t('profile.pastWork')}
           action={{ label: t('profile.addBtn'), onPress: () => router.push('/(creator)/settings?section=past-work' as never) }}
           C={C}>
@@ -391,7 +443,7 @@ export default function CreatorProfileScreen() {
               cta={t('profile.addWorkSample')}
               onPress={() => router.push('/(creator)/settings?section=past-work' as never)} />
           )}
-        </SectionCard>
+        </SectionCard> */}
 
       </ScrollView>
       </MaxWidthContainer>
@@ -434,7 +486,7 @@ const s = StyleSheet.create({
   bubble1:  { width: 160, height: 160, top: -50, right: -30 },
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
-  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
+  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 10 },
 
   // Profile card (floats over cover)
   profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6,
@@ -496,4 +548,13 @@ const s = StyleSheet.create({
   addMoreRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40,
                  borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 11 },
   addMoreText: { fontSize: 13, fontFamily: F.bold },
+
+  // Portfolio preview strip
+  portfolioScroll:   { gap: 10, paddingRight: 4 },
+  portfolioTile:     { width: 76, height: 76, borderRadius: RADIUS.md, borderWidth: 1, overflow: 'hidden' },
+  portfolioImage:    { width: '100%', height: '100%' },
+  portfolioFallback: { justifyContent: 'center', alignItems: 'center' },
+  portfolioPlayBadge:{ position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: RADIUS.full,
+                       backgroundColor: 'rgba(17,24,39,0.65)', justifyContent: 'center', alignItems: 'center' },
+  portfolioAddTile:  { justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderStyle: 'dashed' },
 });

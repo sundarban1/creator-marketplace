@@ -7,6 +7,7 @@ import { CreatorService, exchangeForLongLivedFacebookToken, fetchYoutubeChannel,
 import { PlatformRepository } from '../platform/platform.repository';
 import type { UpdateBusinessProfileInput, AddSocialAccountInput, UpdateSocialAccountInput } from './business.schema';
 import { translateFields, translateMany } from '../../utils/translation';
+import { deriveCityFromLocation } from '../../utils/geo';
 import { analyticsService } from '../analytics/analytics.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
@@ -49,6 +50,16 @@ export class BusinessService {
       await this.repo.setAccountEmail(userId, email);
     }
 
+    // The location picker only hands back a formatted string (no structured
+    // city/district) — derive `city` from it here so businesses are
+    // searchable/browsable by location without a separate settings step,
+    // unless the caller already sent an explicit city (e.g. the
+    // location-privacy settings screen).
+    if (rest.location && rest.city === undefined) {
+      const derivedCity = deriveCityFromLocation(rest.location);
+      if (derivedCity) rest.city = derivedCity;
+    }
+
     const updated = await this.repo.update(userId, rest);
 
     logActivity({ userId, action: ActivityAction.BUSINESS_PROFILE_UPDATED, metadata: { changedFields: Object.keys(rest) } });
@@ -78,8 +89,11 @@ export class BusinessService {
     if (!business.showPublicProfile) return toPrivateBusinessDto(business);
     const dto = toPublicBusinessDto(business);
     const translated = await translateFields(dto, [...BUSINESS_FIELDS], lang);
-    const stats = await analyticsService.getBrandPublicStats(business.userId).catch(() => null);
-    return { ...translated, stats };
+    const [stats, reviews] = await Promise.all([
+      analyticsService.getBrandPublicStats(business.userId).catch(() => null),
+      analyticsService.getReviewsReceived(business.userId).catch(() => []),
+    ]);
+    return { ...translated, stats, reviews };
   }
 
   async uploadPanDoc(userId: string, docUrl: string) {

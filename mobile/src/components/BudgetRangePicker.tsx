@@ -10,7 +10,7 @@ export type BudgetPreset = { key: string; min: number; max: number; label: strin
 // filter in the app (budget, deadline, …), so opening a filter sheet doesn't
 // always mean staring at a full slider before you can do anything.
 export function BudgetRangePicker({
-  visible, presets, min, max, onChange, sliderMin = 0, sliderMax, step = 10, currency = 'Rs', customLabel,
+  visible, presets, min, max, onChange, sliderMin = 0, sliderMax, step = 10, currency = 'Rs', customLabel, showCheck = false,
 }: {
   /** Pass the sheet's own `visible` prop so a stale "custom open" flag from
    *  the previous visit doesn't linger once the sheet is reopened. */
@@ -25,6 +25,8 @@ export function BudgetRangePicker({
   step?: number;
   currency?: string;
   customLabel: string;
+  /** Trailing check-circle on the selected preset — off by default, see FilterChip. */
+  showCheck?: boolean;
 }) {
   const [customOpen, setCustomOpen] = useState(false);
 
@@ -45,6 +47,7 @@ export function BudgetRangePicker({
             label={p.label}
             selected={selectedKey === p.key}
             onPress={() => { onChange(p.min, p.max); setCustomOpen(false); }}
+            showCheck={showCheck}
           />
         ))}
         <FilterChip
@@ -52,6 +55,7 @@ export function BudgetRangePicker({
           icon="sliders-h"
           selected={selectedKey === 'custom'}
           onPress={() => setCustomOpen(true)}
+          showCheck={showCheck}
         />
       </View>
       {showCustom && (

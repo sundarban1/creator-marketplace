@@ -24,8 +24,17 @@ type NavItem = {
 const ACCOUNT_ITEMS: NavItem[] = [
   { iconName: 'share-alt',    labelKey: 'drawer.socialAccounts',    route: '/(creator)/settings?section=social',    color: '#E1306C' },
   { iconName: 'wallet', faName: 'wallet',        labelKey: 'drawer.myWallet',          route: '/(creator)/wallet',                     color: '#16A34A' },
-  { iconName: 'images',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
+  // Hidden from the drawer for now (My Work / past-work portfolio section — not ready to display in the mobile UI).
+  // { iconName: 'images',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
   { iconName: 'gift',   faName: 'gift',          labelKey: 'drawer.referAFriend',      route: '/(creator)/referral',                   color: '#EC4899' },
+  { iconName: 'envelope-open-text', faName: 'envelope-open-text', labelKey: 'drawer.invitations', route: '/(creator)/invitations', color: '#0EA5E9' },
+  { iconName: 'briefcase',   faName: 'briefcase',   labelKey: 'drawer.myServices',        route: '/(creator)/services',                   color: '#7C3AED' },
+  { iconName: 'th-large',    faName: 'th-large',    labelKey: 'drawer.myPortfolio',       route: '/(creator)/portfolio',                  color: '#F59E0B' },
+  // Hidden from the drawer for now (Weekly working-hours/blocked-dates editor — its own standalone route, not a settings section).
+  // { iconName: 'calendar-alt', faName: 'calendar-alt', labelKey: 'drawer.availability',    route: '/(creator)/availability',               color: '#0D9488' },
+  // Hidden from the drawer for now (Public-profile/social-links/contact-details/location visibility
+  // toggles — lives in the shared settings screen's "privacy" section, see renderPrivacy() in settings.tsx).
+  // { iconName: 'eye-slash', faName: 'eye-slash', labelKey: 'drawer.privacy',    route: '/(creator)/settings?section=privacy',   color: '#0D9488' },
   { iconName: 'shield-alt', faName: 'shield-alt', labelKey: 'drawer.security',   route: '/(creator)/settings?section=security',  color: '#3B82F6' },
   { iconName: 'bell',    faName: 'bell',       labelKey: 'drawer.notifications', route: '/(creator)/settings?section=notifications', color: '#D97706' },
   { iconName: 'life-ring', faName: 'life-ring',  labelKey: 'drawer.support',            route: '/(creator)/settings?section=support',   color: '#0891B2' },
@@ -85,7 +94,10 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
             <FontAwesome5 name="chevron-down" solid size={20} color="rgba(255,255,255,0.6)" />
           </Pressable>
 
-          <View style={styles.userRow}>
+          <Pressable
+            style={styles.userRow}
+            hitSlop={4}
+            onPress={() => { onClose(); router.push('/(creator)/(tabs)/profile' as never); }}>
             {user?.avatar ? (
               <Image source={{ uri: user.avatar }} style={styles.avatarCircle} />
             ) : (
@@ -97,7 +109,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
               <Text style={styles.userName} numberOfLines={1}>{displayName}</Text>
               <Text style={styles.userEmail} numberOfLines={1}>{identityLine}</Text>
             </View>
-          </View>
+          </Pressable>
         </View>
 
         {/* Nav */}

@@ -7,10 +7,10 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SearchInput } from '@/components/SearchInput';
 import { BackButton } from '@/components/BackButton';
 import { BusinessFilterModal } from '@/components/BusinessFilterModal';
 import { EntityCard } from '@/components/EntityCard';
@@ -149,22 +149,15 @@ export default function FavoriteBusinessesScreen() {
       {/* Header — back button + search, same row */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('favoriteBrands.title')}>
         <BackButton />
-        <View style={[s.searchBox, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-          <FontAwesome5 name="search" solid size={18} color={C.textSecondary} />
-          <TextInput
-            style={[s.searchInput, { color: C.text }]}
-            placeholder={t('explore.businesses.searchPlaceholder')}
-            placeholderTextColor={C.textSecondary}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-            autoCapitalize="none"
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')} hitSlop={10}>
-              <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
-            </Pressable>
-          )}
+        <View style={[s.searchBox, { flex: 1 }]}>
+          <View style={{ flex: 1 }}>
+            <SearchInput
+              placeholder={t('explore.businesses.searchPlaceholder')}
+              value={search}
+              onChangeText={setSearch}
+              autoCapitalize="none"
+            />
+          </View>
           <Pressable
             style={[
               s.filterBtn,
@@ -291,8 +284,7 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
   header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
-  searchBox:   { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
-  searchInput: { flex: 1, fontSize: 15, fontFamily: F.regular },
+  searchBox:   { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn:   { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate }       from 'react-router-dom';
-import { ChevronDown, ToggleLeft, ToggleRight, Eye, Pencil } from 'lucide-react';
+import { ChevronDown, ToggleLeft, ToggleRight, Eye, Pencil, Trash2 } from 'lucide-react';
 import { DataTable }    from '../components/DataTable';
 import { StatusBadge }  from '../components/StatusBadge';
 import { PageHeader }   from '../components/PageHeader';
@@ -46,6 +46,7 @@ export function Campaigns() {
   const [page, setPage] = useState(1);
   const [editId, setEditId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data, loading, error, refetch } = useApi(() =>
     api.admin.campaigns({
@@ -102,6 +103,25 @@ export function Campaigns() {
       window.alert((e as Error).message ?? 'Failed to update event status.');
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  // Soft delete — the event row stays (audit trail) but every proposal/
+  // requirement/invitation tied to it is force-deleted regardless of status
+  // (accepted, paid, in progress...), so this needs an explicit confirmation.
+  async function handleDelete(row: ApiCampaign) {
+    const confirmed = window.confirm(
+      `Delete "${row.title}"? This permanently removes all of its proposals (accepted, paid, or in progress included) and can't be undone.`
+    );
+    if (!confirmed) return;
+    setDeletingId(row.id);
+    try {
+      await api.admin.deleteCampaign(row.id);
+      refetch();
+    } catch (e) {
+      window.alert((e as Error).message ?? 'Failed to delete event.');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -172,22 +192,23 @@ export function Campaigns() {
     {
       key:    'status',
       header: 'Status',
-      render: (row: ApiCampaign) => <StatusBadge status={mapStatus(row.status)} />,
+      render: (row: ApiCampaign) => <StatusBadge status={row.deletedAt ? 'deleted' : mapStatus(row.status)} />,
     },
     {
       key:    'actions',
       header: 'Actions',
       render: (row: ApiCampaign) => {
-        const canToggle = row.status === 'ACTIVE' || row.status === 'PAUSED';
+        const isDeleted = !!row.deletedAt;
+        const canToggle = !isDeleted && (row.status === 'ACTIVE' || row.status === 'PAUSED');
         return (
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => canToggle && handleToggleActive(row)}
               disabled={!canToggle || togglingId === row.id}
               title={
-                canToggle
-                  ? row.status === 'ACTIVE' ? 'Deactivate' : 'Activate'
-                  : 'Only active or inactive events can be toggled'
+                isDeleted ? 'Event has been deleted'
+                : canToggle ? (row.status === 'ACTIVE' ? 'Deactivate' : 'Activate')
+                : 'Only active or inactive events can be toggled'
               }
               className={`p-1.5 rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 row.status === 'ACTIVE'
@@ -198,7 +219,20 @@ export function Campaigns() {
               {row.status === 'ACTIVE' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
             </button>
             <ActionButton variant="primary" icon={Eye} title="View" onClick={() => navigate(`/campaigns/${row.id}`)} />
-            <ActionButton variant="primary" icon={Pencil} title="Edit" onClick={() => setEditId(row.id)} />
+            <ActionButton
+              variant="primary"
+              icon={Pencil}
+              title={isDeleted ? 'Event has been deleted' : 'Edit'}
+              disabled={isDeleted}
+              onClick={() => setEditId(row.id)}
+            />
+            <ActionButton
+              variant="danger"
+              icon={Trash2}
+              title={isDeleted ? 'Already deleted' : 'Delete'}
+              disabled={isDeleted || deletingId === row.id}
+              onClick={() => handleDelete(row)}
+            />
           </div>
         );
       },

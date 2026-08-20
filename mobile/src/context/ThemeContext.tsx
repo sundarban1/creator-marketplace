@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
-import { COLORS } from '@/utilities/constants';
+import { COLORS, BUSINESS_COLORS } from '@/utilities/constants';
+import { useAuth } from '@/context/AuthContext';
 
 // brinjal1/brinjal2 are hue-matched to the light theme's brinjal (#4F46E5) —
 // lightened for legibility against a dark surface, rather than an unrelated violet.
@@ -23,6 +24,16 @@ export const DARK_COLORS: typeof COLORS = {
   error:       '#F87171',
   badgeFeatured:'#312E81',
   badgeNew:    '#064E3B',
+};
+
+// Dark-mode counterpart of BUSINESS_COLORS (@/utilities/constants) — same
+// green hue as the light theme's business primary, lightened for legibility
+// against a dark surface, matching how DARK_COLORS relates to COLORS above.
+export const BUSINESS_DARK_COLORS: typeof COLORS = {
+  ...DARK_COLORS,
+  brinjal1:    '#4ADE80',
+  brinjal2:    '#22C55E',
+  primaryLight:'#14291C',
 };
 
 type AppThemeContextType = {
@@ -50,5 +61,8 @@ export function useIsDark() {
 
 export function useAppColors(): typeof COLORS {
   const { isDark } = useContext(AppThemeContext);
+  const { user } = useAuth();
+  const isBusiness = user?.role === 'BUSINESS';
+  if (isBusiness) return isDark ? BUSINESS_DARK_COLORS : BUSINESS_COLORS;
   return isDark ? DARK_COLORS : COLORS;
 }

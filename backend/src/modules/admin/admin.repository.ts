@@ -34,6 +34,14 @@ const DEFAULTS: Record<string, unknown> = {
   // CampaignService.getFeaturedQuota. Lowercased on comparison.
   'featuredEvent.unlimitedEmails': [] as string[],
 
+  // ── Marketplace ──────────────────────────────────────────────────────────
+  // §79 — the current launch-focus city. Recommendations (getRecommendedCreators/
+  // getRecommendedBusinesses) rank a same-city match above same-district above
+  // nationwide; this is the only place that city is ever named, so expanding
+  // beyond it later is an admin setting change, never a code change. Empty
+  // string = no priority city (falls back to plain distance-based sorting).
+  'marketplace.launchPriorityCity': 'Itahari',
+
   // ── Public contact info (landing page footer) ──────────────────────────
   // Empty string = not set, so the landing footer hides that item entirely
   // rather than showing a dead link. Contact email reuses
@@ -175,7 +183,15 @@ export class AdminRepository {
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         include: {
           user:   { select: { id: true, email: true, phone: true, isEmailVerified: true, isActive: true, createdAt: true } },
-          _count: { select: { applications: true } },
+          // Provider marketplace additions — services/portfolio are new,
+          // small-cardinality relations (a handful of rows per provider), so
+          // eagerly including them on the paginated list is cheap and avoids
+          // a second per-row fetch when the admin opens the detail modal.
+          services: {
+            select: { id: true, name: true, pricingModel: true, startingPrice: true, status: true, category: { select: { name: true } } },
+            orderBy: { createdAt: 'desc' },
+          },
+          _count: { select: { applications: true, services: true, portfolioItems: true } },
         },
       }),
       prisma.creatorProfile.count({ where }),
@@ -260,6 +276,15 @@ export class AdminRepository {
               },
             },
           },
+        },
+        // Multi-role campaigns (§ CampaignRequirement) — empty for the simple
+        // single-category campaigns every existing campaign uses.
+        requirements: {
+          include: {
+            category: { select: { id: true, name: true, icon: true, color: true } },
+            _count: { select: { applications: { where: { status: 'ACCEPTED' } } } },
+          },
+          orderBy: { createdAt: 'asc' },
         },
         _count: { select: { applications: true } },
       },
@@ -365,6 +390,78 @@ export class AdminRepository {
     });
   }
 
+  // §74 — the dedicated Verification Dashboard's queues. Separate from
+  // getAllCreators/getAllBusinesses (which stay general-purpose/unfiltered)
+  // rather than bolting a status filter onto those, so the existing
+  // Creators/Businesses admin pages are untouched by this.
+  async getProviderVerificationQueue(page: number, limit: number) {
+    const where = { OR: [{ citizenshipStatus: 'PENDING' as const }, { panDocStatus: 'PENDING' as const }] };
+    const [items, total] = await Promise.all([
+      prisma.creatorProfile.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: [{ updatedAt: 'asc' }],
+        select: {
+          id: true, userId: true, fullName: true, avatarUrl: true,
+          citizenshipDocUrl: true, citizenshipStatus: true, panDocUrl: true, panDocStatus: true,
+          createdAt: true, updatedAt: true,
+          user: { select: { email: true, phone: true } },
+        },
+      }),
+      prisma.creatorProfile.count({ where }),
+    ]);
+    return { items, total };
+  }
+
+  async getBusinessVerificationQueue(page: number, limit: number) {
+    const where = { OR: [{ panDocStatus: 'PENDING' as const }, { companyRegDocStatus: 'PENDING' as const }] };
+    const [items, total] = await Promise.all([
+      prisma.businessProfile.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: [{ updatedAt: 'asc' }],
+        select: {
+          id: true, userId: true, businessName: true, logoUrl: true,
+          panDocUrl: true, panDocStatus: true, companyRegDocUrl: true, companyRegDocStatus: true,
+          createdAt: true, updatedAt: true,
+          user: { select: { email: true, phone: true } },
+        },
+      }),
+      prisma.businessProfile.count({ where }),
+    ]);
+    return { items, total };
+  }
+
+  // Mirrors rejectBusinessVerification — providers never had a reason-tracked
+  // reject path before (only the per-document approve/reject toggle), even
+  // though CreatorProfile.verificationRejectReason/verificationRejectedAt
+  // have existed since the Provider marketplace schema pivot and the mobile
+  // settings screen already displays whatever ends up in that field.
+  async rejectCreatorVerification(creatorProfileId: string, reason: string) {
+    const existing = await prisma.creatorProfile.findUnique({
+      where:  { id: creatorProfileId },
+      select: { citizenshipDocUrl: true, panDocUrl: true },
+    });
+    const data: {
+      isVerified: boolean; verificationRejectReason: string; verificationRejectedAt: Date;
+      citizenshipStatus?: 'REJECTED'; panDocStatus?: 'REJECTED';
+    } = { isVerified: false, verificationRejectReason: reason, verificationRejectedAt: new Date() };
+    if (existing?.citizenshipDocUrl) data.citizenshipStatus = 'REJECTED';
+    if (existing?.panDocUrl) data.panDocStatus = 'REJECTED';
+    return prisma.creatorProfile.update({
+      where: { id: creatorProfileId },
+      data,
+      select: {
+        id: true, userId: true, fullName: true, isVerified: true,
+        citizenshipDocUrl: true, citizenshipStatus: true, panDocUrl: true, panDocStatus: true,
+        verificationRejectReason: true,
+        user: { select: { email: true, phone: true } },
+      },
+    });
+  }
+
   async getUserById(userId: string) {
     const user = await prisma.user.findUnique({
       where:  { id: userId },
@@ -411,6 +508,53 @@ export class AdminRepository {
     return prisma.campaign.update({
       where: { id: campaignId },
       data:  { status: 'ACTIVE' },
+    });
+  }
+
+  // Applications with an ACCEPTED status are the only ones worth notifying a
+  // creator about before wiping them (see softDeleteCampaignCascade) — a
+  // PENDING/SHORTLISTED/REJECTED/WITHDRAWN/EXPIRED proposal never became a
+  // real engagement, so silently disappearing it needs no notice.
+  async findCampaignForDeletion(campaignId: string) {
+    return prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: {
+        id: true,
+        title: true,
+        deletedAt: true,
+        applications: {
+          where: { status: 'ACCEPTED' },
+          select: { creator: { select: { userId: true } } },
+        },
+      },
+    });
+  }
+
+  // Admin-only force delete — soft-deletes the Campaign row (kept for audit,
+  // see its schema comment) but hard-deletes every Application/
+  // CampaignRequirement/CampaignInvitation tied to it, regardless of status
+  // (an ACCEPTED/PAID/IN_PROGRESS proposal is removed exactly like a PENDING
+  // one — no guard, unlike setCampaignStatus('CLOSED') above). Application's
+  // own children (Review/RevisionNote/Contract/PaymentTransaction) already
+  // cascade at the DB level via their onDelete: Cascade FK to Application, so
+  // deleting Applications alone is enough to clean those up too.
+  async softDeleteCampaignCascade(campaignId: string) {
+    return prisma.$transaction(async (tx) => {
+      const [applications, requirements, invitations] = await Promise.all([
+        tx.application.deleteMany({ where: { campaignId } }),
+        tx.campaignRequirement.deleteMany({ where: { campaignId } }),
+        tx.campaignInvitation.deleteMany({ where: { campaignId } }),
+      ]);
+      const campaign = await tx.campaign.update({
+        where: { id: campaignId },
+        data:  { deletedAt: new Date() },
+      });
+      return {
+        campaign,
+        applicationsDeleted: applications.count,
+        requirementsDeleted: requirements.count,
+        invitationsDeleted:  invitations.count,
+      };
     });
   }
 
@@ -591,5 +735,16 @@ export class AdminRepository {
     ]);
 
     return { logs, total };
+  }
+
+  // AuditLog.userId/performedBy are bare strings (no Prisma relation — same
+  // "no FK, joined in application code" pattern as CreatorAnalytics), so the
+  // web audit log page needs this to turn them into readable emails.
+  async getUserEmailsByIds(userIds: string[]) {
+    if (userIds.length === 0) return [];
+    return prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true },
+    });
   }
 }

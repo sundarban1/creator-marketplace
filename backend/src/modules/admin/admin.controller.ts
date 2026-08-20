@@ -238,6 +238,33 @@ export async function rejectCampaign(req: Request, res: Response, next: NextFunc
   }
 }
 
+// DELETE /api/admin/campaigns/:id — soft-deletes the event, force-cascading
+// its applications/requirements/invitations regardless of status (see
+// AdminService.deleteCampaign).
+export async function deleteCampaign(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const result = await service.deleteCampaign(id!);
+
+    logActivity({
+      userId:     req.user!.id,
+      action:     ActivityAction.CAMPAIGN_DELETED_BY_ADMIN,
+      entityType: EntityType.CAMPAIGN,
+      entityId:   id,
+      metadata: {
+        title:               result.title,
+        applicationsDeleted: result.applicationsDeleted,
+        requirementsDeleted: result.requirementsDeleted,
+        invitationsDeleted:  result.invitationsDeleted,
+      },
+    });
+
+    return success(res, result.campaign, 'Event deleted');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ── Settings ───────────────────────────────────────────────────────────────────
 
 // GET /api/admin/settings
@@ -388,6 +415,41 @@ export async function setBusinessDocumentStatus(req: Request, res: Response, nex
     if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', 400);
     const updated = await service.setBusinessDocumentStatus(id!, doc, approved);
     return success(res, updated, 'Document status updated');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/verification/providers
+export async function getProviderVerificationQueue(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePagination(req);
+    const { items, total } = await service.getProviderVerificationQueue(page, limit);
+    return paginated(res, items, total, page, limit);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/verification/businesses
+export async function getBusinessVerificationQueue(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePagination(req);
+    const { items, total } = await service.getBusinessVerificationQueue(page, limit);
+    return paginated(res, items, total, page, limit);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/admin/creators/:id/reject
+export async function rejectCreator(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id }     = req.params;
+    const { reason } = req.body as { reason: string };
+    if (!reason?.trim()) throw new AppError('reason is required', 400);
+    const updated = await service.rejectCreator(id!, reason.trim(), req.user!.id);
+    return success(res, updated, 'Creator verification rejected');
   } catch (err) {
     next(err);
   }

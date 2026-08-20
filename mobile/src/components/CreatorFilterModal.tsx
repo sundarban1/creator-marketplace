@@ -71,14 +71,16 @@ type Props = {
   visible: boolean;
   temp: CreatorFilterState;
   setTemp: (f: CreatorFilterState) => void;
-  availableCategories: string[];
+  /** Omit (or pass []) when category selection lives elsewhere on the page
+   *  (e.g. a pill row above the list) — the section just doesn't render. */
+  availableCategories?: string[];
   onApply: () => void;
   onReset: () => void;
   onClose: () => void;
 };
 
 export function CreatorFilterModal({
-  visible, temp, setTemp, availableCategories,
+  visible, temp, setTemp, availableCategories = [],
   onApply, onReset, onClose,
 }: Props) {
   const C = useAppColors();
@@ -172,32 +174,6 @@ export function CreatorFilterModal({
           customLabel={t('filterModal.customLabel')}
         />
       </View>
-
-      {/* Platform — sourced from the admin platform catalog so every supported
-          platform is always selectable, not just ones a creator already connected. */}
-      {allPlatforms.length > 0 && (
-        <View>
-          <FilterSectionHeader
-            icon="mobile-alt"
-            label={t('explore.platform')}
-            hint={temp.platforms.length > 0 ? t('filterModal.selectedCount', { count: temp.platforms.length }) : undefined}
-          />
-          <View style={s.chips}>
-            {allPlatforms.map((p) => {
-              const sel = temp.platforms.includes(p.key);
-              return (
-                <Pressable
-                  key={p.key}
-                  onPress={() => set('platforms', toggle(temp.platforms, p.key))}
-                  style={[s.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                  <FontAwesome5 name={p.icon} size={13} color={sel ? C.brinjal1 : p.color} />
-                  <Text style={[s.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{p.name}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
 
       {/* Location — kept last */}
       <View>

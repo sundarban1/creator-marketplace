@@ -73,7 +73,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
 const TOKENS = [
   'creatorName', 'businessName', 'campaignTitle', 'effectiveDate', 'acceptanceDate', 'deadline',
   'price', 'deliverables', 'timeline', 'platforms', 'contentGuidelines',
-  'approvalRequirements', 'location', 'platformCommission',
+  'approvalRequirements', 'location', 'platformCommission', 'role', 'deliveryFormat',
 ];
 
 export function ContractTemplateEditor() {

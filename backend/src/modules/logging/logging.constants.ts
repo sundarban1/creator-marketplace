@@ -19,6 +19,7 @@ export const ActivityAction = {
   ACCOUNT_VERIFIED:           'account.verified',
   CAMPAIGN_EXPIRED:           'campaign.expired',
   APPLICATION_EXPIRED:        'application.expired',
+  CAMPAIGN_DELETED_BY_ADMIN:  'campaign.deleted_by_admin',
 } as const;
 
 export const AuditAction = {
@@ -30,6 +31,7 @@ export const AuditAction = {
   ACCOUNT_SUSPENDED:        'account.suspended',
   ACCOUNT_REACTIVATED:      'account.reactivated',
   ACCOUNT_DELETED_BY_ADMIN: 'account.deleted_by_admin',
+  REPORT_REVIEWED:          'report.reviewed',
 } as const;
 
 export const EntityType = {

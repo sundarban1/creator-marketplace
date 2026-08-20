@@ -1,12 +1,26 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, MapPin, Phone, Mail } from 'lucide-react';
-import { fadeUp, stagger, VP } from '../lib/motion';
+import { ArrowUpRight, Mail, MapPin, Phone } from 'lucide-react';
+import { FaFacebook, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6';
+import { fadeUp, stagger, VP, PILL_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
 import { useSiteInfo } from '../hooks/useSiteInfo';
+import { useComingSoon } from '../hooks/useComingSoon';
 import { ContactForm } from '../components/ContactForm';
+import { AppStoreBadges } from '../components/AppStoreBadges';
+import { ComingSoonBadge } from '../components/ComingSoonBadge';
+import { useLenisScrollOptional } from '../hooks/useLenis';
+
+// Same brand colors as SocialRail — this is the compact inline counterpart
+// shown in the footer itself, not a replacement for that fixed side rail.
+const SOCIAL_ICONS = [
+  { key: 'facebook' as const, Icon: FaFacebook, label: 'Facebook', color: '#1877F2' },
+  { key: 'instagram' as const, Icon: FaInstagram, label: 'Instagram', color: '#E1306C' },
+  { key: 'tiktok' as const, Icon: FaTiktok, label: 'TikTok', color: '#000000' },
+  { key: 'youtube' as const, Icon: FaYoutube, label: 'YouTube', color: '#FF0000' },
+];
 
 // Same gradient-underline-sweep hover used by the main nav links (LandingNav) —
 // reused here so every text link on the page commits to one hover language
@@ -27,10 +41,62 @@ function FooterLink({ to, children }: { to: string; children: React.ReactNode })
   );
 }
 
+const ANCHOR_LINK_CLASSES =
+  'group relative inline-flex w-fit items-center gap-1 py-0.5 text-left text-ink-soft transition-colors duration-300 hover:text-ink dark:text-white/75 dark:hover:text-white';
+
+// Same visual language as FooterLink but for in-page section anchors (the
+// "Discover" column's People/Services/Opportunities/Events) rather than
+// routed content pages — those don't have dedicated pages of their own yet.
+//
+// LandingFooter itself renders on two kinds of routes: the single-page home
+// route (wrapped in LenisProvider, where these ids actually exist on the
+// page) and standalone/content routes like /privacy or /content-creators
+// (no LenisProvider, and no #possibilities etc. on that page at all). Outside
+// the provider this falls back to a real navigation to `/#id` instead of
+// calling the Lenis-only scrollTo — that used to throw and crash the whole
+// page (caught by the ErrorBoundary as "Something went wrong"), which is why
+// every footer link looked broken on any page other than the homepage.
+function FooterAnchorLink({ id, children }: { id: string; children: React.ReactNode }) {
+  const lenis = useLenisScrollOptional();
+
+  if (!lenis) {
+    return (
+      <Link to={`/#${id}`} className={ANCHOR_LINK_CLASSES}>
+        <span>{children}</span>
+        <span
+          aria-hidden
+          className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
+        />
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={() => lenis.scrollTo(`#${id}`)} className={ANCHOR_LINK_CLASSES}>
+      <span>{children}</span>
+      <span
+        aria-hidden
+        className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
+      />
+    </button>
+  );
+}
+
+function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <motion.div variants={fadeUp}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white/40">{title}</p>
+      <nav className="mt-4 flex flex-col gap-2.5 text-sm">{children}</nav>
+    </motion.div>
+  );
+}
+
 export function LandingFooter() {
   const { d } = useLandingLanguage();
   const { theme } = useLandingTheme();
   const siteInfo = useSiteInfo();
+  const comingSoon = useComingSoon();
+  const activeSocials = SOCIAL_ICONS.filter(({ key }) => siteInfo?.social[key]);
 
   return (
     <footer id={SECTION_IDS.contact} className="relative bg-paper py-16 text-ink dark:bg-ink dark:text-white">
@@ -71,6 +137,24 @@ export function LandingFooter() {
               </motion.div>
             )}
 
+            {activeSocials.length > 0 && (
+              <motion.div variants={fadeUp} className="mt-6 flex items-center gap-2.5">
+                {activeSocials.map(({ key, Icon, label, color }) => (
+                  <motion.a
+                    key={key}
+                    href={siteInfo!.social[key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    whileHover={PILL_HOVER}
+                    style={{ color }}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white transition-colors dark:border-white/10 dark:bg-ink-elevated"
+                  >
+                    <Icon size={14} />
+                  </motion.a>
+                ))}
+              </motion.div>
+            )}
           </motion.div>
 
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp}>
@@ -83,28 +167,54 @@ export function LandingFooter() {
           </motion.div>
         </div>
 
-        {/* Internal-linking cluster for the SEO content pages — without this,
-            they'd be orphan pages reachable only by direct URL/search, which
-            both hurts their own crawlability and wastes the link equity a
-            footer on every page could otherwise pass to them. */}
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mt-14 border-t border-ink/10 pt-10 dark:border-white/10">
-          <motion.p variants={fadeUp} className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white/40">Explore Kolab</motion.p>
-          <motion.nav aria-label="More on Kolab" variants={fadeUp} className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+        {/* Nav columns + app download — folds the internal-linking cluster for
+            the SEO content pages (so they stay crawlable/indexable instead of
+            orphan pages reachable only by direct URL) into a labeled layout
+            instead of one flat unlabeled grid. */}
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={VP}
+          variants={stagger(0.08)}
+          className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 border-t border-ink/10 pt-10 dark:border-white/10 sm:grid-cols-3 lg:grid-cols-5"
+        >
+          <FooterColumn title={d.footer.columns.discover}>
+            <FooterAnchorLink id={SECTION_IDS.possibilities}>{d.possibilities.cards.people.title}</FooterAnchorLink>
+            <FooterAnchorLink id={SECTION_IDS.categories}>{d.possibilities.cards.services.title}</FooterAnchorLink>
+            <FooterAnchorLink id={SECTION_IDS.opportunities}>{d.possibilities.cards.opportunities.title}</FooterAnchorLink>
+            <FooterAnchorLink id={SECTION_IDS.opportunities}>{d.possibilities.cards.events.title}</FooterAnchorLink>
+          </FooterColumn>
+
+          <FooterColumn title={d.footer.columns.forCreators}>
             <FooterLink to="/creator-marketplace-nepal">Creator Marketplace Nepal</FooterLink>
             <FooterLink to="/content-creators">For Creators</FooterLink>
-            <FooterLink to="/brands">For Brands</FooterLink>
             <FooterLink to="/influencers">Influencers</FooterLink>
-            <FooterLink to="/find-campaigns">Find Campaigns</FooterLink>
-            <FooterLink to="/influencer-marketing-nepal">Influencer Marketing</FooterLink>
-            <FooterLink to="/brand-collaboration-nepal">Brand Collaboration</FooterLink>
             <FooterLink to="/tiktok-creators">TikTok Creators</FooterLink>
             <FooterLink to="/instagram-creators">Instagram Creators</FooterLink>
             <FooterLink to="/youtube-creators">YouTube Creators</FooterLink>
             <FooterLink to="/facebook-creators">Facebook Creators</FooterLink>
+          </FooterColumn>
+
+          <FooterColumn title={d.footer.columns.forBusinesses}>
+            <FooterLink to="/brands">For Brands</FooterLink>
+            <FooterLink to="/find-campaigns">Find Campaigns</FooterLink>
+            <FooterLink to="/influencer-marketing-nepal">Influencer Marketing</FooterLink>
+            <FooterLink to="/brand-collaboration-nepal">Brand Collaboration</FooterLink>
             <FooterLink to="/paid-collaborations-nepal">Paid Collaborations</FooterLink>
+          </FooterColumn>
+
+          <FooterColumn title={d.footer.columns.company}>
             <FooterLink to="/industries-nepal">Browse by Industry</FooterLink>
             <FooterLink to="/cities-nepal">Browse by City</FooterLink>
-          </motion.nav>
+            <FooterLink to="/support">{d.footer.support}</FooterLink>
+            <FooterLink to="/privacy">{d.footer.privacy}</FooterLink>
+            <FooterLink to="/terms">{d.footer.terms}</FooterLink>
+          </FooterColumn>
+
+          <motion.div variants={fadeUp}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white/40">{d.footer.downloadApp}</p>
+            <div className="mt-4">{comingSoon ? <ComingSoonBadge /> : <AppStoreBadges />}</div>
+          </motion.div>
         </motion.div>
 
         <div className="mt-10 flex flex-col-reverse items-center justify-between gap-4 border-t border-ink/10 pt-6 dark:border-white/10 sm:flex-row">

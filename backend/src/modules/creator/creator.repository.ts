@@ -104,6 +104,9 @@ export class CreatorRepository {
         location: true, categories: true, isVerified: true,
         citizenshipStatus: true,
         locationLat: true, locationLng: true,
+        // §79 — city/district, used to tier recommendations against the
+        // admin-configured launch-priority city (see getRecommendedForCampaign).
+        city: true, district: true,
         prefBudgetMin: true, prefBudgetMax: true,
         socialAccounts: { select: { platform: true, followers: true } },
         user: { select: { isEmailVerified: true, isPhoneVerified: true } },
@@ -156,6 +159,15 @@ export class CreatorRepository {
         bio: true,
         avatarUrl: true,
         location: true,
+        province: true,
+        district: true,
+        city: true,
+        area: true,
+        address: true,
+        locationVisibility: true,
+        showPublicProfile: true,
+        hideContactDetails: true,
+        hideSocialLinks: true,
         categories: true,
         isVerified: true,
         citizenshipStatus: true,
@@ -203,6 +215,11 @@ export class CreatorRepository {
     categories:  string[];
     nearbyRadiusKm:        number;
     nearbyUseHomeLocation: boolean;
+    providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY';
+    showPublicProfile:  boolean;
+    hideContactDetails: boolean;
+    hideSocialLinks:    boolean;
+    locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
   }>) {
     return prisma.creatorProfile.update({ where: { userId }, data });
   }
@@ -378,5 +395,56 @@ export class CreatorRepository {
       pendingEarnings:   pending._sum.proposedRate  ?? 0,
       totalApplications: total,
     };
+  }
+
+  // ── Availability ──────────────────────────────────────────────────────────
+
+  async updateAvailabilityStatus(userId: string, status: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE') {
+    return prisma.creatorProfile.update({ where: { userId }, data: { availabilityStatus: status } });
+  }
+
+  async getAvailabilitySchedule(creatorProfileId: string) {
+    return prisma.availabilitySchedule.findMany({
+      where: { creatorProfileId },
+      orderBy: { dayOfWeek: 'asc' },
+    });
+  }
+
+  // Full replace rather than per-day upsert — the client always submits the
+  // complete week, so this avoids leaving stale days behind when one is removed.
+  async replaceAvailabilitySchedule(
+    creatorProfileId: string,
+    days: { dayOfWeek: number; availableFrom: string; availableUntil: string }[],
+  ) {
+    return prisma.$transaction([
+      prisma.availabilitySchedule.deleteMany({ where: { creatorProfileId } }),
+      prisma.availabilitySchedule.createMany({
+        data: days.map((d) => ({ creatorProfileId, ...d })),
+      }),
+    ]);
+  }
+
+  // ── Invitations ───────────────────────────────────────────────────────────
+
+  async findInvitations(creatorProfileId: string) {
+    return prisma.campaignInvitation.findMany({
+      where: { creatorId: creatorProfileId },
+      include: { campaign: true, business: { select: { id: true, businessName: true, logoUrl: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findInvitationById(id: string) {
+    return prisma.campaignInvitation.findUnique({
+      where: { id },
+      include: { campaign: true, business: { select: { id: true, userId: true, businessName: true } } },
+    });
+  }
+
+  async respondToInvitation(id: string, status: 'ACCEPTED' | 'DECLINED') {
+    return prisma.campaignInvitation.update({
+      where: { id },
+      data: { status, respondedAt: new Date() },
+    });
   }
 }

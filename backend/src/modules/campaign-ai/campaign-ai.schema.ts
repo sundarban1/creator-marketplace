@@ -47,27 +47,54 @@ const deliverablesSchema = z.object(
   Object.fromEntries(DELIVERABLE_KEYS.map((k) => [k, z.number().int().min(0).max(10).default(0)])) as Record<(typeof DELIVERABLE_KEYS)[number], z.ZodDefault<z.ZodNumber>>,
 ).refine((d) => Object.values(d).some((n) => n > 0), { message: 'At least one deliverable count must be > 0' });
 
-// Kept in sync with BENEFITS in mobile create-campaign.tsx — the Creator Benefits
-// chip toggle list only recognizes these exact labels.
+// Same shape as deliverablesSchema but WITHOUT the "at least one > 0" refine — used for
+// per-role requirements, where a non-Content-Creator role (Model, Photographer, DJ, ...)
+// legitimately has an all-zero deliverables object and carries its content ask in
+// `description` instead (see aiRequirementSchema below).
+const requirementDeliverablesSchema = z.object(
+  Object.fromEntries(DELIVERABLE_KEYS.map((k) => [k, z.number().int().min(0).max(10).default(0)])) as Record<(typeof DELIVERABLE_KEYS)[number], z.ZodDefault<z.ZodNumber>>,
+);
+
+// Kept in sync with OFFERING_OPTIONS in mobile create-campaign.tsx — the
+// "What are you offering?" chip list (Free Invitation flow + the legacy Open
+// Event editor's Creator Benefits section) only recognizes these exact labels.
 export const BENEFIT_OPTIONS = [
-  'Free food & drinks', 'Free product / service', 'Event access',
-  'Gift hampers', 'Networking opportunities', 'Future collaboration',
-  'Skill Workshops', 'Brand Networking', 'Freebies & PR Packages', 'Community & Culture',
+  'Free Event Access', 'Food & Drinks', 'Free Products / Gifts',
+  'Free Service / Experience', 'Product Launch / Preview', 'Other',
 ] as const;
 
-// Shown to the AI so it understands what each benefit category actually means —
-// kept in sync with the descriptions surfaced in the mobile Creator Benefits section.
+// Shown to the AI so it understands what each offering category actually means —
+// kept in sync with the descriptions surfaced in the mobile UI.
 export const BENEFIT_DESCRIPTIONS: Record<(typeof BENEFIT_OPTIONS)[number], string> = {
-  'Free food & drinks': 'Complimentary food and beverages at the event.',
-  'Free product / service': 'A free sample or trial of the brand\'s product or service.',
-  'Event access': 'Entry/admission to the event itself.',
-  'Gift hampers': 'A curated take-home gift bag or hamper.',
-  'Networking opportunities': 'Chances to meet and connect with other creators and the brand team.',
-  'Future collaboration': 'Potential for further paid work or partnership down the line.',
-  'Skill Workshops': 'Free masterclasses on brand-building, mobile editing, financial literacy, and AI tools.',
-  'Brand Networking': 'Direct pitching sessions and meetups with corporate agencies, product sponsors, and local businesses.',
-  'Freebies & PR Packages': 'Complimentary trial products, merchandise, and digital partnerships from major firms.',
-  'Community & Culture': 'Live music festival setups, creator zones, and panel talks with prominent local figures.',
+  'Free Event Access': 'Entry/admission to the event itself.',
+  'Food & Drinks': 'Complimentary food and beverages at the event.',
+  'Free Products / Gifts': 'A free sample, trial product, or take-home gift.',
+  'Free Service / Experience': 'A free session, treatment, or hands-on experience with the brand\'s service.',
+  'Product Launch / Preview': 'Early or exclusive access to a new product or menu before public release.',
+  'Other': 'Something else the business is offering that doesn\'t fit the other categories.',
+};
+
+// Kept in sync with EXCHANGE_TYPES in mobile create-campaign.tsx — captures what the
+// business wants back from attendees in exchange for the free experience (as opposed
+// to `benefits`, which captures what the business is offering).
+export const EXCHANGE_OPTIONS = [
+  'Social media post', 'Reel / short video', 'Video content', 'Photos', 'Story mention',
+  'Honest review', 'Event promotion (pre-event post)', 'Mention / tag the business',
+  'Just attend & share organically', 'Other',
+] as const;
+
+// Shown to the AI so it understands what each exchange option actually means.
+export const EXCHANGE_DESCRIPTIONS: Record<(typeof EXCHANGE_OPTIONS)[number], string> = {
+  'Social media post': 'A dedicated feed post about the event or business.',
+  'Reel / short video': 'A short-form vertical video (Reel/TikTok-style) about the experience.',
+  'Video content': 'Longer-form video content, e.g. a vlog or YouTube segment.',
+  'Photos': 'Photos shared publicly of the event or business.',
+  'Story mention': 'A mention of the event or business in an ephemeral story.',
+  'Honest review': 'A genuine written or spoken review of the experience.',
+  'Event promotion (pre-event post)': 'A post made before the event to help promote attendance.',
+  'Mention / tag the business': 'Tagging or naming the business in any content posted.',
+  'Just attend & share organically': 'No specific content is required — attending and sharing naturally if they wish is enough.',
+  'Other': 'Some other ask not covered by the options above.',
 };
 
 // Field keys the AI is allowed to flag as "not confident" for OPEN_EVENT drafts.
@@ -81,11 +108,46 @@ export const aiEventDraftSchema = z.object({
   platform: z.string().min(1),
   secondaryPlatforms: z.array(z.string()).max(3).default([]),
   benefits: z.array(z.enum(BENEFIT_OPTIONS)).min(1).max(6),
+  exchangeType: z.array(z.enum(EXCHANGE_OPTIONS)).min(1).max(6),
+  expectedContent: z.string().max(300).default(''),
   capacity: z.number().int().min(1).max(500),
   location: z.string().max(120).nullable().default(null),
   needsInput: z.array(z.enum(EVENT_NEEDS_INPUT_FIELDS)).max(2).default([]),
 });
 export type AiEventDraft = z.infer<typeof aiEventDraftSchema>;
+
+// One role the AI inferred from the brief when it clearly asks for multiple
+// distinct provider types/counts (e.g. "two TikTok creators and a photographer")
+// — mirrors campaignRequirementSchema in campaign.schema.ts, except `category`
+// is a free-text name here (matched against real CREATOR categories after the
+// model responds, same fuzzy-match step the top-level category/platform go
+// through) rather than an already-resolved categoryId.
+const aiRequirementSchema = z.object({
+  category: z.string().min(1),
+  quantity: z.number().int().positive().max(20),
+  budgetType: z.enum(['FIXED', 'RANGE', 'NEGOTIABLE']).default('FIXED'),
+  budgetFixed: z.number().positive().optional(),
+  budgetMin: z.number().min(0).optional(),
+  budgetMax: z.number().min(0).optional(),
+  // This role's own content ask — same shape/keys as the top-level
+  // `deliverables` below, but scoped to what THIS provider type should
+  // produce (e.g. a DJ role gets EVENT_COVERAGE_VIDEO, a photographer gets
+  // PHOTO_POST), not the campaign-wide default. Only meaningful for a
+  // Content Creator role — other roles leave this all-zero and use
+  // `description` instead.
+  deliverables: requirementDeliverablesSchema,
+  // Free-text brief of what THIS role should actually do — filled for every
+  // role EXCEPT Content Creator (which uses `deliverables` instead). Empty
+  // string for Content Creator roles.
+  description: z.string().max(300).default(''),
+}).refine((r) => r.budgetType !== 'FIXED' || (r.budgetFixed != null && r.budgetFixed > 0), {
+  message: 'budgetFixed is required when budgetType is FIXED',
+  path: ['budgetFixed'],
+}).refine((r) => r.budgetType !== 'RANGE' || (r.budgetMin != null && r.budgetMax != null && r.budgetMax >= r.budgetMin), {
+  message: 'budgetMin and budgetMax are required when budgetType is RANGE',
+  path: ['budgetMax'],
+});
+export type AiRequirementDraft = z.infer<typeof aiRequirementSchema>;
 
 export const aiCampaignDraftSchema = z.object({
   title: z.string().min(3).max(120),
@@ -112,6 +174,9 @@ export const aiCampaignDraftSchema = z.object({
   approvalRequirements: z.string().min(3).max(400),
   location: z.string().max(120).nullable().default(null),
   needsInput: z.array(z.enum(NEEDS_INPUT_FIELDS)).max(2).default([]),
+  // Empty for the common single-role case — only populated when the brief
+  // clearly names multiple distinct provider types/counts. See CampaignRequirement.
+  requirements: z.array(aiRequirementSchema).max(10).default([]),
 }).refine((d) => d.budgetMax >= d.budgetMin, {
   message: 'budgetMax must be >= budgetMin',
   path: ['budgetMax'],

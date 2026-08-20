@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
-import { LenisProvider } from './hooks/useLenis';
+import { LenisProvider, useLenisScroll } from './hooks/useLenis';
 import { useLandingStats } from './hooks/useLandingStats';
 import { useSuccessStories } from './hooks/useSuccessStories';
 import { LandingLanguageProvider } from './context/LanguageContext';
@@ -14,15 +15,35 @@ import { LandingFooter } from './nav/LandingFooter';
 import { SEO } from '../../lib/seo/SEO';
 import { organizationSchema, websiteSchema } from '../../lib/seo/schema';
 import { Hero } from './sections/Hero';
-import { Showcase } from './sections/Showcase';
-import { TrustStats } from './sections/TrustStats';
-// import { CampaignJourney } from './sections/CampaignJourney'; // Campaign Flow section commented out on the landing page for now
+import { Possibilities } from './sections/Possibilities';
+import { CampaignJourney } from './sections/CampaignJourney';
 import { Audience } from './sections/Audience';
-// import { Categories } from './sections/Categories'; // Categories section commented out on the landing page for now
-import { Collaboration } from './sections/Collaboration';
-import { Partners } from './sections/Partners';
-// import { Security } from './sections/Security'; // Security section commented out on the landing page for now
+import { AIDiscovery } from './sections/AIDiscovery';
+import { OpportunityFeed } from './sections/OpportunityFeed';
+import { TrustStats } from './sections/TrustStats';
+import { Categories } from './sections/Categories';
+import { Security } from './sections/Security';
 import { Stories } from './sections/Stories';
+import { FinalCTA } from './sections/FinalCTA';
+
+// FooterAnchorLink falls back to a real `/#id` navigation when it renders
+// outside this page's LenisProvider (any other route) — this is what makes
+// that link land back on the right in-page section instead of just at the
+// top of the freshly-mounted home page. A fixed delay (rather than firing on
+// mount) gives Lenis + the sections above the target a moment to finish
+// their own mount-time layout work first.
+function HashScrollHandler() {
+  const { scrollTo } = useLenisScroll();
+
+  useEffect(() => {
+    if (!window.location.hash) return;
+    const hash = window.location.hash;
+    const t = setTimeout(() => scrollTo(hash), 400);
+    return () => clearTimeout(t);
+  }, [scrollTo]);
+
+  return null;
+}
 
 function LandingPageInner() {
   const stats = useLandingStats();
@@ -64,21 +85,23 @@ function LandingPageInner() {
         ]}
         jsonLd={[organizationSchema(), websiteSchema()]}
       />
+      <HashScrollHandler />
       <CursorSparkles />
       <ScrollProgress />
       <CornerChrome />
       <SocialRail />
       <LandingNav />
-      <Hero />
-      <Showcase />
-      <TrustStats stats={stats} />
-      <Partners />
+      <Hero stats={stats} />
+      <Possibilities />
       <Audience />
-      {/* <Categories stats={stats} /> Categories section commented out on the landing page for now */}
-      {/* <CampaignJourney /> Campaign Flow section commented out on the landing page for now */}
-      <Collaboration />
-      {/* <Security /> Security section commented out on the landing page for now */}
+      <AIDiscovery />
+      <OpportunityFeed />
+      <TrustStats stats={stats} />
+      <Categories stats={stats} />
       <Stories stories={successStories} />
+      <CampaignJourney />
+      <Security />
+      <FinalCTA />
       <LandingFooter />
       <ChatWidget />
     </div>

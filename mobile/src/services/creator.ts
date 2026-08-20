@@ -31,8 +31,44 @@ export interface ApiCreatorProfile {
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  verificationRejectReason: string | null;
+  verificationRejectedAt: string | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  area: string | null;
+  address: string | null;
+  locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
+  showPublicProfile: boolean;
+  hideContactDetails: boolean;
+  hideSocialLinks: boolean;
+  availabilityStatus: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
+  startingRate: number | null;
+  negotiable: boolean;
   user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean };
   savedByBusinessCount: number;
+}
+
+export interface ApiAvailabilityDay {
+  id: string;
+  creatorProfileId: string;
+  dayOfWeek: number;
+  availableFrom: string;
+  availableUntil: string;
+}
+
+export interface ApiCampaignInvitation {
+  id: string;
+  campaignId: string;
+  businessId: string;
+  message: string | null;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  respondedAt: string | null;
+  createdAt: string;
+  // Backend returns the full Campaign row — only the fields this UI needs are
+  // declared here; extra fields are present at runtime but untyped.
+  campaign: { id: string; title: string; budgetMin: number; budgetMax: number; deadline: string };
+  business: { id: string; businessName: string | null; logoUrl: string | null };
 }
 
 export interface FacebookPageOption {
@@ -58,11 +94,23 @@ export interface ApiCreatorPublicStats {
   completionRate: number;
 }
 
+export interface ApiReviewReceived {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  from: { name: string | null; avatarUrl: string | null };
+}
+
 export interface ApiCreatorPublicProfile {
   id: string;
   userId: string;
   fullName: string | null;
   username: string | null;
+  // Set (with only id/fullName/avatarUrl otherwise populated) when the
+  // creator has disabled showPublicProfile — every other field below is
+  // absent from the response in that case, so check this before reading them.
+  isPrivate?: boolean;
   bio: string | null;
   avatarUrl: string | null;
   location: string | null;
@@ -74,6 +122,20 @@ export interface ApiCreatorPublicProfile {
   socialLinks: Record<string, string | null> | null;
   socialAccounts: { id: string; platform: string; followers: number; profileUrl: string; connectedViaOAuth: boolean }[];
   stats: ApiCreatorPublicStats | null;
+  // Absent on older cached responses — treat as empty, not an error.
+  reviews?: ApiReviewReceived[];
+  services?: ApiPublicService[];
+}
+
+export interface ApiPublicService {
+  id: string;
+  name: string;
+  description: string;
+  startingPrice: number | null;
+  pricingModel: 'PER_PROJECT' | 'PER_HOUR' | 'PER_DAY' | 'PER_CAMPAIGN' | 'CUSTOM_QUOTE';
+  deliveryTime: string | null;
+  whatsIncluded: string[];
+  category: { id: string; name: string; icon: string; color: string };
 }
 
 export interface ApiCreatorListItem {
@@ -220,6 +282,16 @@ export const creatorService = {
     return res.data;
   },
 
+  // §61 — separate from updateProfile's typed field list so a privacy-toggle
+  // save can't accidentally carry stale profile-form state along with it;
+  // mirrors business.ts's updatePrivacy wrapper over the same profile endpoint.
+  async updatePrivacy(data: {
+    showPublicProfile?: boolean; hideContactDetails?: boolean; hideSocialLinks?: boolean;
+    locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
+  }): Promise<void> {
+    await request('PUT', '/api/creator/profile', data);
+  },
+
   async updateSocialLinks(data: Record<string, string | null>): Promise<ApiCreatorProfile> {
     const res = await request<ApiCreatorProfile>('PUT', '/api/creator/social-links', data);
     return res.data;
@@ -362,5 +434,36 @@ export const creatorService = {
 
   async deleteAccount(): Promise<void> {
     await request('DELETE', '/api/auth/account');
+  },
+
+  // ── Availability ─────────────────────────────────────────────────────────
+
+  async updateAvailabilityStatus(status: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE'): Promise<'AVAILABLE' | 'BUSY' | 'UNAVAILABLE'> {
+    const res = await request<{ availabilityStatus: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE' }>('PUT', '/api/creator/availability/status', { status });
+    return res.data.availabilityStatus;
+  },
+
+  async getAvailabilitySchedule(): Promise<ApiAvailabilityDay[]> {
+    const res = await request<ApiAvailabilityDay[]>('GET', '/api/creator/availability/schedule');
+    return res.data;
+  },
+
+  // Submits the complete week — the backend replaces the whole schedule rather
+  // than patching individual days, so always send every day the UI wants kept.
+  async updateAvailabilitySchedule(days: { dayOfWeek: number; availableFrom: string; availableUntil: string }[]): Promise<ApiAvailabilityDay[]> {
+    const res = await request<ApiAvailabilityDay[]>('PUT', '/api/creator/availability/schedule', { days });
+    return res.data;
+  },
+
+  // ── Invitations ──────────────────────────────────────────────────────────
+
+  async listInvitations(): Promise<ApiCampaignInvitation[]> {
+    const res = await request<ApiCampaignInvitation[]>('GET', '/api/creator/invitations');
+    return res.data;
+  },
+
+  async respondToInvitation(id: string, status: 'ACCEPTED' | 'DECLINED'): Promise<ApiCampaignInvitation> {
+    const res = await request<ApiCampaignInvitation>('POST', `/api/creator/invitations/${id}/respond`, { status });
+    return res.data;
   },
 };

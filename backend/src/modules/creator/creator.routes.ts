@@ -17,6 +17,9 @@ import {
   connectInstagramAccountSchema,
   updatePaymentMethodsSchema,
   updateCampaignPrefsSchema,
+  updateAvailabilityStatusSchema,
+  updateAvailabilityScheduleSchema,
+  respondToInvitationSchema,
 } from './creator.schema';
 
 const router = Router();
@@ -257,6 +260,15 @@ router.get('/earnings',                    ctrl.getEarnings.bind(ctrl));
 router.get('/analytics',                   ctrl.getMyAnalytics.bind(ctrl));
 router.put('/payment-methods',             validate(updatePaymentMethodsSchema),  ctrl.updatePaymentMethods.bind(ctrl));
 router.put('/campaign-preferences',        validate(updateCampaignPrefsSchema),   ctrl.updateCampaignPrefs.bind(ctrl));
+
+// Availability (§16)
+router.put('/availability/status',   validate(updateAvailabilityStatusSchema),   ctrl.updateAvailabilityStatus.bind(ctrl));
+router.get('/availability/schedule', ctrl.getAvailabilitySchedule.bind(ctrl));
+router.put('/availability/schedule', validate(updateAvailabilityScheduleSchema), ctrl.updateAvailabilitySchedule.bind(ctrl));
+
+// Invitations (§50) — direct business-to-creator invites, distinct from applying to a campaign
+router.get('/invitations',             ctrl.listInvitations.bind(ctrl));
+router.post('/invitations/:id/respond', validate(respondToInvitationSchema), ctrl.respondToInvitation.bind(ctrl));
 
 // Explore businesses (creator browsing businesses)
 router.get('/businesses',                                 businessCtrl.listBusinesses.bind(businessCtrl));

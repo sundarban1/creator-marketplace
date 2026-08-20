@@ -23,6 +23,9 @@ import {
   Quote,
   FileSignature,
   Phone,
+  ScrollText,
+  History,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -37,6 +40,7 @@ const navGroups: NavGroup[] = [
       { to: '/users',      label: 'Users',      icon: Users           },
       { to: '/creators',   label: 'Creators',   icon: Star            },
       { to: '/businesses', label: 'Businesses', icon: Briefcase       },
+      { to: '/verification', label: 'Verification', icon: ShieldCheck },
       { to: '/campaigns',  label: 'Events',     icon: Megaphone       },
       { to: '/categories', label: 'Categories', icon: Tag             },
       { to: '/platforms',  label: 'Platforms',  icon: Share2          },
@@ -74,6 +78,8 @@ const navGroups: NavGroup[] = [
       { to: '/contact-info', label: 'Contact',     icon: Phone    },
       { to: '/settings',     label: 'Settings',    icon: Settings },
       { to: '/rate-limits',  label: 'Rate Limits', icon: Gauge    },
+      { to: '/audit-logs',   label: 'Audit Logs',  icon: ScrollText },
+      { to: '/activity-logs', label: 'Activity Logs', icon: History },
     ],
   },
 ];

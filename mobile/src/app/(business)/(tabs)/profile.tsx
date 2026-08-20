@@ -24,7 +24,6 @@ import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { BackButton } from '@/components/BackButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -118,7 +117,6 @@ export default function BusinessProfileScreen() {
 
           {/* Top bar */}
           <View style={s.topBar}>
-            <BackButton variant="overlay" fallback="/(business)/" />
             <Pressable style={s.topIconBtn} hitSlop={4}
               onPress={handleCoverPress} disabled={coverUploading}>
               {coverUploading
@@ -186,15 +184,15 @@ export default function BusinessProfileScreen() {
 
           {/* Stats strip */}
           <View style={[s.statsStrip, { borderTopColor: C.border }]}>
-            <View style={s.statItem}>
+            <Pressable style={s.statItem} onPress={() => router.push('/(business)/campaigns' as never)}>
               <Text style={[s.statValue, { color: C.text }]}>{activeCampaigns}</Text>
               <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.active')}</Text>
-            </View>
+            </Pressable>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
-            <View style={s.statItem}>
+            <Pressable style={s.statItem} onPress={() => router.push('/(business)/saved-creators' as never)}>
               <Text style={[s.statValue, { color: C.text }]}>{savedCreatorsCount}</Text>
               <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.savedCreators')}</Text>
-            </View>
+            </Pressable>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
             <View style={s.statItem}>
               <Text style={[s.statValue, { color: C.text }]}>{profile?.favoritedByCount ?? 0}</Text>
@@ -360,7 +358,7 @@ const s = StyleSheet.create({
   bubble1:  { width: 160, height: 160, top: -50, right: -30 },
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
-  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
+  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 10 },
   topIconBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
   // Profile card (floats over cover)

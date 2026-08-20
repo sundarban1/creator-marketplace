@@ -3,7 +3,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { EntityCard } from '@/components/EntityCard';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,10 +12,10 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SearchInput } from '@/components/SearchInput';
 import { BusinessFilterModal } from '@/components/BusinessFilterModal';
 import { EmptyState } from '@/components/EmptyState';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
@@ -25,9 +25,10 @@ import { type LocationFilter } from '@/components/LocationSearchPicker';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { CategoryPillRow } from '@/components/CategoryPillRow';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
 
@@ -37,10 +38,13 @@ function BusinessCard({
   item,
   isFavorited,
   onToggleFavorite,
+  chevronOnly,
 }: {
   item:             BusinessListItem;
   isFavorited:      boolean;
   onToggleFavorite: () => void;
+  /** Discover tab's cards use a plain trailing chevron instead of a full CTA button. */
+  chevronOnly?:     boolean;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -59,8 +63,8 @@ function BusinessCard({
       ringColor={primaryMeta?.color ?? C.brinjal1}
       name={item.businessName}
       verified={item.fullyVerified || item.isVerified}
-      description={item.description || t('explore.businesses.noDescription')}
-      descriptionItalic={!item.description}
+      locationText={item.city ?? item.district ?? undefined}
+      locationBeforeCategory
       categoryLabel={primaryMeta ? item.categories[0] : undefined}
       categoryIcon={primaryMeta?.icon}
       categoryColor={primaryMeta?.color}
@@ -73,6 +77,7 @@ function BusinessCard({
         text: hasEvents ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet'),
       }}
       ctaLabel={t('explore.businesses.viewBusiness')}
+      ctaStyle={chevronOnly ? 'chevron' : 'button'}
       onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}
       action={{
         active: isFavorited,
@@ -88,11 +93,22 @@ function BusinessCard({
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-export default function ExploreBusinessesScreen() {
+// `embedded` renders just the content (no SafeAreaView/MaxWidthContainer/
+// BackButton/search bar) so this same screen can be reused as the
+// "Businesses" tab inside the unified Discover shell — which owns a single
+// shared search bar + filter button for every tab and drives this screen's
+// search/filter via the exposed ref — while the standalone route
+// (/(creator)/explore-businesses) keeps its own search bar and works exactly
+// as before.
+export type BusinessesExploreHandle = { setSearchText: (text: string) => void; openFilter: () => void };
+
+const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?: boolean; onFilterCountChange?: (count: number) => void }>(
+  function ExploreBusinessesScreen({ embedded = false, onFilterCountChange }, ref) {
   const C      = useAppColors();
   const { t }  = useLanguage();
   const toast  = useToast();
   const { favoriteIds, toggle, reloadIds } = useFavoriteBusinesses();
+  const { categories: businessCategories } = useCategories('BUSINESS');
 
   const [businesses, setBusinesses] = useState<BusinessListItem[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -181,6 +197,16 @@ export default function ExploreBusinessesScreen() {
     searchTimer.current = setTimeout(() => void fetchBusinesses({ search: text, silent: true }), 450);
   }
 
+  // Single-select — tapping the already-active category clears it, matching
+  // the existing `category` filter's single-string shape.
+  function toggleCategory(label: string) {
+    const next = category === label ? '' : label;
+    setCategory(next);
+    void fetchBusinesses({ category: next, silent: true });
+  }
+
+  useImperativeHandle(ref, () => ({ setSearchText: onSearchChange, openFilter }));
+
   function openFilter() {
     setTempPlatform(platform);
     setTempCategory(category);
@@ -225,73 +251,87 @@ export default function ExploreBusinessesScreen() {
   const filterActiveCount = [!!category, !!platform, locations.length > 0].filter(Boolean).length;
   const isFilterActive  = filterActiveCount > 0;
   const hasFilter       = !!(search || category || platform || locations.length > 0);
+
+  // Deliberately omits onFilterCountChange from deps — it's a fresh closure
+  // every parent render, and including it would re-fire this effect (and thus
+  // call setState in the parent) on every render, looping forever.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { onFilterCountChange?.(filterActiveCount); }, [filterActiveCount]);
   const displayItems: DisplayBusiness[] = businesses.map((b) => ({
     ...b,
     isFavorited: favoriteIds.has(b.id),
   }));
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <MaxWidthContainer>
-      {/* ── Back button + search, top right ── */}
-      <View style={{ backgroundColor: C.surface }}>
-        <View style={styles.topRow} accessibilityRole="header" accessibilityLabel={t('explore.businesses.headerTitle')}>
-          <BackButton fallback="/(creator)/" />
-          <View style={[styles.searchBox, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-            <FontAwesome5 name="search" solid size={18} color={C.textSecondary} />
-            <TextInput
-              style={[styles.searchInput, { color: C.text }]}
-              placeholder={t('explore.businesses.searchPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              value={search}
-              onChangeText={onSearchChange}
-              returnKeyType="search"
-              autoCapitalize="none"
-            />
-            {search.length > 0 && (
-              <Pressable onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }} hitSlop={10}>
-                <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
+  const content = (
+    <>
+      {/* ── Back button + search, top right — hidden when embedded, since the
+          Discover shell owns one shared search bar + filter button for
+          every tab and drives this screen's search/filter via its ref. ── */}
+      {!embedded && (
+        <View style={{ backgroundColor: C.surface }}>
+          <View style={styles.topRow} accessibilityRole="header" accessibilityLabel={t('explore.businesses.headerTitle')}>
+            <BackButton fallback="/(creator)/" />
+            <View style={[styles.searchBox, { flex: 1 }]}>
+              <View style={{ flex: 1 }}>
+                <SearchInput
+                  placeholder={t('explore.businesses.searchPlaceholder')}
+                  value={search}
+                  onChangeText={onSearchChange}
+                  autoCapitalize="none"
+                />
+              </View>
+              <Pressable
+                style={[
+                  styles.filterBtn,
+                  { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
+                  isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+                ]}
+                onPress={openFilter}
+                hitSlop={6}>
+                <FontAwesome5 name="sliders-h" solid size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+                {isFilterActive && (
+                  <View style={styles.filterCountBadge}>
+                    <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
+                  </View>
+                )}
               </Pressable>
-            )}
-            <Pressable
-              style={[
-                styles.filterBtn,
-                { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
-                isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-              ]}
-              onPress={openFilter}
-              hitSlop={6}>
-              <FontAwesome5 name="sliders-h" solid size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
-              {isFilterActive && (
-                <View style={styles.filterCountBadge}>
-                  <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
-                </View>
-              )}
-            </Pressable>
+            </View>
           </View>
+          {/* Inset hairline, not edge-to-edge — same treatment as Instagram's
+              subtle content-width dividers rather than a full-bleed border. */}
+          <View style={[styles.headerSeparator, { backgroundColor: C.border }]} />
         </View>
-        {/* Inset hairline, not edge-to-edge — same treatment as Instagram's
-            subtle content-width dividers rather than a full-bleed border. */}
-        <View style={[styles.headerSeparator, { backgroundColor: C.border }]} />
-      </View>
+      )}
 
-      {/* Saved link + result count — same row, below search */}
-      <View style={styles.savedRow}>
-        <Pressable
-          style={[styles.favLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
-          onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
-          <FontAwesome5 name="heart" solid size={15} color={C.brinjal1} />
-          <Text style={[styles.favLinkText, { color: C.brinjal1 }]}>{t('explore.businesses.savedLink')}</Text>
-        </Pressable>
-        {!loading && businesses.length > 0 && (
-          <Text style={[styles.countTxt, { color: C.textSecondary }]}>
-            {t('explore.businesses.brandsFound', { n: total })}
-          </Text>
-        )}
-      </View>
+      {/* Saved link — only shown on the standalone route; when embedded in
+          Discover, the shell renders this up in its title row instead
+          (next to "Discover", top-right) rather than duplicating it here. */}
+      {!embedded && (
+        <View style={styles.savedRow}>
+          <Pressable
+            style={[styles.favLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
+            onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
+            <FontAwesome5 name="heart" solid size={15} color={C.brinjal1} />
+            <Text style={[styles.favLinkText, { color: C.brinjal1 }]}>{t('explore.businesses.savedLink')}</Text>
+          </Pressable>
+        </View>
+      )}
 
-      {/* Active filter pills */}
-      {isFilterActive && (
+      {/* Category pills — All + single scrollable row through every category,
+          matching Discover's Opportunities/People tabs exactly (same shared
+          component, not just a similar look). */}
+      <CategoryPillRow
+        categories={businessCategories}
+        activeLabels={category ? [category] : []}
+        onToggle={toggleCategory}
+        showAll
+        onAllPress={() => { setCategory(''); void fetchBusinesses({ category: '', silent: true }); }}
+      />
+
+      {/* Active filter pills — category is deliberately excluded here since
+          the CategoryPillRow above already highlights the selected category;
+          repeating it as a chip+Clear-all below was redundant. */}
+      {(platform || locations.length > 0) && (
         <View style={styles.activePills}>
           {locations.map((loc) => (
             <Pressable
@@ -312,14 +352,6 @@ export default function ExploreBusinessesScreen() {
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setPlatform(''); void fetchBusinesses({ platform: '', silent: true }); }}>
               <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{platform}</Text>
-              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
-            </Pressable>
-          ) : null}
-          {category ? (
-            <Pressable
-              style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
-              onPress={() => { setCategory(''); void fetchBusinesses({ category: '', silent: true }); }}>
-              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{category}</Text>
               <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           ) : null}
@@ -356,6 +388,7 @@ export default function ExploreBusinessesScreen() {
                 item={item}
                 isFavorited={item.isFavorited}
                 onToggleFavorite={() => { void handleToggleFavorite(item.id); }}
+                chevronOnly={embedded}
               />
             )}
             contentContainerStyle={styles.list}
@@ -367,15 +400,35 @@ export default function ExploreBusinessesScreen() {
             maxToRenderPerBatch={8}
             windowSize={7}
             removeClippedSubviews={Platform.OS === 'android'}
-            ListFooterComponent={loadingMore ? (
-              <View style={styles.footerLoading}>
-                <ActivityIndicator size="small" color={C.brinjal1} />
+            ListFooterComponent={
+              <View>
+                {!loading && businesses.length > 0 && (
+                  <Text style={[styles.countTxt, { color: C.textSecondary }]}>
+                    {t('explore.businesses.brandsFound', { n: total })}
+                  </Text>
+                )}
+                {loadingMore && (
+                  <View style={styles.footerLoading}>
+                    <ActivityIndicator size="small" color={C.brinjal1} />
+                  </View>
+                )}
               </View>
-            ) : null}
+            }
           />
         )}
       </View>
-      </MaxWidthContainer>
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        <MaxWidthContainer>{content}</MaxWidthContainer>
+      ) : (
+        <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+          <MaxWidthContainer>{content}</MaxWidthContainer>
+        </SafeAreaView>
+      )}
 
       <BusinessFilterModal
         visible={filterOpen}
@@ -389,9 +442,11 @@ export default function ExploreBusinessesScreen() {
         onReset={resetFilter}
         onClose={() => setFilterOpen(false)}
       />
-    </SafeAreaView>
+    </>
   );
-}
+});
+
+export default ExploreBusinessesScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -399,28 +454,32 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
 
   // Header
-  countTxt:       { fontSize: 12, fontFamily: F.semibold },
-  savedRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 12, marginBottom: 4 },
+  countTxt:       { fontSize: 12, fontFamily: F.semibold, textAlign: 'center', marginTop: 8, marginBottom: 4 },
+  savedRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, marginTop: 12, marginBottom: 4 },
   favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, fontFamily: F.bold },
 
   // Top row — back button + search, top right
   topRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
-  searchBox:      { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
-  searchInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
+  searchBox:      { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn:      { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
-  // Active filter pills
-  activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
+  // Active filter pills — paddingHorizontal 20 (not 16, like topRow above)
+  // to match the People/Opportunities tabs' card-list left edge in the
+  // Discover shell, which is what actually needs to line up across tabs.
+  activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: SCREEN_GUTTER, paddingBottom: 8, gap: 8 },
   activePill:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 5 },
   activePillText: { fontSize: 12, fontFamily: F.semibold },
   clearAllText:   { fontSize: 12, fontFamily: F.bold },
 
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText:    { fontSize: 14, fontFamily: F.regular },
-  list:           { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 14 },
+  // paddingTop matches explore-creators.tsx's People tab list — keeps the
+  // gap between the category pill row and the first card identical across
+  // both tabs in the Discover shell.
+  list:           { paddingHorizontal: SCREEN_GUTTER, paddingTop: 14, paddingBottom: 48, gap: 14 },
   footerLoading:  { paddingVertical: 20 },
 });

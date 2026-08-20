@@ -142,6 +142,25 @@ export class AnalyticsService {
     return review;
   }
 
+  // Null (not 404) when the caller hasn't reviewed yet — "not reviewed" is a
+  // normal state, not an error, for the client's "leave a review" prompt.
+  getMyReview(appId: string, userId: string) {
+    return this.repo.findExistingReview(appId, userId);
+  }
+
+  async getReviewsReceived(userId: string) {
+    const rows = await this.repo.findReviewsReceived(userId);
+    return rows.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt.toISOString(),
+      from: r.fromUser.creatorProfile
+        ? { name: r.fromUser.creatorProfile.fullName, avatarUrl: r.fromUser.creatorProfile.avatarUrl }
+        : { name: r.fromUser.businessProfile?.businessName ?? null, avatarUrl: r.fromUser.businessProfile?.logoUrl ?? null },
+    }));
+  }
+
   // ── Response time ────────────────────────────────────────────────────────
   // `replierRole` is the role of whoever just sent the message that's being
   // scored as a "response" (i.e. the previous message was from the other party).

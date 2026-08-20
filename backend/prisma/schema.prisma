@@ -52,6 +52,7 @@ model User {
   aiConversations           AiConversation[]
   sessions                  Session[]
   pushTokens                PushToken[]
+  reportsFiled              Report[]          @relation("ReportsFiled")
 
   @@index([role])
   @@map("users")
@@ -138,6 +139,32 @@ model CreatorProfile {
   panDocUrl               String?
   panDocStatus            DocumentStatus       @default(NONE)
   panDocUploadedAt        DateTime?
+  // Parity with BusinessProfile's equivalent pair, added later — BusinessProfile
+  // has always had these, Creator never did until the Provider-marketplace work.
+  verificationRejectReason String?
+  verificationRejectedAt   DateTime?
+  // Structured location — additive alongside the free-text `location` above,
+  // which stays authoritative for existing search/display until callers migrate.
+  province                String?
+  district                String?
+  city                    String?
+  area                    String?
+  address                 String?
+  locationVisibility      LocationVisibility   @default(CITY)
+  // §61 — parity with BusinessProfile's equivalent trio, added later:
+  // BusinessProfile has always had these, providers never did until now.
+  // The public profile endpoint gates on showPublicProfile the same way
+  // business.service.ts's getBusinessPublic already does.
+  showPublicProfile       Boolean              @default(true)
+  hideContactDetails      Boolean              @default(false)
+  hideSocialLinks         Boolean              @default(false)
+  availabilityStatus      AvailabilityStatus   @default(AVAILABLE)
+  // Collected as the first step of provider onboarding, right after signup.
+  providerType            ProviderType?
+  // What this provider charges, distinct from prefBudgetMin/Max above (what
+  // they're willing to accept on a campaign).
+  startingRate            Float?
+  negotiable              Boolean              @default(true)
   applications            Application[]
   conversations           Conversation[]       @relation("CreatorConversations")
   conversationsAsCreator2 Conversation[]       @relation("Creator2Conversations")
@@ -152,9 +179,110 @@ model CreatorProfile {
   profileViews            ProfileView[]
   paymentTransactions     PaymentTransaction[]
   contracts               Contract[]
+  services                Service[]
+  portfolioItems          PortfolioItem[]
+  availabilitySchedule    AvailabilitySchedule[]
+  serviceRequests         ServiceRequest[]
 
   @@index([isVerified])
   @@map("creator_profiles")
+}
+
+// A sellable offering a provider lists (§14 of the Provider marketplace spec)
+// — distinct from CreatorProfile.categories (what they generally do) and from
+// Campaign (what a business is hiring for). categoryId is a real FK, unlike
+// the legacy CreatorProfile.categories/Campaign.category string arrays, since
+// this is a new table with no existing data to preserve compatibility with.
+model Service {
+  id                String         @id @default(cuid())
+  creatorProfileId  String
+  categoryId        String
+  name              String
+  description       String
+  startingPrice     Float?
+  pricingModel      PricingModel
+  deliveryTime      String?
+  whatsIncluded     String[]       @default([])
+  status            ServiceStatus  @default(ACTIVE)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  creatorProfile    CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  category          Category       @relation(fields: [categoryId], references: [id])
+  requests          ServiceRequest[]
+
+  @@index([creatorProfileId])
+  @@index([categoryId])
+  @@map("services")
+}
+
+// A business directly asking a provider about one of their listed Services
+// (§33/34) — distinct from the Opportunity/Application flow (CampaignRequirement),
+// which is for businesses posting a role and providers applying to it. Here the
+// business initiates, targeting one specific provider's specific service.
+// Deliberately lightweight: PENDING → ACCEPTED/DECLINED only — once accepted,
+// the two parties continue over regular messaging rather than a tracked
+// deliverables/payment lifecycle like Application has (that's the Opportunity
+// flow's job; a Service inquiry is closer to an initial conversation starter).
+model ServiceRequest {
+  id          String               @id @default(cuid())
+  serviceId   String
+  businessId  String
+  creatorId   String
+  message     String
+  budget      Float?
+  status      ServiceRequestStatus @default(PENDING)
+  respondedAt DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  service     Service              @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  business    BusinessProfile      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  creator     CreatorProfile       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([businessId, createdAt(sort: Desc)])
+  @@index([creatorId, status])
+  @@map("service_requests")
+}
+
+enum ServiceRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+// Structured portfolio entries, additive alongside CreatorProfile.portfolioLinks
+// (unstructured Json, still read by existing code) — new uploads should prefer
+// this table; the Json field is not being migrated or deprecated here.
+model PortfolioItem {
+  id                String          @id @default(cuid())
+  creatorProfileId  String
+  title             String?
+  description       String?
+  category          String?
+  mediaUrl          String?
+  mediaType         MediaType?
+  externalUrl       String?
+  createdAt         DateTime        @default(now())
+  creatorProfile    CreatorProfile  @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([creatorProfileId])
+  @@map("portfolio_items")
+}
+
+// Optional weekly availability, separate from the coarse availabilityStatus
+// enum on CreatorProfile (available/busy/unavailable "right now" vs. a
+// recurring schedule).
+model AvailabilitySchedule {
+  id                String         @id @default(cuid())
+  creatorProfileId  String
+  dayOfWeek         Int
+  availableFrom     String
+  availableUntil    String
+  creatorProfile    CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([creatorProfileId, dayOfWeek])
+  @@map("availability_schedules")
 }
 
 model Withdrawal {
@@ -274,6 +402,10 @@ model BusinessProfile {
   allowDirectMessages      Boolean              @default(true)
   hideContactDetails       Boolean              @default(false)
   showPublicProfile        Boolean              @default(true)
+  // §61 — social links are shown on the public profile by default; hiding
+  // them doesn't remove them from the account, just from what businesses/
+  // providers browsing each other's profiles can see.
+  hideSocialLinks          Boolean              @default(false)
   paymentMethods           String[]             @default([])
   referralCode             String?              @unique
   socialLinks              Json                 @default("{}")
@@ -289,6 +421,18 @@ model BusinessProfile {
   companyRegDocUploadedAt  DateTime?
   verificationRejectReason String?
   verificationRejectedAt   DateTime?
+  province                 String?
+  district                 String?
+  city                     String?
+  area                     String?
+  address                  String?
+  locationVisibility       LocationVisibility   @default(CITY)
+  businessSize             BusinessSize?
+  // Collected as the first step of business onboarding, right after signup.
+  representingType         RepresentingType?
+  // Collected on the last step of business onboarding, alongside
+  // defaultCreatorCategories — see BusinessPurpose for what drives what.
+  purpose                  BusinessPurpose?
   user                     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaigns                Campaign[]
   conversations            Conversation[]       @relation("BusinessConversations")
@@ -302,6 +446,7 @@ model BusinessProfile {
   paymentTransactions      PaymentTransaction[]
   contracts                Contract[]
   aiConversations          AiConversation[]
+  serviceRequests          ServiceRequest[]
 
   @@index([isVerified])
   @@map("business_profiles")
@@ -350,6 +495,14 @@ model Campaign {
   budgetMax             Float
   paymentType           String
   status                CampaignStatus       @default(ACTIVE)
+  // Admin soft-delete (see AdminRepository.softDeleteCampaignCascade) — the
+  // campaign row itself is kept (audit trail), but every consumer-facing
+  // query (findMany/findManySearch/findNearby/findById/findByBusinessId in
+  // CampaignRepository) excludes it, and Applications/CampaignRequirement/
+  // CampaignInvitation rows are hard-deleted at the same time regardless of
+  // their status. Independent of `status` above — a deleted campaign keeps
+  // whatever status it had when removed.
+  deletedAt             DateTime?
   // Snapshotted from the platform.commission admin setting at creation time,
   // so later changes to the global rate never retroactively affect an
   // already-posted event. Null on campaigns created before this field existed.
@@ -387,6 +540,7 @@ model Campaign {
   invitations           CampaignInvitation[]
   paymentTransactions   PaymentTransaction[]
   contracts             Contract[]
+  requirements          CampaignRequirement[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -400,12 +554,17 @@ model Campaign {
   @@index([status, createdAt(sort: Desc)])
   @@index([campaignType, status])
   @@index([locationLat, locationLng])
+  @@index([deletedAt])
   @@map("campaigns")
 }
 
 model Application {
   id                  String               @id @default(cuid())
   campaignId          String
+  // Set only for campaigns using CampaignRequirement (multi-role campaigns) —
+  // null for the simple single-category campaigns that predate it and remain
+  // the common case. See the two-part uniqueness note below @@index.
+  requirementId       String?
   creatorId           String
   coverLetter         String
   proposedRate        Float
@@ -438,17 +597,82 @@ model Application {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   campaign            Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  requirement         CampaignRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
   creator             CreatorProfile       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   reviews             Review[]
   paymentTransactions PaymentTransaction[]
   revisionNotes       RevisionNote[]
   contract            Contract?
 
-  @@unique([campaignId, creatorId])
+  // True uniqueness is enforced by two hand-written partial indexes, not a
+  // plain @@unique — Prisma can't express "unique except when null" and a
+  // naive @@unique([campaignId, creatorId, requirementId]) would silently
+  // stop enforcing one-application-per-campaign for every requirementId-null
+  // (i.e. every simple, non-multi-role) campaign, since Postgres treats each
+  // NULL as distinct in a composite unique index. See the migration.sql this
+  // schema change produces for the actual:
+  //   UNIQUE (campaignId, creatorId) WHERE requirementId IS NULL
+  //   UNIQUE (campaignId, creatorId, requirementId) WHERE requirementId IS NOT NULL
+  // This plain index exists only for query performance, not uniqueness.
+  @@index([campaignId, creatorId])
+  @@index([requirementId])
   @@index([creatorId])
   @@index([creatorId, createdAt(sort: Desc)])
   @@index([campaignId, status])
   @@map("applications")
+}
+
+// One role-slot within a multi-role campaign (§ "Campaign → Requirements →
+// Applications → Collaboration" architecture) — e.g. a restaurant-launch
+// campaign might have "1 Photographer @ NPR 10,000" and "2 Content Creators
+// @ NPR 15,000 each" as two separate CampaignRequirement rows. Purely
+// additive/opt-in: a Campaign with zero requirements behaves exactly as
+// every campaign does today (single category/budget/deadline on Campaign
+// itself, Application.requirementId stays null). Selected-count ("1/2
+// filled") is deliberately NOT a stored counter — compute it live via
+// Application.count({ requirementId, status: ACCEPTED }) vs quantity, same
+// live-compute convention as Category.countUsage, to avoid drift.
+//
+// NOT YET WIRED: campaign.service.ts's capacity-enforcement (auto-reject
+// pending + close campaign when a slot fills) is whole-campaign-scoped today
+// and does not know about per-requirement fill — that's deliberately a
+// separate follow-up task once real UI needs it, not part of this schema
+// change. Do not assume accepting into a requirement behaves correctly yet.
+model CampaignRequirement {
+  id           String                @id @default(cuid())
+  campaignId   String
+  categoryId   String
+  quantity     Int                   @default(1)
+  budgetType   RequirementBudgetType @default(FIXED)
+  budgetFixed  Float?
+  budgetMin    Float?
+  budgetMax    Float?
+  deliverables String?
+  // Free-text brief of what this role should actually do — only meaningful
+  // for non-Content-Creator roles (which use `deliverables` instead).
+  description  String?
+  // §42 — expected file format(s) for this role's deliverables, e.g.
+  // ["JPG", "MP4"]. Free-form strings (not an enum) so "Other: ..." values
+  // typed by the business pass through untouched, same convention as
+  // Category/Provider "Other" text fields elsewhere in this schema.
+  format       String[]  @default([])
+  deadline     DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  category     Category      @relation(fields: [categoryId], references: [id])
+  applications Application[]
+
+  @@index([campaignId])
+  @@index([categoryId])
+  @@map("campaign_requirements")
+}
+
+enum RequirementBudgetType {
+  FIXED
+  RANGE
+  NEGOTIABLE
 }
 
 // Append-only history of every revision request a business has sent for an
@@ -849,15 +1073,17 @@ model SavedCreator {
 }
 
 model CampaignInvitation {
-  id         String          @id @default(cuid())
-  campaignId String
-  creatorId  String
-  businessId String
-  message    String?
-  createdAt  DateTime        @default(now())
-  campaign   Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  creator    CreatorProfile  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  business   BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id          String            @id @default(cuid())
+  campaignId  String
+  creatorId   String
+  businessId  String
+  message     String?
+  status      InvitationStatus  @default(PENDING)
+  respondedAt DateTime?
+  createdAt   DateTime          @default(now())
+  campaign    Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator     CreatorProfile    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  business    BusinessProfile   @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, creatorId])
   @@map("campaign_invitations")
@@ -906,6 +1132,60 @@ model BrandAnalytics {
   @@map("brand_analytics")
 }
 
+// §75 — user-filed reports (spam/fraud/harassment/etc.) against any of the
+// entity types below. Previously the admin "Reports" page rendered entirely
+// from hardcoded mock data (web/src/data/mockData.ts) — this table plus the
+// report module is the first time a real reporting pipeline exists at all.
+model Report {
+  id          String           @id @default(cuid())
+  reporterId  String
+  targetType  ReportTargetType
+  targetId    String
+  reason      ReportReason
+  description String?
+  status      ReportStatus     @default(NEW)
+  // Set together when an admin moves this off NEW — actionNote is shown back
+  // to admins reviewing history, never to the reporter or the reported party.
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  actionNote  String?
+  createdAt   DateTime         @default(now())
+
+  reporter User @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("reports")
+}
+
+enum ReportTargetType {
+  USER
+  BUSINESS
+  SERVICE
+  OPPORTUNITY
+  POST
+  MESSAGE
+  REVIEW
+}
+
+enum ReportReason {
+  SPAM
+  SCAM
+  FRAUD
+  HARASSMENT
+  INAPPROPRIATE_CONTENT
+  FAKE_PROFILE
+  PAYMENT_ISSUE
+  OTHER
+}
+
+enum ReportStatus {
+  NEW
+  UNDER_REVIEW
+  ACTION_TAKEN
+  DISMISSED
+}
+
 model PlatformSetting {
   key       String   @id
   value     String
@@ -942,6 +1222,12 @@ enum MessageType {
   FILE
   VIDEO
   VOICE
+  // §54 — auto-posted at collaboration lifecycle events (work started/
+  // submitted, payment released); rendered as a centered, sender-less pill
+  // in the mobile chat UI rather than a normal left/right bubble. Still has
+  // a real senderId (Message.senderId stays required) — the mobile client
+  // ignores it for SYSTEM messages, it's just bookkeeping.
+  SYSTEM
 }
 
 // Applies to VIDEO attachments/deliverables only (chat: Message.attachmentStatus;
@@ -967,9 +1253,16 @@ enum AiMessageRole {
 
 enum ApplicationStatus {
   PENDING
+  // §49 — a lightweight "under consideration" marker a business can set on a
+  // PENDING application before committing to Accept/Reject; purely additive,
+  // doesn't affect capacity enforcement (only ACCEPTED does) or contract
+  // signing. Both PENDING and SHORTLISTED can still transition straight to
+  // ACCEPTED/REJECTED — updateApplicationStatus never checked prior status.
+  SHORTLISTED
   ACCEPTED
   REJECTED
   EXPIRED
+  WITHDRAWN
 }
 
 enum CampaignType {
@@ -994,6 +1287,9 @@ enum WorkStatus {
   SUBMITTED
   APPROVED
   COMPLETED
+  REVISION
+  CANCELLED
+  DISPUTED
 }
 
 enum PaymentStatus {
@@ -1001,6 +1297,86 @@ enum PaymentStatus {
   PAID
   RELEASED
   REFUNDED
+}
+
+enum PricingModel {
+  PER_PROJECT
+  PER_HOUR
+  PER_DAY
+  PER_CAMPAIGN
+  CUSTOM_QUOTE
+}
+
+enum ServiceStatus {
+  ACTIVE
+  HIDDEN
+  REPORTED
+  REMOVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  BUSY
+  UNAVAILABLE
+}
+
+enum LocationVisibility {
+  EXACT
+  CITY
+  DISTRICT
+}
+
+// Answers "How do you provide your services?" on /account-type → provider
+// onboarding — distinct from BusinessSize (which describes the business itself,
+// not how a creator/provider operates).
+enum ProviderType {
+  INDIVIDUAL
+  TEAM
+  AGENCY
+}
+
+// Answers "Who are you representing?" on business onboarding — the initial
+// focus is ORGANIZATION (where the paid-campaign use case lives); INDIVIDUAL
+// covers a person sourcing providers for their own project.
+enum RepresentingType {
+  ORGANIZATION
+  INDIVIDUAL
+}
+
+// Answers "What is this for?" on business onboarding, right after picking
+// which provider categories they're looking for — drives whether the
+// Industry step (below) is shown at all: only BRAND_MARKETING and
+// CONTENT_CREATION need an industry to match against, the rest (an event,
+// wedding, one-off shoot, ...) don't.
+enum BusinessPurpose {
+  BRAND_MARKETING
+  CONTENT_CREATION
+  EVENT
+  WEDDING
+  PHOTOSHOOT
+  PERFORMANCE
+  COLLABORATION
+  OTHER
+}
+
+enum BusinessSize {
+  SOLO
+  SMALL
+  MEDIUM
+  LARGE
+  AGENCY
+  ENTERPRISE
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
 }
 
 enum CategoryScope {
@@ -1037,8 +1413,15 @@ model Category {
   key       String         @unique
   scope     CategoryScope  @default(BOTH)
   status    CategoryStatus @default(ACTIVE)
+  // Section header for the provider-type picker (e.g. "Content & Media",
+  // "Talent & Appearance") — only meaningful for CREATOR-scope rows; BOTH-scope
+  // content-niche rows (Restaurants, Automotive, ...) leave this null, they're
+  // not grouped. Purely presentational, not queried on.
+  group     String?
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
+  services  Service[]
+  requirements CampaignRequirement[]
 
   @@map("categories")
 }

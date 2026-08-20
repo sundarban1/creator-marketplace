@@ -48,6 +48,11 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
     return n.refId ? { pathname: '/campaign-detail', params: { campaignId: n.refId } } : null;
   }
   if (n.type === 'creator_saved') return null; // just acknowledge — no deep link needed
+  // Service requests (§33/34) — received (provider) routes to the requests
+  // inbox; accepted/declined (business) has nowhere richer to land yet, so
+  // it's acknowledge-only like creator_saved above.
+  if (n.type === 'service_request_received') return isCreator ? '/(creator)/service-requests' : null;
+  if (n.type === 'service_request_accepted' || n.type === 'service_request_declined') return null;
   if (n.type === 'message_request_accepted') {
     if (!n.refId) return null;
     if (n.refType === 'creator_profile')  return { pathname: '/(creator)/creator-detail', params: { id: n.refId } };
@@ -62,12 +67,15 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   }
   if (n.type === 'new_campaign') {
     if (n.refId) return { pathname: '/campaign-detail', params: { campaignId: n.refId } };
-    return isCreator ? '/(creator)/' : null;
+    // No specific campaign to open — send them to the browse/search screen
+    // (Discover), not the dashboard Home, since the actual intent here is
+    // "go look at campaigns."
+    return isCreator ? '/(creator)/(tabs)/discover' : null;
   }
   if (n.type === 'new_message') {
     return isCreator ? '/(creator)/messages/' : '/(business)/messages/';
   }
-  if (['proposal_accepted', 'proposal_rejected', 'proposal_expired', 'campaign_deadline'].includes(n.type)) {
+  if (['proposal_accepted', 'proposal_rejected', 'proposal_shortlisted', 'proposal_expired', 'campaign_deadline'].includes(n.type)) {
     return isCreator ? '/(creator)/proposals' : null;
   }
   return null;

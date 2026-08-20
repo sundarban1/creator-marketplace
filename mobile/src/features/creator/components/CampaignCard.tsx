@@ -7,7 +7,6 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -17,7 +16,7 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 // One component, one `variant`, instead of two files to keep in sync.
 
 const CARD_W    = 264;
-const CARD_IMG_H = 150;
+const CARD_IMG_H = 112;
 
 function timeAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -56,7 +55,6 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories } = useAllCategories();
-  const { platforms: allPlatforms } = usePlatforms();
   const catMeta   = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
   const expiry    = expiryLabel(campaign.deadline, t);
@@ -95,42 +93,40 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
               </View>
             )
           )}
+          {campaign.campaignType === 'OPEN_EVENT' ? (
+            <View style={[styles.paidFreeTag, { backgroundColor: '#F0FDF4' }]}>
+              <Text style={[styles.tagBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
+            </View>
+          ) : (
+            <View style={[styles.paidFreeTag, { backgroundColor: '#EEF2FF' }]}>
+              <Text style={[styles.tagBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
+            </View>
+          )}
         </View>
 
         {/* ── Body ── */}
         <View style={styles.body}>
           <Text style={[styles.title, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">{campaign.title}</Text>
-          <Text style={[styles.brandLine, { color: C.textSecondary }]} numberOfLines={1}>
-            {campaign.brand} · {timeAgo(campaign.createdAt, t)}
-          </Text>
 
-          <View style={styles.tagContainer}>
-            {campaign.campaignType === 'OPEN_EVENT' ? (
-              <View style={[styles.tagBadge, { backgroundColor: '#F0FDF4' }]}>
-                <Text style={[styles.tagBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
-              </View>
-            ) : (
-              <View style={[styles.tagBadge, { backgroundColor: '#EEF2FF' }]}>
-                <Text style={[styles.tagBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
-              </View>
-            )}
+          <Text style={[styles.budgetTitleText, { color: C.text }]} numberOfLines={1}>{campaign.budget}</Text>
+
+          <View style={styles.metaRow}>
+            <Text style={[styles.brandLine, { color: C.textSecondary }]} numberOfLines={1}>
+              {campaign.brand} · {timeAgo(campaign.createdAt, t)}
+            </Text>
           </View>
 
-          {/* Details */}
-          <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
-            <View style={styles.detailRow}>
-              <FontAwesome5 name={campaign.locationType === 'REMOTE' ? 'globe' : 'map-marker-alt'} solid size={13} color={C.textSecondary} />
+          {/* Details — collapsed to one row */}
+          <View style={[styles.detailsRow, { borderTopColor: C.border }]}>
+            <View style={styles.detailItem}>
+              <FontAwesome5 name={campaign.locationType === 'REMOTE' ? 'globe' : 'map-marker-alt'} solid size={11} color={C.textSecondary} />
               <Text style={[styles.detailText, { color: C.textSecondary }]} numberOfLines={1}>
                 {campaign.locationType === 'REMOTE' ? t('createEvent.locationRemote') : (campaign.location ?? t('campaignCard.nepalFallback'))}
               </Text>
             </View>
-            <View style={styles.detailRow}>
-              <FontAwesome5 name="clock" size={13} color={expiry.color} />
+            <View style={[styles.detailItem, styles.detailItemFixed]}>
+              <FontAwesome5 name="clock" size={11} color={expiry.color} />
               <Text style={[styles.detailText, { color: expiry.color }]} numberOfLines={1}>{expiry.label}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <FontAwesome5 name="money-bill-alt" solid size={13} color={C.textSecondary} />
-              <Text style={[styles.detailText, styles.budgetText, { color: C.text }]} numberOfLines={1}>{campaign.budget}</Text>
             </View>
           </View>
 
@@ -138,25 +134,9 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={goToDetail}>
             <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
-            <FontAwesome5 name="arrow-right" solid size={14} color="#fff" />
+            <FontAwesome5 name="arrow-right" solid size={13} color="#fff" />
           </Pressable>
         </View>
-
-        {/* Platforms — straddle the image/body seam: half over the photo,
-            half dipping into the info card. Rendered last (after the body)
-            so it paints on top of the body's own background too. */}
-        {campaign.platforms.length > 0 && (
-          <View style={styles.platformStackBetween}>
-            {campaign.platforms.map((p) => {
-              const meta = getPlatformMeta(allPlatforms, p);
-              return (
-                <View key={p} style={[styles.platformIcon, { backgroundColor: C.surface }]}>
-                  <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                </View>
-              );
-            })}
-          </View>
-        )}
       </Pressable>
     </View>
   );
@@ -185,38 +165,28 @@ const styles = StyleSheet.create({
   },
   distanceTagText: { fontSize: 9, color: '#fff', fontFamily: F.semibold },
 
-  // Straddles the image/body seam — top is set so the stack's center sits
-  // exactly on the image's bottom edge (half over the photo, half over the
-  // info card below it), right-aligned over the card.
-  platformStackBetween: {
-    position: 'absolute', top: CARD_IMG_H - 13, right: 14,
-    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6,
+  paidFreeTag: {
+    position: 'absolute', bottom: 12, right: 12,
+    borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3,
   },
-  platformIcon: {
-    width: 26, height: 26, borderRadius: RADIUS.full,
-    justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#0F172A', shadowOpacity: 0.22, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4,
-  },
+  tagBadgeText: { fontSize: 10, fontFamily: F.bold },
 
-  // Extra top clearance (vs. the 14px used on every other side) so the
-  // platform stack straddling the seam above never crowds the title text.
-  body: { padding: 14, paddingTop: 22 },
-  title: { fontSize: 15, lineHeight: 20, fontFamily: F.bold, marginBottom: 3 },
-  brandLine: { fontSize: 11, fontFamily: F.medium, marginBottom: 8 },
+  body: { padding: 12 },
+  title: { fontSize: 14, lineHeight: 18, fontFamily: F.bold, marginBottom: 2 },
+  budgetTitleText: { fontSize: 13, fontFamily: F.bold, marginBottom: 6 },
 
-  tagContainer: { flexDirection: 'row', marginBottom: 10 },
-  tagBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
-  tagBadgeText: { fontSize: 11, fontFamily: F.bold },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  brandLine: { fontSize: 11, fontFamily: F.medium, flexShrink: 1 },
 
-  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 10, marginBottom: 10, gap: 8 },
-  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  detailText: { fontSize: 12, fontFamily: F.regular, flexShrink: 1 },
-  budgetText: { fontFamily: F.bold },
+  detailsRow: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, paddingTop: 8, marginBottom: 10, gap: 8 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 },
+  detailItemFixed: { flex: 0 },
+  detailText: { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
 
   applyBtn: {
-    minHeight: 42, borderRadius: RADIUS.sm,
+    minHeight: 38, borderRadius: RADIUS.sm,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
     shadowOpacity: 0.32, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
   },
-  applyBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
+  applyBtnText: { color: '#fff', fontSize: 12, fontFamily: F.bold },
 });

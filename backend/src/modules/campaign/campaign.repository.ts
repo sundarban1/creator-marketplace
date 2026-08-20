@@ -43,10 +43,23 @@ export class CampaignRepository {
     aiSuggestedCategories?: string[];
     aiSuggestedPlatforms?: string[];
     aiNeedsInputFields?: string[];
+    requirements?: {
+      categoryId: string;
+      quantity: number;
+      budgetType: 'FIXED' | 'RANGE' | 'NEGOTIABLE';
+      budgetFixed?: number;
+      budgetMin?: number;
+      budgetMax?: number;
+      deliverables?: string;
+      description?: string;
+      format?: string[];
+      deadline?: Date;
+    }[];
   }) {
+    const { requirements, ...campaignData } = data;
     return prisma.campaign.create({
       data: {
-        ...data,
+        ...campaignData,
         campaignType: data.campaignType ?? 'PAID_CAMPAIGN',
         capacity:     data.capacity ?? null,
         eventDate:    data.eventDate ?? null,
@@ -54,10 +67,20 @@ export class CampaignRepository {
         benefits:     data.benefits ?? [],
         status:       data.status ?? 'ACTIVE',
         eventStatus:  'OPEN',
+        // Nested create — same transaction as the campaign row itself, so a
+        // campaign is never left half-created if a requirement fails validation.
+        ...(requirements?.length ? { requirements: { create: requirements } } : {}),
       },
       include: {
         business: { select: { businessName: true, logoUrl: true } },
         _count: { select: { applications: true } },
+        requirements: {
+          include: {
+            category: true,
+            _count: { select: { applications: { where: { status: 'ACCEPTED' } } } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
   }
@@ -83,7 +106,10 @@ export class CampaignRepository {
       return this.findManySearch({ ...filters, search: filters.search.trim() });
     }
 
-    const where: Prisma.CampaignWhereInput = {};
+    // Excludes admin-soft-deleted campaigns unconditionally — independent of
+    // whatever `status` filter is applied, since a deleted campaign can keep
+    // its pre-deletion status (see Campaign.deletedAt's schema comment).
+    const where: Prisma.CampaignWhereInput = { deletedAt: null };
 
     if (filters.category?.length) {
       where.category = { in: filters.category, mode: 'insensitive' };
@@ -161,6 +187,7 @@ export class CampaignRepository {
   }) {
     const { search } = filters;
     const conditions: Prisma.Sql[] = [
+      Prisma.sql`c."deletedAt" IS NULL`,
       Prisma.sql`c.status = ${filters.status ?? 'ACTIVE'}::"CampaignStatus"`,
     ];
     if (filters.category?.length) {
@@ -278,7 +305,8 @@ export class CampaignRepository {
     `;
 
     const boundingBoxWhere = Prisma.sql`
-      c.status = 'ACTIVE'
+      c."deletedAt" IS NULL
+      AND c.status = 'ACTIVE'
       AND c."locationLat" IS NOT NULL
       AND c."locationLng" IS NOT NULL
       AND c."locationLat" BETWEEN ${lat - latDelta} AND ${lat + latDelta}
@@ -355,20 +383,35 @@ export class CampaignRepository {
   }
 
   async findById(id: string) {
-    return prisma.campaign.findUnique({
-      where: { id },
+    // findFirst (not findUnique) — excluding admin-soft-deleted campaigns
+    // needs a second where condition alongside `id`, which findUnique can't
+    // express. Used throughout CampaignService for every business/creator-
+    // facing operation (apply, pay, work management, ...), so this makes a
+    // deleted campaign fully inert for everyone except admin's own
+    // getCampaignDetail/getAllCampaigns (separate queries in admin.repository.ts).
+    return prisma.campaign.findFirst({
+      where: { id, deletedAt: null },
       include: {
         business: {
           select: { businessName: true, logoUrl: true, website: true, description: true },
         },
         _count: { select: { applications: true } },
+        requirements: {
+          include: {
+            category: true,
+            // Live-computed, not stored — see CampaignRequirement's schema
+            // comment. Filtered count of the same relation, not a separate query.
+            _count: { select: { applications: { where: { status: 'ACCEPTED' } } } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
   }
 
   async findByBusinessId(businessId: string, page: number, limit: number, status?: CampaignStatus) {
     const skip = (page - 1) * limit;
-    const where: Prisma.CampaignWhereInput = { businessId, ...(status ? { status } : {}) };
+    const where: Prisma.CampaignWhereInput = { businessId, deletedAt: null, ...(status ? { status } : {}) };
     const [campaigns, total] = await Promise.all([
       prisma.campaign.findMany({
         where,
@@ -431,6 +474,41 @@ export class CampaignRepository {
     return prisma.campaign.delete({ where: { id } });
   }
 
+  // Lightweight id-only fetch — used to exclude campaigns a creator already
+  // applied to from their recommendation candidate pool, without paying for
+  // findApplicationsByCreator's much heavier select (deliverables, revision
+  // notes, business summary, ...) that the recommender has no use for.
+  async findAppliedCampaignIds(creatorId: string): Promise<string[]> {
+    const rows = await prisma.application.findMany({
+      where: { creatorId },
+      select: { campaignId: true },
+    });
+    return rows.map((r) => r.campaignId);
+  }
+
+  // Candidate pool for CampaignService.getRecommendedForCreator — active,
+  // non-deleted, not already applied-to, newest first. Scoring happens
+  // in-memory over this capped pool (mirrors CreatorRepository.findRecommended's
+  // same small-pool-then-score-in-JS approach), so this intentionally doesn't
+  // try to pre-rank by category/budget/location in SQL the way findMany's
+  // filters do — the pool just needs to be reasonably fresh and large enough
+  // that scoring has real signal to rank within.
+  async findCandidatesForRecommendation(excludeCampaignIds: string[], poolSize: number) {
+    return prisma.campaign.findMany({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        ...(excludeCampaignIds.length ? { id: { notIn: excludeCampaignIds } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: poolSize,
+      include: {
+        business: { select: { businessName: true, logoUrl: true } },
+        _count: { select: { applications: true } },
+      },
+    });
+  }
+
   async getDistinctCategories(): Promise<string[]> {
     const rows = await prisma.campaign.findMany({
       where: { status: 'ACTIVE' },
@@ -452,9 +530,16 @@ export class CampaignRepository {
     return rows.map((r) => r.platform).filter(Boolean);
   }
 
+  // Scoped to requirementId: null — this is the "apply to a simple campaign"
+  // path (see CampaignService.applyToCampaign), which doesn't yet create
+  // requirement-linked applications. Real uniqueness for this case is now
+  // enforced by the partial index applications_campaign_creator_no_requirement_key
+  // (see the migration and the comment on Application.@@index([campaignId,
+  // creatorId]) in schema.prisma) — the old compound-unique findUnique no
+  // longer exists since Prisma can't express a nullable-column unique input.
   async findApplication(campaignId: string, creatorId: string) {
-    return prisma.application.findUnique({
-      where: { campaignId_creatorId: { campaignId, creatorId } },
+    return prisma.application.findFirst({
+      where: { campaignId, creatorId, requirementId: null },
     });
   }
 
@@ -466,6 +551,7 @@ export class CampaignRepository {
     timeline: string;
     socialHandles: Record<string, string>;
     portfolioUrl?: string;
+    requirementId?: string;
   }) {
     return prisma.application.create({
       data,
@@ -474,6 +560,14 @@ export class CampaignRepository {
         creator: { select: { fullName: true } },
       },
     });
+  }
+
+  // Requirement-scoped counterpart to findApplication (which is scoped to
+  // requirementId: null, the simple-campaign case) — enforces one application
+  // per creator per requirement, matching the partial unique index
+  // applications_campaign_creator_requirement_key.
+  async findApplicationForRequirement(requirementId: string, creatorId: string) {
+    return prisma.application.findFirst({ where: { requirementId, creatorId } });
   }
 
   // Used by the admin-configurable "proposal submission per day" rate limit —
@@ -583,7 +677,7 @@ export class CampaignRepository {
     });
   }
 
-  async updateApplicationStatus(id: string, status: 'ACCEPTED' | 'REJECTED') {
+  async updateApplicationStatus(id: string, status: 'ACCEPTED' | 'REJECTED' | 'SHORTLISTED' | 'PENDING') {
     return prisma.application.update({
       where: { id },
       data: { status },
@@ -611,6 +705,7 @@ export class CampaignRepository {
         select: {
           id: true,
           campaignId: true,
+          requirementId: true,
           coverLetter: true,
           proposedRate: true,
           timeline: true,
@@ -910,6 +1005,66 @@ export class CampaignRepository {
       data: { status: 'REJECTED' },
     });
     return pending;
+  }
+
+  // ── CampaignRequirement capacity enforcement ─────────────────────────────────
+  // Mirrors the whole-campaign methods above (countAcceptedApplications,
+  // rejectPendingApplications, findPendingApplicationsByCampaign) but scoped to
+  // one requirement, so filling one role in a multi-requirement campaign
+  // doesn't touch applicants for a different, still-open role.
+
+  async countAcceptedApplicationsForRequirement(requirementId: string): Promise<number> {
+    return prisma.application.count({ where: { requirementId, status: 'ACCEPTED' } });
+  }
+
+  async findPendingApplicationsForRequirement(requirementId: string, excludeAppId: string) {
+    return prisma.application.findMany({
+      where: { requirementId, id: { not: excludeAppId }, status: 'PENDING' },
+      include: { creator: { select: { userId: true } } },
+    });
+  }
+
+  async rejectPendingApplicationsForRequirement(
+    requirementId: string,
+    excludeAppId: string
+  ): Promise<{ id: string; creator: { userId: string } }[]> {
+    const pending = await prisma.application.findMany({
+      where: { requirementId, id: { not: excludeAppId }, status: 'PENDING' },
+      select: { id: true, creator: { select: { userId: true } } },
+    });
+    if (pending.length === 0) return [];
+    await prisma.application.updateMany({
+      where: { id: { in: pending.map((a) => a.id) } },
+      data: { status: 'REJECTED' },
+    });
+    return pending;
+  }
+
+  async findRequirementById(requirementId: string) {
+    return prisma.campaignRequirement.findUnique({
+      where: { id: requirementId },
+      select: {
+        id: true, campaignId: true, categoryId: true, quantity: true,
+        budgetType: true, budgetFixed: true, budgetMin: true, budgetMax: true,
+        deliverables: true, description: true, format: true, deadline: true,
+        category: { select: { name: true } },
+      },
+    });
+  }
+
+  // True only once every requirement on the campaign has enough ACCEPTED
+  // applications to meet its quantity — the trigger for closing the whole
+  // campaign once all roles are filled, as opposed to just one.
+  async areAllRequirementsFilled(campaignId: string): Promise<boolean> {
+    const requirements = await prisma.campaignRequirement.findMany({
+      where: { campaignId },
+      select: { id: true, quantity: true },
+    });
+    if (requirements.length === 0) return false;
+    const counts = await Promise.all(
+      requirements.map((r) => prisma.application.count({ where: { requirementId: r.id, status: 'ACCEPTED' } }))
+    );
+    return requirements.every((r, i) => counts[i] >= r.quantity);
   }
 
   async closeCampaign(campaignId: string): Promise<void> {

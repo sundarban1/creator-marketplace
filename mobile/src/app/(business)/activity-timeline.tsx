@@ -14,13 +14,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { campaignService, type DeliverableVideo, type DeliverableFile } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import { useDeliverableVideoUploads, type DeliverableUploadItem } from '@/hooks/useDeliverableVideoUploads';
@@ -32,6 +32,9 @@ import {
 } from '@/utilities/chatAttachments';
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
 import { BottomSheet } from '@/components/BottomSheet';
+import { TabSlider } from '@/components/TabSlider';
+import { ContractBody } from '@/components/ContractModal';
+import { contractService, type Contract } from '@/services/contract';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { NameVideoModal } from '@/components/NameVideoModal';
@@ -505,6 +508,15 @@ export default function CampaignWorkspaceScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast]       = useState('');
 
+  // §52 — Overview/Chat/Deliverables/Payment/Agreement/Activity tabs. Purely
+  // a render-layer split: every state/handler above and below is shared
+  // across tabs unchanged, only which section is visible changes.
+  const [activeTab, setActiveTab] = useState<'overview' | 'deliverables' | 'payment' | 'agreement' | 'activity'>('overview');
+  // undefined = not fetched yet (== loading, once the Agreement tab is open
+  // and it's not a free event), null = fetched-and-none.
+  const [contract, setContract] = useState<Contract | null | undefined>(undefined);
+  const contractFetchStarted = useRef(false);
+
   const [showPay, setShowPay]           = useState(false);
   const [showUpload, setShowUpload]     = useState(false);
   const [showReview, setShowReview]     = useState(false);
@@ -512,6 +524,15 @@ export default function CampaignWorkspaceScreen() {
   const [showCancel, setShowCancel]     = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const autoOpenedFeedback = useRef(false);
+
+  // Post-completion rating (§58) — distinct from showFeedback/showReview
+  // above, which are about the submitted deliverables, not rating the other
+  // party. undefined = not fetched yet, null = fetched, none exists.
+  const [myReview, setMyReview] = useState<{ id: string; rating: number; comment: string | null; createdAt: string } | null | undefined>(undefined);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingValue, setRatingValue]     = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   const [payMethod, setPayMethod]       = useState<'esewa' | 'khalti' | 'fonepay'>('esewa');
   const [uploadUrls, setUploadUrls]     = useState('');
@@ -767,6 +788,43 @@ export default function CampaignWorkspaceScreen() {
 
   useFocusEffect(useCallback(() => { void load(); }, [campaignId, isCreator, applicationId]));
 
+  useEffect(() => {
+    if (app?.workStatus !== 'COMPLETED' || !app.id) return;
+    campaignService.getMyReview(app.id).then(setMyReview).catch(() => setMyReview(null));
+  }, [app?.workStatus, app?.id]);
+
+  // Agreement tab (§52) — lazy, fetched only once the tab is actually opened
+  // (not on initial screen load) since most opens never look at it. Contracts
+  // only exist for paid campaigns — free events have nothing to fetch.
+  useEffect(() => {
+    // Free events never have a contract (render checks isFreeEvent directly,
+    // ahead of `contract`'s undefined/null states) — nothing to fetch, so we
+    // just skip rather than needing to record that in `contract` itself.
+    // contractFetchStarted is a ref (not state) so this guard doesn't itself
+    // trigger the "setState synchronously in an effect" pattern.
+    if (activeTab !== 'agreement' || contractFetchStarted.current) return;
+    if (!app?.id || campaign?.campaignType === 'OPEN_EVENT') return;
+    contractFetchStarted.current = true;
+    contractService.getContractForApplication(app.id)
+      .then(setContract)
+      .catch(() => setContract(null));
+  }, [activeTab, app?.id, campaign?.campaignType]);
+
+  async function handleSubmitRating() {
+    if (!app?.id || ratingValue < 1 || submittingRating) return;
+    setSubmittingRating(true);
+    try {
+      await campaignService.submitReview(app.id, ratingValue, ratingComment.trim());
+      setMyReview({ id: app.id, rating: ratingValue, comment: ratingComment.trim() || null, createdAt: new Date().toISOString() });
+      setShowRatingModal(false);
+      showToast(t('activityTimeline.ratingSubmitted'));
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t('activityTimeline.ratingFailed'));
+    } finally {
+      setSubmittingRating(false);
+    }
+  }
+
   // Deep-linked from the "Revision Requested" notification — open the
   // feedback modal once the note has loaded. Guarded to fire only once per
   // mount so it doesn't reopen on every useFocusEffect refetch.
@@ -976,8 +1034,24 @@ export default function CampaignWorkspaceScreen() {
         <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
+      <View style={[s.tabBarWrap, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+        <TabSlider
+          justify
+          active={activeTab}
+          onChange={(k) => setActiveTab(k as typeof activeTab)}
+          tabs={[
+            { key: 'overview',     label: t('activityTimeline.tabOverview') },
+            { key: 'deliverables', label: t('activityTimeline.tabDeliverables') },
+            { key: 'payment',      label: t('activityTimeline.tabPayment') },
+            { key: 'agreement',    label: t('activityTimeline.tabAgreement') },
+            { key: 'activity',     label: t('activityTimeline.tabActivity') },
+          ]}
+        />
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
 
+        {activeTab === 'overview' && (<>
         {/* ── Campaign Summary Card ── */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <View style={s.summaryRow}>
@@ -1064,6 +1138,130 @@ export default function CampaignWorkspaceScreen() {
           onViewSubmission={() => setShowReview(true)}
         />
 
+        {/* ── Cancel Event button (business only) ── */}
+        {!isCreator && ws !== 'APPROVED' && ws !== 'COMPLETED' && (
+          <Pressable
+            style={[s.cancelBtn, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}
+            onPress={() => setShowCancel(true)}
+          >
+            <FontAwesome5 name="times-circle" solid size={18} color="#EF4444" />
+            <Text style={[s.cancelBtnTxt, { color: '#EF4444' }]}>{t('activityTimeline.cancelEventBtn')}</Text>
+          </Pressable>
+        )}
+
+        {/* ── Security Footer ── */}
+        <View style={s.secFooter}>
+          <FontAwesome5 name="shield-alt" solid size={13} color="#9CA3AF" />
+          <Text style={[s.secFooterTxt, { color: '#9CA3AF' }]}>{t('activityTimeline.paymentSecurityFooter')}</Text>
+        </View>
+        </>)}
+
+        {activeTab === 'deliverables' && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.deliverablesSection')}</Text>
+            {(ws === 'SUBMITTED' || ws === 'APPROVED' || ws === 'COMPLETED') ? (
+              <View style={{ marginTop: 12, gap: 10 }}>
+                <View style={py.row}>
+                  <Text style={[py.label, { color: C.textSecondary }]}>{t('activityTimeline.deliverablesVideos')}</Text>
+                  <Text style={[py.value, { color: C.text }]}>{app?.deliverableVideos.length ?? 0}</Text>
+                </View>
+                <View style={py.row}>
+                  <Text style={[py.label, { color: C.textSecondary }]}>{t('activityTimeline.deliverablesFiles')}</Text>
+                  <Text style={[py.value, { color: C.text }]}>{app?.deliverableFiles.length ?? 0}</Text>
+                </View>
+                <View style={py.row}>
+                  <Text style={[py.label, { color: C.textSecondary }]}>{t('activityTimeline.deliverablesLinks')}</Text>
+                  <Text style={[py.value, { color: C.text }]}>{submittedUrls.length}</Text>
+                </View>
+                {app?.submittedAt && (
+                  <View style={py.row}>
+                    <Text style={[py.label, { color: C.textSecondary }]}>{t('activityTimeline.deliverablesSubmittedAt')}</Text>
+                    <Text style={[py.value, { color: C.text }]}>{fmtDate(app.submittedAt)}</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <Text style={{ color: C.textSecondary, fontSize: 13, marginTop: 8 }}>
+                {isCreator ? t('activityTimeline.deliverablesEmptyCreator') : t('activityTimeline.deliverablesEmptyBusiness')}
+              </Text>
+            )}
+            {ws === 'IN_PROGRESS' && isCreator && (
+              <Pressable
+                style={[ac.btn, { backgroundColor: '#7C3AED', marginTop: 14, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
+                onPress={() => setShowUpload(true)}>
+                <FontAwesome5 name="cloud-upload-alt" solid size={16} color="#fff" />
+                <Text style={ac.btnTxt}>{t('activityTimeline.acUploadBtn')}</Text>
+              </Pressable>
+            )}
+            {(ws === 'SUBMITTED' || ws === 'APPROVED' || ws === 'COMPLETED') && (
+              <Pressable
+                style={[ac.btn, { backgroundColor: '#0EA5E9', marginTop: 14, shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
+                onPress={() => setShowReview(true)}>
+                <FontAwesome5 name="eye" solid size={16} color="#fff" />
+                <Text style={ac.btnTxt}>{isCreator ? t('activityTimeline.acViewSubmissionBtn') : t('activityTimeline.acReviewBtn')}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {activeTab === 'payment' && (
+        <View style={[s.card, { backgroundColor: C.surface }]}>
+          <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.paymentDetails')}</Text>
+          <View style={{ marginTop: 12, gap: 10 }}>
+            {[
+              { label: t('activityTimeline.paymentCreatorFee'),   value: `NPR ${crFee.toLocaleString()}` },
+              { label: t('activityTimeline.paymentPlatformFee'),  value: `NPR ${pfFee.toLocaleString()}` },
+              { label: t('activityTimeline.paymentVat'),          value: `NPR ${vat.toLocaleString()}` },
+            ].map((row, idx) => (
+              <View key={idx} style={py.row}>
+                <Text style={[py.label, { color: C.textSecondary }]}>{row.label}</Text>
+                <Text style={[py.value, { color: C.text }]}>{row.value}</Text>
+              </View>
+            ))}
+            <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
+            <View style={py.row}>
+              <Text style={[py.totalLabel, { color: C.text }]}>{t('activityTimeline.paymentTotal')}</Text>
+              <Text style={[py.totalValue, { color: '#16A34A' }]}>NPR {total.toLocaleString()}</Text>
+            </View>
+            <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
+            <View style={py.row}>
+              <Text style={[py.label, { color: C.textSecondary }]}>{t('activityTimeline.paymentStatus')}</Text>
+              <View style={[py.statusChip, {
+                backgroundColor: app?.paymentStatus === 'RELEASED' ? '#DCFCE7' : paid ? '#E0F2FE' : '#FEF2F2',
+              }]}>
+                <Text style={[py.statusChipTxt, {
+                  color: app?.paymentStatus === 'RELEASED' ? '#16A34A' : paid ? '#0EA5E9' : '#EF4444',
+                }]}>
+                  {app?.paymentStatus === 'RELEASED' ? t('activityTimeline.paymentStatusReleased') : paid ? t('activityTimeline.paymentStatusHeld') : t('activityTimeline.paymentStatusWaiting')}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View style={[py.trustBox, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
+            <FontAwesome5 name="shield-alt" solid size={13} color="#16A34A" />
+            <Text style={[py.trustTxt, { color: '#16A34A' }]}>{t('activityTimeline.paymentSecureNote')}</Text>
+          </View>
+        </View>
+        )}
+
+        {activeTab === 'agreement' && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.agreementSection')}</Text>
+            {isFreeEvent ? (
+              <Text style={{ color: C.textSecondary, fontSize: 13, marginTop: 8 }}>{t('activityTimeline.agreementNotApplicable')}</Text>
+            ) : contract === undefined ? (
+              <View style={{ paddingVertical: 24, alignItems: 'center' }}><ActivityIndicator size="small" color="#7C3AED" /></View>
+            ) : contract === null ? (
+              <Text style={{ color: C.textSecondary, fontSize: 13, marginTop: 8 }}>{t('activityTimeline.agreementUnavailable')}</Text>
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                <ContractBody filledBody={contract.filledBody} terms={contract.terms} contractId={contract.id} downloadTitle={contract.title} />
+              </View>
+            )}
+          </View>
+        )}
+
+        {activeTab === 'activity' && (<>
         {/* ── Activity Timeline ── */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <View style={s.secHeader}>
@@ -1104,62 +1302,37 @@ export default function CampaignWorkspaceScreen() {
           </View>
         </View>
 
-
-        {/* ── Payment Details ── */}
-        <View style={[s.card, { backgroundColor: C.surface }]}>
-          <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.paymentDetails')}</Text>
-          <View style={{ marginTop: 12, gap: 10 }}>
-            {[
-              { label: t('activityTimeline.paymentCreatorFee'),   value: `NPR ${crFee.toLocaleString()}` },
-              { label: t('activityTimeline.paymentPlatformFee'),  value: `NPR ${pfFee.toLocaleString()}` },
-              { label: t('activityTimeline.paymentVat'),          value: `NPR ${vat.toLocaleString()}` },
-            ].map((row, idx) => (
-              <View key={idx} style={py.row}>
-                <Text style={[py.label, { color: C.textSecondary }]}>{row.label}</Text>
-                <Text style={[py.value, { color: C.text }]}>{row.value}</Text>
+        {/* ── Rate your experience (§58) — shown once the project is fully
+              complete, for both sides. ── */}
+        {ws === 'COMPLETED' && myReview !== undefined && (
+          <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+            {myReview ? (
+              <View style={{ gap: 6 }}>
+                <Text style={[s.cardTitle, { color: C.text }]}>{t('activityTimeline.yourRatingTitle')}</Text>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <FontAwesome5 key={n} name="star" solid size={16} color={n <= myReview.rating ? '#F59E0B' : '#E5E7EB'} />
+                  ))}
+                </View>
+                {myReview.comment && <Text style={{ color: C.textSecondary, fontSize: 13 }}>{myReview.comment}</Text>}
               </View>
-            ))}
-            <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
-            <View style={py.row}>
-              <Text style={[py.totalLabel, { color: C.text }]}>{t('activityTimeline.paymentTotal')}</Text>
-              <Text style={[py.totalValue, { color: '#16A34A' }]}>NPR {total.toLocaleString()}</Text>
-            </View>
-            <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
-            <View style={py.row}>
-              <Text style={[py.label, { color: C.textSecondary }]}>{t('activityTimeline.paymentStatus')}</Text>
-              <View style={[py.statusChip, {
-                backgroundColor: app?.paymentStatus === 'RELEASED' ? '#DCFCE7' : paid ? '#E0F2FE' : '#FEF2F2',
-              }]}>
-                <Text style={[py.statusChipTxt, {
-                  color: app?.paymentStatus === 'RELEASED' ? '#16A34A' : paid ? '#0EA5E9' : '#EF4444',
-                }]}>
-                  {app?.paymentStatus === 'RELEASED' ? t('activityTimeline.paymentStatusReleased') : paid ? t('activityTimeline.paymentStatusHeld') : t('activityTimeline.paymentStatusWaiting')}
-                </Text>
-              </View>
-            </View>
+            ) : (
+              <Pressable
+                style={[s.ratingCta, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
+                onPress={() => { setRatingValue(0); setRatingComment(''); setShowRatingModal(true); }}>
+                <FontAwesome5 name="star" solid size={18} color="#F59E0B" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.cardTitle, { color: C.text }]}>
+                    {isCreator ? t('activityTimeline.rateBusinessTitle') : t('activityTimeline.rateCreatorTitle')}
+                  </Text>
+                  <Text style={{ color: C.textSecondary, fontSize: 12 }}>{t('activityTimeline.rateSub')}</Text>
+                </View>
+                <FontAwesome5 name="chevron-right" size={14} color="#F59E0B" />
+              </Pressable>
+            )}
           </View>
-          <View style={[py.trustBox, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
-            <FontAwesome5 name="shield-alt" solid size={13} color="#16A34A" />
-            <Text style={[py.trustTxt, { color: '#16A34A' }]}>{t('activityTimeline.paymentSecureNote')}</Text>
-          </View>
-        </View>
-
-        {/* ── Cancel Event button (business only) ── */}
-        {!isCreator && ws !== 'APPROVED' && ws !== 'COMPLETED' && (
-          <Pressable
-            style={[s.cancelBtn, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}
-            onPress={() => setShowCancel(true)}
-          >
-            <FontAwesome5 name="times-circle" solid size={18} color="#EF4444" />
-            <Text style={[s.cancelBtnTxt, { color: '#EF4444' }]}>{t('activityTimeline.cancelEventBtn')}</Text>
-          </Pressable>
         )}
-
-        {/* ── Security Footer ── */}
-        <View style={s.secFooter}>
-          <FontAwesome5 name="shield-alt" solid size={13} color="#9CA3AF" />
-          <Text style={[s.secFooterTxt, { color: '#9CA3AF' }]}>{t('activityTimeline.paymentSecurityFooter')}</Text>
-        </View>
+        </>)}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -1381,12 +1554,11 @@ export default function CampaignWorkspaceScreen() {
 
         <View style={{ gap: 12, marginVertical: 14 }}>
           <View>
-            <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadLinksLabel')}</Text>
-            <Text style={up.videosSub}>{t('activityTimeline.modalUploadLinksSub')}</Text>
-            <TextInput
-              style={[sh.input, { color: '#111827', height: 100, borderColor: urlError ? '#EF4444' : '#E5E7EB' }]}
+            <TextInputWithLabel
+              label={t('activityTimeline.modalUploadLinksLabel')}
+              hint={t('activityTimeline.modalUploadLinksSub')}
+              leftIcon="link"
               placeholder="https://drive.google.com/..."
-              placeholderTextColor="#9CA3AF"
               value={uploadUrls}
               onChangeText={(t) => { setUploadUrls(t); if (urlError) setUrlError(''); }}
               multiline
@@ -1394,9 +1566,12 @@ export default function CampaignWorkspaceScreen() {
               autoCorrect={false}
               keyboardType="url"
             />
-            <View style={[sh.infoBox, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE', marginTop: 8 }]}>
-              <FontAwesome5 name="info-circle" solid size={15} color="#4F46E5" />
-              <Text style={[sh.infoTxt, { color: '#4F46E5' }]}>{t('activityTimeline.modalUploadLinksPublicHint')}</Text>
+            {/* C.brinjal1/C.primaryLight, not hardcoded indigo — this screen
+                is shared by both roles, and a fixed purple would look wrong
+                against a business viewer's green theme. */}
+            <View style={[sh.infoBox, { backgroundColor: C.primaryLight, borderColor: C.border, marginTop: 8 }]}>
+              <FontAwesome5 name="info-circle" solid size={15} color={C.brinjal1} />
+              <Text style={[sh.infoTxt, { color: C.brinjal1 }]}>{t('activityTimeline.modalUploadLinksPublicHint')}</Text>
             </View>
 
             {/* Live per-link preview */}
@@ -1415,11 +1590,9 @@ export default function CampaignWorkspaceScreen() {
             )}
           </View>
           <View>
-            <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadNotesLabel')}</Text>
-            <TextInput
-              style={[sh.input, { color: '#111827', height: 60 }]}
+            <TextInputWithLabel
+              label={t('activityTimeline.modalUploadNotesLabel')}
               placeholder={t('activityTimeline.modalUploadNotesPlaceholder')}
-              placeholderTextColor="#9CA3AF"
               value={uploadNotes}
               onChangeText={setUploadNotes}
               multiline
@@ -1601,11 +1774,9 @@ export default function CampaignWorkspaceScreen() {
           </View>
         )}
         <View style={{ marginVertical: 14 }}>
-          <Text style={sh.inputLabel}>{t('activityTimeline.modalRevisionNotesLabel')}</Text>
-          <TextInput
-            style={[sh.input, { color: '#111827', height: 100 }]}
+          <TextInputWithLabel
+            label={t('activityTimeline.modalRevisionNotesLabel')}
             placeholder={t('activityTimeline.modalRevisionNotesPlaceholder')}
-            placeholderTextColor="#9CA3AF"
             value={revisionNote}
             onChangeText={setRevisionNote}
             multiline
@@ -1679,6 +1850,34 @@ export default function CampaignWorkspaceScreen() {
         </View>
       </BottomSheet>
 
+      <BottomSheet visible={showRatingModal} onClose={() => setShowRatingModal(false)} title={isCreator ? t('activityTimeline.rateBusinessTitle') : t('activityTimeline.rateCreatorTitle')}>
+        <Text style={sh.sub}>{t('activityTimeline.rateSub')}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginVertical: 18 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Pressable key={n} hitSlop={8} onPress={() => setRatingValue(n)}>
+              <FontAwesome5 name="star" solid size={32} color={n <= ratingValue ? '#F59E0B' : '#E5E7EB'} />
+            </Pressable>
+          ))}
+        </View>
+        <TextInputWithLabel
+          label={t('activityTimeline.ratingCommentLabel')}
+          value={ratingComment}
+          onChangeText={(v) => setRatingComment(v.slice(0, 1000))}
+          placeholder={t('activityTimeline.ratingCommentPlaceholder')}
+          multiline
+          numberOfLines={4}
+        />
+        <Pressable
+          style={[sh.primaryBtn, { marginTop: 16, backgroundColor: '#7C3AED', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6, opacity: (ratingValue < 1 || submittingRating) ? 0.6 : 1 }]}
+          onPress={handleSubmitRating}
+          disabled={ratingValue < 1 || submittingRating}
+        >
+          {submittingRating
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.ratingSubmitBtn')}</Text>}
+        </Pressable>
+      </BottomSheet>
+
       <VideoPlayerModal
         visible={!!playingVideo}
         url={playingVideo?.url ?? null}
@@ -1722,10 +1921,13 @@ const s = StyleSheet.create({
 
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
+  tabBarWrap: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   headerTitle:  { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
   iconBtn:      { padding: 8, minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
 
   card: { borderRadius: RADIUS.lg, padding: 16, ...TOKEN_SHADOW.card, overflow: 'hidden' },
+  cardTitle: { fontSize: 14, fontFamily: F.bold },
+  ratingCta: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.md, borderWidth: 1.5, padding: 12 },
 
   summaryRow:   { flexDirection: 'row', gap: 12, marginBottom: 12 },
   thumb:        { width: 68, height: 68, borderRadius: RADIUS.md, flexShrink: 0 },
@@ -1874,7 +2076,6 @@ const sh = StyleSheet.create({
   methodLeft:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   methodTxt:    { fontSize: 14, fontFamily: F.semibold },
   inputLabel:   { fontSize: 12, fontFamily: F.semibold, color: '#374151', marginBottom: 6 },
-  input:        { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: F.regular, textAlignVertical: 'top' },
   primaryBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.full, paddingVertical: 15 },
   primaryBtnTxt:{ fontSize: 15, fontFamily: F.bold, color: '#fff' },
   infoBox:      { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, padding: 10 },

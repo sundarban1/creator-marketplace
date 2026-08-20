@@ -31,6 +31,15 @@ const ICON_COLORS = [
   { hex: '#6B7280', label: 'Gray' },
 ];
 
+// Provider-type sub-grouping for the CREATOR taxonomy — mirrors the groups
+// already used by prisma/seeds/categories.ts, kept in sync manually since
+// there's no dedicated Group model (see category.schema.ts's comment).
+const KNOWN_GROUPS = [
+  'Content & Creator', 'Photography', 'Video & Production', 'Performance & Entertainment',
+  'Music & Audio', 'Fashion & Beauty', 'Hosting & Presentation', 'Creative & Design',
+  'Events', 'Marketing & Promotion', 'Other',
+];
+
 function slugify(str: string) {
   return str
     .toLowerCase()
@@ -57,6 +66,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
   const [key, setKey] = useState(initial?.key ?? '');
   const [status, setStatus] = useState<CategoryStatus>(initial?.status ?? 'active');
   const [scope, setScope] = useState<CategoryScope>(initial?.scope ?? 'both');
+  const [group, setGroup] = useState<string | null>(initial?.group ?? null);
   const [keyTouched, setKeyTouched] = useState(!!initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -87,7 +97,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    onSubmit({ icon: icon.trim(), iconBg, color, name: name.trim(), key: key.trim(), status, scope });
+    onSubmit({ icon: icon.trim(), iconBg, color, name: name.trim(), key: key.trim(), status, scope, group: scope === 'business' ? null : group });
   }
 
   return (
@@ -279,6 +289,23 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
               ))}
             </div>
           </div>
+
+          {scope !== 'business' && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-800 mb-1">Group</h3>
+              <p className="text-xs text-gray-400 mb-4">Groups related provider types together in pickers, e.g. "Photography".</p>
+              <select
+                value={group ?? ''}
+                onChange={(e) => setGroup(e.target.value || null)}
+                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              >
+                <option value="">— None —</option>
+                {KNOWN_GROUPS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Status</h3>

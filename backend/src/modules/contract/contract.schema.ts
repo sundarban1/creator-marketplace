@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
 export const previewContractSchema = z.object({
-  campaignId:   z.string().min(1),
-  proposedRate: z.number().min(0),
-  timeline:     z.string().min(1).max(120),
+  campaignId:    z.string().min(1),
+  proposedRate:  z.number().min(0),
+  timeline:      z.string().min(1).max(120),
+  requirementId: z.string().min(1).optional(),
 });
 export type PreviewContractInput = z.infer<typeof previewContractSchema>;
 

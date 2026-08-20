@@ -94,11 +94,36 @@ export interface CampaignDto {
   };
   _count?: { applications: number };
   distanceKm?: number;
+  // Present only for multi-role campaigns — undefined (not []) for the
+  // simple single-category case, so clients can branch on `campaign.requirements?.length`
+  // rather than treating an empty array as "has zero roles."
+  requirements?: CampaignRequirementDto[];
+}
+
+export interface CampaignRequirementDto {
+  id: string;
+  categoryId: string;
+  category: { id: string; name: string; key: string; icon: string; color: string };
+  quantity: number;
+  budgetType: string;
+  budgetFixed: number | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  deliverables: string | null;
+  description: string | null;
+  format: string[];
+  deadline: string | null;
+  // Live-computed (count of ACCEPTED applications for this requirement),
+  // never stored — see the schema comment on CampaignRequirement.
+  acceptedCount: number;
 }
 
 export interface ApplicationDto {
   id: string;
   campaignId: string;
+  // Null for the simple single-category case — set only when this
+  // application belongs to one role of a multi-requirement campaign.
+  requirementId: string | null;
   coverLetter: string;
   proposedRate: number;
   // Derived from proposedRate + the campaign's snapshotted commissionRate —
@@ -195,6 +220,21 @@ type RawCampaign = {
   business?: { businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
   _count?: { applications: number };
   distanceKm?: number;
+  requirements?: {
+    id: string;
+    categoryId: string;
+    category: { id: string; name: string; key: string; icon: string; color: string };
+    quantity: number;
+    budgetType: string;
+    budgetFixed: number | null;
+    budgetMin: number | null;
+    budgetMax: number | null;
+    deliverables: string | null;
+    description: string | null;
+    format: string[];
+    deadline: Date | null;
+    _count?: { applications: number };
+  }[];
 };
 
 export function toCampaignDto(c: RawCampaign): CampaignDto {
@@ -247,12 +287,30 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
   if (c.business != null) dto.business = c.business;
   if (c._count  != null) dto._count   = c._count;
   if (c.distanceKm != null) dto.distanceKm = Math.round(c.distanceKm * 10) / 10;
+  if (c.requirements?.length) {
+    dto.requirements = c.requirements.map((r) => ({
+      id:            r.id,
+      categoryId:    r.categoryId,
+      category:      r.category,
+      quantity:      r.quantity,
+      budgetType:    r.budgetType,
+      budgetFixed:   r.budgetFixed,
+      budgetMin:     r.budgetMin,
+      budgetMax:     r.budgetMax,
+      deliverables:  r.deliverables,
+      description:   r.description,
+      format:        r.format ?? [],
+      deadline:      r.deadline ? r.deadline.toISOString() : null,
+      acceptedCount: r._count?.applications ?? 0,
+    }));
+  }
   return dto;
 }
 
 type RawApplication = {
   id: string;
   campaignId: string;
+  requirementId?: string | null;
   coverLetter: string;
   proposedRate: number;
   timeline: string;
@@ -306,6 +364,7 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
   const dto: ApplicationDto = {
     id:              a.id,
     campaignId:      a.campaignId,
+    requirementId:   a.requirementId ?? null,
     coverLetter:     a.coverLetter,
     proposedRate:    a.proposedRate,
     platformFee,

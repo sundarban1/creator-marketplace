@@ -86,9 +86,11 @@ export class CreatorController {
 
   async getPeerCreatorProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // No viewerUserId passed through — that param drives the business-side
-      // profile-view analytics counter, which doesn't apply to creator<->creator views.
-      const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language);
+      // viewerUserId is passed only so the service can detect "viewing your own
+      // profile" and bypass the showPublicProfile gate — it won't trigger the
+      // business-side profile-view analytics counter since that branch looks up
+      // a business record for this id, which a creator's userId never matches.
+      const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language, req.user!.id);
       success(res, profile, 'Creator profile retrieved');
     } catch (err) {
       next(err);
@@ -394,5 +396,40 @@ export class CreatorController {
     } catch (err) {
       next(err);
     }
+  }
+
+  async updateAvailabilityStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.updateAvailabilityStatus(req.user!.id, req.body);
+      success(res, { availabilityStatus: profile.availabilityStatus }, 'Availability updated');
+    } catch (err) { next(err); }
+  }
+
+  async getAvailabilitySchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schedule = await creatorService.getAvailabilitySchedule(req.user!.id);
+      success(res, schedule, 'Availability schedule retrieved');
+    } catch (err) { next(err); }
+  }
+
+  async updateAvailabilitySchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schedule = await creatorService.updateAvailabilitySchedule(req.user!.id, req.body);
+      success(res, schedule, 'Availability schedule updated');
+    } catch (err) { next(err); }
+  }
+
+  async listInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const invitations = await creatorService.listInvitations(req.user!.id);
+      success(res, invitations, 'Invitations retrieved');
+    } catch (err) { next(err); }
+  }
+
+  async respondToInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const invitation = await creatorService.respondToInvitation(req.user!.id, req.params.id, req.body);
+      success(res, invitation, 'Invitation response recorded');
+    } catch (err) { next(err); }
   }
 }

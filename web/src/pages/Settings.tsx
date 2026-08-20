@@ -189,6 +189,7 @@ const DEFAULTS: PlatformSettings = {
   'platform.supportEmail':       'support@collab.com',
   'platform.commission':         '12',
   'platform.description':        'Kolab connects brands with top creators for authentic events.',
+  'marketplace.launchPriorityCity': 'Itahari',
   'featuredEvent.unlimitedEmails': [] as string[],
   'app.minVersion.ios':           '',
   'app.minVersion.android':       '',
@@ -366,6 +367,14 @@ export function Settings() {
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
             />
           </div>
+        </SectionCard>
+
+        {/* Marketplace */}
+        <SectionCard title="Marketplace" subtitle="Controls which market the marketplace currently favors — change this as the launch expands to new cities">
+          <InputField label="Launch Priority City" settingKey="marketplace.launchPriorityCity" settings={settings} onChange={setString} />
+          <p className="text-xs text-gray-400 -mt-2">
+            Recommended providers ranking for businesses favors this city first, then falls back to distance/quality. Leave blank to disable city-priority entirely.
+          </p>
         </SectionCard>
 
         {/* Featured Events */}

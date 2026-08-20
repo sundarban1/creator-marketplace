@@ -181,6 +181,18 @@ function MessageBubble({
   const isVideo   = msg.type === 'VIDEO' && !!msg.attachmentUrl;
   const isVoice   = msg.type === 'VOICE';
 
+  // §54 — auto-posted collaboration lifecycle notices (work started/submitted,
+  // payment released). Always centered, sender-less.
+  if (msg.type === 'SYSTEM') {
+    return (
+      <View style={s.systemRow}>
+        <View style={[s.systemPill, { backgroundColor: C.background, borderColor: C.border }]}>
+          <Text style={[s.systemPillTxt, { color: C.textSecondary }]}>{msg.text}</Text>
+        </View>
+      </View>
+    );
+  }
+
   if (msg.isDeleted) {
     return (
       <View style={[s.bubbleRow, isSent ? s.bubbleRowSent : s.bubbleRowReceived]}>
@@ -693,6 +705,9 @@ const s = StyleSheet.create({
   bubbleReceived: { borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth },
   deletedBubble: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.lg },
   deletedTxt: { fontSize: 13, fontFamily: F.regular, fontStyle: 'italic' },
+  systemRow:      { alignItems: 'center', marginVertical: 8, paddingHorizontal: 40 },
+  systemPill:     { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 6 },
+  systemPillTxt:  { fontSize: 12, fontFamily: F.medium, textAlign: 'center' },
   bubbleTxt:  { fontSize: 15, lineHeight: 22, fontFamily: F.regular },
   bubbleMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3, paddingHorizontal: 2 },
   bubbleTime: { fontSize: 10, fontFamily: F.regular },

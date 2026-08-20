@@ -15,6 +15,8 @@ export type ContractTerms = {
   approvalRequirements: string | null;
   location: string | null;
   platformCommission: number | null;
+  role: string | null;
+  deliveryFormat: string[];
 };
 
 export type ContractPreview = {
@@ -36,8 +38,8 @@ export type Contract = {
 };
 
 export const contractService = {
-  async previewContract(campaignId: string, proposedRate: number, timeline: string): Promise<ContractPreview> {
-    const res = await request<ContractPreview>('POST', '/api/contracts/preview', { campaignId, proposedRate, timeline });
+  async previewContract(campaignId: string, proposedRate: number, timeline: string, requirementId?: string): Promise<ContractPreview> {
+    const res = await request<ContractPreview>('POST', '/api/contracts/preview', { campaignId, proposedRate, timeline, requirementId });
     return res.data;
   },
 

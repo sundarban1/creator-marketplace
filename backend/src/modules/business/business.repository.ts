@@ -1,6 +1,29 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
+// Shared between findMany's Prisma path and findManySearch's raw-SQL + hydrate
+// path below — keeps the two result shapes identical regardless of which path
+// a given request takes.
+const LIST_SELECT = {
+  id:           true,
+  businessName: true,
+  description:  true,
+  logoUrl:      true,
+  website:      true,
+  categories:   true,
+  isVerified:   true,
+  panDocStatus: true,
+  companyRegDocStatus: true,
+  province:     true,
+  district:     true,
+  city:         true,
+  area:         true,
+  address:      true,
+  locationVisibility: true,
+  user: { select: { isEmailVerified: true, isPhoneVerified: true } },
+  _count: { select: { campaigns: { where: { status: 'ACTIVE' as const } } } },
+} satisfies Prisma.BusinessProfileSelect;
+
 export class BusinessRepository {
   async findMany(params: {
     search?:    string;
@@ -10,11 +33,16 @@ export class BusinessRepository {
     page:       number;
     limit:      number;
   }) {
+    // Relevance-ranked, typo-tolerant, multi-field search needs raw SQL
+    // (Prisma can't express similarity()/ORDER BY rank), so it's handled by
+    // a dedicated path that re-applies the same filters directly in SQL —
+    // see findManySearch. Mirrors CampaignRepository's findMany/findManySearch split.
+    if (params.search?.trim()) {
+      return this.findManySearch({ ...params, search: params.search.trim() });
+    }
+
     const where: Prisma.BusinessProfileWhereInput = { showPublicProfile: true };
 
-    if (params.search) {
-      where.businessName = { contains: params.search, mode: 'insensitive' };
-    }
     if (params.category) {
       where.categories = { has: params.category };
     }
@@ -42,22 +70,107 @@ export class BusinessRepository {
         // row on two different pages (or skip one entirely) as the result
         // set shifts between paginated queries.
         orderBy: [{ isVerified: 'desc' }, { businessName: 'asc' }, { id: 'asc' }],
-        select: {
-          id:           true,
-          businessName: true,
-          description:  true,
-          logoUrl:      true,
-          website:      true,
-          categories:   true,
-          isVerified:   true,
-          panDocStatus: true,
-          companyRegDocStatus: true,
-          user: { select: { isEmailVerified: true, isPhoneVerified: true } },
-          _count: { select: { campaigns: { where: { status: 'ACTIVE' } } } },
-        },
+        select: LIST_SELECT,
       }),
       prisma.businessProfile.count({ where }),
     ]);
+    return { businesses, total };
+  }
+
+  /**
+   * Search path for findMany — matches business name, description, and
+   * structured location fields (city/district/area/address), with pg_trgm
+   * similarity on businessName for typo tolerance (e.g. "resturant" still
+   * matches "Restaurant Supplies Co"). Ranked by relevance so a strong name
+   * match outranks an incidental description hit.
+   *
+   * Every other findMany filter (category/platform/locations) is re-applied
+   * here in raw SQL so a search query stays consistent with the non-search
+   * path, then ranking + pagination happen in Postgres and only the
+   * requested page of ids crosses into Node — same pattern as
+   * CampaignRepository's findManySearch.
+   */
+  private async findManySearch(params: {
+    search:     string;
+    category?:  string;
+    platform?:  string;
+    locations?: string[];
+    page:       number;
+    limit:      number;
+  }) {
+    const { search } = params;
+    const conditions: Prisma.Sql[] = [Prisma.sql`b."showPublicProfile" = true`];
+
+    if (params.category) {
+      conditions.push(Prisma.sql`${params.category} = ANY(b.categories)`);
+    }
+    if (params.platform || (params.locations && params.locations.length > 0)) {
+      const campaignConditions: Prisma.Sql[] = [
+        Prisma.sql`c."businessId" = b.id`,
+        Prisma.sql`c.status = 'ACTIVE'::"CampaignStatus"`,
+      ];
+      if (params.platform) {
+        campaignConditions.push(Prisma.sql`${params.platform} = ANY(c.platforms)`);
+      }
+      if (params.locations && params.locations.length > 0) {
+        campaignConditions.push(Prisma.sql`(${Prisma.join(
+          params.locations.map((loc) => Prisma.sql`c.location ILIKE ${`%${loc}%`}`),
+          ' OR ',
+        )})`);
+      }
+      conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM campaigns c WHERE ${Prisma.join(campaignConditions, ' AND ')})`);
+    }
+
+    conditions.push(Prisma.sql`(
+      b."businessName" ILIKE ${`%${search}%`}
+      OR b.description ILIKE ${`%${search}%`}
+      OR b.city ILIKE ${`%${search}%`}
+      OR b.district ILIKE ${`%${search}%`}
+      OR b.area ILIKE ${`%${search}%`}
+      OR b.address ILIKE ${`%${search}%`}
+      OR similarity(b."businessName", ${search}) > 0.2
+    )`);
+
+    const whereSql = Prisma.join(conditions, ' AND ');
+    // Exact/substring name hits rank above a fuzzy match, which ranks above a
+    // hit that only landed in description/location.
+    const rankExpr = Prisma.sql`
+      GREATEST(
+        CASE WHEN b."businessName" ILIKE ${`%${search}%`} THEN 1 ELSE 0 END,
+        similarity(b."businessName", ${search})
+      ) * 2
+      + CASE WHEN b.description ILIKE ${`%${search}%`} THEN 1 ELSE 0 END
+    `;
+    const skip = (params.page - 1) * params.limit;
+
+    const [rows, countRows] = await Promise.all([
+      prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
+        SELECT b.id
+        FROM business_profiles b
+        WHERE ${whereSql}
+        ORDER BY (${rankExpr}) DESC, b."isVerified" DESC, b."businessName" ASC, b.id ASC
+        LIMIT ${params.limit} OFFSET ${skip}
+      `),
+      prisma.$queryRaw<{ count: bigint }[]>(Prisma.sql`
+        SELECT COUNT(*) AS count
+        FROM business_profiles b
+        WHERE ${whereSql}
+      `),
+    ]);
+
+    const total = Number(countRows[0]?.count ?? 0);
+    if (rows.length === 0) return { businesses: [], total };
+
+    const ids = rows.map((r) => r.id);
+    const hydrated = await prisma.businessProfile.findMany({
+      where:  { id: { in: ids } },
+      select: LIST_SELECT,
+    });
+
+    // findMany doesn't preserve `in` order, so re-sort to match the rank-ranked SQL result
+    const byId = new Map(hydrated.map((b) => [b.id, b]));
+    const businesses = ids.map((id) => byId.get(id)).filter((b): b is NonNullable<typeof b> => b != null);
+
     return { businesses, total };
   }
 
@@ -78,7 +191,15 @@ export class BusinessRepository {
         createdAt:            true,
         showPublicProfile:    true,
         hideContactDetails:   true,
+        hideSocialLinks:      true,
         allowDirectMessages:  true,
+        province:             true,
+        district:             true,
+        city:                 true,
+        area:                 true,
+        address:              true,
+        locationVisibility:   true,
+        socialLinks:          true,
         userId:               true,
         user: { select: { isEmailVerified: true, isPhoneVerified: true } },
         campaigns: {
@@ -140,8 +261,15 @@ export class BusinessRepository {
       locationLat: number | null;
       locationLng: number | null;
       phone: string | null;
+      province: string | null;
+      district: string | null;
+      city: string | null;
+      area: string | null;
+      address: string | null;
+      locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
       showPublicProfile: boolean;
       hideContactDetails: boolean;
+      hideSocialLinks: boolean;
       allowDirectMessages: boolean;
       socialLinks: Record<string, string>;
       presenceServices: string[];
@@ -149,6 +277,9 @@ export class BusinessRepository {
       defaultPlatforms: string[];
       defaultCreatorCategories: string[];
       defaultBudgetRange: string | null;
+      representingType: 'ORGANIZATION' | 'INDIVIDUAL';
+      purpose: 'BRAND_MARKETING' | 'CONTENT_CREATION' | 'EVENT' | 'WEDDING' | 'PHOTOSHOOT' | 'PERFORMANCE' | 'COLLABORATION' | 'OTHER';
+      businessSize: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE';
     }>
   ) {
     return prisma.businessProfile.update({

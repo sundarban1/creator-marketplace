@@ -62,6 +62,27 @@ export class AnalyticsRepository {
     return prisma.review.findUnique({ where: { applicationId_fromUserId: { applicationId, fromUserId } } });
   }
 
+  // Reviews received BY userId — for the "Reviews" section on a public
+  // profile (§36/§60). fromUser's creatorProfile/businessProfile are
+  // mutually exclusive (a User has at most one), so the DTO layer picks
+  // whichever is non-null to get a display name/avatar for the reviewer.
+  async findReviewsReceived(userId: string, limit = 10) {
+    return prisma.review.findMany({
+      where: { toUserId: userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true, rating: true, comment: true, createdAt: true,
+        fromUser: {
+          select: {
+            creatorProfile: { select: { fullName: true, avatarUrl: true } },
+            businessProfile: { select: { businessName: true, logoUrl: true } },
+          },
+        },
+      },
+    });
+  }
+
   async applyCreatorRatingSample(userId: string, rating: number) {
     const row = await prisma.creatorAnalytics.upsert({
       where: { userId },

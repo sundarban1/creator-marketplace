@@ -9,6 +9,8 @@ export type SocialLinks = {
 
 export type DocStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
+export type BusinessPurpose = 'BRAND_MARKETING' | 'CONTENT_CREATION' | 'EVENT' | 'WEDDING' | 'PHOTOSHOOT' | 'PERFORMANCE' | 'COLLABORATION' | 'OTHER';
+
 export type BusinessProfile = {
   id:           string;
   businessName: string;
@@ -36,6 +38,8 @@ export type BusinessProfile = {
   companyRegDocUrl:    string | null;
   companyRegDocStatus: DocStatus;
   verificationRejectReason: string | null;
+  representingType: 'ORGANIZATION' | 'INDIVIDUAL' | null;
+  purpose: BusinessPurpose | null;
   favoritedByCount: number;
   user: { email: string; phone: string | null; isEmailVerified: boolean; isPhoneVerified: boolean };
 };
@@ -64,6 +68,7 @@ export const profileService = {
     gender?:     string;
     avatarUrl?:  string;
     categories?: string[];
+    providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY';
   }): Promise<void> {
     await request('PUT', '/api/creator/profile', data);
   },
@@ -87,6 +92,9 @@ export const profileService = {
     defaultPlatforms?:         string[];
     defaultCreatorCategories?: string[];
     defaultBudgetRange?:       string | null;
+    representingType?: 'ORGANIZATION' | 'INDIVIDUAL';
+    purpose?: BusinessPurpose;
+    businessSize?: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE';
   }): Promise<void> {
     await request('PUT', '/api/business/profile', data);
   },

@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { isCreatorFullyVerified } from '../../utils/verification';
+import { maskLocationByVisibility } from '../../utils/geo';
 
 export interface SocialAccountDto {
   id: string;
@@ -46,6 +47,21 @@ export interface CreatorProfileDto {
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  verificationRejectReason: string | null;
+  verificationRejectedAt: string | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  area: string | null;
+  address: string | null;
+  locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
+  showPublicProfile: boolean;
+  hideContactDetails: boolean;
+  hideSocialLinks: boolean;
+  availabilityStatus: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
+  providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  startingRate: number | null;
+  negotiable: boolean;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -69,6 +85,9 @@ export interface PublicCreatorDto {
   fullName: string | null;
   bio: string | null;
   location: string | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
   avatarUrl: string | null;
   categories: string[];
   isVerified: boolean;
@@ -83,6 +102,15 @@ export interface PublicCreatorDto {
     profileUrl: string;
     connectedViaOAuth: boolean;
   }>;
+}
+
+// Mirrors business.dto.ts's toPrivateBusinessDto — returned in place of the
+// full public DTO when the profile owner has turned showPublicProfile off.
+export interface PrivateCreatorDto {
+  id: string;
+  fullName: string | null;
+  avatarUrl: string | null;
+  isPrivate: true;
 }
 
 export interface CreatorListItemDto {
@@ -159,6 +187,21 @@ type RawCreatorProfile = {
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  verificationRejectReason: string | null;
+  verificationRejectedAt: Date | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  area: string | null;
+  address: string | null;
+  locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
+  showPublicProfile: boolean;
+  hideContactDetails: boolean;
+  hideSocialLinks: boolean;
+  availabilityStatus: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
+  providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  startingRate: number | null;
+  negotiable: boolean;
   createdAt: Date;
   updatedAt: Date;
   user?: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean; isOnboarded: boolean } | null;
@@ -194,6 +237,21 @@ export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
     citizenshipStatus: p.citizenshipStatus,
     panDocUrl:     p.panDocUrl,
     panDocStatus:  p.panDocStatus,
+    verificationRejectReason: p.verificationRejectReason,
+    verificationRejectedAt: p.verificationRejectedAt ? p.verificationRejectedAt.toISOString() : null,
+    province:      p.province,
+    district:      p.district,
+    city:          p.city,
+    area:          p.area,
+    address:       p.address,
+    locationVisibility: p.locationVisibility,
+    showPublicProfile:  p.showPublicProfile,
+    hideContactDetails: p.hideContactDetails,
+    hideSocialLinks:    p.hideSocialLinks,
+    availabilityStatus: p.availabilityStatus,
+    providerType:  p.providerType ?? null,
+    startingRate:  p.startingRate,
+    negotiable:    p.negotiable,
     createdAt:     p.createdAt.toISOString(),
     updatedAt:     p.updatedAt.toISOString(),
     user:          p.user ?? null,
@@ -209,6 +267,15 @@ type RawPublicCreator = {
   fullName: string | null;
   bio: string | null;
   location: string | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  area: string | null;
+  address: string | null;
+  locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
+  showPublicProfile: boolean;
+  hideContactDetails: boolean;
+  hideSocialLinks: boolean;
   avatarUrl: string | null;
   categories: string[];
   isVerified: boolean;
@@ -220,7 +287,13 @@ type RawPublicCreator = {
   user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
+export function toPrivateCreatorDto(p: { id: string; fullName: string | null; avatarUrl: string | null }): PrivateCreatorDto {
+  return { id: p.id, fullName: p.fullName, avatarUrl: p.avatarUrl, isPrivate: true };
+}
+
 export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
+  const loc = maskLocationByVisibility(p, p.locationVisibility);
+  const hideSocial = p.hideSocialLinks;
   return {
     id:            p.id,
     userId:        p.userId,
@@ -228,14 +301,17 @@ export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
     fullName:      p.fullName,
     bio:           p.bio,
     location:      p.location,
+    province:      loc.province,
+    district:      loc.district,
+    city:          loc.city,
     avatarUrl:     p.avatarUrl,
     categories:    p.categories,
     isVerified:    p.isVerified,
     fullyVerified: p.user ? isCreatorFullyVerified(p.user, p) : false,
     prefPlatforms: p.prefPlatforms,
-    socialLinks:   (p.socialLinks ?? {}) as Record<string, string>,
+    socialLinks:   hideSocial ? {} : ((p.socialLinks ?? {}) as Record<string, string>),
     portfolioLinks: (p.portfolioLinks ?? []) as Array<{ id: string; label: string; url: string }>,
-    socialAccounts: p.socialAccounts.map((a) => ({ ...a, connectedViaOAuth: a.connectedViaOAuth ?? false })),
+    socialAccounts: hideSocial ? [] : p.socialAccounts.map((a) => ({ ...a, connectedViaOAuth: a.connectedViaOAuth ?? false })),
   };
 }
 

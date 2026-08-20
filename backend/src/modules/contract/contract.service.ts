@@ -15,7 +15,7 @@ const CONTRACT_CAMPAIGN_TYPE = 'PAID_CAMPAIGN' as const;
 export const TOKENS = [
   'creatorName', 'businessName', 'campaignTitle', 'effectiveDate', 'acceptanceDate', 'deadline',
   'price', 'deliverables', 'timeline', 'platforms', 'contentGuidelines',
-  'approvalRequirements', 'location', 'platformCommission',
+  'approvalRequirements', 'location', 'platformCommission', 'role', 'deliveryFormat',
 ] as const;
 
 // Canonical source of the default template text — also seeded into the DB by
@@ -119,7 +119,20 @@ export type ContractTerms = {
   approvalRequirements: string | null;
   location: string | null;
   platformCommission: number | null;
+  role: string | null;
+  deliveryFormat: string[];
 };
+
+// The specific role-slot (§ CampaignRequirement) an application is tied to —
+// its own deliverables/format/deadline take precedence over the parent
+// campaign's when present, since a multi-role campaign's roles can differ.
+type RequirementForContract = {
+  category: { name: string };
+  deliverables: string | null;
+  description: string | null;
+  format: string[];
+  deadline: Date | null;
+} | null;
 
 function assertPaidCampaign(campaignType: string): void {
   if (campaignType !== CONTRACT_CAMPAIGN_TYPE) {
@@ -133,25 +146,42 @@ function buildTermsAndTokens(
   creator: Pick<CreatorProfile, 'fullName'>,
   proposedRate: number,
   timeline: string,
+  requirement: RequirementForContract = null,
 ): { terms: ContractTerms; tokens: Record<string, string> } {
   const priceLabel = fmtMoney(proposedRate);
   const platforms = campaign.platforms ?? [];
   const contentGuidelines = campaign.contentGuidelines ?? [];
   const now = new Date();
 
+  const roleName = requirement?.category.name ?? null;
+  const deliveryFormat = requirement?.format ?? [];
+  const deadline = requirement?.deadline ?? campaign.deadline;
+  const baseDeliverables = requirement?.deliverables || requirement?.description || campaign.deliverables;
+  // Embeds role + delivery format directly into the deliverables text so the
+  // rendered contract differs per role even on an unmodified template body —
+  // {{role}}/{{deliveryFormat}} tokens below are there for template authors
+  // who want them called out separately.
+  const deliverablesLabel = [
+    roleName ? `[Role: ${roleName}]` : null,
+    baseDeliverables,
+    deliveryFormat.length ? `(Format: ${deliveryFormat.join(', ')})` : null,
+  ].filter(Boolean).join(' ');
+
   const terms: ContractTerms = {
     campaignTitle: campaign.title,
     price: priceLabel,
     priceRaw: proposedRate,
     paymentType: campaign.paymentType,
-    deadline: campaign.deadline ? campaign.deadline.toISOString() : null,
+    deadline: deadline ? deadline.toISOString() : null,
     timeline,
-    deliverables: campaign.deliverables,
+    deliverables: deliverablesLabel,
     contentGuidelines,
     platforms,
     approvalRequirements: campaign.approvalRequirements ?? null,
     location: campaign.location ?? null,
     platformCommission: campaign.commissionRate ?? null,
+    role: roleName,
+    deliveryFormat,
   };
 
   const tokens: Record<string, string> = {
@@ -160,15 +190,17 @@ function buildTermsAndTokens(
     campaignTitle: campaign.title,
     effectiveDate:  fmtDate(now),
     acceptanceDate: fmtDate(now),
-    deadline:      fmtDate(campaign.deadline),
+    deadline:      fmtDate(deadline),
     price:         priceLabel,
-    deliverables:  campaign.deliverables || 'As described in the campaign brief',
+    deliverables:  deliverablesLabel || 'As described in the campaign brief',
     timeline,
     platforms:            platforms.join(', ') || 'N/A',
     contentGuidelines:    contentGuidelines.join('; ') || 'N/A',
     approvalRequirements: campaign.approvalRequirements || 'Standard approval process applies.',
     location:      campaign.location || 'N/A',
     platformCommission: campaign.commissionRate != null ? `${campaign.commissionRate}%` : 'N/A',
+    role:          roleName || 'N/A',
+    deliveryFormat: deliveryFormat.join(', ') || 'N/A',
   };
 
   return { terms, tokens };
@@ -196,7 +228,7 @@ export class ContractService {
 
   // No DB write — used by the mobile creator flow to render contract text from
   // the in-progress proposal form, before an Application exists yet.
-  async previewForCampaign(campaignId: string, userId: string, proposedRate: number, timeline: string) {
+  async previewForCampaign(campaignId: string, userId: string, proposedRate: number, timeline: string, requirementId?: string) {
     const creator = await this.creatorRepo.findByUserId(userId);
     if (!creator) throw new AppError('Creator profile not found', 404);
 
@@ -207,8 +239,18 @@ export class ContractService {
     const business = await prisma.businessProfile.findUnique({ where: { id: campaign.businessId } });
     if (!business) throw new AppError('Business not found', 404);
 
+    let requirement: RequirementForContract = null;
+    if (requirementId) {
+      const found = await prisma.campaignRequirement.findUnique({
+        where: { id: requirementId },
+        select: { campaignId: true, deliverables: true, description: true, format: true, deadline: true, category: { select: { name: true } } },
+      });
+      if (!found || found.campaignId !== campaignId) throw new AppError('Requirement not found on this campaign', 404);
+      requirement = found;
+    }
+
     const template = await getOrCreateTemplate();
-    const { terms, tokens } = buildTermsAndTokens(campaign, business, creator, proposedRate, timeline);
+    const { terms, tokens } = buildTermsAndTokens(campaign, business, creator, proposedRate, timeline, requirement);
     const filledBody = renderTemplate(template.body, tokens);
     return { title: template.title, filledBody, terms };
   }
@@ -225,10 +267,11 @@ export class ContractService {
     creator: Pick<CreatorProfile, 'id' | 'fullName'>;
     proposedRate: number;
     timeline: string;
+    requirement?: RequirementForContract;
   }): Promise<Contract> {
     assertPaidCampaign(params.campaign.campaignType);
     const template = await getOrCreateTemplate();
-    const { terms, tokens } = buildTermsAndTokens(params.campaign, params.business, params.creator, params.proposedRate, params.timeline);
+    const { terms, tokens } = buildTermsAndTokens(params.campaign, params.business, params.creator, params.proposedRate, params.timeline, params.requirement);
     const filledBody = renderTemplate(template.body, tokens);
 
     return prisma.contract.create({
@@ -287,7 +330,11 @@ export class ContractService {
       // unable to see an agreement to accept.
       const application = await prisma.application.findUnique({
         where: { id: applicationId },
-        include: { campaign: { include: { business: true } }, creator: true },
+        include: {
+          campaign: { include: { business: true } },
+          creator: true,
+          requirement: { select: { deliverables: true, description: true, format: true, deadline: true, category: { select: { name: true } } } },
+        },
       });
       if (!application) throw new AppError('Application not found', 404);
       assertPaidCampaign(application.campaign.campaignType);
@@ -299,6 +346,7 @@ export class ContractService {
         creator:      application.creator,
         proposedRate: application.proposedRate,
         timeline:     application.timeline,
+        requirement:  application.requirement,
       });
       contract = {
         ...created,
@@ -400,6 +448,7 @@ function renderContractPdf(contract: Contract): Promise<Buffer> {
       doc.moveDown(0.5);
       doc.fontSize(10).font('Helvetica');
       const rows: [string, string][] = [
+        ...(terms.role ? [['Role', terms.role] as [string, string]] : []),
         ['Price', terms.price],
         ['Deadline', fmtDate(terms.deadline)],
         ['Timeline', terms.timeline],

@@ -10,7 +10,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,22 +20,22 @@ import { useAppColors } from '@/context/ThemeContext';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
-import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
+import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { LocationSearchModal } from '@/components/LocationSearchModal';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { TabSlider } from '@/components/TabSlider';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SHADOW, MAX_CONTENT_WIDTH } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, MAX_CONTENT_WIDTH } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import {
-  GOAL_OPTIONS, CREATOR_TYPES, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
+  DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
 import {
-  SectionCard, ChipGroup, ChipMultiGroup, PlatformChipGroup, BudgetTierPicker, Stepper,
-  DeliverablesCounterList, HashtagEditor, FeaturedToggle, cg,
+  SectionCard, ChipGroup, ChipMultiGroup, BudgetTierPicker, Stepper,
+  DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
+import { ListingHeroCard, PreviewRow } from '@/features/business/components/CampaignSummary';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -139,13 +138,9 @@ type EditForm = {
   title: string;
   description: string;
   featureImageUrl: string | null;
-  platforms: string[];
-  goal: string;
+  template: string;
   deliverables: Record<string, number>;
-  targetAudience: string[];
   hashtags: string[];
-  objective: string;
-  contentGuidelines: string[];
   creatorsNeeded: string;
   status: NonNullable<Campaign['status']>;
   budgetMin: string;
@@ -163,19 +158,15 @@ type EditForm = {
 
 type EditErrors = Partial<Record<keyof EditForm, string>>;
 
-// Kept in sync with BENEFITS in create-campaign.tsx / BENEFIT_OPTIONS in
-// backend/campaign-ai.schema.ts — AI-generated event drafts only ever return these.
+// Kept in sync with OFFERING_OPTIONS in create-campaign.tsx / BENEFIT_OPTIONS
+// in backend/campaign-ai.schema.ts — AI-generated event drafts only ever return these.
 const EVENT_BENEFITS = [
-  'Free food & drinks',
-  'Free product / service',
-  'Event access',
-  'Gift hampers',
-  'Networking opportunities',
-  'Future collaboration',
-  'Skill Workshops',
-  'Brand Networking',
-  'Freebies & PR Packages',
-  'Community & Culture',
+  'Free Event Access',
+  'Food & Drinks',
+  'Free Products / Gifts',
+  'Free Service / Experience',
+  'Product Launch / Preview',
+  'Other',
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -187,11 +178,20 @@ export default function CampaignDetailScreen() {
   const C = useAppColors();
   const isBusiness = user?.role === 'BUSINESS';
   const { categories: allCategories } = useAllCategories();
-  const { platforms: allPlatforms } = usePlatforms();
+  // Business-scope categories for the edit summary's Category picker — same
+  // source create-campaign.tsx's own Category chip editor uses.
+  const { categories: liveCategories } = useCategories('BUSINESS');
+  const categoryOptions = liveCategories.map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [hasApplied, setHasApplied]           = useState(false);
-  const [applicationStatus, setApplicationStatus] = useState<'pending' | 'accepted' | 'rejected' | 'expired' | null>(null);
+  const [applicationStatus, setApplicationStatus] = useState<'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' | null>(null);
+  // Multi-role campaigns (§ CampaignRequirement) — which specific roles this
+  // provider has already applied to. The backend allows one application per
+  // role (unique on campaignId+creatorId+requirementId), so a provider can
+  // apply to several different roles on the same campaign; hasApplied above
+  // stays scoped to the simple/no-requirement application slot only.
+  const [appliedRequirementIds, setAppliedRequirementIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -212,10 +212,15 @@ export default function CampaignDetailScreen() {
   const [editOpen, setEditOpen] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
   const [eventCalOpen, setEventCalOpen] = useState(false);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  // Which field's small tap-to-edit BottomSheet is open — null means none.
+  // Location/Venue use LocationSearchModal above instead; Deadline/Event Date
+  // use the existing calOpen/eventCalOpen sheets below — same split as
+  // create-campaign.tsx's Publish screen.
+  const [editingField, setEditingField] = useState<'title' | 'description' | 'image' | 'category' | 'hashtags' | 'people' | 'capacity' | 'benefits' | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
-    title: '', description: '', featureImageUrl: null, platforms: [],
-    goal: GOAL_OPTIONS[0]!, deliverables: DEFAULT_DELIVERABLES, targetAudience: [], hashtags: [],
-    objective: '', contentGuidelines: [], creatorsNeeded: '1',
+    title: '', description: '', featureImageUrl: null, template: '',
+    deliverables: DEFAULT_DELIVERABLES, hashtags: [], creatorsNeeded: '1',
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', locationType: 'ONSITE', isFeatured: false,
     eventDate: null, venue: '', capacity: '20', benefits: [],
@@ -271,13 +276,9 @@ export default function CampaignDetailScreen() {
       title:        campaign.title,
       description:  campaign.description ?? '',
       featureImageUrl: campaign.featureImageUrl ?? null,
-      platforms:    campaign.platforms ?? [],
-      goal:            campaign.goals?.[0] ?? GOAL_OPTIONS[0]!,
+      template:     campaign.template ?? '',
       deliverables:    parseDeliverablesString(campaign.deliverables ?? ''),
-      targetAudience:  campaign.targetAudience ?? [],
       hashtags:        campaign.hashtags ?? [],
-      objective:       campaign.objective ?? '',
-      contentGuidelines: campaign.contentGuidelines ?? [],
       creatorsNeeded:  String(campaign.creatorsNeeded ?? 1),
       status:       campaign.status ?? 'active',
       budgetMin:    String(campaign.budgetRaw ?? ''),
@@ -316,7 +317,6 @@ export default function CampaignDetailScreen() {
         errs.deadline = t('campaignDetail.errRegBeforeEvent');
       if (!editForm.venue.trim()) errs.venue = t('campaignDetail.errVenueRequired');
     } else {
-      if (editForm.platforms.length === 0) errs.platforms  = t('campaignDetail.errPlatformRequired');
       if (!editForm.location.trim())     errs.location     = t('campaignDetail.errLocationRequired');
       if (!editForm.budgetMin.trim() || isNaN(Number(editForm.budgetMin))) {
         errs.budgetMin = t('campaignDetail.errMinBudgetRequired');
@@ -356,12 +356,9 @@ export default function CampaignDetailScreen() {
           title:        editForm.title.trim(),
           description:  editForm.description.trim() || undefined,
           featureImageUrl: editForm.featureImageUrl,
-          goals:        [editForm.goal],
-          contentType:  editForm.goal,
-          targetAudience: editForm.targetAudience,
+          template:     editForm.template || undefined,
+          category:     editForm.template || undefined,
           hashtags:       editForm.hashtags,
-          objective:      editForm.objective.trim() || undefined,
-          contentGuidelines: editForm.contentGuidelines.map((x) => x.trim()).filter(Boolean),
           creatorsNeeded: Number(editForm.creatorsNeeded) || undefined,
           status:       editForm.status,
           deadline:     editForm.deadline!.toISOString(),
@@ -369,8 +366,7 @@ export default function CampaignDetailScreen() {
           // the UI actually allows changing them, otherwise the whole update
           // is rejected even for unrelated fields like title/description.
           ...(hasProposals ? {} : {
-            platforms:    editForm.platforms,
-            deliverables: summarizeDeliverables(editForm.deliverables, [editForm.goal], t),
+            deliverables: summarizeDeliverables(editForm.deliverables, [], t),
             budgetMin:    Number(editForm.budgetMin),
             budgetMax:    Number(editForm.budgetMax),
             location:     editForm.locationType === 'REMOTE' ? null : editForm.location.trim(),
@@ -399,9 +395,11 @@ export default function CampaignDetailScreen() {
       .then(([c, apps]) => {
         setCampaign(c);
         if (!isBusiness) {
-          const myApp = (apps as { campaignId: string; status: string }[]).find((a) => a.campaignId === campaignId);
+          const myApps = (apps as { campaignId: string; status: string; requirementId: string | null }[]).filter((a) => a.campaignId === campaignId);
+          const myApp = myApps.find((a) => !a.requirementId);
           setHasApplied(!!myApp);
-          setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' | 'expired' : null);
+          setApplicationStatus(myApp ? myApp.status as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' : null);
+          setAppliedRequirementIds(new Set(myApps.filter((a) => a.requirementId).map((a) => a.requirementId!)));
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
@@ -414,9 +412,11 @@ export default function CampaignDetailScreen() {
       if (isBusiness || !campaignId) return;
       campaignService.getMyApplications()
         .then(({ proposals: apps }) => {
-          const myApp = apps.find((a) => a.campaignId === campaignId);
+          const myApps = apps.filter((a) => a.campaignId === campaignId);
+          const myApp = myApps.find((a) => !a.requirementId);
           setHasApplied(!!myApp);
-          setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' | 'expired' : null);
+          setApplicationStatus(myApp ? myApp.status as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' : null);
+          setAppliedRequirementIds(new Set(myApps.filter((a) => a.requirementId).map((a) => a.requirementId!)));
         })
         .catch(() => {});
     }, [campaignId, isBusiness])
@@ -453,6 +453,21 @@ export default function CampaignDetailScreen() {
   const heroBg  = catMeta.bg;
   const posted  = daysAgo(campaign.createdAt);
   const heroImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
+
+  // "Who You Need" reflects the roles actually captured at creation.
+  // Events collect a real "who are you inviting" chip set (roleTypes,
+  // stored as targetAudience) — show that ahead of the synthetic
+  // "category (capacity)" line, which just repeats the Capacity row
+  // already shown in Event Details below. Multi-role campaigns list each
+  // role/quantity; other paid campaigns fall back to category + creator
+  // count since their targetAudience is AI-derived, not business-picked.
+  const whoYouNeed = campaign.requirements && campaign.requirements.length > 0
+    ? campaign.requirements.map((r) => `${r.category.name} ×${r.quantity}`)
+    : isOpenEvent && campaign.targetAudience && campaign.targetAudience.length > 0
+      ? campaign.targetAudience
+      : campaign.creatorsNeeded != null && campaign.category
+        ? [`${campaign.category} (${campaign.creatorsNeeded})`]
+        : (campaign.targetAudience && campaign.targetAudience.length > 0 ? campaign.targetAudience : []);
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
@@ -493,7 +508,10 @@ export default function CampaignDetailScreen() {
             </View>
           ) : (
             <View style={[s.heroTypeBadge, { backgroundColor: 'rgba(255,255,255,0.93)' }]}>
-              <Text style={[s.heroTypeTxt, { color: '#4F46E5' }]}>{t('campaignDetail.badgePaidEvent')}</Text>
+              {/* C.brinjal1, not a hardcoded hex — this screen is shared by
+                  both roles (creator/business), and a fixed purple would
+                  read wrong against a business viewer's green theme. */}
+              <Text style={[s.heroTypeTxt, { color: C.brinjal1 }]}>{t('campaignDetail.badgePaidEvent')}</Text>
             </View>
           )}
         </View>
@@ -508,18 +526,6 @@ export default function CampaignDetailScreen() {
             <View style={[s.verifiedBadge, { backgroundColor: C.active }]}>
               <FontAwesome5 name="check" solid size={10} color="#fff" />
             </View>
-            {campaign.platforms.length > 0 && (
-              <View style={[s.platformTag, { marginLeft: 'auto' }]}>
-                {campaign.platforms.map((p) => {
-                  const meta = getPlatformMeta(allPlatforms, p);
-                  return (
-                    <View key={p} style={[s.platformTagIcon, { backgroundColor: meta.bg }]}>
-                      <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                    </View>
-                  );
-                })}
-              </View>
-            )}
           </View>
           <Text style={[s.campaignTitle, { color: C.text }]}>{campaign.title}</Text>
           {campaign.campaignType !== 'OPEN_EVENT' && (
@@ -547,7 +553,6 @@ export default function CampaignDetailScreen() {
                     campaignId:    campaign.id,
                     campaignTitle: campaign.title,
                     campaignType:  campaign.campaignType ?? 'PAID_CAMPAIGN',
-                    platform:      campaign.platforms.join(', '),
                   },
                 })}>
                 <FontAwesome5 name="file-alt" solid size={12} color={campaign.proposals ? C.brinjal1 : C.textSecondary} />
@@ -574,54 +579,35 @@ export default function CampaignDetailScreen() {
           <Text style={[s.description, { color: C.text }]}>{campaign.description}</Text>
         </View>
 
-        {/* 2. Objectives — merged Objective + Event Goals content into one card */}
-        {(campaign.template || campaign.objective || campaign.goals.length > 0 || (campaign.targetAudience && campaign.targetAudience.length > 0)) && (
+        {/* 2. Category — just the category + AI-relevant categories + who
+            the business is targeting. `goals` and `objective` dropped: both
+            are AI-filled write-only fields the business never reviews at
+            creation, so they added noise without adding real information. */}
+        {(campaign.template || whoYouNeed.length > 0) && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionObjectives')}</Text>
-            {campaign.goals.length > 0 && (
-              <View style={s.goalChips}>
-                {campaign.goals.map((g) => (
-                  <View key={g} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
-                    <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{g}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCategory')}</Text>
             {campaign.template && (
-              <View style={[s.templateRow, { marginTop: campaign.goals.length > 0 ? 12 : 0 }]}>
+              <View style={s.templateRow}>
                 <View style={[s.templateBadge, { backgroundColor: C.primaryLight }]}>
                   <Text style={[s.templateTxt, { color: C.brinjal1 }]}>{campaign.template}</Text>
                 </View>
               </View>
             )}
             {!!campaign.aiSuggestedCategories?.length && (
-              <Text style={[s.aiAlsoRelevant, { color: C.textSecondary }]}>Also relevant: {campaign.aiSuggestedCategories.join(', ')}</Text>
+              <Text style={[s.aiAlsoRelevant, { color: C.textSecondary, marginTop: campaign.template ? 8 : 0 }]}>Also relevant: {campaign.aiSuggestedCategories.join(', ')}</Text>
             )}
-            {campaign.objective && (
-              <Text style={[s.description, { color: C.text, marginTop: campaign.template || campaign.goals.length > 0 ? 12 : 0 }]}>{campaign.objective}</Text>
-            )}
-            {campaign.targetAudience && campaign.targetAudience.length > 0 && (
+            {whoYouNeed.length > 0 && (
               <>
                 <Text style={[s.sectionLabel, { color: C.textSecondary, marginTop: 12 }]}>{t('campaignDetail.sectionTargetAudience')}</Text>
                 <View style={s.goalChips}>
-                  {campaign.targetAudience.map((aud) => (
-                    <View key={aud} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
-                      <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{aud}</Text>
+                  {whoYouNeed.map((who) => (
+                    <View key={who} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
+                      <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{who}</Text>
                     </View>
                   ))}
                 </View>
               </>
             )}
-          </View>
-        )}
-
-        {/* 3. Content Guidelines */}
-        {campaign.contentGuidelines && campaign.contentGuidelines.length > 0 && (
-          <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionContentGuidelines')}</Text>
-            {campaign.contentGuidelines.map((g, i) => (
-              <ReqItem key={i} text={g} C={C} />
-            ))}
           </View>
         )}
 
@@ -670,8 +656,27 @@ export default function CampaignDetailScreen() {
           </View>
         ) : null}
 
-        {/* 5. Deliverables */}
-        {campaign.deliverables ? (
+        {/* 5. Deliverables — multi-role campaigns each collect their own
+            deliverables at creation, so list every role's under its own
+            name in one card instead of the single flattened campaign-level
+            string (which also can't be split correctly per role). */}
+        {campaign.requirements && campaign.requirements.length > 0 ? (
+          campaign.requirements.some((r) => r.deliverables) && (
+            <View style={[s.card, { backgroundColor: C.surface }]}>
+              <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDeliverables')}</Text>
+              <View style={{ gap: 14 }}>
+                {campaign.requirements.filter((r) => r.deliverables).map((r) => (
+                  <View key={r.id}>
+                    <Text style={[s.roleTitle, { color: C.text, marginBottom: 4 }]}>{r.category.name}</Text>
+                    {r.deliverables!.split(/,\s*|\s*\+\s*/).filter(Boolean).map((d, i) => (
+                      <ReqItem key={i} text={d.trim()} C={C} />
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </View>
+          )
+        ) : campaign.deliverables ? (
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDeliverables')}</Text>
             {campaign.deliverables.split(/,\s*|\s*\+\s*/).filter(Boolean).map((d, i) => (
@@ -714,7 +719,7 @@ export default function CampaignDetailScreen() {
       </ScrollView>
 
       {/* Sticky CTA */}
-      <View style={[s.ctaBar, { justifyContent: 'center' }]}>
+      <View style={[s.ctaBar, { justifyContent: 'center' }, !isBusiness && campaign.requirements && campaign.requirements.length > 0 && s.ctaBarRoles]}>
         {isBusiness ? (
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
@@ -732,6 +737,58 @@ export default function CampaignDetailScreen() {
               <Text style={s.invitedSub}>{t('campaignDetail.invitedSub')}</Text>
             </View>
           </View>
+        ) : campaign.requirements && campaign.requirements.length > 0 ? (
+          // Multi-role campaign — the "Roles Needed" card lives here, in the
+          // sticky footer, instead of the scrollable body, so applying to a
+          // specific role is always one tap away regardless of scroll position.
+          <View style={{ width: '100%', gap: 8 }}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary, marginBottom: 0 }]}>{t('campaignDetail.sectionRolesNeeded')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.roleChipRow}>
+              {campaign.requirements.map((r) => {
+                const full = r.acceptedCount >= r.quantity;
+                const applied = appliedRequirementIds.has(r.id);
+                const budgetLabel = r.budgetType === 'FIXED' ? `Rs. ${(r.budgetFixed ?? 0).toLocaleString()}`
+                  : r.budgetType === 'RANGE' ? `Rs. ${(r.budgetMin ?? 0).toLocaleString()} - ${(r.budgetMax ?? 0).toLocaleString()}`
+                  : t('campaignDetail.negotiable');
+                return (
+                  <View key={r.id} style={[s.roleChip, { borderColor: C.border, backgroundColor: C.surface }]}>
+                    <View style={[s.roleIconWrap, { backgroundColor: `${r.category.color}1A` }]}>
+                      <FontAwesome5 name={r.category.icon as any} size={14} color={r.category.color} solid />
+                    </View>
+                    <View style={{ gap: 1 }}>
+                      <Text style={[s.roleChipTitle, { color: C.text }]} numberOfLines={1}>{r.category.name}</Text>
+                      <Text style={[s.roleChipSub, { color: C.textSecondary }]} numberOfLines={1}>
+                        {t('campaignDetail.roleFilled', { accepted: r.acceptedCount, quantity: r.quantity })} · {budgetLabel}
+                      </Text>
+                    </View>
+                    {applied ? (
+                      <View style={s.roleAppliedBadge}>
+                        <FontAwesome5 name="check-circle" solid size={14} color="#059669" />
+                      </View>
+                    ) : full ? (
+                      <Text style={[s.roleFullTxt, { color: C.textSecondary }]}>{t('campaignDetail.roleFull')}</Text>
+                    ) : (
+                      <Pressable
+                        style={[s.roleChipApplyBtn, { backgroundColor: C.brinjal1 }]}
+                        onPress={() => router.push({
+                          pathname: '/submit-proposal',
+                          params: {
+                            campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand,
+                            budget: budgetLabel,
+                            budgetMin: String(r.budgetType === 'RANGE' ? (r.budgetMin ?? 0) : (r.budgetFixed ?? 0)),
+                            budgetMax: String(r.budgetType === 'RANGE' ? (r.budgetMax ?? 0) : (r.budgetFixed ?? 0)),
+                            category: r.category.name, campaignType: campaign.campaignType ?? 'PAID_CAMPAIGN',
+                            requirementId: r.id,
+                          },
+                        })}>
+                        <Text style={s.roleApplyBtnTxt}>{t('campaignDetail.roleApply')}</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
         ) : hasApplied ? (
           <View style={s.appliedBadge}>
             <FontAwesome5 name="check-circle" solid size={18} color="#059669" />
@@ -747,7 +804,7 @@ export default function CampaignDetailScreen() {
       </View>
       </MaxWidthContainer>
 
-      {/* ── Edit Campaign Modal ── */}
+      {/* ── Edit Campaign Modal — publish-page-style tap-to-edit summary ── */}
       <BottomSheet
         visible={editOpen}
         onClose={() => setEditOpen(false)}
@@ -764,259 +821,306 @@ export default function CampaignDetailScreen() {
           </Pressable>
         }>
 
-                {/* ── Basic Info ── */}
-                <SectionCard title={t('campaignDetail.fieldTitle')} colors={C}>
-                  <TextInput
-                    style={[em.input, { backgroundColor: C.background, borderColor: editErrors.title ? ERROR_RED : C.border, color: C.text }]}
-                    value={editForm.title}
-                    onChangeText={(v) => updateEdit('title', v)}
-                    placeholder={t('campaignDetail.titlePlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                  />
-                  {editErrors.title ? <Text style={em.errTxt}>{editErrors.title}</Text> : null}
-                </SectionCard>
+        <ListingHeroCard
+          featureImageUrl={editForm.featureImageUrl}
+          title={editForm.title.trim() || t('campaignDetail.titlePlaceholder')}
+          category={editForm.template || undefined}
+          colors={C}
+          onEditPress={() => setEditingField('title')}
+          onImagePress={() => setEditingField('image')}
+        />
+        {editErrors.title ? <Text style={em.errTxt}>{editErrors.title}</Text> : null}
 
-                <SectionCard title={t('createEvent.secFeatureImageTitle')} colors={C}>
-                  <FeatureImagePicker
-                    imageUrl={editForm.featureImageUrl}
-                    category={campaign?.categoryKey ?? campaign?.category ?? ''}
-                    uploading={featureImageUploading}
-                    onPick={handlePickFeatureImage}
-                    onClear={handleClearFeatureImage}
-                    colors={C}
-                  />
-                </SectionCard>
+        <SectionCard
+          title={t('campaignDetail.fieldStatus')}
+          sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
+          colors={C}>
+          <ChipGroup
+            options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
+            value={editForm.status === 'expired'
+              ? t('campaignDetail.statusExpired')
+              : t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
+            onChange={(label) => {
+              if (hasProposals || editForm.status === 'expired') return;
+              const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
+              if (opt) updateEdit('status', opt.value);
+            }}
+            colors={C}
+            disabled={hasProposals || editForm.status === 'expired'}
+          />
+        </SectionCard>
 
-                <SectionCard title={t('campaignDetail.fieldDescription')} colors={C}>
-                  <TextInput
-                    style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                    value={editForm.description}
-                    onChangeText={(v) => updateEdit('description', v)}
-                    placeholder={t('campaignDetail.descriptionPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    multiline
-                    numberOfLines={3}
-                    textAlignVertical="top"
-                  />
-                </SectionCard>
+        {isOpenEvent ? (
+          <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 2 }]}>
+            <Text style={[sc.title, { color: C.text, marginBottom: 2 }]}>{t('campaignDetail.sectionDetails')}</Text>
+            <PreviewRow
+              icon="map-marker-alt"
+              label={t('campaignDetail.fieldVenue')}
+              value={editForm.venue || '—'}
+              colors={C}
+              onPress={() => setLocationModalOpen(true)}
+            />
+            <PreviewRow
+              icon="calendar-day"
+              label={t('campaignDetail.fieldEventDate')}
+              value={editForm.eventDate ? fmtDate(editForm.eventDate) : '—'}
+              colors={C}
+              onPress={() => setEventCalOpen(true)}
+            />
+            <PreviewRow
+              icon="calendar-alt"
+              label={t('campaignDetail.fieldRegDeadline')}
+              value={editForm.deadline ? fmtDate(editForm.deadline) : '—'}
+              colors={C}
+              onPress={() => setCalOpen(true)}
+            />
+            <PreviewRow
+              icon="users"
+              label={t('campaignDetail.fieldCapacity')}
+              value={editForm.capacity || '—'}
+              colors={C}
+              onPress={() => setEditingField('capacity')}
+              last
+            />
+          </View>
+        ) : (
+          <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 2 }]}>
+            <Text style={[sc.title, { color: C.text, marginBottom: 2 }]}>{t('campaignDetail.sectionDetails')}</Text>
+            <PreviewRow
+              icon="th-large"
+              label={t('campaignDetail.fieldCategory')}
+              value={editForm.template || '—'}
+              colors={C}
+              onPress={() => setEditingField('category')}
+            />
+            <PreviewRow
+              icon={editForm.locationType === 'REMOTE' ? 'globe' : 'map-marker-alt'}
+              label={t('campaignDetail.fieldLocation')}
+              value={editForm.locationType === 'REMOTE' ? t('createEvent.locationRemote') : (editForm.location || '—')}
+              colors={C}
+              onPress={hasProposals || editForm.locationType === 'REMOTE' ? undefined : () => setLocationModalOpen(true)}
+            />
+            <PreviewRow
+              icon="money-bill-alt"
+              label={t('createEvent.confirmSectionBudget')}
+              value={`Rs. ${(Number(editForm.budgetMin) || 0).toLocaleString()} – ${(Number(editForm.budgetMax) || 0).toLocaleString()}`}
+              colors={C}
+            />
+            <PreviewRow
+              icon="calendar-alt"
+              label={t('createEvent.confirmSectionCloses')}
+              value={editForm.deadline ? fmtDate(editForm.deadline) : '—'}
+              colors={C}
+              onPress={() => setCalOpen(true)}
+              last
+            />
+          </View>
+        )}
+        {(editErrors.eventDate || editErrors.deadline || editErrors.venue || editErrors.location || editErrors.budgetMin || editErrors.budgetMax) ? (
+          <Text style={em.errTxt}>{editErrors.eventDate || editErrors.deadline || editErrors.venue || editErrors.location || editErrors.budgetMin || editErrors.budgetMax}</Text>
+        ) : null}
+        {!isOpenEvent && hasProposals && <Text style={em.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
 
-                {isOpenEvent ? (
-                  <>
-                    {/* ── Open Event fields ── */}
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionDetails')}</Text>
+        <Pressable
+          style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 6 }]}
+          onPress={() => setEditingField('description')}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[sc.title, { color: C.text }]}>{t('campaignDetail.fieldDescription')}</Text>
+            <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />
+          </View>
+          <Text style={[em.pillCardBody, { color: C.textSecondary }]} numberOfLines={4}>{editForm.description || '—'}</Text>
+        </Pressable>
 
-                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldEventDate')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <Pressable
-                      style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.eventDate ? ERROR_RED : C.border }]}
-                      onPress={() => setEventCalOpen(true)}>
-                      <Text style={[em.dateTxt, { color: editForm.eventDate ? C.text : C.textSecondary }]}>
-                        {editForm.eventDate ? fmtDate(editForm.eventDate) : t('campaignDetail.eventDatePlaceholder')}
-                      </Text>
-                      <FontAwesome5 name="calendar-alt" size={16} color={C.textSecondary} />
-                    </Pressable>
-                    {editErrors.eventDate ? <Text style={em.errTxt}>{editErrors.eventDate}</Text> : null}
-
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldRegDeadline')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <Pressable
-                      style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
-                      onPress={() => setCalOpen(true)}>
-                      <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
-                        {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.deadlinePlaceholder')}
-                      </Text>
-                      <FontAwesome5 name="calendar-alt" size={16} color={C.textSecondary} />
-                    </Pressable>
-                    {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
-
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldVenue')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <PlacesAutocompleteInput
-                      value={editForm.venue}
-                      onChangeText={(v) => updateEdit('venue', v)}
-                      placeholder="e.g. Kathmandu, New York or Remote"
-                      types="geocode"
-                      error={editErrors.venue}
-                    />
-
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldCapacity')}</Text>
-                    <TextInput
-                      style={[em.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                      value={editForm.capacity}
-                      onChangeText={(v) => updateEdit('capacity', v.replace(/[^0-9]/g, ''))}
-                      placeholder={t('campaignDetail.capacityPlaceholder')}
-                      placeholderTextColor={C.textSecondary}
-                      keyboardType="numeric"
-                    />
-
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionBenefits')}</Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                      {EVENT_BENEFITS.map((b) => {
-                        const checked = editForm.benefits.includes(b);
-                        return (
-                          <Pressable
-                            key={b}
-                            style={[cg.chip, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.primaryLight : C.background }]}
-                            onPress={() => {
-                              const next = checked ? editForm.benefits.filter((x) => x !== b) : [...editForm.benefits, b];
-                              updateEdit('benefits', next);
-                            }}>
-                            <Text style={[cg.chipText, { color: checked ? C.brinjal1 : C.textSecondary, fontWeight: checked ? '700' : '500' }]}>{b}</Text>
-                          </Pressable>
-                        );
-                      })}
+        {isOpenEvent ? (
+          <Pressable
+            style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 8 }]}
+            onPress={() => setEditingField('benefits')}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={[sc.title, { color: C.text }]}>{t('campaignDetail.sectionWhatYouGet')}</Text>
+              <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />
+            </View>
+            {editForm.benefits.length > 0 ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {editForm.benefits.map((b) => (
+                  <View key={b} style={[em.pill, { backgroundColor: C.primaryLight }]}>
+                    <Text style={[em.pillText, { color: C.brinjal1 }]}>{b}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={[em.pillCardBody, { color: C.textSecondary }]}>—</Text>
+            )}
+          </Pressable>
+        ) : (
+          <>
+            <Pressable
+              style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 8 }]}
+              onPress={() => setEditingField('hashtags')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[sc.title, { color: C.text }]}>{t('campaignDetail.sectionHashtags')}</Text>
+                <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />
+              </View>
+              {editForm.hashtags.length > 0 ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {editForm.hashtags.map((h) => (
+                    <View key={h} style={[em.pill, { backgroundColor: C.primaryLight }]}>
+                      <Text style={[em.pillText, { color: C.brinjal1 }]}>#{h}</Text>
                     </View>
-                  </>
-                ) : (
-                  <>
-                    {/* ── Paid Campaign fields ── */}
-                    <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} colors={C}>
-                      <TextInput
-                        style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                        value={editForm.objective}
-                        onChangeText={(v) => updateEdit('objective', v)}
-                        multiline
-                        numberOfLines={3}
-                        textAlignVertical="top"
-                        placeholderTextColor={C.textSecondary}
-                      />
-                    </SectionCard>
-
-                    <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} colors={C}>
-                      <ChipGroup options={GOAL_OPTIONS} value={editForm.goal} onChange={(v) => updateEdit('goal', v)} colors={C} />
-                    </SectionCard>
-
-                    <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} colors={C}>
-                      <ChipMultiGroup options={CREATOR_TYPES} values={editForm.targetAudience} onChange={(v) => updateEdit('targetAudience', v)} colors={C} />
-                    </SectionCard>
-
-                    <SectionCard
-                      title={t('campaignDetail.editSectionPlatform')}
-                      sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
-                      colors={C}>
-                      <PlatformChipGroup options={allPlatforms.map((p) => p.name)} values={editForm.platforms} onChange={(v) => updateEdit('platforms', v)} colors={C} error={editErrors.platforms} max={3} disabled={hasProposals} />
-                    </SectionCard>
-
-                    <SectionCard
-                      title={t('createEvent.secDeliverablesTitle')}
-                      sub={hasProposals ? t('campaignDetail.lockedFieldNote') : t('createEvent.secDeliverablesSub')}
-                      colors={C}>
-                      <DeliverablesCounterList value={editForm.deliverables} onChange={(v) => updateEdit('deliverables', v)} colors={C} t={t} disabled={hasProposals} />
-                    </SectionCard>
-
-                    <SectionCard title={t('createEvent.secContentGuidelinesTitle')} sub={t('createEvent.secContentGuidelinesSub')} colors={C}>
-                      <TextInput
-                        style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                        value={editForm.contentGuidelines.join('\n')}
-                        onChangeText={(v) => updateEdit('contentGuidelines', v.split('\n'))}
-                        multiline
-                        numberOfLines={4}
-                        textAlignVertical="top"
-                        placeholderTextColor={C.textSecondary}
-                      />
-                    </SectionCard>
-
-                    <SectionCard title={t('createEvent.secHashtagsTitle')} colors={C}>
-                      <HashtagEditor hashtags={editForm.hashtags} onChange={(v) => updateEdit('hashtags', v)} colors={C} t={t} />
-                    </SectionCard>
-
-                    <SectionCard
-                      title={t('createEvent.secBudgetTitle')}
-                      sub={hasProposals ? t('campaignDetail.lockedFieldNote') : t('createEvent.secBudgetSub')}
-                      colors={C}>
-                      <BudgetTierPicker
-                        budgetMin={Number(editForm.budgetMin) || 0}
-                        budgetMax={Number(editForm.budgetMax) || 0}
-                        onChange={(min, max) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); }}
-                        colors={C}
-                        error={editErrors.budgetMin || editErrors.budgetMax}
-                        disabled={hasProposals}
-                      />
-                    </SectionCard>
-
-                    <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} colors={C}>
-                      <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={(v) => updateEdit('creatorsNeeded', String(v))} colors={C} />
-                    </SectionCard>
-
-                    <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} colors={C}>
-                      <Pressable
-                        style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
-                        onPress={() => setCalOpen(true)}>
-                        <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
-                          {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.datePlaceholder')}
-                        </Text>
-                        <FontAwesome5 name="calendar-alt" size={14} color={C.textSecondary} />
-                      </Pressable>
-                      {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
-                    </SectionCard>
-
-                    <SectionCard
-                      title={t('campaignDetail.fieldLocation')}
-                      sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
-                      colors={C}>
-                      <TabSlider
-                        tabs={[
-                          { key: 'ONSITE', label: t('createEvent.locationOnsite'), icon: 'map-marker-alt' },
-                          { key: 'REMOTE', label: t('createEvent.locationRemote'), icon: 'globe' },
-                        ]}
-                        active={editForm.locationType}
-                        onChange={(k) => { if (hasProposals) return; updateEdit('locationType', k as 'ONSITE' | 'REMOTE'); }}
-                        justify
-                      />
-                      {editForm.locationType === 'REMOTE' ? (
-                        <View style={[em.remoteCard, { backgroundColor: C.background, borderColor: C.border, marginTop: 10 }]}>
-                          <FontAwesome5 name="globe" solid size={18} color={C.brinjal1} />
-                          <View style={em.remoteTextWrap}>
-                            <Text style={[em.remoteTitle, { color: C.text }]}>{t('createEvent.remoteLocationTitle')}</Text>
-                            <Text style={[em.remoteBody, { color: C.textSecondary }]}>{t('createEvent.remoteLocationBody')}</Text>
-                          </View>
-                        </View>
-                      ) : (
-                        <View style={{ marginTop: 10 }}>
-                          <PlacesAutocompleteInput
-                            value={editForm.location}
-                            onChangeText={(v) => { if (!hasProposals) updateEdit('location', v); }}
-                            placeholder="e.g. Kathmandu, New York"
-                            types="geocode"
-                            error={editErrors.location}
-                          />
-                        </View>
-                      )}
-                    </SectionCard>
-                  </>
-                )}
-
-                <SectionCard
-                  title={t('campaignDetail.fieldStatus')}
-                  sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
-                  colors={C}>
-                  <ChipGroup
-                    options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
-                    value={editForm.status === 'expired'
-                      ? t('campaignDetail.statusExpired')
-                      : t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
-                    onChange={(label) => {
-                      if (hasProposals || editForm.status === 'expired') return;
-                      const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
-                      if (opt) updateEdit('status', opt.value);
-                    }}
-                    colors={C}
-                    disabled={hasProposals || editForm.status === 'expired'}
-                  />
-                </SectionCard>
-
-                {/* ── Featured ── */}
-                <View style={{ marginTop: 20 }}>
-                  <FeaturedToggle
-                    value={editForm.isFeatured}
-                    onChange={(v) => { if (hasProposals) return; updateEdit('isFeatured', v); }}
-                    // Once proposals exist, force the locked (zero-quota) visual
-                    // regardless of the "already featured campaigns are always
-                    // freely toggleable" exemption below — see hasProposals above.
-                    quota={hasProposals ? { remaining: 0, price: featuredQuota?.price ?? 0, unlimited: false } : (campaign?.isFeatured ? null : featuredQuota)}
-                    colors={C}
-                    t={t}
-                  />
-                  {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary, marginTop: 8 }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
+                  ))}
                 </View>
+              ) : (
+                <Text style={[em.pillCardBody, { color: C.textSecondary }]}>—</Text>
+              )}
+            </Pressable>
 
+            {/* People Needed — single-role campaigns are fully editable here;
+                multi-role campaigns show existing roles read-only, since the
+                backend only supports creating CampaignRequirement rows, not
+                editing them after the campaign is created. */}
+            <SectionCard title={t('createOpportunity.peopleNeededTitle')} icon="user-plus" colors={C}>
+              {campaign?.requirements && campaign.requirements.length > 0 ? (
+                <View style={{ gap: 4 }}>
+                  {campaign.requirements.map((r, i) => {
+                    const budgetLabel = r.budgetType === 'FIXED' ? `Rs. ${(r.budgetFixed ?? 0).toLocaleString()}`
+                      : r.budgetType === 'RANGE' ? `Rs. ${(r.budgetMin ?? 0).toLocaleString()} – ${(r.budgetMax ?? 0).toLocaleString()}`
+                      : t('campaignDetail.negotiable');
+                    return (
+                      <View key={r.id} style={[em.roleRow, i < campaign.requirements!.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+                        <Text style={[em.roleLabel, { color: C.text }]}>{r.category.name} ×{r.quantity}</Text>
+                        <Text style={[em.roleBudget, { color: C.textSecondary }]}>{budgetLabel}</Text>
+                      </View>
+                    );
+                  })}
+                  <Text style={[em.lockedNote, { marginTop: 4, color: C.textSecondary }]}>{t('campaignDetail.rolesLockedNote')}</Text>
+                </View>
+              ) : (
+                <Pressable style={em.singleRoleRow} onPress={() => setEditingField('people')}>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <Text style={[em.roleLabel, { color: C.text }]}>
+                      {editForm.template ? `${editForm.template} ×${editForm.creatorsNeeded}` : editForm.creatorsNeeded}
+                    </Text>
+                    <Text style={[em.roleBudget, { color: C.textSecondary }]}>
+                      {`Rs. ${(Number(editForm.budgetMin) || 0).toLocaleString()} – ${(Number(editForm.budgetMax) || 0).toLocaleString()}`}
+                    </Text>
+                  </View>
+                  <View style={[em.editBtn, { backgroundColor: `${C.brinjal1}1A` }]}>
+                    <FontAwesome5 name="pen" solid size={12} color={C.brinjal1} />
+                  </View>
+                </Pressable>
+              )}
+            </SectionCard>
+          </>
+        )}
+
+        {/* ── Featured ── */}
+        <View>
+          <FeaturedToggle
+            value={editForm.isFeatured}
+            onChange={(v) => { if (hasProposals) return; updateEdit('isFeatured', v); }}
+            // Once proposals exist, force the locked (zero-quota) visual
+            // regardless of the "already featured campaigns are always
+            // freely toggleable" exemption below — see hasProposals above.
+            quota={hasProposals ? { remaining: 0, price: featuredQuota?.price ?? 0, unlimited: false } : (campaign?.isFeatured ? null : featuredQuota)}
+            colors={C}
+            t={t}
+          />
+          {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary, marginTop: 8 }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
+        </View>
+
+      </BottomSheet>
+
+      {/* Location picker — shared between Paid (location) and Open Event (venue). */}
+      <LocationSearchModal
+        visible={locationModalOpen}
+        initialValue={isOpenEvent ? editForm.venue : editForm.location}
+        onSelect={(address) => {
+          setLocationModalOpen(false);
+          if (isOpenEvent) updateEdit('venue', address);
+          else updateEdit('location', address);
+        }}
+        onClose={() => setLocationModalOpen(false)}
+      />
+
+      {/* Tap-to-edit sheet — one shared BottomSheet, body switches on editingField. */}
+      <BottomSheet
+        visible={editingField !== null}
+        onClose={() => setEditingField(null)}
+        title={
+          editingField === 'title' ? t('campaignDetail.fieldTitle')
+          : editingField === 'description' ? t('campaignDetail.fieldDescription')
+          : editingField === 'image' ? t('createEvent.secFeatureImageTitle')
+          : editingField === 'category' ? t('campaignDetail.fieldCategory')
+          : editingField === 'hashtags' ? t('campaignDetail.sectionHashtags')
+          : editingField === 'people' ? t('createOpportunity.peopleNeededTitle')
+          : editingField === 'capacity' ? t('campaignDetail.fieldCapacity')
+          : editingField === 'benefits' ? t('campaignDetail.sectionWhatYouGet')
+          : ''
+        }>
+        {editingField === 'title' && (
+          <TextInputWithLabel
+            label={t('campaignDetail.fieldTitle')}
+            leftIcon="heading"
+            value={editForm.title}
+            onChangeText={(v) => updateEdit('title', v)}
+            placeholder={t('campaignDetail.titlePlaceholder')}
+            error={editErrors.title}
+          />
+        )}
+        {editingField === 'description' && (
+          <TextInputWithLabel
+            label={t('campaignDetail.fieldDescription')}
+            value={editForm.description}
+            onChangeText={(v) => updateEdit('description', v)}
+            placeholder={t('campaignDetail.descriptionPlaceholder')}
+            multiline
+            numberOfLines={5}
+          />
+        )}
+        {editingField === 'image' && (
+          <FeatureImagePicker
+            imageUrl={editForm.featureImageUrl}
+            category={campaign?.categoryKey ?? campaign?.category ?? ''}
+            uploading={featureImageUploading}
+            onPick={handlePickFeatureImage}
+            onClear={handleClearFeatureImage}
+            colors={C}
+          />
+        )}
+        {editingField === 'category' && (
+          <ChipGroup
+            options={categoryOptions.map((c) => c.label)}
+            value={editForm.template}
+            onChange={(v) => updateEdit('template', v)}
+            colors={C}
+          />
+        )}
+        {editingField === 'hashtags' && (
+          <HashtagEditor hashtags={editForm.hashtags} onChange={(v) => updateEdit('hashtags', v)} colors={C} t={t} />
+        )}
+        {editingField === 'people' && (
+          <View style={{ gap: 8 }}>
+            <Text style={[em.label, { color: C.text, marginTop: 0 }]}>{t('createEvent.secCreatorsNeededTitle')}</Text>
+            <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={(v) => updateEdit('creatorsNeeded', String(v))} colors={C} />
+            <Text style={[em.label, { color: C.text }]}>{t('createEvent.secBudgetTitle')}</Text>
+            <BudgetTierPicker
+              budgetMin={Number(editForm.budgetMin) || 0}
+              budgetMax={Number(editForm.budgetMax) || 0}
+              onChange={(min, max) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); }}
+              colors={C}
+              error={editErrors.budgetMin || editErrors.budgetMax}
+              disabled={hasProposals}
+            />
+            <Text style={[em.label, { color: C.text }]}>{t('createEvent.secDeliverablesTitle')}</Text>
+            <DeliverablesCounterList value={editForm.deliverables} onChange={(v) => updateEdit('deliverables', v)} colors={C} t={t} disabled={hasProposals} />
+            {hasProposals && <Text style={em.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
+          </View>
+        )}
+        {editingField === 'capacity' && (
+          <Stepper value={Number(editForm.capacity) || 1} onChange={(v) => updateEdit('capacity', String(v))} colors={C} />
+        )}
+        {editingField === 'benefits' && (
+          <ChipMultiGroup options={EVENT_BENEFITS} values={editForm.benefits} onChange={(v) => updateEdit('benefits', v)} colors={C} />
+        )}
       </BottomSheet>
 
       {/* ── Calendar modal (deadline) ── */}
@@ -1121,14 +1225,12 @@ const s = StyleSheet.create({
   heroTypeBadge: { position: 'absolute', bottom: 12, right: 14, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   heroTypeTxt:   { fontSize: 11, fontFamily: F.bold },
 
-  titleBlock:    { paddingHorizontal: 20, paddingVertical: 16, gap: 10, borderBottomWidth: 1 },
+  titleBlock:    { paddingHorizontal: SCREEN_GUTTER, paddingVertical: 16, gap: 10, borderBottomWidth: 1 },
   brandRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandAvatar:   { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   brandAvatarTxt:{ fontSize: 12, color: '#fff', fontFamily: F.bold },
   brandName:     { fontSize: 14, fontFamily: F.semibold },
   verifiedBadge: { width: 16, height: 16, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  platformTag:     { flexDirection: 'row', gap: 5 },
-  platformTagIcon: { width: 24, height: 24, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   campaignTitle: { fontSize: 18, lineHeight: 24, fontFamily: F.bold },
   budgetRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
   budget:        { fontSize: 16, fontFamily: F.bold },
@@ -1137,7 +1239,10 @@ const s = StyleSheet.create({
   proposalsBadge:{ borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   proposalsTxt:  { fontSize: 12, fontFamily: F.semibold },
 
-  card:        { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, gap: 12, ...SHADOW.card },
+  // marginHorizontal matches titleBlock/ctaBar's own 20px inset (SCREEN_GUTTER)
+  // below — this used to be a stray 16, so card content sat 4px narrower than
+  // the title/CTA above and below it instead of lining up on the same edge.
+  card:        { marginHorizontal: SCREEN_GUTTER, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, gap: 12, ...SHADOW.card },
   sectionLabel:{ fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: F.bold },
   templateRow: { flexDirection: 'row' },
   templateBadge:{ borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 6 },
@@ -1161,7 +1266,11 @@ const s = StyleSheet.create({
   benefitChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 7 },
   benefitChipTxt:{ fontSize: 13, fontFamily: F.semibold },
 
-  ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 16 },
+  ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: 12, gap: 16 },
+  // Multi-role campaigns need extra vertical room for the "Roles Needed"
+  // label + horizontally-scrolling role chips, unlike every other branch's
+  // single-line button.
+  ctaBarRoles:   { paddingVertical: 10 },
   ctaInfo:       { flex: 1 },
   ctaBudget:     { fontSize: 18, fontFamily: F.bold },
   ctaLabel:      { fontSize: 11, marginTop: 1, fontFamily: F.regular },
@@ -1169,6 +1278,18 @@ const s = StyleSheet.create({
   applyBtnTxt:   { color: '#fff', fontSize: 15, fontFamily: F.bold },
   appliedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ECFDF5', borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 14, borderWidth: 1.5, borderColor: '#A7F3D0' },
   appliedBadgeTxt:{ fontSize: 15, color: '#059669', fontFamily: F.bold },
+  roleIconWrap:  { width: 36, height: 36, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  roleTitle:     { fontSize: 14, fontFamily: F.bold },
+  roleAppliedBadge: { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ECFDF5' },
+  roleFullTxt:   { fontSize: 12, fontFamily: F.medium },
+  roleApplyBtnTxt: { color: '#fff', fontSize: 13, fontFamily: F.bold },
+  // Sticky-footer role chips — compact horizontal-scroll variant of the old
+  // full-width role cards, sized to fit the CTA bar's limited height.
+  roleChipRow:      { flexDirection: 'row', gap: 8 },
+  roleChip:          { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, minWidth: 180 },
+  roleChipTitle:     { fontSize: 13, fontFamily: F.bold },
+  roleChipSub:       { fontSize: 11, fontFamily: F.regular },
+  roleChipApplyBtn:  { borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 7, marginLeft: 'auto' },
 
   invitedCard:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0FDF4', borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: '#6EE7B7' },
   invitedIconWrap:  { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: '#DCFCE7', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
@@ -1187,8 +1308,6 @@ const em = StyleSheet.create({
   lockedNote: { fontSize: 11, marginTop: -8, marginBottom: 10, fontFamily: F.regular },
   label:      { fontSize: 13, marginBottom: 8, fontFamily: F.semibold },
   optional:   { fontSize: 12, fontFamily: F.regular },
-  input:      { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
-  textarea:   { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 80, fontFamily: F.regular },
   errTxt:     { fontSize: 12, color: ERROR_RED, marginTop: 4, fontFamily: F.regular },
 
   remoteCard:     { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14 },
@@ -1210,4 +1329,15 @@ const em = StyleSheet.create({
 
   saveBtn:    { borderRadius: RADIUS.md, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   saveBtnTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
+
+  pillCardBody: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  pill:         { borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5 },
+  pillText:     { fontSize: 12, fontFamily: F.semibold },
+
+  roleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10 },
+  roleLabel:  { fontSize: 14, fontFamily: F.semibold },
+  roleBudget: { fontSize: 12, fontFamily: F.regular },
+
+  singleRoleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  editBtn:       { width: 28, height: 28, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 });

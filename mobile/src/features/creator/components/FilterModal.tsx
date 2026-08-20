@@ -1,6 +1,6 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
+import { FilterSheet, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
 import { FilterChip, FilterChipGroup } from '@/components/FilterChip';
 import { BudgetRangePicker, matchBudgetPreset, type BudgetPreset } from '@/components/BudgetRangePicker';
 import { LocationSearchPicker, type LocationEntry, type LocationFilter } from '@/components/LocationSearchPicker';
@@ -109,6 +109,35 @@ type Props = {
   onReset: () => void;
   onClose: () => void;
 };
+
+// ─── Section header ───────────────────────────────────────────────────────────
+// A bolder, friendlier header than the shared FilterSheet's small-caps one —
+// icon sits inside a tinted circle and the title reads at normal case/size,
+// closer to how each section is labeled in the reference design. Kept local
+// to this modal rather than changed on the shared component, so the other
+// filter sheets in the app (Explore Brands/Creators) keep their current look.
+function SectionHeader({ icon, label, hint }: { icon: keyof typeof FontAwesome5.glyphMap; label: string; hint?: string }) {
+  const C = useAppColors();
+  return (
+    <View style={sh.row}>
+      <View style={sh.titleRow}>
+        <View style={[sh.iconBadge, { backgroundColor: C.primaryLight }]}>
+          <FontAwesome5 name={icon} size={13} color={C.brinjal1} />
+        </View>
+        <Text style={[sh.label, { color: C.text }]}>{label}</Text>
+      </View>
+      {hint ? <Text style={[sh.hint, { color: C.textSecondary }]}>{hint}</Text> : null}
+    </View>
+  );
+}
+
+const sh = StyleSheet.create({
+  row:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconBadge:{ width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  label:    { fontSize: 15, fontFamily: F.bold },
+  hint:     { fontSize: 11, fontFamily: F.semibold },
+});
 
 // ─── DateRangePicker ──────────────────────────────────────────────────────────
 // Custom calendar for the Deadline filter — only rendered once someone taps
@@ -361,7 +390,7 @@ export function FilterModal({
 
       {/* Event Type */}
       <View>
-        <FilterSectionHeader icon="tag" label={t('filterModal.sectionEventType')} />
+        <SectionHeader icon="tag" label={t('filterModal.sectionEventType')} />
         <FilterChipGroup
           options={EVENT_TYPE_OPTS.map(({ value, labelKey, icon }) => ({ value, label: t(labelKey), icon }))}
           selected={tempEventType}
@@ -370,12 +399,13 @@ export function FilterModal({
           onToggle={(vals) => { if (vals.length > 0) setTempEventType(vals as EventTypeFilter[]); }}
           multi
           equalWidth
+          showCheck
         />
       </View>
 
       {/* Budget — one-tap presets first, precise slider tucked behind "Custom" */}
       <View>
-        <FilterSectionHeader icon="money-bill-alt" label={t('filterModal.sectionBudget')} />
+        <SectionHeader icon="money-bill-alt" label={t('filterModal.sectionBudget')} />
         <BudgetRangePicker
           visible={visible}
           presets={BUDGET_PRESETS}
@@ -385,12 +415,13 @@ export function FilterModal({
           sliderMax={BUDGET_MAX}
           step={1000}
           customLabel={t('filterModal.customLabel')}
+          showCheck
         />
       </View>
 
       {/* Deadline — same "presets first" concept as Budget */}
       <View>
-        <FilterSectionHeader icon="calendar-alt" label={t('filterModal.sectionDeadlineRange')} />
+        <SectionHeader icon="calendar-alt" label={t('filterModal.sectionDeadlineRange')} />
         <View style={styles.presetRow}>
           {DEADLINE_PRESETS.map((p) => (
             <FilterChip
@@ -398,6 +429,7 @@ export function FilterModal({
               label={t(p.labelKey)}
               selected={selectedDeadlineKey === p.key}
               onPress={() => applyDeadlinePreset(p)}
+              showCheck
             />
           ))}
           <FilterChip
@@ -405,6 +437,7 @@ export function FilterModal({
             icon="sliders-h"
             selected={selectedDeadlineKey === 'custom'}
             onPress={() => setDeadlineCustomOpen(true)}
+            showCheck
           />
         </View>
         {showDeadlineCustom && (
@@ -416,7 +449,7 @@ export function FilterModal({
 
       {/* Onsite / Remote */}
       <View>
-        <FilterSectionHeader icon="globe" label={t('filterModal.sectionLocationType')} />
+        <SectionHeader icon="globe" label={t('filterModal.sectionLocationType')} />
         <TabSlider
           tabs={[
             { key: 'ONSITE', label: t('createEvent.locationOnsite'), icon: 'map-marker-alt' },

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { GoogleMap, Marker, OverlayView, OVERLAY_MOUSE_TARGET, Polyline, useJsApiLoader } from '@react-google-maps/api';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
-import { SECTION_IDS, COLORS } from '../constants';
+import { COLORS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
 import { TextReveal } from '../components/TextReveal';
@@ -288,7 +288,7 @@ export function Collaboration() {
   const cities = d.collaboration.cities;
 
   return (
-    <section id={SECTION_IDS.collaboration} className="relative overflow-hidden bg-white py-24 dark:bg-ink">
+    <section id="collaboration" className="relative overflow-hidden bg-white py-24 dark:bg-ink">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-1/2 top-0 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-violet/[0.08] blur-[110px]" />
         <svg

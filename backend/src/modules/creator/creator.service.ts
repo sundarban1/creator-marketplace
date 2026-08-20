@@ -3,17 +3,20 @@ import { AppError } from '../../middleware/error';
 import { logger } from '../../config/logger';
 import { env } from '../../config/env';
 import { signOAuthState, verifyOAuthState } from '../../utils/jwt';
-import { toCreatorProfileDto, toPublicCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
+import { toCreatorProfileDto, toPublicCreatorDto, toPrivateCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
+import { getCachedSettings } from '../../utils/settingsCache';
 
 const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
 import { CreatorRepository } from './creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { PlatformRepository } from '../platform/platform.repository';
+import { ServiceRepository } from '../service/service.repository';
 import { analyticsService } from '../analytics/analytics.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
+import { notificationService } from '../notifications/notification.service';
 import type {
   UpdateCreatorProfileInput,
   AddPortfolioLinkInput,
@@ -22,6 +25,9 @@ import type {
   UpdateSocialAccountInput,
   UpdatePaymentMethodsInput,
   UpdateCampaignPrefsInput,
+  UpdateAvailabilityStatusInput,
+  UpdateAvailabilityScheduleInput,
+  RespondToInvitationInput,
 } from './creator.schema';
 
 interface YoutubeChannelResponse {
@@ -273,15 +279,29 @@ function scoreCandidate(
   );
 }
 
+// §79 — ranks candidates against the admin-configured launch-priority city
+// (marketplace.launchPriorityCity) ahead of the score-based ranking above,
+// so the marketplace can favor its current launch market without any of
+// this logic ever hardcoding "Itahari" — an admin changing the setting is
+// the only thing that needs to happen to shift focus to a new city.
+// 0 = same city as the priority city, 1 = has some known location (ranked by
+// the existing distance/score system), 2 = no location on file at all.
+function cityTier(candidateCity: string | null | undefined, priorityCity: string): number {
+  if (priorityCity && candidateCity && candidateCity.trim().toLowerCase() === priorityCity.trim().toLowerCase()) return 0;
+  return candidateCity ? 1 : 2;
+}
+
 export class CreatorService {
   private repo: CreatorRepository;
   private businessRepo: BusinessRepository;
   private platformRepo: PlatformRepository;
+  private serviceRepo: ServiceRepository;
 
   constructor() {
     this.repo = new CreatorRepository();
     this.businessRepo = new BusinessRepository();
     this.platformRepo = new PlatformRepository();
+    this.serviceRepo = new ServiceRepository();
   }
 
   async listCreators(params: {
@@ -327,7 +347,11 @@ export class CreatorService {
     lang?: string;
   }) {
     const limit = Math.min(params.limit ?? 10, 20);
-    const candidates = await this.repo.findRecommended(params.category);
+    const [candidates, settings] = await Promise.all([
+      this.repo.findRecommended(params.category),
+      getCachedSettings(),
+    ]);
+    const priorityCity = (settings['marketplace.launchPriorityCity'] as string | undefined) ?? '';
     const analyticsByUserId = new Map(
       (await this.repo.findAnalyticsByUserIds(candidates.map((c) => c.userId))).map((a) => [a.userId, a]),
     );
@@ -352,7 +376,14 @@ export class CreatorService {
       // campaign requirement, not a preference — creators who don't meet it
       // are excluded outright rather than merely ranked lower.
       .filter((c) => c.topFollowers >= (params.minFollowers ?? 0))
-      .sort((a, b) => scoreCandidate(b, params) - scoreCandidate(a, params))
+      // §79 — city tier is the primary sort key (same-city candidates always
+      // rank ahead of everyone else), the existing weighted score breaks ties
+      // within each tier.
+      .sort((a, b) => {
+        const tierDiff = cityTier(a.city, priorityCity) - cityTier(b.city, priorityCity);
+        if (tierDiff !== 0) return tierDiff;
+        return scoreCandidate(b, params) - scoreCandidate(a, params);
+      })
       .slice(0, limit);
 
     const dtos = ranked.map(toCreatorListItemDto);
@@ -362,6 +393,10 @@ export class CreatorService {
   async getCreatorPublicProfile(creatorId: string, lang = 'en', viewerUserId?: string) {
     const profile = await this.repo.findByIdPublic(creatorId);
     if (!profile) throw new AppError('Creator not found', 404);
+    // showPublicProfile only hides the profile from other viewers — a creator
+    // who reaches their own id here (e.g. via search) should still see it in full.
+    const isOwnProfile = viewerUserId != null && profile.userId === viewerUserId;
+    if (!profile.showPublicProfile && !isOwnProfile) return toPrivateCreatorDto(profile);
 
     // Fire-and-forget — only authenticated brands reach this route at all
     // (business.routes.ts gates the whole file on authorize('BUSINESS')), so
@@ -375,8 +410,12 @@ export class CreatorService {
 
     const dto = toPublicCreatorDto(profile);
     const translated = await translateFields(dto, [...CREATOR_FIELDS], lang);
-    const stats = await analyticsService.getCreatorPublicStats(profile.userId).catch(() => null);
-    return { ...translated, stats };
+    const [stats, reviews, services] = await Promise.all([
+      analyticsService.getCreatorPublicStats(profile.userId).catch(() => null),
+      analyticsService.getReviewsReceived(profile.userId).catch(() => []),
+      this.serviceRepo.findActiveByCreatorProfileId(profile.id).catch(() => []),
+    ]);
+    return { ...translated, stats, reviews, services };
   }
 
   async getFilterOptions() {
@@ -1066,5 +1105,66 @@ export class CreatorService {
 
   async getEarningsSummary(userId: string) {
     return this.repo.getEarningsSummary(userId);
+  }
+
+  // ── Availability (§16) ──────────────────────────────────────────────────────
+
+  async updateAvailabilityStatus(userId: string, input: UpdateAvailabilityStatusInput) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+    return toCreatorProfileDto(await this.repo.updateAvailabilityStatus(userId, input.status));
+  }
+
+  async getAvailabilitySchedule(userId: string) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+    return this.repo.getAvailabilitySchedule(profile.id);
+  }
+
+  async updateAvailabilitySchedule(userId: string, input: UpdateAvailabilityScheduleInput) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+    await this.repo.replaceAvailabilitySchedule(profile.id, input.days);
+    return this.repo.getAvailabilitySchedule(profile.id);
+  }
+
+  // ── Invitations (§50) ────────────────────────────────────────────────────────
+  // NOTE: responding ACCEPTED only flips CampaignInvitation.status today — it
+  // does not create an Application. Deliberately left this way: wiring
+  // accept -> Application would require deciding what proposedRate/timeline
+  // to default to for a deal that skipped the normal proposal step, and that's
+  // a product decision, not a schema/plumbing one. Until that's decided, an
+  // accepted invitation surfaces as "accepted" but the business must still
+  // separately select the creator on the campaign to start a real collaboration.
+
+  async listInvitations(userId: string) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+    return this.repo.findInvitations(profile.id);
+  }
+
+  async respondToInvitation(userId: string, invitationId: string, input: RespondToInvitationInput) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+
+    const invitation = await this.repo.findInvitationById(invitationId);
+    if (!invitation) throw new AppError('Invitation not found', 404);
+    if (invitation.creatorId !== profile.id) throw new AppError('Not authorized to respond to this invitation', 403);
+    if (invitation.status !== 'PENDING') throw new AppError('This invitation has already been responded to', 409);
+
+    const updated = await this.repo.respondToInvitation(invitationId, input.status);
+
+    notificationService.create({
+      userId: invitation.business.userId,
+      type: 'invitation_response',
+      title: input.status === 'ACCEPTED'
+        ? `${profile.fullName ?? 'A creator'} accepted your invitation`
+        : `${profile.fullName ?? 'A creator'} declined your invitation`,
+      body: invitation.campaign.title,
+      refId: invitation.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
+    return updated;
   }
 }

@@ -9,7 +9,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -111,7 +110,7 @@ function generateTemplate(category: string, title: string, brand: string): strin
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SubmitProposalScreen() {
-  const { campaignId, campaignTitle, brand, budget, budgetMin, budgetMax, category, campaignType } = useLocalSearchParams<{
+  const { campaignId, campaignTitle, brand, budget, budgetMin, budgetMax, category, campaignType, requirementId } = useLocalSearchParams<{
     campaignId:    string;
     campaignTitle: string;
     brand:         string;
@@ -120,6 +119,9 @@ export default function SubmitProposalScreen() {
     budgetMax:     string;
     category:      string;
     campaignType:  string;
+    // Set only when applying to a specific role on a multi-role campaign
+    // (§ CampaignRequirement) — undefined for the simple single-category flow.
+    requirementId?: string;
   }>();
   const { t } = useLanguage();
   const C = useAppColors();
@@ -205,6 +207,7 @@ export default function SubmitProposalScreen() {
       timeline:     '2 weeks',
       socialHandles: {},
       portfolioUrl: portfolio.trim() || undefined,
+      requirementId: requirementId || undefined,
     });
     toast.success(t('proposal.submitSuccessBody', { brand }), t('proposal.submitSuccessTitle'));
     setContractModalVisible(false);
@@ -233,7 +236,7 @@ export default function SubmitProposalScreen() {
     // Paid campaigns: review + agree to the contract before actually submitting.
     setLoading(true);
     try {
-      const preview = await contractService.previewContract(campaignId, proposedRate, '2 weeks');
+      const preview = await contractService.previewContract(campaignId, proposedRate, '2 weeks', requirementId);
       setContractPreview(preview);
       setContractModalVisible(true);
     } catch (e) {
@@ -277,6 +280,12 @@ export default function SubmitProposalScreen() {
             <Text style={[styles.badgeLabel, { color: C.brinjal1 }]}>{t('proposal.applyingTo')}</Text>
             <Text style={[styles.campaignTitle, { color: C.text }]}>{campaignTitle}</Text>
             <Text style={[styles.campaignBrand, { color: C.textSecondary }]}>{brand}</Text>
+            {!!requirementId && !!category && (
+              <View style={[styles.budgetPill, { backgroundColor: C.primaryLight }]}>
+                <FontAwesome5 name="user" solid size={12} color={C.brinjal1} />
+                <Text style={[styles.budgetText, { color: C.brinjal1 }]}>{t('proposal.applyingForRole', { role: category })}</Text>
+              </View>
+            )}
             {isFreeEvent ? (
               <View style={[styles.budgetPill, { backgroundColor: '#F0FDF4' }]}>
                 <FontAwesome5 name="check-circle" solid size={13} color="#059669" />
@@ -301,36 +310,25 @@ export default function SubmitProposalScreen() {
           <View style={styles.form}>
             {/* Cover letter */}
             <View style={styles.fieldGroup}>
-              <View style={styles.coverLabelRow}>
-                <Text style={[styles.fieldLabel, { color: C.text }]}>
-                  {t('proposal.coverLetter')}
-                  <Text style={{ color: C.error }}> *</Text>
-                </Text>
-                <Pressable
-                  style={[styles.regenBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '55' }]}
-                  onPress={handleRegenerate}
-                  hitSlop={8}>
-                  <FontAwesome5 name="magic" solid size={11} color={C.brinjal1} />
-                  <Text style={[styles.regenText, { color: C.brinjal1 }]}>Regenerate</Text>
-                </Pressable>
-              </View>
-              <View style={[
-                styles.textareaWrap,
-                { borderColor: coverError ? C.error : C.border, backgroundColor: C.surface },
-              ]}>
-                <TextInput
-                  style={[styles.textarea, { color: C.text }]}
-                  value={coverLetter}
-                  onChangeText={setCoverLetter}
-                  onFocus={() => { bottomFieldFocusedRef.current = false; }}
-                  placeholder={t('proposal.coverLetterPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  multiline
-                  numberOfLines={8}
-                  maxLength={800}
-                  textAlignVertical="top"
-                />
-              </View>
+              <TextInputWithLabel
+                label={`${t('proposal.coverLetter')} *`}
+                rightSlot={
+                  <Pressable
+                    style={[styles.regenBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '55' }]}
+                    onPress={handleRegenerate}
+                    hitSlop={8}>
+                    <FontAwesome5 name="magic" solid size={11} color={C.brinjal1} />
+                    <Text style={[styles.regenText, { color: C.brinjal1 }]}>Regenerate</Text>
+                  </Pressable>
+                }
+                value={coverLetter}
+                onChangeText={setCoverLetter}
+                onFocus={() => { bottomFieldFocusedRef.current = false; }}
+                placeholder={t('proposal.coverLetterPlaceholder')}
+                multiline
+                numberOfLines={8}
+                maxLength={800}
+              />
               <View style={styles.fieldMeta}>
                 {coverError ? (
                   <>
@@ -430,13 +428,9 @@ const styles = StyleSheet.create({
 
   form:            { gap: 20 },
   fieldGroup:      { gap: 6 },
-  coverLabelRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  fieldLabel:      { fontSize: 13, fontFamily: F.semibold },
   regenBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.full, borderWidth: 1 },
   regenText:       { fontSize: 11, fontFamily: F.bold },
 
-  textareaWrap:    { borderWidth: 1.5, borderRadius: RADIUS.md, overflow: 'hidden' },
-  textarea:        { paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 160, fontFamily: F.regular },
   fieldMeta:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   fieldError:      { fontSize: 12, flex: 1, fontFamily: F.medium },
   charHint:        { fontSize: 11, fontFamily: F.regular },

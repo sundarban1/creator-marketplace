@@ -231,9 +231,17 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
         onLongPress={handleLongPress}
         delayLongPress={400}
         onPress={() =>
+          // Outer-stack chat route (sibling of (tabs)), not this nested
+          // messages/[id] route — same screen component either way (chat/[id]
+          // re-exports this one, see that file's comment), but pushing here
+          // instead of into the Messages tab's own nested stack avoids the
+          // composer visibly settling into place a beat after the tab bar
+          // hides, matching how Activity Timeline already opens this screen
+          // (for both a creator<->business and creator<->creator thread —
+          // participantRole is passed through either way).
           router.push({
-            pathname: '/(creator)/messages/[id]' as never,
-            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', participantId: conv.participantId, status: conv.status, campaignTitle: conv.campaignTitle ?? '', participantRole: conv.participantRole },
+            pathname: '/(creator)/chat/[id]' as never,
+            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', participantId: conv.participantId, status: conv.status, campaignTitle: conv.campaignTitle ?? '', participantRole: conv.participantRole, focusInput: 'true' },
           })
         }>
         {/* Avatar — plain, no ring/stripe/badge clutter */}

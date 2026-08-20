@@ -9,6 +9,7 @@ import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
 import { FavoriteRepository } from '../creator/favorite.repository';
 import { AdminRepository } from '../admin/admin.repository';
+import { CategoryRepository } from '../category/category.repository';
 import { notificationService } from '../notifications/notification.service';
 import { contractService } from '../contract/contract.service';
 import { analyticsService } from '../analytics/analytics.service';
@@ -18,6 +19,7 @@ import { logger } from '../../config/logger';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
+import { haversineKm } from '../../utils/geo';
 import {
   sendPaymentSecuredEmail,
   sendWorkStartedEmail,
@@ -113,12 +115,74 @@ import type {
 
 const messagingService = new MessagingService();
 
+// ── Recommended-campaigns scoring ────────────────────────────────────────────
+// Content-based match between a creator's stated preferences and a candidate
+// campaign — mirrors creator.service.ts's RECOMMEND_WEIGHTS/scoreCandidate
+// pair (the campaign->creator direction), just scored the other way around.
+// Every sub-score is normalized to [0, 1]; missing creator preference data
+// (no categories/platforms/coordinates set yet) falls back to a neutral 0.5
+// rather than 0, so a barely-filled-in profile doesn't get an empty feed.
+const RECOMMENDATION_POOL_SIZE = 150;
+const CAMPAIGN_RECOMMEND_WEIGHTS = { category: 0.35, platform: 0.15, budget: 0.15, location: 0.2, freshness: 0.1, quality: 0.05 };
+
+function scoreCampaignForCreator(
+  c: {
+    category: string; platforms: string[]; budgetMin: number; budgetMax: number;
+    locationType: 'ONSITE' | 'REMOTE'; locationLat: number | null; locationLng: number | null;
+    createdAt: Date; isFeatured: boolean; applicationCount: number;
+  },
+  creator: {
+    categories: string[]; prefPlatforms: string[]; prefBudgetMin: number; prefBudgetMax: number;
+    locationLat: number | null; locationLng: number | null; nearbyRadiusKm: number;
+  },
+): number {
+  const categoryScore = creator.categories.length
+    ? (creator.categories.some((cat) => cat.toLowerCase() === c.category.toLowerCase()) ? 1 : 0)
+    : 0.5;
+
+  const platformScore = creator.prefPlatforms.length
+    ? creator.prefPlatforms.filter((p) => c.platforms.includes(p)).length / creator.prefPlatforms.length
+    : 0.5;
+
+  // Budget ranges overlapping is a binary-ish fit — 1 when they do, a soft
+  // floor (not 0) when they don't, since a near-miss campaign is still worth
+  // surfacing, just ranked behind a better-fitting one.
+  const budgetScore = c.budgetMax >= creator.prefBudgetMin && c.budgetMin <= creator.prefBudgetMax ? 1 : 0.3;
+
+  // REMOTE campaigns are reachable by anyone, so they score full marks.
+  // ONSITE campaigns decay from 1 at 0km to 0 at the creator's own stated
+  // nearbyRadiusKm — same falloff shape as creator.service.ts's proximityScore.
+  const locationScore = c.locationType === 'REMOTE'
+    ? 1
+    : creator.locationLat != null && creator.locationLng != null && c.locationLat != null && c.locationLng != null
+      ? Math.max(0, 1 - haversineKm(creator.locationLat, creator.locationLng, c.locationLat, c.locationLng) / Math.max(creator.nearbyRadiusKm, 1))
+      : 0.5;
+
+  const daysSinceCreated = (Date.now() - c.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+  const freshnessScore = Math.max(0, 1 - daysSinceCreated / 30);
+
+  // Featured campaigns get a boost; a growing applicant count pulls the other
+  // way (a soft signal the opportunity may already be effectively filled) —
+  // capped so it can only ever bring the score down to 0, never negative.
+  const qualityScore = Math.max(0, (c.isFeatured ? 1 : 0.6) - Math.min(0.4, c.applicationCount * 0.02));
+
+  return (
+    categoryScore  * CAMPAIGN_RECOMMEND_WEIGHTS.category +
+    platformScore  * CAMPAIGN_RECOMMEND_WEIGHTS.platform +
+    budgetScore    * CAMPAIGN_RECOMMEND_WEIGHTS.budget +
+    locationScore  * CAMPAIGN_RECOMMEND_WEIGHTS.location +
+    freshnessScore * CAMPAIGN_RECOMMEND_WEIGHTS.freshness +
+    qualityScore   * CAMPAIGN_RECOMMEND_WEIGHTS.quality
+  );
+}
+
 export class CampaignService {
   private repo:         CampaignRepository;
   private businessRepo: BusinessRepository;
   private creatorRepo:  CreatorRepository;
   private favoriteRepo: FavoriteRepository;
   private adminRepo:    AdminRepository;
+  private categoryRepo: CategoryRepository;
 
   constructor() {
     this.repo         = new CampaignRepository();
@@ -126,6 +190,7 @@ export class CampaignService {
     this.creatorRepo  = new CreatorRepository();
     this.favoriteRepo = new FavoriteRepository();
     this.adminRepo    = new AdminRepository();
+    this.categoryRepo = new CategoryRepository();
   }
 
   // A requested 'ACTIVE' publish is downgraded to 'PENDING_APPROVAL' when the
@@ -235,6 +300,19 @@ export class CampaignService {
       throw new AppError('Location is required for onsite events', 400);
     }
 
+    // Each requirement's categoryId must be a real, active, strict
+    // CREATOR-scope category (a provider *type* — Photographer, Videographer,
+    // ...) — never a BUSINESS-only or BOTH-scope niche. Mirrors
+    // service.service.ts's assertCategoryUsable for the same reason.
+    if (input.requirements?.length) {
+      for (const r of input.requirements) {
+        const category = await this.categoryRepo.findById(r.categoryId);
+        if (!category) throw new AppError(`Category not found for requirement`, 404);
+        if (category.status !== 'ACTIVE') throw new AppError(`Category "${category.name}" is not active`, 400);
+        if (category.scope !== 'CREATOR') throw new AppError(`Category "${category.name}" is not usable as a campaign requirement`, 400);
+      }
+    }
+
     const [resolvedStatus, commissionRate, featuredAllowed] = await Promise.all([
       this.resolvePublishStatus(input.status),
       this.adminRepo.getSetting('platform.commission').then((v) => Number(v) || 0),
@@ -252,6 +330,10 @@ export class CampaignService {
       commissionRate,
       deadline:  new Date(input.deadline),
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
+      requirements: input.requirements?.map((r) => ({
+        ...r,
+        deadline: r.deadline ? new Date(r.deadline) : undefined,
+      })),
       // Never persist a stale address alongside REMOTE — the server is the
       // source of truth here, not whatever the client happened to send.
       location:     locationType === 'REMOTE' ? null : input.location,
@@ -314,6 +396,57 @@ export class CampaignService {
     const dtos = raw.map(toCampaignDto);
     const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
     return { campaigns, total, page, limit };
+  }
+
+  /**
+   * Up to `limit` active campaigns ranked for this creator by content-based
+   * fit (category/platform/budget/location/freshness/popularity — see
+   * scoreCampaignForCreator above), for the "Recommended Opportunities"
+   * section on the creator home page. Candidates already applied to are
+   * excluded outright rather than merely ranked lower — a creator has no use
+   * for being "recommended" something they've already acted on.
+   */
+  async getRecommendedForCreator(userId: string, limit = 10, lang = 'en') {
+    const creator = await this.creatorRepo.findByUserId(userId);
+    if (!creator) throw new AppError('Creator profile not found', 404);
+
+    const cappedLimit = Math.min(limit, 20);
+    const excludeCampaignIds = await this.repo.findAppliedCampaignIds(creator.id);
+    const candidates = await this.repo.findCandidatesForRecommendation(excludeCampaignIds, RECOMMENDATION_POOL_SIZE);
+
+    const ranked = candidates
+      .map((c) => ({
+        campaign: c,
+        score: scoreCampaignForCreator(
+          {
+            category:         c.category,
+            platforms:        c.platforms,
+            budgetMin:        c.budgetMin,
+            budgetMax:        c.budgetMax,
+            locationType:     c.locationType,
+            locationLat:      c.locationLat,
+            locationLng:      c.locationLng,
+            createdAt:        c.createdAt,
+            isFeatured:       c.isFeatured,
+            applicationCount: c._count.applications,
+          },
+          {
+            categories:     creator.categories,
+            prefPlatforms:  creator.prefPlatforms,
+            prefBudgetMin:  creator.prefBudgetMin,
+            prefBudgetMax:  creator.prefBudgetMax,
+            locationLat:    creator.locationLat,
+            locationLng:    creator.locationLng,
+            nearbyRadiusKm: creator.nearbyRadiusKm,
+          },
+        ),
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, cappedLimit)
+      .map((r) => r.campaign);
+
+    const dtos = ranked.map(toCampaignDto);
+    return translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
   }
 
   async getCategories(): Promise<string[]> {
@@ -533,15 +666,47 @@ export class CampaignService {
       throw new AppError('This campaign is not accepting applications', 400);
     }
 
-    const existingApplication = await this.repo.findApplication(campaignId, creator.id);
-    if (existingApplication) {
-      throw new AppError('You have already applied to this campaign', 409);
+    // Requirement-scoped applications (multi-role campaigns) validate and
+    // dedupe against that one requirement, not the whole campaign — a
+    // multi-category provider can apply to two different roles on the same
+    // campaign. Falls back to the simple whole-campaign check otherwise.
+    let requirement: Awaited<ReturnType<typeof this.repo.findRequirementById>> = null;
+    if (input.requirementId) {
+      requirement = await this.repo.findRequirementById(input.requirementId);
+      if (!requirement || requirement.campaignId !== campaignId) {
+        throw new AppError('Requirement not found on this campaign', 404);
+      }
+      const existingForRequirement = await this.repo.findApplicationForRequirement(input.requirementId, creator.id);
+      if (existingForRequirement) {
+        throw new AppError('You have already applied to this role', 409);
+      }
+    } else {
+      const existingApplication = await this.repo.findApplication(campaignId, creator.id);
+      if (existingApplication) {
+        throw new AppError('You have already applied to this campaign', 409);
+      }
     }
 
     await this.assertProposalSubmissionAllowed(creator.id);
 
     const isFreeCampaign = (campaign as any).campaignType === 'OPEN_EVENT';
-    if (!isFreeCampaign && campaign.budgetMax > 0) {
+    if (requirement) {
+      // Validate against the requirement's own budget, not the campaign's —
+      // the campaign-level budgetMin/Max are informational summaries once
+      // requirements exist (see createCampaignSchema's comment).
+      if (requirement.budgetType === 'FIXED' && requirement.budgetFixed != null) {
+        if (input.proposedRate !== requirement.budgetFixed) {
+          throw new AppError(`Proposed rate must be Rs. ${requirement.budgetFixed.toLocaleString()} for this role`, 400);
+        }
+      } else if (requirement.budgetType === 'RANGE' && requirement.budgetMin != null && requirement.budgetMax != null) {
+        if (input.proposedRate < requirement.budgetMin || input.proposedRate > requirement.budgetMax) {
+          throw new AppError(
+            `Proposed rate must be between Rs. ${requirement.budgetMin.toLocaleString()} and Rs. ${requirement.budgetMax.toLocaleString()}`,
+            400,
+          );
+        }
+      }
+    } else if (!isFreeCampaign && campaign.budgetMax > 0) {
       if (input.proposedRate < campaign.budgetMin || input.proposedRate > campaign.budgetMax) {
         throw new AppError(
           `Proposed rate must be between Rs. ${campaign.budgetMin.toLocaleString()} and Rs. ${campaign.budgetMax.toLocaleString()}`,
@@ -575,6 +740,7 @@ export class CampaignService {
         creator,
         proposedRate: input.proposedRate,
         timeline:     input.timeline,
+        requirement,
       });
     }
 
@@ -654,6 +820,44 @@ export class CampaignService {
     return this.updateApplicationStatus(campaignId, appId, userId, 'REJECTED');
   }
 
+  // §49 — a lightweight "under consideration" marker, distinct from the full
+  // accept/reject flow above: no contract signing, no capacity enforcement,
+  // just a status toggle + notification. Toggles PENDING <-> SHORTLISTED;
+  // only notifies on the way in (SHORTLISTED), not when reverted, so a
+  // business changing their mind a few times doesn't spam the provider.
+  async shortlistApplication(campaignId: string, appId: string, userId: string) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError('Business profile not found', 404);
+
+    const campaign = await this.repo.findById(campaignId);
+    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
+
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError('Application not found', 404);
+    if (application.campaignId !== campaignId) throw new AppError('Application does not belong to this campaign', 400);
+    if (application.status !== 'PENDING' && application.status !== 'SHORTLISTED') {
+      throw new AppError('Only pending applications can be shortlisted', 400);
+    }
+
+    const nextStatus = application.status === 'PENDING' ? 'SHORTLISTED' : 'PENDING';
+    const rawUpdated = await this.repo.updateApplicationStatus(appId, nextStatus);
+    const updated = toApplicationDto(rawUpdated);
+
+    if (nextStatus === 'SHORTLISTED' && application.creator?.userId) {
+      notificationService.create({
+        userId:  application.creator.userId,
+        type:    'proposal_shortlisted',
+        title:   `You've been shortlisted!`,
+        body:    `${business.businessName ?? 'A business'} shortlisted your proposal for "${campaign.title}".`,
+        refId:   campaign.id,
+        refType: 'campaign',
+      }).catch(() => {});
+    }
+
+    return updated;
+  }
+
   private async updateApplicationStatus(
     campaignId: string,
     appId: string,
@@ -696,12 +900,43 @@ export class CampaignService {
       }
     }
 
-    // Capacity enforcement for OPEN_EVENT (uses capacity field)
-    if (status === 'ACCEPTED') {
-      const campaignCapacity = (campaign as any).capacity as number | null;
-      if (campaignCapacity != null) {
+    // Capacity enforcement branches on whether this application belongs to a
+    // CampaignRequirement (multi-role campaign) or not (every campaign that
+    // predates CampaignRequirement, and every simple single-category campaign
+    // created since — requirementId stays null for these, and the two blocks
+    // below run completely unchanged from before CampaignRequirement existed).
+    const requirementId = (application as any).requirementId as string | null;
+
+    if (requirementId == null) {
+      // Capacity enforcement for OPEN_EVENT (uses capacity field)
+      if (status === 'ACCEPTED') {
+        const campaignCapacity = (campaign as any).capacity as number | null;
+        if (campaignCapacity != null) {
+          const acceptedCount = await this.repo.countAcceptedApplications(campaignId);
+          if (acceptedCount >= campaignCapacity) {
+            const rejected = await this.repo.rejectPendingApplications(campaignId, appId);
+            await this.repo.closeCampaign(campaignId);
+            if (rejected.length > 0) {
+              notificationService.createMany(
+                rejected.map((a) => ({
+                  userId:  a.creator.userId,
+                  type:    'campaign_closed' as const,
+                  title:   `"${campaign.title}" is now full`,
+                  body:    'This event has reached its creator capacity.',
+                  refId:   campaign.id,
+                  refType: 'event',
+                }))
+              ).catch(() => {});
+            }
+          }
+        }
+      }
+
+      // Capacity enforcement for PAID_CAMPAIGN (uses creatorsNeeded field)
+      if (status === 'ACCEPTED' && (campaign as any).campaignType === 'PAID_CAMPAIGN') {
+        const needed: number = ((campaign as any).creatorsNeeded as number) ?? 1;
         const acceptedCount = await this.repo.countAcceptedApplications(campaignId);
-        if (acceptedCount >= campaignCapacity) {
+        if (acceptedCount >= needed) {
           const rejected = await this.repo.rejectPendingApplications(campaignId, appId);
           await this.repo.closeCampaign(campaignId);
           if (rejected.length > 0) {
@@ -710,34 +945,37 @@ export class CampaignService {
                 userId:  a.creator.userId,
                 type:    'campaign_closed' as const,
                 title:   `"${campaign.title}" is now full`,
-                body:    'This event has reached its creator capacity.',
+                body:    'All creator slots for this campaign have been filled.',
                 refId:   campaign.id,
-                refType: 'event',
+                refType: 'campaign',
               }))
             ).catch(() => {});
           }
         }
       }
-    }
-
-    // Capacity enforcement for PAID_CAMPAIGN (uses creatorsNeeded field)
-    if (status === 'ACCEPTED' && (campaign as any).campaignType === 'PAID_CAMPAIGN') {
-      const needed: number = ((campaign as any).creatorsNeeded as number) ?? 1;
-      const acceptedCount = await this.repo.countAcceptedApplications(campaignId);
-      if (acceptedCount >= needed) {
-        const rejected = await this.repo.rejectPendingApplications(campaignId, appId);
-        await this.repo.closeCampaign(campaignId);
+    } else if (status === 'ACCEPTED') {
+      // Requirement-scoped: filling one role must never reject applicants for
+      // a different, still-open role, and must never close the campaign until
+      // every role is filled — see the "NOT YET WIRED" note this replaces in
+      // CampaignRequirement's schema comment.
+      const acceptedCount = await this.repo.countAcceptedApplicationsForRequirement(requirementId);
+      const requirement = await this.repo.findRequirementById(requirementId);
+      if (requirement && acceptedCount >= requirement.quantity) {
+        const rejected = await this.repo.rejectPendingApplicationsForRequirement(requirementId, appId);
         if (rejected.length > 0) {
           notificationService.createMany(
             rejected.map((a) => ({
               userId:  a.creator.userId,
               type:    'campaign_closed' as const,
               title:   `"${campaign.title}" is now full`,
-              body:    'All creator slots for this campaign have been filled.',
+              body:    'This role has been filled.',
               refId:   campaign.id,
               refType: 'campaign',
             }))
           ).catch(() => {});
+        }
+        if (await this.repo.areAllRequirementsFilled(campaignId)) {
+          await this.repo.closeCampaign(campaignId);
         }
       }
     }
@@ -810,16 +1048,26 @@ export class CampaignService {
         }).catch(() => {});
       }
 
-      // Notify other pending applicants that the spot is filled
+      // Notify other pending applicants that the spot is filled. Requirement-
+      // scoped when this application belongs to a CampaignRequirement — the
+      // whole-campaign version below would otherwise wrongly tell applicants
+      // for a completely different, still-open role that the campaign closed.
       if (status === 'ACCEPTED') {
-        this.repo.findPendingApplicationsByCampaign(campaignId, appId).then((others) => {
+        const pendingPromise = requirementId != null
+          ? this.repo.findPendingApplicationsForRequirement(requirementId, appId)
+          : this.repo.findPendingApplicationsByCampaign(campaignId, appId);
+        pendingPromise.then((others) => {
           if (others.length === 0) return;
           return notificationService.createMany(
             others.map((a) => ({
               userId:  a.creator.userId,
               type:    'campaign_closed' as const,
-              title:   `"${campaign.title}" is no longer accepting proposals`,
-              body:    `${business.businessName} has selected a creator for this campaign. Thank you for applying!`,
+              title:   requirementId != null
+                ? `A role on "${campaign.title}" has been filled`
+                : `"${campaign.title}" is no longer accepting proposals`,
+              body:    requirementId != null
+                ? `${business.businessName} has selected a provider for this role. Thank you for applying!`
+                : `${business.businessName} has selected a creator for this campaign. Thank you for applying!`,
               refId:   campaign.id,
               refType: 'campaign',
             })),
@@ -953,6 +1201,10 @@ export class CampaignService {
       refType: 'campaign',
     }).catch(() => {});
 
+    messagingService
+      .sendSystemMessage(app.creatorId, app.campaign.business.id, app.campaignId, userId, 'CREATOR', 'Collaboration started.')
+      .catch(() => {});
+
     this.repo.getUserEmails([businessUserId]).then((emailMap) => {
       const email = emailMap.get(businessUserId);
       if (email) {
@@ -985,6 +1237,10 @@ export class CampaignService {
       refId:   app.campaignId,
       refType: 'campaign',
     }).catch(() => {});
+
+    messagingService
+      .sendSystemMessage(app.creatorId, app.campaign.business.id, app.campaignId, userId, 'CREATOR', 'Deliverable submitted.')
+      .catch(() => {});
 
     this.repo.getUserEmails([businessUserId]).then((emailMap) => {
       const email = emailMap.get(businessUserId);

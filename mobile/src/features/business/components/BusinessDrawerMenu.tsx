@@ -22,19 +22,26 @@ type NavItem = {
   color: string;
 };
 
+// Colors for items that also exist in the creator drawer (DrawerMenu.tsx) are
+// kept identical to that file's values — Refer/Notifications/Support/Privacy/
+// Settings/Social are the same *feature* regardless of role, so a business
+// user and a creator user should see the same color for it, not an
+// independently-drifted one (this used to include a stray '#4F46E5' on
+// Privacy — the creator-role brand purple, hardcoded onto a business screen).
 const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
   {
     labelKey: 'drawer.accountGroup',
     items: [
       { iconName: 'share-alt',     labelKey: 'drawer.socialAccounts',    route: '/(business)/settings?section=social',        color: '#E1306C' },
+      { iconName: 'paper-plane', faName: 'paper-plane', labelKey: 'drawer.serviceRequests',  route: '/(business)/service-requests',              color: '#7C3AED' },
       { iconName: 'check-circle', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },
       { iconName: 'wallet', faName: 'wallet',      labelKey: 'drawer.payment',        route: '/(business)/settings?section=payment',       color: '#3B82F6' },
-      { iconName: 'gift', faName: 'gift',          labelKey: 'drawer.referBusiness',   route: '/(business)/refer',                          color: '#F43F5E' },
-      { iconName: 'lock',      labelKey: 'drawer.security',          route: '/(business)/settings?section=account',       color: '#6B7280' },
+      { iconName: 'gift', faName: 'gift',          labelKey: 'drawer.referBusiness',   route: '/(business)/refer',                          color: '#EC4899' },
+      { iconName: 'lock',      labelKey: 'drawer.security',          route: '/(business)/settings?section=account',       color: '#0369A1' },
       { iconName: 'bell', faName: 'bell', labelKey: 'drawer.notifications', route: '/(business)/settings?section=notifications', color: '#D97706' },
       { iconName: 'life-ring', faName: 'life-ring', labelKey: 'drawer.support',        route: '/(business)/settings?section=support',       color: '#0891B2' },
-      { iconName: 'shield-alt', faName: 'shield-alt',  labelKey: 'drawer.privacy',        route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
-      { iconName: 'cog',         labelKey: 'drawer.settings',          route: '/(business)/settings?section=app',           color: '#EC4899' },
+      { iconName: 'shield-alt', faName: 'shield-alt',  labelKey: 'drawer.privacy',        route: '/(business)/settings?section=privacy',       color: '#0D9488' },
+      { iconName: 'cog',         labelKey: 'drawer.settings',          route: '/(business)/settings?section=app',           color: '#6B7280' },
     ],
   },
 ];
@@ -114,7 +121,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
             <FontAwesome5 name="chevron-down" solid size={20} color="rgba(255,255,255,0.6)" />
           </Pressable>
 
-          <View style={styles.userRow}>
+          <Pressable style={styles.userRow} hitSlop={4} onPress={() => navigate('/(business)/(tabs)/profile')}>
             {displayAvatar ? (
               <Image source={{ uri: displayAvatar }} style={styles.avatarCircle} />
             ) : (
@@ -126,7 +133,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
               <Text style={styles.userName} numberOfLines={1}>{displayName}</Text>
               <Text style={styles.userEmail} numberOfLines={1}>{identityLine}</Text>
             </View>
-          </View>
+          </Pressable>
         </View>
 
         {/* Nav */}

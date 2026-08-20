@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, MapPin, Calendar, Users, DollarSign,
   Target, Clock, CheckCircle2, XCircle, Hourglass, Star,
-  FileText, Activity, Wallet, Video,
+  FileText, Activity, Wallet, Video, Layers,
 } from 'lucide-react';
+// `Star` was already imported for the Roles Needed section's icon usage —
+// reused here for the SHORTLISTED application status badge.
 import { StatusBadge }  from '../components/StatusBadge';
 import { Avatar }       from '../components/Avatar';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -29,18 +31,27 @@ function formatBudget(min: number, max: number) {
   return min === max ? f(min) : `${f(min)} – ${f(max)}`;
 }
 
+function formatRequirementBudget(r: { budgetType: string; budgetFixed: number | null; budgetMin: number | null; budgetMax: number | null }) {
+  const f = (n: number) => `NPR ${n.toLocaleString()}`;
+  if (r.budgetType === 'FIXED')  return f(r.budgetFixed ?? 0);
+  if (r.budgetType === 'RANGE')  return `${f(r.budgetMin ?? 0)} – ${f(r.budgetMax ?? 0)}`;
+  return 'Negotiable';
+}
+
 function appStatusIcon(status: string) {
-  if (status === 'ACCEPTED')  return <CheckCircle2 size={14} className="text-green-500" />;
-  if (status === 'REJECTED')  return <XCircle      size={14} className="text-red-400"   />;
-  if (status === 'EXPIRED')   return <Clock        size={14} className="text-gray-400"  />;
-  return                              <Hourglass    size={14} className="text-amber-500" />;
+  if (status === 'ACCEPTED')    return <CheckCircle2 size={14} className="text-green-500" />;
+  if (status === 'REJECTED')    return <XCircle      size={14} className="text-red-400"   />;
+  if (status === 'EXPIRED')     return <Clock        size={14} className="text-gray-400"  />;
+  if (status === 'SHORTLISTED') return <Star         size={14} className="text-blue-500"  />;
+  return                                <Hourglass    size={14} className="text-amber-500" />;
 }
 
 function appStatusBadge(status: string): string {
   const s = status.toLowerCase();
-  if (s === 'accepted') return 'active';
-  if (s === 'rejected') return 'cancelled';
-  if (s === 'expired')  return 'expired';
+  if (s === 'accepted')    return 'active';
+  if (s === 'rejected')    return 'cancelled';
+  if (s === 'expired')     return 'expired';
+  if (s === 'shortlisted') return 'shortlisted';
   return 'pending';
 }
 
@@ -139,9 +150,12 @@ function buildTimeline(campaign: ApiCampaignDetail) {
 
 // ── Application row ───────────────────────────────────────────────────────────
 
-function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
+function ApplicationRow({ app, commissionRate, roleName, onReleased, showToast }: {
   app: ApiApplication;
   commissionRate?: number | null;
+  // Category name of the requirement app.requirementId points to — undefined
+  // for simple single-category campaigns, where there's nothing to label.
+  roleName?: string;
   onReleased: () => void;
   showToast: (msg: string, ok?: boolean) => void;
 }) {
@@ -184,7 +198,12 @@ function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
           <Avatar initials={initials} size="sm" />
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 text-sm truncate">{name}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="font-medium text-gray-900 text-sm truncate">{name}</p>
+            {roleName && (
+              <span className="text-[10px] font-medium bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full flex-shrink-0">{roleName}</span>
+            )}
+          </div>
           <p className="text-xs text-gray-500 truncate">{displayEmailOrPhone(app.creator.user.email)}</p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -692,6 +711,39 @@ export function CampaignDetail() {
             )}
           </div>
 
+          {/* Roles Needed — multi-role campaigns only (§ CampaignRequirement),
+              empty/absent for the simple single-category campaigns every
+              existing campaign uses. */}
+          {!!campaign.requirements?.length && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <Layers size={15} className="text-gray-400" /> Roles Needed
+              </h2>
+              <div className="space-y-2">
+                {campaign.requirements.map((r) => {
+                  const accepted = r._count.applications;
+                  const full = accepted >= r.quantity;
+                  return (
+                    <div key={r.id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2.5">
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `${r.category.color}1A`, color: r.category.color }}>
+                        <Users size={14} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{r.category.name}</p>
+                        <p className="text-xs text-gray-400">{formatRequirementBudget(r)}</p>
+                      </div>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0 ${full ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {accepted}/{r.quantity} filled
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Applications */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
             <div className="flex items-center justify-between">
@@ -711,7 +763,14 @@ export function CampaignDetail() {
             ) : (
               <div className="space-y-2">
                 {campaign.applications.map((app) => (
-                  <ApplicationRow key={app.id} app={app} commissionRate={campaign.commissionRate} onReleased={refetch} showToast={showToast} />
+                  <ApplicationRow
+                    key={app.id}
+                    app={app}
+                    commissionRate={campaign.commissionRate}
+                    roleName={campaign.requirements?.find((r) => r.id === app.requirementId)?.category.name}
+                    onReleased={refetch}
+                    showToast={showToast}
+                  />
                 ))}
               </div>
             )}

@@ -511,7 +511,7 @@ export class MessagingService {
     role: Role,
     data: {
       content: string;
-      type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
+      type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE' | 'SYSTEM';
       attachmentUrl?: string;
       attachmentName?: string;
       attachmentThumbnailUrl?: string;
@@ -785,6 +785,24 @@ export class MessagingService {
   ) {
     const { conversation } = await this.repo.findOrCreateAcceptedConversation(creatorId, businessId, campaignId);
     return this.persistAndBroadcast(conversation, businessUserId, 'BUSINESS', { content }, content);
+  }
+
+  // §54 — auto-posted at collaboration lifecycle events (work started/
+  // submitted, payment released), distinct from sendProposalAcceptedMessage
+  // above (a real personal greeting) — this is a terse system notice, always
+  // rendered as a centered sender-less pill by the mobile client regardless
+  // of which side's userId/role is passed here (needed only for the existing
+  // seenAt/badge bookkeeping in persistAndBroadcast, not for display).
+  async sendSystemMessage(
+    creatorId: string,
+    businessId: string,
+    campaignId: string,
+    userId: string,
+    role: Role,
+    content: string,
+  ) {
+    const { conversation } = await this.repo.findOrCreateAcceptedConversation(creatorId, businessId, campaignId);
+    return this.persistAndBroadcast(conversation, userId, role, { content, type: 'SYSTEM' }, content);
   }
 
   // Called when a business requests a revision on submitted deliverables — the

@@ -6,7 +6,6 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   Animated,
-  Image,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -15,8 +14,8 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputProps,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Facebook from 'expo-auth-session/providers/facebook';
@@ -26,12 +25,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
-import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { useAppColors, useIsDark, BUSINESS_DARK_COLORS } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 
 const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
 import type { Lang } from '@/i18n';
-import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { COLORS, BUSINESS_COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { withAlpha } from '@/utilities/color';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BottomSheet } from '@/components/BottomSheet';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
@@ -45,50 +45,26 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
-const LANG_OPTIONS: { lang: Lang; flag: string }[] = [
-  { lang: 'en', flag: '🇬🇧' },
-  { lang: 'ne', flag: '🇳🇵' },
-];
+const LANG_LABELS: Record<Lang, string> = { en: 'Eng', ne: 'ने' };
 
 // Facebook Login is wired up but hidden for now (Meta app config isn't ready
 // yet) — flip this back on once that's sorted, no other code changes needed.
 const FACEBOOK_LOGIN_ENABLED = false;
 
-// Blends a theme color with alpha for soft tints/glows that adapt automatically between
-// the light and dark palettes — avoids hand-picking a separate literal per theme for
-// every one-off tint (banner backgrounds, aurora blobs, glassy card fill, ...).
-function withAlpha(hex: string, alpha: number): string {
-  const clean = hex.replace('#', '');
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-// Content-creator/brand iconography scattered across the gradient background — random
-// per-icon opacity (computed once at module load, so it's stable across re-renders
-// rather than flickering) gives the scatter a less mechanical, hand-placed feel.
-function scatterOpacity() { return Math.round((Math.random() * 0.07 + 0.05) * 100) / 100; }
-
-const BG_ICONS: { name: string; size: number; rotate: string; style: object; opacity: number }[] = [
-  { name: 'camera',           size: 30, rotate: '-14deg', style: { top: 10,  left: '6%'  }, opacity: scatterOpacity() },
-  { name: 'dollar-sign',      size: 22, rotate: '12deg',  style: { top: 4,   right: '32%' }, opacity: scatterOpacity() },
-  { name: 'laptop',           size: 32, rotate: '9deg',   style: { top: 130, right: '5%' }, opacity: scatterOpacity() },
-  { name: 'bullhorn',         size: 24, rotate: '-10deg', style: { top: 60,  left: '42%' }, opacity: scatterOpacity() },
-  { name: 'photo-video',      size: 22, rotate: '15deg',  style: { top: 195, left: '36%' }, opacity: scatterOpacity() },
-  { name: 'chart-line',       size: 20, rotate: '-8deg',  style: { top: 26,  right: '6%' }, opacity: scatterOpacity() },
-  { name: 'briefcase',        size: 24, rotate: '11deg',  style: { top: 150, left: '8%'  }, opacity: scatterOpacity() },
-  { name: 'hashtag',          size: 18, rotate: '-6deg',  style: { top: 215, right: '20%' }, opacity: scatterOpacity() },
-  { name: 'mobile-alt',       size: 26, rotate: '-9deg',  style: { top: 100, left: '2%'  }, opacity: scatterOpacity() },
-];
+// Same logo backs both the sign-in and create-account hero banners.
+const HERO_IMAGE = require('@/assets/images/logo.png');
 
 // Role card accents pull straight from the active theme's own primary/accent tokens
 // (light or dark) instead of a hardcoded palette, so the cards stay in sync with
-// whatever the rest of the app is using.
-function buildRoles(C: typeof COLORS) {
+// whatever the rest of the app is using. BUSINESS pulls the same green used
+// app-wide for authenticated business users (BUSINESS_COLORS/BUSINESS_DARK_COLORS)
+// rather than C.accent, since pre-login `C` is never role-swapped — this keeps the
+// "Looking for services" identity green from signup through the rest of the app.
+export function buildRoles(C: typeof COLORS, isDark: boolean) {
+  const businessC = isDark ? BUSINESS_DARK_COLORS : BUSINESS_COLORS;
   return [
     { key: 'CREATOR'  as const, label: 'Creator', sub: 'Influencer & creator', icon: 'camera'    as const, grad: [C.brinjal1, C.brinjal2] as const },
-    { key: 'BUSINESS' as const, label: 'Business', sub: 'Company & business', icon: 'briefcase' as const, grad: [C.accent, '#EA580C'] as const },
+    { key: 'BUSINESS' as const, label: 'Business', sub: 'Company & business', icon: 'briefcase' as const, grad: [businessC.brinjal1, businessC.brinjal2] as const },
   ];
 }
 
@@ -118,106 +94,103 @@ function getPwErrorKey(p: string): string | undefined {
   if (!/[0-9]/.test(p)) return 'auth.signup.pwErrorNumber';
 }
 
-// ── Headline highlight word ───────────────────────────────────────────────────
-// Solid fill in a given accent color — no background of its own, since the
-// whole tagline now sits inside one shared white pill (see heroTaglinePill).
-function GradientHighlight({ text, style, color }: { text: string; style: any; color: string }) {
-  return <Text style={[style, { color }]}>{text}</Text>;
-}
+// ── Flat input (Instagram-style) ─────────────────────────────────────────────
+// Filled, label-less field — the placeholder doubles as the label, matching the
+// minimal look of Instagram's own login form. Local to this screen only; the
+// rest of the app keeps using the icon+label TextInputWithLabel.
 
-// ── Input field ───────────────────────────────────────────────────────────────
-
-function Field({
-  icon, label, value, onChangeText, placeholder,
-  secureTextEntry = false, keyboardType = 'default',
-  autoCapitalize = 'none', error, rightSlot,
-}: {
-  icon: keyof typeof FontAwesome5.glyphMap;
-  label: string;
-  value: string;
-  onChangeText: (v: string) => void;
-  placeholder: string;
-  secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'email-address';
-  autoCapitalize?: 'none' | 'words' | 'sentences';
+function FlatInput({ value, onChangeText, placeholder, secureToggle, secureTextEntry, error, onFocus, onBlur, ...rest }: TextInputProps & {
+  secureToggle?: boolean;
   error?: string;
-  rightSlot?: React.ReactNode;
 }) {
   const C = useAppColors();
   const s = useMemo(() => makeStyles(C), [C]);
+  const [hidden, setHidden] = useState(secureTextEntry ?? false);
   const [focused, setFocused] = useState(false);
-  const [hidden,  setHidden]  = useState(secureTextEntry);
-  const anim   = useRef(new Animated.Value(0)).current;
-  const shadow = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
-  const border = anim.interpolate({
-    inputRange:  [0, 1],
-    outputRange: [error ? withAlpha(C.error, 0.35) : C.border, error ? C.error : C.brinjal1],
-  });
 
   return (
-    <View style={s.fieldWrap}>
-      <View style={s.fieldLabelRow}>
-        <Text style={s.fieldLabel}>{label}</Text>
-        {rightSlot}
-      </View>
-      <Animated.View style={[
-        s.field,
-        { borderColor: border },
-        focused && s.fieldFocused,
+    <View>
+      <View style={[
+        s.flatInputRow,
+        { backgroundColor: C.primaryLight, borderColor: focused ? C.brinjal1 : 'transparent' },
+        !!error && { borderColor: C.error },
       ]}>
-        <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${C.brinjal1}15` : C.border }]}>
-          <FontAwesome5 name={icon} size={16} color={focused ? C.brinjal1 : C.textSecondary} />
-        </View>
         <TextInput
-          style={s.fieldInput}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={C.textSecondary}
-          secureTextEntry={hidden}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-          // Android's EditText wraps long placeholder/value text to a second line by
-          // default (unlike iOS, which always clips to one line) — numberOfLines pins it
-          // to one line there; the explicit height in s.fieldInput keeps that line centered.
-          numberOfLines={1}
-          onFocus={() => { setFocused(true);  Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: false }).start(); }}
-          onBlur={()  => { setTimeout(() => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }).start(); }, 150); }}
+          style={[s.flatInput, { color: C.text, fontFamily: F.regular }]}
+          secureTextEntry={secureToggle ? hidden : secureTextEntry}
+          onFocus={(e) => { setFocused(true); onFocus?.(e); }}
+          onBlur={(e) => { setFocused(false); onBlur?.(e); }}
+          {...rest}
         />
-        {secureTextEntry && (
-          <Pressable onPress={() => setHidden(h => !h)} hitSlop={10} style={s.eyeBtn}>
-            <FontAwesome5 name={hidden ? 'eye' : 'eye-slash'} size={18} color={focused ? C.brinjal1 : C.textSecondary} />
+        {secureToggle && (
+          <Pressable onPress={() => setHidden((v) => !v)} hitSlop={10} style={s.flatInputEyeBtn}>
+            <FontAwesome5 name={hidden ? 'eye' : 'eye-slash'} size={16} color={C.textSecondary} />
           </Pressable>
         )}
-      </Animated.View>
-      {!secureTextEntry && focused && (() => {
-        const atIndex = value.indexOf('@');
-        if (atIndex === -1) return null;
-        const localPart  = value.slice(0, atIndex);
-        const domainPart = value.slice(atIndex + 1);
-        if (domainPart.includes('.')) return null;
-        const suggestions = EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart));
-        if (suggestions.length === 0) return null;
-        return (
-          <View style={s.domainSuggestBoxOuter}>
-            <View style={s.domainSuggestBox}>
-              {suggestions.map((domain) => (
-                <Pressable
-                  key={domain}
-                  style={s.domainSuggestItem}
-                  onPress={() => onChangeText(`${localPart}@${domain}`)}>
-                  <Text style={s.domainSuggestText}>{localPart}@<Text style={s.domainSuggestTextBold}>{domain}</Text></Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        );
-      })()}
+      </View>
       {!!error && (
-        <View style={s.fieldErrRow}>
+        <View style={s.feedbackRow}>
           <FontAwesome5 name="exclamation-circle" solid size={12} color={C.error} />
-          <Text style={s.fieldErrText}>{error}</Text>
+          <Text style={[s.errorText, { color: C.error }]}>{error}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── Identifier field (email/phone) ──────────────────────────────────────────────
+// Thin wrapper around FlatInput that adds the email-domain autocomplete dropdown —
+// specific enough to this screen's identifier field that it doesn't belong in the
+// shared component itself.
+
+function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel, error }: {
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder: string;
+  accessibilityLabel: string;
+  error?: string;
+}) {
+  const C = useAppColors();
+  const s = useMemo(() => makeStyles(C), [C]);
+  const [focused, setFocused] = useState(false);
+
+  const atIndex     = value.indexOf('@');
+  const localPart    = value.slice(0, atIndex);
+  const domainPart   = value.slice(atIndex + 1);
+  const suggestions = focused && atIndex !== -1 && !domainPart.includes('.')
+    ? EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart))
+    : [];
+
+  return (
+    <View>
+      <FlatInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        accessibilityLabel={accessibilityLabel}
+        autoCapitalize="none"
+        autoCorrect={false}
+        error={error}
+        onFocus={() => setFocused(true)}
+        // Delayed so a tap on a suggestion below registers before the dropdown unmounts.
+        onBlur={() => setTimeout(() => setFocused(false), 150)}
+      />
+      {suggestions.length > 0 && (
+        <View style={s.domainSuggestBoxOuter}>
+          <View style={s.domainSuggestBox}>
+            {suggestions.map((domain) => (
+              <Pressable
+                key={domain}
+                style={s.domainSuggestItem}
+                onPress={() => onChangeText(`${localPart}@${domain}`)}>
+                <Text style={s.domainSuggestText}>{localPart}@<Text style={s.domainSuggestTextBold}>{domain}</Text></Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       )}
     </View>
@@ -315,6 +288,11 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
   return (
     <View>
+      <View style={s.formHeading}>
+        <Text style={s.formHeadingTitle}>{t('auth.login.title')}</Text>
+        <Text style={s.formHeadingSubtitle}>{t('auth.login.subtitle')}</Text>
+      </View>
+
       {verified === '1' && (
         <View style={[s.banner, { backgroundColor: withAlpha(C.active, 0.12), borderColor: withAlpha(C.active, 0.35) }]}>
           <FontAwesome5 name="check-circle" solid size={15} color={C.active} />
@@ -329,21 +307,19 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       )}
 
       <View style={s.form}>
-        <Field
-          icon={channel === 'email' ? 'envelope' : 'phone'}
-          label={t('auth.login.identifierLabel')} value={identifierInput}
+        <IdentifierField
+          value={identifierInput}
           onChangeText={(v) => { setIdentifierInput(v); setApiError(''); }}
-          placeholder={t('auth.login.identifierPlaceholder')} autoCapitalize="none" error={emErr}
+          placeholder={t('auth.login.identifierPlaceholder')}
+          accessibilityLabel={t('auth.login.identifierLabel')}
+          error={emErr}
         />
-        <Field
-          icon="lock" label={t('auth.login.password')} value={password}
+        <FlatInput
+          value={password}
           onChangeText={(v) => { setPassword(v); setApiError(''); }}
-          placeholder={t('auth.login.passwordEnterPlaceholder')} secureTextEntry error={pwErr}
-          rightSlot={
-            <Pressable onPress={() => router.push('/forgot-password')}>
-              <Text style={s.forgotText}>{t('auth.login.forgotPassword')}</Text>
-            </Pressable>
-          }
+          placeholder={t('auth.login.passwordEnterPlaceholder')}
+          accessibilityLabel={t('auth.login.password')}
+          secureTextEntry secureToggle error={pwErr}
         />
       </View>
 
@@ -358,11 +334,12 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         <View style={[s.primaryBtn, { backgroundColor: C.brinjal1 }]}>
           {loading
             ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
-            : <>
-                <Text style={s.primaryBtnText}>{t('auth.login.loginBtn')}</Text>
-                <FontAwesome5 name="arrow-right" solid size={16} color="rgba(255,255,255,0.8)" />
-              </>}
+            : <Text style={s.primaryBtnText}>{t('auth.login.loginBtn')}</Text>}
         </View>
+      </Pressable>
+
+      <Pressable style={s.forgotWrap} onPress={() => router.push('/forgot-password')} hitSlop={8}>
+        <Text style={s.forgotText}>{t('auth.login.forgotPassword')}</Text>
       </Pressable>
 
       {biometricReady && (
@@ -388,30 +365,25 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         <View style={[s.dividerLine, { backgroundColor: C.border }]} />
       </View>
 
-      <View style={s.socialRow}>
+      <View style={s.socialCardRow}>
         <Pressable
-          style={({ pressed }) => [
-            s.googleFullBtn,
-            googleLoading && { opacity: 0.6 },
-            pressed && !googleLoading && { transform: [{ scale: 0.98 }] },
-          ]}
-          onPress={onGooglePress} disabled={googleLoading}>
+          style={({ pressed }) => [s.socialCardBtn, { borderColor: C.border, backgroundColor: C.surface }, googleLoading && { opacity: 0.6 }, pressed && !googleLoading && { backgroundColor: C.primaryLight }]}
+          onPress={onGooglePress} disabled={googleLoading}
+          accessibilityLabel={t('auth.login.continueGoogle')}>
           {googleLoading
             ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-            : <ExpoImage source={require('@/assets/svg/google.svg')} style={s.googleIcon} contentFit="contain" />}
+            : <ExpoImage source={require('@/assets/images/google.png')} style={s.socialCardIcon} contentFit="contain" />}
+          <Text style={[s.socialCardText, { color: C.text }]}>Google</Text>
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
           <Pressable
-            style={({ pressed }) => [
-              s.socialBtnFb,
-              facebookLoading && { opacity: 0.6 },
-              pressed && !facebookLoading && { transform: [{ scale: 0.98 }] },
-            ]}
-            onPress={onFacebookPress} disabled={facebookLoading}>
+            style={({ pressed }) => [s.socialCardBtn, { borderColor: C.border, backgroundColor: C.surface }, facebookLoading && { opacity: 0.6 }, pressed && !facebookLoading && { backgroundColor: C.primaryLight }]}
+            onPress={onFacebookPress} disabled={facebookLoading}
+            accessibilityLabel={t('auth.login.continueFacebook')}>
             {facebookLoading
               ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-              : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
-            <Text style={s.socialBtnFbText}>{facebookLoading ? t('auth.login.signingIn') : 'Facebook'}</Text>
+              : <View style={s.fbBadgeSmall}><Text style={s.fbF}>f</Text></View>}
+            <Text style={[s.socialCardText, { color: C.text }]}>Facebook</Text>
           </Pressable>
         )}
       </View>
@@ -455,7 +427,8 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
 // ── Create Account form ───────────────────────────────────────────────────────
 
-function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError }: {
+function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError }: {
+  initialRole?: 'CREATOR' | 'BUSINESS';
   onGooglePress: () => void;
   googleLoading: boolean;
   googleError: string;
@@ -464,13 +437,17 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
   facebookError: string;
 }) {
   const C = useAppColors();
+  const { isDark } = useIsDark();
   const s = useMemo(() => makeStyles(C), [C]);
-  const ROLES = useMemo(() => buildRoles(C), [C]);
   const { t } = useLanguage();
 
-  const [role,      setRole]      = useState<'CREATOR' | 'BUSINESS'>('CREATOR');
+  // Account type is chosen up front on /account-type (the primary Welcome →
+  // Get Started path) and carried in via initialRole; immutable for the
+  // lifetime of this mount.
+  const [role] = useState<'CREATOR' | 'BUSINESS'>(initialRole ?? 'CREATOR');
   const [identifierInput, setIdentifierInput] = useState('');
   const [password,  setPassword]  = useState('');
+  const [agreed,    setAgreed]    = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
@@ -486,6 +463,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
     setSubmitted(true);
     setError('');
     if (!identifierValid || getPwErrorKey(password)) return;
+    if (!agreed) { setError(t('auth.signup.termsRequired')); return; }
     setLoading(true);
     try {
       if (channel === 'email') {
@@ -504,58 +482,48 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
     }
   }
 
+  const roles = buildRoles(C, isDark);
+  const activeRole = roles.find((r) => r.key === role)!;
+  const roleLabel = role === 'CREATOR' ? t('accountType.offerTitle') : t('accountType.seekTitle');
+
   return (
     <View>
-      {/* Role cards */}
-      <View style={s.roleRow}>
-        {ROLES.map((r) => {
-          const active = role === r.key;
-          const tint = r.grad[0];
-          const roleLabel = r.key === 'CREATOR' ? t('auth.signup.roleCreatorLabel') : t('auth.signup.roleBusinessLabel');
-          const roleSub   = r.key === 'CREATOR' ? t('auth.signup.roleCreatorSub')   : t('auth.signup.roleBusinessSub');
-          return (
-            <Pressable
-              key={r.key}
-              style={({ pressed }) => [
-                s.roleCard,
-                { borderColor: active ? tint : C.border, backgroundColor: C.surface },
-                active && [s.roleCardActive, { shadowColor: tint }],
-                { transform: [{ scale: pressed ? 0.97 : 1 }] },
-              ]}
-              onPress={() => { setRole(r.key); setSubmitted(false); setError(''); }}>
-              {/* Tint overlay on its own layer — Android's elevation shadow doesn't
-                  composite correctly with a translucent backgroundColor on the same view. */}
-              {active && <View pointerEvents="none" style={[s.roleTintOverlay, { backgroundColor: `${tint}0D` }]} />}
-              <LinearGradient
-                colors={active ? r.grad : [C.primaryLight, C.primaryLight]}
-                style={[s.roleIconBox, active && { shadowColor: tint, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <FontAwesome5 name={r.icon} size={22} color={active ? '#fff' : C.brinjal1} solid />
-              </LinearGradient>
-              <Text style={s.roleLabel}>{roleLabel}</Text>
-              <Text style={[s.roleSub, { color: active ? tint : C.textSecondary }]}>{roleSub}</Text>
-              {active && (
-                <View style={[s.roleCheck, { backgroundColor: tint }]}>
-                  <FontAwesome5 name="check" solid size={13} color="#fff" />
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
+      {/* Carries over the choice made on /account-type ("Offering services" /
+          "Looking for services") so it isn't lost once the user lands here — with
+          a way back to that screen (current choice pre-selected) if they want
+          to change it. */}
+      <Pressable
+        style={[s.roleSummaryRow, { borderColor: C.border, backgroundColor: C.surface }]}
+        onPress={() => router.push({ pathname: '/account-type', params: { role } })}>
+        <LinearGradient colors={activeRole.grad} style={s.roleSummaryIcon} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          <FontAwesome5 name={role === 'CREATOR' ? 'magic' : 'search'} size={14} color="#fff" solid />
+        </LinearGradient>
+        <Text style={s.roleSummaryText}>
+          {t('auth.signup.signingUpAs')} <Text style={[s.roleSummaryTextBold, { color: activeRole.grad[0] }]}>{roleLabel}</Text>
+        </Text>
+        <Text style={[s.roleSummaryChange, { color: C.brinjal1 }]}>{t('auth.signup.changeRole')}</Text>
+      </Pressable>
+
+      <View style={s.formHeading}>
+        <Text style={s.formHeadingTitle}>{t('auth.signup.title')}</Text>
+        <Text style={s.formHeadingSubtitle}>{t('auth.signup.subtitle')}</Text>
       </View>
 
       {/* Fields */}
       <View style={s.form}>
-        <Field
-          icon={channel === 'email' ? 'envelope' : 'phone'}
-          label={t('auth.signup.identifierLabel')} value={identifierInput}
+        <IdentifierField
+          value={identifierInput}
           onChangeText={(v) => { setIdentifierInput(v); setError(''); }}
-          placeholder={t('auth.signup.identifierPlaceholder')} autoCapitalize="none" error={emErr}
+          placeholder={t('auth.signup.identifierPlaceholder')}
+          accessibilityLabel={t('auth.signup.identifierLabel')}
+          error={emErr}
         />
-        <Field
-          icon="lock" label={t('auth.signup.password')} value={password}
+        <FlatInput
+          value={password}
           onChangeText={(v) => { setPassword(v); setError(''); }}
-          placeholder={t('auth.signup.passwordCreatePlaceholder')} secureTextEntry error={pwErr}
+          placeholder={t('auth.signup.passwordCreatePlaceholder')}
+          accessibilityLabel={t('auth.signup.password')}
+          secureTextEntry secureToggle error={pwErr}
         />
         {password.length > 0 && (
           <View style={s.rulesRow}>
@@ -573,6 +541,16 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         )}
       </View>
 
+      <Pressable style={s.termsRow} onPress={() => { setAgreed((v) => !v); setError(''); }} hitSlop={8}>
+        <FontAwesome5 name={agreed ? 'check-square' : 'square'} solid={agreed} size={19} color={agreed ? C.brinjal1 : C.textSecondary} />
+        <Text style={s.termsRowText}>
+          {t('auth.signup.termsPrefix')}{' '}
+          <Text style={{ color: C.brinjal1, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>{t('auth.signup.termsLink')}</Text>
+          {' '}{t('auth.signup.termsAnd')}{' '}
+          <Text style={{ color: C.brinjal1, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>{t('auth.signup.privacyLink')}</Text>
+        </Text>
+      </Pressable>
+
       {!!error && (
         <View style={[s.banner, { backgroundColor: withAlpha(C.error, 0.12), borderColor: withAlpha(C.error, 0.35) }]}>
           <FontAwesome5 name="exclamation-circle" solid size={15} color={C.error} />
@@ -586,10 +564,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         <View style={[s.primaryBtn, { backgroundColor: C.brinjal1 }]}>
           {loading
             ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
-            : <>
-                <Text style={s.primaryBtnText}>{t('auth.signup.createAccountBtn')}</Text>
-                <FontAwesome5 name="arrow-right" solid size={16} color="rgba(255,255,255,0.8)" />
-              </>}
+            : <Text style={s.primaryBtnText}>{t('auth.signup.createAccountBtn')}</Text>}
         </View>
       </Pressable>
 
@@ -599,30 +574,25 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         <View style={[s.dividerLine, { backgroundColor: C.border }]} />
       </View>
 
-      <View style={s.socialRow}>
+      <View style={s.socialCardRow}>
         <Pressable
-          style={({ pressed }) => [
-            s.googleFullBtn,
-            googleLoading && { opacity: 0.6 },
-            pressed && !googleLoading && { transform: [{ scale: 0.98 }] },
-          ]}
-          onPress={onGooglePress} disabled={googleLoading}>
+          style={({ pressed }) => [s.socialCardBtn, { borderColor: C.border, backgroundColor: C.surface }, googleLoading && { opacity: 0.6 }, pressed && !googleLoading && { backgroundColor: C.primaryLight }]}
+          onPress={onGooglePress} disabled={googleLoading}
+          accessibilityLabel={t('auth.signup.continueGoogle')}>
           {googleLoading
             ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-            : <ExpoImage source={require('@/assets/svg/google.svg')} style={s.googleIcon} contentFit="contain" />}
+            : <ExpoImage source={require('@/assets/images/google.png')} style={s.socialCardIcon} contentFit="contain" />}
+          <Text style={[s.socialCardText, { color: C.text }]}>Google</Text>
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
           <Pressable
-            style={({ pressed }) => [
-              s.socialBtnFb,
-              facebookLoading && { opacity: 0.6 },
-              pressed && !facebookLoading && { transform: [{ scale: 0.98 }] },
-            ]}
-            onPress={onFacebookPress} disabled={facebookLoading}>
+            style={({ pressed }) => [s.socialCardBtn, { borderColor: C.border, backgroundColor: C.surface }, facebookLoading && { opacity: 0.6 }, pressed && !facebookLoading && { backgroundColor: C.primaryLight }]}
+            onPress={onFacebookPress} disabled={facebookLoading}
+            accessibilityLabel={t('auth.signup.continueFacebook')}>
             {facebookLoading
               ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-              : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
-            <Text style={s.socialBtnFbText}>{facebookLoading ? t('auth.login.signingIn') : 'Facebook'}</Text>
+              : <View style={s.fbBadgeSmall}><Text style={s.fbF}>f</Text></View>}
+            <Text style={[s.socialCardText, { color: C.text }]}>Facebook</Text>
           </Pressable>
         )}
       </View>
@@ -639,13 +609,6 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
           <Text style={[s.bannerText, { color: C.error }]}>{facebookError}</Text>
         </View>
       )}
-
-      <Text style={s.terms}>
-        {t('auth.signup.termsPrefix')}{' '}
-        <Text style={{ color: C.brinjal1, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>{t('auth.signup.termsLink')}</Text>
-        {' '}{t('auth.signup.termsAnd')}{' '}
-        <Text style={{ color: C.brinjal1, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>{t('auth.signup.privacyLink')}</Text>.
-      </Text>
     </View>
   );
 }
@@ -658,32 +621,18 @@ export default function LoginScreen() {
   const C                         = useAppColors();
   const { isDark }                = useIsDark();
   const s                         = useMemo(() => makeStyles(C), [C]);
-  const ROLES                     = useMemo(() => buildRoles(C), [C]);
-  const params                    = useLocalSearchParams<{ tab?: string; verified?: string }>();
+  const ROLES                     = useMemo(() => buildRoles(C, isDark), [C, isDark]);
+  const params                    = useLocalSearchParams<{ tab?: string; verified?: string; role?: string }>();
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
 
-  // Tagline auto-fit: measured against an invisible unwrapped copy of itself, then
-  // scaled down (never reflowed/wrapped) so "Where Brands Meet Creators" always renders
-  // on one line no matter the screen width or which language's word lengths are in play.
-  const { width: windowWidth } = useWindowDimensions();
-  const [taglineNaturalWidth, setTaglineNaturalWidth] = useState(0);
-  const taglineAvailableWidth = windowWidth - 40; // matches scrollContent's paddingHorizontal (20 × 2)
-  const taglineScale = taglineNaturalWidth > 0 ? Math.min(1, taglineAvailableWidth / taglineNaturalWidth) : 1;
-
-  function renderTaglineWords() {
-    return (
-      <>
-        <Text style={s.heroTagline}>{t('auth.login.heroTaglinePrefix')}</Text>
-        <GradientHighlight text={t('auth.login.heroTaglineBrands')} style={s.heroTaglineHighlight} color={C.brinjal1} />
-        <Text style={s.heroTagline}>{t('auth.login.heroTaglineMiddle')}</Text>
-        <GradientHighlight text={t('auth.login.heroTaglineCreators')} style={s.heroTaglineHighlight} color={C.accent} />
-        {!!t('auth.login.heroTaglineSuffix') && (
-          <Text style={s.heroTagline}>{t('auth.login.heroTaglineSuffix')}</Text>
-        )}
-      </>
-    );
-  }
+  // account-type.tsx sends the user back here via router.replace('/login', { tab: 'signup', role })
+  // after they pick a role — but replace commonly reuses this screen's already-mounted instance
+  // (it was pushed underneath when "Sign up" was tapped), so the useState initializer above never
+  // re-runs. Syncing here on every params.tab change is what actually flips the tab in that case.
+  useEffect(() => {
+    if (params.tab === 'signup' || params.tab === 'login') setTab(params.tab);
+  }, [params.tab]);
 
   // Entrance animation — card slides up and fades in on mount
   const cardAnim = useRef(new Animated.Value(0)).current;
@@ -862,130 +811,101 @@ export default function LoginScreen() {
     }
   }
 
+  const canGoBack    = router.canGoBack();
+
   return (
     <View style={s.root}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* Soft pastel wash (brinjal → base → warm peach) instead of a bold
-          full-bleed color — the reference's light, airy feel. Tokens drawn from the
-          active theme so the same wash re-tunes itself for dark mode automatically. */}
-      <LinearGradient colors={[C.primaryLight, C.preLoginBackground, C.accentLight]} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
-      <View style={s.auroraLayer} pointerEvents="none">
-        <View style={[s.auroraBlob, s.auroraBlobA]} />
-        <View style={[s.auroraBlob, s.auroraBlobB]} />
-        <View style={[s.auroraBlob, s.auroraBlobC]} />
-        {BG_ICONS.map((icon, i) => (
-          <FontAwesome5
-            key={i}
-            name={icon.name as any}
-            size={icon.size}
-            color={C.brinjal1}
-            style={[s.bgIcon, icon.style, { opacity: icon.opacity, transform: [{ rotate: icon.rotate }] }]}
-          />
-        ))}
-      </View>
-
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <MaxWidthContainer>
+        <View style={s.flex}>
         <ScrollView
-          contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 28 }]}
+          style={s.flex}
+          contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          {/* Lang switcher — the selected flag gets the same circular
-              surface+shadow treatment as the home page's notification button. */}
-          <View style={s.langRow}>
-            {LANG_OPTIONS.map(({ lang, flag }) => (
+          {/* ── Hero ── soft-tinted banner: logo, 3-line headline, subtext. */}
+          <LinearGradient
+            colors={[C.background, C.primaryLight]}
+            start={{ x: 0, y: 0 }} end={{ x: 0.3, y: 1 }}
+            style={s.heroBanner}>
+
+            <View style={[s.heroTopRow, { paddingTop: insets.top + 12 }]}>
+              {canGoBack
+                ? (
+                  <Pressable onPress={() => router.back()} hitSlop={8} style={s.heroBackBtn}>
+                    <FontAwesome5 name="arrow-left" size={16} color={C.text} />
+                  </Pressable>
+                )
+                : <View />}
+
+              {/* Lang toggle — shows the language you'd switch TO, not the current
+                  one; tapping applies that switch. */}
               <Pressable
-                key={lang}
-                style={[
-                  s.langBtn,
-                  language === lang && { backgroundColor: C.surface },
-                  language === lang && SHADOW.card,
-                ]}
+                style={s.langBtn}
                 hitSlop={6}
-                onPress={() => setLanguage(lang)}>
-                <Text style={s.langFlag}>{flag}</Text>
+                onPress={() => setLanguage(language === 'en' ? 'ne' : 'en')}>
+                <Text style={[s.langText, { color: C.textSecondary }]}>{LANG_LABELS[language === 'en' ? 'ne' : 'en']}</Text>
               </Pressable>
-            ))}
-          </View>
-
-          {/* Logo sits directly on the page background, tagline below. */}
-          <View style={s.heroCenter}>
-            <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
-            {/* Row of independent word chunks rather than one flowing <Text> paragraph —
-                the highlighted words render in their own accent color, which can't sit
-                inline inside a Text run the way nested <Text> can, so each word lays out
-                as a flex item instead. An invisible unwrapped copy measures the row's
-                natural width; the visible copy is scaled down (never reflowed) to
-                guarantee it always fits one line. */}
-            <View style={s.heroTaglineMeasure} pointerEvents="none" onLayout={(e) => setTaglineNaturalWidth(e.nativeEvent.layout.width)}>
-              {renderTaglineWords()}
             </View>
-            <View style={s.heroTaglineClip}>
-              <View style={[s.heroTaglineRow, { transform: [{ scale: taglineScale }] }]}>
-                {renderTaglineWords()}
-              </View>
-            </View>
-          </View>
 
-          {/* ── Floating card ──
-              Shadow lives on this outer view (no overflow clipping) and the rounded-corner
-              clip lives on the inner view — iOS silently drops a shadow on any view that
-              also has overflow:hidden, so the two responsibilities can't share one view. */}
+            <View style={s.heroTopSpacer} />
+
+            <ExpoImage source={HERO_IMAGE} style={s.heroLogo} contentFit="contain" />
+
+            <View style={s.heroHeadingBlock}>
+              <Text style={[s.heroHeadlineLine, { color: C.text }]}>{t('auth.login.heroHeadline1')}</Text>
+              <Text style={[s.heroHeadlineLine, { color: C.accent }]}>{t('auth.login.heroHeadline2')}</Text>
+              <Text style={[s.heroHeadlineLine, { color: C.brinjal1 }]}>{t('auth.login.heroHeadline3')}</Text>
+              <Text style={[s.heroSubtext, { color: C.textSecondary }]}>{t('auth.login.heroSubtext')}</Text>
+            </View>
+          </LinearGradient>
+
+          {/* ── Form section — a rounded sheet overlapping the hero's bottom
+              edge, so the hero and form read as one layered composition. ── */}
           <Animated.View
             style={[
-              s.cardOuter,
+              s.card,
               {
                 opacity: cardAnim,
                 transform: [{
-                  translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }),
+                  translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }),
                 }],
               },
             ]}>
-            <View style={s.cardInner}>
-              <View style={s.cardBody}>
 
-                {/* Minimal segmented tab — a soft white pill lifts the active
-                    label instead of a bold gradient fill, matching the
-                    reference's clean, low-contrast tab treatment. */}
-                <View style={s.tabBar}>
-                  {(['login', 'signup'] as const).map((tabKey) => (
-                    <Pressable
-                      key={tabKey}
-                      style={[s.tabBtn, tab === tabKey && s.tabBtnActive]}
-                      onPress={() => setTab(tabKey)}>
-                      <Text style={[s.tabBtnText, { color: tab === tabKey ? C.brinjal1 : C.textSecondary }]}>
-                        {tabKey === 'login' ? t('auth.login.tabLogin') : t('auth.login.tabSignup')}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                {/* Form */}
-                <Animated.View
-                  style={{
-                    opacity: formAnim,
-                    transform: [{
-                      translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }),
-                    }],
-                  }}>
-                  {tab === 'login'
-                    ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />
-                    : <SignupForm onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />}
-                </Animated.View>
-
-              </View>
-            </View>
+            {/* Form */}
+            <Animated.View
+              style={{
+                opacity: formAnim,
+                transform: [{
+                  translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }),
+                }],
+              }}>
+              {tab === 'login'
+                ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />
+                : <SignupForm key={params.role} initialRole={params.role === 'BUSINESS' ? 'BUSINESS' : params.role === 'CREATOR' ? 'CREATOR' : undefined} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />}
+            </Animated.View>
           </Animated.View>
 
-          {/* Footer */}
-          <View style={s.footer}>
-            <FontAwesome5 name="shield-alt" solid size={12} color={C.textSecondary} />
-            <Text style={s.footerText}>{t('auth.login.footer')}</Text>
-          </View>
-
         </ScrollView>
+
+        {/* ── Fixed footer ── pinned below the scroll content instead of living
+            inside it, matching Instagram's own hairline-divided switch-account
+            bar that always sits at the bottom of the screen. */}
+        <Pressable
+          style={[s.footerBar, { borderTopColor: C.border, paddingBottom: insets.bottom + 14 }]}
+          onPress={() => tab === 'login' ? router.push('/account-type') : setTab('login')}>
+          <Text style={s.switchTabText}>
+            {tab === 'login' ? t('auth.login.noAccount') : t('welcome.alreadyHaveAccount')}{' '}
+            <Text style={[s.switchTabLink, { color: C.brinjal1 }]}>
+              {tab === 'login' ? t('auth.login.signUpLink') : t('auth.login.signIn')}
+            </Text>
+          </Text>
+        </Pressable>
+        </View>
         </MaxWidthContainer>
       </KeyboardAvoidingView>
 
@@ -1022,59 +942,57 @@ export default function LoginScreen() {
 
 function makeStyles(C: typeof COLORS) {
   return StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.preLoginBackground },
+  root: { flex: 1, backgroundColor: C.background },
   flex: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
 
-  // `justifyContent: 'center'` only has an effect once flexGrow's extra space
-  // exists to distribute — i.e. on a tall/tablet screen where the content is
-  // shorter than the viewport. On a phone (or with the keyboard open) content
-  // already fills or exceeds the ScrollView, so this is a no-op and it scrolls
-  // normally, top-anchored, same as before.
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20 },
+  // ── Gradient hero — brand-color banner (brinjal1 → brinjal2), logo badge
+  // + collaboration illustration, rounded bottom edge the form card overlaps.
+  heroBanner:  { width: '100%', overflow: 'hidden', borderBottomLeftRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl, paddingBottom: 20 },
+  heroTopRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16 },
+  heroBackBtn: { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
+  heroTopSpacer: { height: 10 },
 
-  // Aurora glow blobs — soft two-tone (purple + warm orange) light sources instead of
-  // scattered decorative icons, echoing the app icon's own purple-triangle/orange-ring duo.
-  auroraLayer:  { position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' },
-  auroraBlob:   { position: 'absolute', borderRadius: RADIUS.full },
-  auroraBlobA:  { width: 280, height: 280, backgroundColor: withAlpha(C.brinjal1, 0.06), top: -90, right: -70 },
-  auroraBlobB:  { width: 220, height: 220, backgroundColor: withAlpha(C.accent, 0.14), top: 80, left: -90 },
-  auroraBlobC:  { width: 160, height: 160, backgroundColor: withAlpha(C.brinjal1, 0.05), top: 250, right: 40 },
-  bgIcon:       { position: 'absolute' },
+  // Lang toggle — sits over the hero as a flat pill showing only the
+  // language you'd switch TO; tapping applies that switch.
+  langBtn:  { minWidth: 44, height: 34, paddingHorizontal: 12, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
+  langText: { fontSize: 13, fontFamily: F.bold },
 
-  logoImage: { width: 168, height: 168 / (1740 / 620) },
-  langRow:  { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 6 },
-  // Unselected flags stay plain/flat — the selected one's surface+shadow
-  // (applied inline, see render) is what sets it apart, same as the home
-  // page's notification button.
-  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  langFlag: { fontSize: 15 },
+  heroLogo: { width: 84, height: 30, alignSelf: 'center', marginBottom: 14 },
 
-  heroCenter:  { alignItems: 'center', marginTop: 8, marginBottom: 28, gap: 16, position: 'relative' },
-  // Invisible, unwrapped — exists only so onLayout can report the tagline's true
-  // one-line width, which the visible copy below is then scaled down to fit.
-  heroTaglineMeasure: { position: 'absolute', top: 0, opacity: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroTaglineClip: { width: '100%', overflow: 'hidden', alignItems: 'center' },
-  heroTaglineRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroTagline: { fontSize: 20, color: C.text, fontFamily: F.semibold, letterSpacing: 0.3 },
-  heroTaglineHighlight: { fontSize: 22, fontFamily: F.boldItalic, fontStyle: 'italic', letterSpacing: 0.1 },
+  heroHeadingBlock:  { alignItems: 'center', paddingHorizontal: 28, marginBottom: 22 },
+  heroHeadlineLine:  { fontSize: 21, fontFamily: F.extrabold, lineHeight: 27, textAlign: 'center' },
+  heroSubtext:       { fontSize: 13, fontFamily: F.regular, lineHeight: 19, textAlign: 'center', marginTop: 8 },
 
-  // Floating card — visible margin on every side (not an edge-to-edge sheet),
-  // fully rounded corners on all four corners for a "card floating on the page"
-  // feel. A hairline border pulls extra weight now that the page itself is
-  // light too — the shadow alone doesn't read as strongly against a light wash
-  // as it did against the old dark-purple background.
-  // Much lighter touch than a boxed "card" — a soft, wide, low shadow so the
-  // form reads as gently lifted off the page rather than sitting in a hard
-  // container, closer to the reference's card-less "floating on gradient" feel.
-  cardOuter:  { borderRadius: RADIUS.xl, shadowColor: C.brinjal1, shadowOpacity: 0.08, shadowRadius: 30, shadowOffset: { width: 0, height: 14 }, elevation: 3 },
-  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: withAlpha(C.surface, 0.92) },
-  cardBody:   { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 26 },
+  // ── Form section ──
+  // Rounded-top sheet that overlaps the gradient's bottom edge slightly, so
+  // the hero and the form read as one layered composition rather than two
+  // stacked blocks.
+  card: {
+    backgroundColor: C.background, paddingHorizontal: 22, paddingTop: 26, paddingBottom: 28,
+    marginTop: -RADIUS.xl, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
+  },
 
-  // Pill-shaped segmented tab
-  tabBar:       { flexDirection: 'row', backgroundColor: C.primaryLight, borderRadius: RADIUS.full, padding: 4, marginBottom: 22, gap: 2 },
-  tabBtn:       { flex: 1, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  tabBtnActive: { backgroundColor: C.surface, shadowColor: C.brinjal1, shadowOpacity: 0.14, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
-  tabBtnText:   { fontSize: 14, fontFamily: F.semibold },
+  // Form heading — sits above the Login/Signup fields now that the hero banner above
+  // (logo + tagline) no longer carries a "Welcome back" / "Create account" title itself.
+  formHeading:         { marginBottom: 22, gap: 4, alignItems: 'center' },
+  formHeadingTitle:    { fontSize: 24, fontFamily: F.bold, color: C.text, letterSpacing: 0.2, textAlign: 'center' },
+  formHeadingSubtitle: { fontSize: 14, fontFamily: F.regular, color: C.textSecondary, lineHeight: 20, textAlign: 'center' },
+
+  // Role summary — confirms the choice made on /account-type ("Offering services" /
+  // "Looking for services") and links back to it to change.
+  roleSummaryRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 20 },
+  roleSummaryIcon:      { width: 30, height: 30, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  roleSummaryText:      { flex: 1, fontSize: 13, fontFamily: F.regular, color: C.textSecondary },
+  roleSummaryTextBold:  { fontFamily: F.bold },
+  roleSummaryChange:    { fontSize: 12.5, fontFamily: F.bold },
+
+  // Switch-tab bar — pinned outside the scroll content at the bottom of the
+  // screen (hairline divider + centered prompt), matching Instagram's own
+  // fixed "Don't have an account? Sign up." footer.
+  footerBar:     { alignItems: 'center', justifyContent: 'center', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 14 },
+  switchTabText: { fontSize: 13, fontFamily: F.regular, color: C.textSecondary },
+  switchTabLink: { fontFamily: F.bold },
 
   // Banners
   banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: RADIUS.md, borderWidth: 1, marginBottom: 16 },
@@ -1084,20 +1002,21 @@ function makeStyles(C: typeof COLORS) {
   rememberRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20, marginTop: -4 },
   rememberText: { fontSize: 13, fontFamily: F.medium, color: C.text },
 
-  // Form — filled/tonal fields (soft lavender fill, no border until focused) rather than
-  // outlined boxes, with circular icon badges to match the pill language used throughout.
-  form:          { gap: 16, marginBottom: 20 },
-  fieldWrap:     { gap: 6 },
-  fieldLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fieldLabel:    { fontSize: 13, fontFamily: F.semibold, color: C.text },
-  forgotText:    { fontSize: 12, fontFamily: F.semibold, color: C.brinjal1 },
-  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: C.primaryLight },
-  fieldFocused:  { borderColor: C.brinjal1, backgroundColor: C.surface, shadowColor: C.brinjal1, shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  fieldIconWrap: { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
-  fieldInput:    { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, color: C.text, textAlignVertical: 'center', letterSpacing: 0 },
-  eyeBtn:        { paddingHorizontal: 12 },
-  fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  fieldErrText:  { fontSize: 11, color: C.error, fontFamily: F.medium },
+  // Form
+  form: { gap: 12, marginBottom: 20 },
+
+  // Flat, label-less input — Instagram-style filled field, placeholder doubles
+  // as the label. Local to this screen only (see FlatInput above).
+  flatInputRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 14, minHeight: 50 },
+  flatInput:      { flex: 1, fontSize: 15, paddingVertical: 12 },
+  flatInputEyeBtn:{ paddingLeft: 8 },
+  feedbackRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, paddingHorizontal: 2 },
+  errorText:      { fontSize: 11, fontFamily: F.medium },
+
+  // "Forgot password?" — centered link below the primary button, Instagram-style.
+  forgotWrap:  { alignItems: 'center', marginBottom: 20 },
+  forgotText:  { fontSize: 13, fontFamily: F.semibold, color: C.brinjal1 },
+
   domainSuggestBoxOuter: { borderRadius: RADIUS.md, shadowColor: C.brinjal2, shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   domainSuggestBox:      { borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.md, overflow: 'hidden', backgroundColor: C.surface },
   domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
@@ -1107,40 +1026,40 @@ function makeStyles(C: typeof COLORS) {
   // Role cards
   roleRow:       { flexDirection: 'row', gap: 14, marginBottom: 22 },
   roleCard:      { flex: 1, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: C.border, padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
-  roleCardActive:{ shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
-  roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.lg },
   roleIconBox:   { width: 58, height: 58, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   roleLabel:     { fontSize: 14, fontFamily: F.bold, textAlign: 'center', color: C.text },
   roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },
-  roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: C.surface, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
 
   // Password rules
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: -8 },
   rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
   ruleText: { fontSize: 11, fontFamily: F.medium },
 
-  // Button — full pill shape, solid brinjal fill with a matching soft glow shadow
-  primaryBtnWrap: { borderRadius: RADIUS.full, marginBottom: 20, shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 7 },
-  primaryBtn:     { height: 54, borderRadius: RADIUS.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  // Button — Instagram-style rounded-rect (not a full pill), solid brinjal
+  // fill with a light, close-in shadow rather than a heavy glow.
+  primaryBtnWrap: { borderRadius: RADIUS.sm, marginBottom: 12, shadowColor: C.brinjal1, shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+  primaryBtn:     { height: 50, borderRadius: RADIUS.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryBtnText: { fontSize: 16, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
 
   // Divider
-  divider:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  divider:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12, color: C.textSecondary, fontFamily: F.medium },
 
-  // Social row (Google + Facebook side by side) — same pill family as the primary button
-  socialRow:      { gap: 10, marginBottom: 12 },
+  // Biometric quick-login keeps the full-width labeled pill.
   socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.surface, shadowColor: C.brinjal2, shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   socialBtnFull:  { flex: 0, marginBottom: 12 },
   socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: C.text },
-  googleFullBtn:  { width: '100%', height: 48, justifyContent: 'center', alignItems: 'center', shadowColor: C.brinjal2, shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
-  googleIcon:     { width: '100%', height: 48 },
-  // Facebook badge/button keep Facebook's own brand blue regardless of theme — this is a
+
+  // Google/Facebook — bordered card buttons in a row, shared by both LoginForm and SignupForm.
+  socialCardRow:  { flexDirection: 'row', gap: 10, marginBottom: 4 },
+  socialCardBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: RADIUS.sm, borderWidth: 1.5 },
+  socialCardIcon: { width: 18, height: 18 },
+  socialCardText: { fontSize: 13.5, fontFamily: F.semibold },
+
+  // Facebook badge keeps Facebook's own brand blue regardless of theme — this is a
   // third-party brand mark, not part of the app's own color system.
-  socialBtnFb:    { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
-  socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
-  fbBadge:        { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
+  fbBadgeSmall:   { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
   fbF:            { color: '#fff', fontSize: 13, fontFamily: F.bold },
   spinner:        { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: C.border, borderTopColor: C.brinjal1 },
 
@@ -1156,9 +1075,8 @@ function makeStyles(C: typeof COLORS) {
   suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.brinjal1, borderRadius: RADIUS.full, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
   suspendedContactBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#fff' },
 
-  terms:  { fontSize: 12, color: C.textSecondary, lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
-
-  footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 16 },
-  footerText: { fontSize: 11, color: C.textSecondary, fontFamily: F.regular },
+  // Terms checkbox — sits above the Create Account button (SignupForm only).
+  termsRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 18 },
+  termsRowText: { flex: 1, fontSize: 12.5, fontFamily: F.regular, color: C.textSecondary, lineHeight: 18 },
   });
 }

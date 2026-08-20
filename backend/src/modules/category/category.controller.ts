@@ -13,7 +13,8 @@ export class CategoryController {
       if (scopeRaw && !Object.values(CategoryScope).includes(scopeRaw as CategoryScope)) {
         throw new AppError(`Invalid scope. Must be one of: ${Object.values(CategoryScope).join(', ')}`, 400);
       }
-      const categories = await categoryService.listPublic(scopeRaw as CategoryScope | undefined);
+      const strict = req.query.strict === 'true';
+      const categories = await categoryService.listPublic(scopeRaw as CategoryScope | undefined, strict);
       success(res, categories, 'Categories retrieved');
     } catch (err) {
       next(err);

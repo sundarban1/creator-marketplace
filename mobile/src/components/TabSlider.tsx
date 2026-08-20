@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,12 +34,25 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
   const activeTab = tabs.find((t) => t.key === active) ?? tabs[0];
   const activeColor = activeTab?.color ?? '#4F46E5';
 
+  // Keeps the indicator pill in sync when `active` changes from outside
+  // (e.g. a quick-action deep-link setting the tab via a URL param) rather
+  // than from a press here — handlePress already animates for the press case.
+  useEffect(() => {
+    const idx = tabs.findIndex((t) => t.key === active);
+    const layout = idx >= 0 ? tabLayouts.current[idx] : undefined;
+    if (layout) {
+      Animated.spring(indicatorX, { toValue: layout.x + 2, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
+      Animated.spring(indicatorW, { toValue: layout.width - 4, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
   function handleLayout(idx: number, e: LayoutChangeEvent) {
     const { x, width } = e.nativeEvent.layout;
     tabLayouts.current[idx] = { x, width };
     if (tabs[idx].key === active) {
-      indicatorX.setValue(x + 4);
-      indicatorW.setValue(width - 8);
+      indicatorX.setValue(x + 2);
+      indicatorW.setValue(width - 4);
     }
   }
 
@@ -47,8 +60,8 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
     onChange(tab.key);
     const layout = tabLayouts.current[idx];
     if (layout) {
-      Animated.spring(indicatorX, { toValue: layout.x + 4, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
-      Animated.spring(indicatorW, { toValue: layout.width - 8, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
+      Animated.spring(indicatorX, { toValue: layout.x + 2, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
+      Animated.spring(indicatorW, { toValue: layout.width - 4, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
       if (!justify) scrollRef.current?.scrollTo({ x: Math.max(0, layout.x - 40), animated: true });
     }
   }
@@ -69,11 +82,16 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
         onPress={() => handlePress(tab, idx)}
         style={[s.tab, justify && s.tabFlex]}
       >
-        <View style={[s.tabInner, justify && s.tabInnerCenter]}>
+        <View style={[s.tabInner, justify && s.tabInnerCenter, justify && s.tabInnerJustify]}>
           {tab.icon && (
             <FontAwesome5 name={tab.icon} size={14} color={isActive ? '#fff' : C.textSecondary} />
           )}
-          <Text style={[s.tabLabel, isActive && s.tabLabelActive, { color: isActive ? '#fff' : C.textSecondary }]}>
+          <Text
+            style={[s.tabLabel, { color: isActive ? '#fff' : C.textSecondary }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={justify}
+            minimumFontScale={0.8}
+          >
             {tab.label}
           </Text>
           {tab.count !== undefined && tab.count > 0 && (
@@ -145,8 +163,11 @@ const s = StyleSheet.create({
   tabFlex:        { flex: 1, alignItems: 'center' },
   tabInner:       { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
   tabInnerCenter: { justifyContent: 'center' },
+  // Justified mode packs every tab into one fixed-width row (no horizontal
+  // scroll to fall back on), so labels need every spare pixel — tighter
+  // padding/gap than the scrollable variant, which has room to breathe.
+  tabInnerJustify: { paddingHorizontal: 4, gap: 3 },
   tabLabel:       { fontSize: 13, fontFamily: F.bold },
-  tabLabelActive: { fontSize: 14 },
   badge:          { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center' },
   badgeTxt:       { fontSize: 10, fontFamily: F.extrabold },
   indicator:      { position: 'absolute', top: 3, bottom: 3, borderRadius: 10 },

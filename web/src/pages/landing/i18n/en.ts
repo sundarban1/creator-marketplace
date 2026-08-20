@@ -1,41 +1,52 @@
 export const en = {
   nav: {
     links: {
-      showcase: 'Why Kolab',
-      audience: 'How It Works',
-      journey: 'Campaign Flow',
-      // categories: 'Categories', // Categories section commented out on the landing page for now
-      // security: 'Security', // Security section commented out on the landing page for now
-      collaboration: 'How Creators Connect',
-      contact: 'Contact',
+      discover: 'Discover',
+      services: 'Services',
+      opportunities: 'Opportunities',
+      events: 'Events',
+      howItWorks: 'How it works',
     },
-    cta: 'Get started',
     toggleMenuAriaLabel: 'Toggle menu',
     languageLabel: 'Language',
     appearanceLabel: 'Appearance',
   },
 
   hero: {
-    eyebrow: 'Kolab — AI-powered collaboration between brands and creators.',
-    headlinePrefix: 'Where',
-    headlineBrands: 'Brands',
-    headlineMiddle: 'Meet',
-    headlineCreators: 'Creators',
-    headlineSuffix: '',
-    // Cycled by a typewriter effect in the two colored headline slots — "Where"
-    // and "Meet" stay fixed, these two words type/delete together in sync.
-    headlinePairs: [
-      { a: 'Brands', b: 'Creators' },
-      { a: 'Ideas', b: 'Creativity' },
-      { a: 'Brands', b: 'Talent' },
-      { a: 'Creators', b: 'Success' },
-      { a: 'Creators', b: 'Creators' },
-    ],
-    sub: 'Kolab connects Nepali brands and creators for paid collaborations — discover opportunities, find the right partners, collaborate, and grow, all in one place.',
+    eyebrow: 'The collaboration marketplace',
+    headlineLine1: 'Find the right people.',
+    headlineLine2: 'Create opportunities.',
+    headlineLine3: 'Collaborate.',
+    sub: 'Kolab connects people and businesses with the talent, services and opportunities they need to make things happen.',
+    searchPlaceholder: "Try 'I need a photographer for my event'",
+    searchAriaLabel: 'Search Kolab',
+    micAriaLabel: 'Search by voice',
+    searchCta: 'Search',
+    popularSearchesLabel: 'Popular searches:',
+    popularSearches: ['Photographers', 'Creators', 'Makeup', 'Models', 'Events'],
+    socialProofSuffix: 'people are already on Kolab',
+    socialProofFallback: 10000,
+    connectors: {
+      people: { label: 'People', sub: 'Find the right people' },
+      services: { label: 'Services', sub: 'Find the skills you need' },
+      opportunities: { label: 'Opportunities', sub: 'Find your next opportunity' },
+      events: { label: 'Events', sub: "Discover what's happening" },
+    },
     ctaCreator: 'Join as Creator',
     ctaBusiness: 'Hire Creators',
     scrollAriaLabel: 'Scroll to explore',
     scrollLabel: 'Scroll',
+  },
+
+  possibilities: {
+    eyebrow: 'What you can do here',
+    heading: 'One place. Many possibilities.',
+    cards: {
+      people: { title: 'People', sub: 'Find the people you need.', cta: 'Explore People' },
+      services: { title: 'Services', sub: 'Find the skills you need.', cta: 'Explore Services' },
+      opportunities: { title: 'Opportunities', sub: 'Find your next opportunity.', cta: 'Explore Opportunities' },
+      events: { title: 'Events', sub: "Discover what's happening.", cta: 'Explore Events' },
+    },
   },
 
   showcase: {
@@ -60,61 +71,108 @@ export const en = {
     ],
   },
 
-  journey: {
-    eyebrow: 'How a campaign flows',
-    heading: 'From acceptance to payout, automatically',
-    sub: 'Every campaign on Kolab moves through the same secure, escrow-backed journey — so both sides always know exactly what happens next.',
-    liveBadge: 'Live campaign',
-    legendCreator: 'Creator',
-    legendBrand: 'Brand',
-    legendSystem: 'Kolab',
-    steps: [
-      { title: 'Event created', desc: 'The brand posts a campaign with its budget, goals, and requirements.', role: 'brand' },
-      { title: 'Proposal submitted', desc: 'A creator pitches their idea and rate for the campaign.', role: 'creator' },
-      { title: 'Proposal accepted', desc: 'The brand accepts the pitch and the collaboration is locked in.', role: 'brand' },
-      { title: 'Payment secured', desc: 'Full payment moves into escrow before any work begins — funds are protected for both sides.', role: 'brand' },
-      { title: 'Creator notified', desc: "An instant alert lets the creator know it's time to start creating.", role: 'system' },
-      { title: 'Work begins', desc: 'The creator starts producing content against the agreed brief.', role: 'creator' },
-      { title: 'Deliverables uploaded', desc: 'Finished content is submitted straight from the app for review.', role: 'creator' },
-      { title: 'Brand reviews & approves', desc: 'The brand checks the work and approves it, or requests a quick revision.', role: 'brand' },
-      { title: 'Payment released', desc: "Escrow releases the funds straight to the creator's account. Done.", role: 'system' },
+  audience: {
+    eyebrow: 'Built for both sides',
+    heading: 'Built for both sides of collaboration.',
+    headingAccent: 'collaboration.',
+    sub: "Whether you're offering your skills or looking for the right talent, Kolab brings both sides together.",
+    matchFound: 'Match found',
+    giver: {
+      label: 'For service givers',
+      title: 'Turn what you do into opportunity.',
+      sub: 'Showcase your skills, discover projects and connect with people and businesses looking for what you do.',
+      notifications: ['Food Creator Needed', 'Event Photographer', 'Brand Collaboration'],
+      badge: 'Top Creator',
+      name: 'Sundar Nepal',
+      role: 'Photographer',
+      rating: '4.9 (128)',
+      location: 'Kathmandu',
+      tags: ['Photography', 'Events', 'Reels'],
+      tagsMore: '+3',
+      opportunities: '24 Opportunities',
+      avatarsMore: '+19',
+      cta: 'Find Opportunities',
+      ctaCaption: 'Create your professional profile',
+    },
+    taker: {
+      label: 'For service takers',
+      title: 'Find the people who can make it happen.',
+      sub: 'Discover creators, professionals and services for your business, project or event.',
+      opportunityBadge: 'New opportunity',
+      opportunityTitle: 'Photographer Needed',
+      location: 'Kathmandu',
+      budget: 'NPR 20,000',
+      creators: '2 Creators',
+      project: 'Restaurant Launch',
+      projectTag: 'Project',
+      opportunityCta: 'Find People',
+      talent: ['Photographer', 'Creator', 'Videographer'],
+      cta: 'Find Talent',
+      ctaCaption: 'Post your project or requirement',
+    },
+  },
+
+  aiDiscovery: {
+    eyebrow: 'Search smarter',
+    heading: 'AI discovery that understands you.',
+    sub: 'Tell Kolab what you need. Search naturally — type it, speak it, and let Kolab find the right match.',
+    understandingLabel: 'Understanding…',
+    matchesLabel: 'matches found',
+    viewMatches: 'View Matches',
+    queries: [
+      { text: 'I need 2 food creators in Kathmandu for my restaurant launch.', checklist: ['Food & Beverage', 'Content Creator', 'Kathmandu', '2 people', 'Restaurant Launch'], matches: 24 },
+      { text: 'I need a photographer and videographer for my brand event.', checklist: ['Photography', 'Videography', 'Brand Event', '2 people'], matches: 31 },
+      { text: 'I need a DJ and event host for my corporate event.', checklist: ['DJ', 'Event Host', 'Corporate Event', '2 people'], matches: 18 },
+      { text: 'I need a makeup artist and photographer for a wedding.', checklist: ['Makeup Artist', 'Photography', 'Wedding', '2 people'], matches: 27 },
+      { text: 'I need food creators, photographers, and videographers for my café launch.', checklist: ['Food & Beverage', 'Photography', 'Videography', 'Café Launch'], matches: 22 },
     ],
   },
 
-  audience: {
-    eyebrow: 'Built for both sides',
-    heading: 'Whether you create or you hire',
-    creator: {
-      title: 'For Creators',
-      sub: 'Turn your following into income.',
-      points: [
-        'Connect Instagram, TikTok, YouTube & Facebook',
-        'Get discovered by real brands across Nepal',
-        'Apply to paid campaigns and open events',
-        'Get paid securely via eSewa, Khalti, or Fonepay',
-      ],
-      cta: 'Join as Creator',
-    },
-    business: {
-      title: 'For Brands',
-      sub: 'Find and hire the right creators, fast.',
-      points: [
-        'Search creators by category, location & budget',
-        'Post a campaign or invite creators directly',
-        'Track proposals and progress in one dashboard',
-        'Pay only when the work is approved',
-      ],
-      cta: 'Hire Creators',
-    },
+  opportunityFeed: {
+    eyebrow: 'Never miss a fit',
+    heading: 'Your next opportunity could be one swipe away.',
+    opportunitiesLabel: 'Opportunities',
+    viewAllOpportunities: 'View all opportunities',
+    applyNow: 'Apply Now',
+    opportunities: [
+      { badge: 'Paid', title: 'Food Creator Needed', location: 'Kathmandu', meta: 'NPR 20,000', sub: '3 Creators' },
+      { badge: 'Event', title: 'Grand Opening Collaboration', location: 'Pokhara', meta: 'Free food + experience', sub: 'Networking' },
+      { badge: 'Free', title: 'Free Creator Event', location: 'Kathmandu', meta: 'Free food · Experience', sub: 'Networking' },
+    ],
+    moreOpportunities: [
+      { title: 'Fashion Shoot Assistant', date: 'Deadline Sep 18', location: 'Kathmandu' },
+      { title: 'Cafe Menu Launch', date: 'Deadline Sep 22', location: 'Lalitpur' },
+      { title: 'Travel Vlog Partner', date: 'Deadline Sep 30', location: 'Pokhara' },
+    ],
+    eventsLabel: 'Upcoming Events',
+    viewAllEvents: 'View all events',
+    featuredEvent: { dateDay: '12', dateMonth: 'Sep', title: 'Grand Opening Event', location: 'Kathmandu', sub: 'Creators, Photographers, Hosts' },
+    moreEvents: [
+      { title: 'Music Festival', date: 'Sep 20', location: 'Pokhara' },
+      { title: 'Brand Launch Party', date: 'Sep 25', location: 'Kathmandu' },
+      { title: 'Wedding Showcase', date: 'Oct 05', location: 'Lalitpur' },
+    ],
   },
 
   categories: {
-    eyebrow: 'Every niche, covered',
-    heading: 'Creators across every category',
+    eyebrow: 'Every category, covered',
+    heading: 'Whatever you need, someone on Kolab can help.',
+    more: 'More',
     list: [
       'Fashion', 'Travel', 'Food & Beverage', 'Technology', 'Gaming',
       'Fitness & Health', 'Beauty', 'Lifestyle', 'Music', 'Photography',
       'Education', 'Entertainment',
+    ],
+  },
+
+  howItWorks: {
+    eyebrow: 'How Kolab works',
+    heading: 'From idea to collaboration.',
+    steps: [
+      { title: 'Discover', desc: 'Find people, services, events or opportunities that match your needs.' },
+      { title: 'Connect', desc: 'Explore profiles, requirements or portfolios, then reach out or apply.' },
+      { title: 'Collaborate', desc: 'Work together smoothly and bring your ideas to life.' },
+      { title: 'Grow', desc: 'Build relationships, reputation and future opportunities.' },
     ],
   },
 
@@ -148,20 +206,21 @@ export const en = {
   },
 
   security: {
-    eyebrow: 'Security',
-    heading: 'Built on trust',
-    sub: 'Every account and every payment is protected.',
+    eyebrow: 'Built on trust',
+    heading: 'Built for meaningful collaborations.',
+    sub: 'Every profile, request, and conversation is designed to keep collaboration safe and clear.',
     points: [
-      { title: 'Verified creators', desc: 'Identity confirmed with citizenship document verification.' },
-      { title: 'Escrow payments', desc: 'Funds are held safely until the work is approved.' },
-      { title: 'ID & contact verification', desc: 'Email, phone, and document checks for every account.' },
-      { title: 'Transparent reviews', desc: 'Every collaboration ends with an honest rating.' },
+      { title: 'Verified Profiles', desc: 'Identity checks keep the people and businesses you meet real.' },
+      { title: 'Reviews & Ratings', desc: 'Honest feedback from real collaborations, every time.' },
+      { title: 'Clear Requirements', desc: 'Scope, budget, and deliverables spelled out upfront.' },
+      { title: 'Secure Communication', desc: 'Keep every conversation and file in one protected place.' },
+      { title: 'Report & Safety', desc: 'Flag an issue anytime — our team responds fast.' },
     ],
   },
 
   stories: {
     eyebrow: 'Success stories',
-    heading: 'Loved by creators and brands',
+    heading: 'Success stories from our community.',
     items: [
       { quote: 'My first paid campaign came within two weeks of joining Kolab.', name: 'Priya Sharma', role: 'Fashion Creator, Kathmandu' },
       { quote: 'We hired three creators for our launch in a single afternoon.', name: 'Himalaya Brew', role: 'Brand' },
@@ -177,14 +236,22 @@ export const en = {
   },
 
   finalCta: {
-    heading: 'Ready to get started?',
-    sub: "Join Nepal's creator marketplace today.",
-    ctaCreator: 'Join as Creator',
-    ctaBusiness: 'Hire Creators',
+    heading: 'Ready to collaborate?',
+    sub: 'Find your people. Offer your skills. Discover opportunities. Make something happen.',
+    ctaGetStarted: 'Get Started',
+    ctaExplore: 'Explore Kolab',
+    roles: { designer: 'Designer', business: 'Business', creator: 'Creator' },
   },
 
   footer: {
-    tagline: 'Where Brands Meet Creators.',
+    tagline: 'Discover. Connect. Collaborate. Grow.',
+    columns: {
+      discover: 'Discover',
+      forCreators: 'For Creators',
+      forBusinesses: 'For Businesses',
+      company: 'Company & Support',
+    },
+    downloadApp: 'Download the Kolab app',
     privacy: 'Privacy',
     terms: 'Terms',
     support: 'Support',

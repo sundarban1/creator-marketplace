@@ -237,6 +237,30 @@ router.get('/nearby', validate(nearbyQuerySchema, 'query'), ctrl.nearby.bind(ctr
 
 /**
  * @swagger
+ * /api/campaigns/recommended:
+ *   get:
+ *     tags: [Campaign]
+ *     summary: Active campaigns ranked for the current creator by content-based
+ *       fit (category/platform/budget/location/freshness) — CREATOR only.
+ *       Excludes campaigns already applied to.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10, maximum: 20 }
+ *     responses:
+ *       200:
+ *         description: Recommended campaigns, best match first
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaginatedResponse'
+ */
+router.get('/recommended', authenticate, authorize('CREATOR'), ctrl.getRecommended.bind(ctrl));
+
+/**
+ * @swagger
  * /api/campaigns/my:
  *   get:
  *     tags: [Campaign]
@@ -398,6 +422,13 @@ router.post(
   authorize('CREATOR', 'BUSINESS'),
   validate(submitReviewSchema),
   ctrl.submitReview.bind(ctrl)
+);
+
+router.get(
+  '/applications/:appId/review',
+  authenticate,
+  authorize('CREATOR', 'BUSINESS'),
+  ctrl.getMyReview.bind(ctrl)
 );
 
 router.put(
@@ -725,6 +756,15 @@ router.put(
   authenticate,
   authorize('BUSINESS'),
   ctrl.rejectApplication.bind(ctrl)
+);
+
+// §49 — toggles PENDING <-> SHORTLISTED, a lightweight "under consideration"
+// marker distinct from accept/reject above.
+router.put(
+  '/:id/applications/:appId/shortlist',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.shortlistApplication.bind(ctrl)
 );
 
 export default router;

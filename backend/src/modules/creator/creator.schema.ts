@@ -22,6 +22,13 @@ export const updateCreatorProfileSchema = z.object({
   categories:  z.array(z.string()).optional(),
   nearbyRadiusKm:        z.number().int().min(1).max(200).optional(),
   nearbyUseHomeLocation: z.boolean().optional(),
+  // "How do you provide your services?" — first step of provider onboarding.
+  providerType: z.enum(['INDIVIDUAL', 'TEAM', 'AGENCY']).optional(),
+  // §61 — Privacy settings.
+  showPublicProfile:  z.boolean().optional(),
+  hideContactDetails: z.boolean().optional(),
+  hideSocialLinks:    z.boolean().optional(),
+  locationVisibility: z.enum(['EXACT', 'CITY', 'DISTRICT']).optional(),
 });
 
 export const addPortfolioLinkSchema = z.object({
@@ -93,6 +100,36 @@ export const updateCampaignPrefsSchema = z.object({
   prefBudgetMin: z.number().min(0).optional(),
   prefBudgetMax: z.number().min(0).optional(),
 });
+
+const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+export const updateAvailabilityStatusSchema = z.object({
+  status: z.enum(['AVAILABLE', 'BUSY', 'UNAVAILABLE']),
+});
+
+export const updateAvailabilityScheduleSchema = z.object({
+  days: z.array(
+    z.object({
+      dayOfWeek: z.number().int().min(0, 'dayOfWeek must be 0-6').max(6, 'dayOfWeek must be 0-6'),
+      availableFrom: z.string().regex(TIME_RE, 'Must be HH:mm'),
+      availableUntil: z.string().regex(TIME_RE, 'Must be HH:mm'),
+    }).refine((d) => d.availableFrom < d.availableUntil, {
+      message: 'availableFrom must be before availableUntil',
+      path: ['availableUntil'],
+    })
+  ).max(7, 'At most 7 days').refine(
+    (days) => new Set(days.map((d) => d.dayOfWeek)).size === days.length,
+    { message: 'Each day may only appear once' }
+  ),
+});
+
+export const respondToInvitationSchema = z.object({
+  status: z.enum(['ACCEPTED', 'DECLINED']),
+});
+
+export type UpdateAvailabilityStatusInput   = z.infer<typeof updateAvailabilityStatusSchema>;
+export type UpdateAvailabilityScheduleInput = z.infer<typeof updateAvailabilityScheduleSchema>;
+export type RespondToInvitationInput        = z.infer<typeof respondToInvitationSchema>;
 
 export type UpdateCreatorProfileInput  = z.infer<typeof updateCreatorProfileSchema>;
 export type AddPortfolioLinkInput      = z.infer<typeof addPortfolioLinkSchema>;

@@ -10,8 +10,8 @@ export class CategoryService {
     this.repo = new CategoryRepository();
   }
 
-  async listPublic(scope?: CategoryScope) {
-    return this.repo.findManyPublic(scope);
+  async listPublic(scope?: CategoryScope, strict?: boolean) {
+    return this.repo.findManyPublic(scope, strict);
   }
 
   async listForAdmin() {

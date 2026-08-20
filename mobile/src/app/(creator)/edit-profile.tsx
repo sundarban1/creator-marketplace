@@ -10,7 +10,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,6 +22,7 @@ import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { creatorService } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 
 // ─── EditProfileScreen ────────────────────────────────────────────────────────
 
@@ -159,7 +159,7 @@ export default function EditProfileScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
-      <PageHeader title={t('profile.editCreator.headerTitle')} backFallback="/(creator)/profile" />
+      <PageHeader title={t('profile.editCreator.headerTitle')} backFallback="/(creator)/(tabs)/profile" />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -171,53 +171,51 @@ export default function EditProfileScreen() {
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.fullNameLabel')}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+            <TextInputWithLabel
+              label={t('profile.editCreator.fullNameLabel')}
+              leftIcon="user"
               value={fullName}
               onChangeText={setFullName}
               placeholder={t('profile.editCreator.fullNamePlaceholder')}
-              placeholderTextColor={C.textSecondary}
             />
           </View>
 
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.usernameLabel')}</Text>
-            <View style={[styles.usernameRow, { backgroundColor: C.background, borderColor: usernameStatus === 'taken' || usernameStatus === 'invalid' ? C.error : C.border }]}>
-              <Text style={[styles.atSign, { color: C.textSecondary }]}>@</Text>
-              <TextInput
-                style={[styles.usernameInput, { color: C.text }]}
-                value={username}
-                onChangeText={handleUsernameChange}
-                placeholder={t('profile.editCreator.usernamePlaceholder')}
-                placeholderTextColor={C.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {usernameStatus === 'checking' && <ActivityIndicator size="small" color={C.textSecondary} />}
-              {usernameStatus === 'available' && <FontAwesome5 name="check-circle" solid size={18} color="#16A34A" />}
-              {(usernameStatus === 'taken' || usernameStatus === 'invalid') && <FontAwesome5 name="times-circle" solid size={18} color={C.error} />}
-            </View>
-            {usernameStatus === 'taken' && <Text style={[styles.usernameHint, { color: C.error }]}>{t('profile.editCreator.usernameTakenError')}</Text>}
-            {usernameStatus === 'invalid' && <Text style={[styles.usernameHint, { color: C.error }]}>{t('profile.editCreator.usernameInvalidHint')}</Text>}
-            {usernameStatus === 'available' && <Text style={[styles.usernameHint, { color: '#16A34A' }]}>{t('profile.editCreator.usernameAvailableHint')}</Text>}
+            <TextInputWithLabel
+              label={t('profile.editCreator.usernameLabel')}
+              leftIcon="at"
+              value={username}
+              onChangeText={handleUsernameChange}
+              placeholder={t('profile.editCreator.usernamePlaceholder')}
+              autoCapitalize="none"
+              autoCorrect={false}
+              error={
+                usernameStatus === 'taken' ? t('profile.editCreator.usernameTakenError')
+                : usernameStatus === 'invalid' ? t('profile.editCreator.usernameInvalidHint')
+                : undefined
+              }
+              hint={usernameStatus === 'available' ? t('profile.editCreator.usernameAvailableHint') : undefined}
+              rightSlot={
+                usernameStatus === 'checking' ? <ActivityIndicator size="small" color={C.textSecondary} />
+                : usernameStatus === 'available' ? <FontAwesome5 name="check-circle" solid size={18} color="#16A34A" />
+                : (usernameStatus === 'taken' || usernameStatus === 'invalid') ? <FontAwesome5 name="times-circle" solid size={18} color={C.error} />
+                : undefined
+              }
+            />
           </View>
 
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.bioLabel')}</Text>
-            <TextInput
-              style={[styles.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+            <TextInputWithLabel
+              label={t('profile.editCreator.bioLabel')}
               value={bio}
               onChangeText={(v) => setBio(v.slice(0, 500))}
               placeholder={t('profile.editCreator.bioPlaceholder')}
-              placeholderTextColor={C.textSecondary}
               multiline
               numberOfLines={4}
-              textAlignVertical="top"
             />
             <Text style={[styles.charCount, { color: C.textSecondary }]}>{bio.length}/500</Text>
           </View>
@@ -266,17 +264,14 @@ const styles = StyleSheet.create({
   container:  { flex: 1 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content:    { paddingBottom: 24 },
-  sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
+  // marginHorizontal matches card/saveBtnWrap's 16 below — this used to be a
+  // stray 20, so the section label sat 4px further in than the card under it
+  // (same fix as the business side's identical edit-profile screen).
+  sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 16, fontFamily: F.bold },
   card:       { marginHorizontal: 16, borderRadius: RADIUS.lg, borderWidth: 1, ...SHADOW.card, overflow: 'hidden' },
   field:      { padding: 16, gap: 6 },
   divider:    { height: 1 },
   label:      { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
-  input:      { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
-  textarea:   { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
-  usernameRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, gap: 6 },
-  atSign:        { fontSize: 14, fontFamily: F.semibold },
-  usernameInput: { flex: 1, fontSize: 14, paddingVertical: 10, fontFamily: F.regular },
-  usernameHint:  { fontSize: 11, fontFamily: F.regular, marginTop: 2 },
   charCount:  { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
   locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
   locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },

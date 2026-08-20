@@ -22,7 +22,7 @@ export function ActionButton({ variant = 'neutral', icon: Icon, title, className
     <button
       title={title}
       aria-label={title}
-      className={`p-1.5 rounded-lg border transition-colors ${VARIANT_CLASSES[variant]} ${className}`}
+      className={`p-1.5 rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${className}`}
       {...props}
     >
       <Icon size={15} />

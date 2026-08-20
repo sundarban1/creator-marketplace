@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SearchInput } from '@/components/SearchInput';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { TabSlider } from '@/components/TabSlider';
@@ -25,13 +26,12 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem, type ApiCreatorListItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { FilterSheet, FilterSectionHeader } from '@/components/FilterSheet';
 import { BottomSheet } from '@/components/BottomSheet';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -91,7 +91,6 @@ export default function CampaignsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
-  const { platforms: allPlatforms } = usePlatforms();
   const toast = useToast();
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
@@ -107,7 +106,6 @@ export default function CampaignsScreen() {
   // this app (explore-creators, saved-creators): no new backend support.
   const [search, setSearch] = useState('');
   const [searchDebounced, setSearchDebouncedImmediate] = useDebouncedValue(search, 400);
-  const [searchFocused, setSearchFocused] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
 
   const [categoryFilter, setCategoryFilter]         = useState('');
@@ -315,7 +313,6 @@ export default function CampaignsScreen() {
         campaignId:    c.id,
         campaignTitle: c.title,
         campaignType:  c.campaignType ?? 'PAID_CAMPAIGN',
-        platform:      c.platforms.join(', '),
       },
     });
   }
@@ -358,26 +355,17 @@ export default function CampaignsScreen() {
           feed's top-header search bar, for a consistent feel. */}
       <View style={styles.searchRow}>
         <Pressable
-          style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
+          style={styles.searchCard}
           onPress={() => searchInputRef.current?.focus()}>
-          <FontAwesome5 name="search" solid size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
-          <TextInput
-            ref={searchInputRef}
-            style={[styles.searchInput, { color: C.text }]}
-            placeholder={t('campaigns.searchPlaceholder')}
-            placeholderTextColor={C.textSecondary}
-            value={search}
-            onChangeText={setSearch}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')} hitSlop={10} style={{ marginRight: 6 }}>
-              <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
-            </Pressable>
-          )}
+          <View style={{ flex: 1 }}>
+            <SearchInput
+              ref={searchInputRef}
+              placeholder={t('campaigns.searchPlaceholder')}
+              value={search}
+              onChangeText={setSearch}
+              autoCorrect={false}
+            />
+          </View>
           <Pressable
             style={[
               styles.filterBtn,
@@ -509,18 +497,27 @@ export default function CampaignsScreen() {
                 <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
                 <View style={styles.cardBody}>
                 <Pressable
-                  style={({ pressed }) => [styles.cardContent, pressed && { opacity: 0.92 }]}
+                  style={({ pressed }) => [styles.cardContent, hasFooterActions && styles.cardContentTightFooter, pressed && { opacity: 0.92 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                   {/* Header — thumbnail on the left, title + tags on the right */}
                   <View style={styles.cardHeader}>
-                    <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
-                      <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
-                      {cardImage && (
-                        <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
-                      )}
+                    <View style={styles.thumbColumn}>
+                      <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
+                        <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
+                        {cardImage && (
+                          <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                        )}
+                      </View>
+                      <Text style={[styles.postedDay, { color: C.textSecondary }]} numberOfLines={1}>{timeAgo(c.createdAt)}</Text>
                     </View>
                     <View style={styles.titleSection}>
                       <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
+                      {c.campaignType !== 'OPEN_EVENT' && (
+                        <View style={[styles.statChip, { backgroundColor: `${C.brinjal1}14`, alignSelf: 'flex-start' }]}>
+                          <FontAwesome5 name="money-bill-wave" size={12} color={C.brinjal1} />
+                          <Text style={[styles.statText, styles.budgetText, { color: C.brinjal1 }]} numberOfLines={1}>{c.budget}</Text>
+                        </View>
+                      )}
                       <View style={styles.tagContainer}>
                         <View style={[styles.tagBadge, { backgroundColor: meta.bg }]}>
                           <FontAwesome5 name={meta.icon} size={9} color={meta.color} />
@@ -542,45 +539,23 @@ export default function CampaignsScreen() {
                           </View>
                         )}
                       </View>
-                      <Text style={[styles.postedDay, { color: C.textSecondary }]}>{timeAgo(c.createdAt)}</Text>
-                    </View>
-                  </View>
-
-                  {/* Details — deadline/creators/budget on the left, platforms on the right */}
-                  <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
-                    <View style={styles.detailsLeft}>
-                      {dateIso && (
-                        <View style={styles.detailRow}>
-                          <FontAwesome5 name="calendar-alt" size={14} color={C.textSecondary} />
-                          <Text style={[styles.detailText, { color: C.textSecondary }]}>{formatShortDate(dateIso)}</Text>
-                        </View>
-                      )}
-                      {!!creatorsCount && (
-                        <View style={styles.detailRow}>
-                          <FontAwesome5 name="users" solid size={14} color={C.textSecondary} />
-                          <Text style={[styles.detailText, { color: C.textSecondary }]}>{t('createEvent.summaryNCreators', { n: creatorsCount })}</Text>
-                        </View>
-                      )}
-                      {c.campaignType !== 'OPEN_EVENT' && (
-                        <View style={styles.detailRow}>
-                          <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
-                          <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {c.platforms.length > 0 && (
-                      <View style={styles.detailsRight}>
-                        {c.platforms.map((p) => {
-                          const pMeta = getPlatformMeta(allPlatforms, p);
-                          return (
-                            <View key={p} style={[styles.socialIcon, { backgroundColor: pMeta.bg }]}>
-                              <FontAwesome5 name={pMeta.icon} size={13} color={pMeta.color} />
+                      {(dateIso || !!creatorsCount) && (
+                        <View style={styles.tagContainer}>
+                          {dateIso && (
+                            <View style={[styles.statChip, { backgroundColor: C.background }]}>
+                              <FontAwesome5 name="calendar-alt" size={12} color={C.textSecondary} />
+                              <Text style={[styles.statText, { color: C.textSecondary }]} numberOfLines={1}>{formatShortDate(dateIso)}</Text>
                             </View>
-                          );
-                        })}
-                      </View>
-                    )}
+                          )}
+                          {!!creatorsCount && (
+                            <View style={[styles.statChip, { backgroundColor: C.background }]}>
+                              <FontAwesome5 name="users" solid size={12} color={C.textSecondary} />
+                              <Text style={[styles.statText, { color: C.textSecondary }]} numberOfLines={1}>{t('createEvent.summaryNCreators', { n: creatorsCount })}</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
                   </View>
 
                   {c.status === 'draft' && (
@@ -791,48 +766,42 @@ const styles = StyleSheet.create({
 
   // Search + category filter — same compound search pill (card + docked
   // filter button) as the creator home feed's top-header search bar.
-  searchRow:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
-  searchCard:  { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, paddingHorizontal: 14, height: 44, borderWidth: 1.5 },
-  searchCardFocused: {
-    borderColor: '#7C3AED', borderWidth: 2,
-    shadowColor: '#7C3AED', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
-  },
-  searchIcon:  { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
+  searchRow:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, paddingBottom: SPACING.sm },
+  searchCard:  { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn:   { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
 
   // Flush with the page, same as the creator proposals tab bar: no
   // background or shadow of its own, just spacing.
-  filterRow: { marginTop: 14 },
+  filterRow: { marginTop: SPACING.md },
 
-  list: { paddingHorizontal: 20, paddingTop: 14, gap: 12, paddingBottom: 40 },
+  list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xxxl },
   listEmpty: { flexGrow: 1 },
-  footerLoading: { paddingVertical: 20 },
+  footerLoading: { paddingVertical: SPACING.xl },
 
-  noResultsWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 60, gap: 10 },
+  noResultsWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingVertical: 60, gap: SPACING.sm },
 
-  emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16 },
+  emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg },
   emptyCard: {
     width: '100%', borderRadius: RADIUS.xl, borderWidth: 1,
-    alignItems: 'center', paddingHorizontal: 28, paddingVertical: 36, gap: 10,
+    alignItems: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xxl, gap: SPACING.sm,
     overflow: 'hidden',
     ...SHADOW.card,
   },
   emptyDot1: { position: 'absolute', width: 120, height: 120, borderRadius: RADIUS.full, top: -40, right: -30, opacity: 0.5 },
   emptyDot2: { position: 'absolute', width: 80, height: 80, borderRadius: RADIUS.full, bottom: -25, left: -20, opacity: 0.4 },
   emptyIconCircle: { width: 80, height: 80, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  emptyTitle: { fontSize: 18, textAlign: 'center', fontFamily: F.bold },
-  emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular, paddingHorizontal: 8 },
-  emptyCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10, borderRadius: RADIUS.full, paddingHorizontal: 22, paddingVertical: 12 },
-  emptyCreateBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
+  emptyTitle: { fontSize: FONT_SIZE.lg, textAlign: 'center', fontFamily: F.bold },
+  emptySub: { fontSize: FONT_SIZE.sm, textAlign: 'center', lineHeight: 20, fontFamily: F.regular, paddingHorizontal: SPACING.sm },
+  emptyCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: SPACING.sm, borderRadius: RADIUS.full, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md },
+  emptyCreateBtnText: { color: '#fff', fontSize: FONT_SIZE.md, fontFamily: F.bold },
   emptySwitchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  emptySwitchText: { fontSize: 12, fontFamily: F.regular },
-  emptySwitchLink: { fontSize: 12, fontFamily: F.bold },
+  emptySwitchText: { fontSize: FONT_SIZE.xs, fontFamily: F.regular },
+  emptySwitchLink: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
 
   // Category filter sheet chips — same shape as BusinessFilterModal's.
-  categoryChipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  categoryChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 9 },
-  categoryChipText: { fontSize: 13, fontFamily: F.medium },
+  categoryChipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  categoryChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: 9 },
+  categoryChipText: { fontSize: FONT_SIZE.sm, fontFamily: F.medium },
 
   // Two-per-row grid on tablet/iPad (numColumns===2) — phones stay single
   // column (numColumns===1, cardWrapHalf unused, columnWrapperStyle unset).
@@ -852,69 +821,68 @@ const styles = StyleSheet.create({
   // it, kept out of `card`'s own row flexDirection so they stack vertically
   // instead of sitting beside it.
   cardBody: { flex: 1 },
-  cardContent: { padding: 18 },
+  cardContent: { padding: SPACING.lg },
+  cardContentTightFooter: { paddingBottom: SPACING.sm },
 
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
-  titleSection: { flex: 1, gap: 6 },
-  eventTitle: { fontSize: 16, fontFamily: F.bold, lineHeight: 21 },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.md },
+  titleSection: { flex: 1, gap: 8 },
+  eventTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, lineHeight: 21 },
   tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },
-  tagBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
-  tagBadgeText: { fontSize: 11, fontFamily: F.bold },
+  tagBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 4 },
+  tagBadgeText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
   typeBadgePaid: { backgroundColor: TabColors.brand.bg },
   typeBadgeFree: { backgroundColor: TabColors.info.bg },
   typeBadgeTextPaid: { color: TabColors.brand.color },
   typeBadgeTextFree: { color: TabColors.info.color },
-  postedDay: { fontSize: 12, fontFamily: F.regular },
+  postedDay: { fontSize: FONT_SIZE.xs, fontFamily: F.regular, textAlign: 'center' },
+  thumbColumn: { alignItems: 'center', gap: 4, flexShrink: 0 },
   thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
 
-  detailsSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 14 },
-  detailsLeft:  { gap: 10, flexShrink: 1 },
-  detailsRight: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8, flexShrink: 0, marginLeft: 12 },
-  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  detailText: { fontSize: 13, fontFamily: F.regular },
+  // Stat chips — each chip's own tinted background is what visually
+  // separates it from its neighbors, no border lines needed.
+  statChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 7, flexShrink: 1, minWidth: 0 },
+  statText: { fontSize: FONT_SIZE.sm, fontFamily: F.medium },
   budgetText: { fontFamily: F.bold },
 
-  socialIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  draftNote: { marginTop: SPACING.sm },
 
-  draftNote: { marginTop: 8 },
+  buttonContainer: { flexDirection: 'row', gap: SPACING.sm, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md },
+  buttonPrimary: { flex: 1, minHeight: 42, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SPACING.md },
+  buttonTextPrimary: { color: '#fff', fontSize: FONT_SIZE.sm, fontFamily: F.bold },
+  buttonSecondary: { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.md },
+  buttonTextSecondary: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
-  buttonContainer: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingBottom: 16 },
-  buttonPrimary: { flex: 1, minHeight: 42, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
-  buttonTextPrimary: { color: '#fff', fontSize: 13, fontFamily: F.bold },
-  buttonSecondary: { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: 12 },
-  buttonTextSecondary: { fontSize: 13, fontFamily: F.bold },
-
-  modalList: { padding: 16, gap: 12, paddingBottom: 40 },
+  modalList: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxxl },
 
   // Invite modal
-  inviteSuccess: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  inviteSuccessText: { fontSize: 18, fontFamily: F.bold },
-  inviteSuccessHint: { fontSize: 13, textAlign: 'center', fontFamily: F.regular },
+  inviteSuccess: { alignItems: 'center', paddingVertical: 48, gap: SPACING.sm },
+  inviteSuccessText: { fontSize: FONT_SIZE.xl, fontFamily: F.bold },
+  inviteSuccessHint: { fontSize: FONT_SIZE.sm, textAlign: 'center', fontFamily: F.regular },
 
-  selectionBanner: { paddingHorizontal: 16, paddingVertical: 8, marginHorizontal: 16, marginTop: 10, borderRadius: RADIUS.sm },
-  selectionText: { fontSize: 13, fontFamily: F.bold },
+  selectionBanner: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, marginHorizontal: SPACING.lg, marginTop: SPACING.sm, borderRadius: RADIUS.sm },
+  selectionText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
   creatorPickRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderRadius: RADIUS.md, borderWidth: 1.5, padding: 12,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
+    borderRadius: RADIUS.md, borderWidth: 1.5, padding: SPACING.md,
   },
   pickAvatar: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  pickAvatarText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
+  pickAvatarText: { color: '#fff', fontSize: FONT_SIZE.md, fontFamily: F.bold },
   pickInfo: { flex: 1, gap: 2 },
-  pickName: { fontSize: 14, fontFamily: F.bold },
-  pickSub: { fontSize: 12, fontFamily: F.regular },
+  pickName: { fontSize: FONT_SIZE.md, fontFamily: F.bold },
+  pickSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular },
   checkbox: { width: 22, height: 22, borderRadius: RADIUS.full, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
-  sendInviteBtn: { borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },
-  sendInviteBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
+  sendInviteBtn: { borderRadius: RADIUS.full, paddingVertical: SPACING.md, alignItems: 'center' },
+  sendInviteBtnText: { color: '#fff', fontSize: FONT_SIZE.md, fontFamily: F.bold },
 
   // Recommended-creators inline section, within the same invite sheet.
-  inlineNotice: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4, gap: 3, alignItems: 'center' },
-  inlineNoticeTitle: { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
-  inlineNoticeSub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center' },
-  modeSwitchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12 },
-  modeSwitchText: { fontSize: 13, fontFamily: F.bold },
-  suggestConfirmBtn: { borderRadius: RADIUS.md, height: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  suggestConfirmText: { fontSize: 13, color: '#fff', fontFamily: F.bold, textAlign: 'center' },
-  suggestEmpty: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24, gap: 10 },
+  inlineNotice: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: 4, gap: 3, alignItems: 'center' },
+  inlineNoticeTitle: { fontSize: FONT_SIZE.md, fontFamily: F.bold, textAlign: 'center' },
+  inlineNoticeSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center' },
+  modeSwitchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: SPACING.md },
+  modeSwitchText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
+  suggestConfirmBtn: { borderRadius: RADIUS.md, height: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SPACING.xl },
+  suggestConfirmText: { fontSize: FONT_SIZE.sm, color: '#fff', fontFamily: F.bold, textAlign: 'center' },
+  suggestEmpty: { alignItems: 'center', paddingVertical: SPACING.xl, paddingHorizontal: SPACING.xl, gap: SPACING.sm },
 });

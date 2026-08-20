@@ -1,7 +1,7 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -27,7 +27,7 @@ import { TabColors } from '@/utilities/tabColors';
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
-type AppStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
+type AppStatus = 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
 type TabKey = 'all' | AppStatus;
 
 type Proposal = {
@@ -50,16 +50,26 @@ type Proposal = {
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
-  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'clock'             as const, color: TabColors.brand.color,  bg: TabColors.brand.bg },
-  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'check-circle' as const, color: TabColors.positive.color, bg: TabColors.positive.bg },
-  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'times-circle'     as const, color: TabColors.danger.color,   bg: TabColors.danger.bg },
-  expired:  { labelKey: 'proposal.creator.statusExpired'  as const, icon: 'hourglass-end'     as const, color: TabColors.closed.color,   bg: TabColors.closed.bg },
+  pending:     { labelKey: 'proposal.creator.statusPending'     as const, icon: 'clock'         as const, color: TabColors.brand.color,    bg: TabColors.brand.bg },
+  shortlisted: { labelKey: 'proposal.creator.statusShortlisted' as const, icon: 'star'          as const, color: TabColors.info.color,     bg: TabColors.info.bg },
+  accepted:    { labelKey: 'proposal.creator.statusAccepted'    as const, icon: 'check-circle'  as const, color: TabColors.positive.color, bg: TabColors.positive.bg },
+  rejected:    { labelKey: 'proposal.creator.statusRejected'    as const, icon: 'times-circle'  as const, color: TabColors.danger.color,   bg: TabColors.danger.bg },
+  expired:     { labelKey: 'proposal.creator.statusExpired'     as const, icon: 'hourglass-end' as const, color: TabColors.closed.color,   bg: TabColors.closed.bg },
 };
 
+// Colors match the business side's equivalent workspace stages
+// ((business)/(tabs)/proposals.tsx's workspaceBtnConfig) for the same
+// underlying `workStatus` value — NONE/IN_PROGRESS/SUBMITTED used to all
+// render as the identical indigo here, giving three different stages no
+// visual distinction from one another (business's tracker already
+// distinguishes every stage). APPROVED/COMPLETED deliberately stay green
+// rather than also matching business 1:1 — the creator side collapses
+// "awaiting release" vs "released" into one reassuring "you're done" color,
+// since unlike the business, the creator has no further action either way.
 const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof FontAwesome5.glyphMap; color: string; subKey: string }> = {
-  NONE:        { labelKey: 'proposal.creator.trackNoneLabel',        icon: 'location-arrow',       color: '#4F46E5', subKey: 'proposal.creator.trackNoneSub'        },
-  IN_PROGRESS: { labelKey: 'proposal.creator.trackInProgressLabel',  icon: 'brush',          color: '#4F46E5', subKey: 'proposal.creator.trackInProgressSub'  },
-  SUBMITTED:   { labelKey: 'proposal.creator.trackSubmittedLabel',   icon: 'hourglass',      color: '#4F46E5', subKey: 'proposal.creator.trackSubmittedSub'   },
+  NONE:        { labelKey: 'proposal.creator.trackNoneLabel',        icon: 'location-arrow',       color: '#6366F1', subKey: 'proposal.creator.trackNoneSub'        },
+  IN_PROGRESS: { labelKey: 'proposal.creator.trackInProgressLabel',  icon: 'brush',          color: '#7C3AED', subKey: 'proposal.creator.trackInProgressSub'  },
+  SUBMITTED:   { labelKey: 'proposal.creator.trackSubmittedLabel',   icon: 'hourglass',      color: '#D97706', subKey: 'proposal.creator.trackSubmittedSub'   },
   // Approval no longer releases payment automatically — an admin releases it
   // manually, so ProposalCard overrides this "sub" based on paymentStatus
   // (pending release, awaiting verification, or fully complete).
@@ -265,15 +275,16 @@ const PAGE_SIZE = 10;
 type TabState = { items: Proposal[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
 const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
 
-const STATUS_PARAM: Record<TabKey, 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | undefined> = {
-  all: undefined, pending: 'PENDING', accepted: 'ACCEPTED', rejected: 'REJECTED', expired: 'EXPIRED',
+const STATUS_PARAM: Record<TabKey, 'PENDING' | 'SHORTLISTED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | undefined> = {
+  all: undefined, pending: 'PENDING', shortlisted: 'SHORTLISTED', accepted: 'ACCEPTED', rejected: 'REJECTED', expired: 'EXPIRED',
 };
 
 export default function ProposalsScreen() {
   const { t } = useLanguage();
   const C = useAppColors();
+  const params = useLocalSearchParams<{ tab?: string }>();
   const [tabData, setTabData] = useState<Record<TabKey, TabState>>({
-    all: emptyTabState(), pending: emptyTabState(), accepted: emptyTabState(), rejected: emptyTabState(), expired: emptyTabState(),
+    all: emptyTabState(), pending: emptyTabState(), shortlisted: emptyTabState(), accepted: emptyTabState(), rejected: emptyTabState(), expired: emptyTabState(),
   });
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -326,6 +337,15 @@ export default function ProposalsScreen() {
     }
   }
 
+  // Lets other screens (e.g. Home's "My Campaigns" quick action) land directly
+  // on a specific tab via ?tab=accepted instead of always opening on "all".
+  useEffect(() => {
+    if (params.tab && params.tab in STATUS_PARAM && params.tab !== activeTab) {
+      selectTab(params.tab as TabKey);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.tab]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     void loadTab(activeTab, 1, true);
@@ -339,21 +359,23 @@ export default function ProposalsScreen() {
   }
 
   const tabs = [
-    { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'copy'       as const, color: TabColors.neutral.color,  count: tabData.all.total },
-    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'clock'             as const, color: TabColors.brand.color,  count: tabData.pending.total },
-    { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'check-circle' as const, color: TabColors.positive.color, count: tabData.accepted.total },
-    { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'times-circle'     as const, color: TabColors.danger.color,   count: tabData.rejected.total },
-    { key: 'expired',  label: t('proposal.creator.tabExpired'),  icon: 'hourglass-end'    as const, color: TabColors.closed.color,   count: tabData.expired.total },
+    { key: 'all',         label: t('proposal.creator.tabAll'),         icon: 'copy'          as const, color: TabColors.neutral.color,  count: tabData.all.total },
+    { key: 'pending',     label: t('proposal.creator.tabPending'),     icon: 'clock'          as const, color: TabColors.brand.color,    count: tabData.pending.total },
+    { key: 'shortlisted', label: t('proposal.creator.tabShortlisted'), icon: 'star'           as const, color: TabColors.info.color,     count: tabData.shortlisted.total },
+    { key: 'accepted',    label: t('proposal.creator.tabAccepted'),    icon: 'check-circle'   as const, color: TabColors.positive.color, count: tabData.accepted.total },
+    { key: 'rejected',    label: t('proposal.creator.tabRejected'),    icon: 'times-circle'   as const, color: TabColors.danger.color,   count: tabData.rejected.total },
+    { key: 'expired',     label: t('proposal.creator.tabExpired'),     icon: 'hourglass-end'  as const, color: TabColors.closed.color,   count: tabData.expired.total },
   ];
 
   const current = tabData[activeTab];
 
   const emptyMessages: Record<TabKey, { faIcon: string; title: string; sub: string }> = {
-    all:      { faIcon: 'inbox',          title: t('proposal.creator.emptyTitle'),        sub: t('proposal.creator.emptySub')        },
-    pending:  { faIcon: 'hourglass-half', title: t('proposal.creator.emptyPendingTitle'), sub: t('proposal.creator.emptyPendingSub') },
-    accepted: { faIcon: 'check-circle',   title: t('proposal.creator.emptyAcceptedTitle'),sub: t('proposal.creator.emptyAcceptedSub')},
-    rejected: { faIcon: 'times-circle',   title: t('proposal.creator.emptyRejectedTitle'),sub: t('proposal.creator.emptyRejectedSub')},
-    expired:  { faIcon: 'hourglass-end',  title: t('proposal.creator.emptyExpiredTitle'), sub: t('proposal.creator.emptyExpiredSub') },
+    all:         { faIcon: 'inbox',          title: t('proposal.creator.emptyTitle'),            sub: t('proposal.creator.emptySub')            },
+    pending:     { faIcon: 'hourglass-half', title: t('proposal.creator.emptyPendingTitle'),     sub: t('proposal.creator.emptyPendingSub')     },
+    shortlisted: { faIcon: 'star',           title: t('proposal.creator.emptyShortlistedTitle'), sub: t('proposal.creator.emptyShortlistedSub') },
+    accepted:    { faIcon: 'check-circle',   title: t('proposal.creator.emptyAcceptedTitle'),    sub: t('proposal.creator.emptyAcceptedSub')    },
+    rejected:    { faIcon: 'times-circle',   title: t('proposal.creator.emptyRejectedTitle'),    sub: t('proposal.creator.emptyRejectedSub')    },
+    expired:     { faIcon: 'hourglass-end',  title: t('proposal.creator.emptyExpiredTitle'),     sub: t('proposal.creator.emptyExpiredSub')     },
   };
   const emptyMsg = emptyMessages[activeTab];
 

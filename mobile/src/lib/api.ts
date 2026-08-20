@@ -118,6 +118,23 @@ export interface ApiCampaign {
   distanceKm?:   number;
   business:      { businessName: string; logoUrl: string | null };
   _count:        { applications: number };
+  // Present only for multi-role campaigns — undefined for the simple
+  // single-category case every campaign used before CampaignRequirement.
+  requirements?: ApiCampaignRequirement[];
+}
+
+export interface ApiCampaignRequirement {
+  id: string;
+  categoryId: string;
+  category: { id: string; name: string; key: string; icon: string; color: string };
+  quantity: number;
+  budgetType: 'FIXED' | 'RANGE' | 'NEGOTIABLE';
+  budgetFixed: number | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  deliverables: string | null;
+  deadline: string | null;
+  acceptedCount: number;
 }
 
 // ── Messaging shapes ───────────────────────────────────────────────────────────

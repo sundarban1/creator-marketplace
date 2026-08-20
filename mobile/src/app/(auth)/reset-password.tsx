@@ -1,13 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 
 function getPasswordError(pwd: string, t: TFn): string | undefined {
   if (pwd.length < 8) return t('auth.resetPassword.pwErrorMinLength');
@@ -129,30 +130,36 @@ export default function ResetPasswordScreen() {
           <View style={styles.form}>
             {/* New password */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: C.text }]}>{t('auth.resetPassword.newPasswordLabel')}</Text>
-              <PasswordInput
+              <TextInputWithLabel
+                label={t('auth.resetPassword.newPasswordLabel')}
+                leftIcon="lock"
+                secureToggle
+                secureTextEntry
                 value={password}
-                onChange={(v) => { setPassword(v); setError(''); }}
+                onChangeText={(v) => { setPassword(v); setError(''); }}
                 placeholder={t('auth.resetPassword.newPasswordPlaceholder')}
-                hasError={!!pwdError}
-                C={C}
+                error={pwdError}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
-              {pwdError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwdError}</Text> : null}
             </View>
 
             {/* Confirm password */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: C.text }]}>{t('auth.resetPassword.confirmPasswordLabel')}</Text>
-              <PasswordInput
+              <TextInputWithLabel
+                label={t('auth.resetPassword.confirmPasswordLabel')}
+                leftIcon="lock"
+                secureToggle
+                secureTextEntry
                 value={confirm}
-                onChange={setConfirm}
+                onChangeText={setConfirm}
                 onFocus={() => { confirmFocusedRef.current = true; }}
                 onBlur={() => { confirmFocusedRef.current = false; }}
                 placeholder={t('auth.resetPassword.confirmPasswordPlaceholder')}
-                hasError={!!confirmError}
-                C={C}
+                error={confirmError}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
-              {confirmError ? <Text style={[styles.fieldError, { color: C.error }]}>{confirmError}</Text> : null}
             </View>
           </View>
 
@@ -189,32 +196,6 @@ export default function ResetPasswordScreen() {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function PasswordInput({
-  value, onChange, placeholder, hasError, C, onFocus, onBlur,
-}: { value: string; onChange: (t: string) => void; placeholder: string; hasError: boolean; C: any; onFocus?: () => void; onBlur?: () => void }) {
-  const [show, setShow] = useState(false);
-  return (
-    <View style={[styles.pwdRow, { backgroundColor: C.surface, borderColor: hasError ? C.error : C.border }]}>
-      <TextInput
-        style={[styles.pwdInput, { color: C.text }]}
-        value={value}
-        onChangeText={onChange}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        placeholderTextColor={C.textSecondary}
-        secureTextEntry={!show}
-        autoCapitalize="none"
-        autoCorrect={false}
-        numberOfLines={1}
-      />
-      <Pressable onPress={() => setShow((s) => !s)} style={styles.eyeBtn}>
-        <FontAwesome5 name={show ? 'eye-slash' : 'eye'} solid size={18} color={C.textSecondary} />
-      </Pressable>
-    </View>
-  );
-}
-
 function RuleRow({ met, text }: { met: boolean; text: string }) {
   return (
     <View style={styles.ruleRow}>
@@ -243,11 +224,6 @@ const styles = StyleSheet.create({
   errorBannerText: { fontSize: 13, fontFamily: F.semibold },
   form: { gap: 16, marginBottom: 24 },
   fieldGroup: { gap: 6 },
-  label: { fontSize: 13, fontFamily: F.bold },
-  fieldError: { fontSize: 12, fontFamily: F.medium },
-  pwdRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 52 },
-  pwdInput: { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, textAlignVertical: 'center', letterSpacing: 0 },
-  eyeBtn: { padding: 6 },
   btn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 24 },
   btnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   btnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },

@@ -8,11 +8,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '@/components/BackButton';
+import { SearchInput } from '@/components/SearchInput';
 import { EntityCard } from '@/components/EntityCard';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -200,22 +200,15 @@ export default function SavedCreatorsScreen() {
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.header} accessibilityRole="header" accessibilityLabel={t('savedCreators.title')}>
           <BackButton />
-          <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-            <FontAwesome5 name="search" solid size={18} color={C.textSecondary} />
-            <TextInput
-              style={[s.searchInput, { color: C.text }]}
-              placeholder={t('explore.searchCreators')}
-              placeholderTextColor={C.textSecondary}
-              value={search}
-              onChangeText={setSearch}
-              returnKeyType="search"
-              autoCorrect={false}
-            />
-            {search.length > 0 && (
-              <Pressable onPress={() => setSearch('')} hitSlop={10}>
-                <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
-              </Pressable>
-            )}
+          <View style={[s.searchCard, { flex: 1 }]}>
+            <View style={{ flex: 1 }}>
+              <SearchInput
+                placeholder={t('explore.searchCreators')}
+                value={search}
+                onChangeText={setSearch}
+                autoCorrect={false}
+              />
+            </View>
             <Pressable
               style={[
                 s.filterBtn,
@@ -345,8 +338,7 @@ const s = StyleSheet.create({
   header:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
 
-  searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
+  searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },

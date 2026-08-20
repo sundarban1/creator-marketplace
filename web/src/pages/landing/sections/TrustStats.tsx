@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
-import { SECTION_IDS } from '../constants';
 import { useCountUp } from '../hooks/useCountUp';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
@@ -36,7 +35,7 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
   ];
 
   return (
-    <section id={SECTION_IDS.trust} className="relative overflow-hidden bg-paper py-28 text-ink sm:py-36 dark:bg-ink dark:text-white">
+    <section id="trust" className="relative overflow-hidden bg-paper py-24 text-ink dark:bg-ink dark:text-white">
       <SectionWave fill={theme === 'dark' ? '#141110' : '#FBF9F5'} />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-[8%] top-0 h-[360px] w-[360px] rounded-full bg-violet/[0.12] blur-[110px]" />
@@ -44,7 +43,7 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-6">
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-16 max-w-2xl">
+        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-14 max-w-2xl">
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/50">
             {d.trust.eyebrow}
           </motion.p>

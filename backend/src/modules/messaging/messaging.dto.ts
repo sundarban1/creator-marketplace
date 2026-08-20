@@ -3,7 +3,7 @@ export interface MessageDto {
   conversationId: string;
   senderId: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE' | 'SYSTEM';
   attachmentUrl: string | null;
   attachmentName: string | null;
   attachmentThumbnailUrl: string | null;
@@ -59,7 +59,7 @@ type RawMessage = {
   conversationId: string;
   senderId: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE' | 'SYSTEM';
   attachmentUrl: string | null;
   attachmentName: string | null;
   attachmentThumbnailUrl?: string | null;

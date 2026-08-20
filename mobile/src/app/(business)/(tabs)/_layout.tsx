@@ -22,12 +22,13 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 // `color` is omitted for `index` (Home) — it uses the theme's brinjal accent instead, resolved at render time.
 // The header's menu button (see index.tsx) opens the drawer; `notifications`
-// is this tab's real destination screen.
+// is still a real, routable screen (see the <Tabs.Screen name="notifications">
+// below), it's just no longer one of the bottom tab bar's icons.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home',          iconActive: 'home',          label: 'Home' },
-  campaigns:     { icon: 'briefcase',     iconActive: 'briefcase',     label: 'Events',    color: '#059669' },
+  campaigns:     { icon: 'briefcase',     iconActive: 'briefcase',     label: 'Events', color: '#059669' },
   messages:      { icon: 'comment',    iconActive: 'comment',    label: 'Messages',  color: '#2563EB' },
-  notifications: { icon: 'bell', iconActive: 'bell', label: 'Notifications' },
+  profile:       { icon: 'user', iconActive: 'user', label: 'Profile' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
@@ -36,12 +37,10 @@ function CustomTabBar({
   state,
   navigation,
   chatBadge,
-  notifBadge,
 }: {
   state: any;
   navigation: any;
   chatBadge: number;
-  notifBadge: number;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -66,11 +65,11 @@ function CustomTabBar({
     campaigns:     t('business.tab.events'),
     messages:      t('business.tab.messages'),
     notifications: t('business.tab.notifications'),
+    profile:       t('business.tab.profile'),
   };
 
   const badgeMap: Record<string, number> = {
     messages:      chatBadge,
-    notifications: notifBadge,
   };
 
   const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
@@ -261,7 +260,7 @@ export default function BusinessTabsLayout() {
   const { t } = useLanguage();
   const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { chatBadgeCount, badgeCount } = useNotificationBadge();
+  const { chatBadgeCount } = useNotificationBadge();
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
@@ -274,7 +273,6 @@ export default function BusinessTabsLayout() {
                 state={props.state}
                 navigation={props.navigation}
                 chatBadge={chatBadgeCount}
-                notifBadge={badgeCount}
               />
             )}
           >
@@ -295,9 +293,11 @@ export default function BusinessTabsLayout() {
               })}
               options={{ title: t('business.tab.messages') }}
             />
-            <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
+            {/* notifications.tsx stays reachable via the header bell, no longer a bottom-tab destination */}
+            <Tabs.Screen name="notifications" options={{ href: null }} />
             {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
             <Tabs.Screen name="create" options={{ href: null }} />
+            <Tabs.Screen name="profile" options={{ title: t('business.tab.profile') }} />
           </Tabs>
         </MaxWidthContainer>
 

@@ -1,22 +1,34 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { authService } from '@/services/auth';
 import { creatorService } from '@/services/creator';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
+import { StepIndicator } from '@/components/StepIndicator';
+import { GroupedCategoryPicker } from '@/components/GroupedCategoryPicker';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { BackButton } from '@/components/BackButton';
 
-const TOTAL_STEPS = 2;
-const GENDER_KEYS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'] as const;
+// Three required steps, matching what's actually needed before a provider can
+// use Kolab (how they operate, profile [name, username, email, location],
+// services) — everything else (bio, photo, portfolio, social platforms,
+// pricing, verification docs, ...) is collected progressively later via
+// Settings/edit-profile/portfolio screens, not here.
+const TOTAL_STEPS = 3;
+
+const PROVIDER_TYPE_OPTIONS = [
+  { key: 'INDIVIDUAL' as const, icon: 'user'     as const, titleKey: 'onboarding.providerTypeIndividualTitle', descKey: 'onboarding.providerTypeIndividualDesc' },
+  { key: 'TEAM'       as const, icon: 'users'    as const, titleKey: 'onboarding.providerTypeTeamTitle',       descKey: 'onboarding.providerTypeTeamDesc' },
+  { key: 'AGENCY'     as const, icon: 'building' as const, titleKey: 'onboarding.providerTypeAgencyTitle',     descKey: 'onboarding.providerTypeAgencyDesc' },
+];
 
 function generateCreatorBio(categories: string[]): string {
   if (categories.length === 0) return '';
@@ -74,7 +86,13 @@ export default function OnboardingScreen() {
   // isEmailVerified: false until they add a real one — collect it here.
   const needsEmail = !user?.isEmailVerified;
 
-  // Step 1 — profile basics
+  // Step 1 — how they provide their services (Individual / Team / Agency)
+  const [providerType, setProviderType] = useState<'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null>(null);
+  const [providerTypeSubmitted, setProviderTypeSubmitted] = useState(false);
+  const [providerTypeLoading,   setProviderTypeLoading]   = useState(false);
+  const [providerTypeError,     setProviderTypeError]     = useState('');
+
+  // Step 2 — profile (name, username, email, location)
   const [fullName,  setFullName]  = useState('');
   const [email,     setEmail]     = useState('');
   const [emailFocused, setEmailFocused] = useState(false);
@@ -83,11 +101,6 @@ export default function OnboardingScreen() {
   const emailCheckDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emailCheckRequestId = useRef(0);
   const [username,  setUsername]  = useState('');
-  const [gender,    setGender]    = useState('');
-  const [location, setLocation] = useState('');
-  const [locationLat, setLocationLat] = useState<number | null>(null);
-  const [locationLng, setLocationLng] = useState<number | null>(null);
-  const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const usernameSuggestDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usernameSuggestRequestId = useRef(0);
@@ -96,8 +109,8 @@ export default function OnboardingScreen() {
   const [step1Error,     setStep1Error]     = useState('');
   const step1ScrollRef = useRef<ScrollView>(null);
   // Username and (for phone-signups) Email are the last text fields in the
-  // step-1 form — Gender below uses chips and Location a modal, neither opens
-  // the keyboard.
+  // profile form (step 2) — the Location picker below them doesn't open the
+  // keyboard.
   const lastTextFieldFocusedRef = useRef(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -128,12 +141,22 @@ export default function OnboardingScreen() {
     };
   }, []);
 
-  // Step 2 — categories
+  // Location — part of Step 2's profile form, below Email.
+  const [location, setLocation] = useState('');
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+
+  // Step 3 — services (categories); also the final step, so its Continue
+  // button completes onboarding.
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [step2Submitted, setStep2Submitted] = useState(false);
   const [step2Loading,   setStep2Loading]   = useState(false);
   const [step2Error,     setStep2Error]     = useState('');
-  const { categories } = useCategories('CREATOR');
+  // strict:true excludes BOTH-scope content-niche rows (e.g. "Hotels",
+  // "Resorts", "Restaurants") that have no group/parent — wrong to mix into
+  // this provider-type picker. See service-form.tsx for the same exclusion.
+  const { categories } = useCategories('CREATOR', true);
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -162,7 +185,7 @@ export default function OnboardingScreen() {
     : !/^[a-zA-Z0-9_]+$/.test(username.trim()) ? t('onboarding.usernamePattern')
     : undefined
     : undefined;
-  const genderError   = step1Submitted && !gender ? t('onboarding.genderRequired') : undefined;
+
   const locationError = step1Submitted && !location.trim() ? t('onboarding.locationRequired') : undefined;
 
   const step1Valid =
@@ -170,7 +193,6 @@ export default function OnboardingScreen() {
     (!needsEmail || (email.trim().length > 0 && EMAIL_REGEX.test(email.trim()))) &&
     username.trim().length >= 3 &&
     /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
-    !!gender &&
     location.trim().length > 0;
 
   function handleFullNameChange(v: string) {
@@ -220,6 +242,21 @@ export default function OnboardingScreen() {
     setStep1Error('');
   }
 
+  async function handleProviderTypeContinue() {
+    setProviderTypeSubmitted(true);
+    if (!providerType) return;
+    setProviderTypeLoading(true);
+    setProviderTypeError('');
+    try {
+      await profileService.updateCreatorProfile({ providerType });
+      setStep(2);
+    } catch (e: any) {
+      setProviderTypeError(e.message ?? 'Failed to save. Please try again.');
+    } finally {
+      setProviderTypeLoading(false);
+    }
+  }
+
   async function handleStep1Continue() {
     setStep1Submitted(true);
     if (!step1Valid) return;
@@ -230,13 +267,12 @@ export default function OnboardingScreen() {
         fullName: fullName.trim(),
         email:    needsEmail ? email.trim() : undefined,
         username: username.trim(),
-        gender:   gender || undefined,
         location: location.trim(),
         locationLat: locationLat ?? undefined,
         locationLng: locationLng ?? undefined,
       });
       updateUser({ name: fullName.trim(), ...(needsEmail ? { email: email.trim() } : {}) });
-      setStep(2);
+      setStep(3);
     } catch (e: any) {
       setStep1Error(e.message ?? 'Failed to save. Please try again.');
     } finally {
@@ -244,7 +280,9 @@ export default function OnboardingScreen() {
     }
   }
 
-  async function handleStep2Finish() {
+  // Final step — categories submit also completes onboarding (Location moved
+  // into Step 2 above, so there's no separate step after this one).
+  async function handleStep2Continue() {
     setStep2Submitted(true);
     if (selectedCategories.length === 0) return;
     setStep2Loading(true);
@@ -287,6 +325,7 @@ export default function OnboardingScreen() {
   }
 
   const STEP_CONFIG = [
+    { title: t('onboarding.providerTypeTitle'), subtitle: t('onboarding.providerTypeSubtitle') },
     { title: t('onboarding.step1Title'), subtitle: t('onboarding.step1Subtitle') },
     { title: t('onboarding.step2Title'), subtitle: t('onboarding.step2Subtitle') },
   ];
@@ -303,30 +342,72 @@ export default function OnboardingScreen() {
       <KeyboardAvoidingView style={styles.flex}>
       <MaxWidthContainer>
 
-      {/* ── Top bar ── */}
-      <View style={styles.topBar}>
-        {step > 1 ? (
-          <BackButton onPress={() => setStep((s) => s - 1)} />
-        ) : (
-          <View style={styles.backBtnSpacer} />
-        )}
-        <View style={styles.progressRow}>
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <View key={i} style={[styles.progressSegment, { backgroundColor: i + 1 <= step ? C.brinjal1 : C.border }]} />
-          ))}
-        </View>
-        <View style={{ width: 36 }} />
-      </View>
+      <StepIndicator
+        step={step} total={TOTAL_STEPS}
+        stepLabel={t('onboarding.stepIndicator', { n: step, total: TOTAL_STEPS })}
+        title={title} subtitle={subtitle}
+        onBack={() => setStep((s) => s - 1)}
+      />
 
-      {/* ── Step header ── */}
-      <View style={styles.stepHeader}>
-        <Text style={[styles.stepNum, { color: C.brinjal1 }]}>{t('onboarding.stepIndicator', { n: step, total: TOTAL_STEPS })}</Text>
-        <Text style={[styles.stepTitle, { color: C.text }]}>{title}</Text>
-        <Text style={[styles.stepSubtitle, { color: C.textSecondary }]}>{subtitle}</Text>
-      </View>
-
-        {/* ────────── Step 1: Profile basics ────────── */}
+        {/* ────────── Step 1: How do you provide your services? (Individual/Team/Agency) ────────── */}
         {step === 1 && (
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+            {providerTypeSubmitted && !providerType && (
+              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{t('onboarding.providerTypeError')}</Text>
+              </View>
+            )}
+
+            {providerTypeError ? (
+              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{providerTypeError}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.choiceCards}>
+              {PROVIDER_TYPE_OPTIONS.map((opt) => {
+                const active = providerType === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => { setProviderType(opt.key); setProviderTypeError(''); }}
+                    style={[styles.choiceCard, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}>
+                    <View style={[styles.choiceIcon, { backgroundColor: active ? C.brinjal1 : C.primaryLight }]}>
+                      <FontAwesome5 name={opt.icon} size={18} color={active ? '#fff' : C.brinjal1} solid />
+                    </View>
+                    <View style={styles.choiceText}>
+                      <Text style={[styles.choiceTitle, { color: C.text }]}>{t(opt.titleKey)}</Text>
+                      <Text style={[styles.choiceDesc, { color: C.textSecondary }]}>{t(opt.descKey)}</Text>
+                    </View>
+                    <FontAwesome5 name={active ? 'check-circle' : 'circle'} solid={active} size={20} color={active ? C.brinjal1 : C.border} />
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Pressable
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 },
+                (!providerType || providerTypeLoading) && styles.primaryBtnDisabled]}
+              onPress={handleProviderTypeContinue}
+              disabled={providerTypeLoading}>
+              {providerTypeLoading ? (
+                <View style={styles.loadingRow}>
+                  <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
+                  <Text style={styles.primaryBtnText}>{t('onboarding.saving')}</Text>
+                </View>
+              ) : (
+                <Text style={styles.primaryBtnText}>{t('onboarding.continueBtn')}</Text>
+              )}
+            </Pressable>
+
+          </ScrollView>
+        )}
+
+        {/* ────────── Step 2: Profile (name, username, email, location) ────────── */}
+        {step === 2 && (
           <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={[styles.scrollContent, keyboardVisible && { paddingBottom: 24 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step1Error ? (
@@ -338,42 +419,35 @@ export default function OnboardingScreen() {
             <View style={styles.form}>
 
               {/* Full Name */}
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.fullNameLabel')} <Text style={{ color: C.error }}>*</Text></Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: C.surface, borderColor: fullNameError ? C.error : C.border, color: C.text }]}
-                  value={fullName}
-                  onChangeText={handleFullNameChange}
-                  onFocus={() => { lastTextFieldFocusedRef.current = false; }}
-                  placeholder={t('onboarding.fullNamePlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  autoCapitalize="words"
-                />
-                {fullNameError && <Text style={[styles.fieldError, { color: C.error }]}>{fullNameError}</Text>}
-              </View>
+              <TextInputWithLabel
+                label={`${t('onboarding.fullNameLabel')} *`}
+                leftIcon="user"
+                value={fullName}
+                onChangeText={handleFullNameChange}
+                onFocus={() => { lastTextFieldFocusedRef.current = false; }}
+                placeholder={t('onboarding.fullNamePlaceholder')}
+                autoCapitalize="words"
+                error={fullNameError}
+              />
 
               {/* Username */}
               <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.usernameLabel')} <Text style={{ color: C.error }}>*</Text></Text>
-                <View style={[styles.usernameRow, { backgroundColor: C.surface, borderColor: usernameError ? C.error : C.border }]}>
-                  <Text style={[styles.atSign, { color: C.brinjal1 }]}>@</Text>
-                  <TextInput
-                    style={[styles.usernameInput, { color: C.text }]}
-                    value={username}
-                    onChangeText={(v) => {
-                      setStep1Error('');
-                      setUsername(v.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
-                    }}
-                    onFocus={() => { lastTextFieldFocusedRef.current = !needsEmail; }}
-                    placeholder={t('onboarding.usernamePlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <Text style={[styles.usernameLimit, { color: C.textSecondary }]}>{t('onboarding.usernameLimit', { n: username.length })}</Text>
-                </View>
-                {usernameError && <Text style={[styles.fieldError, { color: C.error }]}>{usernameError}</Text>}
-                {!usernameError && <Text style={[styles.fieldHint, { color: C.textSecondary }]}>{t('onboarding.usernameHint')}</Text>}
+                <TextInputWithLabel
+                  label={`${t('onboarding.usernameLabel')} *`}
+                  leftIcon="at"
+                  value={username}
+                  onChangeText={(v) => {
+                    setStep1Error('');
+                    setUsername(v.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
+                  }}
+                  onFocus={() => { lastTextFieldFocusedRef.current = !needsEmail; }}
+                  placeholder={t('onboarding.usernamePlaceholder')}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  error={usernameError}
+                  hint={t('onboarding.usernameHint')}
+                  rightSlot={<Text style={[styles.usernameLimit, { color: C.textSecondary }]}>{t('onboarding.usernameLimit', { n: username.length })}</Text>}
+                />
                 {usernameSuggestions.length > 0 && (
                   <View>
                     <Text style={[styles.suggestionLabel, { color: C.textSecondary }]}>{t('onboarding.usernameSuggestions')}</Text>
@@ -394,18 +468,19 @@ export default function OnboardingScreen() {
               {/* Email — only for phone-signup accounts, which start without a real one */}
               {needsEmail && (
                 <View style={styles.formGroup}>
-                  <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.emailLabel')} <Text style={{ color: C.error }}>*</Text></Text>
-                  <TextInput
-                    style={[styles.formInput, { backgroundColor: C.surface, borderColor: emailError ? C.error : C.border, color: C.text }]}
+                  <TextInputWithLabel
+                    label={`${t('onboarding.emailLabel')} *`}
+                    leftIcon="envelope"
                     value={email}
                     onChangeText={handleEmailChange}
                     onFocus={() => { lastTextFieldFocusedRef.current = true; setEmailFocused(true); }}
                     onBlur={() => { setTimeout(() => setEmailFocused(false), 150); }}
                     placeholder={t('onboarding.emailPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="email-address"
+                    error={emailError}
+                    hint={emailChecking ? t('onboarding.emailChecking') : emailAvailable === true ? t('onboarding.emailAvailable') : undefined}
                   />
                   {emailFocused && (() => {
                     const atIndex = email.indexOf('@');
@@ -430,46 +505,16 @@ export default function OnboardingScreen() {
                       </View>
                     );
                   })()}
-                  {emailError ? (
-                    <Text style={[styles.fieldError, { color: C.error }]}>{emailError}</Text>
-                  ) : emailChecking ? (
-                    <Text style={[styles.fieldHint, { color: C.textSecondary }]}>{t('onboarding.emailChecking')}</Text>
-                  ) : emailAvailable === true ? (
-                    <Text style={[styles.fieldHint, { color: C.active }]}>{t('onboarding.emailAvailable')}</Text>
-                  ) : null}
                 </View>
               )}
 
-              {/* Gender */}
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.genderLabel')} <Text style={{ color: C.error }}>*</Text></Text>
-                <View style={styles.genderRow}>
-                  {GENDER_KEYS.map((g) => {
-                    const selected = gender === g;
-                    return (
-                      <Pressable
-                        key={g}
-                        style={[styles.genderChip, { borderColor: selected ? C.brinjal1 : genderError ? C.error : C.border, backgroundColor: selected ? C.primaryLight : C.surface }]}
-                        onPress={() => { setGender(selected ? '' : g); setStep1Error(''); }}>
-                        <Text style={[styles.genderChipText, { color: selected ? C.brinjal1 : C.text, fontFamily: selected ? F.bold : F.regular }]}>
-                          {g === 'Male' ? t('onboarding.genderMale')
-                            : g === 'Female' ? t('onboarding.genderFemale')
-                            : g === 'Non-binary' ? t('onboarding.genderNonBinary')
-                            : t('onboarding.genderPreferNot')}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                {genderError && <Text style={[styles.fieldError, { color: C.error }]}>{genderError}</Text>}
-              </View>
-
-              {/* Location — kept last */}
+              {/* Location */}
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
                 <Pressable
                   style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
                   onPress={() => setLocationModalOpen(true)}>
+                  <FontAwesome5 name="map-marker-alt" size={16} color={C.textSecondary} />
                   <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
                     {location || t('onboarding.locationPlaceholder')}
                   </Text>
@@ -498,15 +543,8 @@ export default function OnboardingScreen() {
           </ScrollView>
         )}
 
-        <LocationSearchModal
-          visible={locationModalOpen}
-          initialValue={location}
-          onSelect={handleLocationSelect}
-          onClose={() => setLocationModalOpen(false)}
-        />
-
-        {/* ────────── Step 2: Categories ────────── */}
-        {step === 2 && (
+        {/* ────────── Step 3: Services (categories) — final step ────────── */}
+        {step === 3 && (
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
             <View style={styles.selectionBadgeRow}>
@@ -534,34 +572,14 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            <View style={styles.categoryGrid}>
-              {categories.map((cat) => {
-                const isSelected = selectedCategories.includes(cat.name);
-                const isDisabled = !isSelected && selectedCategories.length >= 5;
-                return (
-                  <Pressable
-                    key={cat.id}
-                    style={[
-                      styles.categoryChip,
-                      { borderColor: C.border, backgroundColor: C.surface },
-                      isSelected && { borderColor: C.brinjal1, backgroundColor: C.primaryLight },
-                      isDisabled && styles.categoryChipDisabled,
-                    ]}
-                    onPress={() => { if (!isDisabled) toggleCategory(cat.name); }}>
-                    <FontAwesome5 name={cat.icon} size={16} color={isSelected ? cat.color : C.textSecondary} />
-                    <Text style={[styles.categoryLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
-                      {cat.name}
-                    </Text>
-                    {isSelected && <FontAwesome5 name="check-circle" solid size={16} color={C.brinjal1} />}
-                  </Pressable>
-                );
-              })}
+            <View style={{ marginBottom: 28 }}>
+              <GroupedCategoryPicker categories={categories} selected={selectedCategories} onToggle={toggleCategory} max={5} />
             </View>
 
             <Pressable
               style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active },
                 (selectedCategories.length === 0 || step2Loading) && styles.primaryBtnDisabled]}
-              onPress={handleStep2Finish}
+              onPress={handleStep2Continue}
               disabled={step2Loading}>
               {step2Loading ? (
                 <View style={styles.loadingRow}>
@@ -576,6 +594,13 @@ export default function OnboardingScreen() {
           </ScrollView>
         )}
 
+        <LocationSearchModal
+          visible={locationModalOpen}
+          initialValue={location}
+          onSelect={handleLocationSelect}
+          onClose={() => setLocationModalOpen(false)}
+        />
+
       </MaxWidthContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -585,39 +610,32 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, gap: 12 },
-  backBtnSpacer: { width: 40, height: 40 },
-  progressRow: { flex: 1, flexDirection: 'row', gap: 6 },
-  progressSegment: { flex: 1, height: 4, borderRadius: 2 },
-  stepHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 4 },
-  stepNum: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4, fontFamily: F.bold },
-  stepTitle: { fontSize: 24, fontFamily: F.bold },
-  stepSubtitle: { fontSize: 14, lineHeight: 20, marginTop: 4, fontFamily: F.regular },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 48 },
   errorBanner: { borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
   errorBannerText: { fontSize: 13, fontFamily: F.semibold },
+
+  // Step 1's Individual/Team/Agency picker — a row-card per option (icon,
+  // title + description, trailing check) rather than the large square cards
+  // on /account-type, since there are three of these instead of two.
+  choiceCards: { gap: 12, marginBottom: 28 },
+  choiceCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14 },
+  choiceIcon:  { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  choiceText:  { flex: 1, gap: 2 },
+  choiceTitle: { fontSize: 15, fontFamily: F.bold },
+  choiceDesc:  { fontSize: 12.5, fontFamily: F.regular, lineHeight: 17 },
 
   form: { gap: 16, marginBottom: 28 },
   formGroup: { gap: 6 },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   formLabel: { fontSize: 13, fontFamily: F.bold },
   optionalTag: { fontSize: 12, fontFamily: F.medium },
-  formInput: { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
   fieldError: { fontSize: 12, fontFamily: F.medium },
-  fieldHint: { fontSize: 11, fontFamily: F.regular },
 
   locationBtn: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, gap: 8 },
   locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: F.regular },
   locationArrow: { fontSize: 20, color: '#9CA3AF' },
 
-  usernameRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14 },
-  atSign: { fontSize: 16, marginRight: 2, fontFamily: F.bold },
-  usernameInput: { flex: 1, fontSize: 15, paddingVertical: 13, fontFamily: F.regular },
   usernameLimit: { fontSize: 11, fontFamily: F.regular },
-
-  genderRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  genderChip: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 8 },
-  genderChipText: { fontSize: 13 },
 
   suggestionLabel: { fontSize: 11, fontFamily: F.medium, marginTop: 8, marginBottom: 6 },
   suggestionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -632,10 +650,6 @@ const styles = StyleSheet.create({
   selectionBadge: { alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 5 },
   selectionText: { fontSize: 13, fontFamily: F.bold },
   maxReachedText: { fontSize: 12, fontFamily: F.semibold },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 },
-  categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.sm, borderWidth: 1.5 },
-  categoryChipDisabled: { opacity: 0.35 },
-  categoryLabel: { fontSize: 13, fontFamily: F.medium },
 
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 16, height: 16, borderRadius: RADIUS.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
