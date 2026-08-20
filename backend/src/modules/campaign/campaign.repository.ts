@@ -43,6 +43,8 @@ export class CampaignRepository {
     aiSuggestedCategories?: string[];
     aiSuggestedPlatforms?: string[];
     aiNeedsInputFields?: string[];
+    completionType?: 'SERVICE' | 'DELIVERABLE';
+    completionReason?: string;
     requirements?: {
       categoryId: string;
       quantity: number;
@@ -54,6 +56,8 @@ export class CampaignRepository {
       description?: string;
       format?: string[];
       deadline?: Date;
+      completionType?: 'SERVICE' | 'DELIVERABLE';
+      completionReason?: string;
     }[];
   }) {
     const { requirements, ...campaignData } = data;
@@ -431,6 +435,27 @@ export class CampaignRepository {
     return { campaigns, total };
   }
 
+  // How long an application still counts as "recent" when ranking the creator
+  // feed's Trending tab. Three days is long enough that a quiet weekday
+  // doesn't erase a campaign that was hot yesterday, short enough that the
+  // tab reflects interest now rather than all-time popularity.
+  static readonly TRENDING_WINDOW_HOURS = 72;
+
+  // Applications-per-campaign inside the trending window — the velocity half
+  // of the trending score (`_count.applications` on the campaign itself is the
+  // all-time total, which can't distinguish "50 applications last week" from
+  // "50 applications this morning"). One grouped query for the whole page, so
+  // this costs a single extra round-trip regardless of page size.
+  async countRecentApplications(campaignIds: string[], since: Date): Promise<Map<string, number>> {
+    if (campaignIds.length === 0) return new Map();
+    const rows = await prisma.application.groupBy({
+      by: ['campaignId'],
+      where: { campaignId: { in: campaignIds }, createdAt: { gte: since } },
+      _count: { _all: true },
+    });
+    return new Map(rows.map((r) => [r.campaignId, r._count._all]));
+  }
+
   async update(id: string, data: Partial<{
     title: string;
     description: string;
@@ -463,6 +488,8 @@ export class CampaignRepository {
     contentGuidelines: string[];
     targetAudience: string[];
     hashtags: string[];
+    completionType: 'SERVICE' | 'DELIVERABLE' | null;
+    completionReason: string | null;
   }>) {
     return prisma.campaign.update({
       where: { id },
@@ -677,10 +704,18 @@ export class CampaignRepository {
     });
   }
 
-  async updateApplicationStatus(id: string, status: 'ACCEPTED' | 'REJECTED' | 'SHORTLISTED' | 'PENDING') {
+  // `workStatus` is written in the same update only for free events (see
+  // CampaignService.updateApplicationStatus) — accepting a creator into an
+  // OPEN_EVENT is terminal, so the application lands at COMPLETED rather than
+  // entering the start → submit → approve work flow a paid campaign follows.
+  async updateApplicationStatus(
+    id: string,
+    status: 'ACCEPTED' | 'REJECTED' | 'SHORTLISTED' | 'PENDING',
+    opts?: { workStatus?: WorkStatus },
+  ) {
     return prisma.application.update({
       where: { id },
-      data: { status },
+      data: { status, ...(opts?.workStatus ? { workStatus: opts.workStatus } : {}) },
     });
   }
 
@@ -788,6 +823,17 @@ export class CampaignRepository {
     });
   }
 
+  // Free events (OPEN_EVENT) only — see CampaignService.approveWork. There's
+  // no payment to release, so the business's approval is itself the terminal
+  // state; a paid campaign instead reaches COMPLETED via the admin's
+  // releasePayment below.
+  async completeWork(appId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { workStatus: WorkStatus.COMPLETED },
+    });
+  }
+
   async requestRevision(appId: string, note: string) {
     const [updated] = await prisma.$transaction([
       prisma.application.update({
@@ -796,6 +842,26 @@ export class CampaignRepository {
       }),
       prisma.revisionNote.create({
         data: { applicationId: appId, note },
+      }),
+    ]);
+    return updated;
+  }
+
+  // §40 dispute flow — unlike requestRevision, this does NOT reopen the job
+  // (workStatus stays out of the normal flow entirely at DISPUTED) since a
+  // SERVICE job has nothing left for the provider to "redo" the way a
+  // deliverable resubmission would. Reuses RevisionNote for the reason text
+  // so it surfaces in the same feedback history the mobile app already reads.
+  async reportIssue(appId: string, reason: string) {
+    const [updated] = await prisma.$transaction([
+      prisma.application.update({
+        where: { id: appId },
+        // Reuses revisionRequestedAt as a generic "last note flagged at"
+        // timestamp rather than adding a dedicated disputedAt column.
+        data: { workStatus: WorkStatus.DISPUTED, workNote: reason, revisionRequestedAt: new Date() },
+      }),
+      prisma.revisionNote.create({
+        data: { applicationId: appId, note: reason },
       }),
     ]);
     return updated;

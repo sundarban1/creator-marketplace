@@ -45,3 +45,13 @@ export function logActivity(input: LogActivityInput): void {
       logger.error({ err, action: input.action }, 'Failed to write activity log');
     });
 }
+
+// Newest first, per the Activity Timeline UI convention — a job/application
+// detail page's Activity tab, not the admin activity feed (which has its own
+// unscoped listing in admin.repository.ts).
+export function getActivityForEntity(entityType: EntityTypeValue, entityId: string) {
+  return prisma.activityLog.findMany({
+    where: { entityType, entityId },
+    orderBy: { createdAt: 'desc' },
+  });
+}

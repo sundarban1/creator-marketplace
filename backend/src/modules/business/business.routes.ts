@@ -34,6 +34,7 @@ router.post('/creators/:id/save',      savedCtrl.toggle.bind(savedCtrl));
 
 // Campaign invitations
 router.post('/campaigns/:campaignId/invite', savedCtrl.inviteCreators.bind(savedCtrl));
+router.get('/campaigns/:campaignId/invitations', savedCtrl.listCampaignInvitations.bind(savedCtrl));
 
 // Profile
 router.get('/profile', ctrl.getProfile.bind(ctrl));

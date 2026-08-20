@@ -22,8 +22,14 @@ export type SuggestDescriptionInput = z.infer<typeof suggestDescriptionSchema>;
 // Field keys the AI is allowed to flag as "not confident" — kept in sync with
 // FormData in mobile create-campaign.tsx so the chip renderer can key off them.
 export const NEEDS_INPUT_FIELDS = [
-  'location', 'budgetMin', 'budgetMax', 'creatorsNeeded', 'deadline', 'platform', 'category',
+  'location', 'budgetMin', 'budgetMax', 'creatorsNeeded', 'deadline', 'platform', 'category', 'completionType',
 ] as const;
+
+// Whether a role is completed by performing/attending in person (no file
+// upload) or by submitting a digital output for review — see CompletionType
+// in schema.prisma. AI-detected; low-confidence guesses get flagged via
+// `needsInput` above rather than a separate confidence field.
+export const COMPLETION_TYPES = ['SERVICE', 'DELIVERABLE'] as const;
 
 // Kept in sync with GOAL_OPTIONS in mobile create-campaign.tsx — the Goal chip picker
 // only ever renders these exact labels, so the AI must pick one of them verbatim.
@@ -98,7 +104,7 @@ export const EXCHANGE_DESCRIPTIONS: Record<(typeof EXCHANGE_OPTIONS)[number], st
 };
 
 // Field keys the AI is allowed to flag as "not confident" for OPEN_EVENT drafts.
-export const EVENT_NEEDS_INPUT_FIELDS = ['location', 'capacity', 'platform', 'category'] as const;
+export const EVENT_NEEDS_INPUT_FIELDS = ['location', 'capacity', 'platform', 'category', 'completionType'] as const;
 
 export const aiEventDraftSchema = z.object({
   title: z.string().min(3).max(120),
@@ -112,6 +118,8 @@ export const aiEventDraftSchema = z.object({
   expectedContent: z.string().max(300).default(''),
   capacity: z.number().int().min(1).max(500),
   location: z.string().max(120).nullable().default(null),
+  completionType: z.enum(COMPLETION_TYPES),
+  completionReason: z.string().min(3).max(300),
   needsInput: z.array(z.enum(EVENT_NEEDS_INPUT_FIELDS)).max(2).default([]),
 });
 export type AiEventDraft = z.infer<typeof aiEventDraftSchema>;
@@ -140,6 +148,8 @@ const aiRequirementSchema = z.object({
   // role EXCEPT Content Creator (which uses `deliverables` instead). Empty
   // string for Content Creator roles.
   description: z.string().max(300).default(''),
+  completionType: z.enum(COMPLETION_TYPES),
+  completionReason: z.string().min(3).max(300),
 }).refine((r) => r.budgetType !== 'FIXED' || (r.budgetFixed != null && r.budgetFixed > 0), {
   message: 'budgetFixed is required when budgetType is FIXED',
   path: ['budgetFixed'],
@@ -173,6 +183,8 @@ export const aiCampaignDraftSchema = z.object({
   sampleCaption: z.string().min(5).max(600),
   approvalRequirements: z.string().min(3).max(400),
   location: z.string().max(120).nullable().default(null),
+  completionType: z.enum(COMPLETION_TYPES),
+  completionReason: z.string().min(3).max(300),
   needsInput: z.array(z.enum(NEEDS_INPUT_FIELDS)).max(2).default([]),
   // Empty for the common single-role case — only populated when the brief
   // clearly names multiple distinct provider types/counts. See CampaignRequirement.

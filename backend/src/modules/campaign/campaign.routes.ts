@@ -402,11 +402,24 @@ router.delete(
   ctrl.removeDeliverableFile.bind(ctrl)
 );
 
+router.get(
+  '/applications/:appId/activity',
+  authenticate,
+  ctrl.getApplicationActivity.bind(ctrl)
+);
+
 router.put(
   '/applications/:appId/approve',
   authenticate,
   authorize('BUSINESS'),
   ctrl.approveWork.bind(ctrl)
+);
+
+router.put(
+  '/applications/:appId/report-issue',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.reportIssue.bind(ctrl)
 );
 
 router.put(

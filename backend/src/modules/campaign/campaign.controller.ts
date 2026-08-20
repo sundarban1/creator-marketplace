@@ -270,6 +270,16 @@ export class CampaignController {
     }
   }
 
+  async reportIssue(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { reason } = req.body as { reason?: string };
+      const result = await campaignService.reportIssue(req.params.appId, req.user!.id, reason ?? '');
+      success(res, result, 'Issue reported');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async requestRevision(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { note } = req.body as { note?: string };
@@ -330,12 +340,14 @@ export class CampaignController {
   async uploadDeliverableFile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) throw new AppError('No file provided', 400);
-      // 'close' fires on a premature client disconnect too (not just normal
-      // completion) — res.writableEnded is what tells the two apart: still
-      // false here means the connection dropped before we ever responded,
-      // i.e. the creator cancelled mid-upload.
+      // Must listen on res (not req) for 'close': by this point multer has
+      // already fully consumed the request body, so req's readable stream
+      // closes on its own almost immediately regardless of the socket —
+      // listening there fires a false positive on every single upload. res
+      // stays tied to the actual outgoing connection, so its 'close' only
+      // fires early (before writableEnded) on a genuine client disconnect.
       let clientDisconnected = false;
-      req.on('close', () => { if (!res.writableEnded) clientDisconnected = true; });
+      res.on('close', () => { if (!res.writableEnded) clientDisconnected = true; });
       const result = await campaignService.uploadDeliverableFile(
         req.params.appId, req.user!.id, req.file, () => clientDisconnected,
       );
@@ -364,6 +376,15 @@ export class CampaignController {
       const result = await campaignService.payForApplication(req.params.appId, req.user!.id);
       res.json({ success: true, data: result });
     } catch (e) { next(e); }
+  }
+
+  async getApplicationActivity(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.getApplicationActivity(req.params.appId, req.user!.id);
+      success(res, result);
+    } catch (err) {
+      next(err);
+    }
   }
 
   async startWork(req: Request, res: Response, next: NextFunction): Promise<void> {

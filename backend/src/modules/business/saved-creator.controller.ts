@@ -118,4 +118,57 @@ export class SavedCreatorController {
       res.json({ success: true, data: { invited: creatorIds.length } });
     } catch (err) { next(err); }
   }
+
+  // Everyone this business has invited to one campaign, with how each creator
+  // responded — powers the "Invited" tab of a free event's proposals screen
+  // (campaign-proposals.tsx), which lists invitees separately from the
+  // creators who applied on their own.
+  async listCampaignInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const business = await businessRepo.findByUserId(req.user!.id);
+      if (!business) throw new AppError('Business profile not found', 404);
+
+      const { campaignId } = req.params;
+      const campaign = await prisma.campaign.findUnique({
+        where: { id: campaignId },
+        select: { id: true, businessId: true },
+      });
+      if (!campaign || campaign.businessId !== business.id) {
+        throw new AppError('Campaign not found', 404);
+      }
+
+      const invitations = await prisma.campaignInvitation.findMany({
+        where: { campaignId },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id:          true,
+          status:      true,
+          message:     true,
+          createdAt:   true,
+          respondedAt: true,
+          creator: {
+            select: { id: true, userId: true, fullName: true, avatarUrl: true, location: true },
+          },
+        },
+      });
+
+      res.json({
+        success: true,
+        data: invitations.map((i) => ({
+          id:          i.id,
+          status:      i.status,
+          message:     i.message,
+          createdAt:   i.createdAt,
+          respondedAt: i.respondedAt,
+          creator: {
+            id:        i.creator.id,
+            userId:    i.creator.userId,
+            fullName:  i.creator.fullName ?? 'Creator',
+            avatarUrl: i.creator.avatarUrl,
+            location:  i.creator.location,
+          },
+        })),
+      });
+    } catch (err) { next(err); }
+  }
 }

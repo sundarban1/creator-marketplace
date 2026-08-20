@@ -85,6 +85,8 @@ export interface CampaignDto {
   aiPrompt: string | null;
   aiSuggestedCategories: string[];
   aiSuggestedPlatforms: string[];
+  completionType: string | null;
+  completionReason: string | null;
   createdAt: string;
   business?: {
     businessName: string | null;
@@ -93,6 +95,11 @@ export interface CampaignDto {
     description?: string | null;
   };
   _count?: { applications: number };
+  // How many of those applications arrived in the last TRENDING_WINDOW_HOURS —
+  // the velocity signal the creator feed's Trending tab ranks on. Absent
+  // (not 0) when the endpoint doesn't compute it, so a client can tell
+  // "no recent interest" from "not measured".
+  recentProposals?: number;
   distanceKm?: number;
   // Present only for multi-role campaigns — undefined (not []) for the
   // simple single-category case, so clients can branch on `campaign.requirements?.length`
@@ -113,6 +120,8 @@ export interface CampaignRequirementDto {
   description: string | null;
   format: string[];
   deadline: string | null;
+  completionType: string | null;
+  completionReason: string | null;
   // Live-computed (count of ACCEPTED applications for this requirement),
   // never stored — see the schema comment on CampaignRequirement.
   acceptedCount: number;
@@ -216,9 +225,15 @@ type RawCampaign = {
   aiPrompt: string | null;
   aiSuggestedCategories: string[];
   aiSuggestedPlatforms: string[];
+  completionType: string | null;
+  completionReason: string | null;
   createdAt: Date;
   business?: { businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
   _count?: { applications: number };
+  // Applications received inside the trending window (see
+  // CampaignRepository.countRecentApplications) — attached by the list
+  // endpoints only, so it stays absent on single-campaign reads.
+  recentApplications?: number;
   distanceKm?: number;
   requirements?: {
     id: string;
@@ -233,6 +248,8 @@ type RawCampaign = {
     description: string | null;
     format: string[];
     deadline: Date | null;
+    completionType: string | null;
+    completionReason: string | null;
     _count?: { applications: number };
   }[];
 };
@@ -282,10 +299,13 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     aiPrompt:              c.aiPrompt,
     aiSuggestedCategories: c.aiSuggestedCategories ?? [],
     aiSuggestedPlatforms:  c.aiSuggestedPlatforms ?? [],
+    completionType:   c.completionType,
+    completionReason: c.completionReason,
     createdAt:      c.createdAt.toISOString(),
   };
   if (c.business != null) dto.business = c.business;
   if (c._count  != null) dto._count   = c._count;
+  if (c.recentApplications != null) dto.recentProposals = c.recentApplications;
   if (c.distanceKm != null) dto.distanceKm = Math.round(c.distanceKm * 10) / 10;
   if (c.requirements?.length) {
     dto.requirements = c.requirements.map((r) => ({
@@ -301,6 +321,8 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
       description:   r.description,
       format:        r.format ?? [],
       deadline:      r.deadline ? r.deadline.toISOString() : null,
+      completionType:   r.completionType,
+      completionReason: r.completionReason,
       acceptedCount: r._count?.applications ?? 0,
     }));
   }
@@ -396,4 +418,26 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
   }
   if (a.creator != null) dto.creator = a.creator;
   return dto;
+}
+
+// Job/Application Activity tab (§ Activity Timeline) — system-generated
+// events only, kept separate from chat. `action` is the dot.snake_case
+// taxonomy string from ActivityAction; clients format the human-readable
+// sentence from it (same approach as the admin activity feed's generic
+// formatAction()) so it stays translatable rather than baking English
+// sentences into the row at write time.
+export interface ActivityLogDto {
+  id: string;
+  action: string;
+  metadata: unknown;
+  createdAt: string;
+}
+
+export function toActivityLogDto(a: { id: string; action: string; metadata: Prisma.JsonValue; createdAt: Date }): ActivityLogDto {
+  return {
+    id:        a.id,
+    action:    a.action,
+    metadata:  a.metadata,
+    createdAt: a.createdAt.toISOString(),
+  };
 }

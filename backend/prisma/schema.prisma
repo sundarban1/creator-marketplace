@@ -534,6 +534,11 @@ model Campaign {
   aiSuggestedCategories String[]             @default([])
   aiSuggestedPlatforms  String[]             @default([])
   aiNeedsInputFields    String[]             @default([])
+  // AI-determined (or business-corrected) completion type for the simple
+  // single-category case — null until classified. Multi-requirement
+  // campaigns use each CampaignRequirement's own completionType instead.
+  completionType        CompletionType?
+  completionReason      String?
   applications          Application[]
   business              BusinessProfile      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversations         Conversation[]
@@ -657,6 +662,11 @@ model CampaignRequirement {
   // Category/Provider "Other" text fields elsewhere in this schema.
   format       String[]  @default([])
   deadline     DateTime?
+  // Per-role completion type — a multi-role campaign can freely mix e.g. a
+  // DJ (SERVICE) and a Photographer (DELIVERABLE) requirement. Null until
+  // classified, same convention as Campaign.completionType.
+  completionType   CompletionType?
+  completionReason String?
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
 
@@ -1268,6 +1278,16 @@ enum ApplicationStatus {
 enum CampaignType {
   PAID_CAMPAIGN
   OPEN_EVENT
+}
+
+// Whether a role is completed by performing/attending in person (no file
+// upload expected) or by submitting a digital output for review. Drives
+// which job-completion UI/flow an Application follows. Nullable — existing
+// campaigns predating this field, and any campaign the AI/business hasn't
+// classified yet, simply don't branch on it.
+enum CompletionType {
+  SERVICE
+  DELIVERABLE
 }
 
 enum LocationType {

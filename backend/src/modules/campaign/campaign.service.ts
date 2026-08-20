@@ -1,8 +1,8 @@
-import { CampaignStatus, ApplicationStatus, CampaignType } from '@prisma/client';
+import { CampaignStatus, ApplicationStatus, CampaignType, WorkStatus } from '@prisma/client';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
-import { toCampaignDto, toApplicationDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
+import { toCampaignDto, toApplicationDto, toActivityLogDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
 import { generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, uploadImage as uploadImageToCloudinary, uploadRawFile, deleteImage, deleteRawFile } from '../../utils/cloudinary';
 import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
@@ -16,7 +16,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { emitToRole } from '../../socket';
 import { logger } from '../../config/logger';
-import { logActivity } from '../logging/activity.service';
+import { logActivity, getActivityForEntity } from '../logging/activity.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
@@ -71,7 +71,7 @@ function deliverableFileCloudinaryId(publicId: string): string {
 // else (title, description, deadline, status, etc.) can still be edited.
 const FIELDS_LOCKED_AFTER_PROPOSALS = [
   'budgetMin', 'budgetMax', 'platforms', 'deliverables',
-  'location', 'locationLat', 'locationLng', 'locationType', 'isFeatured',
+  'location', 'locationLat', 'locationLng', 'locationType', 'isFeatured', 'completionType',
 ] as const;
 
 export const MASTER_CATEGORIES: { label: string }[] = [
@@ -360,6 +360,16 @@ export class CampaignService {
     return campaign;
   }
 
+  // Attaches the trending-window application counts the creator feed's
+  // Trending tab ranks on (see CampaignRepository.countRecentApplications).
+  // Only the list endpoints do this — a single-campaign read has no ranking
+  // to do and shouldn't pay for the extra query.
+  private async withRecentApplicationCounts<T extends { id: string }>(campaigns: T[]): Promise<(T & { recentApplications: number })[]> {
+    const since = new Date(Date.now() - CampaignRepository.TRENDING_WINDOW_HOURS * 60 * 60 * 1000);
+    const counts = await this.repo.countRecentApplications(campaigns.map((c) => c.id), since);
+    return campaigns.map((c) => ({ ...c, recentApplications: counts.get(c.id) ?? 0 }));
+  }
+
   async list(query: CampaignListQuery, lang = 'en') {
     const { page = 1, limit = 10, ...filters } = query;
     const validatedLimit = Math.min(limit, 50);
@@ -370,7 +380,7 @@ export class CampaignService {
       limit: validatedLimit,
     });
 
-    const dtos = raw.map(toCampaignDto);
+    const dtos = (await this.withRecentApplicationCounts(raw)).map(toCampaignDto);
     const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
     return { campaigns, total, page, limit: validatedLimit };
   }
@@ -393,7 +403,7 @@ export class CampaignService {
       platform: query.platform,
     });
 
-    const dtos = raw.map(toCampaignDto);
+    const dtos = (await this.withRecentApplicationCounts(raw)).map(toCampaignDto);
     const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
     return { campaigns, total, page, limit };
   }
@@ -844,6 +854,10 @@ export class CampaignService {
     const rawUpdated = await this.repo.updateApplicationStatus(appId, nextStatus);
     const updated = toApplicationDto(rawUpdated);
 
+    if (nextStatus === 'SHORTLISTED') {
+      logActivity({ userId, action: ActivityAction.APPLICATION_SHORTLISTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId, creatorId: application.creatorId } });
+    }
+
     if (nextStatus === 'SHORTLISTED' && application.creator?.userId) {
       notificationService.create({
         userId:  application.creator.userId,
@@ -876,11 +890,24 @@ export class CampaignService {
     if (!application) throw new AppError('Application not found', 404);
     if (application.campaignId !== campaignId) throw new AppError('Application does not belong to this campaign', 400);
 
-    const rawUpdated = await this.repo.updateApplicationStatus(appId, status);
+    // A free event (OPEN_EVENT) ends at the acceptance itself: there are no
+    // deliverables to submit and no work stage to start, so approving a
+    // creator lands the application straight at the terminal COMPLETED
+    // workStatus in the same write. Paid campaigns keep the full
+    // start -> submit -> approve flow and stay at NONE here.
+    const isFreeEvent = (campaign as any).campaignType === 'OPEN_EVENT';
+
+    const rawUpdated = await this.repo.updateApplicationStatus(
+      appId,
+      status,
+      status === 'ACCEPTED' && isFreeEvent ? { workStatus: WorkStatus.COMPLETED } : undefined,
+    );
     const updated    = toApplicationDto(rawUpdated);
 
     if (status === 'ACCEPTED') {
       logActivity({ userId, action: ActivityAction.APPLICATION_HIRED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId, creatorId: application.creatorId } });
+    } else {
+      logActivity({ userId, action: ActivityAction.APPLICATION_REJECTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId, creatorId: application.creatorId } });
     }
 
     // Business's e-signature (see campaign-proposals.tsx, which gates the accept
@@ -980,7 +1007,6 @@ export class CampaignService {
       }
     }
 
-    const isFreeEvent = (campaign as any).campaignType === 'OPEN_EVENT';
     const creatorUserId = application.creator?.userId as string | undefined;
 
     if (creatorUserId) {
@@ -1177,6 +1203,24 @@ export class CampaignService {
     return { success: true };
   }
 
+  // Job/Application Activity tab — either participant (the applying creator
+  // or the campaign's owning business) can read it, never a third party.
+  async getApplicationActivity(appId: string, userId: string) {
+    const app = await this.repo.findApplicationById(appId);
+    if (!app) throw new AppError('Application not found', 404);
+
+    const [creator, business] = await Promise.all([
+      this.creatorRepo.findByUserId(userId),
+      this.businessRepo.findByUserId(userId),
+    ]);
+    const isCreator = creator != null && app.creatorId === creator.id;
+    const isBusiness = business != null && app.campaign.business.id === business.id;
+    if (!isCreator && !isBusiness) throw new AppError('Not authorized', 403);
+
+    const logs = await getActivityForEntity(EntityType.APPLICATION, appId);
+    return logs.map(toActivityLogDto);
+  }
+
   async startWork(appId: string, userId: string) {
     const creator = await this.creatorRepo.findByUserId(userId);
     if (!creator) throw new AppError('Creator profile not found', 404);
@@ -1185,10 +1229,17 @@ export class CampaignService {
     if (!app) throw new AppError('Application not found', 404);
     if (app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
     if (app.status !== 'ACCEPTED') throw new AppError('Application is not accepted', 400);
-    if ((app as any).paymentStatus !== 'PAID') throw new AppError('Payment not yet secured', 400);
+    // A free event (OPEN_EVENT) has no work stage at all: being accepted is
+    // itself the end of the flow (the application is already COMPLETED, see
+    // updateApplicationStatus), so there is nothing to start.
+    const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
+    if (isFreeEvent) throw new AppError('Free events have no work stage — being accepted is final', 400);
+    if (app.paymentStatus !== 'PAID') throw new AppError('Payment not yet secured', 400);
 
     const updated = await this.repo.startWork(appId);
     analyticsService.incrCampaignStarted(userId);
+
+    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_STARTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
 
     // Notify + email business
     const businessUserId = app.campaign.business.userId;
@@ -1223,6 +1274,10 @@ export class CampaignService {
     if (!app) throw new AppError('Application not found', 404);
     if (app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
     if (app.status !== 'ACCEPTED') throw new AppError('Application is not accepted', 400);
+    // Free events never ask for a deliverable — see startWork above.
+    if (app.campaign.campaignType === 'OPEN_EVENT') {
+      throw new AppError('Free events have no deliverables to submit', 400);
+    }
 
     const updated = await this.repo.submitWork(appId, data);
 
@@ -1261,7 +1316,15 @@ export class CampaignService {
     if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
 
-    const updated = await this.repo.approveWork(appId);
+    // A free event has no escrow to release, so the business's approval is
+    // itself the end of the job — park it at COMPLETED rather than APPROVED,
+    // which would otherwise wait forever on a payment release that never
+    // comes (and keep the campaign permanently unclosable, see
+    // countUnresolvedApplications).
+    const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
+    const updated = isFreeEvent
+      ? await this.repo.completeWork(appId)
+      : await this.repo.approveWork(appId);
 
     logActivity({ userId, action: ActivityAction.APPLICATION_WORK_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
 
@@ -1273,25 +1336,32 @@ export class CampaignService {
       userId:  creatorUserId,
       type:    'work_approved',
       title:   'Your project has been approved!',
-      body:    `${business.businessName} approved your work for "${app.campaign.title}". Payment will be released by admin now on your wallet.`,
+      body:    isFreeEvent
+        ? `${business.businessName} confirmed your work for "${app.campaign.title}". This collaboration is complete — thanks for taking part!`
+        : `${business.businessName} approved your work for "${app.campaign.title}". Payment will be released by admin now on your wallet.`,
       refId:   app.campaignId,
-      refType: 'campaign',
+      refType: isFreeEvent ? 'event' : 'campaign',
     }).catch(() => {});
 
-    notificationService.createForAdmins({
-      type:    'payment_release_pending',
-      title:   'Payment release needed',
-      body:    `${business.businessName} approved ${app.creator.fullName ?? 'a creator'}'s work for "${app.campaign.title}" — release the payment when ready.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
+    // Both of these are purely about the money — a free event has none, so
+    // admins get no release task and the creator gets no "payment released
+    // NPR 0" email.
+    if (!isFreeEvent) {
+      notificationService.createForAdmins({
+        type:    'payment_release_pending',
+        title:   'Payment release needed',
+        body:    `${business.businessName} approved ${app.creator.fullName ?? 'a creator'}'s work for "${app.campaign.title}" — release the payment when ready.`,
+        refId:   app.campaignId,
+        refType: 'campaign',
+      }).catch(() => {});
 
-    this.repo.getUserEmails([creatorUserId]).then((emailMap) => {
-      const email = emailMap.get(creatorUserId);
-      if (email) {
-        sendWorkApprovedEmail(email, app.creator.fullName ?? 'Creator', app.campaign.title, app.proposedRate).catch(() => {});
-      }
-    }).catch(() => {});
+      this.repo.getUserEmails([creatorUserId]).then((emailMap) => {
+        const email = emailMap.get(creatorUserId);
+        if (email) {
+          sendWorkApprovedEmail(email, app.creator.fullName ?? 'Creator', app.campaign.title, app.proposedRate).catch(() => {});
+        }
+      }).catch(() => {});
+    }
 
     return toApplicationDto(updated);
   }
@@ -1308,6 +1378,8 @@ export class CampaignService {
     const existingVideos = await this.repo.getDeliverableVideos(appId);
 
     const updated = await this.repo.requestRevision(appId, note);
+
+    logActivity({ userId, action: ActivityAction.APPLICATION_REVISION_REQUESTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
 
     // Send the revision note as a chat message, followed by a copy of each
     // currently-submitted video (see sendRevisionRequestMessage) — awaited
@@ -1352,6 +1424,41 @@ export class CampaignService {
     return toApplicationDto(updated);
   }
 
+  // §40 dispute flow — business-only, and only once the provider has marked
+  // their side done (workStatus SUBMITTED covers both a SERVICE job's "mark
+  // completed" and a DELIVERABLE job's actual file submission). Distinct
+  // from requestRevision: this flags DISPUTED rather than reopening the job,
+  // since a SERVICE job has no further work for the provider to redo.
+  async reportIssue(appId: string, userId: string, reason: string) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError('Business profile not found', 404);
+
+    const app = await this.repo.findApplicationById(appId);
+    if (!app) throw new AppError('Application not found', 404);
+    if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
+    if (app.workStatus !== 'SUBMITTED') throw new AppError('Nothing to report an issue on yet', 400);
+
+    const updated = await this.repo.reportIssue(appId, reason);
+
+    logActivity({ userId, action: ActivityAction.APPLICATION_DISPUTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+
+    messagingService
+      .sendSystemMessage(app.creatorId, business.id, app.campaignId, userId, 'BUSINESS', `Issue reported: ${reason}`)
+      .catch(() => {});
+
+    const creatorUserId = app.creator.userId;
+    notificationService.create({
+      userId:  creatorUserId,
+      type:    'issue_reported',
+      title:   'An issue was reported',
+      body:    `${business.businessName} reported an issue with "${app.campaign.title}". Check the details.`,
+      refId:   app.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
+    return toApplicationDto(updated);
+  }
+
   // ── Deliverable videos ───────────────────────────────────────────────────────
   // Mirrors messaging.service.ts's requestVideoUploadSignature/completeVideoAttachment
   // pair almost exactly (see that file for the "server verifies via Cloudinary's
@@ -1368,6 +1475,12 @@ export class CampaignService {
     const app = await this.repo.findApplicationById(appId);
     if (!app) throw new AppError('Application not found', 404);
     if (app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
+    // Free events have no deliverable stage at all (see submitWork) — checked
+    // before the workStatus rule below so the error says why, rather than the
+    // misleading "already approved" that COMPLETED would otherwise produce.
+    if (app.campaign.campaignType === 'OPEN_EVENT') {
+      throw new AppError('Free events have no deliverables to upload', 400);
+    }
     // Ownership alone (what submitWork checks) isn't enough here — workStatus
     // can advance to APPROVED/COMPLETED while `status` stays 'ACCEPTED' for the
     // application's entire lifetime, so a plain status check would let a creator

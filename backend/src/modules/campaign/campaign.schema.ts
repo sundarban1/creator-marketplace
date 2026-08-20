@@ -14,6 +14,8 @@ export const campaignRequirementSchema = z.object({
   description:  z.string().max(1000).optional(),
   format:       z.array(z.string().max(20)).max(10).default([]),
   deadline:     z.string().datetime().optional(),
+  completionType:   z.enum(['SERVICE', 'DELIVERABLE']).optional(),
+  completionReason: z.string().max(300).optional(),
 }).refine((r) => r.budgetType !== 'FIXED' || (r.budgetFixed != null && r.budgetFixed > 0), {
   message: 'budgetFixed is required and must be > 0 when budgetType is FIXED',
   path: ['budgetFixed'],
@@ -60,6 +62,8 @@ export const createCampaignSchema = z.object({
   aiSuggestedCategories: z.array(z.string()).default([]),
   aiSuggestedPlatforms:  z.array(z.string()).default([]),
   aiNeedsInputFields:    z.array(z.string()).default([]),
+  completionType:   z.enum(['SERVICE', 'DELIVERABLE']).optional(),
+  completionReason: z.string().max(300).optional(),
   // Omit for the simple single-category flow every existing campaign uses.
   // When present, requirements are the source of truth for "what providers
   // are needed" — category/budgetMin/budgetMax/creatorsNeeded above still
@@ -103,6 +107,8 @@ export const updateCampaignSchema = z.object({
   venue:        z.string().optional(),
   benefits:     z.array(z.string()).optional(),
   eventStatus:  z.enum(['OPEN', 'FULL', 'CLOSED']).optional(),
+  completionType:   z.enum(['SERVICE', 'DELIVERABLE']).optional(),
+  completionReason: z.string().max(300).optional(),
 });
 
 export const campaignListQuerySchema = z.object({

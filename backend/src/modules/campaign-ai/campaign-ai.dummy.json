@@ -75,7 +75,9 @@
             "MENTION_IN_CAPTION": 0,
             "TAG_BUSINESS": 0,
             "GOOGLE_REVIEW": 0
-          }
+          },
+          "completionType": "DELIVERABLE",
+          "completionReason": "The creator is expected to create and publish the agreed social media content."
         },
         {
           "category": "Photographer",
@@ -92,9 +94,13 @@
             "MENTION_IN_CAPTION": 0,
             "TAG_BUSINESS": 0,
             "GOOGLE_REVIEW": 0
-          }
+          },
+          "completionType": "DELIVERABLE",
+          "completionReason": "Edited photos will be submitted for your review after the shoot."
         }
-      ]
+      ],
+      "completionType": "DELIVERABLE",
+      "completionReason": "The creators are expected to create and publish the agreed social media content."
     },
     {
       "keywords": [
@@ -155,7 +161,9 @@
       "needsInput": [
         "location"
       ],
-      "goal": "More Customers"
+      "goal": "More Customers",
+      "completionType": "DELIVERABLE",
+      "completionReason": "The creators are expected to create and publish the agreed social media content."
     },
     {
       "keywords": [
@@ -215,7 +223,9 @@
       "needsInput": [
         "location"
       ],
-      "goal": "Sales"
+      "goal": "Sales",
+      "completionType": "DELIVERABLE",
+      "completionReason": "The creators are expected to create and publish the agreed social media content."
     },
     {
       "keywords": [
@@ -275,7 +285,9 @@
       "needsInput": [
         "location"
       ],
-      "goal": "More Customers"
+      "goal": "More Customers",
+      "completionType": "DELIVERABLE",
+      "completionReason": "The creators are expected to create and publish the agreed social media content."
     },
     {
       "keywords": [
@@ -334,7 +346,9 @@
       "needsInput": [
         "location"
       ],
-      "goal": "Sales"
+      "goal": "Sales",
+      "completionType": "DELIVERABLE",
+      "completionReason": "The creators are expected to create and publish the agreed social media content."
     },
     {
       "keywords": [],
@@ -384,7 +398,9 @@
         "location",
         "budgetMin"
       ],
-      "goal": "Brand Awareness"
+      "goal": "Brand Awareness",
+      "completionType": "DELIVERABLE",
+      "completionReason": "The creators are expected to create and publish the agreed social media content."
     }
   ],
   "eventTemplates": [
@@ -424,7 +440,9 @@
       "location": null,
       "needsInput": [
         "location"
-      ]
+      ],
+      "completionType": "DELIVERABLE",
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
     },
     {
       "keywords": [
@@ -460,7 +478,9 @@
       "location": null,
       "needsInput": [
         "location"
-      ]
+      ],
+      "completionType": "DELIVERABLE",
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
     },
     {
       "keywords": [
@@ -495,7 +515,9 @@
       "location": null,
       "needsInput": [
         "location"
-      ]
+      ],
+      "completionType": "DELIVERABLE",
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
     },
     {
       "keywords": [
@@ -530,7 +552,9 @@
       "location": null,
       "needsInput": [
         "location"
-      ]
+      ],
+      "completionType": "DELIVERABLE",
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
     },
     {
       "keywords": [],
@@ -554,7 +578,9 @@
       "location": null,
       "needsInput": [
         "location"
-      ]
+      ],
+      "completionType": "DELIVERABLE",
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
     }
   ],
   "descriptionTemplates": [

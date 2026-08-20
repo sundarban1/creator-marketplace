@@ -20,6 +20,11 @@ export const ActivityAction = {
   CAMPAIGN_EXPIRED:           'campaign.expired',
   APPLICATION_EXPIRED:        'application.expired',
   CAMPAIGN_DELETED_BY_ADMIN:  'campaign.deleted_by_admin',
+  APPLICATION_REJECTED:            'application.rejected',
+  APPLICATION_SHORTLISTED:         'application.shortlisted',
+  APPLICATION_WORK_STARTED:        'application.work_started',
+  APPLICATION_REVISION_REQUESTED:  'application.revision_requested',
+  APPLICATION_DISPUTED:            'application.disputed',
 } as const;
 
 export const AuditAction = {
