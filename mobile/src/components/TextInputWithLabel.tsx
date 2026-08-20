@@ -20,6 +20,7 @@ type Props = TextInputProps & {
   secureToggle?: boolean;
   leftIcon?: keyof typeof FontAwesome5.glyphMap;
   rightSlot?: ReactNode;
+  clearable?: boolean;
 };
 
 // The one labeled text-input shape for the app — filled/tonal field with a circular
@@ -27,13 +28,17 @@ type Props = TextInputProps & {
 // screen. Covers simple fields, textareas (via `multiline`), and password fields
 // (via `secureToggle`); search boxes use the separate, unlabeled `SearchInput`.
 export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInputWithLabel({
-  label, error, hint, secureToggle, secureTextEntry, leftIcon, rightSlot, style, multiline, ...rest
+  label, error, hint, secureToggle, secureTextEntry, leftIcon, rightSlot, style, multiline,
+  clearable = true, ...rest
 }, ref) {
   const C = useAppColors();
   const [hidden,  setHidden]  = useState(secureTextEntry ?? false);
   const [focused, setFocused] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;
   const isDisabled = rest.editable === false;
+  const showClear = clearable && !secureToggle && !multiline && !isDisabled && focused && !!rest.value;
+  const charCount = typeof rest.value === 'string' ? rest.value.length : 0;
+  const atLimit = typeof rest.maxLength === 'number' && charCount >= rest.maxLength;
 
   const onFocus: NonNullable<TextInputProps['onFocus']> = (e) => {
     setFocused(true);
@@ -92,21 +97,49 @@ export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInpu
           accessibilityState={{ disabled: isDisabled }}
           {...rest}
         />
+        {showClear && (
+          <Pressable
+            onPress={() => rest.onChangeText?.('')}
+            hitSlop={10}
+            style={styles.clearBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Clear text"
+          >
+            <FontAwesome5 name="times-circle" solid size={16} color={C.textSecondary} />
+          </Pressable>
+        )}
         {secureToggle && (
-          <Pressable onPress={() => setHidden((v) => !v)} hitSlop={10} style={styles.eyeBtn}>
+          <Pressable
+            onPress={() => setHidden((v) => !v)}
+            hitSlop={10}
+            style={styles.eyeBtn}
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
+          >
             <FontAwesome5 name={hidden ? 'eye' : 'eye-slash'} size={18} color={focused ? C.brinjal1 : C.textSecondary} />
           </Pressable>
         )}
       </Animated.View>
 
-      {error ? (
+      {(error || hint || typeof rest.maxLength === 'number') && (
         <View style={styles.feedbackRow}>
-          <FontAwesome5 name="exclamation-circle" solid size={12} color={C.error} />
-          <Text style={[styles.errorText, { color: C.error, fontFamily: F.medium }]}>{error}</Text>
+          <View style={styles.feedbackLeft}>
+            {error ? (
+              <>
+                <FontAwesome5 name="exclamation-circle" solid size={12} color={C.error} />
+                <Text style={[styles.errorText, { color: C.error, fontFamily: F.medium }]}>{error}</Text>
+              </>
+            ) : hint ? (
+              <Text style={[styles.hintText, { color: C.textSecondary, fontFamily: F.regular }]}>{hint}</Text>
+            ) : null}
+          </View>
+          {typeof rest.maxLength === 'number' && (
+            <Text style={[styles.charCount, { color: atLimit ? C.error : C.textSecondary, fontFamily: F.regular }]}>
+              {charCount}/{rest.maxLength}
+            </Text>
+          )}
         </View>
-      ) : hint ? (
-        <Text style={[styles.hintText, { color: C.textSecondary, fontFamily: F.regular }]}>{hint}</Text>
-      ) : null}
+      )}
     </View>
   );
 });
@@ -122,7 +155,10 @@ const styles = StyleSheet.create({
   inputNoIcon:  { paddingLeft: 14 },
   inputMultiline: { minHeight: 90, paddingTop: 12, textAlignVertical: 'top' },
   eyeBtn:       { paddingHorizontal: 12 },
-  feedbackRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  errorText:    { fontSize: 11 },
+  clearBtn:     { paddingHorizontal: 8 },
+  feedbackRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  feedbackLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
+  errorText:    { fontSize: 11, flexShrink: 1 },
   hintText:     { fontSize: 11, paddingHorizontal: 2 },
+  charCount:    { fontSize: 11, flexShrink: 0 },
 });

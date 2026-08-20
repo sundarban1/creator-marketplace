@@ -11,11 +11,10 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:essentials": "tsx prisma/seed-essentials.ts",
     "db:seed:admin": "tsx prisma/seed-admin.ts",
-    "db:seed:categories": "tsx prisma/seed-categories.ts",
     "db:seed:platforms": "tsx prisma/seed-platforms.ts",
     "db:seed:success-stories": "tsx prisma/seed-success-stories.ts",
-    "db:seed:contracts": "tsx prisma/seed-contracts.ts",
     "db:seed:bulk": "tsx prisma/bulk-seed.ts"
   },
   "dependencies": {

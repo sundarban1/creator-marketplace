@@ -4,7 +4,7 @@ import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
-import { AppStoreBadges } from '../components/AppStoreBadges';
+import { AppStoreBadges, getDeviceStoreUrl } from '../components/AppStoreBadges';
 import { ComingSoonBadge } from '../components/ComingSoonBadge';
 import { SectionWave } from '../components/SectionWave';
 import { useComingSoon } from '../hooks/useComingSoon';
@@ -111,7 +111,13 @@ export function FinalCTA() {
 
           <motion.div variants={fadeUp} className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <button
-              onClick={() => scrollTo('#final-cta-download')}
+              onClick={() => {
+                if (comingSoon) {
+                  scrollTo('#final-cta-download');
+                  return;
+                }
+                window.open(getDeviceStoreUrl(), '_blank', 'noopener,noreferrer');
+              }}
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
             >
               {d.finalCta.ctaGetStarted}

@@ -48,8 +48,12 @@ services:
       # ── Database — wired to the Render Postgres instance above. After this
       # database's first deploy (migrations run automatically via
       # docker-entrypoint.sh), open the service's Shell tab on the Render
-      # dashboard and run `npm run db:seed` once to populate categories,
-      # platforms, the admin account, and help/FAQ/legal content. ─────────────
+      # dashboard and run:
+      #   npm run db:seed:essentials   (categories, legal pages, FAQs, contract template)
+      #   npm run db:seed:admin        (SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD env vars)
+      #   npm run db:seed:platforms    (platform catalog)
+      # `npm run db:seed` also exists but additionally creates fake demo
+      # users/campaigns/success-stories — local/staging use only, not prod. ──
       - key: DATABASE_URL
         fromDatabase:
           name: kolab

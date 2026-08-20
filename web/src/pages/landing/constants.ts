@@ -21,16 +21,14 @@ export const SECTION_IDS = {
   opportunities: 'opportunities',
   categories: 'categories',
   stories: 'stories',
-  howItWorks: 'how-it-works',
   security: 'security',
   finalCta: 'get-started',
   contact: 'contact',
 } as const;
 
-export const NAV_LINKS: { key: 'discover' | 'services' | 'opportunities' | 'events' | 'howItWorks'; id: string }[] = [
+export const NAV_LINKS: { key: 'discover' | 'services' | 'opportunities' | 'events'; id: string }[] = [
   { key: 'discover', id: SECTION_IDS.possibilities },
   { key: 'services', id: SECTION_IDS.categories },
   { key: 'opportunities', id: SECTION_IDS.opportunities },
   { key: 'events', id: SECTION_IDS.opportunities },
-  { key: 'howItWorks', id: SECTION_IDS.howItWorks },
 ];

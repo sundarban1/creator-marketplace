@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 
-export async function seedContent(prisma: PrismaClient) {
+// Demo-only help-center copy — not part of the production essentials seed
+// (prisma/seed-essentials.ts), which only ships FAQs + Legal via seedLegalContent
+// below plus categories/contracts. Called from the full local seed (seed.ts).
+export async function seedHelpArticles(prisma: PrismaClient) {
   // ── Help Center (creator-facing) ───────────────────────────────────────────
   const helpArticles = [
     { id: 'seed-help-1', question: 'How do campaigns work?', answer: 'Businesses in Nepal post campaigns describing their goals, budget, and requirements. Creators browse and apply by submitting a proposal with a cover letter and proposed rate. If the business accepts, you deliver the content by the agreed deadline and get paid.', category: 'Campaigns', order: 1 },
@@ -21,7 +24,11 @@ export async function seedContent(prisma: PrismaClient) {
     ),
   );
   console.log(`  ✅ Help articles: ${helpArticles.length} seeded`);
+}
 
+// Real content, safe to run against production — used by both the full local
+// seed (seed.ts) and the production essentials seed (prisma/seed-essentials.ts).
+export async function seedLegalContent(prisma: PrismaClient) {
   // ── FAQs (creator-facing) ────────────────────────────────────────────────────
   const faqArticles = [
     { id: 'seed-faq-1', question: 'What is Kolab?', answer: 'Kolab is Nepal’s marketplace connecting content creators with local businesses for paid collaborations, sponsored content, and brand campaigns — from momo shops in Kathmandu to hotels in Pokhara.', category: 'General', order: 1 },

@@ -16,7 +16,6 @@ import { SEO } from '../../lib/seo/SEO';
 import { organizationSchema, websiteSchema } from '../../lib/seo/schema';
 import { Hero } from './sections/Hero';
 import { Possibilities } from './sections/Possibilities';
-import { CampaignJourney } from './sections/CampaignJourney';
 import { Audience } from './sections/Audience';
 import { AIDiscovery } from './sections/AIDiscovery';
 import { OpportunityFeed } from './sections/OpportunityFeed';
@@ -99,7 +98,6 @@ function LandingPageInner() {
       <TrustStats stats={stats} />
       <Categories stats={stats} />
       <Stories stories={successStories} />
-      <CampaignJourney />
       <Security />
       <FinalCTA />
       <LandingFooter />

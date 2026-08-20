@@ -4,6 +4,7 @@ import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
+import { useLenisScroll } from '../hooks/useLenis';
 
 type CardKey = 'people' | 'services' | 'opportunities' | 'events';
 
@@ -19,6 +20,8 @@ const CARDS: { key: CardKey; accent: string; ring: string; photo: string }[] = [
 
 export function Possibilities() {
   const { d } = useLandingLanguage();
+  const { scrollTo } = useLenisScroll();
+  const goToDownload = () => scrollTo(`#${SECTION_IDS.finalCta}`);
 
   return (
     <section id={SECTION_IDS.possibilities} className="relative bg-paper py-24 dark:bg-ink">
@@ -49,7 +52,16 @@ export function Possibilities() {
                 key={key}
                 variants={fadeUp}
                 whileHover={CARD_HOVER}
-                className={`group relative overflow-hidden rounded-3xl border border-ink/10 bg-gradient-to-b ${ring} bg-white shadow-[0_2px_10px_rgba(20,17,16,0.04)] dark:border-white/10 dark:bg-ink-elevated`}
+                role="button"
+                tabIndex={0}
+                onClick={goToDownload}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    goToDownload();
+                  }
+                }}
+                className={`group relative cursor-pointer overflow-hidden rounded-3xl border border-ink/10 bg-gradient-to-b ${ring} bg-white shadow-[0_2px_10px_rgba(20,17,16,0.04)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet dark:border-white/10 dark:bg-ink-elevated`}
               >
                 <div className="relative aspect-[4/3] w-full overflow-hidden">
                   <img
