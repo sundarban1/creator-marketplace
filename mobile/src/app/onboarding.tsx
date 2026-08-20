@@ -573,7 +573,7 @@ export default function OnboardingScreen() {
             ) : null}
 
             <View style={{ marginBottom: 28 }}>
-              <GroupedCategoryPicker categories={categories} selected={selectedCategories} onToggle={toggleCategory} max={5} />
+              <GroupedCategoryPicker categories={categories} selected={selectedCategories} onToggle={toggleCategory} max={5} variant="pill" />
             </View>
 
             <Pressable

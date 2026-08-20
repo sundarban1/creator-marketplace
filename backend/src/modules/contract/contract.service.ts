@@ -18,11 +18,14 @@ export const TOKENS = [
   'approvalRequirements', 'location', 'platformCommission', 'role', 'deliveryFormat',
 ] as const;
 
-// Canonical source of the default template text — also seeded into the DB by
-// prisma/seeds/contracts.ts (npm run db:seed:contracts). This copy is only the
-// lazy-create fallback for getOrCreateTemplate() below, so the feature still
-// works end-to-end even if the seed was never run. Markdown (#/##, **bold**,
-// bullet lines) — rendered by both the mobile ContractModal and the PDF export.
+// Canonical source of the default template text for the app's lazy-create
+// fallback (getOrCreateTemplate() below) — kept in sync by hand with the copy
+// in prisma/seeds/contract-template.ts, which prisma/seeds/contracts.ts seeds
+// into the DB. The two can't share one file: tsc's rootDir is `src`, so a seed
+// script (run via tsx straight from prisma/ in the production image, which
+// ships prisma/ but not src/) can't import across that boundary. Markdown
+// (#/##, **bold**, bullet lines) — rendered by both the mobile ContractModal
+// and the PDF export.
 export const DEFAULT_TEMPLATE = {
   title: 'Kolab Agreement',
   body: `This Creator Collaboration Agreement ("Agreement") is entered into on **{{effectiveDate}}** between **{{businessName}}** ("Business") and **{{creatorName}}** ("Creator") for the campaign **"{{campaignTitle}}"** facilitated through the Kolab platform.

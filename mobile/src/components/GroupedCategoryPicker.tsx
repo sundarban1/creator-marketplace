@@ -11,6 +11,7 @@ type Props = {
   onToggle: (name: string) => void;
   max: number;
   onMaxReached?: () => void;
+  variant?: 'default' | 'pill';
 };
 
 // Same "pick up to N" chip grid as CategoryChipGrid, but sectioned by the
@@ -19,7 +20,7 @@ type Props = {
 // underneath, instead of one long flat wall of chips. Rows with no group
 // (or when nothing has a group — e.g. the industry list) render as a single
 // ungrouped section.
-export function GroupedCategoryPicker({ categories, selected, onToggle, max, onMaxReached }: Props) {
+export function GroupedCategoryPicker({ categories, selected, onToggle, max, onMaxReached, variant }: Props) {
   const C = useAppColors();
   const groups = new Map<string, GroupedChipCategory[]>();
   const ungrouped: GroupedChipCategory[] = [];
@@ -35,18 +36,18 @@ export function GroupedCategoryPicker({ categories, selected, onToggle, max, onM
   }
 
   if (groups.size === 0) {
-    return <CategoryChipGrid categories={ungrouped} selected={selected} onToggle={onToggle} max={max} onMaxReached={onMaxReached} />;
+    return <CategoryChipGrid categories={ungrouped} selected={selected} onToggle={onToggle} max={max} onMaxReached={onMaxReached} variant={variant} />;
   }
 
   return (
     <View style={s.wrap}>
       {ungrouped.length > 0 && (
-        <CategoryChipGrid categories={ungrouped} selected={selected} onToggle={onToggle} max={max} onMaxReached={onMaxReached} />
+        <CategoryChipGrid categories={ungrouped} selected={selected} onToggle={onToggle} max={max} onMaxReached={onMaxReached} variant={variant} />
       )}
       {[...groups.entries()].map(([group, items]) => (
         <View key={group} style={s.section}>
           <Text style={[s.sectionTitle, { color: C.textSecondary }]}>{group.toUpperCase()}</Text>
-          <CategoryChipGrid categories={items} selected={selected} onToggle={onToggle} max={max} onMaxReached={onMaxReached} />
+          <CategoryChipGrid categories={items} selected={selected} onToggle={onToggle} max={max} onMaxReached={onMaxReached} variant={variant} />
         </View>
       ))}
     </View>

@@ -92,10 +92,6 @@ export default function AccountTypeScreen() {
                   <ExpoImage source={CARD_IMAGE[r.key]} style={s.cardArt} contentFit="cover" />
                   <LinearGradient colors={['rgba(0,0,0,0.4)', 'transparent']} style={s.imageScrim} />
 
-                  <LinearGradient colors={r.grad} style={s.iconBadge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                    <FontAwesome5 name={r.icon} solid size={16} color="#fff" />
-                  </LinearGradient>
-
                   {active && (
                     <View style={[s.checkBadge, { backgroundColor: tint }]}>
                       <FontAwesome5 name="check" solid size={11} color="#fff" />
@@ -163,10 +159,6 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
     imageWrap: { height: 108, position: 'relative' },
     cardArt: { width: '100%', height: '100%' },
     imageScrim: { position: 'absolute', top: 0, left: 0, right: 0, height: 56 },
-    iconBadge: {
-      position: 'absolute', top: SPACING.sm, left: SPACING.sm,
-      width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
-    },
     checkBadge: {
       position: 'absolute', top: SPACING.sm, right: SPACING.sm, zIndex: 1,
       width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',

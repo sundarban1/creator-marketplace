@@ -408,7 +408,7 @@ const en = {
     exploreBtn: 'Explore Creators',
     categoryRequired: 'At least 1 category is required',
  successTitle: "You're all set!",
-    successBody: "Your business profile is ready.\nLet's start finding the right creators.",
+    successBody: "Your business profile is ready.\nLet's start finding the right people.",
   },
 
   creator: {

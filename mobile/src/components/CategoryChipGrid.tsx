@@ -57,7 +57,7 @@ export function CategoryChipGrid({ categories, selected, onToggle, max, sortByLe
             accessibilityRole="checkbox"
             accessibilityState={{ checked: isSelected, disabled: isDisabled }}
             accessibilityLabel={cat.name}>
-            {cat.icon && <FontAwesome5 name={cat.icon as any} size={pill ? 12 : 14} color={isSelected ? cat.color : C.textSecondary} />}
+            {cat.icon && <FontAwesome5 name={cat.icon as any} size={pill ? 12 : 14} color={cat.color ?? C.textSecondary} />}
             <Text style={[s.label, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontFamily: F.bold }]}>
               {cat.name}
             </Text>
