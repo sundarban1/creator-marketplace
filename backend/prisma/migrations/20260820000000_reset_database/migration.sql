@@ -46,11 +46,18 @@ BEGIN
   END LOOP;
 
   -- Drop functions this schema manages via raw SQL (see init's search section).
+  -- Excludes functions owned by an extension (e.g. pg_trgm's
+  -- gin_extract_query_trgm) — those can only be removed by dropping the
+  -- extension itself, not the individual function.
   FOR r IN (
     SELECT p.proname, oidvectortypes(p.proargtypes) AS args
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
+      AND NOT EXISTS (
+        SELECT 1 FROM pg_depend d
+        WHERE d.objid = p.oid AND d.deptype = 'e'
+      )
   ) LOOP
     EXECUTE 'DROP FUNCTION IF EXISTS public.' || quote_ident(r.proname) || '(' || r.args || ') CASCADE';
   END LOOP;
