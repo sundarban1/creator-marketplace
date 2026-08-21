@@ -118,7 +118,7 @@ const rm = StyleSheet.create({
   successWrap: { alignItems: 'center', paddingVertical: 12, gap: 8 },
   successIconWrap: { width: 64, height: 64, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   successTitle: { fontSize: 17, fontFamily: F.bold },
-  successSub: { fontSize: 13, fontFamily: F.regular, textAlign: 'center', paddingHorizontal: 20, lineHeight: 19 },
+  successSub: { fontSize: 13, fontFamily: F.regular, textAlign: 'center', paddingHorizontal: 20, lineHeight: 20 },
   doneBtn: { borderRadius: RADIUS.full, paddingHorizontal: 32, paddingVertical: 12, marginTop: 12 },
   doneBtnTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 });

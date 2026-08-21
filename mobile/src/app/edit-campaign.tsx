@@ -834,7 +834,7 @@ export default function EditCampaignScreen() {
 const cal = StyleSheet.create({
   nav:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   navBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  navTxt: { fontSize: 28, lineHeight: 32 },
+  navTxt: { fontSize: 28, lineHeight: 42 },
   title:  { fontSize: 15, fontWeight: '700' },
   dayRow: { flexDirection: 'row' },
   dayHdr: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' },
@@ -867,7 +867,7 @@ const s = StyleSheet.create({
   saveBtn:    { flex: 1, borderRadius: RADIUS.md, height: 54, justifyContent: 'center', alignItems: 'center', ...SHADOW.raised },
   saveBtnTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 
-  pillCardBody: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  pillCardBody: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   pill:         { borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5 },
   pillText:     { fontSize: 12, fontFamily: F.semibold },
 

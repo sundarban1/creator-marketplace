@@ -2344,7 +2344,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
   },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
-  topTitle: { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
+  topTitle: { fontSize: 18, fontFamily: F.bold, lineHeight: 27 },
 
   // marginHorizontal matches card/hintCard's 16 below — this used to be a
   // stray 20 (same copy-pasted mismatch as edit-profile.tsx and the creator
@@ -2358,7 +2358,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card, overflow: 'hidden',
   },
   hintCard: { marginHorizontal: 16, borderRadius: RADIUS.sm, padding: 12, marginTop: 8, marginBottom: 4 },
-  hintText: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  hintText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
@@ -2369,8 +2369,8 @@ const styles = StyleSheet.create({
   // even though the flex `alignItems: 'center'` math is correct.
   // No `flex: 1` here — the wrapping navTextCol/navTextColWithSub View now owns that (see below),
   // so this Text sizes to its natural content height and can be genuinely centered within it.
-  rowLabel: { fontSize: 15, lineHeight: 18, fontFamily: F.medium, includeFontPadding: false },
-  rowSub: { fontSize: 12, lineHeight: 15, marginTop: 1, fontFamily: F.regular, includeFontPadding: false },
+  rowLabel: { fontSize: 15, lineHeight: 23, fontFamily: F.medium, includeFontPadding: false },
+  rowSub: { fontSize: 12, lineHeight: 18, marginTop: 1, fontFamily: F.regular, includeFontPadding: false },
   // Single-line rows (no `sub`) get a fixed height matching navIonIconWrap (34) with its own
   // `justifyContent: 'center'` — this centers the text against a box of the exact same known
   // height as the icon, so the two are guaranteed pixel-aligned regardless of any font-metric
@@ -2456,12 +2456,12 @@ const styles = StyleSheet.create({
   emptySubText: { fontSize: 13, fontFamily: F.regular },
 
   faqCard: { borderRadius: RADIUS.md, padding: 14, gap: 6, ...SHADOW.card },
-  faqQ: { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
-  faqA: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
+  faqQ: { fontSize: 14, lineHeight: 21, fontFamily: F.bold },
+  faqA: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
 
   accordionCard: { borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent' },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
-  accordionTitle: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.bold },
+  accordionTitle: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.bold },
   accordionBody: { fontSize: 13, lineHeight: 20, paddingHorizontal: 14, paddingBottom: 14, fontFamily: F.regular },
   navIonIconWrap: { width: 34, height: 34, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
 

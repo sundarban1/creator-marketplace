@@ -126,7 +126,7 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
-  topTitle:  { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
+  topTitle:  { fontSize: 18, fontFamily: F.bold, lineHeight: 27 },
   saveBtn:   { borderRadius: RADIUS.sm, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   saveBtnTxt:{ color: '#fff', fontSize: 14, fontFamily: F.bold },
   content:   { padding: 20, paddingBottom: 48 },

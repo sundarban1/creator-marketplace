@@ -246,6 +246,31 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQU
   }
 }
 
+// ── Cold-start warm-up ────────────────────────────────────────────────────────
+
+// Render's free plan spins the backend down after ~15 min of inactivity, and a
+// cold start takes 30-60s — longer than most of this app's request budgets, so
+// the first call after an idle period aborts and the screen falls back. Screens
+// that are about to make an expensive call (create-event's AI generate) fire
+// this on mount, giving the instance time to boot while the brand is still
+// typing their prompt. Fire-and-forget: /health needs no auth, runs a
+// `SELECT 1` (so it warms the Prisma pool too), and a failure here is
+// irrelevant — the real request will report its own error.
+const WARM_UP_MIN_INTERVAL_MS = 60_000;
+let lastWarmUpAt = 0;
+
+export function warmUpBackend(): void {
+  if (!network.isOnline()) return;
+  const now = Date.now();
+  // A screen remounting (tab switch, back navigation) shouldn't re-ping a
+  // backend that was already woken seconds ago.
+  if (now - lastWarmUpAt < WARM_UP_MIN_INTERVAL_MS) return;
+  lastWarmUpAt = now;
+  // Generous ceiling on purpose: aborting early would defeat the point, since
+  // the whole reason for this call is that a cold boot can take up to a minute.
+  void fetchWithTimeout(`${API_BASE}/health`, { method: 'GET' }, 60_000).catch(() => {});
+}
+
 // Thrown only when the refresh token itself is genuinely missing/rejected —
 // distinct from a network/timeout failure, which shouldn't log the user out
 // (e.g. a cold Render backend timing out on refresh isn't an expired session).

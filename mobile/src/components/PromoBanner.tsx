@@ -69,7 +69,7 @@ const s = StyleSheet.create({
   iconWrap: { width: 38, height: 38, borderRadius: RADIUS.md, backgroundColor: ACCENT_BG, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   text:  { flex: 1, gap: 2 },
   title: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
-  sub:   { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
+  sub:   { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: 20, opacity: 0.75 },
   amount: { fontSize: FONT_SIZE.md, fontFamily: F.extrabold, color: '#059669' },
   close: { position: 'absolute', top: 8, right: 8, padding: 4 },
 });

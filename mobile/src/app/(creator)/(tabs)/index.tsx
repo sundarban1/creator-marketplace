@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, ...SHADOW.floating },
   ctaTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff' },
-  ctaSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 18 },
+  ctaSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 20 },
   ctaIconWrap: { width: 48, height: 48, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   ctaBtn: {
     flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm,
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
   quickActionTile: { flex: 1, alignItems: 'center', gap: SPACING.sm },
   quickActionTilePressed: { opacity: 0.7 },
   quickActionIconWrap: { width: 52, height: 52, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center' },
-  quickActionLabel: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, textAlign: 'center', lineHeight: 15 },
+  quickActionLabel: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, textAlign: 'center', lineHeight: 17 },
 
   section: { gap: SPACING.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
 
   cardEmpty: { borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: SPACING.xl, alignItems: 'center', gap: SPACING.sm },
   cardEmptyTitle: { fontSize: FONT_SIZE.md, fontFamily: F.bold, textAlign: 'center' },
-  cardEmptySub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
+  cardEmptySub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
 
   nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, flex: 1 },
   nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: 5, flexShrink: 1 },

@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
   avatarArea:            { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
 
   heroNameRow:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
-  heroName:              { fontSize: 22, lineHeight: 28, fontFamily: F.bold, flexShrink: 1 },
+  heroName:              { fontSize: 22, lineHeight: 33, fontFamily: F.bold, flexShrink: 1 },
   statsStrip:            { flexDirection: 'row', alignItems: 'center', width: '100%', marginTop: 16, paddingTop: 16, borderTopWidth: 1 },
   heroStat:              { flex: 1, minWidth: 0, alignItems: 'center' },
   heroStatValue:         { fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
   campaignThumb:         { width: 72, alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' },
   featuredDot:           { position: 'absolute', top: 6, right: 4, backgroundColor: '#F59E0B', borderRadius: RADIUS.full, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
   campaignBody:          { flex: 1, padding: 10, gap: 3 },
-  campaignTitle:         { fontSize: 14, lineHeight: 18, fontFamily: F.bold },
+  campaignTitle:         { fontSize: 14, lineHeight: 21, fontFamily: F.bold },
   campaignMeta:          { fontSize: 11, marginTop: 0, fontFamily: F.regular },
   campaignFooter:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' },
   campaignBudget:        { fontSize: 13, fontFamily: F.bold },

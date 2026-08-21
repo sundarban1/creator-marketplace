@@ -62,5 +62,5 @@ const rl = StyleSheet.create({
   avatarFallbackTxt: { fontSize: 12, fontFamily: F.bold },
   name: { fontSize: 13, fontFamily: F.semibold },
   date: { fontSize: 11, fontFamily: F.regular },
-  comment: { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
+  comment: { fontSize: 13, fontFamily: F.regular, lineHeight: 20 },
 });

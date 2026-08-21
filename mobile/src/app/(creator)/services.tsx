@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   statusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
   statusBadgeText: { fontSize: 10, fontFamily: F.bold },
 
-  description: { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
+  description: { fontSize: 13, fontFamily: F.regular, lineHeight: 20 },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   price: { fontSize: 14, fontFamily: F.bold },

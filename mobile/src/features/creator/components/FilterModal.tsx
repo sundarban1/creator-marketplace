@@ -497,7 +497,7 @@ const dp = StyleSheet.create({
   calTitle:    { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'center', fontFamily: F.bold },
   monthNav:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   navBtn:      { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  navBtnTxt:   { fontSize: 24, lineHeight: 28 },
+  navBtnTxt:   { fontSize: 24, lineHeight: 36 },
   monthTitle:  { fontSize: 15, fontFamily: F.bold },
   dayRow:      { flexDirection: 'row' },
   dayHdr:      { flex: 1, textAlign: 'center', fontSize: 11, fontFamily: F.semibold },
@@ -513,5 +513,5 @@ const styles = StyleSheet.create({
   remoteCard:     { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14 },
   remoteTextWrap: { flex: 1, gap: 3 },
   remoteTitle:    { fontSize: 14, fontFamily: F.semibold },
-  remoteBody:     { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  remoteBody:     { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
 });

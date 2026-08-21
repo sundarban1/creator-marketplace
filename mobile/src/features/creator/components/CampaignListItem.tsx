@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
 
   body: { flex: 1, padding: 12, gap: 6, minWidth: 0 },
 
-  title:      { fontSize: 14.5, lineHeight: 19, letterSpacing: -0.2, fontFamily: F.bold },
+  title:      { fontSize: 14.5, lineHeight: 22, letterSpacing: -0.2, fontFamily: F.bold },
   // flexShrink so a long budget range truncates (ellipsis, via numberOfLines={1})
   // instead of pushing the days-left label in amountDaysLeft off the row.
   budgetText: { fontSize: 14, fontFamily: F.bold, flexShrink: 1, minWidth: 0 },

@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   card: { width: '100%', maxWidth: 360, borderRadius: RADIUS.lg, padding: 20, gap: 10, ...SHADOW.floating },
   title: { fontSize: 16, fontFamily: F.bold },
-  sub: { fontSize: 12, fontFamily: F.regular, lineHeight: 17, marginBottom: 4 },
+  sub: { fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginBottom: 4 },
   input: { borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 6 },
   skipBtn: { paddingHorizontal: 10, paddingVertical: 10, justifyContent: 'center' },

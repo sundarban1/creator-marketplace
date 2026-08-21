@@ -76,6 +76,10 @@ export interface AiCampaignDraft {
   // Empty for the common single-role case — populated only when the AI
   // detected the brief clearly asks for multiple distinct provider types.
   requirements: AiRequirementDraft[];
+  // true when the backend's own OpenAI call failed and it served a canned
+  // template instead (see campaign-ai.service.ts). Optional so an older
+  // backend that doesn't send it is simply treated as a real AI draft.
+  aiFallback?: boolean;
 }
 
 export interface AiEventDraft {
@@ -95,6 +99,8 @@ export interface AiEventDraft {
   needsInput: string[];
   aiSuggestedCategories: string[];
   aiSuggestedPlatforms: string[];
+  // See AiCampaignDraft.aiFallback.
+  aiFallback?: boolean;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

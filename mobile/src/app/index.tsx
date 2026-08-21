@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
 
   headline: {
     marginTop: SPACING.lg, textAlign: 'center', color: TEXT,
-    fontSize: 26, lineHeight: 32, fontFamily: F.bold,
+    fontSize: 26, lineHeight: 39, fontFamily: F.bold,
   },
   subtitle: {
     marginTop: SPACING.sm, textAlign: 'center', color: MUTED,

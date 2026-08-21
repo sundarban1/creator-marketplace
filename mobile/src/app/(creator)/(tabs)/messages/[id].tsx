@@ -844,7 +844,7 @@ const s = StyleSheet.create({
   systemRow:      { alignItems: 'center', marginVertical: 8, paddingHorizontal: 40 },
   systemPill:     { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 6 },
   systemPillTxt:  { fontSize: 12, fontFamily: F.medium, textAlign: 'center' },
-  bubbleTxt:  { fontSize: 15, lineHeight: 22, fontFamily: F.regular },
+  bubbleTxt:  { fontSize: 15, lineHeight: 23, fontFamily: F.regular },
   bubbleMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3, paddingHorizontal: 2 },
   bubbleTime: { fontSize: 10, fontFamily: F.regular },
 
@@ -882,7 +882,7 @@ const s = StyleSheet.create({
   emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 32, paddingVertical: 80 },
   emptyIcon:  { width: 72, height: 72, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 16, fontFamily: F.bold, textAlign: 'center' },
-  emptyHint:  { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 19 },
+  emptyHint:  { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
   retryBtn:     { marginTop: 6, paddingHorizontal: 20, paddingVertical: 10 },
   retryBtnText: { fontSize: 14, fontFamily: F.bold },
 

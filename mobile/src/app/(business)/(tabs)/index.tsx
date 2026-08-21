@@ -673,8 +673,8 @@ const styles = StyleSheet.create({
   // the screen — hero-level, not standard-card.
   ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, ...SHADOW.floating },
   ctaTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff', lineHeight: 21 },
-  ctaSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 18 },
+  ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff', lineHeight: 26 },
+  ctaSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 20 },
   ctaIconWrap: { width: 48, height: 48, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   ctaBtn: {
     flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm,
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
   thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   titleSection: { flex: 1, gap: 6 },
-  eventTitle: { fontSize: 16, fontFamily: F.bold, lineHeight: 21 },
+  eventTitle: { fontSize: 16, fontFamily: F.bold, lineHeight: 24 },
   tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },
   statusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
   statusText: { fontSize: 11, fontFamily: F.bold },

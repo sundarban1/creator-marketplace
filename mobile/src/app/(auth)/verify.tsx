@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   emailIconWrap: { width: 68, height: 68, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   heroTitle: { fontSize: 20, color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
-  heroSpamHint: { fontSize: 12, color: 'rgba(255,255,255,0.62)', textAlign: 'center', lineHeight: 17, fontFamily: F.regular },
+  heroSpamHint: { fontSize: 12, color: 'rgba(255,255,255,0.62)', textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
   heroEmail: { color: '#fff', fontFamily: F.bold },
 
   card: { flex: 1, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 24, paddingTop: 36, alignItems: 'center' },

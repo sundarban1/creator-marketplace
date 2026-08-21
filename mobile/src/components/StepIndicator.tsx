@@ -54,5 +54,5 @@ const s = StyleSheet.create({
   stepHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 4 },
   stepNum: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4, fontFamily: F.bold },
   stepTitle: { fontSize: 24, fontFamily: F.bold },
-  stepSubtitle: { fontSize: 14, lineHeight: 20, marginTop: 4, fontFamily: F.regular },
+  stepSubtitle: { fontSize: 14, lineHeight: 21, marginTop: 4, fontFamily: F.regular },
 });

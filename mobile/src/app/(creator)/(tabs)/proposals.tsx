@@ -472,14 +472,14 @@ const styles = StyleSheet.create({
   thumbInitials:{ fontSize: 18, fontFamily: F.bold },
   titleSection: { flex: 1, gap: 4 },
   brandName:    { fontSize: 15, fontFamily: F.bold },
-  campaignTitle:{ fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
+  campaignTitle:{ fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
   tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6, marginTop: 2 },
   tagBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
   tagBadgeText: { fontSize: 11, fontFamily: F.bold },
 
   // Cover letter
   coverRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 7, borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
-  coverText: { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
+  coverText: { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
   seeMore:   { fontSize: 12, fontFamily: F.semibold, marginTop: 3 },
 
   // Details section — sized to match CampaignListItem's detailsSection.

@@ -62,7 +62,16 @@ function pickDummyDescription(input: SuggestDescriptionInput): string {
 }
 
 const MODEL = 'gpt-5-mini';
-const REQUEST_TIMEOUT_MS = 45_000;
+// The whole server-side budget has to finish INSIDE the mobile client's own
+// abort deadline for this route (50s, see mobile/src/services/campaign.ts) —
+// otherwise a transient OpenAI hiccup makes the SDK retry past the phone's
+// deadline, the client gives up first, and the brand sees the mobile generic
+// template instead of the dummy draft this service would have returned.
+// The SDK applies `timeout` PER ATTEMPT and defaults to maxRetries: 2, so the
+// default 45s budget was really 3 x 45s + backoff (~136s) — nearly 3x over.
+// 20s x 2 attempts + ~0.5s backoff lands at ~41s worst case, safely under 50s.
+const REQUEST_TIMEOUT_MS = 20_000;
+const MAX_RETRIES = 1;
 
 function buildLanguageInstruction(language: string, inputSource?: 'voice' | 'text'): string {
   // Voice input: the prompt is a Whisper transcription, which auto-detects and
@@ -231,7 +240,7 @@ export class CampaignAiService {
       if (input.platform) parts.push(`Platform: ${input.platform}`);
       if (input.deliverables) parts.push(`Deliverables: ${input.deliverables}`);
 
-      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS });
+      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS, maxRetries: MAX_RETRIES });
       const response = await client.chat.completions.create({
         model: MODEL,
         max_completion_tokens: 300,
@@ -252,7 +261,7 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
+  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; aiFallback: boolean; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
     const [realCategories, realProviderCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       // strict:true — requirements need real provider TYPES (Photographer,
@@ -267,6 +276,11 @@ export class CampaignAiService {
     const platformNames = realPlatforms.map((p) => p.name);
 
     let draft: AiCampaignDraft;
+    // Surfaced to the client so a dummy draft is visibly distinguishable from a
+    // real AI one — without it, this fallback and the mobile-side network
+    // fallback look identical in the UI and neither is diagnosable from a
+    // screenshot. See the aiFallback note on generateEventDraft.
+    let aiFallback = false;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
       const raw = await this.callModel(buildSystemPrompt(categoryNames, providerCategoryNames, platformNames, language, businessContext, inputSource), prompt);
@@ -276,9 +290,10 @@ export class CampaignAiService {
       if (err instanceof CampaignIntentError) throw err;
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy campaign draft');
       draft = pickDummyDraft(prompt);
+      aiFallback = true;
     }
     const matched = this.matchToRealTaxonomy(draft, categoryNames, platformNames);
-    return { ...matched, requirements: this.resolveRequirements(draft.requirements, realProviderCategories) };
+    return { ...matched, aiFallback, requirements: this.resolveRequirements(draft.requirements, realProviderCategories) };
   }
 
   // Matches each AI-guessed requirement category name to a real CREATOR
@@ -302,7 +317,7 @@ export class CampaignAiService {
     });
   }
 
-  async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
+  async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; aiFallback: boolean }> {
     const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
@@ -312,6 +327,11 @@ export class CampaignAiService {
     const platformNames = realPlatforms.map((p) => p.name);
 
     let draft: AiEventDraft;
+    // true = this draft came from campaign-ai.dummy.json, not the model. The
+    // mobile client has its OWN fallback template for when the request never
+    // comes back at all, and the two used to be indistinguishable on screen;
+    // this flag lets the client say which one the brand is actually looking at.
+    let aiFallback = false;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
       const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language, businessContext, inputSource), prompt);
@@ -321,8 +341,9 @@ export class CampaignAiService {
       if (err instanceof CampaignIntentError) throw err;
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy event draft');
       draft = pickDummyEventDraft(prompt);
+      aiFallback = true;
     }
-    return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
+    return { ...this.matchToRealTaxonomy(draft, categoryNames, platformNames), aiFallback };
   }
 
   // Fed into the system prompt so the AI can infer industry/location the
@@ -358,7 +379,7 @@ export class CampaignAiService {
   }
 
   private async callModel(systemPrompt: string, prompt: string): Promise<string> {
-    const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS });
+    const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS, maxRetries: MAX_RETRIES });
     const response = await client.chat.completions.create({
       model: MODEL,
       max_completion_tokens: 3000,

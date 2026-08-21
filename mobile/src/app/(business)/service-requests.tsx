@@ -139,12 +139,12 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 15, fontFamily: F.bold },
   headerText: { flex: 1, gap: 2 },
   creatorName: { fontSize: 12, fontFamily: F.medium },
-  serviceName: { fontSize: 15, fontFamily: F.bold, lineHeight: 20 },
+  serviceName: { fontSize: 15, fontFamily: F.bold, lineHeight: 23 },
   statusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   statusBadgeText: { fontSize: 11, fontFamily: F.bold },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   metaText: { fontSize: 13, fontFamily: F.regular },
 
-  message: { fontSize: 13, fontFamily: F.regular, fontStyle: 'italic', lineHeight: 19, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
+  message: { fontSize: 13, fontFamily: F.regular, fontStyle: 'italic', lineHeight: 20, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
 });

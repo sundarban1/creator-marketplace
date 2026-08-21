@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   choiceIcon:  { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   choiceText:  { flex: 1, gap: 2 },
   choiceTitle: { fontSize: 15, fontFamily: F.bold },
-  choiceDesc:  { fontSize: 12.5, fontFamily: F.regular, lineHeight: 17 },
+  choiceDesc:  { fontSize: 12.5, fontFamily: F.regular, lineHeight: 19 },
 
   form: { gap: 16, marginBottom: 28 },
   formGroup: { gap: 6 },
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   fieldError: { fontSize: 12, fontFamily: F.medium },
 
   locationBtn: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, gap: 8 },
-  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: F.regular },
+  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 23, fontFamily: F.regular },
   locationArrow: { fontSize: 20, color: '#9CA3AF' },
 
   usernameLimit: { fontSize: 11, fontFamily: F.regular },

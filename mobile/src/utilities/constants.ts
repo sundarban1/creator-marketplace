@@ -57,6 +57,37 @@ export const F = {
   extrabold:  'Poppins-ExtraBold',
 };
 
+// Minimum `lineHeight / fontSize` ratio for any Text that can render Nepali.
+//
+// Devanagari hangs its consonants from a headline (shirorekha) and then stacks
+// vowel signs and nasal marks *above* it, so it needs far more room above the
+// baseline than Latin does. Measured from the shipped Poppins TTF (1000 upm):
+//
+//   'A' (Latin cap)   693      <- what tight line heights were tuned against
+//   'द' (consonant)   740
+//   'ि' / 'ी'          996
+//   'ै'               1041
+//   'ँ'               1065     <- chandrabindu, the tallest mark
+//   hhea/typo ascent 1050
+//
+// Poppins' own natural line height is (1050 + 350 + 100) / 1000 = 1.5em, so any
+// tighter value clips the matras off the top — on Android RN's CustomLineHeightSpan
+// clamps the ascent to `-lineHeight + descent` once lineHeight drops below the
+// font's natural extent, which is exactly what shaved the marks in the ne locale.
+//
+// Caveat: at exactly 1.5 the chandrabindu 'ँ' (1065) still grazes the 1050 ascent
+// by 15/1000 em (~1px at fontSize 48, sub-pixel at body sizes). Bump an individual
+// style higher, or drop its explicit lineHeight entirely, if you see a shaved 'ँ'
+// on a large Nepali heading.
+export const LINE_HEIGHT_RATIO = 1.5;
+
+/**
+ * Devanagari-safe line height for a given font size. Prefer this over hand-picked
+ * `lineHeight` values so Nepali text can't get clipped as new styles are added.
+ */
+export const lineHeightFor = (fontSize: number) =>
+  Math.ceil(fontSize * LINE_HEIGHT_RATIO);
+
 // Shared corner-radius scale — screens previously hand-rolled one-off values
 // (10/11/12/14/16/20...) with no consistent logic. Use these everywhere instead
 // so every card/button/sheet reads as one coherent system.

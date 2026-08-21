@@ -284,9 +284,9 @@ const styles = StyleSheet.create({
 
   itemContent:{ flex: 1, gap: 4 },
   titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  itemTitle:  { fontSize: 14, flex: 1, fontFamily: F.bold, lineHeight: 19 },
+  itemTitle:  { fontSize: 14, flex: 1, fontFamily: F.bold, lineHeight: 21 },
   unreadDot:  { width: 7, height: 7, borderRadius: RADIUS.full, flexShrink: 0 },
 
-  itemBody:   { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  itemBody:   { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   itemTime:   { fontSize: 11, opacity: 0.55, fontFamily: F.regular, marginTop: 1 },
 });

@@ -465,7 +465,7 @@ const s = StyleSheet.create({
   newBadgeTxt: { fontSize: 10, fontFamily: F.bold },
   reqTime:     { fontSize: 11, fontFamily: F.regular },
   reqMsgBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: RADIUS.md, padding: 12, borderWidth: StyleSheet.hairlineWidth },
-  reqMsg:      { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: F.regular },
+  reqMsg:      { flex: 1, fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   reqMsgEmpty: { flex: 1, fontSize: 13, fontStyle: 'italic', fontFamily: F.regular },
   campaignPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 6, paddingVertical: 2 },
   campaignPillTxt: { fontSize: 10, fontFamily: F.semibold, maxWidth: 180 },

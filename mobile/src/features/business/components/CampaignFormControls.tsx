@@ -303,7 +303,7 @@ export function Stepper({ value, onChange, min = 1, max = 50, colors }: {
 const st = StyleSheet.create({
   wrap:   { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden' },
   btn:    { width: 52, height: 52, justifyContent: 'center', alignItems: 'center' },
-  btnTxt: { fontSize: 24, lineHeight: 28, fontFamily: F.regular },
+  btnTxt: { fontSize: 24, lineHeight: 36, fontFamily: F.regular },
   center: { flex: 1, alignItems: 'center' },
   value:  { fontSize: 24, fontFamily: F.bold },
   unit:   { fontSize: 11, marginTop: 1, fontFamily: F.medium },
@@ -366,7 +366,7 @@ const dlv = StyleSheet.create({
   label:      { flex: 1, fontSize: 14 },
   counter:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, overflow: 'hidden' },
   counterBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  counterBtnTxt: { fontSize: 20, lineHeight: 24, fontWeight: '300' },
+  counterBtnTxt: { fontSize: 20, lineHeight: 30, fontWeight: '300' },
   counterVal: { width: 28, textAlign: 'center', fontSize: 14, fontFamily: F.bold },
 });
 
@@ -492,7 +492,7 @@ const ft = StyleSheet.create({
   left:        { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   labelRow:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
   label:       { fontSize: 14, fontFamily: F.bold },
-  sub:         { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+  sub:         { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
   pill:        { borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
   pillText:    { fontSize: 10, fontFamily: F.bold },
   switch:      { width: 44, height: 26, borderRadius: RADIUS.full, position: 'relative' },
@@ -555,7 +555,7 @@ const ctp = StyleSheet.create({
   radio:      { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   radioDot:   { width: 9, height: 9, borderRadius: RADIUS.full },
   optionTitle: { fontSize: 14, fontFamily: F.bold },
-  optionDesc:  { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+  optionDesc:  { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
   reasonBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: RADIUS.md, padding: 10, borderWidth: 1 },
-  reasonText: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: F.regular, fontStyle: 'italic' },
+  reasonText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular, fontStyle: 'italic' },
 });

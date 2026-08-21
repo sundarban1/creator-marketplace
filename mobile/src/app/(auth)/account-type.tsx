@@ -140,7 +140,7 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
     header: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.sm },
     titleBlock: { paddingHorizontal: SPACING.xl, marginTop: SPACING.xl, marginBottom: SPACING.xxl, gap: SPACING.xs },
     title: { fontSize: FONT_SIZE.xxl, fontFamily: F.bold },
-    subtitle: { fontSize: FONT_SIZE.md, fontFamily: F.regular, lineHeight: 22 },
+    subtitle: { fontSize: FONT_SIZE.md, fontFamily: F.regular, lineHeight: 23 },
 
     cards: { paddingHorizontal: SPACING.xl, gap: SPACING.lg },
     card: {
@@ -162,7 +162,7 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
 
     cardBody: { padding: SPACING.lg, paddingRight: SPACING.xxl, gap: 6 },
     cardTitle: { fontSize: FONT_SIZE.md, fontFamily: F.bold, letterSpacing: 0.1 },
-    cardDesc: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: 19 },
+    cardDesc: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: 20 },
 
     benefitList: { gap: 6, marginTop: 4, marginBottom: 2 },
     benefitRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

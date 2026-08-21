@@ -961,8 +961,8 @@ function makeStyles(C: typeof COLORS) {
   heroLogo: { width: 84, height: 30, alignSelf: 'center', marginBottom: 14 },
 
   heroHeadingBlock:  { alignItems: 'center', paddingHorizontal: 28, marginBottom: 22 },
-  heroHeadlineLine:  { fontSize: 21, fontFamily: F.extrabold, lineHeight: 27, textAlign: 'center' },
-  heroSubtext:       { fontSize: 13, fontFamily: F.regular, lineHeight: 19, textAlign: 'center', marginTop: 8 },
+  heroHeadlineLine:  { fontSize: 21, fontFamily: F.extrabold, lineHeight: 32, textAlign: 'center' },
+  heroSubtext:       { fontSize: 13, fontFamily: F.regular, lineHeight: 20, textAlign: 'center', marginTop: 8 },
 
   // ── Form section ──
   // Rounded-top sheet that overlaps the gradient's bottom edge slightly, so
@@ -977,7 +977,7 @@ function makeStyles(C: typeof COLORS) {
   // (logo + tagline) no longer carries a "Welcome back" / "Create account" title itself.
   formHeading:         { marginBottom: 22, gap: 4, alignItems: 'center' },
   formHeadingTitle:    { fontSize: 24, fontFamily: F.bold, color: C.text, letterSpacing: 0.2, textAlign: 'center' },
-  formHeadingSubtitle: { fontSize: 14, fontFamily: F.regular, color: C.textSecondary, lineHeight: 20, textAlign: 'center' },
+  formHeadingSubtitle: { fontSize: 14, fontFamily: F.regular, color: C.textSecondary, lineHeight: 21, textAlign: 'center' },
 
   // Role summary — confirms the choice made on /account-type ("Offering services" /
   // "Looking for services") and links back to it to change.
@@ -1028,7 +1028,7 @@ function makeStyles(C: typeof COLORS) {
   roleCard:      { flex: 1, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: C.border, padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
   roleIconBox:   { width: 58, height: 58, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   roleLabel:     { fontSize: 14, fontFamily: F.bold, textAlign: 'center', color: C.text },
-  roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },
+  roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
 
   // Password rules
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: -8 },
@@ -1077,6 +1077,6 @@ function makeStyles(C: typeof COLORS) {
 
   // Terms checkbox — sits above the Create Account button (SignupForm only).
   termsRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 18 },
-  termsRowText: { flex: 1, fontSize: 12.5, fontFamily: F.regular, color: C.textSecondary, lineHeight: 18 },
+  termsRowText: { flex: 1, fontSize: 12.5, fontFamily: F.regular, color: C.textSecondary, lineHeight: 19 },
   });
 }

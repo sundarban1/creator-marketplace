@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   tagBadgeText: { fontSize: 10, fontFamily: F.bold },
 
   body: { padding: 12 },
-  title: { fontSize: 14, lineHeight: 18, fontFamily: F.bold, marginBottom: 2 },
+  title: { fontSize: 14, lineHeight: 21, fontFamily: F.bold, marginBottom: 2 },
   budgetTitleText: { fontSize: 13, fontFamily: F.bold, marginBottom: 6 },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },

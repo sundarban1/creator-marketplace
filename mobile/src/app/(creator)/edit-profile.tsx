@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   label:      { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   charCount:  { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
   locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
-  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
+  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.regular },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
   clearLocation:  { fontSize: 12, marginTop: 2, fontFamily: F.semibold },
   chipGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },

@@ -2134,7 +2134,7 @@ const s = StyleSheet.create({
   thumb:        { width: 68, height: 68, borderRadius: RADIUS.md, flexShrink: 0 },
   thumbClip:    { width: '100%', height: '100%', borderRadius: RADIUS.md, overflow: 'hidden' },
   thumbImage:   { width: '100%', height: '100%' },
-  summaryTitle: { fontSize: 15, fontFamily: F.bold, lineHeight: 21, marginBottom: 3 },
+  summaryTitle: { fontSize: 15, fontFamily: F.bold, lineHeight: 23, marginBottom: 3 },
   summaryBrand: { fontSize: 13, fontFamily: F.semibold, marginBottom: 6 },
   metaRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   metaChip:     { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3F4F6', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
@@ -2168,7 +2168,7 @@ const pt = StyleSheet.create({
   dot:        { width: 28, height: 28, borderRadius: RADIUS.full, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   activePulse:{ width: 10, height: 10, borderRadius: RADIUS.full, backgroundColor: '#fff' },
   emptyCore:  { width: 8, height: 8, borderRadius: RADIUS.full, backgroundColor: '#E5E7EB' },
-  label:      { fontSize: 9, fontFamily: F.semibold, textAlign: 'center', marginTop: 5, lineHeight: 12 },
+  label:      { fontSize: 9, fontFamily: F.semibold, textAlign: 'center', marginTop: 5, lineHeight: 14 },
 });
 
 const tl = StyleSheet.create({
@@ -2181,7 +2181,7 @@ const tl = StyleSheet.create({
   title:    { fontSize: 13 },
   badge:    { borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 2 },
   badgeTxt: { fontSize: 9, fontFamily: F.bold, textTransform: 'uppercase', letterSpacing: 0.3 },
-  desc:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
+  desc:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
   time:     { fontSize: 10, fontFamily: F.regular, marginTop: 4, lineHeight: 15 },
 });
 
@@ -2218,7 +2218,7 @@ const ac = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBg: { width: 36, height: 36, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   heading:{ fontSize: 16, fontFamily: F.bold, flexShrink: 1 },
-  sub:    { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
+  sub:    { fontSize: 13, fontFamily: F.regular, lineHeight: 20 },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.full, paddingVertical: 13, marginTop: 4 },
   btnTxt: { fontSize: 14, fontFamily: F.bold, color: '#fff' },
@@ -2283,5 +2283,5 @@ const sh = StyleSheet.create({
   infoTxt:      { fontSize: 12, fontFamily: F.semibold, flex: 1 },
   warnBox:      { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1.5, borderRadius: RADIUS.md, padding: 14, marginVertical: 12 },
   warnTitle:    { fontSize: 14, fontFamily: F.bold, marginBottom: 4 },
-  warnBody:     { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
+  warnBody:     { fontSize: 13, fontFamily: F.regular, lineHeight: 20 },
 });

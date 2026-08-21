@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   heroTitle: { fontSize: 22, color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   heroPhone: { color: '#fff', fontFamily: F.bold },
-  heroHint: { fontSize: 12, color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 17, marginTop: 10, fontFamily: F.regular, paddingHorizontal: 12 },
+  heroHint: { fontSize: 12, color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 18, marginTop: 10, fontFamily: F.regular, paddingHorizontal: 12 },
   card: { flex: 1, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 24, paddingTop: 36, alignItems: 'center' },
   otpRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   otpBox: { width: 46, height: 58, borderRadius: RADIUS.sm, borderWidth: 2, textAlign: 'center', fontSize: 22, fontFamily: F.bold },

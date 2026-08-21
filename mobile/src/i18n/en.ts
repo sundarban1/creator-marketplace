@@ -185,10 +185,10 @@ const en = {
  creatorRole: 'Creator',
  businessRole: 'Business',
       joiningAs: "I'm joining as",
-      roleCreatorLabel: 'Creator',
-      roleCreatorSub: 'Find businesses, create content & earn money',
-      roleBusinessLabel: 'Business',
-      roleBusinessSub: 'Hire creators near you & grow your business',
+      roleCreatorLabel: 'Service Giver',
+      roleCreatorSub: 'e.g. creator, DJ, model',
+      roleBusinessLabel: 'Service Taker',
+      roleBusinessSub: 'e.g. agency, business',
       signingUpAs: 'Signing up as',
       changeRole: 'Change',
       pwRule8Chars: '8+ chars',
@@ -462,7 +462,7 @@ const en = {
       expandToKm: 'Expand to {{km}} km',
       tabNew: 'New',
       tabTrending: 'Trending',
-      tabFree: 'Free',
+      tabFree: 'Open',
       tabEndingSoon: 'Ending Soon',
       sortDateLatest: 'Date (Latest)',
       sortDateOldest: 'Date (Oldest)',
@@ -2493,7 +2493,12 @@ const en = {
     createEventBtn:      'Create Event',
     aiModalGenerating:   'Creating your event…',
     aiGenerateFailed:    "Couldn't create your event. Please try again with a different description.",
-    aiGenerateFallback:  "Couldn't reach AI right now — loaded a generic template you can edit before publishing.",
+    // Two distinct failure modes, deliberately worded differently: the request
+    // never came back (network/timeout/cold backend) vs. it came back fine but
+    // the server couldn't reach the AI provider. Same-looking copy made them
+    // impossible to tell apart in a bug report.
+    aiNetworkFallback:   "Couldn't reach the server in time — loaded a generic template you can edit before publishing.",
+    aiServiceFallback:   "AI is unavailable right now — loaded a starter draft you can edit before publishing.",
     aiOverlayTitle:      'Kolab is creating your event for you',
     aiOverlayStep1:      'Reading your idea…',
     aiOverlayStep2:      'Picking the best platforms…',

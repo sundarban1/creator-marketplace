@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  pageTitle:      { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
+  pageTitle:      { fontSize: 20, fontFamily: F.bold, lineHeight: 30 },
   pageSub:        { fontSize: 13, fontFamily: F.regular, marginTop: 2 },
 
   filterRow: { ...SHADOW.card },
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   platformPill:  { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
   platformText:  { fontSize: 11, fontFamily: F.semibold },
 
-  cardTitle: { fontSize: 15, lineHeight: 20, paddingHorizontal: 16, paddingBottom: 10, fontFamily: F.bold },
+  cardTitle: { fontSize: 15, lineHeight: 23, paddingHorizontal: 16, paddingBottom: 10, fontFamily: F.bold },
 
   statsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
   statItem:    { flex: 1, alignItems: 'center', gap: 2 },

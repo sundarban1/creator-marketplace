@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
 
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.md },
   titleSection: { flex: 1, gap: 8 },
-  eventTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, lineHeight: 21 },
+  eventTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, lineHeight: 26 },
   tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },
   tagBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 4 },
   tagBadgeText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },

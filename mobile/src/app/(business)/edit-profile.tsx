@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
   topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
-  topTitle:      { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
+  topTitle:      { fontSize: 18, fontFamily: F.bold, lineHeight: 27 },
   content:       { paddingBottom: 24 },
   // marginHorizontal matches card/topBar/saveBtn's 16 below — this used to be
   // a stray 20, so the section label sat 4px further in than the card under it.
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   suggestItem:   { paddingHorizontal: 12, paddingVertical: 11 },
   suggestText:   { fontSize: 13, fontFamily: F.regular },
   locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
-  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
+  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.regular },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
   clearLocation:  { fontSize: 12, marginTop: 2, fontFamily: F.semibold },
   saveBtn:       { marginHorizontal: 16, marginTop: 20, borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },

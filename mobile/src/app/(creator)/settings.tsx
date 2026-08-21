@@ -2691,7 +2691,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card, overflow: 'hidden',
   },
   hintCard: { marginHorizontal: 16, borderRadius: RADIUS.sm, padding: 12, marginTop: 8, marginBottom: 4 },
-  hintText: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  hintText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
   subLabel: { fontSize: 11, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   subDivider: { height: 1, marginTop: 4 },
@@ -2705,8 +2705,12 @@ const styles = StyleSheet.create({
   // Text sizes to its natural content height and can be genuinely centered within it.
   // Poppins' glyphs sit high within their own line box, so even a height-matched centered
   // box (navTextCol below) still reads a few px above the icon's true center — nudge down.
-  rowLabel: { flex: 1, fontSize: 15, lineHeight: 18, fontFamily: F.medium, includeFontPadding: false, marginTop: 9 },
-  rowSub: { fontSize: 12, lineHeight: 15, marginTop: 1, fontFamily: F.regular, includeFontPadding: false },
+  // The nudge is calibrated against `lineHeight`: the label's optical centre is
+  // `marginTop + lineHeight / 2`, and the tuned target inside the 34px navTextCol is ~18px.
+  // lineHeight rose 18 -> 23 (Devanagari floor, see LINE_HEIGHT_RATIO in utilities/constants),
+  // so the nudge drops 9 -> 6 to keep that centre where it was.
+  rowLabel: { flex: 1, fontSize: 15, lineHeight: 23, fontFamily: F.medium, includeFontPadding: false, marginTop: 6 },
+  rowSub: { fontSize: 12, lineHeight: 18, marginTop: 1, fontFamily: F.regular, includeFontPadding: false },
   // Fixed height matching navIonIconWrap (34) with its own `justifyContent: 'center'` — this
   // centers the label against a box of the exact same known height as the icon, so the two are
   // guaranteed pixel-aligned regardless of any font-metric quirks, rather than relying on the
@@ -2724,7 +2728,7 @@ const styles = StyleSheet.create({
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   accordionIconWrap: { width: 30, height: 30, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   accordionEmoji: { fontSize: 15 },
-  accordionTitle: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.bold, marginTop: 9 },
+  accordionTitle: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.bold, marginTop: 9 },
   accordionChevronWrap: { width: 26, height: 26, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   accordionBody: { fontSize: 13, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 
@@ -2894,13 +2898,13 @@ const styles = StyleSheet.create({
 
   // FAQ / legal
   faqCard: { borderRadius: RADIUS.lg, padding: 14, gap: 6, ...SHADOW.card },
-  faqQ: { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
-  faqA: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
+  faqQ: { fontSize: 14, lineHeight: 21, fontFamily: F.bold },
+  faqA: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   helpSkeletonQ: { height: 14, borderRadius: RADIUS.sm, marginBottom: 8, width: '80%' },
   helpSkeletonA: { height: 11, borderRadius: RADIUS.sm, marginBottom: 4, width: '100%' },
   helpEmpty: { margin: 20, borderRadius: RADIUS.lg, borderWidth: 1, padding: 32, alignItems: 'center', gap: 8 },
   helpEmptyTitle: { fontSize: 15, textAlign: 'center', fontFamily: F.bold },
-  helpEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 19, fontFamily: F.regular },
+  helpEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   legalDate: { fontSize: 12, marginTop: 12, marginBottom: 4, fontFamily: F.regular },
   legalSection: { paddingVertical: 14, borderBottomWidth: 1, gap: 6 },
   legalTitle: { fontSize: 14, fontFamily: F.bold },

@@ -913,13 +913,13 @@ const styles = StyleSheet.create({
   // fontSize matches CategoryPillRow's own pill label exactly (13/FONT_SIZE.sm)
   // — this Platforms row sits directly below that Categories row, so the two
   // pill styles need to read as one system, not two slightly different ones.
-  catLabel: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, lineHeight: 16 },
+  catLabel: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, lineHeight: 20 },
 
   // ── Featured ──
   featuredRow:       { paddingHorizontal: SCREEN_GUTTER, gap: 8, marginTop: 16, marginBottom: 16 },
   featuredEmpty:     { marginHorizontal: SCREEN_GUTTER, marginBottom: 16, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle:{ fontSize: FONT_SIZE.md, fontFamily: F.bold, textAlign: 'center' },
-  featuredEmptySub:  { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
+  featuredEmptySub:  { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
   featuredLoadingMore: { width: 60, justifyContent: 'center', alignItems: 'center' },
 
   // ── Nearby ──

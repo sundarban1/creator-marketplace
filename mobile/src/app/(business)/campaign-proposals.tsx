@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   closeCampaignBtnTxt: { fontSize: 13, fontFamily: F.semibold },
-  headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, lineHeight: 22, textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, lineHeight: 27, textAlign: 'center' },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },
@@ -1191,7 +1191,7 @@ const styles = StyleSheet.create({
   actionBtnDisabled: { opacity: 0.45 },
   actionText: { fontSize: 13, fontFamily: F.bold },
   readOnlyNotice:     { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8 },
-  readOnlyNoticeText: { flex: 1, fontSize: 11, fontFamily: F.regular, lineHeight: 15 },
+  readOnlyNoticeText: { flex: 1, fontSize: 11, fontFamily: F.regular, lineHeight: 17 },
 
   startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.full, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
   startProjectBtnTxt: { fontSize: 13, color: '#fff', fontFamily: F.bold },
@@ -1200,6 +1200,6 @@ const styles = StyleSheet.create({
   // in for the paid campaign's project-workspace button.
   confirmedRow:       { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: 10, paddingHorizontal: 12, marginTop: 10 },
   confirmedTitle:     { fontSize: 13, fontFamily: F.bold },
-  confirmedSub:       { fontSize: 11, fontFamily: F.regular, lineHeight: 16, marginTop: 2 },
+  confirmedSub:       { fontSize: 11, fontFamily: F.regular, lineHeight: 17, marginTop: 2 },
 
 });

@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
-import { ApiError } from '@/lib/api';
+import { ApiError, warmUpBackend } from '@/lib/api';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
@@ -834,7 +834,7 @@ const pn = StyleSheet.create({
   row:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   roleLabel: { fontSize: 14, fontFamily: F.semibold },
   metaLabel: { fontSize: 12, fontFamily: F.regular },
-  workLabel: { fontSize: 12, fontFamily: F.regular, lineHeight: 16, marginTop: 1 },
+  workLabel: { fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginTop: 1 },
   completionChip:   { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 3, marginTop: 3 },
   completionChipTxt:{ fontSize: 11, fontFamily: F.semibold },
   editBtn:  { width: 28, height: 28, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
@@ -947,7 +947,7 @@ function CalendarGrid({ value, onChange, colors }: {
 const cal = StyleSheet.create({
   monthNav:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   navBtn:    { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  navTxt:    { fontSize: 28, lineHeight: 32 },
+  navTxt:    { fontSize: 28, lineHeight: 42 },
   monthTitle:{ fontSize: 15, fontFamily: F.bold },
   dayRow:    { flexDirection: 'row' },
   dayHdr:    { flex: 1, textAlign: 'center', fontSize: 11, fontFamily: F.semibold },
@@ -1084,6 +1084,13 @@ export default function CreateCampaignScreen() {
       setBusinessCategories(profile.categories ?? []);
     }).catch(() => { /* location/categories stay empty */ });
   }, []);
+
+  // The AI generate call below has a 50s ceiling, but a Render free-plan
+  // backend that has spun down needs 30-60s just to boot — which is why the
+  // first Generate press after an idle period used to land on the fallback
+  // template. Waking it here, while the brand is still writing their prompt,
+  // means the request usually meets a warm instance. Fire-and-forget by design.
+  useEffect(() => { warmUpBackend(); }, []);
 
   // Fails open (stays null → toggle isn't locked) if this errors — the
   // backend still enforces the quota server-side on publish either way.
@@ -1288,6 +1295,12 @@ export default function CreateCampaignScreen() {
       setAiPromptText('');
       setPhase(targetPhase);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
+      // The request succeeded but the backend couldn't reach OpenAI and served
+      // a canned draft — say so, otherwise it's indistinguishable from a real
+      // AI result and the brand publishes boilerplate thinking it was written
+      // for them. Deliberately different wording from the catch below so the
+      // two failure modes are tellable apart from a screenshot alone.
+      if (draft.aiFallback) showToast(t('createEvent.aiServiceFallback'), 'error');
     } catch (err) {
       // The AI understood the prompt fine but decided it isn't a campaign at all
       // (small talk, unrelated question, near-silent audio) — a content rejection,
@@ -1335,7 +1348,7 @@ export default function CreateCampaignScreen() {
       setAiPromptText('');
       setPhase(targetPhase);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-      showToast(t('createEvent.aiGenerateFallback'), 'error');
+      showToast(t('createEvent.aiNetworkFallback'), 'error');
     } finally {
       setAiLoading(false);
     }
@@ -1396,6 +1409,8 @@ export default function CreateCampaignScreen() {
       setAiPromptText('');
       setPhase(targetPhase);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
+      // Same reasoning as handleGenerateWithAi's success path above.
+      if (draft.aiFallback) showToast(t('createEvent.aiServiceFallback'), 'error');
     } catch (err) {
       // Same reasoning as handleGenerateWithAi's catch above: a content
       // rejection (no event intent detected) gets the AI's own clarifying
@@ -1435,7 +1450,7 @@ export default function CreateCampaignScreen() {
       setAiPromptText('');
       setPhase(targetPhase);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-      showToast(t('createEvent.aiGenerateFallback'), 'error');
+      showToast(t('createEvent.aiNetworkFallback'), 'error');
     } finally {
       setAiLoading(false);
     }
@@ -3940,12 +3955,12 @@ const s = StyleSheet.create({
   // Tap-to-open location field — same pattern as the profile location editor
   // and the "search creators" location filter, both backed by LocationSearchModal.
   locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14, gap: 8 },
-  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: F.regular },
+  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 23, fontFamily: F.regular },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
   remoteCard:     { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14 },
   remoteTextWrap: { flex: 1, gap: 3 },
   remoteTitle:    { fontSize: 14, fontFamily: F.semibold },
-  remoteBody:     { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  remoteBody:     { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
 
   descHeaderRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   descHeaderText: { flex: 1, minWidth: 0 },
@@ -3990,7 +4005,7 @@ const s = StyleSheet.create({
 
   helpSheet:     { width: '100%', borderRadius: RADIUS.xl, padding: 24, ...SHADOW.floating },
   helpHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  helpSub:       { fontSize: 13, fontFamily: F.regular, lineHeight: 19, marginBottom: 20 },
+  helpSub:       { fontSize: 13, fontFamily: F.regular, lineHeight: 20, marginBottom: 20 },
   // Mirrors the home tab's quickActionsRow/quickAction/quickActionIcon/
   // quickActionLabel shapes exactly (RADIUS.lg card, RADIUS.md icon box,
   // colored glow shadow) so this modal reads as the same design system.
@@ -4020,7 +4035,7 @@ const s = StyleSheet.create({
   optionIconWrap: { width: 40, height: 40, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', ...Platform.select({ ios: { shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, default: {} }) },
   optionTextWrap: { flex: 1, gap: 2 },
   optionTitle:    { fontSize: 14, fontFamily: F.bold },
-  optionDesc:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
+  optionDesc:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
   // ── "What are you looking to create?" cards — dedicated styles (not the
   // shared optionCard/optionIconWrap family above, which the 'describe'
   // phase's text/audio picker also uses) so this redesign can't shift that
@@ -4029,9 +4044,9 @@ const s = StyleSheet.create({
   typeCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   typeCardIconWrap: { width: 52, height: 52, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center', ...Platform.select({ ios: { shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, default: {} }) },
   typeCardTitle:  { fontSize: 17, fontFamily: F.bold, marginBottom: 3 },
-  typeCardDesc:   { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
+  typeCardDesc:   { fontSize: 13, fontFamily: F.regular, lineHeight: 20 },
   typeCardExample: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: RADIUS.md, borderLeftWidth: 3, paddingHorizontal: 12, paddingVertical: 10 },
-  typeCardExampleText: { flex: 1, fontSize: 12, fontFamily: F.medium, lineHeight: 17, fontStyle: 'italic' },
+  typeCardExampleText: { flex: 1, fontSize: 12, fontFamily: F.medium, lineHeight: 18, fontStyle: 'italic' },
   typeCardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
   typeCardCta:    { fontSize: 13, fontFamily: F.bold },
 
