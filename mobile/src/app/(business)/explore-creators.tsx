@@ -150,7 +150,11 @@ function ServiceCard({ service }: { service: ApiService }) {
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-export default function ExploreCreatorsScreen() {
+// `showBack` is false when this renders as the Find People tab root (see
+// (tabs)/find-people.tsx) — a tab has no back stack, so the button would only
+// ever bounce to Home. The standalone /(business)/explore-creators route keeps
+// it, since that one IS pushed onto a stack.
+export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: boolean } = {}) {
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
@@ -360,7 +364,7 @@ export default function ExploreCreatorsScreen() {
       {/* Header — back button + search, same row */}
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.header} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
-          <BackButton fallback="/(business)/" />
+          {showBack && <BackButton fallback="/(business)/" />}
           <View style={[s.searchCard, { flex: 1 }]}>
             <View style={{ flex: 1 }}>
               <SearchInput

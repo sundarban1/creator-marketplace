@@ -169,8 +169,14 @@ export default function SubmitProposalScreen() {
 
   const budgetMinNum   = parseFloat(budgetMin ?? '') || 0;
   const budgetMaxNum   = parseFloat(budgetMax ?? '') || 0;
-  const hasBudgetRange = !isFreeEvent && budgetMaxNum > 0;
-  const rateOutOfRange = hasBudgetRange && !!proposedRate && (proposedRate < budgetMinNum || proposedRate > budgetMaxNum);
+  const hasBudget      = !isFreeEvent && budgetMaxNum > 0;
+  // A fixed budget arrives here as min === max (campaign-level) or as the
+  // requirement's budgetFixed echoed into both params. It's a ceiling, not an
+  // exact price — the creator may underbid it but never ask for more.
+  const isFixedBudget  = hasBudget && budgetMinNum === budgetMaxNum;
+  const rateOutOfRange = hasBudget && !!proposedRate && (
+    isFixedBudget ? proposedRate > budgetMaxNum : (proposedRate < budgetMinNum || proposedRate > budgetMaxNum)
+  );
   const isRateInvalid  = !isFreeEvent && (!proposedRate || proposedRate <= 0 || rateOutOfRange);
 
   const coverError = submitted && coverLetterLen < 50
@@ -180,7 +186,9 @@ export default function SubmitProposalScreen() {
     ? (!proposedRate || proposedRate <= 0)
       ? t('proposal.rateInvalidError')
       : rateOutOfRange
-        ? t('proposal.rateRangeError', { min: budgetMinNum.toLocaleString(), max: budgetMaxNum.toLocaleString() })
+        ? isFixedBudget
+          ? t('proposal.rateAboveFixedError', { max: budgetMaxNum.toLocaleString() })
+          : t('proposal.rateRangeError', { min: budgetMinNum.toLocaleString(), max: budgetMaxNum.toLocaleString() })
         : undefined
     : undefined;
   const portError  = submitted && portfolio.trim() && !isValidUrl(portfolio.trim())
@@ -357,7 +365,12 @@ export default function SubmitProposalScreen() {
                 placeholder="e.g. 5000"
                 keyboardType="numeric"
                 error={rateError}
-                hint={hasBudgetRange ? `Budget range: Rs. ${budgetMinNum.toLocaleString()} – Rs. ${budgetMaxNum.toLocaleString()}` : undefined}
+                hint={
+                  !hasBudget ? undefined
+                  : isFixedBudget
+                    ? t('proposal.budgetFixedHint', { max: budgetMaxNum.toLocaleString() })
+                    : t('proposal.budgetRangeHint', { min: budgetMinNum.toLocaleString(), max: budgetMaxNum.toLocaleString() })
+                }
               />
             )}
 

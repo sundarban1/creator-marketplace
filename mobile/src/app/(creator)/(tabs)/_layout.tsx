@@ -24,13 +24,15 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 // bar. `discover` holds all the search/filter/browse/nearby functionality
 // that used to live on Home directly (see discover.tsx) — Home itself is now
 // a lightweight "next best action" dashboard.
-// "proposals" (Applications) and "notifications" (Activity) are intentionally
-// absent here — both are still real, routable screens (see the <Tabs.Screen>
-// entries below), reached from Home's quick actions / header bell rather than
-// a bottom tab bar icon.
+// "notifications" is intentionally absent here — it stays a real, routable
+// screen (see the <Tabs.Screen> entry below) reached from Home's header bell
+// rather than a bottom tab bar icon. "proposals" (Applications) IS on the bar:
+// the spec's Service Giver navigation is Home | Find Work | Applications |
+// Messages | Profile.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home',          iconActive: 'home',          label: 'Home' },
-  discover:      { icon: 'search',        iconActive: 'search',        label: 'Discover' },
+  discover:      { icon: 'search',        iconActive: 'search',        label: 'Find Work' },
+  proposals:     { icon: 'file-alt',      iconActive: 'file-alt',      label: 'Applications', color: '#059669' },
   messages:      { icon: 'comment',    iconActive: 'comment',    label: 'Messages',   color: '#2563EB' },
   profile:       { icon: 'user', iconActive: 'user', label: 'Profile' },
 };
@@ -66,10 +68,9 @@ function CustomTabBar({
 
   const labelMap: Record<string, string> = {
     index:         t('creator.tab.home'),
-    discover:      t('creator.tab.discover'),
+    discover:      t('creator.tab.findWork'),
     proposals:     t('creator.tab.proposals'),
     messages:      t('creator.tab.messages'),
-    notifications: t('creator.tab.activity'),
     profile:       t('creator.tab.profile'),
   };
 
@@ -238,7 +239,7 @@ export default function CreatorTabsLayout() {
             )}
           >
             <Tabs.Screen name="index"    options={{ title: t('creator.tab.home') }} />
-            <Tabs.Screen name="discover" options={{ title: t('creator.tab.discover') }} />
+            <Tabs.Screen name="discover" options={{ title: t('creator.tab.findWork') }} />
             <Tabs.Screen name="proposals" options={{ title: t('creator.tab.proposals') }} />
             <Tabs.Screen
               name="messages"
@@ -250,7 +251,8 @@ export default function CreatorTabsLayout() {
               })}
               options={{ title: t('creator.tab.messages') }}
             />
-            <Tabs.Screen name="notifications" options={{ title: t('creator.tab.activity') }} />
+            {/* notifications.tsx stays reachable via the header bell, never a bottom-tab destination */}
+            <Tabs.Screen name="notifications" options={{ href: null }} />
             <Tabs.Screen name="profile" options={{ title: t('creator.tab.profile') }} />
           </Tabs>
         </MaxWidthContainer>

@@ -705,8 +705,13 @@ export class CampaignService {
       // the campaign-level budgetMin/Max are informational summaries once
       // requirements exist (see createCampaignSchema's comment).
       if (requirement.budgetType === 'FIXED' && requirement.budgetFixed != null) {
-        if (input.proposedRate !== requirement.budgetFixed) {
-          throw new AppError(`Proposed rate must be Rs. ${requirement.budgetFixed.toLocaleString()} for this role`, 400);
+        // A fixed budget is a ceiling, not an exact price — a creator may
+        // underbid it, but never ask for more than the business set aside.
+        if (input.proposedRate > requirement.budgetFixed) {
+          throw new AppError(`Proposed rate cannot exceed Rs. ${requirement.budgetFixed.toLocaleString()} for this role`, 400);
+        }
+        if (!isFreeCampaign && requirement.budgetFixed > 0 && input.proposedRate <= 0) {
+          throw new AppError('Proposed rate must be greater than zero', 400);
         }
       } else if (requirement.budgetType === 'RANGE' && requirement.budgetMin != null && requirement.budgetMax != null) {
         if (input.proposedRate < requirement.budgetMin || input.proposedRate > requirement.budgetMax) {
@@ -717,7 +722,15 @@ export class CampaignService {
         }
       }
     } else if (!isFreeCampaign && campaign.budgetMax > 0) {
-      if (input.proposedRate < campaign.budgetMin || input.proposedRate > campaign.budgetMax) {
+      if (campaign.budgetMin === campaign.budgetMax) {
+        // Fixed budget: underbidding is allowed, overbidding is not.
+        if (input.proposedRate > campaign.budgetMax) {
+          throw new AppError(`Proposed rate cannot exceed Rs. ${campaign.budgetMax.toLocaleString()}`, 400);
+        }
+        if (input.proposedRate <= 0) {
+          throw new AppError('Proposed rate must be greater than zero', 400);
+        }
+      } else if (input.proposedRate < campaign.budgetMin || input.proposedRate > campaign.budgetMax) {
         throw new AppError(
           `Proposed rate must be between Rs. ${campaign.budgetMin.toLocaleString()} and Rs. ${campaign.budgetMax.toLocaleString()}`,
           400,

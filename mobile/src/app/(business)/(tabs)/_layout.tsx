@@ -23,12 +23,15 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 // `color` is omitted for `index` (Home) — it uses the theme's brinjal accent instead, resolved at render time.
 // The header's menu button (see index.tsx) opens the drawer; `notifications`
 // is still a real, routable screen (see the <Tabs.Screen name="notifications">
-// below), it's just no longer one of the bottom tab bar's icons.
+// below), it's just no longer one of the bottom tab bar's icons. `profile` is
+// off the bar for the same reason — the drawer's user row (see
+// BusinessDrawerMenu) is its entry point, which keeps the bar at four tabs so
+// the raised Post Work button sits dead centre with two tabs either side.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
-  index:         { icon: 'home',          iconActive: 'home',          label: 'Home' },
-  campaigns:     { icon: 'briefcase',     iconActive: 'briefcase',     label: 'Events', color: '#059669' },
-  messages:      { icon: 'comment',    iconActive: 'comment',    label: 'Messages',  color: '#2563EB' },
-  profile:       { icon: 'user', iconActive: 'user', label: 'Profile' },
+  index:          { icon: 'home',          iconActive: 'home',          label: 'Home' },
+  'find-people':  { icon: 'users',         iconActive: 'users',         label: 'Find People', color: '#7C3AED' },
+  campaigns:      { icon: 'briefcase',     iconActive: 'briefcase',     label: 'My Work', color: '#059669' },
+  messages:       { icon: 'comment',       iconActive: 'comment',       label: 'Messages', color: '#2563EB' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
@@ -62,10 +65,9 @@ function CustomTabBar({
 
   const labelMap: Record<string, string> = {
     index:         t('business.tab.home'),
-    campaigns:     t('business.tab.events'),
+    'find-people': t('business.tab.findPeople'),
+    campaigns:     t('business.tab.myWork'),
     messages:      t('business.tab.messages'),
-    notifications: t('business.tab.notifications'),
-    profile:       t('business.tab.profile'),
   };
 
   const badgeMap: Record<string, number> = {
@@ -143,18 +145,23 @@ function CustomTabBar({
           </Pressable>
         );
 
-        // Raised circular "create event" button, docked between Events and
-        // Messages — replaces the old free-floating draggable FAB with a
+        // Raised circular "Post Work" button, docked between Find People and
+        // My Work — replaces the old free-floating draggable FAB with a
         // fixed spot nested in a notch cut into the bar itself.
-        if (route.name !== 'campaigns') return [tabItem];
+        if (route.name !== 'find-people') return [tabItem];
         return [
           tabItem,
-          <View key="create-event" style={tabS.createWrap}>
+          <View key="post-work" style={tabS.createWrap}>
             {/* Backdrop circle matches the page background, so it reads as a
                 notch carved into the bar rather than a button just sitting
                 on top of it. */}
             <View style={[tabS.createNotch, { backgroundColor: C.background }]}>
-              <Pressable onPress={() => router.push('/create-campaign')} hitSlop={6}>
+              <Pressable
+                onPress={() => router.push('/create-campaign')}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={t('business.tab.postWork')}
+              >
                 <View style={[tabS.createBtn, { backgroundColor: C.brinjal1 }]}>
                   <FontAwesome5 name="plus" solid size={26} color="#fff" />
                 </View>
@@ -277,11 +284,12 @@ export default function BusinessTabsLayout() {
             )}
           >
             <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
-            <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
+            <Tabs.Screen name="find-people" options={{ title: t('business.tab.findPeople') }} />
+            <Tabs.Screen name="campaigns" options={{ title: t('business.tab.myWork') }} />
             {/* proposals.tsx stays a reachable route (linked from the home
                 quick actions and the pending-proposals banner) but is no
                 longer a bottom-tab destination — per-campaign proposals now
-                open via campaign-proposals.tsx from each event card instead. */}
+                open via campaign-proposals.tsx from each work card instead. */}
             <Tabs.Screen name="proposals" options={{ href: null }} />
             <Tabs.Screen
               name="messages"
@@ -297,7 +305,8 @@ export default function BusinessTabsLayout() {
             <Tabs.Screen name="notifications" options={{ href: null }} />
             {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
             <Tabs.Screen name="create" options={{ href: null }} />
-            <Tabs.Screen name="profile" options={{ title: t('business.tab.profile') }} />
+            {/* profile.tsx stays reachable from the drawer's user row, no longer a bottom-tab destination */}
+            <Tabs.Screen name="profile" options={{ href: null }} />
           </Tabs>
         </MaxWidthContainer>
 

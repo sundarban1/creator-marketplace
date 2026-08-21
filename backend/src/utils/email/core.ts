@@ -11,11 +11,10 @@ const FROM_NAME    = 'Kolab';
 const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'noreply@ourkolab.com';
 const FROM         = `${FROM_NAME} <${FROM_ADDRESS}>`;
 
-// Resend requires the from-address to be on a domain verified with Resend —
-// a Gmail address never qualifies. Without a verified domain, their sandbox
-// sender is the only address that can send at all (and only to the account
-// owner's own inbox until a domain is verified).
-const RESEND_FROM = `${FROM_NAME} <onboarding@resend.dev>`;
+// Resend requires the from-address to be on a domain verified with Resend, so
+// this stays on ourkolab.com rather than following EMAIL_USERNAME (which may
+// be a Gmail address for the SMTP path, and would never qualify).
+const RESEND_FROM = `${FROM_NAME} <noreply@ourkolab.com>`;
 
 export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
