@@ -7,6 +7,7 @@ export interface ApiCategory {
   color: string;
   name: string;
   key: string;
+  scope: 'CREATOR' | 'BUSINESS' | 'BOTH';
   // Section header for the provider-role picker (e.g. "Photography", "Events")
   // — only meaningful for CREATOR-scope rows; industry (BOTH-scope) rows leave
   // this null, they're not grouped.

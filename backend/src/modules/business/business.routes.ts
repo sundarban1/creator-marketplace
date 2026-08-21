@@ -43,6 +43,7 @@ router.post('/logo', uploadImage.single('logo'), ctrl.uploadLogo.bind(ctrl));
 router.post('/cover', uploadImage.single('cover'), ctrl.uploadCoverImage.bind(ctrl));
 router.post('/documents/pan',         uploadImage.single('document'), ctrl.uploadPanDoc.bind(ctrl));
 router.post('/documents/company-reg', uploadImage.single('document'), ctrl.uploadCompanyRegDoc.bind(ctrl));
+router.post('/documents/identity',    uploadImage.single('document'), ctrl.uploadIdentityDoc.bind(ctrl));
 router.get('/payment-history', ctrl.getPaymentHistory.bind(ctrl));
 router.get('/analytics', ctrl.getMyAnalytics.bind(ctrl));
 

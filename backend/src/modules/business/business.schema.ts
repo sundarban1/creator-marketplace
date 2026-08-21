@@ -52,8 +52,14 @@ export const updateBusinessProfileSchema = z.object({
   defaultPlatforms:         z.array(z.string()).optional(),
   defaultCreatorCategories: z.array(z.string()).optional(),
   defaultBudgetRange:       z.string().optional().nullable(),
-  // "Who are you representing?" — first step of business onboarding.
+  // "How are you hiring?" — first step of service-taker onboarding.
   representingType: z.enum(['ORGANIZATION', 'INDIVIDUAL']).optional(),
+  // ORGANIZATION-only fields. Nullable so switching a profile back to
+  // INDIVIDUAL can clear them; `organizationTypeOther` only carries meaning
+  // alongside organizationType: 'OTHER'.
+  organizationType: z.enum(['COMPANY', 'BRAND', 'RESTAURANT_CAFE', 'HOTEL_RESORT', 'AGENCY', 'STARTUP', 'NGO', 'INGO', 'EDUCATION', 'EVENT_ORGANIZER', 'MEDIA_PRODUCTION', 'RETAIL_SHOP', 'ECOMMERCE', 'COMMUNITY_CLUB', 'GOVERNMENT', 'OTHER']).optional().nullable(),
+  organizationTypeOther: z.string().trim().max(60, 'Keep it under 60 characters').optional().nullable(),
+  contactPersonName: z.string().trim().min(2, 'Contact person name must be at least 2 characters').max(100).optional().nullable(),
   // "What is this for?" — last step of business onboarding, alongside
   // defaultCreatorCategories.
   purpose: z.enum(['BRAND_MARKETING', 'CONTENT_CREATION', 'EVENT', 'WEDDING', 'PHOTOSHOOT', 'PERFORMANCE', 'COLLABORATION', 'OTHER']).optional(),

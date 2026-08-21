@@ -1,5 +1,6 @@
 import { request } from '@/lib/api';
 import type { ApiSocialAccount } from '@/lib/api';
+import type { ApiPortfolioItem } from './portfolio';
 
 export type { ApiSocialAccount };
 
@@ -144,6 +145,9 @@ export interface ApiCreatorPublicProfile {
   // Absent on older cached responses — treat as empty, not an error.
   reviews?: ApiReviewReceived[];
   services?: ApiPublicService[];
+  // Media-backed portfolio entries (PortfolioItem table), separate from the
+  // legacy label+url portfolioLinks above.
+  portfolioItems?: ApiPortfolioItem[];
 }
 
 export interface ApiPublicService {

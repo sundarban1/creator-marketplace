@@ -16,6 +16,15 @@ const FROM         = `${FROM_NAME} <${FROM_ADDRESS}>`;
 // be a Gmail address for the SMTP path, and would never qualify).
 const RESEND_FROM = `${FROM_NAME} <noreply@ourkolab.com>`;
 
+/** The SMTP host `createTransporter()` would pick, for logging — so a sandboxed
+ *  relay (e.g. smtp.mailtrap.io, which swallows everything) is visible in the
+ *  logs rather than having to be read off the host's dashboard. */
+function smtpHostInUse(): string | undefined {
+  if (env.EMAIL_HOST && env.EMAIL_USERNAME && env.EMAIL_PASSWORD) return env.EMAIL_HOST;
+  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) return env.SMTP_HOST;
+  return undefined;
+}
+
 export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 }
@@ -47,32 +56,35 @@ function createTransporter() {
 }
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  // Gmail SMTP first — it can send to any recipient with no sandbox restriction.
-  // Resend is the fallback: it's HTTPS-based (works even if outbound SMTP ports are
-  // blocked wherever this is hosted), but on the free tier it can only deliver to
-  // the account owner's own inbox until a domain is verified at resend.com/domains,
-  // so it's a safety net for when SMTP is unreachable/misconfigured, not the primary
-  // path.
-  const transporter = createTransporter();
-  if (transporter) {
-    try {
-      await transporter.sendMail({ from: FROM, to, subject, html });
-      logger.info({ to, subject }, 'Email sent (SMTP)');
-      return;
-    } catch (err) {
-      logger.warn({ to, subject, err }, 'SMTP send failed, falling back to Resend');
-    }
-  }
-
+  // Resend first, SMTP second — deliberately in that order. The SMTP path is the
+  // dev/local one, and it's routinely pointed at a capture-only sandbox (Mailtrap),
+  // which accepts every message and delivers none. Trying SMTP first meant a
+  // sandboxed prod logged a cheerful "Email sent" while no OTP ever reached a real
+  // inbox, and the Resend fallback was never reached because nothing had "failed".
+  // Resend is also HTTPS-based, so it's unaffected by hosts that block outbound
+  // SMTP ports. Note its free tier only delivers to the account owner's own inbox
+  // until ourkolab.com is verified at resend.com/domains.
   if (env.RESEND_API_KEY) {
     const resend = new Resend(env.RESEND_API_KEY);
     const { error } = await resend.emails.send({ from: RESEND_FROM, to, subject, html });
-    if (error) throw new Error(`Resend: ${error.message}`);
-    logger.info({ to, subject }, 'Email sent (Resend)');
+    if (!error) {
+      logger.info({ to, subject }, 'Email sent (Resend)');
+      return;
+    }
+    logger.warn({ to, subject, err: error }, 'Resend send failed, falling back to SMTP');
+  }
+
+  const transporter = createTransporter();
+  if (transporter) {
+    await transporter.sendMail({ from: FROM, to, subject, html });
+    logger.info({ to, subject, host: smtpHostInUse() }, 'Email sent (SMTP)');
     return;
   }
 
-  logger.debug({ to, subject }, 'Email not sent (no email provider configured)');
+  // Never downgrade this to debug: prod runs at LOG_LEVEL=info, so a debug line
+  // here makes a completely unconfigured mailer indistinguishable from a working
+  // one — the caller gets a resolved promise and the user gets silence.
+  logger.error({ to, subject }, 'Email NOT sent — no email provider configured (set RESEND_API_KEY)');
 }
 
 // ── Shared layout ──────────────────────────────────────────────────────────────

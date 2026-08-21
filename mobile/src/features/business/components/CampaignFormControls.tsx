@@ -90,7 +90,7 @@ export function ChipGroup({
 // ─── ChipMultiGroup (multi-select, "Any Creator" exclusive) ───────────────────
 
 export function ChipMultiGroup({
-  values, onChange, options, colors, error, disabled,
+  values, onChange, options, colors, error, disabled, labelFor,
 }: {
   values: string[];
   onChange: (v: string[]) => void;
@@ -98,6 +98,11 @@ export function ChipMultiGroup({
   colors: ReturnType<typeof useAppColors>;
   error?: string;
   disabled?: boolean;
+  // Renders a different label than the option string itself. Needed where the
+  // option IS the stored/persisted value (event offerings, exchange types) and
+  // so has to stay in English while the brand sees it in their own language.
+  // Omitted everywhere the option is already display text.
+  labelFor?: (option: string) => string;
 }) {
   const C = colors;
   function toggle(opt: string) {
@@ -118,7 +123,7 @@ export function ChipMultiGroup({
               disabled={disabled}
               style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface, opacity: disabled && !sel ? 0.4 : 1 }]}
               onPress={() => toggle(opt)}>
-              <Text style={[cg.chipText, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
+              <Text style={[cg.chipText, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{labelFor ? labelFor(opt) : opt}</Text>
             </Pressable>
           );
         })}

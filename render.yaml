@@ -80,7 +80,17 @@ services:
       - key: FRONTEND_URL
         sync: false
 
-      # ── Email (Gmail SMTP) — fill in via Render dashboard ────────────────────
+      # ── Email ───────────────────────────────────────────────────────────────
+      # RESEND_API_KEY is the production path and the one that must be set: it
+      # sends over HTTPS, so it works regardless of outbound SMTP-port blocking.
+      # Requires ourkolab.com to be verified at resend.com/domains, otherwise
+      # Resend only delivers to the account owner's own inbox.
+      # The EMAIL_*/SMTP_* vars below are the local-dev fallback and are usually
+      # pointed at a capture-only sandbox (Mailtrap) — do NOT rely on them here:
+      # a sandbox accepts every message and delivers none, which is exactly how
+      # prod ended up silently swallowing every signup/reset OTP.
+      - key: RESEND_API_KEY
+        sync: false
       - key: EMAIL_HOST
         sync: false
       - key: EMAIL_PORT

@@ -76,9 +76,37 @@ export function mapAiCampaignDraftToForm(draft: AiCampaignDraft, aiPrompt: strin
   };
 }
 
+// Turns the AI's "YYYY-MM-DD" (+ optional "HH:MM") into a local Date. Built
+// component-by-component rather than via `new Date(iso)`, which would parse a
+// bare date string as UTC midnight and land on the previous calendar day for
+// every user east of Greenwich — Nepal included.
+function parseAiEventDate(date: string | null, time: string | null): Date | null {
+  if (!date) return null;
+  const [y, m, d] = date.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const [hh, mm] = (time ?? '').split(':').map(Number);
+  const parsed = new Date(y, m - 1, d, Number.isFinite(hh) ? hh : 0, Number.isFinite(mm) ? mm : 0);
+  // A model that misreads the year (or resolves "the 14th" into a month that
+  // has already gone by) would otherwise silently publish an event in the past.
+  if (Number.isNaN(parsed.getTime()) || dayStart(parsed) < dayStart(new Date())) return null;
+  return parsed;
+}
+
 export function mapAiEventDraftToForm(draft: AiEventDraft, aiPrompt: string, prev: FormData): Partial<FormData> {
-  const eventDate = prev.eventDate ?? dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-  const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
+  // The date the brand actually stated wins over both the form's current value
+  // and the seven-days-out default — before this, everything they said about
+  // timing was discarded and every AI-generated event landed a week out.
+  const spokenDate = parseAiEventDate(draft.eventDate ?? null, draft.eventTime ?? null);
+  const eventDate = spokenDate ?? prev.eventDate ?? dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+  // Registration normally closes two days before the event, but an event the
+  // brand said is happening tomorrow would put that in the past — clamp it into
+  // [today, event day] instead of shipping a deadline that already expired.
+  const today = dayStart(new Date());
+  const twoDaysBefore = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
+  const regDeadline = new Date(Math.min(
+    Math.max(twoDaysBefore.getTime(), today.getTime()),
+    dayStart(eventDate).getTime(),
+  ));
   return {
     template:    draft.category,
     platforms:   draft.platforms.slice(0, 1),
@@ -93,6 +121,10 @@ export function mapAiEventDraftToForm(draft: AiEventDraft, aiPrompt: string, pre
     capacity:    draft.capacity,
     eventDate,
     deadline:    regDeadline,
+    // Only overwrite a venue the brand hasn't already typed on the setup
+    // screen — their own entry is more reliable than an inferred one.
+    venue:       prev.venue.trim() || draft.venue?.trim() || draft.location?.trim() || prev.venue,
+    location:    draft.location?.trim() || prev.location,
     featureImageUrl:       prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
     aiGenerated:           true,
     aiPrompt,

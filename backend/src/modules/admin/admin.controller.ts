@@ -411,7 +411,9 @@ export async function setBusinessDocumentStatus(req: Request, res: Response, nex
   try {
     const { id, doc }  = req.params;
     const { approved } = req.body as { approved: boolean };
-    if (doc !== 'pan' && doc !== 'companyReg') throw new AppError('doc must be "pan" or "companyReg"', 400);
+    if (doc !== 'pan' && doc !== 'companyReg' && doc !== 'identity') {
+      throw new AppError('doc must be "pan", "companyReg" or "identity"', 400);
+    }
     if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', 400);
     const updated = await service.setBusinessDocumentStatus(id!, doc, approved);
     return success(res, updated, 'Document status updated');

@@ -17,6 +17,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
+import { eventOptionLabel } from '@/features/business/utils/eventOptionLabels';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
@@ -334,7 +335,7 @@ export default function CampaignDetailScreen() {
               {campaign.benefits.map((b, i) => (
                 <View key={i} style={[s.benefitChip, { backgroundColor: '#F0FDF4', borderColor: '#A7F3D0' }]}>
                   <FontAwesome5 name="gift" solid size={12} color="#065F46" />
-                  <Text style={[s.benefitChipTxt, { color: '#065F46' }]}>{b}</Text>
+                  <Text style={[s.benefitChipTxt, { color: '#065F46' }]}>{eventOptionLabel(b, 'offering', t)}</Text>
                 </View>
               ))}
             </View>

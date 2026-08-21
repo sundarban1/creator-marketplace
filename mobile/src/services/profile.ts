@@ -24,6 +24,11 @@ export type BusinessProfile = {
   location:     string | null;
   locationLat:  number | null;
   locationLng:  number | null;
+  province:     string | null;
+  district:     string | null;
+  city:         string | null;
+  area:         string | null;
+  address:      string | null;
   isVerified:   boolean;
   fullyVerified: boolean;
   createdAt:    string;
@@ -37,12 +42,25 @@ export type BusinessProfile = {
   panDocStatus:        DocStatus;
   companyRegDocUrl:    string | null;
   companyRegDocStatus: DocStatus;
+  // INDIVIDUAL service takers verify with one identity document instead of
+  // PAN + company registration — see the backend's isBusinessFullyVerified.
+  identityDocUrl:      string | null;
+  identityDocStatus:   DocStatus;
+  // §7 tri-state, derived server-side so every surface agrees.
+  verificationStatus:  'NOT_VERIFIED' | 'PENDING' | 'VERIFIED';
   verificationRejectReason: string | null;
   representingType: 'ORGANIZATION' | 'INDIVIDUAL' | null;
+  // ORGANIZATION-only — always null on an INDIVIDUAL profile (the backend
+  // clears them when the hiring type is set to INDIVIDUAL).
+  organizationType: OrganizationType | null;
+  organizationTypeOther: string | null;
+  contactPersonName: string | null;
   purpose: BusinessPurpose | null;
   favoritedByCount: number;
   user: { email: string; phone: string | null; isEmailVerified: boolean; isPhoneVerified: boolean };
 };
+
+export type OrganizationType = 'COMPANY' | 'BRAND' | 'RESTAURANT_CAFE' | 'HOTEL_RESORT' | 'AGENCY' | 'STARTUP' | 'NGO' | 'INGO' | 'EDUCATION' | 'EVENT_ORGANIZER' | 'MEDIA_PRODUCTION' | 'RETAIL_SHOP' | 'ECOMMERCE' | 'COMMUNITY_CLUB' | 'GOVERNMENT' | 'OTHER';
 
 export type Category = { label: string };
 
@@ -85,6 +103,14 @@ export const profileService = {
     location?:      string | null;
     locationLat?:   number | null;
     locationLng?:   number | null;
+    // Nepal's Province → District → City / Municipality hierarchy. Nothing asks
+    // the user for these directly any more — business onboarding backfills them
+    // from the chosen Google Place's address components (resolvePlaceDetails).
+    province?:      string | null;
+    district?:      string | null;
+    city?:          string | null;
+    area?:          string | null;
+    address?:       string | null;
     categories?:    string[];
     socialLinks?:   SocialLinks;
     presenceServices?:         string[];
@@ -93,6 +119,9 @@ export const profileService = {
     defaultCreatorCategories?: string[];
     defaultBudgetRange?:       string | null;
     representingType?: 'ORGANIZATION' | 'INDIVIDUAL';
+    organizationType?: OrganizationType | null;
+    organizationTypeOther?: string | null;
+    contactPersonName?: string | null;
     purpose?: BusinessPurpose;
     businessSize?: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE';
   }): Promise<void> {

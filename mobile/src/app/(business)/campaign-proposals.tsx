@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
@@ -134,7 +135,11 @@ function ProposalCard({
       {/* Creator header */}
       <View style={styles.cardHeader}>
         <View style={[styles.avatar, { backgroundColor: accentBg }]}>
-          <Text style={[styles.avatarText, { color: accent }]}>{initials(p.creator.fullName)}</Text>
+          {p.creator.avatarUrl ? (
+            <Image source={{ uri: p.creator.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+          ) : (
+            <Text style={[styles.avatarText, { color: accent }]}>{initials(p.creator.fullName)}</Text>
+          )}
         </View>
         <View style={styles.creatorMeta}>
           <Text style={[styles.creatorName, { color: C.text }]}>{p.creator.fullName}</Text>
@@ -328,7 +333,11 @@ function InviteeCard({ invitee }: { invitee: CampaignInvitee }) {
       }>
       <View style={styles.cardHeader}>
         <View style={[styles.avatar, { backgroundColor: FREE_LIGHT }]}>
-          <Text style={[styles.avatarText, { color: FREE_ACCENT }]}>{initials(invitee.creator.fullName)}</Text>
+          {invitee.creator.avatarUrl ? (
+            <Image source={{ uri: invitee.creator.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+          ) : (
+            <Text style={[styles.avatarText, { color: FREE_ACCENT }]}>{initials(invitee.creator.fullName)}</Text>
+          )}
         </View>
         <View style={styles.creatorMeta}>
           <Text style={[styles.creatorName, { color: C.text }]}>{invitee.creator.fullName}</Text>
@@ -1159,6 +1168,7 @@ const styles = StyleSheet.create({
   },
   cardHeader:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   avatar:         { width: 46, height: 46, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  avatarImg:      { width: 46, height: 46, borderRadius: RADIUS.full },
   avatarText:     { fontSize: 15, fontFamily: F.bold },
   creatorMeta:    { flex: 1, gap: 3 },
   creatorName:    { fontSize: 14, fontFamily: F.bold },

@@ -60,6 +60,19 @@ export class BusinessService {
       if (derivedCity) rest.city = derivedCity;
     }
 
+    // Organization-only fields must not survive on an INDIVIDUAL profile — the
+    // hiring type is the source of truth, so switching to INDIVIDUAL clears
+    // them rather than leaving stale organization data hanging off a personal
+    // account. Likewise, the free-text "other" label only means anything while
+    // organizationType is OTHER.
+    if (rest.representingType === 'INDIVIDUAL') {
+      rest.organizationType      = null;
+      rest.organizationTypeOther = null;
+      rest.contactPersonName     = null;
+    } else if (rest.organizationType && rest.organizationType !== 'OTHER') {
+      rest.organizationTypeOther = null;
+    }
+
     const updated = await this.repo.update(userId, rest);
 
     logActivity({ userId, action: ActivityAction.BUSINESS_PROFILE_UPDATED, metadata: { changedFields: Object.keys(rest) } });
@@ -98,6 +111,23 @@ export class BusinessService {
 
   async uploadPanDoc(userId: string, docUrl: string) {
     return toBusinessProfileDto(await this.repo.updatePanDoc(userId, docUrl));
+  }
+
+  // INDIVIDUAL service takers only — citizenship / national ID / personal PAN.
+  // Rejected for ORGANIZATION profiles so the two verification paths can't be
+  // mixed into a half-and-half state the status rules don't describe. Checked
+  // by the controller *before* it uploads, so a rejected request doesn't leave
+  // an orphaned file in Cloudinary.
+  async assertCanUploadIdentityDoc(userId: string) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Business profile not found', 404);
+    if (profile.representingType !== 'INDIVIDUAL') {
+      throw new AppError('Identity documents apply to individual accounts. Upload your PAN and company registration instead.', 400);
+    }
+  }
+
+  async uploadIdentityDoc(userId: string, docUrl: string) {
+    return toBusinessProfileDto(await this.repo.updateIdentityDoc(userId, docUrl));
   }
 
   async uploadCompanyRegDoc(userId: string, docUrl: string) {

@@ -333,28 +333,39 @@ export class AdminRepository {
     });
   }
 
-  async setBusinessDocumentStatus(businessProfileId: string, doc: 'pan' | 'companyReg', approved: boolean) {
+  // 'identity' is the INDIVIDUAL service taker's citizenship / national ID /
+  // personal PAN — without it here an individual could upload a document that
+  // no admin could ever act on, leaving them stuck at PENDING forever.
+  async setBusinessDocumentStatus(businessProfileId: string, doc: 'pan' | 'companyReg' | 'identity', approved: boolean) {
     const status: 'APPROVED' | 'REJECTED' = approved ? 'APPROVED' : 'REJECTED';
-    const data = doc === 'pan' ? { panDocStatus: status } : { companyRegDocStatus: status };
+    const data =
+      doc === 'pan'      ? { panDocStatus: status }
+      : doc === 'identity' ? { identityDocStatus: status }
+      : { companyRegDocStatus: status };
     return prisma.businessProfile.update({
       where: { id: businessProfileId },
       data,
       select: {
         id: true, userId: true, businessName: true,
         panDocUrl: true, panDocStatus: true, companyRegDocUrl: true, companyRegDocStatus: true,
+        identityDocUrl: true, identityDocStatus: true,
       },
     });
   }
 
   async updateBusinessVerification(businessProfileId: string, isVerified: boolean) {
-    const data: { isVerified: boolean; panDocStatus?: 'APPROVED'; companyRegDocStatus?: 'APPROVED' } = { isVerified };
+    const data: {
+      isVerified: boolean;
+      panDocStatus?: 'APPROVED'; companyRegDocStatus?: 'APPROVED'; identityDocStatus?: 'APPROVED';
+    } = { isVerified };
     if (isVerified) {
       const existing = await prisma.businessProfile.findUnique({
         where:  { id: businessProfileId },
-        select: { panDocUrl: true, companyRegDocUrl: true },
+        select: { panDocUrl: true, companyRegDocUrl: true, identityDocUrl: true },
       });
       if (existing?.panDocUrl) data.panDocStatus = 'APPROVED';
       if (existing?.companyRegDocUrl) data.companyRegDocStatus = 'APPROVED';
+      if (existing?.identityDocUrl) data.identityDocStatus = 'APPROVED';
     }
     return prisma.businessProfile.update({
       where: { id: businessProfileId },
@@ -362,6 +373,7 @@ export class AdminRepository {
       select: {
         id: true, userId: true, businessName: true, isVerified: true,
         panDocUrl: true, panDocStatus: true, companyRegDocUrl: true, companyRegDocStatus: true,
+        identityDocUrl: true, identityDocStatus: true,
         user: { select: { email: true } },
       },
     });
@@ -370,20 +382,22 @@ export class AdminRepository {
   async rejectBusinessVerification(businessProfileId: string, reason: string) {
     const existing = await prisma.businessProfile.findUnique({
       where:  { id: businessProfileId },
-      select: { panDocUrl: true, companyRegDocUrl: true },
+      select: { panDocUrl: true, companyRegDocUrl: true, identityDocUrl: true },
     });
     const data: {
       isVerified: boolean; verificationRejectReason: string; verificationRejectedAt: Date;
-      panDocStatus?: 'REJECTED'; companyRegDocStatus?: 'REJECTED';
+      panDocStatus?: 'REJECTED'; companyRegDocStatus?: 'REJECTED'; identityDocStatus?: 'REJECTED';
     } = { isVerified: false, verificationRejectReason: reason, verificationRejectedAt: new Date() };
     if (existing?.panDocUrl) data.panDocStatus = 'REJECTED';
     if (existing?.companyRegDocUrl) data.companyRegDocStatus = 'REJECTED';
+    if (existing?.identityDocUrl) data.identityDocStatus = 'REJECTED';
     return prisma.businessProfile.update({
       where: { id: businessProfileId },
       data,
       select: {
         id: true, userId: true, businessName: true, isVerified: true,
         panDocUrl: true, panDocStatus: true, companyRegDocUrl: true, companyRegDocStatus: true,
+        identityDocUrl: true, identityDocStatus: true,
         verificationRejectReason: true,
         user: { select: { email: true, phone: true } },
       },

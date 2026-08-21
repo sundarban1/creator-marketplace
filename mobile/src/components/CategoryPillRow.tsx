@@ -47,7 +47,7 @@ export function CategoryPillRow({ categories, activeLabels, onToggle, wrap, show
     const isActive = activeLabels.includes(cat.name);
     return (
       <Pressable
-        key={cat.name}
+        key={cat.id}
         style={[s.pill, { backgroundColor: isActive ? meta.color : C.surface, borderColor: isActive ? meta.color : C.border }]}
         onPress={() => onToggle(cat.name)}>
         <FontAwesome5 name={meta.icon} size={13} color={isActive ? '#fff' : meta.color} />

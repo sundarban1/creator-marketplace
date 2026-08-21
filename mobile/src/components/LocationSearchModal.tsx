@@ -34,7 +34,8 @@ export function LocationSearchModal({
 }: {
   visible: boolean;
   initialValue: string;
-  onSelect: (address: string, lat: number, lng: number) => void;
+  /** `placeId` is absent only when the pick came from the geocode fallback below. */
+  onSelect: (address: string, lat: number, lng: number, placeId?: string) => void;
   onClose: () => void;
 }) {
   const C = useAppColors();
@@ -86,7 +87,7 @@ export function LocationSearchModal({
 
   async function handleSelectPrediction(prediction: Prediction) {
     if (!PLACES_KEY) {
-      onSelect(prediction.description, 0, 0);
+      onSelect(prediction.description, 0, 0, prediction.place_id);
       return;
     }
     try {
@@ -104,12 +105,13 @@ export function LocationSearchModal({
           prediction.description,
           data.result.geometry.location.lat,
           data.result.geometry.location.lng,
+          prediction.place_id,
         );
       } else {
-        await fallBackToGeocode(prediction.description);
+        await fallBackToGeocode(prediction.description, prediction.place_id);
       }
     } catch {
-      await fallBackToGeocode(prediction.description);
+      await fallBackToGeocode(prediction.description, prediction.place_id);
     }
   }
 
@@ -123,9 +125,9 @@ export function LocationSearchModal({
   // pointing at an old pin. Geocoding API is a separate Google product from
   // Places Details, so it's a real second chance at getting real coordinates
   // for the new address, not just a retry of the same failing call.
-  async function fallBackToGeocode(address: string) {
+  async function fallBackToGeocode(address: string, placeId?: string) {
     const coords = await geocodeAddress(address);
-    onSelect(address, coords?.lat ?? 0, coords?.lng ?? 0);
+    onSelect(address, coords?.lat ?? 0, coords?.lng ?? 0, placeId);
   }
 
   return (

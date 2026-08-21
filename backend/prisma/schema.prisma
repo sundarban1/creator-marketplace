@@ -109,80 +109,80 @@ model Block {
 }
 
 model CreatorProfile {
-  id                      String               @id @default(cuid())
-  userId                  String               @unique
-  fullName                String?
-  bio                     String?
-  location                String?
-  avatarUrl               String?
-  coverImageUrl           String?
-  categories              String[]
-  socialLinks             Json                 @default("{}")
-  portfolioLinks          Json                 @default("[]")
-  isVerified              Boolean              @default(false)
-  createdAt               DateTime             @default(now())
-  updatedAt               DateTime             @updatedAt
-  username                String?              @unique
-  paymentMethods          String[]             @default([])
-  prefPlatforms           String[]             @default([])
-  prefLocations           String[]             @default([])
-  prefBudgetMin           Float                @default(0)
-  prefBudgetMax           Float                @default(500)
-  locationLat             Float?
-  locationLng             Float?
-  nearbyRadiusKm          Int                  @default(25)
-  nearbyUseHomeLocation   Boolean              @default(false)
-  referralCode            String?              @unique
-  citizenshipDocUrl       String?
-  citizenshipStatus       CitizenshipStatus    @default(NONE)
-  citizenshipUploadedAt   DateTime?
-  panDocUrl               String?
-  panDocStatus            DocumentStatus       @default(NONE)
-  panDocUploadedAt        DateTime?
+  id                       String                 @id @default(cuid())
+  userId                   String                 @unique
+  fullName                 String?
+  bio                      String?
+  location                 String?
+  avatarUrl                String?
+  coverImageUrl            String?
+  categories               String[]
+  socialLinks              Json                   @default("{}")
+  portfolioLinks           Json                   @default("[]")
+  isVerified               Boolean                @default(false)
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  username                 String?                @unique
+  paymentMethods           String[]               @default([])
+  prefPlatforms            String[]               @default([])
+  prefLocations            String[]               @default([])
+  prefBudgetMin            Float                  @default(0)
+  prefBudgetMax            Float                  @default(500)
+  locationLat              Float?
+  locationLng              Float?
+  nearbyRadiusKm           Int                    @default(25)
+  nearbyUseHomeLocation    Boolean                @default(false)
+  referralCode             String?                @unique
+  citizenshipDocUrl        String?
+  citizenshipStatus        CitizenshipStatus      @default(NONE)
+  citizenshipUploadedAt    DateTime?
+  panDocUrl                String?
+  panDocStatus             DocumentStatus         @default(NONE)
+  panDocUploadedAt         DateTime?
   // Parity with BusinessProfile's equivalent pair, added later — BusinessProfile
   // has always had these, Creator never did until the Provider-marketplace work.
   verificationRejectReason String?
   verificationRejectedAt   DateTime?
   // Structured location — additive alongside the free-text `location` above,
   // which stays authoritative for existing search/display until callers migrate.
-  province                String?
-  district                String?
-  city                    String?
-  area                    String?
-  address                 String?
-  locationVisibility      LocationVisibility   @default(CITY)
+  province                 String?
+  district                 String?
+  city                     String?
+  area                     String?
+  address                  String?
+  locationVisibility       LocationVisibility     @default(CITY)
   // §61 — parity with BusinessProfile's equivalent trio, added later:
   // BusinessProfile has always had these, providers never did until now.
   // The public profile endpoint gates on showPublicProfile the same way
   // business.service.ts's getBusinessPublic already does.
-  showPublicProfile       Boolean              @default(true)
-  hideContactDetails      Boolean              @default(false)
-  hideSocialLinks         Boolean              @default(false)
-  availabilityStatus      AvailabilityStatus   @default(AVAILABLE)
+  showPublicProfile        Boolean                @default(true)
+  hideContactDetails       Boolean                @default(false)
+  hideSocialLinks          Boolean                @default(false)
+  availabilityStatus       AvailabilityStatus     @default(AVAILABLE)
   // Collected as the first step of provider onboarding, right after signup.
-  providerType            ProviderType?
+  providerType             ProviderType?
   // What this provider charges, distinct from prefBudgetMin/Max above (what
   // they're willing to accept on a campaign).
-  startingRate            Float?
-  negotiable              Boolean              @default(true)
-  applications            Application[]
-  conversations           Conversation[]       @relation("CreatorConversations")
-  conversationsAsCreator2 Conversation[]       @relation("Creator2Conversations")
-  user                    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  favoriteBusinesses      FavoriteBusiness[]
-  socialAccounts          SocialAccount[]
-  savedBy                 SavedCreator[]
-  receivedInvitations     CampaignInvitation[]
-  referralsMade           Referral[]           @relation("ReferralsMade")
-  referralsReceived       Referral?            @relation("ReferralsReceived")
-  withdrawals             Withdrawal[]
-  profileViews            ProfileView[]
-  paymentTransactions     PaymentTransaction[]
-  contracts               Contract[]
-  services                Service[]
-  portfolioItems          PortfolioItem[]
-  availabilitySchedule    AvailabilitySchedule[]
-  serviceRequests         ServiceRequest[]
+  startingRate             Float?
+  negotiable               Boolean                @default(true)
+  applications             Application[]
+  conversations            Conversation[]         @relation("CreatorConversations")
+  conversationsAsCreator2  Conversation[]         @relation("Creator2Conversations")
+  user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favoriteBusinesses       FavoriteBusiness[]
+  socialAccounts           SocialAccount[]
+  savedBy                  SavedCreator[]
+  receivedInvitations      CampaignInvitation[]
+  referralsMade            Referral[]             @relation("ReferralsMade")
+  referralsReceived        Referral?              @relation("ReferralsReceived")
+  withdrawals              Withdrawal[]
+  profileViews             ProfileView[]
+  paymentTransactions      PaymentTransaction[]
+  contracts                Contract[]
+  services                 Service[]
+  portfolioItems           PortfolioItem[]
+  availabilitySchedule     AvailabilitySchedule[]
+  serviceRequests          ServiceRequest[]
 
   @@index([isVerified])
   @@map("creator_profiles")
@@ -194,21 +194,21 @@ model CreatorProfile {
 // the legacy CreatorProfile.categories/Campaign.category string arrays, since
 // this is a new table with no existing data to preserve compatibility with.
 model Service {
-  id                String         @id @default(cuid())
-  creatorProfileId  String
-  categoryId        String
-  name              String
-  description       String
-  startingPrice     Float?
-  pricingModel      PricingModel
-  deliveryTime      String?
-  whatsIncluded     String[]       @default([])
-  status            ServiceStatus  @default(ACTIVE)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  creatorProfile    CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
-  category          Category       @relation(fields: [categoryId], references: [id])
-  requests          ServiceRequest[]
+  id               String           @id @default(cuid())
+  creatorProfileId String
+  categoryId       String
+  name             String
+  description      String
+  startingPrice    Float?
+  pricingModel     PricingModel
+  deliveryTime     String?
+  whatsIncluded    String[]         @default([])
+  status           ServiceStatus    @default(ACTIVE)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  creatorProfile   CreatorProfile   @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  category         Category         @relation(fields: [categoryId], references: [id])
+  requests         ServiceRequest[]
 
   @@index([creatorProfileId])
   @@index([categoryId])
@@ -235,9 +235,9 @@ model ServiceRequest {
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
 
-  service     Service              @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  business    BusinessProfile      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  creator     CreatorProfile       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  service  Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  business BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  creator  CreatorProfile  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
   @@index([serviceId])
   @@index([businessId, createdAt(sort: Desc)])
@@ -255,16 +255,16 @@ enum ServiceRequestStatus {
 // (unstructured Json, still read by existing code) — new uploads should prefer
 // this table; the Json field is not being migrated or deprecated here.
 model PortfolioItem {
-  id                String          @id @default(cuid())
-  creatorProfileId  String
-  title             String?
-  description       String?
-  category          String?
-  mediaUrl          String?
-  mediaType         MediaType?
-  externalUrl       String?
-  createdAt         DateTime        @default(now())
-  creatorProfile    CreatorProfile  @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  id               String         @id @default(cuid())
+  creatorProfileId String
+  title            String?
+  description      String?
+  category         String?
+  mediaUrl         String?
+  mediaType        MediaType?
+  externalUrl      String?
+  createdAt        DateTime       @default(now())
+  creatorProfile   CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
 
   @@index([creatorProfileId])
   @@map("portfolio_items")
@@ -274,12 +274,12 @@ model PortfolioItem {
 // enum on CreatorProfile (available/busy/unavailable "right now" vs. a
 // recurring schedule).
 model AvailabilitySchedule {
-  id                String         @id @default(cuid())
-  creatorProfileId  String
-  dayOfWeek         Int
-  availableFrom     String
-  availableUntil    String
-  creatorProfile    CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  id               String         @id @default(cuid())
+  creatorProfileId String
+  dayOfWeek        Int
+  availableFrom    String
+  availableUntil   String
+  creatorProfile   CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
 
   @@unique([creatorProfileId, dayOfWeek])
   @@map("availability_schedules")
@@ -419,6 +419,14 @@ model BusinessProfile {
   companyRegDocUrl         String?
   companyRegDocStatus      DocumentStatus       @default(NONE)
   companyRegDocUploadedAt  DateTime?
+  // INDIVIDUAL service takers verify with a personal identity document
+  // (citizenship, national ID or personal PAN) — they have no company
+  // registration, so requiring panDoc + companyRegDoc the way an ORGANIZATION
+  // does would leave them permanently unverifiable. ORGANIZATION profiles
+  // leave this null and use the two fields above instead.
+  identityDocUrl           String?
+  identityDocStatus        DocumentStatus       @default(NONE)
+  identityDocUploadedAt    DateTime?
   verificationRejectReason String?
   verificationRejectedAt   DateTime?
   province                 String?
@@ -430,6 +438,14 @@ model BusinessProfile {
   businessSize             BusinessSize?
   // Collected as the first step of business onboarding, right after signup.
   representingType         RepresentingType?
+  // ORGANIZATION-only, collected on the same step as businessName. Never asked
+  // of an INDIVIDUAL hirer, so both stay null on those profiles.
+  organizationType         OrganizationType?
+  // Free text, only meaningful when organizationType is OTHER.
+  organizationTypeOther    String?
+  // Who to reach at the organization — distinct from businessName, and from
+  // the account holder's User.name (an office manager may run the account).
+  contactPersonName        String?
   // Collected on the last step of business onboarding, alongside
   // defaultCreatorCategories — see BusinessPurpose for what drives what.
   purpose                  BusinessPurpose?
@@ -474,27 +490,27 @@ model BusinessReferral {
 }
 
 model Campaign {
-  id                    String               @id @default(cuid())
+  id                    String                @id @default(cuid())
   businessId            String
   title                 String
   description           String
   template              String?
   featureImageUrl       String?
   category              String
-  goals                 Json                 @default("[]")
-  platforms             String[]             @default([])
-  minFollowers          Int                  @default(0)
+  goals                 Json                  @default("[]")
+  platforms             String[]              @default([])
+  minFollowers          Int                   @default(0)
   contentType           String
   deliverables          String
   deadline              DateTime
   location              String?
   locationLat           Float?
   locationLng           Float?
-  locationType          LocationType         @default(ONSITE)
+  locationType          LocationType          @default(ONSITE)
   budgetMin             Float
   budgetMax             Float
   paymentType           String
-  status                CampaignStatus       @default(ACTIVE)
+  status                CampaignStatus        @default(ACTIVE)
   // Admin soft-delete (see AdminRepository.softDeleteCampaignCascade) — the
   // campaign row itself is kept (audit trail), but every consumer-facing
   // query (findMany/findManySearch/findNearby/findById/findByBusinessId in
@@ -510,37 +526,37 @@ model Campaign {
   // full proposedRate; the platform fee is the business's cost, not a
   // deduction from the creator's payout.
   commissionRate        Float?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
-  isFeatured            Boolean              @default(false)
-  creatorsNeeded        Int                  @default(1)
-  campaignType          CampaignType         @default(PAID_CAMPAIGN)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  isFeatured            Boolean               @default(false)
+  creatorsNeeded        Int                   @default(1)
+  campaignType          CampaignType          @default(PAID_CAMPAIGN)
   capacity              Int?
   eventDate             DateTime?
   venue                 String?
-  benefits              Json                 @default("[]")
-  eventStatus           EventStatus          @default(OPEN)
-  paymentStatus         PaymentStatus        @default(UNPAID)
+  benefits              Json                  @default("[]")
+  eventStatus           EventStatus           @default(OPEN)
+  paymentStatus         PaymentStatus         @default(UNPAID)
   paidAt                DateTime?
   paymentMethod         String?
   objective             String?
-  contentGuidelines     String[]             @default([])
-  targetAudience        String[]             @default([])
-  hashtags              String[]             @default([])
+  contentGuidelines     String[]              @default([])
+  targetAudience        String[]              @default([])
+  hashtags              String[]              @default([])
   sampleCaption         String?
   approvalRequirements  String?
-  aiGenerated           Boolean              @default(false)
+  aiGenerated           Boolean               @default(false)
   aiPrompt              String?
-  aiSuggestedCategories String[]             @default([])
-  aiSuggestedPlatforms  String[]             @default([])
-  aiNeedsInputFields    String[]             @default([])
+  aiSuggestedCategories String[]              @default([])
+  aiSuggestedPlatforms  String[]              @default([])
+  aiNeedsInputFields    String[]              @default([])
   // AI-determined (or business-corrected) completion type for the simple
   // single-category case — null until classified. Multi-requirement
   // campaigns use each CampaignRequirement's own completionType instead.
   completionType        CompletionType?
   completionReason      String?
   applications          Application[]
-  business              BusinessProfile      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business              BusinessProfile       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversations         Conversation[]
   invitations           CampaignInvitation[]
   paymentTransactions   PaymentTransaction[]
@@ -644,31 +660,31 @@ model Application {
 // separate follow-up task once real UI needs it, not part of this schema
 // change. Do not assume accepting into a requirement behaves correctly yet.
 model CampaignRequirement {
-  id           String                @id @default(cuid())
-  campaignId   String
-  categoryId   String
-  quantity     Int                   @default(1)
-  budgetType   RequirementBudgetType @default(FIXED)
-  budgetFixed  Float?
-  budgetMin    Float?
-  budgetMax    Float?
-  deliverables String?
+  id               String                @id @default(cuid())
+  campaignId       String
+  categoryId       String
+  quantity         Int                   @default(1)
+  budgetType       RequirementBudgetType @default(FIXED)
+  budgetFixed      Float?
+  budgetMin        Float?
+  budgetMax        Float?
+  deliverables     String?
   // Free-text brief of what this role should actually do — only meaningful
   // for non-Content-Creator roles (which use `deliverables` instead).
-  description  String?
+  description      String?
   // §42 — expected file format(s) for this role's deliverables, e.g.
   // ["JPG", "MP4"]. Free-form strings (not an enum) so "Other: ..." values
   // typed by the business pass through untouched, same convention as
   // Category/Provider "Other" text fields elsewhere in this schema.
-  format       String[]  @default([])
-  deadline     DateTime?
+  format           String[]              @default([])
+  deadline         DateTime?
   // Per-role completion type — a multi-role campaign can freely mix e.g. a
   // DJ (SERVICE) and a Photographer (DELIVERABLE) requirement. Null until
   // classified, same convention as Campaign.completionType.
   completionType   CompletionType?
   completionReason String?
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   category     Category      @relation(fields: [categoryId], references: [id])
@@ -807,11 +823,11 @@ model Conversation {
 }
 
 model Message {
-  id                     String       @id @default(cuid())
+  id                     String            @id @default(cuid())
   conversationId         String
   senderId               String
   content                String
-  type                   MessageType  @default(TEXT)
+  type                   MessageType       @default(TEXT)
   attachmentUrl          String?
   attachmentName         String?
   attachmentThumbnailUrl String? // Cloudinary-derived jpg poster frame — VIDEO only
@@ -828,7 +844,7 @@ model Message {
   // expo-audio metering during recording, so the playback bubble renders the
   // actual recorded waveform instead of a generic placeholder.
   attachmentWaveform     String?
-  createdAt              DateTime     @default(now())
+  createdAt              DateTime          @default(now())
   // "Delete for everyone" (sender-only, no time limit) — the row is kept so
   // history/pagination doesn't shift, but the content is tombstoned in the DTO.
   deletedAt              DateTime?
@@ -838,11 +854,11 @@ model Message {
   editedAt               DateTime?
   // "Delete for me" — hides the message from one side's view without touching
   // the other participant's copy or the underlying content.
-  hiddenForCreator       Boolean      @default(false)
-  hiddenForBusiness      Boolean      @default(false)
-  hiddenForCreator2      Boolean      @default(false)
-  conversation           Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender                 User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  hiddenForCreator       Boolean           @default(false)
+  hiddenForBusiness      Boolean           @default(false)
+  hiddenForCreator2      Boolean           @default(false)
+  conversation           Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender                 User              @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt(sort: Desc)])
   @@map("messages")
@@ -981,37 +997,37 @@ model FaqArticle {
 }
 
 model SupportRequest {
-  id         String   @id @default(cuid())
-  userId     String?
+  id             String   @id @default(cuid())
+  userId         String?
   // Set only for anonymous submissions (e.g. the public landing-page contact
   // form) — logged-in submissions identify the sender via `user` instead.
-  guestName  String?
-  guestEmail String?
-  topic      String
-  message    String
-  status     String   @default("OPEN")
+  guestName      String?
+  guestEmail     String?
+  topic          String
+  message        String
+  status         String   @default("OPEN")
   // Cloudinary URLs — up to 3, uploaded via POST /api/support/attachments
   // before the request itself is submitted.
   attachmentUrls String[] @default([])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User?    @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User?    @relation(fields: [userId], references: [id])
 
   @@map("support_requests")
 }
 
 model IssueReport {
-  id          String   @id @default(cuid())
-  userId      String?
-  type        String
-  description String
-  status      String   @default("OPEN")
+  id             String   @id @default(cuid())
+  userId         String?
+  type           String
+  description    String
+  status         String   @default("OPEN")
   // Cloudinary URLs — up to 3, uploaded via POST /api/support/attachments
   // before the report itself is submitted.
   attachmentUrls String[] @default([])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User?    @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User?    @relation(fields: [userId], references: [id])
 
   @@map("issue_reports")
 }
@@ -1083,17 +1099,17 @@ model SavedCreator {
 }
 
 model CampaignInvitation {
-  id          String            @id @default(cuid())
+  id          String           @id @default(cuid())
   campaignId  String
   creatorId   String
   businessId  String
   message     String?
-  status      InvitationStatus  @default(PENDING)
+  status      InvitationStatus @default(PENDING)
   respondedAt DateTime?
-  createdAt   DateTime          @default(now())
-  campaign    Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  creator     CreatorProfile    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  business    BusinessProfile   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  campaign    Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator     CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  business    BusinessProfile  @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, creatorId])
   @@map("campaign_invitations")
@@ -1360,9 +1376,13 @@ enum ProviderType {
   AGENCY
 }
 
-// Answers "Who are you representing?" on business onboarding — the initial
-// focus is ORGANIZATION (where the paid-campaign use case lives); INDIVIDUAL
-// covers a person sourcing providers for their own project.
+// Answers "How are you hiring?" on service-taker onboarding — two equal-weight
+// choices, not a primary and a fallback. INDIVIDUAL is a person hiring for a
+// personal need (wedding photographer, birthday DJ); ORGANIZATION is someone
+// hiring on behalf of a company, brand, NGO, hotel, school or team. An
+// INDIVIDUAL is never asked for an organization name, business size, PAN or
+// registration — see the Business Verification backlog for progressive
+// verification.
 enum RepresentingType {
   ORGANIZATION
   INDIVIDUAL
@@ -1381,6 +1401,29 @@ enum BusinessPurpose {
   PHOTOSHOOT
   PERFORMANCE
   COLLABORATION
+  OTHER
+}
+
+// What kind of organization is hiring — ORGANIZATION-only, asked right after
+// the organization name. The list is deliberately Nepal-shaped (INGO and
+// "Event Organizer" earn their places here in a way they wouldn't elsewhere).
+// OTHER pairs with BusinessProfile.organizationTypeOther for the free text.
+enum OrganizationType {
+  COMPANY
+  BRAND
+  RESTAURANT_CAFE
+  HOTEL_RESORT
+  AGENCY
+  STARTUP
+  NGO
+  INGO
+  EDUCATION
+  EVENT_ORGANIZER
+  MEDIA_PRODUCTION
+  RETAIL_SHOP
+  ECOMMERCE
+  COMMUNITY_CLUB
+  GOVERNMENT
   OTHER
 }
 
@@ -1425,22 +1468,22 @@ enum DocumentStatus {
 }
 
 model Category {
-  id        String         @id @default(cuid())
-  icon      String
-  iconBg    String
-  color     String         @default("#6B7280")
-  name      String
-  key       String         @unique
-  scope     CategoryScope  @default(BOTH)
-  status    CategoryStatus @default(ACTIVE)
+  id           String                @id @default(cuid())
+  icon         String
+  iconBg       String
+  color        String                @default("#6B7280")
+  name         String
+  key          String                @unique
+  scope        CategoryScope         @default(BOTH)
+  status       CategoryStatus        @default(ACTIVE)
   // Section header for the provider-type picker (e.g. "Content & Media",
   // "Talent & Appearance") — only meaningful for CREATOR-scope rows; BOTH-scope
   // content-niche rows (Restaurants, Automotive, ...) leave this null, they're
   // not grouped. Purely presentational, not queried on.
-  group     String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  services  Service[]
+  group        String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  services     Service[]
   requirements CampaignRequirement[]
 
   @@map("categories")

@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { campaignService } from '@/services/campaign';
+import { campaignService, clampAiPrompt } from '@/services/campaign';
 import { ApiError, warmUpBackend } from '@/lib/api';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
@@ -30,6 +30,9 @@ import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
 import { VoicePromptInput } from '@/features/business/components/VoicePromptInput';
+import { VoiceTranscriptReview } from '@/features/business/components/VoiceTranscriptReview';
+import { eventOptionLabel, eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
+import { fallbackLang, genericCampaignTemplate, genericFreeEventTemplate } from '@/features/business/utils/fallbackTemplates';
 import { transcribeAudio } from '@/services/audioTranscribe';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -335,39 +338,10 @@ const NEED_HELP_SCRIPT_NE = `कोल्याबमा स्वागत छ!
 // already covers OpenAI-specific failures (bad key, quota, malformed response), so this
 // only kicks in when the whole request never came back. Keeps campaign creation working
 // end-to-end even with zero connectivity to the AI provider.
-const GENERIC_AI_TEMPLATE = {
-  title: 'New Promotional Campaign',
-  description: "Creators will create engaging content that introduces your brand to their audience, highlighting what makes it worth trying and encouraging followers to check it out.",
-  objective: 'Increase brand awareness and drive engagement',
-  contentGuidelines: [
-    'Introduce the brand naturally within the content',
-    'Highlight one clear reason to try it',
-    'Keep the tone authentic and conversational',
-    'Include a clear call-to-action in the caption',
-  ],
-  targetAudience: ['Any Creator'],
-  suggestedDurationDays: 14,
-  creatorsNeeded: 4,
-  budgetMin: 6000,
-  budgetMax: 15000,
-  deliverables: { REEL: 1, STORY: 2 } as Record<string, number>,
-  hashtags: ['NewBrand', 'MustTry', 'SupportLocal'],
-  sampleCaption: "Just discovered this and had to share \u{1F440} If you're into this kind of thing, you're going to love it.",
-  approvalRequirements: 'Brand will review draft content before it’s posted',
-};
-
-// Used when generateEventWithAi() throws outright (network down, request timeout,
-// backend error unrelated to the AI call itself) — the backend's own dummy-template
-// fallback already covers OpenAI-specific failures. Mirrors GENERIC_AI_TEMPLATE above,
-// but for OPEN_EVENT drafts (no budget/deliverables, has benefits/capacity instead).
-const GENERIC_FREE_EVENT_TEMPLATE = {
-  title: 'Exclusive Creator Event',
-  description: "We're inviting creators to an exclusive event to experience our brand firsthand and create authentic content. Enjoy complimentary access, connect with our team, and share your genuine experience with your audience.",
-  benefits: ['Free Event Access', 'Free Products / Gifts'],
-  capacity: 20,
-  exchangeType: ['Just attend & share organically'],
-  expectedContent: '',
-};
+// Both live in i18n now (aiFallbackTemplates) and are built per-language by
+// genericCampaignTemplate/genericFreeEventTemplate — a brand who described their
+// event in Nepali was previously handed an English draft here, which reads as
+// the app ignoring their language rather than as a degraded path.
 
 // "What are you offering?" — kept in sync with BENEFIT_OPTIONS in
 // backend/campaign-ai.schema.ts — the AI-generated event draft's `benefits`
@@ -1116,6 +1090,15 @@ export default function CreateCampaignScreen() {
   const [promptMode, setPromptMode] = useState<'text' | 'audio'>('text');
   const [recordedAudioUri, setRecordedAudioUri] = useState<string | null>(null);
   const [transcribingAudio, setTranscribingAudio] = useState(false);
+  // What the transcription heard, shown back to the brand for correction
+  // before anything is generated from it (see VoiceTranscriptReview). Null
+  // means no recording has been transcribed yet — distinct from '', which is
+  // a transcript the brand has deliberately cleared.
+  const [audioTranscript, setAudioTranscript] = useState<string | null>(null);
+  // Transcription failed for a recording that's still on disk. Kept separate
+  // from a null transcript so the brand can retry the request itself rather
+  // than being made to re-record over what was usually just a network blip.
+  const [transcriptFailed, setTranscriptFailed] = useState(false);
   // Which Quick Audio Sample (if any) is currently being read aloud via TTS —
   // null when nothing is playing.
   const [playingSampleIdx, setPlayingSampleIdx] = useState<number | null>(null);
@@ -1316,6 +1299,9 @@ export default function CreateCampaignScreen() {
       // itself never came back (network down, timeout, unrelated server error). Load a
       // generic template locally instead of leaving the user stuck with an empty form.
       const fallbackCategory = categoryOptions.find((c) => c.label === 'Lifestyle')?.label ?? categoryOptions[0]?.label ?? '';
+      // The brand's own words decide the language here, not the app setting —
+      // see fallbackLang.
+      const GENERIC_AI_TEMPLATE = genericCampaignTemplate(fallbackLang(prompt, language));
       const fallbackPlatform = platformOptions.find((p) => p === 'Instagram') ?? platformOptions[0] ?? '';
       setForm((prev) => ({
         ...prev,
@@ -1423,6 +1409,7 @@ export default function CreateCampaignScreen() {
       // falls back to a dummy draft for OpenAI-specific failures, so reaching this
       // catch means the request itself never came back.
       const fallbackCategory = categoryOptions.find((c) => c.label === 'Lifestyle')?.label ?? categoryOptions[0]?.label ?? '';
+      const GENERIC_FREE_EVENT_TEMPLATE = genericFreeEventTemplate(fallbackLang(prompt, language));
       const fallbackPlatform = platformOptions.find((p) => p === 'Instagram') ?? platformOptions[0] ?? '';
       setForm((prev) => {
         const eventDate = prev.eventDate ?? defaultEventDate;
@@ -1457,14 +1444,52 @@ export default function CreateCampaignScreen() {
   }
 
   // VoicePromptInput hands back a uri once a recording passes basic
-  // validation — remembered here until the page's own Create Event button
-  // (below) is pressed, which is what actually transcribes + generates.
+  // validation. Transcription starts immediately rather than waiting for the
+  // page's Create Event button: the transcript is what the brand needs to see
+  // and correct, and making them press a button to reveal it reads as if the
+  // button did nothing. Generation still waits for that button.
   function handleAudioRecorded(uri: string) {
     setRecordedAudioUri(uri);
+    void transcribeRecording(uri);
+  }
+
+  async function transcribeRecording(uri: string) {
+    setTranscribingAudio(true);
+    setAudioTranscript(null);
+    setTranscriptFailed(false);
+    try {
+      // Clamped, not sent raw — a long recording transcribes past what the
+      // generate endpoint accepts, and an over-length prompt comes back as a
+      // plain 400 that handleGenerate*'s catch can only read as "the request
+      // never came back". Clamping here also keeps the box the brand edits
+      // and the text the generator receives identical. See clampAiPrompt.
+      const text = clampAiPrompt(await transcribeAudio(uri));
+      // Empty means the audio carried no speech at all — re-recording is the
+      // only way forward, so this is a failure the retry can't help with.
+      if (!text) {
+        showToast(t('createEvent.audioTryAgain'), 'error');
+        setRecordedAudioUri(null);
+        return;
+      }
+      setAudioTranscript(text);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('createEvent.audioTryAgain'), 'error');
+      // Recording deliberately kept so retryTranscription can reuse it.
+      setTranscriptFailed(true);
+    } finally {
+      setTranscribingAudio(false);
+    }
+  }
+
+  function retryTranscription() {
+    if (!recordedAudioUri || transcribingAudio) return;
+    void transcribeRecording(recordedAudioUri);
   }
 
   function handleAudioDiscard() {
     setRecordedAudioUri(null);
+    setAudioTranscript(null);
+    setTranscriptFailed(false);
   }
 
   function handleAudioError(message: string) {
@@ -1472,28 +1497,20 @@ export default function CreateCampaignScreen() {
   }
 
   // Shared by both the Paid and Open Event "Create Event" buttons. In Text
-  // mode this is just handleGenerateWithAi/handleGenerateEventWithAi, same as
-  // before. In Audio mode, the recording sitting in `recordedAudioUri` is
-  // transcribed first, then fed into that exact same generate flow — so
-  // audio and text ultimately produce a draft the identical way.
+  // mode this is just handleGenerateWithAi/handleGenerateEventWithAi. In Audio
+  // mode the transcript already exists (transcribeRecording ran when the
+  // recording finished) and may have been corrected by the brand — the string
+  // in the review box is what gets generated from, so audio and text feed the
+  // exact same generate flow.
   async function handleCreateEventPress(targetPhase: Phase = 'review') {
     if (promptMode === 'audio') {
-      if (!recordedAudioUri || aiLoading || transcribingAudio) return;
-      setTranscribingAudio(true);
-      try {
-        const text = await transcribeAudio(recordedAudioUri);
-        if (!text.trim()) {
-          showToast(t('createEvent.audioTryAgain'), 'error');
-          return;
-        }
-        setRecordedAudioUri(null);
-        if (form.eventType === 'PAID_CAMPAIGN') await handleGenerateWithAi(text, targetPhase);
-        else await handleGenerateEventWithAi(text, targetPhase);
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : t('createEvent.audioTryAgain'), 'error');
-      } finally {
-        setTranscribingAudio(false);
-      }
+      const prompt = audioTranscript?.trim();
+      if (!prompt || aiLoading || transcribingAudio) return;
+      setRecordedAudioUri(null);
+      setAudioTranscript(null);
+      setTranscriptFailed(false);
+      if (form.eventType === 'PAID_CAMPAIGN') await handleGenerateWithAi(prompt, targetPhase);
+      else await handleGenerateEventWithAi(prompt, targetPhase);
       return;
     }
     if (form.eventType === 'PAID_CAMPAIGN') void handleGenerateWithAi(undefined, targetPhase);
@@ -1827,8 +1844,11 @@ export default function CreateCampaignScreen() {
   // (inviteDescribe has no venue field, mirroring the Paid flow's location check).
   // 'completionType' is deliberately absent: a free event always completes the
   // same way (attend + share), so the flow never asks the business for it even
-  // when the AI flags it as uncertain.
-  const inviteDraftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'location')
+  // when the AI flags it as uncertain. 'eventDate' IS in the tier: when the
+  // brand never said when the event is, the date on the draft is a bare
+  // seven-days-out placeholder, and publishing that unchallenged is exactly
+  // how an invitation goes out on a day nobody chose.
+  const inviteDraftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'location' || f === 'eventDate')
     || (form.locationType === 'ONSITE' && !form.venue.trim());
 
   // Three independent "tracks" now share this one screen: the new 3-step
@@ -1856,7 +1876,10 @@ export default function CreateCampaignScreen() {
 
   // Create Event button: in Text mode there must be something typed; in
   // Audio mode a recording must be sitting ready (see handleAudioRecorded).
-  const canSubmitEvent = promptMode === 'text' ? aiPromptText.trim().length > 0 : !!recordedAudioUri;
+  // Audio mode is submittable only once there's a transcript with something in
+  // it — a recording alone isn't enough now that the brand is shown (and can
+  // edit, or empty) the text the draft will actually be generated from.
+  const canSubmitEvent = promptMode === 'text' ? aiPromptText.trim().length > 0 : !!audioTranscript?.trim();
   const aiBusy = aiLoading || transcribingAudio;
 
   return (
@@ -2063,23 +2086,36 @@ export default function CreateCampaignScreen() {
                       disabled={aiLoading || transcribingAudio}
                     />
 
-                    <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
-                    <View style={ai.chipWrap}>
-                      {getPromptSamples(businessCategories[0]).map(({ text, lang }, idx) => (
-                        <Pressable
-                          key={`${idx}-${text}`}
-                          style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
-                          onPress={() => handlePlaySample(idx, text, lang)}
-                          disabled={aiLoading}>
-                          <FontAwesome5
-                            name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
-                            size={15}
-                            color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
-                          />
-                          <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
+                    <VoiceTranscriptReview
+                      value={audioTranscript}
+                      onChangeText={setAudioTranscript}
+                      transcribing={transcribingAudio}
+                      failed={transcriptFailed}
+                      onRetry={retryTranscription}
+                      disabled={aiLoading}
+                    />
+
+                    {audioTranscript === null && !transcribingAudio && !transcriptFailed && (
+                      <>
+                        <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
+                        <View style={ai.chipWrap}>
+                          {getPromptSamples(businessCategories[0]).map(({ text, lang }, idx) => (
+                            <Pressable
+                              key={`${idx}-${text}`}
+                              style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                              onPress={() => handlePlaySample(idx, text, lang)}
+                              disabled={aiLoading}>
+                              <FontAwesome5
+                                name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
+                                size={15}
+                                color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
+                              />
+                              <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </>
+                    )}
                   </>
                 )}
               </SectionCard>
@@ -2318,6 +2354,7 @@ export default function CreateCampaignScreen() {
                 values={form.benefits}
                 onChange={(v) => update('benefits', v)}
                 colors={C}
+                labelFor={(o) => eventOptionLabel(o, 'offering', t)}
               />
               <Pressable
                 style={[s.generateBtn, { backgroundColor: form.benefits.length > 0 ? C.brinjal1 : C.border }]}
@@ -2405,23 +2442,36 @@ export default function CreateCampaignScreen() {
                       disabled={aiLoading || transcribingAudio}
                     />
 
-                    <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
-                    <View style={ai.chipWrap}>
-                      {getInviteSamples(businessCategories[0]).map(({ text, lang }, idx) => (
-                        <Pressable
-                          key={`${idx}-${text}`}
-                          style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
-                          onPress={() => handlePlaySample(idx, text, lang)}
-                          disabled={aiLoading}>
-                          <FontAwesome5
-                            name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
-                            size={15}
-                            color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
-                          />
-                          <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
+                    <VoiceTranscriptReview
+                      value={audioTranscript}
+                      onChangeText={setAudioTranscript}
+                      transcribing={transcribingAudio}
+                      failed={transcriptFailed}
+                      onRetry={retryTranscription}
+                      disabled={aiLoading}
+                    />
+
+                    {audioTranscript === null && !transcribingAudio && !transcriptFailed && (
+                      <>
+                        <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
+                        <View style={ai.chipWrap}>
+                          {getInviteSamples(businessCategories[0]).map(({ text, lang }, idx) => (
+                            <Pressable
+                              key={`${idx}-${text}`}
+                              style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                              onPress={() => handlePlaySample(idx, text, lang)}
+                              disabled={aiLoading}>
+                              <FontAwesome5
+                                name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
+                                size={15}
+                                color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
+                              />
+                              <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </>
+                    )}
                   </>
                 )}
               </SectionCard>
@@ -2483,14 +2533,14 @@ export default function CreateCampaignScreen() {
                 <PreviewRow
                   icon="gift"
                   label={t('createInvitation.offeringLabel')}
-                  value={form.benefits.join(', ') || '—'}
+                  value={eventOptionLabels(form.benefits, 'offering', t).join(', ') || '—'}
                   colors={C}
                   onPress={() => setEditingField('offerings')}
                 />
                 <PreviewRow
                   icon="hand-holding-heart"
                   label={t('createInvitation.exchangeLabel')}
-                  value={form.exchangeType.join(', ') || '—'}
+                  value={eventOptionLabels(form.exchangeType, 'exchange', t).join(', ') || '—'}
                   colors={C}
                   onPress={() => setEditingField('exchangeType')}
                 />
@@ -2595,7 +2645,7 @@ export default function CreateCampaignScreen() {
                 <PreviewRow
                   icon="gift"
                   label={t('createInvitation.publishReceiveLabel')}
-                  value={form.benefits.join(', ') || '—'}
+                  value={eventOptionLabels(form.benefits, 'offering', t).join(', ') || '—'}
                   colors={C}
                   onPress={() => setEditingField('offerings')}
                 />
@@ -2609,7 +2659,7 @@ export default function CreateCampaignScreen() {
                 <PreviewRow
                   icon="hand-holding-heart"
                   label={t('createInvitation.publishExchangeLabel')}
-                  value={form.exchangeType.join(', ') || '—'}
+                  value={eventOptionLabels(form.exchangeType, 'exchange', t).join(', ') || '—'}
                   colors={C}
                   onPress={() => setEditingField('exchangeType')}
                 />
@@ -2804,23 +2854,36 @@ export default function CreateCampaignScreen() {
                           disabled={aiLoading || transcribingAudio}
                         />
 
-                        <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
-                        <View style={ai.chipWrap}>
-                          {getPromptSamples(businessCategories[0]).map(({ text, lang }, idx) => (
-                            <Pressable
-                              key={`${idx}-${text}`}
-                              style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
-                              onPress={() => handlePlaySample(idx, text, lang)}
-                              disabled={aiLoading}>
-                              <FontAwesome5
-                                name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
-                                size={15}
-                                color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
-                              />
-                              <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
-                            </Pressable>
-                          ))}
-                        </View>
+                        <VoiceTranscriptReview
+                          value={audioTranscript}
+                          onChangeText={setAudioTranscript}
+                          transcribing={transcribingAudio}
+                          failed={transcriptFailed}
+                          onRetry={retryTranscription}
+                          disabled={aiLoading}
+                        />
+
+                        {audioTranscript === null && !transcribingAudio && !transcriptFailed && (
+                          <>
+                            <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
+                            <View style={ai.chipWrap}>
+                              {getPromptSamples(businessCategories[0]).map(({ text, lang }, idx) => (
+                                <Pressable
+                                  key={`${idx}-${text}`}
+                                  style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                                  onPress={() => handlePlaySample(idx, text, lang)}
+                                  disabled={aiLoading}>
+                                  <FontAwesome5
+                                    name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
+                                    size={15}
+                                    color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
+                                  />
+                                  <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
+                                </Pressable>
+                              ))}
+                            </View>
+                          </>
+                        )}
                       </>
                     )}
                   </SectionCard>
@@ -2953,23 +3016,36 @@ export default function CreateCampaignScreen() {
                           disabled={aiLoading || transcribingAudio}
                         />
 
-                        <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
-                        <View style={ai.chipWrap}>
-                          {getPromptSamples(businessCategories[0]).map(({ text, lang }, idx) => (
-                            <Pressable
-                              key={`${idx}-${text}`}
-                              style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
-                              onPress={() => handlePlaySample(idx, text, lang)}
-                              disabled={aiLoading}>
-                              <FontAwesome5
-                                name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
-                                size={15}
-                                color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
-                              />
-                              <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
-                            </Pressable>
-                          ))}
-                        </View>
+                        <VoiceTranscriptReview
+                          value={audioTranscript}
+                          onChangeText={setAudioTranscript}
+                          transcribing={transcribingAudio}
+                          failed={transcriptFailed}
+                          onRetry={retryTranscription}
+                          disabled={aiLoading}
+                        />
+
+                        {audioTranscript === null && !transcribingAudio && !transcriptFailed && (
+                          <>
+                            <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
+                            <View style={ai.chipWrap}>
+                              {getPromptSamples(businessCategories[0]).map(({ text, lang }, idx) => (
+                                <Pressable
+                                  key={`${idx}-${text}`}
+                                  style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                                  onPress={() => handlePlaySample(idx, text, lang)}
+                                  disabled={aiLoading}>
+                                  <FontAwesome5
+                                    name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
+                                    size={15}
+                                    color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
+                                  />
+                                  <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
+                                </Pressable>
+                              ))}
+                            </View>
+                          </>
+                        )}
                       </>
                     )}
                   </SectionCard>
@@ -3355,14 +3431,14 @@ export default function CreateCampaignScreen() {
                       "What are you offering?" step, not the old 10-item BENEFITS
                       list, so editing here and there never diverge. */}
                   <SectionCard title={t('createEvent.secBenefitsTitle')} sub={t('createEvent.secBenefitsSub')} icon="gift" colors={C}>
-                    <ChipMultiGroup options={OFFERING_OPTIONS} values={form.benefits} onChange={(v) => update('benefits', v)} colors={C} />
+                    <ChipMultiGroup options={OFFERING_OPTIONS} values={form.benefits} onChange={(v) => update('benefits', v)} colors={C} labelFor={(o) => eventOptionLabel(o, 'offering', t)} />
                   </SectionCard>
 
                   {/* In exchange for this, looking for — Free Invitation-only
                       concept, but this legacy editor is also this flow's "Edit
                       details" fallback, so it needs its own round-trippable field. */}
                   <SectionCard title={t('createInvitation.exchangeLabel')} icon="hand-holding-heart" colors={C}>
-                    <ChipMultiGroup options={EXCHANGE_OPTIONS} values={form.exchangeType} onChange={(v) => update('exchangeType', v)} colors={C} />
+                    <ChipMultiGroup options={EXCHANGE_OPTIONS} values={form.exchangeType} onChange={(v) => update('exchangeType', v)} colors={C} labelFor={(o) => eventOptionLabel(o, 'exchange', t)} />
                   </SectionCard>
 
                   {!(form.exchangeType.length === 1 && form.exchangeType[0] === 'Just attend & share organically') && (
@@ -3807,10 +3883,10 @@ export default function CreateCampaignScreen() {
           />
         )}
         {editingField === 'offerings' && (
-          <ChipMultiGroup options={OFFERING_OPTIONS} values={form.benefits} onChange={(v) => update('benefits', v)} colors={C} />
+          <ChipMultiGroup options={OFFERING_OPTIONS} values={form.benefits} onChange={(v) => update('benefits', v)} colors={C} labelFor={(o) => eventOptionLabel(o, 'offering', t)} />
         )}
         {editingField === 'exchangeType' && (
-          <ChipMultiGroup options={EXCHANGE_OPTIONS} values={form.exchangeType} onChange={(v) => update('exchangeType', v)} colors={C} />
+          <ChipMultiGroup options={EXCHANGE_OPTIONS} values={form.exchangeType} onChange={(v) => update('exchangeType', v)} colors={C} labelFor={(o) => eventOptionLabel(o, 'exchange', t)} />
         )}
         {editingField === 'expectedContent' && (
           <TextInputWithLabel

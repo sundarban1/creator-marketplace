@@ -7,7 +7,10 @@
         "espresso",
         "latte",
         "brew",
-        "roast"
+        "roast",
+        "कफी",
+        "क्याफे",
+        "चिया"
       ],
       "title": "Sip & Share: New Coffee Launch",
       "description": "Creators will visit and feature our new coffee blend through authentic, visually engaging content. We're looking for genuine reactions and lifestyle-style shots that make viewers want to try it themselves.",
@@ -100,7 +103,21 @@
         }
       ],
       "completionType": "DELIVERABLE",
-      "completionReason": "The creators are expected to create and publish the agreed social media content."
+      "completionReason": "The creators are expected to create and publish the agreed social media content.",
+      "ne": {
+        "title": "सिप एन्ड सेयर: नयाँ कफी लन्च",
+        "description": "क्रिएटरहरूले आएर हाम्रो नयाँ कफी ब्लेन्ड चाखी साँचो र हेर्नलायक कन्टेन्टमार्फत देखाउनेछन्। हामी वास्तविक प्रतिक्रिया र लाइफस्टाइल शैलीका सट खोज्दैछौं, जसले हेर्नेलाई आफैं चाख्न मन लगाओस्।",
+        "objective": "नयाँ कफी लन्चको स्थानीय चर्चा बढाउने र पसलमा ग्राहक ल्याउने",
+        "contentGuidelines": [
+          "कफी बनाउँदै वा खन्याउँदै गरेको देखाउनुहोस्",
+          "कप/ब्रान्डिङको कम्तीमा एउटा स्पष्ट सट राख्नुहोस्",
+          "स्वर न्यानो र सहज राख्नुहोस्, धेरै स्क्रिप्टेड नबनाउनुहोस्",
+          "क्याप्सनमा स्वादका विशेषता उल्लेख गर्नुहोस्"
+        ],
+        "sampleCaption": "बिहानको मेरो नयाँ मनपर्ने बानी भेटियो ☕️ यो नयाँ ब्लेन्डको फिनिस एकदम स्मुथ छ — कफी मन पराउनेले पक्कै चाख्नुपर्छ।",
+        "approvalRequirements": "पोस्ट गर्नुअघि ब्रान्डले २४ घण्टाभित्र ड्राफ्ट कन्टेन्ट हेर्नेछ",
+        "completionReason": "क्रिएटरहरूले सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [
@@ -110,7 +127,17 @@
         "dish",
         "chef",
         "dining",
-        "eatery"
+        "eatery",
+        "रेस्टुरेन्ट",
+        "खाना",
+        "मेनु",
+        "मःम",
+        "म:म",
+        "परिकार",
+        "भोजन",
+        "momo",
+        "khana",
+        "khaja"
       ],
       "title": "Taste the New Menu",
       "description": "Creators will dine in and showcase our newest menu items through short-form video and photo content, highlighting flavor, presentation, and the overall dining experience.",
@@ -163,7 +190,21 @@
       ],
       "goal": "More Customers",
       "completionType": "DELIVERABLE",
-      "completionReason": "The creators are expected to create and publish the agreed social media content."
+      "completionReason": "The creators are expected to create and publish the agreed social media content.",
+      "ne": {
+        "title": "नयाँ मेनु चाख्नुहोस्",
+        "description": "क्रिएटरहरूले आएर खाना खाँदै हाम्रा नयाँ मेनु आइटमहरू छोटो भिडियो र फोटोमार्फत देखाउनेछन् — स्वाद, प्रस्तुति र समग्र खानपिन अनुभवमा जोड दिँदै।",
+        "objective": "नयाँ मेनु लन्चको चर्चा र बुकिङ बढाउने",
+        "contentGuidelines": [
+          "कम्तीमा २ सिग्नेचर परिकार नजिकबाट खिच्नुहोस्",
+          "रेस्टुरेन्टको वातावरण/भित्री भाग छोटो देखाउनुहोस्",
+          "स्वादमा साँचो प्रतिक्रिया दिनुहोस् — बढाइचढाइ नगर्नुहोस्",
+          "रेस्टुरेन्टको लोकेसन ट्याग गर्नुहोस्"
+        ],
+        "sampleCaption": "यो नयाँ मेनुले त छक्कै पार्‍यो 🔥 चाखेका हरेक परिकार अघिल्लोभन्दा राम्रो — पूरा रिभ्यु स्टोरीमा!",
+        "approvalRequirements": "परिकार सही रूपमा देखिएको सुनिश्चित गर्न ब्रान्डले पोस्ट गर्नुअघि कन्टेन्ट हेर्नेछ",
+        "completionReason": "क्रिएटरहरूले सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [
@@ -173,7 +214,14 @@
         "wear",
         "outfit",
         "boutique",
-        "dress"
+        "dress",
+        "कपडा",
+        "पोसाक",
+        "फेसन",
+        "कलेक्सन",
+        "लुगा",
+        "lugga",
+        "kapada"
       ],
       "title": "Style Drop: New Collection",
       "description": "Creators will style and feature pieces from our new collection in real-life outfits, showing versatility and fit through lookbook-style content.",
@@ -225,7 +273,21 @@
       ],
       "goal": "Sales",
       "completionType": "DELIVERABLE",
-      "completionReason": "The creators are expected to create and publish the agreed social media content."
+      "completionReason": "The creators are expected to create and publish the agreed social media content.",
+      "ne": {
+        "title": "स्टाइल ड्रप: नयाँ कलेक्सन",
+        "description": "क्रिएटरहरूले हाम्रो नयाँ कलेक्सनका पोसाक वास्तविक आउटफिटमा स्टाइल गरी लुकबुक शैलीको कन्टेन्टमार्फत बहुउपयोगिता र फिटिङ देखाउनेछन्।",
+        "objective": "नयाँ कपडा कलेक्सनको दृश्यता र बिक्री बढाउने",
+        "contentGuidelines": [
+          "कम्तीमा २ फरक आउटफिट कम्बिनेसन स्टाइल गर्नुहोस्",
+          "फिटिङ विभिन्न कोणबाट देखाउनुहोस्",
+          "क्याप्सनमा साइज र कपडाको अनुभव उल्लेख गर्नुहोस्",
+          "उज्यालो प्राकृतिक र रङ सही देखिने गरी राख्नुहोस्"
+        ],
+        "sampleCaption": "यो नयाँ ड्रप कति राम्रो फिट भयो 😍 दुई तरिकाले स्टाइल गरें — दुवै लुक हेर्न स्वाइप गर्नुहोस्!",
+        "approvalRequirements": "पोस्ट लाइभ हुनुअघि ब्रान्डले स्टाइलिङ र फोटो हेर्नेछ",
+        "completionReason": "क्रिएटरहरूले सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [
@@ -235,7 +297,13 @@
         "training",
         "yoga",
         "wellness",
-        "health"
+        "health",
+        "जिम",
+        "फिटनेस",
+        "व्यायाम",
+        "योग",
+        "कसरत",
+        "byayam"
       ],
       "title": "Train With Us: Membership Push",
       "description": "Creators will experience a session at our facility and share their honest workout experience, highlighting the equipment, coaching, and overall vibe to drive membership sign-ups.",
@@ -287,7 +355,21 @@
       ],
       "goal": "More Customers",
       "completionType": "DELIVERABLE",
-      "completionReason": "The creators are expected to create and publish the agreed social media content."
+      "completionReason": "The creators are expected to create and publish the agreed social media content.",
+      "ne": {
+        "title": "हामीसँग ट्रेन गर्नुहोस्: मेम्बरसिप अभियान",
+        "description": "क्रिएटरहरूले हाम्रो फ्यासिलिटीमा एउटा सेसन अनुभव गरी आफ्नो इमान्दार वर्कआउट अनुभव बाँड्नेछन् — उपकरण, कोचिङ र समग्र माहोल देखाउँदै, जसले नयाँ मेम्बरसिप बढाओस्।",
+        "objective": "क्रिएटरका साँचो अनुभवमार्फत नयाँ मेम्बरसिप बढाउने",
+        "contentGuidelines": [
+          "वास्तविक ट्रेनिङ वा क्लासको एक अंश देखाउनुहोस्",
+          "फ्यासिलिटी/उपकरण छोटो रूपमा देखाउनुहोस्",
+          "सेसनपछिको एउटा साँचो नतिजा वा अनुभूति बाँड्नुहोस्",
+          "धेरै पालिस गरिएको विज्ञापनजस्तो शैली नअपनाउनुहोस्"
+        ],
+        "sampleCaption": "पहिलो सेसन सकियो, अहिल्यै फरक महसुस भयो 💪 यहाँको कोचिङ अर्कै स्तरको छ — पूरा अनुभव स्टोरीमा।",
+        "approvalRequirements": "पोस्ट गर्नुअघि ब्रान्डले सेसनको रिक्याप हेर्नेछ",
+        "completionReason": "क्रिएटरहरूले सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [
@@ -296,7 +378,13 @@
         "makeup",
         "cosmetic",
         "skin",
-        "glow"
+        "glow",
+        "स्किनकेयर",
+        "ब्युटी",
+        "मेकअप",
+        "सौन्दर्य",
+        "छाला",
+        "सिंगार"
       ],
       "title": "Glow Up: Product Feature",
       "description": "Creators will incorporate our product into their skincare/beauty routine and share honest before-and-after style content over a short period.",
@@ -348,7 +436,21 @@
       ],
       "goal": "Sales",
       "completionType": "DELIVERABLE",
-      "completionReason": "The creators are expected to create and publish the agreed social media content."
+      "completionReason": "The creators are expected to create and publish the agreed social media content.",
+      "ne": {
+        "title": "ग्लो अप: प्रोडक्ट फिचर",
+        "description": "क्रिएटरहरूले हाम्रो प्रोडक्ट आफ्नो स्किनकेयर/ब्युटी रुटिनमा समावेश गरी छोटो अवधिमा इमान्दार बिफोर-आफ्टर शैलीको कन्टेन्ट बाँड्नेछन्।",
+        "objective": "फिचर गरिएको ब्युटी प्रोडक्टप्रति विश्वास बनाउने र प्रयोग बढाउने",
+        "contentGuidelines": [
+          "वास्तविक रुटिनमा प्रोडक्ट प्रयोग गरेको देखाउनुहोस्",
+          "इमान्दार पहिलो प्रतिक्रिया बाँड्नुहोस्",
+          "टेक्स्चर/लगाउने तरिकाको नजिकको सट राख्नुहोस्",
+          "बढाइचढाइ दाबी नगर्नुहोस् — साँचो राख्नुहोस्"
+        ],
+        "sampleCaption": "एक हप्ता प्रयोग गरें, अहिल्यै छालामा फरक महसुस भयो ✨ पूरा रुटिन स्टोरीमा।",
+        "approvalRequirements": "पोस्ट गर्नुअघि ब्रान्डले कन्टेन्ट हेर्नेछ",
+        "completionReason": "क्रिएटरहरूले सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [],
@@ -400,7 +502,21 @@
       ],
       "goal": "Brand Awareness",
       "completionType": "DELIVERABLE",
-      "completionReason": "The creators are expected to create and publish the agreed social media content."
+      "completionReason": "The creators are expected to create and publish the agreed social media content.",
+      "ne": {
+        "title": "कुरा फैलाऔं: ब्रान्ड अभियान",
+        "description": "क्रिएटरहरूले हाम्रो ब्रान्डलाई आफ्ना दर्शकसँग चिनाउने आकर्षक कन्टेन्ट बनाउनेछन् — किन प्रयास गर्न लायक छ भन्ने देखाउँदै र फलोअरहरूलाई हेर्न प्रोत्साहित गर्दै।",
+        "objective": "ब्रान्डको चिनारी बढाउने र पहिलो पटकको संलग्नता ल्याउने",
+        "contentGuidelines": [
+          "कन्टेन्टभित्रै ब्रान्डलाई स्वाभाविक रूपमा चिनाउनुहोस्",
+          "प्रयास गर्नुपर्ने एउटा स्पष्ट कारण देखाउनुहोस्",
+          "स्वर साँचो र कुराकानी जस्तो राख्नुहोस्",
+          "क्याप्सनमा स्पष्ट कल-टु-एक्सन राख्नुहोस्"
+        ],
+        "sampleCaption": "भर्खरै यो भेटें, बाँड्नै पर्‍यो 👀 यस्तो कुरा मन पराउनुहुन्छ भने तपाईंलाई पक्कै मनपर्छ।",
+        "approvalRequirements": "पोस्ट गर्नुअघि ब्रान्डले ड्राफ्ट कन्टेन्ट हेर्नेछ",
+        "completionReason": "क्रिएटरहरूले सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     }
   ],
   "eventTemplates": [
@@ -414,7 +530,20 @@
         "dish",
         "chef",
         "dining",
-        "eatery"
+        "eatery",
+        "कफी",
+        "क्याफे",
+        "चिया",
+        "रेस्टुरेन्ट",
+        "खाना",
+        "मेनु",
+        "मःम",
+        "म:म",
+        "परिकार",
+        "भोजन",
+        "momo",
+        "khana",
+        "khaja"
       ],
       "title": "Exclusive Food Creator Night – Dine, Discover & Create",
       "description": "We're inviting food creators to an exclusive creator night at our restaurant. Experience our signature dishes, meet the chef, and create authentic content about your dining journey. Enjoy a curated menu, behind-the-scenes kitchen access, and a memorable evening with fellow creators.",
@@ -442,7 +571,13 @@
         "location"
       ],
       "completionType": "DELIVERABLE",
-      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event.",
+      "ne": {
+        "title": "विशेष फूड क्रिएटर नाइट – खानुहोस्, चिन्नुहोस्, बनाउनुहोस्",
+        "description": "हामी फूड क्रिएटरहरूलाई हाम्रो रेस्टुरेन्टमा विशेष क्रिएटर नाइटमा निम्तो गर्दैछौं। हाम्रा सिग्नेचर परिकारहरू चाख्नुहोस्, सेफसँग भेट्नुहोस्, र आफ्नो खानपिनको अनुभवबारे साँचो कन्टेन्ट बनाउनुहोस्। विशेष मेनु, भान्साको भित्री झलक, र अरू क्रिएटरहरूसँग सम्झनलायक साँझ।",
+        "expectedContent": "कार्यक्रमको ३ दिनभित्र १ रिल + २ इन्स्टाग्राम स्टोरी, व्यवसायलाई ट्याग गरेर",
+        "completionReason": "सहभागीहरूले कार्यक्रमबारे सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [
@@ -452,7 +587,14 @@
         "wear",
         "outfit",
         "boutique",
-        "dress"
+        "dress",
+        "कपडा",
+        "पोसाक",
+        "फेसन",
+        "कलेक्सन",
+        "लुगा",
+        "lugga",
+        "kapada"
       ],
       "title": "Fashion Creator Showcase – Style Night",
       "description": "We're hosting an exclusive fashion creator event where you'll get first access to our latest collection, professional styling support, and a curated backdrop for content creation. A perfect opportunity to create stunning fashion content while connecting with like-minded creators.",
@@ -480,7 +622,13 @@
         "location"
       ],
       "completionType": "DELIVERABLE",
-      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event.",
+      "ne": {
+        "title": "फेसन क्रिएटर शोकेस – स्टाइल नाइट",
+        "description": "हामी विशेष फेसन क्रिएटर कार्यक्रम गर्दैछौं, जहाँ तपाईंले हाम्रो नयाँ कलेक्सनमा पहिलो पहुँच, व्यावसायिक स्टाइलिङ सहयोग, र कन्टेन्ट बनाउन मिल्ने राम्रो ब्याकड्रप पाउनुहुनेछ। उस्तै रुचि भएका क्रिएटरहरूसँग जोडिँदै राम्रो फेसन कन्टेन्ट बनाउने उपयुक्त अवसर।",
+        "expectedContent": "३–५ स्टाइल गरिएका फोटो र १ इन्स्टाग्राम स्टोरी, व्यवसायलाई ट्याग गरेर",
+        "completionReason": "सहभागीहरूले कार्यक्रमबारे सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [
@@ -490,7 +638,13 @@
         "training",
         "yoga",
         "wellness",
-        "health"
+        "health",
+        "जिम",
+        "फिटनेस",
+        "व्यायाम",
+        "योग",
+        "कसरत",
+        "byayam"
       ],
       "title": "Fitness Creator Invite – Train, Create & Inspire",
       "description": "We're inviting fitness creators for a complimentary workout session, facility tour, and content creation day. Experience our equipment, classes, and community — then share your authentic fitness journey with your audience.",
@@ -517,7 +671,13 @@
         "location"
       ],
       "completionType": "DELIVERABLE",
-      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event.",
+      "ne": {
+        "title": "फिटनेस क्रिएटर निम्तो – ट्रेन गर्नुहोस्, बनाउनुहोस्, प्रेरित गर्नुहोस्",
+        "description": "हामी फिटनेस क्रिएटरहरूलाई निःशुल्क वर्कआउट सेसन, फ्यासिलिटी टुर र कन्टेन्ट बनाउने दिनका लागि निम्तो गर्दैछौं। हाम्रा उपकरण, क्लास र समुदायको अनुभव लिनुहोस् — अनि आफ्नो साँचो फिटनेस यात्रा आफ्ना दर्शकसँग बाँड्नुहोस्।",
+        "expectedContent": "सहभागी भएको एक हप्ताभित्र वर्कआउट अनुभवबारे १ इमान्दार सोसल मिडिया पोस्ट",
+        "completionReason": "सहभागीहरूले कार्यक्रमबारे सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [
@@ -526,7 +686,13 @@
         "makeup",
         "cosmetic",
         "skin",
-        "glow"
+        "glow",
+        "स्किनकेयर",
+        "ब्युटी",
+        "मेकअप",
+        "सौन्दर्य",
+        "छाला",
+        "सिंगार"
       ],
       "title": "Beauty Creator Event – Glow, Create & Connect",
       "description": "Join our exclusive beauty creator event for complimentary treatments, product demonstrations, and content creation opportunities. Experience our services firsthand and create authentic beauty content that resonates with your audience.",
@@ -554,7 +720,13 @@
         "location"
       ],
       "completionType": "DELIVERABLE",
-      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event.",
+      "ne": {
+        "title": "ब्युटी क्रिएटर इभेन्ट – ग्लो, क्रिएट र कनेक्ट",
+        "description": "निःशुल्क ट्रिटमेन्ट, प्रोडक्ट डेमो र कन्टेन्ट बनाउने अवसरका लागि हाम्रो विशेष ब्युटी क्रिएटर कार्यक्रममा सहभागी हुनुहोस्। हाम्रा सेवाहरू आफैं अनुभव गर्नुहोस् र आफ्ना दर्शकलाई छुने साँचो ब्युटी कन्टेन्ट बनाउनुहोस्।",
+        "expectedContent": "ट्रिटमेन्टबारे इमान्दार पहिलो प्रतिक्रिया सहितको १ रिल, व्यवसायलाई ट्याग गरेर",
+        "completionReason": "सहभागीहरूले कार्यक्रमबारे सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     },
     {
       "keywords": [],
@@ -580,7 +752,13 @@
         "location"
       ],
       "completionType": "DELIVERABLE",
-      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event."
+      "completionReason": "Attendees are expected to create and publish the agreed social media content about the event.",
+      "ne": {
+        "title": "विशेष क्रिएटर कार्यक्रम",
+        "description": "हामी क्रिएटरहरूलाई हाम्रो ब्रान्ड नजिकबाट अनुभव गर्न र साँचो कन्टेन्ट बनाउन विशेष कार्यक्रममा निम्तो गर्दैछौं। निःशुल्क प्रवेशको आनन्द लिनुहोस्, हाम्रो टोलीसँग भेट्नुहोस्, र आफ्नो वास्तविक अनुभव आफ्ना दर्शकसँग बाँड्नुहोस्।",
+        "expectedContent": "",
+        "completionReason": "सहभागीहरूले कार्यक्रमबारे सहमति अनुसारको सोसल मिडिया कन्टेन्ट बनाएर पोस्ट गर्नुपर्ने हुन्छ।"
+      }
     }
   ],
   "descriptionTemplates": [
@@ -591,9 +769,25 @@
         "food",
         "restaurant",
         "menu",
-        "dish"
+        "dish",
+        "कफी",
+        "क्याफे",
+        "चिया",
+        "रेस्टुरेन्ट",
+        "खाना",
+        "मेनु",
+        "मःम",
+        "म:म",
+        "परिकार",
+        "भोजन",
+        "momo",
+        "khana",
+        "khaja"
       ],
-      "text": "Creators will feature the product through authentic, appetizing content that captures the taste and experience, encouraging their audience to come try it in person."
+      "text": "Creators will feature the product through authentic, appetizing content that captures the taste and experience, encouraging their audience to come try it in person.",
+      "ne": {
+        "text": "क्रिएटरहरूले साँचो र स्वादिष्ट देखिने कन्टेन्टमार्फत प्रोडक्ट देखाउनेछन्, जसले स्वाद र अनुभव दुवै समेट्छ र हेर्नेलाई आफैं चाख्न मन लगाउँछ।"
+      }
     },
     {
       "keywords": [
@@ -601,9 +795,19 @@
         "fashion",
         "apparel",
         "wear",
-        "outfit"
+        "outfit",
+        "कपडा",
+        "पोसाक",
+        "फेसन",
+        "कलेक्सन",
+        "लुगा",
+        "lugga",
+        "kapada"
       ],
-      "text": "Creators will style and showcase the pieces in real outfits, highlighting fit and versatility to inspire their audience to shop the collection."
+      "text": "Creators will style and showcase the pieces in real outfits, highlighting fit and versatility to inspire their audience to shop the collection.",
+      "ne": {
+        "text": "क्रिएटरहरूले पोसाकहरू वास्तविक आउटफिटमा स्टाइल गरी देखाउनेछन्, फिटिङ र बहुउपयोगितामा जोड दिँदै आफ्ना दर्शकलाई प्रेरित गर्नेछन्।"
+      }
     },
     {
       "keywords": [
@@ -611,22 +815,43 @@
         "fitness",
         "workout",
         "wellness",
-        "health"
+        "health",
+        "जिम",
+        "फिटनेस",
+        "व्यायाम",
+        "योग",
+        "कसरत",
+        "byayam"
       ],
-      "text": "Creators will share their honest experience trying the service, highlighting what makes it worth a visit and encouraging their audience to book a session."
+      "text": "Creators will share their honest experience trying the service, highlighting what makes it worth a visit and encouraging their audience to book a session.",
+      "ne": {
+        "text": "क्रिएटरहरूले सेवा प्रयोग गरेको आफ्नो इमान्दार अनुभव बाँड्नेछन्, किन एक पटक जान लायक छ भन्ने देखाउँदै र अरूलाई प्रोत्साहित गर्दै।"
+      }
     },
     {
       "keywords": [
         "skincare",
         "beauty",
         "makeup",
-        "cosmetic"
+        "cosmetic",
+        "स्किनकेयर",
+        "ब्युटी",
+        "मेकअप",
+        "सौन्दर्य",
+        "छाला",
+        "सिंगार"
       ],
-      "text": "Creators will incorporate the product into their routine and share honest impressions, helping their audience understand why it's worth trying."
+      "text": "Creators will incorporate the product into their routine and share honest impressions, helping their audience understand why it's worth trying.",
+      "ne": {
+        "text": "क्रिएटरहरूले प्रोडक्टलाई आफ्नो रुटिनमा समावेश गरी इमान्दार प्रतिक्रिया बाँड्नेछन्, जसले दर्शकलाई प्रयास गर्न लायक हो कि होइन बुझ्न मद्दत गर्छ।"
+      }
     },
     {
       "keywords": [],
-      "text": "Creators will produce authentic content that introduces the brand to their audience, highlighting what makes it stand out and encouraging viewers to check it out."
+      "text": "Creators will produce authentic content that introduces the brand to their audience, highlighting what makes it stand out and encouraging viewers to check it out.",
+      "ne": {
+        "text": "क्रिएटरहरूले ब्रान्डलाई आफ्ना दर्शकसँग चिनाउने साँचो कन्टेन्ट बनाउनेछन्, किन ध्यान दिन लायक छ भन्ने देखाउँदै।"
+      }
     }
   ]
 }

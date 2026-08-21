@@ -387,7 +387,7 @@ export class AdminService {
     return this.repo.setCreatorDocumentStatus(creatorId, doc, approved);
   }
 
-  async setBusinessDocumentStatus(businessId: string, doc: 'pan' | 'companyReg', approved: boolean) {
+  async setBusinessDocumentStatus(businessId: string, doc: 'pan' | 'companyReg' | 'identity', approved: boolean) {
     return this.repo.setBusinessDocumentStatus(businessId, doc, approved);
   }
 

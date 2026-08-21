@@ -99,7 +99,6 @@ export function ContractBody({ filledBody, terms, contractId, downloadTitle }: {
     ['Deadline', fmtDate(terms.deadline)],
     ['Timeline', terms.timeline],
     ['Deliverables', terms.deliverables],
-    ['Platforms', terms.platforms.join(', ') || 'N/A'],
   ];
 
   async function handleDownload() {

@@ -32,7 +32,7 @@ export function Businesses() {
   const navigate = useNavigate();
   const [action,  setAction]  = useState<Action | null>(null);
   const [viewing, setViewing] = useState<ApiBusiness | null>(null);
-  const [previewDoc, setPreviewDoc] = useState<{ doc: 'pan' | 'companyReg'; url: string; title: string; status?: string } | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ doc: 'pan' | 'companyReg' | 'identity'; url: string; title: string; status?: string } | null>(null);
   const [docLoading, setDocLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
@@ -87,7 +87,10 @@ export function Businesses() {
     try {
       await api.admin.setBusinessDocumentStatus(viewing.id, previewDoc.doc, approved);
       const status = approved ? 'APPROVED' : 'REJECTED';
-      const patch = previewDoc.doc === 'pan' ? { panDocStatus: status } : { companyRegDocStatus: status };
+      const patch =
+        previewDoc.doc === 'pan'      ? { panDocStatus: status }
+        : previewDoc.doc === 'identity' ? { identityDocStatus: status }
+        : { companyRegDocStatus: status };
       setViewing({ ...viewing, ...patch } as ApiBusiness);
       setPreviewDoc({ ...previewDoc, status });
       showToast(`Document ${approved ? 'approved' : 'unapproved'}.`);
@@ -268,7 +271,7 @@ export function Businesses() {
                 },
               ],
             },
-            ...(viewing.panDocUrl || viewing.companyRegDocUrl
+            ...(viewing.panDocUrl || viewing.companyRegDocUrl || viewing.identityDocUrl
               ? [{
                   heading: 'Documents',
                   fields: [
@@ -276,6 +279,10 @@ export function Businesses() {
                     ...(viewing.panDocUrl ? [{ label: 'PAN status', value: <StatusBadge status={docStatus(viewing.panDocStatus)} /> }] : []),
                     ...(viewing.companyRegDocUrl ? [{ label: 'Company registration certificate', value: <button onClick={() => setPreviewDoc({ doc: 'companyReg', url: viewing.companyRegDocUrl!, title: 'Company registration certificate', status: viewing.companyRegDocStatus ?? undefined })} className="text-indigo-600 hover:underline font-medium">View document</button> }] : []),
                     ...(viewing.companyRegDocUrl ? [{ label: 'Reg. status', value: <StatusBadge status={docStatus(viewing.companyRegDocStatus)} /> }] : []),
+                    // Individual service takers verify with one identity document
+                    // (citizenship / national ID / personal PAN) instead.
+                    ...(viewing.identityDocUrl ? [{ label: 'Identity document', value: <button onClick={() => setPreviewDoc({ doc: 'identity', url: viewing.identityDocUrl!, title: 'Identity document', status: viewing.identityDocStatus ?? undefined })} className="text-indigo-600 hover:underline font-medium">View document</button> }] : []),
+                    ...(viewing.identityDocUrl ? [{ label: 'Identity status', value: <StatusBadge status={docStatus(viewing.identityDocStatus)} /> }] : []),
                     ...(viewing.verificationRejectReason ? [{ label: 'Reject reason', value: viewing.verificationRejectReason }] : []),
                   ],
                 }]

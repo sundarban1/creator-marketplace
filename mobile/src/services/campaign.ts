@@ -94,6 +94,16 @@ export interface AiEventDraft {
   expectedContent: string;
   capacity: number;
   location: string | null;
+  // The specific place named in the prompt ("our Durbarmarg outlet"), as
+  // opposed to `location`, which is the broader city/area. Null when the brand
+  // didn't name one.
+  venue: string | null;
+  // Calendar date the AI resolved from what the brand actually said about
+  // timing ("this Saturday", "on the 14th"), as YYYY-MM-DD — null when no
+  // timing was mentioned, in which case the flow keeps its own default.
+  eventDate: string | null;
+  // 24-hour HH:MM start time, null when the brand didn't state one.
+  eventTime: string | null;
   completionType: 'SERVICE' | 'DELIVERABLE';
   completionReason: string;
   needsInput: string[];
@@ -101,6 +111,29 @@ export interface AiEventDraft {
   aiSuggestedPlatforms: string[];
   // See AiCampaignDraft.aiFallback.
   aiFallback?: boolean;
+}
+
+// Draft generation runs well past the shared request() default of 30s, and this
+// deadline has to stay ABOVE the backend's own OpenAI budget (~71s worst case,
+// see REQUEST_TIMEOUT_MS in campaign-ai.service.ts). If the phone gives up
+// first, the brand gets this file's caller-side generic template instead of the
+// closer-to-right draft the server was still assembling.
+const AI_DRAFT_TIMEOUT_MS = 80_000;
+
+// A voice prompt is a Whisper transcription of up to a 2-minute recording, and
+// the backend accepts 2,500 characters (see generateCampaignSchema). Clamping
+// here rather than letting an over-long transcript come back as a plain 400 —
+// which the create-event screen can only read as "the request never came back"
+// and answer with a fabricated template. Trimming at a sentence boundary keeps
+// the brand's opening description, which carries the intent, intact.
+export const MAX_AI_PROMPT_CHARS = 2400;
+
+export function clampAiPrompt(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= MAX_AI_PROMPT_CHARS) return trimmed;
+  const head = trimmed.slice(0, MAX_AI_PROMPT_CHARS);
+  const lastBreak = Math.max(head.lastIndexOf('. '), head.lastIndexOf('। '), head.lastIndexOf('? '), head.lastIndexOf('! '));
+  return (lastBreak > MAX_AI_PROMPT_CHARS * 0.6 ? head.slice(0, lastBreak + 1) : head).trim();
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -374,14 +407,12 @@ export const campaignService = {
   },
 
   async generateWithAi(prompt: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft> {
-    // Longer timeout than the default 30s — GPT-5 mini's reasoning latency on this
-    // longer structured-JSON prompt can take 20-40s (backend's own budget is 45s).
-    const res = await request<AiCampaignDraft>('POST', '/api/campaigns/ai/generate', { prompt, inputSource }, undefined, 50000);
+    const res = await request<AiCampaignDraft>('POST', '/api/campaigns/ai/generate', { prompt, inputSource }, undefined, AI_DRAFT_TIMEOUT_MS);
     return res.data;
   },
 
   async generateEventWithAi(prompt: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft> {
-    const res = await request<AiEventDraft>('POST', '/api/campaigns/ai/generate-event', { prompt, inputSource }, undefined, 50000);
+    const res = await request<AiEventDraft>('POST', '/api/campaigns/ai/generate-event', { prompt, inputSource }, undefined, AI_DRAFT_TIMEOUT_MS);
     return res.data;
   },
 

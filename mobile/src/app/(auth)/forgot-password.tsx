@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useState } from 'react';
@@ -24,7 +24,10 @@ export default function ForgotPasswordScreen() {
   const { isDark } = useIsDark();
   const { t } = useLanguage();
   const toast = useToast();
-  const [channel, setChannel] = useState<Channel>('email');
+  // reset-otp sends users here with channel=phone when an email reset turned up
+  // nothing — a phone-only signup can never be reached by email.
+  const { channel: initialChannel } = useLocalSearchParams<{ channel?: string }>();
+  const [channel, setChannel] = useState<Channel>(initialChannel === 'phone' ? 'phone' : 'email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);

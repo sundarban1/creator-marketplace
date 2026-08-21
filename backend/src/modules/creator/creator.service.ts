@@ -13,6 +13,7 @@ import { CreatorRepository } from './creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { PlatformRepository } from '../platform/platform.repository';
 import { ServiceRepository } from '../service/service.repository';
+import { PortfolioRepository } from '../portfolio/portfolio.repository';
 import { analyticsService } from '../analytics/analytics.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
@@ -296,12 +297,14 @@ export class CreatorService {
   private businessRepo: BusinessRepository;
   private platformRepo: PlatformRepository;
   private serviceRepo: ServiceRepository;
+  private portfolioRepo: PortfolioRepository;
 
   constructor() {
     this.repo = new CreatorRepository();
     this.businessRepo = new BusinessRepository();
     this.platformRepo = new PlatformRepository();
     this.serviceRepo = new ServiceRepository();
+    this.portfolioRepo = new PortfolioRepository();
   }
 
   async listCreators(params: {
@@ -410,12 +413,16 @@ export class CreatorService {
 
     const dto = toPublicCreatorDto(profile);
     const translated = await translateFields(dto, [...CREATOR_FIELDS], lang);
-    const [stats, reviews, services] = await Promise.all([
+    // portfolioItems are the richer, media-backed entries (PortfolioItem table)
+    // — distinct from the legacy portfolioLinks label+url list already carried
+    // by toPublicCreatorDto. Both are returned so viewers see the full body of work.
+    const [stats, reviews, services, portfolioItems] = await Promise.all([
       analyticsService.getCreatorPublicStats(profile.userId).catch(() => null),
       analyticsService.getReviewsReceived(profile.userId).catch(() => []),
       this.serviceRepo.findActiveByCreatorProfileId(profile.id).catch(() => []),
+      this.portfolioRepo.findByCreatorProfileId(profile.id).catch(() => []),
     ]);
-    return { ...translated, stats, reviews, services };
+    return { ...translated, stats, reviews, services, portfolioItems };
   }
 
   async getFilterOptions() {

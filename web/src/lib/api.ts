@@ -76,6 +76,10 @@ export interface ApiVerificationQueueBusiness {
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   companyRegDocUrl: string | null;
   companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  // INDIVIDUAL service takers verify with this instead of PAN + company reg.
+  identityDocUrl: string | null;
+  identityDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  representingType: 'ORGANIZATION' | 'INDIVIDUAL' | null;
   createdAt: string;
   updatedAt: string;
   user: { email: string; phone: string | null } | null;
@@ -300,6 +304,9 @@ export interface ApiBusiness {
   panDocStatus?:       'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   companyRegDocUrl?:   string | null;
   companyRegDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  identityDocUrl?:     string | null;
+  identityDocStatus?:  'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  representingType?:   'ORGANIZATION' | 'INDIVIDUAL' | null;
   verificationRejectReason?: string | null;
   // Provider marketplace additions — all optional since they postdate every
   // business that signed up before this was added; null/undefined for those.
@@ -857,8 +864,8 @@ export const api = {
     verifyBusiness: (id: string, verified: boolean) =>
       request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/verify`, { verified }),
 
-    setBusinessDocumentStatus: (id: string, doc: 'pan' | 'companyReg', approved: boolean) =>
-      request<{ id: string; panDocStatus?: string; companyRegDocStatus?: string }>('PATCH', `/api/admin/businesses/${id}/documents/${doc}`, { approved }),
+    setBusinessDocumentStatus: (id: string, doc: 'pan' | 'companyReg' | 'identity', approved: boolean) =>
+      request<{ id: string; panDocStatus?: string; companyRegDocStatus?: string; identityDocStatus?: string }>('PATCH', `/api/admin/businesses/${id}/documents/${doc}`, { approved }),
 
     rejectBusiness: (id: string, reason: string) =>
       request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/reject`, { reason }),

@@ -25,9 +25,15 @@ class CampaignIntentError extends AppError {
   }
 }
 
-type DummyCampaignTemplate = AiCampaignDraft & { keywords: string[] };
-type DummyEventTemplate = AiEventDraft & { keywords: string[] };
-type DummyDescriptionTemplate = { keywords: string[]; text: string };
+// Each template carries an optional `ne` overlay holding Nepali versions of
+// just its free-text fields — enums, counts and keywords are language-neutral
+// and stay shared. Without it a brand who described their event in Nepali and
+// happened to hit this fallback (no API key, billing failure, timeout) got a
+// wholly English draft, which reads as the app ignoring their language rather
+// than as a degraded path.
+type DummyCampaignTemplate = AiCampaignDraft & { keywords: string[]; ne?: Partial<AiCampaignDraft> };
+type DummyEventTemplate = AiEventDraft & { keywords: string[]; ne?: Partial<AiEventDraft> };
+type DummyDescriptionTemplate = { keywords: string[]; text: string; ne?: { text: string } };
 
 const dummy = dummyData as unknown as {
   campaignTemplates: DummyCampaignTemplate[];
@@ -44,36 +50,144 @@ function matchByKeywords<T extends { keywords: string[] }>(templates: T[], hayst
   return matched ?? fallback ?? templates[0];
 }
 
+// Romanized-Nepali markers — short function words and verb endings that are
+// common in Nepali and vanishingly rare in English marketing copy. Only ever
+// consulted for the fallback templates, where the cost of guessing wrong is one
+// template in the wrong language on an already-degraded path; the real AI route
+// decides language from the prompt itself and never uses this.
+const ROMANIZED_NEPALI_MARKERS = [
+  'chha', 'chhan', 'cha ', 'chau', 'garna', 'garne', 'garcha', 'garchha', 'gardai',
+  'chahan', 'chaiyo', 'chahiyo', 'hamro', 'hamile', 'naya', 'jana ', 'haru', 'lai ',
+  'bholi', 'beluka', 'aaune', 'ko lagi', 'parcha', 'parchha',
+  'khana', 'pasal', 'ramro', 'sabai', 'tapai',
+];
+
+// Whether the FALLBACK draft should be written in Nepali. Devanagari in the
+// prompt is conclusive; otherwise two or more distinct romanized markers, or an
+// app already set to Nepali, is taken as intent. Two markers rather than one so
+// an English brief mentioning e.g. a "Khana" brand name doesn't flip language.
+function wantsNepaliFallback(prompt: string, language: string): boolean {
+  if (/[\u0900-\u097F]/.test(prompt)) return true;
+  const lower = ` ${prompt.toLowerCase()} `;
+  const hits = new Set(ROMANIZED_NEPALI_MARKERS.filter((m) => lower.includes(m)));
+  if (hits.size >= 2) return true;
+  return language === 'ne';
+}
+
 // Used when the OpenAI API is unavailable (no key, auth/billing failure, timeout,
 // or a malformed response) so campaign creation still works end-to-end for demos/dev.
-function pickDummyDraft(prompt: string): AiCampaignDraft {
-  const { keywords, ...draft } = matchByKeywords(dummy.campaignTemplates, prompt);
-  return aiCampaignDraftSchema.parse(draft);
+function pickDummyDraft(prompt: string, language: string): AiCampaignDraft {
+  const { keywords, ne, ...draft } = matchByKeywords(dummy.campaignTemplates, prompt);
+  const localized = wantsNepaliFallback(prompt, language) && ne ? { ...draft, ...ne } : draft;
+  return aiCampaignDraftSchema.parse(localized);
 }
 
-function pickDummyEventDraft(prompt: string): AiEventDraft {
-  const { keywords, ...draft } = matchByKeywords(dummy.eventTemplates, prompt);
-  return aiEventDraftSchema.parse(draft);
+function pickDummyEventDraft(prompt: string, language: string): AiEventDraft {
+  const { keywords, ne, ...draft } = matchByKeywords(dummy.eventTemplates, prompt);
+  const localized = wantsNepaliFallback(prompt, language) && ne ? { ...draft, ...ne } : draft;
+  return aiEventDraftSchema.parse(localized);
 }
 
-function pickDummyDescription(input: SuggestDescriptionInput): string {
+function pickDummyDescription(input: SuggestDescriptionInput, language: string): string {
   const haystack = [input.title, input.category, input.platform, input.deliverables].filter(Boolean).join(' ');
-  return matchByKeywords(dummy.descriptionTemplates, haystack).text;
+  const matched = matchByKeywords(dummy.descriptionTemplates, haystack);
+  return wantsNepaliFallback(haystack, language) && matched.ne ? matched.ne.text : matched.text;
 }
 
 const MODEL = 'gpt-5-mini';
 // The whole server-side budget has to finish INSIDE the mobile client's own
-// abort deadline for this route (50s, see mobile/src/services/campaign.ts) —
+// abort deadline for this route (80s, see mobile/src/services/campaign.ts) —
 // otherwise a transient OpenAI hiccup makes the SDK retry past the phone's
 // deadline, the client gives up first, and the brand sees the mobile generic
 // template instead of the dummy draft this service would have returned.
-// The SDK applies `timeout` PER ATTEMPT and defaults to maxRetries: 2, so the
-// default 45s budget was really 3 x 45s + backoff (~136s) — nearly 3x over.
-// 20s x 2 attempts + ~0.5s backoff lands at ~41s worst case, safely under 50s.
-const REQUEST_TIMEOUT_MS = 20_000;
+// The SDK applies `timeout` PER ATTEMPT, so this is a per-attempt figure:
+// 35s x 2 attempts + ~0.5s backoff lands at ~71s worst case, under 80s.
+// Sized for DRAFT_REASONING_EFFORT below rather than for 'minimal' — a draft
+// that arrives a few seconds later but names the right date and venue beats a
+// fast one the brand has to correct field by field.
+const REQUEST_TIMEOUT_MS = 35_000;
 const MAX_RETRIES = 1;
 
-function buildLanguageInstruction(language: string, inputSource?: 'voice' | 'text'): string {
+// 'minimal' was leaving the model no room to actually reason over a brief that
+// carries several interacting constraints at once — resolving spoken timing
+// against today's date, splitting a single stated budget across roles, picking
+// benefits/exchange options from fixed enums — and it showed up as drafts that
+// were fluent but wrong on exactly those fields. 'low' is the cheapest tier
+// that reliably handles them; the extra latency is covered by the budget above.
+const DRAFT_REASONING_EFFORT = 'low' as const;
+
+// The description rewrite is a single short paragraph with no constraints to
+// reason over, and it runs against the mobile client's DEFAULT 30s deadline
+// (campaignService.suggestDescription passes no override) — so it keeps the
+// old minimal/fast settings and a budget that fits inside 30s.
+const DESCRIPTION_TIMEOUT_MS = 12_000;
+
+// The straggler-localization repair (see localizeStragglers) runs AFTER the
+// draft call has already spent from the same client-side deadline, so it gets a
+// deliberately small slice and no retries — worst case 35s draft + 8s repair is
+// still inside the phone's 80s budget. It never blocks a result: on timeout the
+// original draft is returned as-is.
+const REPAIR_TIMEOUT_MS = 8_000;
+
+// The free-text fields of an EVENT draft — every field the brand actually
+// reads as prose. Kept as an explicit per-draft-type list because the language
+// rule below is shared by both prompts, and a single campaign-shaped list was
+// naming four fields that don't exist on an event draft (objective,
+// contentGuidelines, sampleCaption, approvalRequirements) while never
+// mentioning three that do. Those three were left unconstrained, so a brand who
+// spoke Nepali got a Nepali title and description alongside an English venue,
+// expectedContent and completionReason.
+const EVENT_LOCALIZED_FIELDS = ['title', 'description', 'expectedContent', 'venue', 'location', 'completionReason'];
+
+// The same event fields as real object keys, for the post-generation
+// consistency sweep (see localizeStragglers). Kept next to the prose list
+// above so the two can't drift apart.
+const EVENT_LOCALIZED_KEYS = ['title', 'description', 'expectedContent', 'venue', 'location', 'completionReason'] as const;
+
+// Campaign equivalent. requirements[] descriptions are nested rather than
+// top-level and are left to the prompt alone.
+const CAMPAIGN_LOCALIZED_KEYS = [
+  'title', 'description', 'objective', 'contentGuidelines', 'sampleCaption', 'approvalRequirements',
+  'location', 'completionReason',
+] as const;
+
+const DEVANAGARI = /[\u0900-\u097F]/;
+
+function hasDevanagari(value: unknown): boolean {
+  if (typeof value === 'string') return DEVANAGARI.test(value);
+  if (Array.isArray(value)) return value.some((v) => typeof v === 'string' && DEVANAGARI.test(v));
+  return false;
+}
+
+function isPopulatedText(value: unknown): boolean {
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.some((v) => typeof v === 'string' && v.trim().length > 0);
+  return false;
+}
+
+// Same idea for a paid-campaign draft. completionReason and each
+// requirements[] entry's description are prose the brand reads too, and were
+// missing from the old shared list for the same reason.
+const CAMPAIGN_LOCALIZED_FIELDS = [
+  'title', 'description', 'objective', 'contentGuidelines', 'sampleCaption',
+  'approvalRequirements', 'location', 'completionReason', 'every requirements[] entry\'s description',
+];
+
+// Enum-valued fields are matched against fixed taxonomy/option lists after the
+// model responds and are rendered as chips keyed on the exact English string —
+// translating one silently drops it on the floor.
+const NEVER_TRANSLATE = 'category, secondaryCategories, platform, secondaryPlatforms, goal, targetAudience, benefits, exchangeType, completionType, needsInput, paymentType, and every requirements[] entry\'s category';
+
+function buildLanguageInstruction(language: string, localizedFields: string[], inputSource?: 'voice' | 'text'): string {
+  const fieldList = localizedFields.join(', ');
+  // Spelled out once and shared by both branches so the two can't drift — this
+  // is the part that decides whether the brand gets a usable Nepali draft.
+  const nepaliRules = `  - Write EVERY ONE of these fields in Nepali, not just the first few: ${fieldList}. Leave none of them in English. A field being short (like title, venue or location) does NOT exempt it — "Thamel, Kathmandu" must be written "ठमेल, काठमाडौं", and a Nepali brief gets a Nepali TITLE, never an English one.
+  - This holds just as strongly when the brand's own words arrived in Latin letters (romanized Nepali) as when they arrived in Devanagari. The script the prompt happens to be typed in is not the language it is in — do not let Latin input pull the output into English. Worked example: the prompt "Hamro naya cafe ko opening ma 10 jana creator lai bolauna chahanchhau" must produce a title like "नयाँ क्याफे उद्घाटन — क्रिएटर भेटघाट", NOT "New Cafe Opening — Creator Meetup".
+  - Use proper Devanagari script throughout. Never leave romanized Nepali in Latin letters, and never mix scripts inside a single word (write "भोलि", never "बHolि").
+  - Proper nouns that are genuinely written in Latin by their owner — the business's own name, social handles, platform names like Instagram — may stay in Latin inside a Nepali sentence. Everything else in these fields is Devanagari, including the Nepali words around them.
+  - Write simple, everyday conversational Nepali that an ordinary person in Nepal can easily read — the way Nepali is actually written in casual social-media/marketing posts. Avoid stiff, overly formal, literary, or heavily Sanskritized words.`;
+
   // Voice input: the prompt is a Whisper transcription, which auto-detects and
   // transcribes whatever language the brand actually spoke — that already-detected
   // language is the only signal that matters here. The app's UI language setting
@@ -81,18 +195,20 @@ function buildLanguageInstruction(language: string, inputSource?: 'voice' | 'tex
   // English draft, not a Nepali one, and vice versa).
   if (inputSource === 'voice') {
     return `LANGUAGE: The prompt below is a transcription of the brand's own voice recording — it may be a mix of English and Nepali, but write based on whichever language the transcription is actually in.
-- If the transcription is in Nepali (Devanagari script) or romanized Nepali (Nepali words spelled out with Latin letters, e.g. "pasal", "khana ko lagi", "creator haru chaiyeko"), write title, description, objective, contentGuidelines, sampleCaption, approvalRequirements, and location (if not null) in NEPALI using proper Devanagari script — always convert romanized Nepali into Devanagari, never leave it in Latin letters. A few stray English words mixed into otherwise-Nepali speech are normal and don't change this — still write in Nepali.
-- Otherwise (the transcription is in English) write those same fields in English.
-- Write Nepali in simple, everyday conversational language that an ordinary person in Nepal can easily read and understand — the way Nepali is actually spoken or written in casual social-media/marketing posts. Avoid stiff, overly formal, literary, or heavily Sanskritized words.
-- Regardless of language, category, secondaryCategories, platform, secondaryPlatforms, goal, and targetAudience must always use the exact values from the lists provided — never translate or alter them.
+- Treat the transcription as NEPALI if it is in Devanagari script, OR if it is romanized Nepali (Nepali words spelled out with Latin letters, e.g. "pasal", "khana ko lagi", "creator haru chaiyeko", "bholi beluka", "chahanchhau"). Romanized Nepali is Nepali — the brand spoke Nepali and the Latin letters are only how the transcription wrote it down. A few stray English words mixed into otherwise-Nepali speech are normal and do not make it English.
+- If the transcription is Nepali by that test:
+${nepaliRules}
+- Otherwise (the transcription is genuinely English) write those same fields in English.
+- Regardless of language, ${NEVER_TRANSLATE} must always use the exact values from the lists provided — never translate or alter them.
 - hashtags must always use Latin letters/numbers only (no Devanagari) since they are literal social-media hashtags.`;
   }
 
   return `LANGUAGE: The brand's app is currently set to "${language === 'ne' ? 'Nepali' : 'English'}".
-- If the app language is Nepali, OR the brand's prompt below is written in Nepali (Devanagari script) or romanized Nepali (Nepali words spelled out with Latin letters, e.g. "pasal", "khana ko lagi", "creator haru chaiyeko"), write title, description, objective, contentGuidelines, sampleCaption, approvalRequirements, and location (if not null) in NEPALI using proper Devanagari script — always convert romanized Nepali into Devanagari, never leave it in Latin letters.
-- Write that Nepali in simple, everyday conversational language that an ordinary person in Nepal can easily read and understand — the way Nepali is actually spoken or written in casual social-media/marketing posts. Avoid stiff, overly formal, literary, or heavily Sanskritized words.
+- Treat this as NEPALI if the app language is Nepali, OR if the brand's prompt below is written in Devanagari script, OR if it is romanized Nepali (Nepali words spelled out with Latin letters, e.g. "pasal", "khana ko lagi", "creator haru chaiyeko"). Romanized Nepali is Nepali.
+- If Nepali by that test:
+${nepaliRules}
 - Otherwise write those same fields in English.
-- Regardless of language, category, secondaryCategories, platform, secondaryPlatforms, goal, and targetAudience must always use the exact values from the lists provided — never translate or alter them.
+- Regardless of language, ${NEVER_TRANSLATE} must always use the exact values from the lists provided — never translate or alter them.
 - hashtags must always use Latin letters/numbers only (no Devanagari) since they are literal social-media hashtags.`;
 }
 
@@ -174,14 +290,34 @@ Respond with a JSON object with EXACTLY these keys:
   - category is "Content Creator" (or an equally general content-creation role): fill "deliverables" with the SAME exact keys/rules as the top-level deliverables field above, scoped to what THIS role should produce (lean on REEL/STORY/PHOTO_POST as fits the brief). Leave "description" as "".
   - any other category (Model, Photographer, Videographer, DJ, Dancer, Event Planner, etc.): leave "deliverables" all-zero, and instead fill "description" with a concise, specific, actionable 1-2 sentence brief of what that role should actually do — e.g. a Model: "Model outfits and pose for photo and short social clips per the brand's direction; available for the full shoot duration and wardrobe changes." A Photographer: "Capture high-resolution event photography and short video clips, deliver an edited gallery within 3 days." Never leave description empty for a non-Content-Creator role.
 
-${buildLanguageInstruction(language, inputSource)}
+${buildLanguageInstruction(language, CAMPAIGN_LOCALIZED_FIELDS, inputSource)}
 
 ${buildIntentInstruction()}
 
 Whenever campaignIntentDetected is true, fill in every field above with your best sensible guess using the business profile and sensible defaults, even for a very short or vague prompt — never leave a field empty. Respond with ONLY the JSON object.`;
 }
 
-function buildEventSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
+// Today's date as the brand experiences it, so relative timing in a prompt
+// ("this Saturday") resolves against Kathmandu's calendar day and not the
+// server's UTC one — Nepal is UTC+05:45, so for the whole Nepali evening the
+// two disagree, and "tomorrow" would land a day early.
+function todayInNepal(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kathmandu', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
+
+// The model has no clock, so without an explicit anchor it cannot resolve the
+// relative dates brands overwhelmingly speak in ("this Saturday", "next week",
+// "on the 14th"). Before this, every AI draft — voice or typed — silently
+// landed on "seven days from now" no matter what the brand actually said,
+// which is the most visible way a generated event comes out wrong.
+function buildEventDateInstruction(today: string): string {
+  return `- eventDate: string "YYYY-MM-DD" or null — TODAY'S DATE IS ${today}. Resolve whatever the brand said about timing against that date: "this Saturday"/"next Friday"/"in two weeks"/"on the 14th"/"Dashain week" all become a concrete calendar date. A bare month-day with no year that has already passed this year means NEXT year. Return null ONLY if the brand gave no timing signal at all — never invent a date, and never default to "a week from now".
+- eventTime: string "HH:MM" in 24-hour form, or null — the start time if the brand said one ("5pm" -> "17:00", "साँझ ६ बजे" -> "18:00"). Null if they didn't say. Do not infer a time from the event type alone.`;
+}
+
+function buildEventSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, today: string, inputSource?: 'voice' | 'text'): string {
   return `You are an event-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for FREE (non-monetary) in-person events. Creators attend in exchange for perks — not cash — and may be asked to post content about the experience, though some events are simply organic/no-content-ask invites where attending and enjoying the experience is enough.
 
 Given a brand's short description of the event they want to host, generate a complete event brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
@@ -204,12 +340,14 @@ ${BENEFIT_OPTIONS.map((b) => `  - "${b}": ${BENEFIT_DESCRIPTIONS[b]}`).join('\n'
 ${EXCHANGE_OPTIONS.map((e) => `  - "${e}": ${EXCHANGE_DESCRIPTIONS[e]}`).join('\n')}
 - expectedContent: string (0-300 chars) — a short free-text description of the specific content ask, e.g. "1 Instagram Reel + 2 Stories within 3 days of the event". Populate this ONLY when exchangeType includes anything other than "Just attend & share organically". Leave it as an empty string "" when "Just attend & share organically" is the only or dominant selection.
 - capacity: number, how many creators the venue can realistically host (typically 5-50)
-- location: string or null, a city/area if inferable, otherwise null
+- location: string or null, the broader city/area if inferable, otherwise null
+- venue: string or null, the SPECIFIC place the brand named ("our Durbarmarg outlet", "Hotel Yak & Yeti", "the Jhamsikhel branch"), otherwise null. This is narrower than location — if they only named a city, put it in location and leave venue null.
+${buildEventDateInstruction(today)}
 - completionType: "SERVICE" or "DELIVERABLE". ${buildCompletionTypeInstruction()}
 - completionReason: string, the one-sentence explanation described above.
-- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","capacity","platform","category","completionType"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
+- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","capacity","platform","category","completionType","eventDate"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless. Include "eventDate" whenever you returned eventDate as null, so the brand is prompted to pick a date.
 
-${buildLanguageInstruction(language, inputSource)}
+${buildLanguageInstruction(language, EVENT_LOCALIZED_FIELDS, inputSource)}
 
 ${buildIntentInstruction()}
 
@@ -221,7 +359,7 @@ function buildDescriptionSystemPrompt(language: string): string {
 
 Given a few details about a brand's event/campaign, write a single description of 2-4 sentences describing what the campaign is about and what creators should do. Respond with ONLY the description text — no labels, no quotes, no markdown, no preamble.
 
-${buildLanguageInstruction(language)}
+${buildLanguageInstruction(language, ['the description text'])}
 (For this task only the description text itself is being written, so the language rule above applies to that text.)`;
 }
 
@@ -240,7 +378,7 @@ export class CampaignAiService {
       if (input.platform) parts.push(`Platform: ${input.platform}`);
       if (input.deliverables) parts.push(`Deliverables: ${input.deliverables}`);
 
-      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS, maxRetries: MAX_RETRIES });
+      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: DESCRIPTION_TIMEOUT_MS, maxRetries: MAX_RETRIES });
       const response = await client.chat.completions.create({
         model: MODEL,
         max_completion_tokens: 300,
@@ -257,7 +395,7 @@ export class CampaignAiService {
       return description;
     } catch (err) {
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy description');
-      return pickDummyDescription(input);
+      return pickDummyDescription(input, language);
     }
   }
 
@@ -286,10 +424,11 @@ export class CampaignAiService {
       const raw = await this.callModel(buildSystemPrompt(categoryNames, providerCategoryNames, platformNames, language, businessContext, inputSource), prompt);
       this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response');
+      draft = await this.localizeStragglers(draft, CAMPAIGN_LOCALIZED_KEYS);
     } catch (err) {
       if (err instanceof CampaignIntentError) throw err;
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy campaign draft');
-      draft = pickDummyDraft(prompt);
+      draft = pickDummyDraft(prompt, language);
       aiFallback = true;
     }
     const matched = this.matchToRealTaxonomy(draft, categoryNames, platformNames);
@@ -334,13 +473,14 @@ export class CampaignAiService {
     let aiFallback = false;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language, businessContext, inputSource), prompt);
+      const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language, businessContext, todayInNepal(), inputSource), prompt);
       this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiEventDraftSchema, 'AI event response');
+      draft = await this.localizeStragglers(draft, EVENT_LOCALIZED_KEYS);
     } catch (err) {
       if (err instanceof CampaignIntentError) throw err;
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy event draft');
-      draft = pickDummyEventDraft(prompt);
+      draft = pickDummyEventDraft(prompt, language);
       aiFallback = true;
     }
     return { ...this.matchToRealTaxonomy(draft, categoryNames, platformNames), aiFallback };
@@ -378,12 +518,81 @@ export class CampaignAiService {
     throw new CampaignIntentError(clarifying || "It sounds like you're not creating a campaign. Tell me what you'd like to promote.");
   }
 
+  // Catches the last few fields that slip back into English on an otherwise
+  // Nepali draft — typically the spec-shaped ones like expectedContent ("1
+  // Instagram Reel within 3 days"), which read as technical strings the model
+  // doesn't think of as prose. The signal is the draft's own internal
+  // inconsistency, not language detection: if SOME localized fields came back
+  // in Devanagari, the brand is getting a Nepali draft, and any sibling field
+  // with no Devanagari in it at all is a straggler rather than a choice. A
+  // genuinely English draft has zero Devanagari fields and is never touched.
+  private async localizeStragglers<T extends Record<string, unknown>>(draft: T, keys: readonly string[]): Promise<T> {
+    const populated = keys.filter((k) => isPopulatedText(draft[k]));
+    const localized = populated.filter((k) => hasDevanagari(draft[k]));
+    const stragglers = populated.filter((k) => !hasDevanagari(draft[k]));
+    // Require the draft to be predominantly Nepali before rewriting anything,
+    // so a mostly-English draft with one Nepali proper noun in it is left alone.
+    if (stragglers.length === 0 || localized.length < stragglers.length) return draft;
+
+    const payload = Object.fromEntries(stragglers.map((k) => [k, draft[k]]));
+    try {
+      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REPAIR_TIMEOUT_MS, maxRetries: 0 });
+      const response = await client.chat.completions.create({
+        model: MODEL,
+        max_completion_tokens: 1500,
+        reasoning_effort: 'minimal',
+        verbosity: 'low',
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: `You translate individual field values of an event/campaign brief into Nepali. Respond with ONLY a JSON object using EXACTLY the same keys and the same value types (a string stays a string, an array of strings stays an array of the same length).
+- Write the Nepali in proper Devanagari script, in simple everyday conversational language an ordinary person in Nepal can read.
+- Keep proper nouns that are genuinely written in Latin by their owner — the business's own name, social handles, and platform names like Instagram, TikTok, YouTube, Facebook — in Latin. Translate the Nepali words around them.
+- Keep all numbers, counts and durations exactly as they are; only the language changes.
+- Do not add, drop, merge or reorder anything. Do not make any value longer than the one you were given.`,
+          },
+          { role: 'user', content: JSON.stringify(payload) },
+        ],
+      });
+      const text = response.choices[0]?.message?.content;
+      if (!text) throw new Error('empty repair response');
+      const parsed = JSON.parse(text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim()) as Record<string, unknown>;
+
+      const repaired: Record<string, unknown> = { ...draft };
+      for (const key of stragglers) {
+        const next = parsed[key];
+        const before = draft[key];
+        // Only accept a replacement that is actually Nepali and structurally
+        // identical to what it replaces — anything else keeps the original,
+        // since a half-applied repair is worse than an English field.
+        if (typeof before === 'string' && typeof next === 'string' && next.trim() && DEVANAGARI.test(next)) {
+          repaired[key] = next;
+        } else if (Array.isArray(before) && Array.isArray(next) && next.length === before.length
+          && next.every((v) => typeof v === 'string' && v.trim()) && next.some((v: string) => DEVANAGARI.test(v))) {
+          repaired[key] = next;
+        }
+      }
+      logger.info({ stragglers }, 'Localized straggler fields left in English on a Nepali draft');
+      return repaired as T;
+    } catch (err) {
+      // Non-fatal by design: the draft is already usable, just partly English,
+      // and every field stays editable in the app.
+      logger.warn({ err: err instanceof Error ? err.message : err, stragglers }, 'Straggler localization failed, keeping original draft');
+      return draft;
+    }
+  }
+
   private async callModel(systemPrompt: string, prompt: string): Promise<string> {
     const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS, maxRetries: MAX_RETRIES });
     const response = await client.chat.completions.create({
       model: MODEL,
-      max_completion_tokens: 3000,
-      reasoning_effort: 'minimal',
+      // Reasoning tokens are billed against this same ceiling, so raising the
+      // effort tier above without raising this would let a hard brief spend its
+      // whole allowance thinking and return an empty/truncated body — which
+      // this service can only treat as a failure and answer with a dummy draft.
+      max_completion_tokens: 6000,
+      reasoning_effort: DRAFT_REASONING_EFFORT,
       verbosity: 'low',
       response_format: { type: 'json_object' },
       messages: [
@@ -393,7 +602,11 @@ export class CampaignAiService {
     });
     const text = response.choices[0]?.message?.content;
     if (!text) {
-      throw new Error('AI response did not contain text content');
+      // Distinguish "ran out of tokens mid-JSON" from a genuinely empty reply —
+      // both surface to the brand as the same dummy draft, so the only way to
+      // tell which one is happening is from this log line.
+      const finish = response.choices[0]?.finish_reason;
+      throw new Error(`AI response did not contain text content (finish_reason: ${finish ?? 'unknown'})`);
     }
     return text;
   }
@@ -420,20 +633,31 @@ export class CampaignAiService {
     return result.data;
   }
 
-  private matchToRealTaxonomy<T extends { category: string; secondaryCategories: string[]; platform: string; secondaryPlatforms: string[] }>(
+  private matchToRealTaxonomy<T extends { category: string; secondaryCategories: string[]; platform: string; secondaryPlatforms: string[]; needsInput: string[] }>(
     draft: T,
     realCategories: string[],
     realPlatforms: string[],
   ): T & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] } {
-    const matchedCategory = fuzzyMatch(draft.category, realCategories) ?? realCategories[0] ?? draft.category;
+    // Nothing matched at all means the fallback below is an arbitrary pick, not
+    // a near-miss — so flag the field for the brand to confirm instead of
+    // presenting the first taxonomy row as if the AI had chosen it. Without
+    // this, an unmatchable guess showed up as a confidently-wrong category with
+    // nothing in the UI hinting it was a fallback.
+    const unconfirmed: string[] = [];
+
+    const categoryMatch = fuzzyMatch(draft.category, realCategories);
+    const matchedCategory = categoryMatch ?? realCategories[0] ?? draft.category;
     if (matchedCategory !== draft.category && !realCategories.some((c) => c === draft.category)) {
       logger.warn({ guess: draft.category, matched: matchedCategory }, 'AI category guess did not match real taxonomy, falling back');
     }
+    if (categoryMatch == null && realCategories.length > 0) unconfirmed.push('category');
 
-    const matchedPlatform = fuzzyMatch(draft.platform, realPlatforms) ?? realPlatforms[0] ?? draft.platform;
+    const platformMatch = fuzzyMatch(draft.platform, realPlatforms);
+    const matchedPlatform = platformMatch ?? realPlatforms[0] ?? draft.platform;
     if (matchedPlatform !== draft.platform && !realPlatforms.some((p) => p === draft.platform)) {
       logger.warn({ guess: draft.platform, matched: matchedPlatform }, 'AI platform guess did not match known platforms, falling back');
     }
+    if (platformMatch == null && realPlatforms.length > 0) unconfirmed.push('platform');
 
     const aiSuggestedCategories = [draft.category, ...draft.secondaryCategories]
       .filter((c) => c !== matchedCategory);
@@ -445,16 +669,86 @@ export class CampaignAiService {
       category: matchedCategory,
       platform: matchedPlatform,
       platforms: [matchedPlatform],
+      // Both draft schemas cap needsInput at 2 entries and the mobile chip row
+      // is sized for that, so keep the AI's own flags first and only top up.
+      needsInput: [...draft.needsInput, ...unconfirmed.filter((f) => !draft.needsInput.includes(f))].slice(0, 2),
       aiSuggestedCategories,
       aiSuggestedPlatforms,
     };
   }
 }
 
+// Normalizes away the punctuation and accents that separate an AI guess from
+// the taxonomy row it obviously means — "Cafes"/"Café", "Bars & Nightlife"/
+// "Bars and Nightlife", "Twitter / X"/"Twitter/X".
+function normalizeForMatch(value: string): string {
+  return value
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\band\b/g, '&')
+    .replace(/[^a-z0-9&]+/g, ' ')
+    .trim();
+}
+
+// Crude but sufficient here: the taxonomy is a fixed list of ordinary English
+// nouns, and the only difference this has to absorb is the model returning
+// "Restaurant" for "Restaurants" or "Gym" for "Gyms".
+function singularize(token: string): string {
+  if (token.length > 4 && token.endsWith('ies')) return `${token.slice(0, -3)}y`;
+  if (token.length > 4 && (token.endsWith('ses') || token.endsWith('xes') || token.endsWith('ches') || token.endsWith('shes'))) return token.slice(0, -2);
+  if (token.length > 3 && token.endsWith('s') && !token.endsWith('ss')) return token.slice(0, -1);
+  return token;
+}
+
+// Significant words only — connectives are dropped so they can't carry an
+// overlap score on their own ("Food & Drink" and "Health & Beauty" share
+// nothing meaningful but would otherwise both score on "&").
+function matchTokens(value: string): string[] {
+  return normalizeForMatch(value).split(' ')
+    .filter((t) => t.length > 2 && t !== 'and')
+    .map(singularize);
+}
+
 function fuzzyMatch(guess: string, options: string[]): string | null {
-  const normalized = guess.trim().toLowerCase();
-  const exact = options.find((o) => o.toLowerCase() === normalized);
+  const normalized = normalizeForMatch(guess);
+  if (!normalized) return null;
+
+  // Whitespace-insensitive exact pass first, so "Tik Tok" still resolves to
+  // "TikTok" and "Twitter/X" to "Twitter / X".
+  const squashed = normalized.replace(/[^a-z0-9]/g, '');
+  const exact = options.find((o) => normalizeForMatch(o).replace(/[^a-z0-9]/g, '') === squashed);
   if (exact) return exact;
-  const partial = options.find((o) => o.toLowerCase().includes(normalized) || normalized.includes(o.toLowerCase()));
-  return partial ?? null;
+
+  const guessTokens = matchTokens(guess);
+  if (guessTokens.length === 0) return null;
+  const guessKey = ` ${guessTokens.join(' ')} `;
+
+  // Substring matching only in the direction that's actually safe: a guess that
+  // CONTAINS a whole option ("Cafes & Restaurants" -> "Cafés"). The reverse
+  // direction was the bug — a short guess matched the first option containing
+  // those letters anywhere, so "Bar" could land on "Barbershops" and a brand's
+  // event came back filed under the wrong category with nothing in the UI to
+  // explain why. Longest option wins, so a guess containing both "Cafés" and
+  // "Bars & Nightlife" resolves to the more specific one.
+  const contained = options
+    .filter((o) => {
+      const key = matchTokens(o).join(' ');
+      return key.length > 0 && guessKey.includes(` ${key} `);
+    })
+    .sort((a, b) => matchTokens(b).join(' ').length - matchTokens(a).join(' ').length)[0];
+  if (contained) return contained;
+
+  // Otherwise score by shared significant words and require a real overlap, so
+  // an unmatchable guess returns null (and the caller falls back visibly)
+  // rather than silently binding to a coincidental letter run.
+  let best: { option: string; score: number } | null = null;
+  for (const option of options) {
+    const optionTokens = matchTokens(option);
+    if (optionTokens.length === 0) continue;
+    const shared = optionTokens.filter((t) => guessTokens.includes(t)).length;
+    if (shared === 0) continue;
+    const score = shared / Math.max(guessTokens.length, optionTokens.length);
+    if (!best || score > best.score) best = { option, score };
+  }
+  return best && best.score >= 0.5 ? best.option : null;
 }

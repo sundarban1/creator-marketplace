@@ -14,6 +14,11 @@ const LIST_SELECT = {
   isVerified:   true,
   panDocStatus: true,
   companyRegDocStatus: true,
+  // Inputs to isBusinessFullyVerified/businessVerificationStatus, which branch
+  // on hiring type — omitting either silently falls back to the ORGANIZATION
+  // rule and under-reports verified individuals.
+  identityDocStatus: true,
+  representingType:  true,
   province:     true,
   district:     true,
   city:         true,
@@ -188,6 +193,8 @@ export class BusinessRepository {
         isVerified:           true,
         panDocStatus:         true,
         companyRegDocStatus:  true,
+        identityDocStatus:    true,
+        representingType:     true,
         createdAt:            true,
         showPublicProfile:    true,
         hideContactDetails:   true,
@@ -278,6 +285,9 @@ export class BusinessRepository {
       defaultCreatorCategories: string[];
       defaultBudgetRange: string | null;
       representingType: 'ORGANIZATION' | 'INDIVIDUAL';
+      organizationType: 'COMPANY' | 'BRAND' | 'RESTAURANT_CAFE' | 'HOTEL_RESORT' | 'AGENCY' | 'STARTUP' | 'NGO' | 'INGO' | 'EDUCATION' | 'EVENT_ORGANIZER' | 'MEDIA_PRODUCTION' | 'RETAIL_SHOP' | 'ECOMMERCE' | 'COMMUNITY_CLUB' | 'GOVERNMENT' | 'OTHER' | null;
+      organizationTypeOther: string | null;
+      contactPersonName: string | null;
       purpose: 'BRAND_MARKETING' | 'CONTENT_CREATION' | 'EVENT' | 'WEDDING' | 'PHOTOSHOOT' | 'PERFORMANCE' | 'COLLABORATION' | 'OTHER';
       businessSize: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE';
     }>
@@ -306,6 +316,13 @@ export class BusinessRepository {
     return prisma.businessProfile.update({
       where: { userId },
       data:  { panDocUrl: docUrl, panDocStatus: 'PENDING', panDocUploadedAt: new Date() },
+    });
+  }
+
+  async updateIdentityDoc(userId: string, docUrl: string) {
+    return prisma.businessProfile.update({
+      where: { userId },
+      data:  { identityDocUrl: docUrl, identityDocStatus: 'PENDING', identityDocUploadedAt: new Date() },
     });
   }
 

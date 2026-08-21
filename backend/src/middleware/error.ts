@@ -31,7 +31,13 @@ export class AppError extends Error {
     this.statusCode = statusCode;
     this.isOperational = isOperational;
     this.data = data;
-    Object.setPrototypeOf(this, AppError.prototype);
+    // new.target, NOT AppError.prototype — hardcoding the base class here
+    // reset every SUBCLASS instance's prototype back to AppError's, so
+    // `err instanceof SomeSubclassOfAppError` was always false. That silently
+    // disabled CampaignIntentError's special handling in campaign-ai.service:
+    // a prompt with no campaign intent got answered with an unrelated dummy
+    // draft instead of the AI's own "what would you like to promote?".
+    Object.setPrototypeOf(this, new.target.prototype);
     Error.captureStackTrace(this, this.constructor);
   }
 }

@@ -56,6 +56,12 @@ type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
 
 
+// The business's own industries (`categories`). 5, matching
+// business-onboarding.tsx's MAX_INDUSTRIES and (business)/edit-categories.tsx's
+// MAX — all three edit the same field, and this screen used to cap at 3, so a
+// business with 4-5 industries set elsewhere couldn't add any here.
+const MAX_BIZ_CATEGORIES = 5;
+
 const BUDGET_RANGES = ['Under NPR 5,000', 'NPR 5,000–15,000', 'NPR 15,000–50,000', 'NPR 50,000+'];
 
 const NEPAL_PAYMENTS = [
@@ -228,7 +234,12 @@ export default function BusinessSettingsScreen() {
   const { language, setLanguage, t } = useLanguage();
   const { flags } = usePlatformFlags();
   const { categories: businessCategoryOptions } = useCategories('BUSINESS');
-  const { categories: creatorCategoryOptions } = useCategories('CREATOR');
+  // `strict` — provider roles only, no BOTH-scope industry rows. This feeds
+  // defaultCreatorCategories, whose one consumer passes it to
+  // getRecommendedCreators({ category }); creators only ever carry
+  // CREATOR-scope categories, so an industry row here matches nobody. Must
+  // stay in step with business-onboarding.tsx's interests step.
+  const { categories: creatorCategoryOptions } = useCategories('CREATOR', true);
   const { platforms: platformOptions } = usePlatforms();
 
   const langLabelToCode = (label: string): 'en' | 'ne' => label === 'Nepali' ? 'ne' : 'en';
@@ -356,6 +367,12 @@ export default function BusinessSettingsScreen() {
   const [isBizVerified, setIsBizVerified] = useState(false);
   const [panDocStatus, setPanDocStatus] = useState<DocStatus>('NONE');
   const [companyRegDocStatus, setCompanyRegDocStatus] = useState<DocStatus>('NONE');
+  const [identityDocStatus, setIdentityDocStatus] = useState<DocStatus>('NONE');
+  const [identityUploading, setIdentityUploading] = useState(false);
+  // Drives which documents the Verification section asks for — an INDIVIDUAL
+  // has no PAN registration or company registration to give (spec §15).
+  const [representingType, setRepresentingType] = useState<'ORGANIZATION' | 'INDIVIDUAL' | null>(null);
+  const [serverVerificationStatus, setServerVerificationStatus] = useState<'NOT_VERIFIED' | 'PENDING' | 'VERIFIED'>('NOT_VERIFIED');
   const [panUploading, setPanUploading] = useState(false);
   const [companyRegUploading, setCompanyRegUploading] = useState(false);
   const [rejectReason, setRejectReason] = useState<string | null>(null);
@@ -368,10 +385,32 @@ export default function BusinessSettingsScreen() {
   const youtubeAuth = useGoogleAccessToken(['https://www.googleapis.com/auth/youtube.readonly']);
   const facebookPagesAuth = useFacebookAccessToken(['pages_show_list', 'pages_read_engagement', 'instagram_basic']);
 
+  // Derived server-side (businessVerificationStatus) so this screen, the
+  // profile badge and any other surface can't disagree — and so the
+  // INDIVIDUAL-vs-ORGANIZATION document rule lives in exactly one place.
+  // `isBizVerified` (the admin-toggled flag) still wins outright.
   const verificationStatus: 'verified' | 'under_review' | 'not_verified' =
-    isBizVerified ? 'verified'
-    : (panDocStatus === 'PENDING' || companyRegDocStatus === 'PENDING') ? 'under_review'
+    isBizVerified || serverVerificationStatus === 'VERIFIED' ? 'verified'
+    : serverVerificationStatus === 'PENDING' ? 'under_review'
     : 'not_verified';
+
+  const isIndividualTaker = representingType === 'INDIVIDUAL';
+
+  async function handleUploadIdentity() {
+    setIdentityUploading(true);
+    try {
+      const result = await pickAndUpload('business-identity');
+      if (result) {
+        setIdentityDocStatus(result.status ?? 'PENDING');
+        setServerVerificationStatus('PENDING');
+        showToast(t('businessSettings.uploadSuccessToast'));
+      }
+    } catch {
+      showToast(t('businessSettings.uploadFailedToast'));
+    } finally {
+      setIdentityUploading(false);
+    }
+  }
 
   async function handleUploadPan() {
     setPanUploading(true);
@@ -629,6 +668,9 @@ export default function BusinessSettingsScreen() {
       setIsBizVerified(p.isVerified);
       setPanDocStatus(p.panDocStatus);
       setCompanyRegDocStatus(p.companyRegDocStatus);
+      setIdentityDocStatus(p.identityDocStatus);
+      setRepresentingType(p.representingType);
+      setServerVerificationStatus(p.verificationStatus);
       setRejectReason(p.verificationRejectReason);
       if (p.defaultPlatforms?.length)         setPrefPlatforms(p.defaultPlatforms);
       if (p.defaultCreatorCategories?.length)  setPrefCreatorCats(p.defaultCreatorCategories);
@@ -667,7 +709,7 @@ export default function BusinessSettingsScreen() {
   function toggleBizCategory(val: string) {
     setBizCategory((prev) => {
       if (prev.includes(val)) return prev.filter((x) => x !== val);
-      if (prev.length >= 3) return prev;
+      if (prev.length >= MAX_BIZ_CATEGORIES) return prev;
       return [...prev, val];
     });
   }
@@ -1086,12 +1128,12 @@ export default function BusinessSettingsScreen() {
             <View style={styles.formField}>
               <View style={styles.labelRow}>
                 <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessCategoryLabel')}</Text>
-                <Text style={[styles.optionalTag, { color: C.textSecondary }]}>{bizCategory.length}/3</Text>
+                <Text style={[styles.optionalTag, { color: C.textSecondary }]}>{bizCategory.length}/{MAX_BIZ_CATEGORIES}</Text>
               </View>
               <View style={styles.chipGroup}>
                 {businessCategoryOptions.map(({ name: cat }) => {
                   const active = bizCategory.includes(cat);
-                  const disabled = !active && bizCategory.length >= 3;
+                  const disabled = !active && bizCategory.length >= MAX_BIZ_CATEGORIES;
                   return (
                     <Pressable
                       key={cat}
@@ -1813,17 +1855,26 @@ export default function BusinessSettingsScreen() {
         {verificationStatus !== 'verified' && (
           <HintCard>
             <Text style={[styles.hintText, { color: C.brinjal1 }]}>
-              {verificationStatus === 'under_review' ? t('businessSettings.underReviewMessage') : t('businessSettings.verifiedHint')}
+              {verificationStatus === 'under_review'
+                ? t('businessSettings.underReviewMessage')
+                : isIndividualTaker
+                  ? `${t('businessSettings.verifiedHint')} ${t('businessSettings.identityDocHint')}`
+                  : t('businessSettings.verifiedHint')}
             </Text>
           </HintCard>
         )}
 
         <SectionHeader title={t('businessSettings.uploadDocumentsSection')} />
         <Card>
-          {[
-            { label: t('businessSettings.panRegistrationLabel'), icon: 'file-invoice', status: panDocStatus, uploading: panUploading, upload: handleUploadPan },
-            { label: t('businessSettings.companyRegLabel'), icon: 'building', status: companyRegDocStatus, uploading: companyRegUploading, upload: handleUploadCompanyReg },
-          ].map((doc, idx, arr) => (
+          {(isIndividualTaker
+            ? [
+                { label: t('businessSettings.identityDocLabel'), icon: 'id-card', status: identityDocStatus, uploading: identityUploading, upload: handleUploadIdentity },
+              ]
+            : [
+                { label: t('businessSettings.panRegistrationLabel'), icon: 'file-invoice', status: panDocStatus, uploading: panUploading, upload: handleUploadPan },
+                { label: t('businessSettings.companyRegLabel'), icon: 'building', status: companyRegDocStatus, uploading: companyRegUploading, upload: handleUploadCompanyReg },
+              ]
+          ).map((doc, idx, arr) => (
             <Pressable
               key={doc.label}
               style={[styles.row, idx < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}

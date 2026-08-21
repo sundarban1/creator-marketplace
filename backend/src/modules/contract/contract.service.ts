@@ -40,9 +40,7 @@ The content must follow these campaign requirements:
 
 **Content Guidelines:** {{contentGuidelines}}
 
-The content will be published on:
-
-**Platforms:** {{platforms}}
+The content will be published on the Creator's own social media account.
 
 ## 2. Compensation
 
@@ -456,7 +454,6 @@ function renderContractPdf(contract: Contract): Promise<Buffer> {
         ['Deadline', fmtDate(terms.deadline)],
         ['Timeline', terms.timeline],
         ['Deliverables', terms.deliverables],
-        ['Platforms', terms.platforms.join(', ') || 'N/A'],
       ];
       rows.forEach(([label, value]) => {
         doc.font('Helvetica-Bold').text(`${label}: `, { continued: true }).font('Helvetica').text(value);

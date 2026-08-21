@@ -4,6 +4,8 @@ import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { ReviewsList } from '@/components/ReviewsList';
 import { ReportModal } from '@/components/ReportModal';
+import { ImagePreviewModal } from '@/components/ImagePreviewModal';
+import { VideoPlayerModal } from '@/components/VideoPlayerModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
 import {
@@ -21,6 +23,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorPublicProfile, type ApiPublicService } from '@/services/creator';
+import type { ApiPortfolioItem } from '@/services/portfolio';
 import { chatService } from '@/services/chat';
 import { serviceRequestService } from '@/services/serviceRequest';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -110,6 +113,10 @@ export default function CreatorDetailScreen() {
   const [serviceReqError, setServiceReqError]     = useState('');
   const [sentServiceReqIds, setSentServiceReqIds] = useState<Set<string>>(new Set());
   const [showReportModal, setShowReportModal] = useState(false);
+
+  // Portfolio media the viewer tapped — opened in the same full-screen preview
+  // chrome the deliverables sheets use (image vs. video picked by mediaType).
+  const [previewItem, setPreviewItem] = useState<ApiPortfolioItem | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -256,6 +263,7 @@ export default function CreatorDetailScreen() {
   const initials = (profile.fullName ?? 'C').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
   const avatarBg = getAvatarBg(allCategories, profile.categories);
   const portfolioLinks = (profile.portfolioLinks ?? []) as { id: string; label: string; url: string }[];
+  const portfolioItems = profile.portfolioItems ?? [];
 
   // Merge socialLinks (JSON handles) + socialAccounts (structured with followers)
   const socialLinksMap = (profile.socialLinks ?? {}) as Record<string, string | null>;
@@ -495,10 +503,59 @@ export default function CreatorDetailScreen() {
           </View>
         )}
 
-        {/* ── Portfolio ── */}
-        {portfolioLinks.length > 0 && (
+        {/* ── Portfolio work (media-backed PortfolioItem entries) ── */}
+        {portfolioItems.length > 0 && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
             <SectionTitle label={t('creatorDetailExtra.sectionPortfolio')} color={C.textSecondary} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.workRow}>
+              {portfolioItems.map((item) => {
+                const hasMedia = !!item.mediaUrl;
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[s.workTile, { backgroundColor: C.background, borderColor: C.border }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.title ?? t('portfolioScreen.untitled')}
+                    onPress={() => {
+                      if (hasMedia) setPreviewItem(item);
+                      else if (item.externalUrl) Linking.openURL(item.externalUrl).catch(() => {});
+                    }}>
+                    {hasMedia ? (
+                      <Image source={{ uri: item.mediaUrl! }} style={s.workThumb} resizeMode="cover" />
+                    ) : (
+                      <View style={[s.workThumb, s.workThumbFallback, { backgroundColor: C.primaryLight }]}>
+                        <FontAwesome5 name="external-link-alt" solid size={20} color={C.brinjal1} />
+                      </View>
+                    )}
+                    {item.mediaType === 'VIDEO' && hasMedia && (
+                      <View style={s.workPlayBadge}>
+                        <FontAwesome5 name="play" solid size={10} color="#fff" />
+                      </View>
+                    )}
+                    <View style={s.workMeta}>
+                      <Text style={[s.workTitle, { color: C.text }]} numberOfLines={1}>
+                        {item.title ?? t('portfolioScreen.untitled')}
+                      </Text>
+                      {!!item.category && (
+                        <Text style={[s.workCategory, { color: C.textSecondary }]} numberOfLines={1}>
+                          {item.category}
+                        </Text>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Portfolio links (legacy label+url list) ── */}
+        {portfolioLinks.length > 0 && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionPortfolioLinks')} color={C.textSecondary} />
             <View style={s.portfolioList}>
               {portfolioLinks.map((link) => (
                 <Pressable
@@ -635,6 +692,19 @@ export default function CreatorDetailScreen() {
           targetId={profile.userId}
         />
       )}
+
+      <ImagePreviewModal
+        visible={!!previewItem && previewItem.mediaType !== 'VIDEO'}
+        url={previewItem?.mediaUrl ?? null}
+        title={previewItem?.title ?? t('portfolioScreen.untitled')}
+        onClose={() => setPreviewItem(null)}
+      />
+      <VideoPlayerModal
+        visible={!!previewItem && previewItem.mediaType === 'VIDEO'}
+        url={previewItem?.mediaUrl ?? null}
+        title={previewItem?.title ?? t('portfolioScreen.untitled')}
+        onClose={() => setPreviewItem(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -703,6 +773,19 @@ const s = StyleSheet.create({
   statTile:   { width: '47%', borderRadius: RADIUS.md, padding: 12, gap: 4, alignItems: 'flex-start' },
   statValue:  { fontSize: 16, fontFamily: F.bold },
   statLabel:  { fontSize: 11, fontFamily: F.medium },
+
+  // Portfolio work gallery
+  workRow:          { gap: 12, paddingRight: 4 },
+  workTile:         { width: 148, borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden' },
+  workThumb:        { width: '100%', height: 148 },
+  workThumbFallback:{ justifyContent: 'center', alignItems: 'center' },
+  workPlayBadge:    {
+    position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 12,
+    backgroundColor: 'rgba(17,24,39,0.65)', justifyContent: 'center', alignItems: 'center',
+  },
+  workMeta:         { paddingHorizontal: 10, paddingVertical: 8, gap: 2 },
+  workTitle:        { fontSize: 13, fontFamily: F.semibold },
+  workCategory:     { fontSize: 11, fontFamily: F.regular },
 
   // Portfolio
   portfolioList:    { gap: 10 },

@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { buildGeocodeUrl } from './constants';
+import { buildGeocodeUrl, buildPlaceDetailsUrl } from './constants';
 import { showPermissionDeniedAlert } from './permissionAlert';
 
 export type LatLng = { lat: number; lng: number };
@@ -19,6 +19,49 @@ export async function geocodeAddress(address: string): Promise<LatLng | null> {
       return { lat: loc.lat, lng: loc.lng };
     }
     return null;
+  } catch {
+    return null;
+  }
+}
+
+export type ResolvedPlace = {
+  /** Full human-readable place string, as shown in the autocomplete dropdown. */
+  location: string;
+  coords: LatLng | null;
+  /** Nepal's administrative hierarchy, best-effort — Google doesn't always return every level. */
+  city:     string | null;
+  district: string | null;
+  province: string | null;
+};
+
+function componentOf(components: any[], type: string): string | null {
+  return components.find((c) => c.types?.includes(type))?.long_name ?? null;
+}
+
+/**
+ * Turns a Places autocomplete `place_id` into coordinates plus whatever slice of
+ * Nepal's Province → District → City hierarchy Google can give us. Screens ask the
+ * user a single "where are you?" question; this is what backfills the structured
+ * city/district/province columns the API still stores (and that creator-facing
+ * lists display) without making the user pick three dropdowns.
+ */
+export async function resolvePlaceDetails(placeId: string): Promise<ResolvedPlace | null> {
+  try {
+    const res = await fetch(buildPlaceDetailsUrl(placeId, 'geometry,formatted_address,name,address_components'));
+    const json = await res.json();
+    if (json.status !== 'OK' || !json.result) return null;
+    const r = json.result;
+    const components: any[] = r.address_components ?? [];
+    const loc = r.geometry?.location;
+    return {
+      location: r.formatted_address ?? r.name ?? '',
+      coords: loc ? { lat: loc.lat, lng: loc.lng } : null,
+      // Google labels Nepali municipalities as `locality`, falling back to the
+      // ward/sublocality level for addresses inside a metro area.
+      city:     componentOf(components, 'locality') ?? componentOf(components, 'sublocality') ?? null,
+      district: componentOf(components, 'administrative_area_level_2') ?? null,
+      province: componentOf(components, 'administrative_area_level_1') ?? null,
+    };
   } catch {
     return null;
   }

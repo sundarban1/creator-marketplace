@@ -32,6 +32,7 @@ import {
   DeliverablesCounterList, HashtagEditor, FeaturedToggle, CompletionTypePicker, sc,
 } from '@/features/business/components/CampaignFormControls';
 import { ListingHeroCard, PreviewRow } from '@/features/business/components/CampaignSummary';
+import { eventOptionLabel } from '@/features/business/utils/eventOptionLabels';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -542,7 +543,7 @@ export default function EditCampaignScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                 {editForm.benefits.map((b) => (
                   <View key={b} style={[s.pill, { backgroundColor: C.primaryLight }]}>
-                    <Text style={[s.pillText, { color: C.brinjal1 }]}>{b}</Text>
+                    <Text style={[s.pillText, { color: C.brinjal1 }]}>{eventOptionLabel(b, 'offering', t)}</Text>
                   </View>
                 ))}
               </View>
@@ -771,7 +772,7 @@ export default function EditCampaignScreen() {
           <Stepper value={Number(editForm.capacity) || 1} onChange={(v) => updateEdit('capacity', String(v))} colors={C} />
         )}
         {editingField === 'benefits' && (
-          <ChipMultiGroup options={EVENT_BENEFITS} values={editForm.benefits} onChange={(v) => updateEdit('benefits', v)} colors={C} />
+          <ChipMultiGroup options={EVENT_BENEFITS} values={editForm.benefits} onChange={(v) => updateEdit('benefits', v)} colors={C} labelFor={(o) => eventOptionLabel(o, 'offering', t)} />
         )}
       </BottomSheet>
 

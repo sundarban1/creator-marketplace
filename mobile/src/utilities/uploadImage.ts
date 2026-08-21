@@ -10,7 +10,7 @@ import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
 
-export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' | 'business-cover' | 'creator-citizenship' | 'creator-pan' | 'business-pan' | 'business-company-reg' | 'campaign-feature' | 'portfolio-item';
+export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' | 'business-cover' | 'creator-citizenship' | 'creator-pan' | 'business-pan' | 'business-company-reg' | 'business-identity' | 'campaign-feature' | 'portfolio-item';
 
 const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?: [number, number]; isDocument?: boolean }> = {
   'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   aspect: [1, 1]  },
@@ -21,6 +21,8 @@ const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?
   'creator-pan':             { path: '/api/creator/pan',                       field: 'document', isDocument: true },
   'business-pan':            { path: '/api/business/documents/pan',         field: 'document', isDocument: true },
   'business-company-reg':    { path: '/api/business/documents/company-reg', field: 'document', isDocument: true },
+  // INDIVIDUAL service takers only — citizenship / national ID / personal PAN.
+  'business-identity':       { path: '/api/business/documents/identity',    field: 'document', isDocument: true },
   'campaign-feature':        { path: '/api/campaigns/feature-image',        field: 'image', aspect: [16, 9] },
   'portfolio-item':          { path: '/api/creator/portfolio-items/upload', field: 'media' },
 };

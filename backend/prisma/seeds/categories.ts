@@ -56,6 +56,25 @@ const INDUSTRY_CATEGORIES: { icon: string; color: string; name: string; key: str
   { icon: 'wifi',               color: '#0891B2', name: 'Internet & Telecom',       key: 'internet-telecom',       scope: 'BOTH' },
   { icon: 'briefcase-medical',  color: '#DC2626', name: 'Healthcare & Medical',     key: 'healthcare-medical',     scope: 'BOTH' },
   { icon: 'couch',              color: '#9333EA', name: 'Home & Furniture',         key: 'home-furniture',         scope: 'BOTH' },
+  // Added alongside the service-taker onboarding Industry step, which is
+  // required for every ORGANIZATION — the OrganizationType options added at
+  // the same time (NGO, INGO, GOVERNMENT, MEDIA_PRODUCTION, COMMUNITY_CLUB,
+  // AGENCY) previously had no industry they could honestly pick. Also fills
+  // the remaining gaps in the product spec's §6 industry list.
+  { icon: 'photo-video',        color: '#7C3AED', name: 'Media & Production',       key: 'media-production',       scope: 'BOTH' },
+  { icon: 'hands-helping',      color: '#0D9488', name: 'NGO & Development',        key: 'ngo-development',        scope: 'BOTH' },
+  { icon: 'landmark',           color: '#475569', name: 'Government & Public Sector', key: 'government-public',    scope: 'BOTH' },
+  { icon: 'briefcase',          color: '#2563EB', name: 'Professional Services',    key: 'professional-services',  scope: 'BOTH' },
+  { icon: 'futbol',             color: '#16A34A', name: 'Sports & Recreation',      key: 'sports-recreation',      scope: 'BOTH' },
+  { icon: 'seedling',           color: '#65A30D', name: 'Agriculture',              key: 'agriculture',            scope: 'BOTH' },
+  { icon: 'hard-hat',           color: '#F59E0B', name: 'Construction & Engineering', key: 'construction-engineering', scope: 'BOTH' },
+  { icon: 'heart',              color: '#EC4899', name: 'Lifestyle',                key: 'lifestyle',              scope: 'BOTH' },
+  // Same name as the CREATOR-scope 'Other' role (Category.name isn't unique,
+  // only `key`). Non-strict CREATOR fetches DO mix the two (they widen to
+  // "CREATOR OR BOTH"), so the mobile useCategories hook drops the duplicate
+  // name and keeps the exact-scope row — see dedupeByName there before adding
+  // any further same-named pair here.
+  { icon: 'ellipsis-h',         color: '#6B7280', name: 'Other',                    key: 'other-industry',         scope: 'BOTH' },
 ];
 
 // Provider roles (CREATOR scope) — "What do you offer?" / "What are you
@@ -128,28 +147,44 @@ const PROVIDER_CATEGORIES: { icon: string; name: string; key: string; scope: Cat
 ];
 
 export async function seedCategories(prisma: PrismaClient) {
-  // Full wipe + fresh insert rather than upsert-by-key. NOTE: this was
-  // previously risk-free because Category had no incoming FK relations
-  // (creator/business profiles and campaigns store category names as plain
-  // strings) — that's no longer true now that Service.categoryId is a real
-  // FK to Category.id (onDelete: RESTRICT). Still safe today because no
-  // Service rows exist yet, but once the Services UI ships, this script will
-  // start throwing a foreign-key error instead of running (RESTRICT, not
-  // CASCADE, so it fails loudly rather than silently deleting real provider
-  // services) if any Service references a category being wiped. At that
-  // point this needs to become an upsert-by-key instead of wipe+reinsert.
-  const { count } = await prisma.category.deleteMany({});
-  if (count > 0) console.log(`  🗑️  Categories: removed ${count} existing`);
-  const total = INDUSTRY_CATEGORIES.length + PROVIDER_CATEGORIES.length;
-  await prisma.category.createMany({
-    data: [
-      ...INDUSTRY_CATEGORIES.map((c, i) => ({ ...c, iconBg: BG_COLORS[i % BG_COLORS.length]! })),
-      ...PROVIDER_CATEGORIES.map((c, i) => ({
-        ...c,
-        color: ICON_COLORS[i % ICON_COLORS.length]!,
-        iconBg: BG_COLORS[i % BG_COLORS.length]!,
-      })),
-    ],
-  });
-  console.log(`  ✅ Categories: ${total} seeded`);
+  // Upsert-by-key, not wipe+reinsert. The previous version deleted every row
+  // first, which the note here already flagged as living on borrowed time
+  // because Category picked up incoming FKs (onDelete: RESTRICT). It came due:
+  // CampaignRequirement.categoryId now references Category.id, so the wipe
+  // fails outright against any database that has campaign requirements —
+  // Service.categoryId is the same hazard waiting behind it.
+  //
+  // Upserting keys off `key` (the unique column) so re-running is safe and
+  // preserves ids, which is what the FKs point at. Rows that exist in the
+  // database but not here are left alone rather than deleted — removing a
+  // category is an admin action, and doing it silently from a seed script
+  // would break whatever still references it. Admin-toggled `status` is set
+  // on create only, so re-running never resurrects a category an admin
+  // deliberately disabled.
+  const rows = [
+    ...INDUSTRY_CATEGORIES.map((c, i) => ({ ...c, iconBg: BG_COLORS[i % BG_COLORS.length]! })),
+    ...PROVIDER_CATEGORIES.map((c, i) => ({
+      ...c,
+      color: ICON_COLORS[i % ICON_COLORS.length]!,
+      iconBg: BG_COLORS[i % BG_COLORS.length]!,
+    })),
+  ];
+
+  let created = 0;
+  for (const row of rows) {
+    const { key, ...rest } = row;
+    const existing = await prisma.category.findUnique({ where: { key }, select: { id: true } });
+    if (!existing) created++;
+    await prisma.category.upsert({
+      where:  { key },
+      create: { key, ...rest },
+      update: rest,
+    });
+  }
+
+  const stale = await prisma.category.count({ where: { key: { notIn: rows.map((r) => r.key) } } });
+  console.log(`  ✅ Categories: ${rows.length} seeded (${created} new, ${rows.length - created} updated)`);
+  if (stale > 0) {
+    console.log(`  ⚠️  ${stale} category row(s) in the database are not in this seed — left untouched; remove them from the admin Categories page if they're obsolete.`);
+  }
 }

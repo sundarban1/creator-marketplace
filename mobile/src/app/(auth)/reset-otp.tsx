@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, lineHeightFor } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 
@@ -214,6 +214,23 @@ export default function ResetOtpScreen() {
               </Pressable>
             )}
           </View>
+
+          {/* A phone-only signup has no real address on its account (its email
+              column holds the <phone>@phone.kolab.internal placeholder), so a
+              reset requested by email silently matches nobody and no code is
+              ever sent. Give that dead end a visible way out. */}
+          {channel === 'email' && (
+            <View style={styles.altChannelRow}>
+              <Text style={[styles.altChannelLabel, { color: C.textSecondary }]}>
+                {t('auth.resetOtp.phonePrompt')}
+              </Text>
+              <Pressable onPress={() => router.replace({ pathname: '/forgot-password', params: { channel: 'phone' } })}>
+                <Text style={[styles.altChannelLink, { color: C.brinjal1 }]}>
+                  {t('auth.resetOtp.phoneLink')}
+                </Text>
+              </Pressable>
+            </View>
+          )}
         </View>
         </MaxWidthContainer>
       </KeyboardAvoidingView>
@@ -248,4 +265,7 @@ const styles = StyleSheet.create({
   resendLabel: { fontSize: 14, fontFamily: F.regular },
   resendTimer: { fontSize: 14, fontFamily: F.semibold },
   resendLink: { fontSize: 14, fontFamily: F.bold },
+  altChannelRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' },
+  altChannelLabel: { fontSize: 13, fontFamily: F.regular, lineHeight: lineHeightFor(13) },
+  altChannelLink: { fontSize: 13, fontFamily: F.bold, lineHeight: lineHeightFor(13) },
 });

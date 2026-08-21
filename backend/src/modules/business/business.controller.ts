@@ -102,6 +102,23 @@ export class BusinessController {
     }
   }
 
+  async uploadIdentityDoc(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      await businessService.assertCanUploadIdentityDoc(req.user!.id);
+      const docUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'businesses/identity',
+        `identity_${req.user!.id}`,
+        [],
+      );
+      const profile = await businessService.uploadIdentityDoc(req.user!.id, docUrl);
+      success(res, { docUrl: profile.identityDocUrl, identityDocStatus: profile.identityDocStatus }, 'Identity document uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async uploadCompanyRegDoc(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) throw new AppError('No image file provided', 400);

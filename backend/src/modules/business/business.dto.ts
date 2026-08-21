@@ -1,6 +1,25 @@
 import { Prisma } from '@prisma/client';
-import { isBusinessFullyVerified } from '../../utils/verification';
+import { isBusinessFullyVerified, businessVerificationStatus } from '../../utils/verification';
 import { maskLocationByVisibility } from '../../utils/geo';
+
+// Every consumer of the verification rules needs the same four fields; the
+// nullish defaults keep the older raw shapes (which don't select all of them)
+// falling back to the stricter ORGANIZATION path rather than throwing.
+function verificationInputs(b: {
+  panDocStatus?: string;
+  companyRegDocStatus?: string;
+  identityDocStatus?: string;
+  representingType?: 'ORGANIZATION' | 'INDIVIDUAL' | null;
+}) {
+  return {
+    panDocStatus:        b.panDocStatus ?? 'NONE',
+    companyRegDocStatus: b.companyRegDocStatus ?? 'NONE',
+    identityDocStatus:   b.identityDocStatus ?? 'NONE',
+    representingType:    b.representingType ?? null,
+  };
+}
+
+export type OrganizationType = 'COMPANY' | 'BRAND' | 'RESTAURANT_CAFE' | 'HOTEL_RESORT' | 'AGENCY' | 'STARTUP' | 'NGO' | 'INGO' | 'EDUCATION' | 'EVENT_ORGANIZER' | 'MEDIA_PRODUCTION' | 'RETAIL_SHOP' | 'ECOMMERCE' | 'COMMUNITY_CLUB' | 'GOVERNMENT' | 'OTHER';
 
 export type BusinessPurpose = 'BRAND_MARKETING' | 'CONTENT_CREATION' | 'EVENT' | 'WEDDING' | 'PHOTOSHOOT' | 'PERFORMANCE' | 'COLLABORATION' | 'OTHER';
 
@@ -40,8 +59,16 @@ export interface BusinessProfileDto {
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   companyRegDocUrl: string | null;
   companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  identityDocUrl: string | null;
+  identityDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  // §7 — the single tri-state clients render, derived server-side so every
+  // surface agrees instead of each recomputing it from raw doc statuses.
+  verificationStatus: 'NOT_VERIFIED' | 'PENDING' | 'VERIFIED';
   verificationRejectReason: string | null;
   representingType: 'ORGANIZATION' | 'INDIVIDUAL' | null;
+  organizationType: OrganizationType | null;
+  organizationTypeOther: string | null;
+  contactPersonName: string | null;
   purpose: BusinessPurpose | null;
   businessSize: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE' | null;
   createdAt: string;
@@ -142,10 +169,15 @@ type RawBusinessProfile = {
   defaultBudgetRange?: string | null;
   panDocUrl?: string | null;
   panDocStatus?: string;
+  identityDocUrl?: string | null;
+  identityDocStatus?: string;
   companyRegDocUrl?: string | null;
   companyRegDocStatus?: string;
   verificationRejectReason?: string | null;
   representingType?: 'ORGANIZATION' | 'INDIVIDUAL' | null;
+  organizationType?: OrganizationType | null;
+  organizationTypeOther?: string | null;
+  contactPersonName?: string | null;
   purpose?: BusinessPurpose | null;
   businessSize?: 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'AGENCY' | 'ENTERPRISE' | null;
   createdAt: Date;
@@ -176,7 +208,7 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     address:             b.address ?? null,
     locationVisibility:  b.locationVisibility ?? 'CITY',
     isVerified:          b.isVerified,
-    fullyVerified:       b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
+    fullyVerified:       b.user ? isBusinessFullyVerified(b.user, verificationInputs(b)) : false,
     showPublicProfile:   b.showPublicProfile,
     hideContactDetails:  b.hideContactDetails,
     hideSocialLinks:     b.hideSocialLinks ?? false,
@@ -191,8 +223,14 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     panDocStatus:        (b.panDocStatus ?? 'NONE') as BusinessProfileDto['panDocStatus'],
     companyRegDocUrl:    b.companyRegDocUrl ?? null,
     companyRegDocStatus: (b.companyRegDocStatus ?? 'NONE') as BusinessProfileDto['companyRegDocStatus'],
+    identityDocUrl:      b.identityDocUrl ?? null,
+    identityDocStatus:   (b.identityDocStatus ?? 'NONE') as BusinessProfileDto['identityDocStatus'],
+    verificationStatus:  b.user ? businessVerificationStatus(b.user, verificationInputs(b)) : 'NOT_VERIFIED',
     verificationRejectReason: b.verificationRejectReason ?? null,
     representingType:    b.representingType ?? null,
+    organizationType:      b.organizationType ?? null,
+    organizationTypeOther: b.organizationTypeOther ?? null,
+    contactPersonName:     b.contactPersonName ?? null,
     purpose:             b.purpose ?? null,
     businessSize:        b.businessSize ?? null,
     createdAt:           b.createdAt.toISOString(),
@@ -220,6 +258,7 @@ type RawPublicBusiness = {
   categories: string[];
   isVerified: boolean;
   panDocStatus?: string;
+  identityDocStatus?: string;
   companyRegDocStatus?: string;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
@@ -262,7 +301,7 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
     socialLinks:         b.hideSocialLinks ? {} : ((b.socialLinks ?? {}) as Record<string, string>),
     categories:          b.categories,
     isVerified:          b.isVerified,
-    fullyVerified:       b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
+    fullyVerified:       b.user ? isBusinessFullyVerified(b.user, verificationInputs(b)) : false,
     showPublicProfile:   b.showPublicProfile,
     hideContactDetails:  b.hideContactDetails,
     hideSocialLinks:     b.hideSocialLinks,
@@ -288,6 +327,7 @@ type RawBusinessListItem = {
   categories: string[];
   isVerified: boolean;
   panDocStatus?: string;
+  identityDocStatus?: string;
   companyRegDocStatus?: string;
   province: string | null;
   district: string | null;
@@ -309,7 +349,7 @@ export function toBusinessListItemDto(b: RawBusinessListItem): BusinessListItemD
     website:      b.website,
     categories:   b.categories,
     isVerified:   b.isVerified,
-    fullyVerified: b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
+    fullyVerified: b.user ? isBusinessFullyVerified(b.user, verificationInputs(b)) : false,
     city:         loc.city,
     district:     loc.district,
     _count:       b._count,

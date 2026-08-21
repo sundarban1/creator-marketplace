@@ -16,11 +16,32 @@ function isFresh(key: CacheKey) {
   return cache[key] !== undefined && Date.now() - (cachedAt[key] ?? 0) < CACHE_TTL_MS;
 }
 
+// Category.name isn't unique in the DB — only `key` is. The CREATOR-scope
+// 'Other' provider role and the BOTH-scope 'Other' industry both exist, so any
+// non-strict scoped fetch (which widens to "scope OR BOTH") returns two rows
+// labelled 'Other'. Everything downstream — filters, profile tags, campaign
+// categories — matches on the name string, so same-named rows are
+// indistinguishable to both the user and the filtering, and they collide as
+// React keys in the chip rows. Keep one row per name, preferring the one whose
+// scope exactly matches what the caller asked for (so the CREATOR picker keeps
+// the grouped provider role rather than the ungrouped industry row).
+function dedupeByName(cats: ApiCategory[], scope?: 'CREATOR' | 'BUSINESS'): ApiCategory[] {
+  const byName = new Map<string, ApiCategory>();
+  for (const c of cats) {
+    const kept = byName.get(c.name);
+    if (!kept || (scope !== undefined && c.scope === scope && kept.scope !== scope)) byName.set(c.name, c);
+  }
+  return [...byName.values()];
+}
+
 function fetchScoped(key: CacheKey, scope?: 'CREATOR' | 'BUSINESS', strict?: boolean): Promise<ApiCategory[]> {
   if (isFresh(key)) return Promise.resolve(cache[key]!);
   if (!inflight[key]) {
     inflight[key] = categoryService.getCategories(scope, strict)
-      .then((cats) => { cache[key] = cats; cachedAt[key] = Date.now(); return cats; })
+      .then((raw) => {
+        const cats = dedupeByName(raw, scope);
+        cache[key] = cats; cachedAt[key] = Date.now(); return cats;
+      })
       .finally(() => { delete inflight[key]; });
   }
   return inflight[key]!;

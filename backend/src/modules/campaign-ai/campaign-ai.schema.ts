@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
+// The typed prompt box in the app caps itself at 500 characters, but a VOICE
+// prompt is a Whisper transcription of up to a 2-minute recording — roughly
+// 300 spoken words, well over 1,500 characters. A 500-char cap here rejected
+// any recording longer than ~40 seconds with a plain 400, which the mobile
+// client could only treat as "the request never came back" and answer with its
+// generic fabricated template — so a brand who described their event in detail
+// got a *less* accurate draft than one who said a single sentence. 2,500 covers
+// a full-length recording with the Free Invitation flow's offerings suffix.
 export const generateCampaignSchema = z.object({
-  prompt: z.string().min(3, 'Please describe what you want to promote').max(500),
+  prompt: z.string().min(3, 'Please describe what you want to promote').max(2500),
   // 'voice' — a transcribed recording, where the actual spoken language (not
   // the app's UI language setting) must decide the output language. Omitted
   // for the Text prompt mode.
@@ -104,7 +112,7 @@ export const EXCHANGE_DESCRIPTIONS: Record<(typeof EXCHANGE_OPTIONS)[number], st
 };
 
 // Field keys the AI is allowed to flag as "not confident" for OPEN_EVENT drafts.
-export const EVENT_NEEDS_INPUT_FIELDS = ['location', 'capacity', 'platform', 'category', 'completionType'] as const;
+export const EVENT_NEEDS_INPUT_FIELDS = ['location', 'capacity', 'platform', 'category', 'completionType', 'eventDate'] as const;
 
 export const aiEventDraftSchema = z.object({
   title: z.string().min(3).max(120),
@@ -118,6 +126,19 @@ export const aiEventDraftSchema = z.object({
   expectedContent: z.string().max(300).default(''),
   capacity: z.number().int().min(1).max(500),
   location: z.string().max(120).nullable().default(null),
+  // When the brand actually stated when the event is ("this Saturday", "on the
+  // 14th at 5pm"), the model resolves it against today's date and returns it
+  // here; null when they didn't say. Without these the flow silently defaulted
+  // every AI-generated event to "seven days from now", which is the single
+  // most visible way a voice-generated draft came out wrong.
+  // Calendar date only, YYYY-MM-DD — the time of day rides in eventTime.
+  eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().default(null),
+  // 24-hour HH:MM, null when no time was mentioned.
+  eventTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().default(null),
+  // The specific venue the brand named ("our Durbarmarg outlet", "Hotel Yak &
+  // Yeti") as opposed to `location`, which is the broader city/area. Null when
+  // no specific place was named.
+  venue: z.string().max(160).nullable().default(null),
   completionType: z.enum(COMPLETION_TYPES),
   completionReason: z.string().min(3).max(300),
   needsInput: z.array(z.enum(EVENT_NEEDS_INPUT_FIELDS)).max(2).default([]),
