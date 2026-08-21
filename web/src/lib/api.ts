@@ -135,7 +135,7 @@ export interface ApiStats {
     role:      string;
     createdAt: string;
     creatorProfile?:  { fullName: string } | null;
-    businessProfile?: { businessName: string } | null;
+    businessProfile?: { businessName: string | null } | null;
   }>;
 }
 
@@ -148,7 +148,7 @@ export interface ApiUser {
   isActive:        boolean;
   createdAt:       string;
   creatorProfile?:  { fullName: string; avatarUrl?: string | null; isVerified: boolean } | null;
-  businessProfile?: { businessName: string; logoUrl?: string | null; isVerified: boolean } | null;
+  businessProfile?: { businessName: string | null; logoUrl?: string | null; isVerified: boolean } | null;
 }
 
 export interface ApiCreator {
@@ -289,7 +289,7 @@ export interface ApiPlatform {
 export interface ApiBusiness {
   id:           string;
   userId:       string;
-  businessName: string;
+  businessName: string | null;
   description?: string | null;
   logoUrl?:     string | null;
   website?:     string | null;
@@ -356,7 +356,7 @@ export interface ApiCampaign {
   status:    string;
   deadline:  string;
   createdAt: string;
-  business:  { businessName: string; logoUrl?: string | null };
+  business:  { businessName: string | null; logoUrl?: string | null };
   _count:    { applications: number };
   // Set once an admin force-deletes the event (see api.admin.deleteCampaign)
   // — the row itself is kept for audit, only its applications/requirements/
@@ -478,7 +478,7 @@ export interface ApiCampaignDetail {
   updatedAt:      string;
   business: {
     id:           string;
-    businessName: string;
+    businessName: string | null;
     logoUrl?:     string | null;
     website?:     string | null;
     description?: string | null;
@@ -608,7 +608,7 @@ export interface ApiConversationAdmin {
   creator:       { fullName: string; avatarUrl?: string | null };
   // Exactly one of these two is set — creator↔business conversations carry
   // `business`, creator↔creator conversations carry `creator2` instead.
-  business:      { businessName: string; logoUrl?: string | null } | null;
+  business:      { businessName: string | null; logoUrl?: string | null } | null;
   creator2?:     { fullName: string; avatarUrl?: string | null } | null;
   campaign?:     { title: string } | null;
   _count:        { messages: number };

@@ -16,3 +16,11 @@ export function displayEmailOrPhone(email: string): string {
   if (!isPhonePlaceholderEmail(email)) return email;
   return email.slice(0, -PLACEHOLDER_EMAIL_DOMAIN.length).replace(/^\+?977/, '');
 }
+
+/** Formats a business profile's `businessName` for display. The column is
+ *  nullable (a business that signed up but never finished onboarding has no
+ *  name yet), so every admin surface must tolerate null rather than assume a
+ *  string it can `.slice()`. */
+export function displayBusinessName(name: string | null | undefined): string {
+  return name?.trim() || 'Unnamed business';
+}

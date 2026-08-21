@@ -10,6 +10,7 @@ const COLORS = [
 ];
 
 function colorFromInitials(initials: string): string {
+  if (!initials) return COLORS[0];
   const idx = initials.charCodeAt(0) % COLORS.length;
   return COLORS[idx];
 }

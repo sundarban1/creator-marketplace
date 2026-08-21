@@ -10,7 +10,7 @@ import { DocumentPreviewModal } from '../components/DocumentPreviewModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiBusiness } from '../lib/api';
 import { useApi }        from '../lib/useApi';
-import { displayEmailOrPhone, isPhonePlaceholderEmail } from '../lib/identity';
+import { displayEmailOrPhone, displayBusinessName, isPhonePlaceholderEmail } from '../lib/identity';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -58,13 +58,13 @@ export function Businesses() {
       const userId = action.business.user.id;
       if (action.type === 'delete') {
         await api.admin.deleteUser(userId);
-        showToast(`${action.business.businessName} deleted.`);
+        showToast(`${displayBusinessName(action.business.businessName)} deleted.`);
       } else if (action.type === 'verify' || action.type === 'unverify') {
         await api.admin.verifyBusiness(action.business.id, action.type === 'verify');
-        showToast(`${action.business.businessName} ${action.type === 'verify' ? 'verified' : 'unverified'}.`);
+        showToast(`${displayBusinessName(action.business.businessName)} ${action.type === 'verify' ? 'verified' : 'unverified'}.`);
       } else if (action.type === 'reject') {
         await api.admin.rejectBusiness(action.business.id, rejectReason.trim());
-        showToast(`${action.business.businessName}'s verification was rejected.`);
+        showToast(`${displayBusinessName(action.business.businessName)}'s verification was rejected.`);
         setRejectReason('');
       } else {
         const isActive = action.type === 'activate';
@@ -103,22 +103,25 @@ export function Businesses() {
     {
       key:    'name',
       header: 'Business',
-      render: (row: ApiBusiness) => (
+      render: (row: ApiBusiness) => {
+        const name = displayBusinessName(row.businessName);
+        return (
         <button
           onClick={() => setViewing(row)}
           className="flex items-center gap-3 text-left group"
         >
           {row.logoUrl ? (
-            <img src={row.logoUrl} alt={row.businessName} className="w-8 h-8 rounded-lg object-cover" />
+            <img src={row.logoUrl} alt={name} className="w-8 h-8 rounded-lg object-cover" />
           ) : (
-            <Avatar initials={row.businessName.slice(0, 2).toUpperCase()} size="sm" />
+            <Avatar initials={name.slice(0, 2).toUpperCase()} size="sm" />
           )}
           <div className="min-w-0">
-            <p className="font-medium text-gray-900 truncate group-hover:text-indigo-600 group-hover:underline">{row.businessName}</p>
+            <p className="font-medium text-gray-900 truncate group-hover:text-indigo-600 group-hover:underline">{name}</p>
             <p className="text-xs text-gray-500 truncate">{displayEmailOrPhone(row.user.email)}</p>
           </div>
         </button>
-      ),
+        );
+      },
     },
     {
       key:    'categories',
@@ -189,14 +192,14 @@ export function Businesses() {
             variant="primary"
             icon={BarChart3}
             title="Analytics"
-            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.businessName, email: row.user.email } })} />
+            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: displayBusinessName(row.businessName), email: row.user.email } })} />
           <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', business: row })} />
         </div>
       ),
     },
   ];
 
-  const bName = action?.business.businessName ?? '';
+  const bName = action ? displayBusinessName(action.business.businessName) : '';
   const bEmail = action ? displayEmailOrPhone(action.business.user.email) : '';
   const modalCfg = action
     ? action.type === 'delete'
@@ -242,10 +245,10 @@ export function Businesses() {
           onClose={() => setViewing(null)}
           avatar={
             viewing.logoUrl
-              ? <img src={viewing.logoUrl} alt={viewing.businessName} className="w-12 h-12 rounded-lg object-cover" />
-              : <Avatar initials={viewing.businessName.slice(0, 2).toUpperCase()} size="md" />
+              ? <img src={viewing.logoUrl} alt={displayBusinessName(viewing.businessName)} className="w-12 h-12 rounded-lg object-cover" />
+              : <Avatar initials={displayBusinessName(viewing.businessName).slice(0, 2).toUpperCase()} size="md" />
           }
-          title={viewing.businessName}
+          title={displayBusinessName(viewing.businessName)}
           subtitle={displayEmailOrPhone(viewing.user.email)}
           badges={<StatusBadge status={businessStatus(viewing)} />}
           sections={[

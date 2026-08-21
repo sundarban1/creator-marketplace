@@ -13,7 +13,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { EditEventModal } from '../components/EditEventModal';
 import { api, type ApiCampaignDetail, type ApiApplication } from '../lib/api';
 import { useApi }       from '../lib/useApi';
-import { displayEmailOrPhone } from '../lib/identity';
+import { displayEmailOrPhone, displayBusinessName } from '../lib/identity';
 
 const CAMPAIGN_STATUSES = ['ACTIVE', 'PAUSED', 'CLOSED'] as const;
 
@@ -100,7 +100,7 @@ function buildTimeline(campaign: ApiCampaignDetail) {
   events.push({
     date:  campaign.createdAt,
     label: 'Event created',
-    sub:   `by ${campaign.business.businessName}`,
+    sub:   `by ${displayBusinessName(campaign.business.businessName)}`,
     color: 'bg-indigo-500',
   });
 
@@ -451,7 +451,7 @@ export function CampaignDetail() {
               )}
               <StatusBadge status={campaign.status === 'PENDING_APPROVAL' ? 'pending' : campaign.status.toLowerCase()} />
             </div>
-            <p className="text-sm text-gray-500 mt-0.5">{campaign.business.businessName} · {isEvent ? 'Open Event' : 'Paid Event'}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{displayBusinessName(campaign.business.businessName)} · {isEvent ? 'Open Event' : 'Paid Event'}</p>
           </div>
         </div>
 
@@ -787,12 +787,12 @@ export function CampaignDetail() {
             </h2>
             <div className="flex items-center gap-3">
               {campaign.business.logoUrl ? (
-                <img src={campaign.business.logoUrl} alt={campaign.business.businessName} className="w-10 h-10 rounded-lg object-cover" />
+                <img src={campaign.business.logoUrl} alt={displayBusinessName(campaign.business.businessName)} className="w-10 h-10 rounded-lg object-cover" />
               ) : (
-                <Avatar initials={campaign.business.businessName.slice(0, 2).toUpperCase()} size="sm" />
+                <Avatar initials={displayBusinessName(campaign.business.businessName).slice(0, 2).toUpperCase()} size="sm" />
               )}
               <div className="min-w-0">
-                <p className="font-semibold text-gray-900 text-sm truncate">{campaign.business.businessName}</p>
+                <p className="font-semibold text-gray-900 text-sm truncate">{displayBusinessName(campaign.business.businessName)}</p>
                 {campaign.business.website && (
                   <a href={campaign.business.website} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline truncate block">
                     {campaign.business.website.replace(/^https?:\/\//, '')}

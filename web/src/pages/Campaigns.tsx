@@ -9,6 +9,7 @@ import { EditEventModal } from '../components/EditEventModal';
 import { ActionButton } from '../components/ActionButton';
 import { api, type ApiCampaign } from '../lib/api';
 import { useApi }       from '../lib/useApi';
+import { displayBusinessName } from '../lib/identity';
 
 const PAGE_SIZE = 10;
 
@@ -58,14 +59,14 @@ export function Campaigns() {
   const allCampaigns = data?.data ?? [];
 
   const businessNames = useMemo(() => {
-    const names = [...new Set(allCampaigns.map((c) => c.business.businessName))].sort();
+    const names = [...new Set(allCampaigns.map((c) => displayBusinessName(c.business.businessName)))].sort();
     return names;
   }, [allCampaigns]);
 
   const campaigns = useMemo(() =>
     businessFilter === 'All'
       ? allCampaigns
-      : allCampaigns.filter((c) => c.business.businessName === businessFilter),
+      : allCampaigns.filter((c) => displayBusinessName(c.business.businessName) === businessFilter),
     [allCampaigns, businessFilter]
   );
 
@@ -135,7 +136,7 @@ export function Campaigns() {
           className="min-w-0 text-left group"
         >
           <p className="font-medium text-gray-900 truncate max-w-[220px] group-hover:text-indigo-600 group-hover:underline">{row.title}</p>
-          <p className="text-xs text-gray-500 truncate">{row.business.businessName}</p>
+          <p className="text-xs text-gray-500 truncate">{displayBusinessName(row.business.businessName)}</p>
         </button>
       ),
     },

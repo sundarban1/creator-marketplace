@@ -11,7 +11,7 @@ import { ActionButton }  from '../components/ActionButton';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiUser } from '../lib/api';
 import { useApi }        from '../lib/useApi';
-import { displayEmailOrPhone, isPhonePlaceholderEmail } from '../lib/identity';
+import { displayEmailOrPhone, displayBusinessName, isPhonePlaceholderEmail } from '../lib/identity';
 
 const PAGE_SIZE = 10;
 
@@ -291,7 +291,7 @@ export function Users() {
               ? [{
                   heading: 'Business profile',
                   fields: [
-                    { label: 'Business name', value: viewing.businessProfile.businessName },
+                    { label: 'Business name', value: displayBusinessName(viewing.businessProfile.businessName) },
                     { label: 'Verified', value: viewing.businessProfile.isVerified ? 'Yes' : 'No' },
                   ],
                 }]

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { api, type ApiConversationAdmin, type ConversationStats, type Pagination } from '../lib/api';
+import { displayBusinessName } from '../lib/identity';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -242,9 +243,9 @@ export function Conversations() {
                     <td className="px-5 py-3.5">
                       {conv.business ? (
                         <div className="flex items-center gap-2.5">
-                          <Avatar name={conv.business.businessName} url={conv.business.logoUrl} size={32} />
+                          <Avatar name={displayBusinessName(conv.business.businessName)} url={conv.business.logoUrl} size={32} />
                           <div>
-                            <p className="font-medium text-gray-800 text-sm leading-tight">{conv.business.businessName}</p>
+                            <p className="font-medium text-gray-800 text-sm leading-tight">{displayBusinessName(conv.business.businessName)}</p>
                             <p className="text-xs text-gray-400">Business</p>
                           </div>
                         </div>
@@ -347,7 +348,7 @@ export function Conversations() {
             <p className="text-sm text-gray-500 text-center mb-6">
               This will permanently delete the conversation between{' '}
               <strong>{toDelete.creator.fullName}</strong> and{' '}
-              <strong>{toDelete.business?.businessName ?? toDelete.creator2?.fullName ?? 'the other participant'}</strong> and all{' '}
+              <strong>{toDelete.business ? displayBusinessName(toDelete.business.businessName) : toDelete.creator2?.fullName ?? 'the other participant'}</strong> and all{' '}
               {toDelete._count.messages} message{toDelete._count.messages !== 1 ? 's' : ''}. This cannot be undone.
             </p>
             <div className="flex gap-3">
