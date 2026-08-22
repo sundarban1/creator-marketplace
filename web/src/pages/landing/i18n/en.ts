@@ -13,11 +13,11 @@ export const en = {
   },
 
   hero: {
-    eyebrow: 'The collaboration marketplace',
+    eyebrow: 'Find skills for your campaign or job',
     headlineLine1: 'Find the right people.',
     headlineLine2: 'Create opportunities.',
     headlineLine3: 'Collaborate.',
-    sub: 'Kolab connects people and businesses with the talent, services and opportunities they need to make things happen.',
+    sub: 'Kolab helps you find the skills your campaign, event or job needs — and connects you with the people who can deliver them.',
     searchPlaceholder: "Try 'I need a photographer for my event'",
     searchAriaLabel: 'Search Kolab',
     micAriaLabel: 'Search by voice',
@@ -32,8 +32,8 @@ export const en = {
       opportunities: { label: 'Opportunities', sub: 'Find your next opportunity' },
       events: { label: 'Events', sub: "Discover what's happening" },
     },
-    ctaCreator: 'Join as Creator',
-    ctaBusiness: 'Hire Creators',
+    ctaCreator: 'Offer Your Skills',
+    ctaBusiness: 'Find Skills',
     scrollAriaLabel: 'Scroll to explore',
     scrollLabel: 'Scroll',
   },
@@ -52,9 +52,9 @@ export const en = {
   showcase: {
     eyebrow: 'Why Kolab',
     panels: [
-      { heading: 'Find the Right Match', sub: 'Discover creators, brands, and collaboration opportunities that actually fit your goals, niche, audience, and budget.' },
+      { heading: 'Find the Right Skills', sub: 'Discover the people and skills that actually fit your campaign, job, budget, and timeline.' },
       { heading: 'Everything in One Place', sub: 'Discover opportunities, send proposals, communicate, manage campaigns, submit deliverables, and track payments without jumping between platforms.' },
-      { heading: 'Real Opportunities, Less Hassle', sub: 'Skip endless DMs and cold outreach. Find genuine collaboration opportunities and connect directly with the right people.' },
+      { heading: 'Real Work, Less Hassle', sub: 'Skip endless DMs and cold outreach. Find real campaigns and jobs — or the skills to deliver them — and connect directly.' },
       { heading: 'Collaborate with Confidence', sub: 'Keep campaign requirements, communication, deliverables, deadlines, and agreements organized so everyone knows what to expect.' },
       { heading: 'Get Paid Securely', sub: 'Make payments and receive earnings through a transparent process, reducing the stress of chasing payments, scams, or unclear deals.' },
     ],
@@ -62,11 +62,11 @@ export const en = {
 
   trust: {
     eyebrow: 'Trusted by',
-    heading: "Nepal's creator economy, by the numbers",
+    heading: 'Nepal Skill People economy',
     // fallback is shown only until the real /api/public/landing-stats count loads
     stats: [
-      { fallback: 5000, label: 'Creators' },
-      { fallback: 300, label: 'Brands' },
+      { fallback: 5000, label: 'Skilled People' },
+      { fallback: 300, label: 'Businesses' },
       { fallback: 12, label: 'Categories' },
     ],
   },
@@ -75,7 +75,7 @@ export const en = {
     eyebrow: 'Built for both sides',
     heading: 'Built for both sides of collaboration.',
     headingAccent: 'collaboration.',
-    sub: "Whether you're offering your skills or looking for the right talent, Kolab brings both sides together.",
+    sub: "Whether you're offering your skills or hiring them for a campaign, event or job, Kolab brings both sides together.",
     matchFound: 'Match found',
     giver: {
       label: 'For service givers',
@@ -97,7 +97,7 @@ export const en = {
     taker: {
       label: 'For service takers',
       title: 'Find the people who can make it happen.',
-      sub: 'Discover creators, professionals and services for your business, project or event.',
+      sub: 'Find the skills you need for your campaign, event or job — and the people behind them.',
       opportunityBadge: 'New opportunity',
       opportunityTitle: 'Photographer Needed',
       location: 'Kathmandu',
@@ -107,7 +107,7 @@ export const en = {
       projectTag: 'Project',
       opportunityCta: 'Find People',
       talent: ['Photographer', 'Creator', 'Videographer'],
-      cta: 'Find Talent',
+      cta: 'Find Skills',
       ctaCaption: 'Post your project or requirement',
     },
   },
@@ -115,7 +115,7 @@ export const en = {
   aiDiscovery: {
     eyebrow: 'Search smarter',
     heading: 'AI discovery that understands you.',
-    sub: 'Tell Kolab what you need. Search naturally — type it, speak it, and let Kolab find the right match.',
+    sub: 'Tell Kolab what your campaign or job needs. Search naturally — type it, speak it, and let Kolab find the right skills.',
     understandingLabel: 'Understanding…',
     matchesLabel: 'matches found',
     viewMatches: 'View Matches',
@@ -144,7 +144,7 @@ export const en = {
       { title: 'Cafe Menu Launch', date: 'Deadline Sep 22', location: 'Lalitpur' },
       { title: 'Travel Vlog Partner', date: 'Deadline Sep 30', location: 'Pokhara' },
     ],
-    eventsLabel: 'Upcoming Events',
+    eventsLabel: 'Find People for Your Event',
     viewAllEvents: 'View all events',
     featuredEvent: { dateDay: '12', dateMonth: 'Sep', title: 'Grand Opening Event', location: 'Kathmandu', sub: 'Creators, Photographers, Hosts' },
     moreEvents: [
@@ -156,7 +156,7 @@ export const en = {
 
   categories: {
     eyebrow: 'Every category, covered',
-    heading: 'Whatever you need, someone on Kolab can help.',
+    heading: 'Whatever skill your campaign or job needs, someone on Kolab has it.',
     more: 'More',
     list: [
       'Fashion', 'Travel', 'Food & Beverage', 'Technology', 'Gaming',
@@ -237,7 +237,7 @@ export const en = {
 
   finalCta: {
     heading: 'Ready to collaborate?',
-    sub: 'Find your people. Offer your skills. Discover opportunities. Make something happen.',
+    sub: 'Find the skills for your campaign or job. Offer your own. Make something happen.',
     ctaGetStarted: 'Get Started',
     ctaExplore: 'Explore Kolab',
     roles: { designer: 'Designer', business: 'Business', creator: 'Creator' },

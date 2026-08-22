@@ -36,15 +36,23 @@ export const BUSINESS_DARK_COLORS: typeof COLORS = {
   primaryLight:'#14291C',
 };
 
-// Scopes a subtree to the neutral pre-login palette, ignoring the signed-in
-// user's role. The auth stack wraps itself in this because `login()` sets the
-// user *before* RootNavigator redirects — without it, a business login repaints
-// the login screen green for the frame (plus the push animation) between auth
-// state landing and the business home mounting.
-const PreLoginThemeContext = createContext(false);
+// Pins a subtree to one palette instead of deriving it from the live auth
+// state. Both auth transitions change `user` while the *outgoing* screens are
+// still mounted — `login()` sets the user before RootNavigator redirects, and
+// `logout()` nulls it before the redirect back — so without pinning, a business
+// login repaints the login screen green and a logout repaints the business
+// screens brinjal, each for a frame plus the navigation animation.
+type ThemeScope = 'preLogin' | 'business';
+const ThemeScopeContext = createContext<ThemeScope | null>(null);
 
+/** Neutral palette for the auth stack, even once a BUSINESS user is signed in. */
 export function PreLoginTheme({ children }: { children: ReactNode }) {
-  return <PreLoginThemeContext.Provider value={true}>{children}</PreLoginThemeContext.Provider>;
+  return <ThemeScopeContext.Provider value="preLogin">{children}</ThemeScopeContext.Provider>;
+}
+
+/** Business palette for the business stack, even once the user is signed out. */
+export function BusinessTheme({ children }: { children: ReactNode }) {
+  return <ThemeScopeContext.Provider value="business">{children}</ThemeScopeContext.Provider>;
 }
 
 type AppThemeContextType = {
@@ -73,8 +81,8 @@ export function useIsDark() {
 export function useAppColors(): typeof COLORS {
   const { isDark } = useContext(AppThemeContext);
   const { user } = useAuth();
-  const preLogin = useContext(PreLoginThemeContext);
-  const isBusiness = user?.role === 'BUSINESS' && !preLogin;
+  const scope = useContext(ThemeScopeContext);
+  const isBusiness = scope ? scope === 'business' : user?.role === 'BUSINESS';
   if (isBusiness) return isDark ? BUSINESS_DARK_COLORS : BUSINESS_COLORS;
   return isDark ? DARK_COLORS : COLORS;
 }
