@@ -625,6 +625,9 @@ const ne = {
     errorInsufficientBalance: 'रकम तपाईंको ब्यालेन्सभन्दा बढी भयो',
     withdrawSuccess: 'रु. {{amount}} झिकियो!',
     withdrawError: 'पैसा झिक्न सकिएन।',
+    confirmPrompt: 'रु. {{amount}} झिक्ने कुरा पुष्टि गर्नुहोस्',
+    confirmCancel: 'रद्द गर्नुहोस्',
+    confirmFailed: 'चिन्न सकिएन — पैसा झिकिएन। फेरि प्रयास गर्नुहोस्।',
   },
 
   messages: {
@@ -3278,6 +3281,15 @@ const ne = {
     noContent: 'अहिलेसम्म कुनै सामग्री उपलब्ध छैन।',
     lastUpdated: 'अन्तिम अपडेट {{date}}',
     footer: '© २०२६ Kolab · सर्वाधिकार सुरक्षित',
+  },
+
+  // ── Biometric enrolment offer (post-login, one-shot) ──────────
+  biometricEnroll: {
+    title:         '{{label}} अन गर्ने?',
+    body:          'आफ्नो डिभाइसको {{label}} प्रयोग गरेर Kolab खातामा छिटो र सुरक्षित रूपमा लगइन गर्नुहोस्। सेटिङबाट जुनसुकै बेला अफ गर्न सकिन्छ।',
+    enable:        'अन गर्नुहोस्',
+    notNow:        'अहिले होइन',
+    confirmPrompt: '{{label}} लगइन अन गर्न पुष्टि गर्नुहोस्',
   },
 
   // ── Biometric Gate ────────────────────────────────────────────

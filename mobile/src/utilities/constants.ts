@@ -168,6 +168,9 @@ export const USER_KEY               = 'ch_user';
 export const ACCESS_TOKEN_KEY       = 'ch_access_token';
 export const REFRESH_TOKEN_KEY      = 'ch_refresh_token';
 export const BIOMETRIC_ENABLED_KEY  = 'ch_biometric_enabled';
+// One-shot marker for the post-login "Enable Face ID / Fingerprint?" offer —
+// set whether the user taps Enable or Not now, so the offer never nags twice.
+export const BIOMETRIC_OFFERED_KEY  = 'ch_biometric_offered';
 export const RECENT_SEARCHES_KEY    = 'ch_recent_searches';
 
 // User roles — use these instead of the bare 'CREATOR'/'BUSINESS' string literals

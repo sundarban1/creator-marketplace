@@ -629,6 +629,9 @@ const en = {
     errorInsufficientBalance: 'Amount exceeds your available balance',
     withdrawSuccess: 'Rs. {{amount}} withdrawn successfully!',
     withdrawError: 'Could not process this withdrawal.',
+    confirmPrompt: 'Confirm withdrawal of Rs. {{amount}}',
+    confirmCancel: 'Cancel',
+    confirmFailed: "Couldn't verify your identity — withdrawal cancelled. Please try again.",
   },
 
   messages: {
@@ -3278,6 +3281,15 @@ const en = {
     noContent: 'No content available yet.',
     lastUpdated: 'Last updated {{date}}',
     footer: '© 2026 Kolab · All rights reserved',
+  },
+
+  // ── Biometric enrolment offer (post-login, one-shot) ──────────
+  biometricEnroll: {
+    title:         'Enable {{label}}?',
+    body:          'Sign in faster and securely access your Kolab account using your device\'s {{label}}. You can turn this off any time in Settings.',
+    enable:        'Enable',
+    notNow:        'Not now',
+    confirmPrompt: 'Confirm to enable {{label}} login',
   },
 
   // ── Biometric Gate ────────────────────────────────────────────

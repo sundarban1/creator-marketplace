@@ -17,6 +17,7 @@ import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
+import { confirmSensitiveAction } from '@/services/biometric';
 import { F } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; label: string; color: string }> = {
@@ -64,6 +65,19 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
     setError('');
     setSubmitting(true);
     try {
+      // Step-up check before the money actually moves. Runs inside `submitting`
+      // so the button is already disabled while the native sheet is up — the
+      // prompt is modal, but the sheet behind it stays mounted and tappable on
+      // Android once it's dismissed and the promise is still settling.
+      const confirmation = await confirmSensitiveAction(
+        t('wallet.confirmPrompt', { amount: amount.toLocaleString() }),
+        t('wallet.confirmCancel'),
+      );
+      // Backing out of the prompt is a deliberate "no", not a failure — leave the
+      // form exactly as it was, with no error text, so they can just try again.
+      if (confirmation === 'cancelled') return;
+      if (confirmation === 'failed') { setError(t('wallet.confirmFailed')); return; }
+
       await onWithdraw(amount, method);
       handleClose();
     } catch (err) {

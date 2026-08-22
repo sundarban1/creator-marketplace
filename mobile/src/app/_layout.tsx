@@ -24,11 +24,12 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { PlatformSettingsProvider, usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { SplashScreen } from '@/components/SplashScreen';
 import { BiometricGateScreen } from '@/components/BiometricGateScreen';
+import { BiometricEnrollPrompt } from '@/components/BiometricEnrollPrompt';
 import { ForceUpdateScreen } from '@/components/ForceUpdateScreen';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { GlobalUploadBanner } from '@/components/GlobalUploadBanner';
 import { ToastProvider } from '@/components/Toast';
-import { isBiometricLoginEnabled } from '@/services/biometric';
+import { syncBiometricLoginWithDevice } from '@/services/biometric';
 import { authService } from '@/services/auth';
 import { initBackgroundVideoUploadManager } from '@/services/backgroundVideoUploadManager';
 import { initSentry } from '@/utilities/sentry';
@@ -130,7 +131,10 @@ function RootNavigator() {
 
   useEffect(() => {
     if (isLoading) return;
-    setBiometricGateArmed(isBiometricLoginEnabled());
+    // syncBiometricLoginWithDevice (not a bare isBiometricLoginEnabled read) so a
+    // device whose face/fingerprint enrolment was removed since last launch drops
+    // the preference here instead of arming a gate that can never be satisfied.
+    void syncBiometricLoginWithDevice().then(setBiometricGateArmed);
   }, [isLoading]);
 
   useEffect(() => {
@@ -193,27 +197,34 @@ function RootNavigator() {
   }
 
   return (
-    // contentStyle here matters as much as the individual screens' own
-    // backgrounds — expo-router mounts the incoming screen's native container
-    // (this contentStyle) a beat before that screen's own root View paints,
-    // and its default is transparent/white. Without a themed backgroundColor
-    // here, every push/pop shows a one-frame white flash between screens
-    // (worse in dark mode, where it reads as a visible blink).
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.background } }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="oauthredirect" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen name="business-onboarding" />
-      <Stack.Screen name="(creator)" />
-      <Stack.Screen name="(business)" />
-      <Stack.Screen name="legal" options={{ presentation: 'card' }} />
-      <Stack.Screen name="campaign-detail" options={{ presentation: 'card' }} />
-      <Stack.Screen name="submit-proposal" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="create-campaign" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="edit-campaign" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="video-player" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
-    </Stack>
+    <>
+      {/* contentStyle here matters as much as the individual screens' own
+          backgrounds — expo-router mounts the incoming screen's native container
+          (this contentStyle) a beat before that screen's own root View paints,
+          and its default is transparent/white. Without a themed backgroundColor
+          here, every push/pop shows a one-frame white flash between screens
+          (worse in dark mode, where it reads as a visible blink). */}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.background } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="oauthredirect" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="business-onboarding" />
+        <Stack.Screen name="(creator)" />
+        <Stack.Screen name="(business)" />
+        <Stack.Screen name="legal" options={{ presentation: 'card' }} />
+        <Stack.Screen name="campaign-detail" options={{ presentation: 'card' }} />
+        <Stack.Screen name="submit-proposal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="create-campaign" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="edit-campaign" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="video-player" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+      </Stack>
+
+      {/* Sits after the force-update and biometric-gate early returns above, so the
+          one-shot enrolment offer can only ever appear over real app content —
+          never stacked on top of a blocking screen. */}
+      <BiometricEnrollPrompt />
+    </>
   );
 }
 
