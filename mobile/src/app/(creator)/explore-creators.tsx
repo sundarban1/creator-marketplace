@@ -48,28 +48,22 @@ function formatFollowers(n: number) {
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
   return String(n);
 }
-function toggle<T>(arr: T[], item: T): T[] {
-  return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
-}
 
 // ─── Filter state ─────────────────────────────────────────────────────────────
 
 type FilterState = {
   locations: LocationEntry[];
-  platforms: string[];
   categories: string[];
 };
 
 const DEFAULT_FILTER: FilterState = {
   locations: [],
-  platforms: [],
   categories: [],
 };
 
 function filterActiveCount(f: FilterState) {
   return [
     f.locations.length > 0,
-    f.platforms.length > 0,
     f.categories.length > 0,
   ].filter(Boolean).length;
 }
@@ -91,9 +85,7 @@ function ExploreFilterModal({
   onReset: () => void;
   onClose: () => void;
 }) {
-  const C = useAppColors();
   const { t } = useLanguage();
-  const { platforms: allPlatforms } = usePlatforms();
 
   function set<K extends keyof FilterState>(key: K, val: FilterState[K]) {
     setTemp({ ...temp, [key]: val });
@@ -103,13 +95,9 @@ function ExploreFilterModal({
   for (const loc of temp.locations) {
     activeChips.push({
       key: `loc-${loc.label}`,
-      label: loc.label === 'Remote' ? t('filterModal.remote') : loc.label,
+      label: loc.label,
       onClear: () => set('locations', temp.locations.filter((l) => l.label !== loc.label)),
     });
-  }
-  for (const p of temp.platforms) {
-    const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
-    activeChips.push({ key: `plat-${p}`, label, onClear: () => set('platforms', temp.platforms.filter((x) => x !== p)) });
   }
 
   const applyLabel = activeChips.length > 0
@@ -132,32 +120,6 @@ function ExploreFilterModal({
           not in this modal — keeping it in one place avoids two disagreeing
           controls for the same filter. */}
 
-      {/* Platform — sourced from the admin platform catalog so every supported
-          platform is always selectable, not just ones a creator already connected. */}
-      {allPlatforms.length > 0 && (
-        <View>
-          <FilterSectionHeader
-            icon="mobile-alt"
-            label={t('explore.platform')}
-            hint={temp.platforms.length > 0 ? t('filterModal.selectedCount', { count: temp.platforms.length }) : undefined}
-          />
-          <View style={fm.chips}>
-            {allPlatforms.map((p) => {
-              const sel = temp.platforms.includes(p.key);
-              return (
-                <Pressable
-                  key={p.key}
-                  onPress={() => set('platforms', toggle(temp.platforms, p.key))}
-                  style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                  <FontAwesome5 name={p.icon} size={13} color={sel ? C.brinjal1 : p.color} />
-                  <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{p.name}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
       {/* Location — kept last */}
       <View>
         <FilterSectionHeader
@@ -165,17 +127,12 @@ function ExploreFilterModal({
           label={t('explore.location')}
           hint={t('explore.locationsAllowed', { count: temp.locations.length, max: MAX_LOCS })}
         />
-        <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} />
+        {/* No Remote chip — people are filtered by where they are based. */}
+        <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} showRemoteOption={false} />
       </View>
     </FilterSheet>
   );
 }
-
-const fm = StyleSheet.create({
-  chips:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 8, borderRadius: RADIUS.full, borderWidth: 1.5 },
-  chipText: { fontSize: 13, fontFamily: F.medium },
-});
 
 // ─── Creator Avatar ───────────────────────────────────────────────────────────
 
@@ -238,7 +195,6 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
   function ExploreCreatorPeersScreen({ embedded = false, onFilterCountChange }, ref) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const { platforms: allPlatforms } = usePlatforms();
 
   const [creators, setCreators] = useState<ApiCreatorListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -290,7 +246,7 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
     setError('');
     try {
       const locationText = filter.locations.length > 0
-        ? filter.locations.filter((l) => l.label !== 'Remote').map((l) => l.label).join(',')
+        ? filter.locations.map((l) => l.label).join(',')
         : undefined;
 
       const res = await creatorService.listPeerCreators({
@@ -299,7 +255,6 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
         search: nameSearch.trim() || undefined,
         location: locationText || undefined,
         categories: filter.categories.length ? filter.categories : undefined,
-        platforms: filter.platforms.length ? filter.platforms : undefined,
       });
       setTotal(res.total);
       setCreators((prev) => {
@@ -353,8 +308,6 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
   function removeActiveFilter<K extends keyof FilterState>(key: K, value?: unknown) {
     if (key === 'locations' && value !== undefined) {
       setActiveFilter({ ...activeFilter, locations: activeFilter.locations.filter((l) => l.label !== value) });
-    } else if (key === 'platforms' && value !== undefined) {
-      setActiveFilter({ ...activeFilter, platforms: activeFilter.platforms.filter((p) => p !== value) });
     } else if (key === 'categories' && value !== undefined) {
       setActiveFilter({ ...activeFilter, categories: activeFilter.categories.filter((c) => c !== value) });
     }
@@ -414,26 +367,15 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
           pushed around unpredictably. Categories are deliberately excluded
           here since the CategoryPillRow above already highlights the
           selected ones; repeating them as chips+Clear-all was redundant. */}
-      {(activeFilter.locations.length > 0 || activeFilter.platforms.length > 0) && (
+      {activeFilter.locations.length > 0 && (
         <View style={s.chipRow}>
           {activeFilter.locations.map((loc) => (
             <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <FontAwesome5 name={loc.label === 'Remote' ? 'globe' : 'map-marker-alt'} solid size={12} color={C.brinjal1} />
+              <FontAwesome5 name="map-marker-alt" solid size={12} color={C.brinjal1} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label}</Text>
               <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           ))}
-          {activeFilter.platforms.map((p) => {
-            const meta = getPlatformMeta(allPlatforms, p);
-            const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
-            return (
-              <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-                <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
-                <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
-              </Pressable>
-            );
-          })}
           <Pressable onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
             <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>

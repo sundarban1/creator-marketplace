@@ -157,7 +157,7 @@ export const en = {
 
   opportunityFeed: {
     eyebrow: 'Never miss a fit',
-    heading: 'Your next opportunity could be one swipe away.',
+    heading: 'Your next opportunity could be one click away.',
     opportunitiesLabel: 'Opportunities',
     viewAllOpportunities: 'View all opportunities',
     applyNow: 'Apply Now',

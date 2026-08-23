@@ -40,7 +40,7 @@ export function BusinessFilterModal({
   for (const loc of tempLocation) {
     activeChips.push({
       key: `loc-${loc.label}`,
-      label: loc.label === 'Remote' ? t('filterModal.remote') : loc.label,
+      label: loc.label,
       onClear: () => setTempLocation(tempLocation.filter((l) => l.label !== loc.label)),
     });
   }
@@ -68,7 +68,9 @@ export function BusinessFilterModal({
           label={t('explore.businesses.filterLocation')}
           hint={t('explore.businesses.filterLocationCount', { n: tempLocation.length })}
         />
-        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
+        {/* No Remote chip — a business is filtered by where it actually is,
+            so "Remote" was never a location a business could match. */}
+        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} showRemoteOption={false} />
       </View>
     </FilterSheet>
   );

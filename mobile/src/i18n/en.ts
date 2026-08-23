@@ -544,7 +544,7 @@ const en = {
     browse: {
       heading: 'Discover Events',
       subheading: '{{count}} active opportunities',
-      searchPlaceholder: 'Search Events...',
+      searchPlaceholder: 'Search work',
       applyNow: 'Apply Now',
       proposals: '{{count}} proposals',
       empty: 'No events match your filters.',
@@ -3291,7 +3291,9 @@ const en = {
   // ── Account Type (dedicated service-provider/seeker chooser) ─
   accountType: {
     pageTitle: 'How will you use Kolab?',
-    pageSubtitle: 'Earn money by offering your services and skills — or, as a business, find skilled people to promote your business.',
+    offerLeadIn: 'Earn money by offering your services and skills.',
+    dividerOr: 'or',
+    seekLeadIn: 'As a business, find skilled people to promote your business.',
     offerTitle: 'Offering services',
     offerDesc: 'I provide services and want to find clients, projects and opportunities.',
     offerExample: 'e.g. photographers, content creators, actors, DJs',
@@ -3397,7 +3399,7 @@ const en = {
     greetingAfternoon: 'Good afternoon, {{name}}',
     greetingEvening: 'Good evening, {{name}}',
     greetingGeneric: 'Welcome back',
-    searchPlaceholder: 'Search opportunities, services, or businesses',
+    searchPlaceholder: 'Search work, businesses, or people',
     ctaTitle: 'Find your next work',
     ctaSub: 'Discover businesses looking for people like you.',
     ctaBtn: 'Browse Work',

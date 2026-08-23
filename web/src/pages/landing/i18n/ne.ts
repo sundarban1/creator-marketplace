@@ -150,7 +150,7 @@ export const ne: LandingDict = {
 
   opportunityFeed: {
     eyebrow: 'कुनै अवसर नछुटाउनुहोस्',
-    heading: 'तपाईंको अर्को अवसर एक स्वाइप टाढा हुन सक्छ।',
+    heading: 'तपाईंको अर्को अवसर एक क्लिक टाढा हुन सक्छ।',
     opportunitiesLabel: 'अवसरहरू',
     viewAllOpportunities: 'सबै अवसर हेर्नुहोस्',
     applyNow: 'आवेदन दिनुहोस्',

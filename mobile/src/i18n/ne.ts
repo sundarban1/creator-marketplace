@@ -534,7 +534,7 @@ const ne = {
     browse: {
       heading: 'इभेन्टहरू खोज्नुहोस्',
       subheading: '{{count}} इभेन्ट खुला छन्',
-      searchPlaceholder: 'इभेन्ट खोज्नुहोस्...',
+      searchPlaceholder: 'काम खोज्नुहोस्',
       applyNow: 'एप्लाई गर्नुहोस्',
       proposals: '{{count}} प्रपोजल',
       empty: 'तपाईंको फिल्टरसँग मिल्ने इभेन्ट छैन।',
@@ -3209,7 +3209,9 @@ const ne = {
   // ── Account Type (dedicated service-provider/seeker chooser) ─
   accountType: {
     pageTitle: 'तपाईं Kolab कसरी प्रयोग गर्नुहुन्छ?',
-    pageSubtitle: 'आफ्नो सेवा र सीप प्रदान गरेर कमाउनुहोस् — वा व्यवसायको रूपमा, आफ्नो व्यवसाय प्रवर्धन गर्न सिपालु व्यक्तिहरू खोज्नुहोस्।',
+    offerLeadIn: 'आफ्नो सेवा र सीप प्रदान गरेर कमाउनुहोस्।',
+    dividerOr: 'वा',
+    seekLeadIn: 'व्यवसायको रूपमा, आफ्नो व्यवसाय प्रवर्धन गर्न सिपालु व्यक्तिहरू खोज्नुहोस्।',
     offerTitle: 'सेवा प्रदान गर्दै',
     offerDesc: 'म सेवा प्रदान गर्छु र ग्राहक, प्रोजेक्ट र अवसरहरू खोज्न चाहन्छु।',
     offerExample: 'जस्तै: फोटोग्राफर, कन्टेन्ट क्रिएटर, एक्टर, DJ',
@@ -3315,7 +3317,7 @@ const ne = {
     greetingAfternoon: 'शुभ दिउँसो, {{name}}',
     greetingEvening: 'शुभ साँझ, {{name}}',
     greetingGeneric: 'फेरि स्वागत छ',
-    searchPlaceholder: 'अवसर, सेवा, वा व्यवसाय खोज्नुहोस्',
+    searchPlaceholder: 'काम, व्यवसाय, वा मानिस खोज्नुहोस्',
     ctaTitle: 'तपाईंको अर्को काम फेला पार्नुहोस्',
     ctaSub: 'तपाईं जस्तै मानिस खोजिरहेका व्यवसायहरू पत्ता लगाउनुहोस्।',
     ctaBtn: 'काम ब्राउज गर्नुहोस्',

@@ -2,7 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
@@ -86,7 +86,6 @@ export default function AccountTypeScreen() {
               landmark to jump to at the top of the scroll. */}
           <View style={s.intro}>
             <Text style={[s.pageTitle, { color: C.text }]} accessibilityRole="header">{t('accountType.pageTitle')}</Text>
-            <Text style={[s.pageSubtitle, { color: C.textSecondary }]}>{t('accountType.pageSubtitle')}</Text>
           </View>
 
           <View style={s.cards}>
@@ -100,8 +99,25 @@ export default function AccountTypeScreen() {
                 ? [t('accountType.offerBenefit1'), t('accountType.offerBenefit2'), t('accountType.offerBenefit3')]
                 : [t('accountType.seekBenefit1'), t('accountType.seekBenefit2'), t('accountType.seekBenefit3')];
               return (
+                <Fragment key={r.key}>
+                {/* Each card is introduced by its own half of what used to be
+                    one long page subtitle, in the same centred lead-in style,
+                    so the two options read as a matched pair. The business
+                    half additionally gets the "or" rule that separates them. */}
+                {r.key === 'CREATOR' && (
+                  <Text style={[s.leadIn, { color: C.textSecondary }]}>{t('accountType.offerLeadIn')}</Text>
+                )}
+                {r.key === 'BUSINESS' && (
+                  <View style={s.orBlock}>
+                    <View style={s.orRow}>
+                      <View style={[s.orRule, { backgroundColor: C.border }]} />
+                      <Text style={[s.orText, { color: C.textSecondary }]}>{t('accountType.dividerOr')}</Text>
+                      <View style={[s.orRule, { backgroundColor: C.border }]} />
+                    </View>
+                    <Text style={[s.leadIn, { color: C.textSecondary }]}>{t('accountType.seekLeadIn')}</Text>
+                  </View>
+                )}
                 <Pressable
-                  key={r.key}
                   onPress={() => handleSelect(r.key)}
                   style={({ pressed }) => [
                     s.card,
@@ -152,6 +168,7 @@ export default function AccountTypeScreen() {
                     </View>
                   </View>
                 </Pressable>
+                </Fragment>
               );
             })}
           </View>
@@ -183,7 +200,14 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
     // ── Page heading ──
     intro:        { gap: SPACING.xs },
     pageTitle:    { fontSize: FONT_SIZE.xxl, fontFamily: F.bold, letterSpacing: -0.2, lineHeight: lineHeightFor(FONT_SIZE.xxl) },
-    pageSubtitle: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm) },
+
+    // ── Card lead-ins ── one line above each card, plus the "or" rule
+    //    that separates the two choices.
+    leadIn:  { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm), textAlign: 'center' },
+    orBlock: { gap: SPACING.sm },
+    orRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+    orRule:  { flex: 1, height: StyleSheet.hairlineWidth },
+    orText:  { fontSize: FONT_SIZE.xs, fontFamily: F.bold, letterSpacing: 0.6, textTransform: 'uppercase' },
 
     // ── Choice cards ── standard content cards (surface, hairline, raised).
     cards: { gap: SPACING.lg },
