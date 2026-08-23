@@ -29,6 +29,7 @@ import { F, RADIUS, SCREEN_GUTTER } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
+import { ResultCountPill } from '@/components/ResultCountPill';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
 
@@ -403,9 +404,7 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
             ListFooterComponent={
               <View>
                 {!loading && businesses.length > 0 && (
-                  <Text style={[styles.countTxt, { color: C.textSecondary }]}>
-                    {t('explore.businesses.brandsFound', { n: total })}
-                  </Text>
+                  <ResultCountPill label={t('explore.businesses.brandsFound', { n: total })} />
                 )}
                 {loadingMore && (
                   <View style={styles.footerLoading}>
@@ -454,7 +453,6 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
 
   // Header
-  countTxt:       { fontSize: 12, fontFamily: F.semibold, textAlign: 'center', marginTop: 8, marginBottom: 4 },
   savedRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, marginTop: 12, marginBottom: 4 },
   favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, fontFamily: F.bold },

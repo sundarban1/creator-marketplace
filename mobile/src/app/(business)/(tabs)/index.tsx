@@ -371,7 +371,7 @@ export default function BusinessHomeScreen() {
                   style={styles.serviceTile}
                   accessibilityRole="button"
                   accessibilityLabel={cat.name}
-                  onPress={() => router.push('/(business)/explore-creators')}>
+                  onPress={() => router.push({ pathname: '/(business)/explore-creators', params: { category: cat.name } })}>
                   <View style={[styles.serviceIconWrap, { backgroundColor: cat.iconBg }, SHADOW.card]}>
                     <FontAwesome5 name={cat.icon as any} size={18} color={cat.color} />
                   </View>

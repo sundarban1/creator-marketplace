@@ -4117,7 +4117,7 @@ const s = StyleSheet.create({
   optionTextWrap: { flex: 1, gap: 2 },
   optionTitle:    { fontSize: 14, fontFamily: F.bold },
   optionDesc:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
-  // ── "What are you looking to create?" cards — dedicated styles (not the
+  // ── "What event do you want to create?" cards — dedicated styles (not the
   // shared optionCard/optionIconWrap family above, which the 'describe'
   // phase's text/audio picker also uses) so this redesign can't shift that
   // other picker's layout.

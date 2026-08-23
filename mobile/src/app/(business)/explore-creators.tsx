@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
@@ -28,6 +28,7 @@ import {
   type CreatorFilterState,
 } from '@/components/CreatorFilterModal';
 import { RangeDropdown } from '@/components/RangeDropdown';
+import { ResultCountPill } from '@/components/ResultCountPill';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
@@ -189,8 +190,17 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
     { value: 'followers', label: t('explore.sortFollowers') },
   ];
 
+  // `category` is the label of a tile tapped in the business home's "Find
+  // People by Category" slider — the screen opens with that category already
+  // applied and its results loaded, rather than dropping the business on an
+  // unfiltered list and making them find the pill again. Seeded as initial
+  // state (not an effect) so the first fetch already carries the filter.
+  const { category: presetCategory } = useLocalSearchParams<{ category?: string }>();
+
   const [filterVisible, setFilterVisible] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<CreatorFilterState>(DEFAULT_CREATOR_FILTER);
+  const [activeFilter, setActiveFilter] = useState<CreatorFilterState>(
+    presetCategory ? { ...DEFAULT_CREATOR_FILTER, categories: [presetCategory] } : DEFAULT_CREATOR_FILTER,
+  );
   const [tempFilter, setTempFilter] = useState<CreatorFilterState>(DEFAULT_CREATOR_FILTER);
   // BOTH-scope rows — the shared industry/niche list (Hotels, Restaurants, …)
   // a business browses by, matching the "Find People by Category" slider on
@@ -433,6 +443,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
           categories={adminCategories}
           activeLabels={activeFilter.categories}
           onToggle={toggleCategory}
+          autoScrollToActive
         />
       )}
 
@@ -538,9 +549,9 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
               ListFooterComponent={
                 <View style={s.listFooter}>
                   {loadingMore && <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />}
-                  <Text style={[s.countText, { color: C.textSecondary }]} numberOfLines={1}>
-                    {total !== 1 ? t('explore.creatorsFoundPlural', { count: total }) : t('explore.creatorsFound', { count: total })}
-                  </Text>
+                  <ResultCountPill
+                    label={total !== 1 ? t('explore.creatorsFoundPlural', { count: total }) : t('explore.creatorsFound', { count: total })}
+                  />
                 </View>
               }
             />
@@ -582,9 +593,9 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
               ListFooterComponent={
                 <View style={s.listFooter}>
                   {servicesLoadingMore && <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />}
-                  <Text style={[s.countText, { color: C.textSecondary }]} numberOfLines={1}>
-                    {servicesTotal !== 1 ? t('explore.servicesFoundPlural', { count: servicesTotal }) : t('explore.servicesFound', { count: servicesTotal })}
-                  </Text>
+                  <ResultCountPill
+                    label={servicesTotal !== 1 ? t('explore.servicesFoundPlural', { count: servicesTotal }) : t('explore.servicesFound', { count: servicesTotal })}
+                  />
                 </View>
               }
             />
@@ -624,7 +635,6 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
-  countText: { fontSize: 12, fontFamily: F.semibold },
 
   loadingText: { fontSize: 14, fontFamily: F.regular },
 

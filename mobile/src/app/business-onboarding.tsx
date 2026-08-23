@@ -602,10 +602,10 @@ export default function BusinessOnboardingScreen() {
             ) : null}
 
             <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.fieldLabel, { color: C.text }]}>
-                  {t('businessOnboarding.interestsLabel')} <Text style={{ color: C.error }}>*</Text>
-                </Text>
+              {/* No field label here: the step header above already asks the
+                  question ("What category of talent do you need?"), so the row
+                  carries only the counter, pushed right on its own. */}
+              <View style={[styles.labelRow, { justifyContent: 'flex-end' }]}>
                 <View style={[styles.countBadge, { backgroundColor: interestCategories.length > 0 ? C.primaryLight : C.border }]}>
                   <Text style={[styles.countBadgeText, { color: interestCategories.length > 0 ? C.brinjal1 : C.textSecondary }]}>
                     {t('businessOnboarding.interestsCounter', { n: interestCategories.length })}

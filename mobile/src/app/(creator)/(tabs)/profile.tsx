@@ -354,7 +354,7 @@ export default function CreatorProfileScreen() {
         <SectionCard
           title={t('portfolioScreen.title')}
           action={{
-            label: portfolioItems.length > 0 ? t('profile.manage') : t('portfolioScreen.addItem'),
+            label: portfolioItems.length > 0 ? t('profile.manage') : t('portfolioScreen.addShort'),
             onPress: () => router.push((portfolioItems.length > 0 ? '/(creator)/portfolio' : '/(creator)/portfolio-form') as never),
           }}
           C={C}>

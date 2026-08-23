@@ -15,6 +15,7 @@ import { useCategories, sortOtherLast } from '@/hooks/useCategories';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
+import { ResultCountPill } from '@/components/ResultCountPill';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
@@ -710,10 +711,19 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
           }
         }}
         ListFooterComponent={
+          // Same closing pill the Businesses and People tabs end on (see
+          // ResultCountPill) — only once the whole filtered list is on screen,
+          // so the number can't contradict the rows still paging in above it.
           !loading && listVisibleCount < filteredList.length ? (
             <View style={styles.listLoadingMore}>
               <ActivityIndicator size="small" color={C.brinjal1} />
             </View>
+          ) : !loading && filteredList.length > 0 ? (
+            <ResultCountPill
+              label={filteredList.length !== 1
+                ? t('explore.worksFoundPlural', { count: filteredList.length })
+                : t('explore.worksFound', { count: filteredList.length })}
+            />
           ) : null
         }
         ListHeaderComponent={

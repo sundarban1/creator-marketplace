@@ -29,6 +29,7 @@ import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
+import { ResultCountPill } from '@/components/ResultCountPill';
 
 const PAGE_SIZE = 10;
 const MAX_LOCS = 3;
@@ -423,9 +424,9 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
             ListFooterComponent={
               <View>
                 {!loading && creators.length > 0 && (
-                  <Text style={[s.countText, { color: C.textSecondary }]}>
-                    {total !== 1 ? t('explore.peopleFoundPlural', { count: total }) : t('explore.peopleFound', { count: total })}
-                  </Text>
+                  <ResultCountPill
+                    label={total !== 1 ? t('explore.peopleFoundPlural', { count: total }) : t('explore.peopleFound', { count: total })}
+                  />
                 )}
                 {loadingMore && <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />}
               </View>
@@ -477,7 +478,6 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
-  countText: { fontSize: 12, fontFamily: F.semibold, textAlign: 'center', marginTop: 8, marginBottom: 4 },
 
   loadingText: { fontSize: 14, fontFamily: F.regular },
 

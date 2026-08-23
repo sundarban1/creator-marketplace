@@ -1,4 +1,5 @@
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
@@ -23,14 +24,30 @@ type Props = {
   showAll?: boolean;
   allLabel?: string;
   onAllPress?: () => void;
+  // Scrolls the first active pill into view once, for callers that arrive with
+  // a category already selected (e.g. tapping a tile on the business home) —
+  // otherwise the selection is real but sits off-screen and the screen looks
+  // like it ignored the tap. Deliberately once-only: re-scrolling on every
+  // activeLabels change would yank the row around while the user taps pills.
+  autoScrollToActive?: boolean;
 };
 
 // Category chips styled to match the pill row already used on Discover's
 // "Opportunities" tab (icon + label, rounded-full, filled when active) —
 // shared here so Opportunities/Businesses/People show categories the exact
 // same way instead of each tab inventing its own look.
-export function CategoryPillRow({ categories, activeLabels, onToggle, wrap, showAll, allLabel = 'All', onAllPress }: Props) {
+export function CategoryPillRow({ categories, activeLabels, onToggle, wrap, showAll, allLabel = 'All', onAllPress, autoScrollToActive }: Props) {
   const C = useAppColors();
+  const scrollRef = useRef<ScrollView>(null);
+  const didAutoScroll = useRef(false);
+
+  // Each pill reports its own x once laid out; the first active one wins.
+  function onPillLayout(label: string, x: number) {
+    if (!autoScrollToActive || didAutoScroll.current || wrap) return;
+    if (activeLabels[0] !== label) return;
+    didAutoScroll.current = true;
+    scrollRef.current?.scrollTo({ x: Math.max(0, x - SCREEN_GUTTER), animated: false });
+  }
 
   const allActive = activeLabels.length === 0;
   const allPill = showAll && (
@@ -49,6 +66,7 @@ export function CategoryPillRow({ categories, activeLabels, onToggle, wrap, show
       <Pressable
         key={cat.id}
         style={[s.pill, { backgroundColor: isActive ? meta.color : C.surface, borderColor: isActive ? meta.color : C.border }]}
+        onLayout={(e) => onPillLayout(cat.name, e.nativeEvent.layout.x)}
         onPress={() => onToggle(cat.name)}>
         <FontAwesome5 name={meta.icon} size={13} color={isActive ? '#fff' : meta.color} />
         <Text style={[s.label, { color: isActive ? '#fff' : C.text }]} numberOfLines={1}>{displayCategory(cat.name)}</Text>
@@ -61,7 +79,7 @@ export function CategoryPillRow({ categories, activeLabels, onToggle, wrap, show
   }
 
   return (
-    <ScrollView style={s.scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
+    <ScrollView ref={scrollRef} style={s.scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
       {allPill}
       {pills}
     </ScrollView>

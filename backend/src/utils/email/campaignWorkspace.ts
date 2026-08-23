@@ -19,7 +19,7 @@ export async function sendPaymentSecuredEmail(
       <p style="margin:0;color:#16A34A;font-size:22px;font-weight:800;">NPR ${amount.toLocaleString()}</p>
     </div>
     <p style="color:#374151;font-size:15px;margin:0 0 20px;line-height:1.6;">
-      Your payment is safely held on the platform. Open the Kolab app, click <strong>"Let's Create Content"</strong> to officially start working, and deliver your best work!
+      Your payment is safely held on the platform. Open the Kolab app, click <strong>"Let's Start Work"</strong> to officially start working, and deliver your best work!
     </p>
     <div style="background:#FFF7ED;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
       <p style="margin:0;color:#92400E;font-size:13px;">⏰ Please start work within <strong>48 hours</strong> to keep the campaign on track.</p>
