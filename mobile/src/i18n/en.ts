@@ -151,7 +151,7 @@ const en = {
       heroHeadline1: 'Find the right people.',
       heroHeadline2: 'Create opportunities.',
       heroHeadline3: 'Collaborate.',
-      heroSubtext: 'Connect with talent, services, events and opportunities. All in one place.',
+      heroHeadline4: 'All in one place.',
       tabLogin: 'Log in',
       tabSignup: 'Create Account',
       footer: 'Secure & encrypted  •  We never share your data',

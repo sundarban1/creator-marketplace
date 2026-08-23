@@ -938,8 +938,8 @@ export default function LoginScreen() {
                 <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline1')}</Text>
                 <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline2')}</Text>
                 <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline3')}</Text>
+                <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline4')}</Text>
               </View>
-              <Text style={s.heroSubtext}>{t('auth.login.heroSubtext')}</Text>
 
               {/* Hero art — replaces the flat handshake glyph this panel used
                   to carry. It bleeds into the card's bottom-right corner, and
@@ -1060,7 +1060,6 @@ function makeStyles(C: typeof COLORS) {
   // floating lift.
   heroCard:         { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.md, overflow: 'hidden', ...SHADOW.floating },
   heroHeadlineLine: { fontSize: FONT_SIZE.xl, fontFamily: F.extrabold, color: '#fff', lineHeight: lineHeightFor(FONT_SIZE.xl) },
-  heroSubtext:      { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: 'rgba(255,255,255,0.85)', lineHeight: lineHeightFor(FONT_SIZE.sm) },
   // Bled into the card's bottom-right corner — the negative margins cancel the
   // card's own padding so the artwork meets the rounded edge.
   heroArtWrap:      { alignSelf: 'flex-end', width: 196, height: 104, marginRight: -SPACING.xl, marginBottom: -SPACING.xl },
