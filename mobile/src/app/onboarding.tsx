@@ -8,13 +8,13 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { authService } from '@/services/auth';
-import { creatorService } from '@/services/creator';
+import { creatorService, type ProviderType } from '@/services/creator';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { StepIndicator } from '@/components/StepIndicator';
 import { GroupedCategoryPicker } from '@/components/GroupedCategoryPicker';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, lineHeightFor } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // Three required steps, matching what's actually needed before a provider can
@@ -24,17 +24,27 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 // Settings/edit-profile/portfolio screens, not here.
 const TOTAL_STEPS = 3;
 
+// Labels and descriptions live in the shared `providerType` namespace — the
+// Settings picker shows the same three cards and must not drift from these.
 const PROVIDER_TYPE_OPTIONS = [
-  { key: 'INDIVIDUAL' as const, icon: 'user'     as const, titleKey: 'onboarding.providerTypeIndividualTitle', descKey: 'onboarding.providerTypeIndividualDesc' },
-  { key: 'TEAM'       as const, icon: 'users'    as const, titleKey: 'onboarding.providerTypeTeamTitle',       descKey: 'onboarding.providerTypeTeamDesc' },
-  { key: 'AGENCY'     as const, icon: 'building' as const, titleKey: 'onboarding.providerTypeAgencyTitle',     descKey: 'onboarding.providerTypeAgencyDesc' },
+  { key: 'INDIVIDUAL' as const, icon: 'user'     as const, titleKey: 'providerType.individual', descKey: 'providerType.individualDesc' },
+  { key: 'TEAM'       as const, icon: 'users'    as const, titleKey: 'providerType.team',       descKey: 'providerType.teamDesc' },
+  { key: 'AGENCY'     as const, icon: 'building' as const, titleKey: 'providerType.agency',     descKey: 'providerType.agencyDesc' },
 ];
 
-function generateCreatorBio(categories: string[]): string {
+// Seeded bio, editable later from edit-profile. Worded per provider type — a
+// team and an agency are a "we", and neither of them is one content creator.
+function generateProviderBio(categories: string[], providerType: ProviderType | null): string {
   if (categories.length === 0) return '';
   const catStr = categories.length === 1
     ? categories[0]
     : categories.slice(0, -1).join(', ') + ' and ' + categories[categories.length - 1];
+  if (providerType === 'TEAM') {
+    return `We're a ${catStr} team that works together on every booking, from planning through final delivery. We love working with clients who care about the details and want a crew they can count on.`;
+  }
+  if (providerType === 'AGENCY') {
+    return `We're an agency offering ${catStr} services, delivered by a team of specialists. We work with businesses that want dependable execution end to end, from the first brief to the final handover.`;
+  }
   return `I'm a ${catStr} content creator passionate about sharing authentic stories and engaging experiences. I love collaborating with businesses that align with my values to create content that truly connects with audiences and drives meaningful results.`;
 }
 
@@ -87,13 +97,15 @@ export default function OnboardingScreen() {
   const needsEmail = !user?.isEmailVerified;
 
   // Step 1 — how they provide their services (Individual / Team / Agency)
-  const [providerType, setProviderType] = useState<'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null>(null);
+  const [providerType, setProviderType] = useState<ProviderType | null>(null);
   const [providerTypeSubmitted, setProviderTypeSubmitted] = useState(false);
   const [providerTypeLoading,   setProviderTypeLoading]   = useState(false);
   const [providerTypeError,     setProviderTypeError]     = useState('');
 
   // Step 2 — profile (name, username, email, location)
   const [fullName,  setFullName]  = useState('');
+  // §4 — TEAM only. A team of one is an individual, so the minimum is 2.
+  const [teamSize,  setTeamSize]  = useState('');
   const [email,     setEmail]     = useState('');
   const [emailFocused, setEmailFocused] = useState(false);
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
@@ -157,6 +169,11 @@ export default function OnboardingScreen() {
   // "Resorts", "Restaurants") that have no group/parent — wrong to mix into
   // this provider-type picker. See service-form.tsx for the same exclusion.
   const { categories } = useCategories('CREATOR', true);
+  // §6 — an AGENCY also picks the industries it serves. BUSINESS scope is the
+  // industry list (Food & Restaurant, Hospitality, ...), the same rows business
+  // onboarding's Industry step shows — not the CREATOR provider types above.
+  const { categories: industryOptions } = useCategories('BUSINESS');
+  const [industries, setIndustries] = useState<string[]>([]);
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -172,8 +189,21 @@ export default function OnboardingScreen() {
     return () => clearTimeout(id);
   }, [finished]);
 
+  const isTeam   = providerType === 'TEAM';
+  const isAgency = providerType === 'AGENCY';
+
+  // Step 2 asks the same three things of everyone, but a Team enters a team
+  // name and an Agency a business name — neither is "your full name". Same
+  // branch-the-copy-not-the-form approach as business-onboarding's
+  // Individual/Organization split.
+  const nameCopy = isTeam
+    ? { label: t('onboarding.teamNameLabel'),   placeholder: t('onboarding.teamNamePlaceholder'),   icon: 'users'    as const, required: t('onboarding.teamNameRequired') }
+    : isAgency
+    ? { label: t('onboarding.agencyNameLabel'), placeholder: t('onboarding.agencyNamePlaceholder'), icon: 'building' as const, required: t('onboarding.agencyNameRequired') }
+    : { label: t('onboarding.fullNameLabel'),   placeholder: t('onboarding.fullNamePlaceholder'),   icon: 'user'     as const, required: t('onboarding.fullNameRequired') };
+
   // ── Step 1 validation ──
-  const fullNameError = step1Submitted && !fullName.trim() ? t('onboarding.fullNameRequired') : undefined;
+  const fullNameError = step1Submitted && !fullName.trim() ? nameCopy.required : undefined;
   const emailError = !needsEmail || !step1Submitted ? undefined
     : !email.trim()                    ? t('onboarding.emailRequired')
     : !EMAIL_REGEX.test(email.trim())  ? t('onboarding.emailInvalid')
@@ -188,12 +218,19 @@ export default function OnboardingScreen() {
 
   const locationError = step1Submitted && !location.trim() ? t('onboarding.locationRequired') : undefined;
 
+  const teamSizeNum = parseInt(teamSize, 10);
+  const teamSizeValid = !isTeam || (Number.isFinite(teamSizeNum) && teamSizeNum >= 2 && teamSizeNum <= 500);
+  const teamSizeError = !isTeam || !step1Submitted || teamSizeValid ? undefined
+    : !teamSize.trim() ? t('onboarding.teamSizeRequired')
+    : t('onboarding.teamSizeInvalid');
+
   const step1Valid =
     fullName.trim().length > 0 &&
     (!needsEmail || (email.trim().length > 0 && EMAIL_REGEX.test(email.trim()))) &&
     username.trim().length >= 3 &&
     /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
-    location.trim().length > 0;
+    location.trim().length > 0 &&
+    teamSizeValid;
 
   function handleFullNameChange(v: string) {
     setStep1Error('');
@@ -224,6 +261,14 @@ export default function OnboardingScreen() {
         if (requestId === emailCheckRequestId.current) setEmailChecking(false);
       }
     }, 400);
+  }
+
+  function toggleIndustry(label: string) {
+    setIndustries((prev) => {
+      if (prev.includes(label)) return prev.filter((c) => c !== label);
+      if (prev.length >= 5) return prev;
+      return [...prev, label];
+    });
   }
 
   function toggleCategory(label: string) {
@@ -265,6 +310,7 @@ export default function OnboardingScreen() {
     try {
       await profileService.updateCreatorProfile({
         fullName: fullName.trim(),
+        teamSize: isTeam ? teamSizeNum : undefined,
         email:    needsEmail ? email.trim() : undefined,
         username: username.trim(),
         location: location.trim(),
@@ -288,8 +334,12 @@ export default function OnboardingScreen() {
     setStep2Loading(true);
     setStep2Error('');
     try {
-      const bio = generateCreatorBio(selectedCategories);
-      await profileService.updateCreatorProfile({ categories: selectedCategories, bio });
+      const bio = generateProviderBio(selectedCategories, providerType);
+      await profileService.updateCreatorProfile({
+        categories: selectedCategories,
+        ...(isAgency ? { industries } : {}),
+        bio,
+      });
       await authService.completeOnboarding();
       updateUser({ isFirstLogin: false });
       setFinished(true);
@@ -326,7 +376,11 @@ export default function OnboardingScreen() {
 
   const STEP_CONFIG = [
     { title: t('onboarding.providerTypeTitle'), subtitle: t('onboarding.providerTypeSubtitle') },
-    { title: t('onboarding.step1Title'), subtitle: t('onboarding.step1Subtitle') },
+    isTeam
+      ? { title: t('onboarding.step1TitleTeam'),   subtitle: t('onboarding.step1SubtitleTeam') }
+      : isAgency
+      ? { title: t('onboarding.step1TitleAgency'), subtitle: t('onboarding.step1SubtitleAgency') }
+      : { title: t('onboarding.step1Title'),       subtitle: t('onboarding.step1Subtitle') },
     { title: t('onboarding.step2Title'), subtitle: t('onboarding.step2Subtitle') },
   ];
   const { title, subtitle } = STEP_CONFIG[step - 1];
@@ -418,17 +472,32 @@ export default function OnboardingScreen() {
 
             <View style={styles.form}>
 
-              {/* Full Name */}
+              {/* Name — full name, team name or agency name, per provider type */}
               <TextInputWithLabel
-                label={`${t('onboarding.fullNameLabel')} *`}
-                leftIcon="user"
+                label={`${nameCopy.label} *`}
+                leftIcon={nameCopy.icon}
                 value={fullName}
                 onChangeText={handleFullNameChange}
                 onFocus={() => { lastTextFieldFocusedRef.current = false; }}
-                placeholder={t('onboarding.fullNamePlaceholder')}
+                placeholder={nameCopy.placeholder}
                 autoCapitalize="words"
                 error={fullNameError}
               />
+
+              {/* Team size — TEAM only */}
+              {isTeam && (
+                <TextInputWithLabel
+                  label={`${t('onboarding.teamSizeLabel')} *`}
+                  leftIcon="user-friends"
+                  value={teamSize}
+                  onChangeText={(v) => { setStep1Error(''); setTeamSize(v.replace(/[^0-9]/g, '').slice(0, 3)); }}
+                  onFocus={() => { lastTextFieldFocusedRef.current = false; }}
+                  placeholder={t('onboarding.teamSizePlaceholder')}
+                  keyboardType="number-pad"
+                  hint={t('onboarding.teamSizeHint')}
+                  error={teamSizeError}
+                />
+              )}
 
               {/* Username */}
               <View style={styles.formGroup}>
@@ -510,7 +579,7 @@ export default function OnboardingScreen() {
 
               {/* Location */}
               <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
+                <Text style={[styles.formLabel, { color: C.text }]}>{isTeam || isAgency ? t('onboarding.locationLabelBased') : t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
                 <Pressable
                   style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
                   onPress={() => setLocationModalOpen(true)}>
@@ -572,9 +641,27 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            <View style={{ marginBottom: 28 }}>
+            <View style={{ marginBottom: isAgency ? 20 : 28 }}>
               <GroupedCategoryPicker categories={categories} selected={selectedCategories} onToggle={toggleCategory} max={5} variant="pill" />
             </View>
+
+            {/* §6 — industries an agency serves, kept on this step rather than
+                added as a fourth one: it's the same question ("what work do you
+                take on?") from the client's side. */}
+            {isAgency && (
+              <View style={{ marginBottom: 28, gap: 10 }}>
+                <View style={styles.selectionBadgeRow}>
+                  <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.industriesLabel')}</Text>
+                  <View style={[styles.selectionBadge, { backgroundColor: industries.length > 0 ? C.primaryLight : C.border }]}>
+                    <Text style={[styles.selectionText, { color: industries.length > 0 ? C.brinjal1 : C.textSecondary }]}>
+                      {t('onboarding.industriesSelected', { n: industries.length })}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.fieldHintText, { color: C.textSecondary }]}>{t('onboarding.industriesHint')}</Text>
+                <GroupedCategoryPicker categories={industryOptions} selected={industries} onToggle={toggleIndustry} max={5} variant="pill" />
+              </View>
+            )}
 
             <Pressable
               style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active },
@@ -628,6 +715,7 @@ const styles = StyleSheet.create({
   formGroup: { gap: 6 },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   formLabel: { fontSize: 13, fontFamily: F.bold },
+  fieldHintText: { fontSize: 12, fontFamily: F.regular, lineHeight: lineHeightFor(12) },
   optionalTag: { fontSize: 12, fontFamily: F.medium },
   fieldError: { fontSize: 12, fontFamily: F.medium },
 

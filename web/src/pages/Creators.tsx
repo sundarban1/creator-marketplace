@@ -34,7 +34,7 @@ export function Creators() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [action,  setAction]  = useState<Action | null>(null);
   const [viewing, setViewing] = useState<ApiCreator | null>(null);
-  const [previewDoc, setPreviewDoc] = useState<{ doc: 'citizenship' | 'pan'; url: string; title: string; status?: string } | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ doc: 'citizenship' | 'pan' | 'companyReg'; url: string; title: string; status?: string } | null>(null);
   const [docLoading, setDocLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
@@ -96,7 +96,10 @@ export function Creators() {
     try {
       await api.admin.setCreatorDocumentStatus(viewing.id, previewDoc.doc, approved);
       const status = approved ? 'APPROVED' : 'REJECTED';
-      const patch = previewDoc.doc === 'citizenship' ? { citizenshipStatus: status } : { panDocStatus: status };
+      const patch =
+        previewDoc.doc === 'citizenship' ? { citizenshipStatus: status }
+        : previewDoc.doc === 'companyReg' ? { companyRegDocStatus: status }
+        : { panDocStatus: status };
       setViewing({ ...viewing, ...patch } as ApiCreator);
       setPreviewDoc({ ...previewDoc, status });
       showToast(`Document ${approved ? 'approved' : 'unapproved'}.`);
@@ -288,7 +291,7 @@ export function Creators() {
                   })),
                 }]
               : []),
-            ...(viewing.citizenshipDocUrl || viewing.panDocUrl
+            ...(viewing.citizenshipDocUrl || viewing.panDocUrl || viewing.companyRegDocUrl
               ? [{
                   heading: 'Documents',
                   fields: [
@@ -296,6 +299,8 @@ export function Creators() {
                     ...(viewing.citizenshipDocUrl ? [{ label: 'Citizenship status', value: <StatusBadge status={docStatus(viewing.citizenshipStatus)} /> }] : []),
                     ...(viewing.panDocUrl ? [{ label: 'PAN', value: <button onClick={() => setPreviewDoc({ doc: 'pan', url: viewing.panDocUrl!, title: 'PAN', status: viewing.panDocStatus ?? undefined })} className="text-indigo-600 hover:underline font-medium">View document</button> }] : []),
                     ...(viewing.panDocUrl ? [{ label: 'PAN status', value: <StatusBadge status={docStatus(viewing.panDocStatus)} /> }] : []),
+                    ...(viewing.companyRegDocUrl ? [{ label: 'Company registration', value: <button onClick={() => setPreviewDoc({ doc: 'companyReg', url: viewing.companyRegDocUrl!, title: 'Company registration', status: viewing.companyRegDocStatus ?? undefined })} className="text-indigo-600 hover:underline font-medium">View document</button> }] : []),
+                    ...(viewing.companyRegDocUrl ? [{ label: 'Company reg. status', value: <StatusBadge status={docStatus(viewing.companyRegDocStatus)} /> }] : []),
                   ],
                 }]
               : []),

@@ -5,7 +5,7 @@ import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { BottomSheet } from '@/components/BottomSheet';
-import { creatorService } from '@/services/creator';
+import { creatorService, type ProviderType } from '@/services/creator';
 import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
 import { useLanguage } from '@/context/LanguageContext';
@@ -434,14 +434,40 @@ export default function CreatorSettingsScreen() {
   const [phoneVerified, setPhoneVerified] = useState<boolean | null>(null);
   const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState('');
 
+  // Provider type — "How do you provide your services?" (onboarding step 1),
+  // changeable here. A change restructures the profile, so it goes through a
+  // confirmation modal rather than saving straight from the picker the way the
+  // location-visibility picker does.
+  const [providerType, setProviderType] = useState<ProviderType | null>(null);
+  // §5 — an agency's legal identifiers. Editable here rather than at
+  // onboarding: the spec is explicit that no legal document or number blocks
+  // profile creation, they're part of progressive verification.
+  const [panNo, setPanNo]                 = useState('');
+  const [vatNo, setVatNo]                 = useState('');
+  const [companyRegNo, setCompanyRegNo]   = useState('');
+  const [legalSaving, setLegalSaving]     = useState(false);
+  const [legalSaved, setLegalSaved]       = useState(false);
+  const [showProviderTypePicker, setShowProviderTypePicker] = useState(false);
+  const [pendingProviderType, setPendingProviderType] = useState<ProviderType | null>(null);
+  const [providerTypeSaving, setProviderTypeSaving] = useState(false);
+
   // Citizenship verification
   const [citizenshipStatus, setCitizenshipStatus] = useState<'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'>('NONE');
   const [creatorIsVerified, setCreatorIsVerified] = useState(false);
+  // Derived server-side (providerVerificationStatus) so this row can't disagree
+  // with the badge on the public profile, and so the AGENCY-vs-person document
+  // rule lives in one place. The admin-toggled isVerified flag still wins.
+  const [serverVerificationStatus, setServerVerificationStatus] = useState<'NOT_VERIFIED' | 'PENDING' | 'VERIFIED'>('NOT_VERIFIED');
   const [citizenshipUploading, setCitizenshipUploading] = useState(false);
 
   // PAN verification
   const [panStatus, setPanStatus] = useState<'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'>('NONE');
   const [panUploading, setPanUploading] = useState(false);
+
+  // §5 — AGENCY company registration. An agency's verified badge depends on
+  // this document, not on citizenship.
+  const [companyRegStatus, setCompanyRegStatus] = useState<'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'>('NONE');
+  const [companyRegUploading, setCompanyRegUploading] = useState(false);
 
   // Phone verification sub-page
   const [phoneSubPage, setPhoneSubPage] = useState<'input' | 'otp' | null>(null);
@@ -538,7 +564,13 @@ export default function CreatorSettingsScreen() {
       if (profile.user?.phone) setVerifiedPhoneNumber(formatPhoneDisplay(profile.user.phone));
       if (profile.citizenshipStatus) setCitizenshipStatus(profile.citizenshipStatus);
       if (profile.panDocStatus) setPanStatus(profile.panDocStatus);
+      if (profile.companyRegDocStatus) setCompanyRegStatus(profile.companyRegDocStatus);
       setCreatorIsVerified(profile.isVerified === true);
+      if (profile.verificationStatus) setServerVerificationStatus(profile.verificationStatus);
+      if (profile.providerType) setProviderType(profile.providerType);
+      setPanNo(profile.panNo ?? '');
+      setVatNo(profile.vatNo ?? '');
+      setCompanyRegNo(profile.companyRegNo ?? '');
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1993,6 +2025,21 @@ export default function CreatorSettingsScreen() {
       }
     }
 
+    async function handleUploadCompanyReg() {
+      setCompanyRegUploading(true);
+      try {
+        const result = await pickAndUpload('creator-company-reg');
+        if (result) {
+          setCompanyRegStatus(result.status ?? 'PENDING');
+          toast.success(t('creatorSettings.companyRegUploadSuccess'));
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : t('creatorSettings.companyRegUploadFailed'));
+      } finally {
+        setCompanyRegUploading(false);
+      }
+    }
+
     async function handleUploadPan() {
       setPanUploading(true);
       try {
@@ -2366,6 +2413,39 @@ export default function CreatorSettingsScreen() {
             </View>
           </Pressable>
 
+          {/* §5 — Company registration row (agencies only). Placed with the
+              other verification documents rather than in the Business details
+              card, since it's reviewed by an admin like the rest of them. */}
+          {providerType === 'AGENCY' && (
+            <Pressable
+              style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+              disabled={companyRegUploading || companyRegStatus === 'PENDING' || companyRegStatus === 'APPROVED'}
+              onPress={handleUploadCompanyReg}>
+              <View style={[styles.navIonIconWrap, { backgroundColor: '#0D948818' }]}>
+                <FontAwesome5 name="building" solid size={18} color="#0D9488" />
+              </View>
+              <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.uploadCompanyRegLabel')}</Text>
+              <View style={styles.navRight}>
+                {companyRegUploading ? (
+                  <ActivityIndicator size="small" color={C.brinjal1} />
+                ) : companyRegStatus === 'APPROVED' ? (
+                  <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.companyRegApproved')}</Text></View>
+                ) : companyRegStatus === 'PENDING' ? (
+                  <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.badgeText, { color: '#D97706' }]}>{t('creatorSettings.companyRegPending')}</Text></View>
+                ) : companyRegStatus === 'REJECTED' ? (
+                  <View style={[styles.soonBadge, { backgroundColor: '#FEE2E2' }]}><Text style={[styles.badgeText, { color: '#DC2626' }]}>{t('creatorSettings.companyRegRejected')}</Text></View>
+                ) : (
+                  <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
+                    <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>{t('creatorSettings.companyRegNotUploaded')}</Text>
+                  </View>
+                )}
+                {!companyRegUploading && companyRegStatus !== 'PENDING' && companyRegStatus !== 'APPROVED' && (
+                  <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
+                )}
+              </View>
+            </Pressable>
+          )}
+
           {/* Creator Badge row */}
           <View style={styles.row}>
             <View
@@ -2379,8 +2459,12 @@ export default function CreatorSettingsScreen() {
               <FontAwesome5 name="award" solid size={18} color="#F59E0B" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.creatorBadgeLabel')}</Text>
-            {creatorIsVerified ? (
+            {creatorIsVerified || serverVerificationStatus === 'VERIFIED' ? (
               <FontAwesome5 name="check-circle" solid size={20} color="#3B82F6" />
+            ) : serverVerificationStatus === 'PENDING' ? (
+              <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}>
+                <Text style={[styles.badgeText, { color: '#D97706' }]}>{t('creatorSettings.badgeUnderReview')}</Text>
+              </View>
             ) : (
               <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
                 <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('creatorSettings.notVerifiedBadge')}</Text>
@@ -2388,6 +2472,58 @@ export default function CreatorSettingsScreen() {
             )}
           </View>
         </Card>
+
+        {/* §5 — agency legal identifiers. None of these are required, and none
+            of them are ever shown on the public profile. */}
+        {providerType === 'AGENCY' && (
+          <>
+            <SectionHeader title={t('creatorSettings.businessDetailsSection')} />
+            <Card>
+              <View style={{ padding: 16, gap: 14 }}>
+                <TextInputWithLabel
+                  label={t('creatorSettings.panNoLabel')}
+                  leftIcon="id-card"
+                  value={panNo}
+                  onChangeText={(v) => { setPanNo(v); setLegalSaved(false); }}
+                  placeholder={t('creatorSettings.panNoPlaceholder')}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+                <TextInputWithLabel
+                  label={t('creatorSettings.vatNoLabel')}
+                  leftIcon="receipt"
+                  value={vatNo}
+                  onChangeText={(v) => { setVatNo(v); setLegalSaved(false); }}
+                  placeholder={t('creatorSettings.vatNoPlaceholder')}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  hint={t('creatorSettings.vatNoHint')}
+                />
+                <TextInputWithLabel
+                  label={t('creatorSettings.companyRegNoLabel')}
+                  leftIcon="building"
+                  value={companyRegNo}
+                  onChangeText={(v) => { setCompanyRegNo(v); setLegalSaved(false); }}
+                  placeholder={t('creatorSettings.companyRegNoPlaceholder')}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+                <Pressable
+                  style={[styles.saveBtn, { backgroundColor: C.brinjal1 }, legalSaving && { opacity: 0.6 }]}
+                  disabled={legalSaving}
+                  onPress={saveLegalDetails}
+                  accessibilityRole="button">
+                  <Text style={styles.saveBtnText}>
+                    {legalSaving ? t('creatorSettings.saving') : legalSaved ? t('creatorSettings.legalSavedBtn') : t('creatorSettings.legalSaveBtn')}
+                  </Text>
+                </Pressable>
+              </View>
+            </Card>
+            <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
+              <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.businessDetailsHint')}</Text>
+            </View>
+          </>
+        )}
 
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.verifiedHint')}</Text>
@@ -2428,6 +2564,51 @@ export default function CreatorSettingsScreen() {
     );
   }
 
+  const PROVIDER_TYPE_LABEL: Record<ProviderType, string> = {
+    INDIVIDUAL: t('providerType.individual'),
+    TEAM:       t('providerType.team'),
+    AGENCY:     t('providerType.agency'),
+  };
+
+  const PROVIDER_TYPE_DESC: Record<ProviderType, string> = {
+    INDIVIDUAL: t('providerType.individualDesc'),
+    TEAM:       t('providerType.teamDesc'),
+    AGENCY:     t('providerType.agencyDesc'),
+  };
+
+  async function saveLegalDetails() {
+    setLegalSaving(true);
+    try {
+      // Empty means "cleared", not "unchanged" — the API takes null for that.
+      await creatorService.updateProfile({
+        panNo:        panNo.trim() || null,
+        vatNo:        vatNo.trim() || null,
+        companyRegNo: companyRegNo.trim() || null,
+      });
+      setLegalSaved(true);
+      showToast(t('creatorSettings.legalSavedToast'));
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t('creatorSettings.legalSaveFailed'), true);
+    } finally {
+      setLegalSaving(false);
+    }
+  }
+
+  async function confirmProviderTypeChange() {
+    if (!pendingProviderType) return;
+    setProviderTypeSaving(true);
+    try {
+      await creatorService.updateProviderType(pendingProviderType);
+      setProviderType(pendingProviderType);
+      setPendingProviderType(null);
+      showToast(t('creatorSettings.providerTypeChangedToast'));
+    } catch {
+      showToast(t('creatorSettings.providerTypeChangeFailed'), true);
+    } finally {
+      setProviderTypeSaving(false);
+    }
+  }
+
   // ── Main Settings ─────────────────────────────────────────────
 
   function renderMainSettings() {
@@ -2450,6 +2631,12 @@ export default function CreatorSettingsScreen() {
             </View>
           </View>
           <NavRow ionIcon="edit" ionIconColor={C.brinjal1} label={t('creatorSettings.editProfileLabel')} onPress={() => router.push('/(creator)/edit-profile')} />
+          <NavRow
+            faIcon="user-cog" faIconColor="#0891B2"
+            label={t('creatorSettings.providerTypeLabel')}
+            value={providerType ? PROVIDER_TYPE_LABEL[providerType] : t('creatorSettings.providerTypeNotSet')}
+            onPress={() => setShowProviderTypePicker(true)}
+          />
           <NavRow faIcon="pause-circle" faIconColor="#F59E0B" label={t('creatorSettings.deactivateAccount')} onPress={handleDeactivateAccount} />
           <NavRow faIcon="trash-alt" label={t('creatorSettings.deleteAccount')} onPress={handleDeleteAccount} danger isLast />
         </Card>
@@ -2517,6 +2704,50 @@ export default function CreatorSettingsScreen() {
           </View>
           <NavRow faIcon="globe" faIconColor="#10B981" label={t('creatorSettings.languageSection')} value={selectedLang} onPress={() => {}} isLast />
         </Card>
+
+        {/* Provider type — same picker shape as the location-visibility one, but
+            the choice is staged into pendingProviderType and only saved once the
+            confirmation modal below is accepted. */}
+        <BottomSheet
+          visible={showProviderTypePicker}
+          onClose={() => setShowProviderTypePicker(false)}
+          title={t('creatorSettings.providerTypeLabel')}
+          subtitle={t('creatorSettings.providerTypeSub')}
+          scrollable={false}
+        >
+          {(['INDIVIDUAL', 'TEAM', 'AGENCY'] as const).map((opt) => (
+            <Pressable
+              key={opt}
+              style={[styles.row, { borderBottomWidth: opt !== 'AGENCY' ? 1 : 0, borderBottomColor: C.border }]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: providerType === opt }}
+              onPress={() => {
+                setShowProviderTypePicker(false);
+                // Re-picking what they already are isn't a change to confirm.
+                if (opt !== providerType) setPendingProviderType(opt);
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{PROVIDER_TYPE_LABEL[opt]}</Text>
+                <Text style={[styles.rowSub, { color: C.textSecondary }]}>{PROVIDER_TYPE_DESC[opt]}</Text>
+              </View>
+              {providerType === opt && <FontAwesome5 name="check" solid size={16} color={C.brinjal1} />}
+            </Pressable>
+          ))}
+        </BottomSheet>
+
+        <AppModal
+          visible={!!pendingProviderType}
+          type="warning"
+          icon="exchange-alt"
+          title={t('creatorSettings.providerTypeConfirmTitle', { type: pendingProviderType ? PROVIDER_TYPE_LABEL[pendingProviderType] : '' })}
+          body={t('creatorSettings.providerTypeConfirmBody')}
+          confirmLabel={t('creatorSettings.providerTypeConfirmBtn')}
+          cancelLabel={t('common.cancel')}
+          loading={providerTypeSaving}
+          onConfirm={confirmProviderTypeChange}
+          onCancel={() => setPendingProviderType(null)}
+        />
       </>
     );
   }

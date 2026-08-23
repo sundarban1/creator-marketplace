@@ -373,6 +373,24 @@ export class CreatorController {
     }
   }
 
+  async uploadCompanyRegDoc(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Guard first: rejecting after the upload would orphan a Cloudinary file.
+      await creatorService.assertCanUploadCompanyRegDoc(req.user!.id);
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const docUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'creators/company-registration',
+        `company_reg_${req.user!.id}`,
+        [],
+      );
+      const profile = await creatorService.uploadCompanyRegDoc(req.user!.id, docUrl);
+      success(res, { docUrl: profile.companyRegDocUrl, companyRegDocStatus: profile.companyRegDocStatus }, 'Company registration document uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async uploadPan(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) throw new AppError('No image file provided', 400);

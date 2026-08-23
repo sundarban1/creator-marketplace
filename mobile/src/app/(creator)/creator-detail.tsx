@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { ProviderTypeBadge } from '@/components/ProviderTypeBadge';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
 import {
@@ -254,6 +255,7 @@ export default function CreatorPeerDetailScreen() {
           <View style={s.nameRow}>
             <Text style={[s.name, { color: C.text }]} numberOfLines={2}>{profile.fullName ?? 'Creator'}</Text>
             {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
+            <ProviderTypeBadge type={profile.providerType} teamSize={profile.teamSize} />
           </View>
           {profile.username ? (
             <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
@@ -324,6 +326,52 @@ export default function CreatorPeerDetailScreen() {
             </View>
           </View>
         )}
+
+        {/* ── Industries (agencies only, §6) ── */}
+        {(profile.industries?.length ?? 0) > 0 && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionIndustries')} color={C.textSecondary} />
+            <View style={s.chips}>
+              {profile.industries.map((ind) => {
+                const meta = getCategoryMeta(allCategories, ind);
+                return (
+                  <View key={ind} style={[s.catChip, { backgroundColor: C.primaryLight }]}>
+                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                    <Text style={[s.catChipText, { color: C.brinjal1 }]}>{ind}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* ── Service mode (§3 step 4) ── */}
+        {profile.serviceMode ? (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('serviceMode.label')} color={C.textSecondary} />
+            <View style={s.socialRow2}>
+              <FontAwesome5
+                name={profile.serviceMode === 'ONLINE' ? 'laptop' : profile.serviceMode === 'MY_LOCATION' ? 'store' : profile.serviceMode === 'HYBRID' ? 'random' : 'car-side'}
+                solid size={14} color={C.brinjal1}
+              />
+              <Text style={[s.websiteText, { color: C.text }]}>{t(`serviceMode.${profile.serviceMode}`)}</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* ── Website (§5) ── */}
+        {profile.website ? (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionWebsite')} color={C.textSecondary} />
+            <Pressable
+              style={s.socialRow2}
+              onPress={() => Linking.openURL(profile.website!).catch(() => {})}
+              accessibilityRole="link">
+              <FontAwesome5 name="globe" solid size={14} color={C.brinjal1} />
+              <Text style={[s.websiteText, { color: C.brinjal1 }]} numberOfLines={1}>{profile.website}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* ── Social Platforms ── */}
         {mergedPlatforms.length > 0 && (
@@ -513,6 +561,8 @@ const s = StyleSheet.create({
   name:         { fontSize: 22, fontFamily: F.bold, textAlign: 'center' },
   username:     { fontSize: 14, fontFamily: F.regular, marginTop: 2 },
   locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  socialRow2:   { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
+  websiteText:  { fontSize: 14, fontFamily: F.medium, flex: 1 },
   location:     { fontSize: 13, fontFamily: F.regular },
 
   // Sections

@@ -87,6 +87,9 @@ export const profileService = {
     avatarUrl?:  string;
     categories?: string[];
     providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY';
+    teamSize?: number | null;
+    industries?: string[];
+    serviceMode?: 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID' | null;
   }): Promise<void> {
     await request('PUT', '/api/creator/profile', data);
   },

@@ -47,6 +47,13 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.type === 'event_expired') {
     return n.refId ? { pathname: '/campaign-detail', params: { campaignId: n.refId } } : null;
   }
+  // §4 team/agency roster — the invite lands on the invitee, the response on
+  // the team owner. Both halves live on the same screen (pending invites at
+  // the top, roster below), so either tap opens it. Provider-only screen, so
+  // a business account has nowhere to land.
+  if (n.type === 'team_invitation' || n.type === 'team_invitation_response') {
+    return isCreator ? '/(creator)/team' : null;
+  }
   if (n.type === 'creator_saved') return null; // just acknowledge — no deep link needed
   // Service requests (§33/34) — received (provider) routes to the requests
   // inbox; accepted/declined (business) has nowhere richer to land yet, so

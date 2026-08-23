@@ -93,6 +93,8 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
       ringColor={meta.color}
       name={creator.fullName ?? 'Creator'}
       verified={creator.fullyVerified || creator.isVerified}
+      providerType={creator.providerType}
+      teamSize={creator.teamSize}
       locationText={creator.location ?? undefined}
       bio={creator.bio ?? undefined}
       categoryPills={categoryPills}

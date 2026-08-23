@@ -457,6 +457,29 @@ export class CreatorService {
     }
 
     const { email, ...rest } = input;
+
+    // teamSize only means anything for a TEAM. Switching to any other provider
+    // type clears it, and a teamSize sent by a non-TEAM provider is dropped
+    // rather than stored — same shape as business.service.ts clearing its
+    // ORGANIZATION-only fields when representingType flips to INDIVIDUAL.
+    const effectiveProviderType = rest.providerType ?? profile.providerType;
+    if (effectiveProviderType !== 'TEAM') {
+      if (rest.providerType && profile.teamSize != null) rest.teamSize = null;
+      else delete rest.teamSize;
+    }
+    // §6 industries are the AGENCY equivalent — same rule.
+    if (effectiveProviderType !== 'AGENCY') {
+      if (rest.providerType && profile.industries.length > 0) rest.industries = [];
+      else delete rest.industries;
+    }
+    // §5 legal identifiers: only an AGENCY can set them, but an existing value
+    // survives a provider-type change — see the schema comment for why these
+    // are treated differently from the two presentation fields above.
+    if (effectiveProviderType !== 'AGENCY') {
+      delete rest.panNo;
+      delete rest.vatNo;
+      delete rest.companyRegNo;
+    }
     if (email) {
       const account = await this.repo.getUserEmailStatus(userId);
       if (account?.isEmailVerified) throw new AppError('Your account already has a verified email', 409);
@@ -474,6 +497,21 @@ export class CreatorService {
 
   async uploadCitizenship(userId: string, docUrl: string) {
     return toCreatorProfileDto(await this.repo.updateCitizenship(userId, docUrl));
+  }
+
+  // Checked by the controller BEFORE the file reaches Cloudinary, so a wrong
+  // caller can't leave an orphaned upload behind — same guard order as
+  // business.service.ts's identity-document endpoint.
+  async assertCanUploadCompanyRegDoc(userId: string) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (profile.providerType !== 'AGENCY') {
+      throw new AppError('Only an Agency uploads a company registration document', 400);
+    }
+  }
+
+  async uploadCompanyRegDoc(userId: string, docUrl: string) {
+    return toCreatorProfileDto(await this.repo.updateCompanyRegDoc(userId, docUrl));
   }
 
   async uploadPan(userId: string, docUrl: string) {

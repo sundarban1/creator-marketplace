@@ -26,11 +26,6 @@ const CARD_IMAGE: Record<Role, number> = {
   BUSINESS: require('@/assets/images/account-type/find-services.jpg'),
 };
 
-// The glyph that rides each card also rides the "Signing up as …" chip on the
-// next screen (login.tsx's SignupForm), so the mark the user picks here is the
-// one that confirms their choice afterwards.
-const CARD_ICON: Record<Role, 'magic' | 'search'> = { CREATOR: 'magic', BUSINESS: 'search' };
-
 // The most important screen in the signup flow — it's what determines whether
 // the user lands in the Creator or Business experience, so the two choices get
 // full-width, fully-tappable cards rather than a compact side-by-side picker
@@ -39,8 +34,8 @@ const CARD_ICON: Record<Role, 'magic' | 'search'> = { CREATOR: 'magic', BUSINESS
 // the primary Welcome → Get Started path, not a replacement for those).
 //
 // Laid out from the same pieces as the creator home feed and login.tsx: a
-// pinned header row, then content cards (surface fill, hairline border, raised
-// lift) each fronted by the home feed's rounded-square Quick Action tile.
+// pinned header row, a heading that states the question, then content cards
+// (surface fill, hairline border, raised lift) each fronted by a photo band.
 //
 // Copy deliberately avoids "Creator"/"Business" terminology in favor of "Offering
 // services" / "Looking for services" — this keeps the choice legible as Kolab
@@ -85,6 +80,15 @@ export default function AccountTypeScreen() {
         </View>
 
         <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Names the decision before the cards do — without it the two cards
+              read as a list of features rather than a choice the user has to
+              make. accessibilityRole="header" also gives screen readers a
+              landmark to jump to at the top of the scroll. */}
+          <View style={s.intro}>
+            <Text style={[s.pageTitle, { color: C.text }]} accessibilityRole="header">{t('accountType.pageTitle')}</Text>
+            <Text style={[s.pageSubtitle, { color: C.textSecondary }]}>{t('accountType.pageSubtitle')}</Text>
+          </View>
+
           <View style={s.cards}>
             {roles.map((r) => {
               const active = selected === r.key;
@@ -123,16 +127,6 @@ export default function AccountTypeScreen() {
                         <FontAwesome5 name="check" solid size={11} color="#fff" />
                       </View>
                     )}
-
-                    {/* Quick Action tile, straight off the home feed — a rounded
-                        square of the role's own colour, straddling the photo's
-                        bottom edge so it anchors the body text below it. */}
-                    <LinearGradient
-                      colors={r.grad}
-                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                      style={[s.iconTile, { borderColor: C.surface }]}>
-                      <FontAwesome5 name={CARD_ICON[r.key]} solid size={20} color="#fff" />
-                    </LinearGradient>
                   </View>
 
                   <View style={s.cardBody}>
@@ -186,30 +180,23 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
     langChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, minHeight: 36, justifyContent: 'center' },
     langChipText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
 
+    // ── Page heading ──
+    intro:        { gap: SPACING.xs },
+    pageTitle:    { fontSize: FONT_SIZE.xxl, fontFamily: F.bold, letterSpacing: -0.2, lineHeight: lineHeightFor(FONT_SIZE.xxl) },
+    pageSubtitle: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm) },
+
     // ── Choice cards ── standard content cards (surface, hairline, raised).
     cards: { gap: SPACING.lg },
     card:  { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden' },
 
-    // zIndex lifts the whole band — and with it the tile hanging below its
-    // bottom edge — above `cardBody`, which is a later sibling and would
-    // otherwise paint straight over the overlapping part of the tile.
-    imageWrap:  { height: 124, position: 'relative', zIndex: 2 },
+    imageWrap:  { height: 124, position: 'relative' },
     cardArt:    { width: '100%', height: '100%' },
     imageScrim: { position: 'absolute', top: 0, left: 0, right: 0, height: 60 },
     checkBadge: {
       position: 'absolute', top: SPACING.md, right: SPACING.md, zIndex: 1,
       width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
     },
-    // Straddles the photo's bottom edge — the 3px ring in the card's own
-    // surface colour is what keeps it legible against the photo behind it.
-    iconTile: {
-      position: 'absolute', left: SPACING.lg, bottom: -22, zIndex: 1,
-      width: 52, height: 52, borderRadius: RADIUS.lg, borderWidth: 3,
-      justifyContent: 'center', alignItems: 'center', ...SHADOW.card,
-    },
-
-    // paddingTop clears the tile overlapping from the photo above.
-    cardBody:      { padding: SPACING.lg, paddingTop: SPACING.xl + SPACING.sm, gap: 6 },
+    cardBody:      { padding: SPACING.lg, gap: 6 },
     cardTitleRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
     cardTitle:     { flex: 1, fontSize: FONT_SIZE.lg, fontFamily: F.bold, letterSpacing: 0.1, lineHeight: lineHeightFor(FONT_SIZE.lg) },
     cardDesc:      { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm) },

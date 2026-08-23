@@ -7,11 +7,23 @@
 
 type VerifiableUser = { isEmailVerified: boolean; isPhoneVerified: boolean };
 
+// Providers verify differently depending on how they provide services (§5).
+// An AGENCY is a registered business, so it proves that with its company
+// registration document — it has no "citizenship" of its own, and demanding
+// the owner's would leave every agency stuck on an individual's rule.
+// INDIVIDUAL and TEAM both prove a person's identity with citizenship.
+//
+// A null providerType falls back to the citizenship rule, NOT the agency one:
+// unlike the service-taker side (where the fallback is deliberately the
+// stricter rule), every provider predating the provider-type question is a
+// person, and applying the agency rule to them would strip badges already earned.
 export function isCreatorFullyVerified(
   user: VerifiableUser,
-  profile: { citizenshipStatus: string },
+  profile: { citizenshipStatus: string; companyRegDocStatus?: string; providerType?: string | null },
 ): boolean {
-  return user.isEmailVerified && user.isPhoneVerified && profile.citizenshipStatus === 'APPROVED';
+  if (!user.isEmailVerified || !user.isPhoneVerified) return false;
+  if (profile.providerType === 'AGENCY') return profile.companyRegDocStatus === 'APPROVED';
+  return profile.citizenshipStatus === 'APPROVED';
 }
 
 // Service takers verify differently depending on how they hire (spec §15).
@@ -38,6 +50,24 @@ export function isBusinessFullyVerified(
     return profile.identityDocStatus === 'APPROVED';
   }
   return profile.panDocStatus === 'APPROVED' && profile.companyRegDocStatus === 'APPROVED';
+}
+
+/** The provider-side mirror of businessVerificationStatus below: derived, never
+ *  stored, so the badge, the settings screen and any future surface can't
+ *  disagree, and so the AGENCY-vs-person document rule lives in exactly one
+ *  place. Only the document relevant to this provider's type is considered —
+ *  an agency's pending citizenship upload (if it ever made one) must not read
+ *  as "verification in progress" when the registration document is what
+ *  actually gates its badge. */
+export function providerVerificationStatus(
+  user: VerifiableUser,
+  profile: { citizenshipStatus: string; companyRegDocStatus?: string; providerType?: string | null },
+): 'NOT_VERIFIED' | 'PENDING' | 'VERIFIED' {
+  if (isCreatorFullyVerified(user, profile)) return 'VERIFIED';
+  const relevant = profile.providerType === 'AGENCY'
+    ? (profile.companyRegDocStatus ?? 'NONE')
+    : profile.citizenshipStatus;
+  return relevant === 'PENDING' ? 'PENDING' : 'NOT_VERIFIED';
 }
 
 /** The three states the spec (§7) wants surfaced, derived rather than stored so

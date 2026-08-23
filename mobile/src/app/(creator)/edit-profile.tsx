@@ -19,7 +19,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/Button';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
-import { creatorService } from '@/services/creator';
+import { creatorService, type ServiceMode } from '@/services/creator';
+
+const SERVICE_MODES: ServiceMode[] = ['CLIENT_LOCATION', 'MY_LOCATION', 'ONLINE', 'HYBRID'];
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
@@ -41,6 +43,8 @@ export default function EditProfileScreen() {
   const usernameCheckDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usernameCheckRequestId = useRef(0);
   const [bio, setBio] = useState('');
+  const [website, setWebsite] = useState('');
+  const [serviceMode, setServiceMode] = useState<ServiceMode | null>(null);
   const [location, setLocation] = useState('');
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
@@ -54,6 +58,8 @@ export default function EditProfileScreen() {
         setUsername(profile.username ?? '');
         setOriginalUsername(profile.username ?? '');
         setBio(profile.bio ?? '');
+        setWebsite(profile.website ?? '');
+        setServiceMode(profile.serviceMode);
         setLocation(profile.location ?? '');
         setLocationLat(profile.locationLat ?? null);
         setLocationLng(profile.locationLng ?? null);
@@ -116,6 +122,9 @@ export default function EditProfileScreen() {
         fullName: fullName.trim(),
         bio: bio.trim() || undefined,
         categories,
+        // Empty means "cleared", not "unchanged" — null is how the API clears it.
+        website: website.trim() || null,
+        serviceMode,
       };
       if (usernameChanged) payload.username = username;
       // Always send location as a trio (or null-out the whole trio when
@@ -223,6 +232,48 @@ export default function EditProfileScreen() {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('serviceMode.label')}</Text>
+            <View style={styles.modeWrap}>
+              {SERVICE_MODES.map((mode) => {
+                const active = serviceMode === mode;
+                return (
+                  <Pressable
+                    key={mode}
+                    onPress={() => setServiceMode(active ? null : mode)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    style={[styles.modeChip, {
+                      borderColor: active ? C.brinjal1 : C.border,
+                      backgroundColor: active ? C.primaryLight : C.background,
+                    }]}>
+                    <Text style={[styles.modeText, { color: active ? C.brinjal1 : C.textSecondary }]}>
+                      {t(`serviceMode.${mode}`)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: C.border }]} />
+
+          <View style={styles.field}>
+            <TextInputWithLabel
+              label={t('profile.editCreator.websiteLabel')}
+              leftIcon="globe"
+              value={website}
+              onChangeText={setWebsite}
+              placeholder={t('profile.editCreator.websitePlaceholder')}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              hint={t('profile.editCreator.websiteHint')}
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: C.border }]} />
+
+          <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.locationLabel')}</Text>
             <Pressable
               style={[styles.locationBtn, { backgroundColor: C.background, borderColor: C.border }]}
@@ -272,6 +323,9 @@ const styles = StyleSheet.create({
   field:      { padding: 16, gap: 6 },
   divider:    { height: 1 },
   label:      { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
+  modeWrap:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  modeChip:   { paddingHorizontal: 14, minHeight: 40, justifyContent: 'center', borderRadius: RADIUS.full, borderWidth: 1.5 },
+  modeText:   { fontSize: 13, fontFamily: F.semibold },
   charCount:  { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
   locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
   locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.regular },

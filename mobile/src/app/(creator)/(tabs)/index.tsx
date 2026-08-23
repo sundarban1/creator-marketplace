@@ -18,7 +18,7 @@ import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { CampaignCard } from '@/features/creator/components/CampaignCard';
 import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCardSkeleton';
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
-import { creatorService, type ApiCreatorProfile } from '@/services/creator';
+import { creatorService, type ApiCreatorProfile, type ApiProviderMember } from '@/services/creator';
 import { campaignService } from '@/services/campaign';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
 import type { Campaign } from '@/types';
@@ -54,6 +54,14 @@ export default function HomeScreen() {
   const [profile, setProfile] = useState<ApiCreatorProfile | null>(null);
   const [yourWork, setYourWork] = useState<WorkItem[]>([]);
   const [recommended, setRecommended] = useState<Campaign[]>([]);
+  // §16 — the Team dashboard block. Only a TEAM/AGENCY has a roster, and the
+  // roster endpoint 400s for anyone else, so it's fetched conditionally.
+  const [teamMembers, setTeamMembers] = useState<ApiProviderMember[]>([]);
+  // §16 agency dashboard. Derived from the accepted-applications fetch this
+  // screen already makes — clients, projects and deliverables are all facts
+  // about bookings, so none of them needed a new entity: an accepted
+  // Application IS the project (§13), and deliverables already live on it.
+  const [agencyStats, setAgencyStats] = useState({ clients: 0, active: 0, deliverables: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -160,11 +168,23 @@ export default function HomeScreen() {
       if ((hasPhoto || hasLink) && !p.portfolioLinks?.length) missing.push(t('creator.home.fieldPortfolio'));
       setMissingFields(missing);
 
-      const [applications, recs] = await Promise.all([
+      const isTeamOrAgency = p.providerType === 'TEAM' || p.providerType === 'AGENCY';
+      const [applications, recs, roster] = await Promise.all([
         campaignService.getMyApplications({ status: 'ACCEPTED', limit: 10 }).catch(() => ({ proposals: [], total: 0 })),
         campaignService.recommended({ limit: 5 }).catch(() => ({ campaigns: [] })),
+        isTeamOrAgency ? creatorService.listTeamMembers().catch(() => [] as ApiProviderMember[]) : Promise.resolve([] as ApiProviderMember[]),
       ]);
+      setTeamMembers(roster);
       setYourWork(applications.proposals.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED'));
+
+      if (isTeamOrAgency) {
+        const accepted = applications.proposals;
+        setAgencyStats({
+          clients: new Set(accepted.map((a) => a.businessId).filter(Boolean)).size,
+          active: accepted.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED').length,
+          deliverables: accepted.reduce((n, a) => n + (a.deliverableVideos?.length ?? 0), 0),
+        });
+      }
 
       // Same `status: 'ACCEPTED'` fetch above already has everything needed
       // to flag actions actually waiting on the creator — no separate call.
@@ -370,6 +390,75 @@ export default function HomeScreen() {
               </View>
             ) : (
               <View style={{ gap: SPACING.xxl }}>
+                {/* §16 — the agency/team dashboard row. Three counts, no new
+                    endpoint: all three are derived from the accepted-bookings
+                    fetch above. */}
+                {(profile?.providerType === 'TEAM' || profile?.providerType === 'AGENCY') && (
+                  <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { color: C.text }]}>
+                      {profile?.providerType === 'AGENCY' ? t('home.agencySection') : t('home.teamStatsSection')}
+                    </Text>
+                    <View style={styles.statsRow}>
+                      {[
+                        { key: 'clients',      value: agencyStats.clients,      label: t('home.statClients'),      icon: 'building'   as const },
+                        { key: 'projects',     value: agencyStats.active,       label: t('home.statProjects'),     icon: 'briefcase'  as const },
+                        { key: 'deliverables', value: agencyStats.deliverables, label: t('home.statDeliverables'), icon: 'photo-video' as const },
+                      ].map((stat) => (
+                        <Pressable
+                          key={stat.key}
+                          style={[styles.statTile, { backgroundColor: C.surface, borderColor: C.border }]}
+                          onPress={() => router.push({ pathname: '/(creator)/(tabs)/proposals', params: { tab: 'accepted' } })}>
+                          <FontAwesome5 name={stat.icon} solid size={14} color={C.brinjal1} />
+                          <Text style={[styles.statValue, { color: C.text }]}>{stat.value}</Text>
+                          <Text style={[styles.statLabel, { color: C.textSecondary }]} numberOfLines={2}>{stat.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* §16 — Team block, teams and agencies only. Deliberately a
+                    feed section rather than a sixth tab or a sixth quick
+                    action: the tab bar already carries five items, and the
+                    quick-action row is five fixed-width columns that fill the
+                    screen exactly (see quickActionTile), so a sixth of either
+                    would overflow on a small phone. */}
+                {(profile?.providerType === 'TEAM' || profile?.providerType === 'AGENCY') && (
+                  <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionTitle, { color: C.text }]}>{t('home.teamSection')}</Text>
+                      <Pressable onPress={() => router.push('/(creator)/team')}>
+                        <Text style={[styles.seeAll, { color: C.brinjal1 }]}>{t('home.teamManage')}</Text>
+                      </Pressable>
+                    </View>
+                    <Pressable
+                      style={[styles.workCard, { backgroundColor: C.surface, borderColor: C.border }, SHADOW.raised]}
+                      onPress={() => router.push('/(creator)/team')}>
+                      <View style={[styles.workThumb, { backgroundColor: C.primaryLight }]}>
+                        <FontAwesome5 name="users" solid size={18} color={C.brinjal1} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.workTitle, { color: C.text }]} numberOfLines={1}>
+                          {(() => {
+                            // t() is a flat lookup with {{var}} interpolation —
+                            // no plural rules — so the branch is explicit here.
+                            const n = teamMembers.filter((m) => m.status === 'ACCEPTED').length;
+                            return n === 0 ? t('home.teamMemberCountNone')
+                              : n === 1 ? t('home.teamMemberCountOne')
+                              : t('home.teamMemberCountMany', { n });
+                          })()}
+                        </Text>
+                        <Text style={[styles.workBrand, { color: C.textSecondary }]} numberOfLines={1}>
+                          {teamMembers.some((m) => m.status === 'PENDING')
+                            ? t('home.teamPending', { n: teamMembers.filter((m) => m.status === 'PENDING').length })
+                            : t('home.teamInviteHint')}
+                        </Text>
+                      </View>
+                      <FontAwesome5 name="chevron-right" size={13} color={C.textSecondary} />
+                    </Pressable>
+                  </View>
+                )}
+
                 {/* Your Work */}
                 {yourWork.length > 0 && (
                   <View style={styles.section}>
@@ -600,6 +689,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: 11,
   },
   ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
+
+  statsRow:   { flexDirection: 'row', gap: SPACING.sm },
+  statTile:   { flex: 1, borderWidth: 1, borderRadius: RADIUS.lg, paddingVertical: SPACING.md, paddingHorizontal: SPACING.sm, alignItems: 'center', gap: 4 },
+  statValue:  { fontSize: FONT_SIZE.xl, fontFamily: F.bold },
+  statLabel:  { fontSize: FONT_SIZE.xs, fontFamily: F.medium, textAlign: 'center' },
 
   quickActionsRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xxl },
   // flex: 1 (not a fixed width) — five equal-width columns that always sum

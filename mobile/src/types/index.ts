@@ -161,7 +161,9 @@ export type AppNotification = {
     | 'account_verified'
     | 'verification_rejected'
     | 'proposal_expired'
-    | 'event_expired';
+    | 'event_expired'
+    | 'team_invitation'
+    | 'team_invitation_response';
   title: string;
   body: string;
   timestamp: string;

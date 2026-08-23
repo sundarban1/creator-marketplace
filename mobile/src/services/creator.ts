@@ -4,6 +4,11 @@ import type { ApiPortfolioItem } from './portfolio';
 
 export type { ApiSocialAccount };
 
+export type ProviderType = 'INDIVIDUAL' | 'TEAM' | 'AGENCY';
+
+// §3 step 4 — where a provider delivers.
+export type ServiceMode = 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID';
+
 export interface ApiCreatorProfile {
   id: string;
   userId: string;
@@ -32,6 +37,13 @@ export interface ApiCreatorProfile {
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  // §5 — AGENCY registration document; gates an agency's verified badge.
+  companyRegDocUrl: string | null;
+  companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUploadedAt: string | null;
+  // Derived by the server (providerVerificationStatus) — never recompute the
+  // AGENCY-vs-person document rule on the client.
+  verificationStatus: 'NOT_VERIFIED' | 'PENDING' | 'VERIFIED';
   verificationRejectReason: string | null;
   verificationRejectedAt: string | null;
   province: string | null;
@@ -44,6 +56,21 @@ export interface ApiCreatorProfile {
   hideContactDetails: boolean;
   hideSocialLinks: boolean;
   availabilityStatus: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
+  // "How do you provide your services?" — collected as step 1 of onboarding,
+  // changeable later from Settings. Null only for accounts onboarded before
+  // the question existed.
+  providerType: ProviderType | null;
+  // §4 — only ever set for a TEAM; the server clears it on a switch away.
+  teamSize: number | null;
+  // §6 — only ever set for an AGENCY; same clear-on-switch rule.
+  industries: string[];
+  website: string | null;
+  serviceMode: ServiceMode | null;
+  // §5 — AGENCY legal identifiers. Private profile only; never on the public
+  // profile or discovery cards.
+  panNo: string | null;
+  vatNo: string | null;
+  companyRegNo: string | null;
   startingRate: number | null;
   negotiable: boolean;
   user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean };
@@ -127,6 +154,14 @@ export interface ApiCreatorPublicProfile {
   userId: string;
   fullName: string | null;
   username: string | null;
+  // §9 badge — null for accounts onboarded before the question existed.
+  providerType: ProviderType | null;
+  teamSize: number | null;
+  // §6 — AGENCY only, empty for every other provider type.
+  industries: string[];
+  // Null when the provider has hidden their social links.
+  website: string | null;
+  serviceMode: ServiceMode | null;
   // Set (with only id/fullName/avatarUrl otherwise populated) when the
   // creator has disabled showPublicProfile — every other field below is
   // absent from the response in that case, so check this before reading them.
@@ -164,6 +199,8 @@ export interface ApiPublicService {
 export interface ApiCreatorListItem {
   id: string;
   fullName: string | null;
+  providerType: ProviderType | null;
+  teamSize: number | null;
   bio: string | null;
   avatarUrl: string | null;
   location: string | null;
@@ -175,6 +212,65 @@ export interface ApiCreatorListItem {
   averageRating?: number;
   completionRate?: number;
   completedEvents?: number;
+}
+
+// §4/§7 — team/agency membership. `member` is populated on the roster
+// (/team/members), `provider` on the invitee's own list (/team/memberships);
+// neither duplicates the other's profile fields.
+export type ProviderMemberRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'MEMBER';
+
+export interface ApiProviderMember {
+  id: string;
+  providerId: string;
+  memberId: string;
+  jobRole: string | null;
+  accessRole: ProviderMemberRole;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  invitedAt: string;
+  respondedAt: string | null;
+  member?: {
+    id: string;
+    userId: string;
+    fullName: string | null;
+    username: string | null;
+    avatarUrl: string | null;
+    categories: string[];
+    isVerified: boolean;
+  };
+  provider?: {
+    id: string;
+    userId: string;
+    fullName: string | null;
+    avatarUrl: string | null;
+    providerType: ProviderType | null;
+  };
+}
+
+// §13/§16 — who inside a team is working a booking the team won. Carries no
+// money by design; payouts stay with the provider that was hired.
+export interface ApiAssignment {
+  id: string;
+  applicationId: string;
+  memberId: string;
+  note: string | null;
+  assignedAt: string;
+  member?: {
+    id: string;
+    userId: string;
+    fullName: string | null;
+    username: string | null;
+    avatarUrl: string | null;
+    categories: string[];
+    isVerified: boolean;
+  };
+  // Populated on the assignee's own list (my-assignments), not on a booking's roster.
+  application?: {
+    id: string;
+    status: string;
+    workStatus: string;
+    campaign: { id: string; title: string; featureImageUrl: string | null };
+    creator:  { id: string; fullName: string | null; avatarUrl: string | null; providerType: ProviderType | null };
+  };
 }
 
 export interface ApiCreatorListResponse {
@@ -298,6 +394,13 @@ export const creatorService = {
     locationLat?: number | null;
     locationLng?: number | null;
     categories?: string[];
+    teamSize?: number | null;
+    industries?: string[];
+    website?: string | null;
+    serviceMode?: ServiceMode | null;
+    panNo?: string | null;
+    vatNo?: string | null;
+    companyRegNo?: string | null;
     nearbyRadiusKm?: number;
     nearbyUseHomeLocation?: boolean;
   }): Promise<ApiCreatorProfile> {
@@ -313,6 +416,14 @@ export const creatorService = {
     locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
   }): Promise<void> {
     await request('PUT', '/api/creator/profile', data);
+  },
+
+  // Separate wrapper for the same reason updatePrivacy above is one — changing
+  // how a provider works restructures their profile, so it's confirmed and sent
+  // on its own rather than riding along with unrelated profile-form state.
+  async updateProviderType(providerType: ProviderType): Promise<ApiCreatorProfile> {
+    const res = await request<ApiCreatorProfile>('PUT', '/api/creator/profile', { providerType });
+    return res.data;
   },
 
   async updateSocialLinks(data: Record<string, string | null>): Promise<ApiCreatorProfile> {
@@ -486,6 +597,72 @@ export const creatorService = {
   },
 
   // ── Invitations ──────────────────────────────────────────────────────────
+
+  // ── Team members (§4/§7) ───────────────────────────────────────────────────
+  // §7 — omit providerId for your own team; pass one to act as an ADMIN member
+  // of someone else's. The server authorizes either way.
+  async listTeamMembers(providerId?: string): Promise<ApiProviderMember[]> {
+    const res = await request<ApiProviderMember[]>(
+      'GET',
+      providerId ? `/api/creator/team/members?providerId=${encodeURIComponent(providerId)}` : '/api/creator/team/members',
+    );
+    return res.data;
+  },
+
+  async inviteTeamMember(data: {
+    providerId?: string;
+    email?: string;
+    phone?: string;
+    jobRole?: string;
+    accessRole?: Exclude<ProviderMemberRole, 'OWNER'>;
+  }): Promise<ApiProviderMember> {
+    const res = await request<ApiProviderMember>('POST', '/api/creator/team/members', data);
+    return res.data;
+  },
+
+  async updateTeamMember(id: string, data: {
+    jobRole?: string | null;
+    accessRole?: Exclude<ProviderMemberRole, 'OWNER'>;
+  }): Promise<ApiProviderMember> {
+    const res = await request<ApiProviderMember>('PATCH', `/api/creator/team/members/${id}`, data);
+    return res.data;
+  },
+
+  async removeTeamMember(id: string): Promise<void> {
+    await request('DELETE', `/api/creator/team/members/${id}`);
+  },
+
+  // ── Assignments (§13/§16) ──────────────────────────────────────────────────
+  async listAssignments(applicationId: string): Promise<ApiAssignment[]> {
+    const res = await request<ApiAssignment[]>('GET', `/api/creator/team/assignments?applicationId=${encodeURIComponent(applicationId)}`);
+    return res.data;
+  },
+
+  async assignMember(applicationId: string, memberId: string, note?: string): Promise<ApiAssignment> {
+    const res = await request<ApiAssignment>('POST', '/api/creator/team/assignments', { applicationId, memberId, ...(note ? { note } : {}) });
+    return res.data;
+  },
+
+  async unassignMember(assignmentId: string): Promise<void> {
+    await request('DELETE', `/api/creator/team/assignments/${assignmentId}`);
+  },
+
+  // Work handed to this provider by a team they belong to.
+  async listMyAssignments(): Promise<ApiAssignment[]> {
+    const res = await request<ApiAssignment[]>('GET', '/api/creator/team/my-assignments');
+    return res.data;
+  },
+
+  // The invitee's side — invitations to join someone else's team.
+  async listMyMemberships(): Promise<ApiProviderMember[]> {
+    const res = await request<ApiProviderMember[]>('GET', '/api/creator/team/memberships');
+    return res.data;
+  },
+
+  async respondToMembership(id: string, status: 'ACCEPTED' | 'DECLINED'): Promise<ApiProviderMember> {
+    const res = await request<ApiProviderMember>('POST', `/api/creator/team/memberships/${id}/respond`, { status });
+    return res.data;
+  },
 
   async listInvitations(): Promise<ApiCampaignInvitation[]> {
     const res = await request<ApiCampaignInvitation[]>('GET', '/api/creator/invitations');

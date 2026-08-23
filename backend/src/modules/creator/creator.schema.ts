@@ -24,6 +24,24 @@ export const updateCreatorProfileSchema = z.object({
   nearbyUseHomeLocation: z.boolean().optional(),
   // "How do you provide your services?" — first step of provider onboarding.
   providerType: z.enum(['INDIVIDUAL', 'TEAM', 'AGENCY']).optional(),
+  // §4 — how many people are in the team. Nullable so a provider can clear it;
+  // ignored outright unless the provider is a TEAM (see creator.service.ts).
+  // Minimum 2 — a "team" of one is an INDIVIDUAL, and the onboarding field
+  // enforces the same floor.
+  teamSize: z.number().int().min(2).max(500).nullable().optional(),
+  // §6 — industries an AGENCY serves. Same cap as business onboarding's
+  // industry step, which edits the equivalent field on BusinessProfile.
+  industries: z.array(z.string()).max(5).optional(),
+  // §5 step 2 — AGENCY legal identifiers. Nullable so they can be cleared;
+  // dropped server-side for any other provider type (see creator.service.ts).
+  // §5 step 1 — accepted from every provider type, not just agencies: a
+  // freelance photographer's portfolio site is just as relevant.
+  website:      z.string().trim().url('Invalid website URL').nullable().optional(),
+  // §3 step 4 — where the provider delivers. Nullable so it can be unset.
+  serviceMode:  z.enum(['CLIENT_LOCATION', 'MY_LOCATION', 'ONLINE', 'HYBRID']).nullable().optional(),
+  panNo:        z.string().trim().max(20).nullable().optional(),
+  vatNo:        z.string().trim().max(20).nullable().optional(),
+  companyRegNo: z.string().trim().max(40).nullable().optional(),
   // §61 — Privacy settings.
   showPublicProfile:  z.boolean().optional(),
   hideContactDetails: z.boolean().optional(),

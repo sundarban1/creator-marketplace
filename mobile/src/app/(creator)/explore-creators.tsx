@@ -202,6 +202,8 @@ function CreatorCard({ creator, chevronOnly }: { creator: ApiCreatorListItem; /*
       ringColor={meta.color}
       name={creator.fullName ?? 'Creator'}
       verified={creator.fullyVerified || creator.isVerified}
+      providerType={creator.providerType}
+      teamSize={creator.teamSize}
       locationText={creator.location ?? undefined}
       bio={creator.bio ?? undefined}
       categoryLabel={creator.categories.length > 0 ? creator.categories[0] : undefined}

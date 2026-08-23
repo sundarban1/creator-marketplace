@@ -161,6 +161,44 @@ model CreatorProfile {
   availabilityStatus       AvailabilityStatus     @default(AVAILABLE)
   // Collected as the first step of provider onboarding, right after signup.
   providerType             ProviderType?
+  // §4 — how many people are in the team. A plain count, not a bucketed enum
+  // like BusinessProfile.businessSize: the spec renders it literally ("Team ·
+  // 4 members"), which a bucket can't produce. Only meaningful for
+  // providerType TEAM — cleared by CreatorService.updateProfile on any switch
+  // away from TEAM, the same way business.service.ts clears its
+  // ORGANIZATION-only fields.
+  teamSize                 Int?
+  // §6 — the industries an AGENCY serves (Food & Restaurant, Hospitality,
+  // Fashion...). Deliberately separate from `categories`, which holds what the
+  // provider DOES (Photographer, Videographer) — the same split
+  // BusinessProfile already makes between its industry `categories` and
+  // `defaultCreatorCategories`. AGENCY-only: cleared by
+  // CreatorService.updateProfile on any switch away, like teamSize above.
+  industries               String[]               @default([])
+  // §5 step 2 — an AGENCY's legal identifiers. Never public (a PAN is not
+  // public data): private DTO only, used for verification and payouts.
+  // AGENCY-only on write, but deliberately NOT wiped when the provider type
+  // changes, unlike teamSize/industries above — those two are presentation
+  // fields that would display wrongly for the new type, while these are
+  // records of fact that stay true and back a verification decision.
+  panNo                    String?
+  vatNo                    String?
+  companyRegNo             String?
+  // §3 step 4 — where this provider delivers. Distinct from Campaign's
+  // ONSITE/REMOTE LocationType, which describes what a job requires: that
+  // 2-value enum can't express "at my location" (a salon, a studio) versus
+  // "at the client's" (a mobile makeup artist), which is exactly the
+  // distinction the spec asks providers for.
+  serviceMode              ServiceMode?
+  // §5 step 1 — a provider's own site. Public like socialLinks (and hidden by
+  // the same hideSocialLinks toggle), not a private contact detail.
+  website                  String?
+  // §5 — an AGENCY's business-registration document, the provider-side mirror
+  // of BusinessProfile.companyRegDoc*. Optional: it gates the verified badge
+  // for an agency, never profile creation (§18).
+  companyRegDocUrl         String?
+  companyRegDocStatus      DocumentStatus         @default(NONE)
+  companyRegDocUploadedAt  DateTime?
   // What this provider charges, distinct from prefBudgetMin/Max above (what
   // they're willing to accept on a campaign).
   startingRate             Float?
@@ -183,6 +221,9 @@ model CreatorProfile {
   portfolioItems           PortfolioItem[]
   availabilitySchedule     AvailabilitySchedule[]
   serviceRequests          ServiceRequest[]
+  members                  ProviderMember[]       @relation("ProviderMembers")
+  assignedWork             ApplicationAssignment[] @relation("AssignedWork")
+  memberOf                 ProviderMember[]       @relation("ProviderMemberships")
 
   @@index([isVerified])
   @@map("creator_profiles")
@@ -268,6 +309,69 @@ model PortfolioItem {
 
   @@index([creatorProfileId])
   @@map("portfolio_items")
+}
+
+// §4/§7 — one membership table for both TEAM and AGENCY, per the spec's rule
+// that provider types share a common model rather than getting parallel ones.
+// The two role axes are deliberately separate: `jobRole` is what the person
+// does on a booking (Photographer, Editor, DJ...), `accessRole` is what they
+// can do inside Kolab (§7's Owner/Admin/Manager/Member). A team that never
+// thinks about permissions just leaves every member on the MEMBER default.
+//
+// Name, photo and skills are NOT duplicated here — they live on the member's
+// own CreatorProfile, so a member who updates their profile updates it
+// everywhere they appear. V1 therefore only invites people who already have a
+// Kolab provider account; inviting a stranger by bare phone number would have
+// nothing to attach the membership to until they signed up.
+// §13/§16 — which members are working a booking the team or agency won.
+//
+// Ownership itself needs no new model: a TEAM/AGENCY *is* a CreatorProfile, so
+// an Application it wins already belongs to it, the review already targets its
+// user (analytics.service.ts resolves toUserId from application.creator), and
+// the payout already goes to its profile. This table only records who inside
+// the team is doing the work — it deliberately carries no money, so §15's "no
+// automatic payment splitting in V1" stays true by construction.
+model ApplicationAssignment {
+  id            String   @id @default(cuid())
+  applicationId String
+  memberId      String
+  note          String?
+  assignedAt    DateTime @default(now())
+
+  application Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  member      CreatorProfile @relation("AssignedWork", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, memberId])
+  @@index([memberId, assignedAt(sort: Desc)])
+  @@map("application_assignments")
+}
+
+model ProviderMember {
+  id          String             @id @default(cuid())
+  providerId  String
+  memberId    String
+  jobRole     String?
+  accessRole  ProviderMemberRole @default(MEMBER)
+  // §4 — "The invited person must accept the invitation before becoming an
+  // active team member", so a row exists while still PENDING and only counts
+  // as active once ACCEPTED.
+  status      InvitationStatus   @default(PENDING)
+  invitedAt   DateTime           @default(now())
+  respondedAt DateTime?
+
+  provider CreatorProfile @relation("ProviderMembers", fields: [providerId], references: [id], onDelete: Cascade)
+  member   CreatorProfile @relation("ProviderMemberships", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, memberId])
+  @@index([memberId, status])
+  @@map("provider_members")
+}
+
+enum ProviderMemberRole {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
 }
 
 // Optional weekly availability, separate from the coarse availabilityStatus
@@ -623,6 +727,7 @@ model Application {
   reviews             Review[]
   paymentTransactions PaymentTransaction[]
   revisionNotes       RevisionNote[]
+  assignments         ApplicationAssignment[]
   contract            Contract?
 
   // True uniqueness is enforced by two hand-written partial indexes, not a
@@ -1309,6 +1414,16 @@ enum CompletionType {
 enum LocationType {
   ONSITE
   REMOTE
+}
+
+// §3 step 4. HYBRID is the spec's "Both online and physical" — a provider who
+// works at both their own and the client's location, but never online, picks
+// whichever is primary; the spec offers exactly these four choices.
+enum ServiceMode {
+  CLIENT_LOCATION
+  MY_LOCATION
+  ONLINE
+  HYBRID
 }
 
 enum EventStatus {

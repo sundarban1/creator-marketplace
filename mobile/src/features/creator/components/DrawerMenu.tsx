@@ -6,10 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useCloseOnScrollDown } from '@/hooks/useCloseOnScrollDown';
+import { creatorService, type ProviderType } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { getAccountIdentityLine, isValidNepaliPhone } from '@/utilities/phone';
 
 const SCREEN_H = Dimensions.get('window').height;
+
+// Provider type decides whether team-only entries show. Cached at module level
+// so reopening the drawer doesn't refetch the profile on every open.
+let cachedProviderType: ProviderType | null = null;
 
 type NavItem = {
   iconName: keyof typeof FontAwesome5.glyphMap;
@@ -29,6 +34,7 @@ const ACCOUNT_ITEMS: NavItem[] = [
   { iconName: 'gift',   faName: 'gift',          labelKey: 'drawer.referAFriend',      route: '/(creator)/referral',                   color: '#EC4899' },
   { iconName: 'envelope-open-text', faName: 'envelope-open-text', labelKey: 'drawer.invitations', route: '/(creator)/invitations', color: '#0EA5E9' },
   { iconName: 'briefcase',   faName: 'briefcase',   labelKey: 'drawer.myServices',        route: '/(creator)/services',                   color: '#7C3AED' },
+  { iconName: 'users',       faName: 'users',       labelKey: 'drawer.myTeam',            route: '/(creator)/team',                       color: '#0D9488' },
   { iconName: 'th-large',    faName: 'th-large',    labelKey: 'drawer.myPortfolio',       route: '/(creator)/portfolio',                  color: '#F59E0B' },
   // Hidden from the drawer for now (Weekly working-hours/blocked-dates editor — its own standalone route, not a settings section).
   // { iconName: 'calendar-alt', faName: 'calendar-alt', labelKey: 'drawer.availability',    route: '/(creator)/availability',               color: '#0D9488' },
@@ -57,6 +63,21 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const [rendered, setRendered] = useState(false);
   const { dragY, panHandlers, onScroll } = useCloseOnScrollDown(onClose);
+  const [providerType, setProviderType] = useState<ProviderType | null>(cachedProviderType);
+
+  // Fetched on the first open rather than on mount, so it doesn't race the
+  // home screen's own profile request at app start.
+  useEffect(() => {
+    if (!visible || cachedProviderType) return;
+    let cancelled = false;
+    creatorService.getProfile()
+      .then((p) => {
+        cachedProviderType = p.providerType;
+        if (!cancelled) setProviderType(p.providerType);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {
@@ -80,6 +101,10 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
   const displayName = user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Creator';
   const initial = displayName[0].toUpperCase();
   const identityLine = user ? getAccountIdentityLine(user) : '';
+  // An INDIVIDUAL provider has no roster of their own, so "My Team" is noise.
+  const navItems = ACCOUNT_ITEMS.filter(
+    (item) => item.labelKey !== 'drawer.myTeam' || providerType === 'TEAM' || providerType === 'AGENCY',
+  );
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -123,7 +148,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
           {...panHandlers}
         >
           <View style={styles.navGroup}>
-            {ACCOUNT_ITEMS.map(({ iconName, faName, labelKey, route, color }) => (
+            {navItems.map(({ iconName, faName, labelKey, route, color }) => (
               <Pressable
                 key={labelKey}
                 hitSlop={4}

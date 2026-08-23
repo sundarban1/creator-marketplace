@@ -397,7 +397,12 @@ export async function setCreatorDocumentStatus(req: Request, res: Response, next
   try {
     const { id, doc }  = req.params;
     const { approved } = req.body as { approved: boolean };
-    if (doc !== 'citizenship' && doc !== 'pan') throw new AppError('doc must be "citizenship" or "pan"', 400);
+    // 'companyReg' is the AGENCY provider's registration document — without it
+    // here an agency could upload a document no admin could ever act on,
+    // leaving it stuck at PENDING and permanently unverifiable.
+    if (doc !== 'citizenship' && doc !== 'pan' && doc !== 'companyReg') {
+      throw new AppError('doc must be "citizenship", "pan" or "companyReg"', 400);
+    }
     if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', 400);
     const updated = await service.setCreatorDocumentStatus(id!, doc, approved);
     return success(res, updated, 'Document status updated');

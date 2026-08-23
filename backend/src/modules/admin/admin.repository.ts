@@ -300,14 +300,18 @@ export class AdminRepository {
   }
 
   async updateCreatorVerification(creatorProfileId: string, isVerified: boolean) {
-    const data: { isVerified: boolean; citizenshipStatus?: 'APPROVED'; panDocStatus?: 'APPROVED' } = { isVerified };
+    const data: {
+      isVerified: boolean;
+      citizenshipStatus?: 'APPROVED'; panDocStatus?: 'APPROVED'; companyRegDocStatus?: 'APPROVED';
+    } = { isVerified };
     if (isVerified) {
       const existing = await prisma.creatorProfile.findUnique({
         where:  { id: creatorProfileId },
-        select: { citizenshipDocUrl: true, panDocUrl: true },
+        select: { citizenshipDocUrl: true, panDocUrl: true, companyRegDocUrl: true },
       });
       if (existing?.citizenshipDocUrl) data.citizenshipStatus = 'APPROVED';
       if (existing?.panDocUrl) data.panDocStatus = 'APPROVED';
+      if (existing?.companyRegDocUrl) data.companyRegDocStatus = 'APPROVED';
     }
     return prisma.creatorProfile.update({
       where: { id: creatorProfileId },
@@ -320,15 +324,19 @@ export class AdminRepository {
     });
   }
 
-  async setCreatorDocumentStatus(creatorProfileId: string, doc: 'citizenship' | 'pan', approved: boolean) {
+  async setCreatorDocumentStatus(creatorProfileId: string, doc: 'citizenship' | 'pan' | 'companyReg', approved: boolean) {
     const status: 'APPROVED' | 'REJECTED' = approved ? 'APPROVED' : 'REJECTED';
-    const data = doc === 'citizenship' ? { citizenshipStatus: status } : { panDocStatus: status };
+    const data =
+      doc === 'citizenship' ? { citizenshipStatus: status }
+      : doc === 'companyReg' ? { companyRegDocStatus: status }
+      : { panDocStatus: status };
     return prisma.creatorProfile.update({
       where: { id: creatorProfileId },
       data,
       select: {
         id: true, userId: true, fullName: true,
         citizenshipStatus: true, citizenshipDocUrl: true, panDocStatus: true, panDocUrl: true,
+        companyRegDocStatus: true, companyRegDocUrl: true,
       },
     });
   }
@@ -409,7 +417,13 @@ export class AdminRepository {
   // rather than bolting a status filter onto those, so the existing
   // Creators/Businesses admin pages are untouched by this.
   async getProviderVerificationQueue(page: number, limit: number) {
-    const where = { OR: [{ citizenshipStatus: 'PENDING' as const }, { panDocStatus: 'PENDING' as const }] };
+    const where = {
+      OR: [
+        { citizenshipStatus: 'PENDING' as const },
+        { panDocStatus: 'PENDING' as const },
+        { companyRegDocStatus: 'PENDING' as const },
+      ],
+    };
     const [items, total] = await Promise.all([
       prisma.creatorProfile.findMany({
         where,
@@ -417,8 +431,9 @@ export class AdminRepository {
         take: limit,
         orderBy: [{ updatedAt: 'asc' }],
         select: {
-          id: true, userId: true, fullName: true, avatarUrl: true,
+          id: true, userId: true, fullName: true, avatarUrl: true, providerType: true,
           citizenshipDocUrl: true, citizenshipStatus: true, panDocUrl: true, panDocStatus: true,
+          companyRegDocUrl: true, companyRegDocStatus: true,
           createdAt: true, updatedAt: true,
           user: { select: { email: true, phone: true } },
         },
@@ -456,14 +471,15 @@ export class AdminRepository {
   async rejectCreatorVerification(creatorProfileId: string, reason: string) {
     const existing = await prisma.creatorProfile.findUnique({
       where:  { id: creatorProfileId },
-      select: { citizenshipDocUrl: true, panDocUrl: true },
+      select: { citizenshipDocUrl: true, panDocUrl: true, companyRegDocUrl: true },
     });
     const data: {
       isVerified: boolean; verificationRejectReason: string; verificationRejectedAt: Date;
-      citizenshipStatus?: 'REJECTED'; panDocStatus?: 'REJECTED';
+      citizenshipStatus?: 'REJECTED'; panDocStatus?: 'REJECTED'; companyRegDocStatus?: 'REJECTED';
     } = { isVerified: false, verificationRejectReason: reason, verificationRejectedAt: new Date() };
     if (existing?.citizenshipDocUrl) data.citizenshipStatus = 'REJECTED';
     if (existing?.panDocUrl) data.panDocStatus = 'REJECTED';
+    if (existing?.companyRegDocUrl) data.companyRegDocStatus = 'REJECTED';
     return prisma.creatorProfile.update({
       where: { id: creatorProfileId },
       data,

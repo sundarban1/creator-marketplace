@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { isCreatorFullyVerified } from '../../utils/verification';
+import { isCreatorFullyVerified, providerVerificationStatus } from '../../utils/verification';
 import { maskLocationByVisibility } from '../../utils/geo';
 
 export interface SocialAccountDto {
@@ -47,6 +47,13 @@ export interface CreatorProfileDto {
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  // §5 — AGENCY business registration. Gates an agency's verified badge the
+  // way citizenship gates an individual's.
+  companyRegDocUrl: string | null;
+  companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUploadedAt: string | null;
+  // Derived server-side so no client recomputes the AGENCY-vs-person rule.
+  verificationStatus: 'NOT_VERIFIED' | 'PENDING' | 'VERIFIED';
   verificationRejectReason: string | null;
   verificationRejectedAt: string | null;
   province: string | null;
@@ -60,6 +67,15 @@ export interface CreatorProfileDto {
   hideSocialLinks: boolean;
   availabilityStatus: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
   providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  teamSize: number | null;
+  industries: string[];
+  website: string | null;
+  serviceMode: 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID' | null;
+  // §5 — private DTO only. A PAN/VAT/registration number is never exposed on
+  // the public profile or on discovery cards.
+  panNo: string | null;
+  vatNo: string | null;
+  companyRegNo: string | null;
   startingRate: number | null;
   negotiable: boolean;
   createdAt: string;
@@ -83,6 +99,20 @@ export interface PublicCreatorDto {
   userId: string;
   username: string | null;
   fullName: string | null;
+  // §9 — a client needs to know whether they're hiring a person, a team or a
+  // business before they hire. Null for accounts onboarded before the question
+  // existed; clients render no badge rather than assuming INDIVIDUAL.
+  providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  // Only ever set for a TEAM — renders the spec's "Team · 4 members" line.
+  teamSize: number | null;
+  // Only ever set for an AGENCY — the spec's "Agency · Creative & Marketing".
+  industries: string[];
+  // Hidden by hideSocialLinks, like socialLinks/socialAccounts below — a
+  // website is an external link, not a private contact detail.
+  website: string | null;
+  // §3 step 4 — public: a client has to know whether the provider comes to
+  // them, works online, or expects them to travel.
+  serviceMode: 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID' | null;
   bio: string | null;
   location: string | null;
   province: string | null;
@@ -116,6 +146,8 @@ export interface PrivateCreatorDto {
 export interface CreatorListItemDto {
   id: string;
   fullName: string | null;
+  providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  teamSize: number | null;
   bio: string | null;
   avatarUrl: string | null;
   location: string | null;
@@ -187,6 +219,9 @@ type RawCreatorProfile = {
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUrl?: string | null;
+  companyRegDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUploadedAt?: Date | null;
   verificationRejectReason: string | null;
   verificationRejectedAt: Date | null;
   province: string | null;
@@ -200,6 +235,13 @@ type RawCreatorProfile = {
   hideSocialLinks: boolean;
   availabilityStatus: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
   providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  teamSize?: number | null;
+  industries?: string[];
+  website?: string | null;
+  serviceMode?: 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID' | null;
+  panNo?: string | null;
+  vatNo?: string | null;
+  companyRegNo?: string | null;
   startingRate: number | null;
   negotiable: boolean;
   createdAt: Date;
@@ -237,6 +279,10 @@ export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
     citizenshipStatus: p.citizenshipStatus,
     panDocUrl:     p.panDocUrl,
     panDocStatus:  p.panDocStatus,
+    companyRegDocUrl:        p.companyRegDocUrl ?? null,
+    companyRegDocStatus:     p.companyRegDocStatus ?? 'NONE',
+    companyRegDocUploadedAt: p.companyRegDocUploadedAt ? p.companyRegDocUploadedAt.toISOString() : null,
+    verificationStatus: p.user ? providerVerificationStatus(p.user, p) : 'NOT_VERIFIED',
     verificationRejectReason: p.verificationRejectReason,
     verificationRejectedAt: p.verificationRejectedAt ? p.verificationRejectedAt.toISOString() : null,
     province:      p.province,
@@ -250,6 +296,13 @@ export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
     hideSocialLinks:    p.hideSocialLinks,
     availabilityStatus: p.availabilityStatus,
     providerType:  p.providerType ?? null,
+    teamSize:      p.teamSize ?? null,
+    industries:    p.industries ?? [],
+    website:       p.website ?? null,
+    serviceMode:   p.serviceMode ?? null,
+    panNo:         p.panNo ?? null,
+    vatNo:         p.vatNo ?? null,
+    companyRegNo:  p.companyRegNo ?? null,
     startingRate:  p.startingRate,
     negotiable:    p.negotiable,
     createdAt:     p.createdAt.toISOString(),
@@ -265,6 +318,11 @@ type RawPublicCreator = {
   userId: string;
   username: string | null;
   fullName: string | null;
+  providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  teamSize?: number | null;
+  industries?: string[];
+  website?: string | null;
+  serviceMode?: 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID' | null;
   bio: string | null;
   location: string | null;
   province: string | null;
@@ -280,6 +338,7 @@ type RawPublicCreator = {
   categories: string[];
   isVerified: boolean;
   citizenshipStatus: string;
+  companyRegDocStatus?: string;
   prefPlatforms: string[];
   socialLinks: Prisma.JsonValue;
   portfolioLinks: Prisma.JsonValue;
@@ -299,6 +358,11 @@ export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
     userId:        p.userId,
     username:      p.username,
     fullName:      p.fullName,
+    providerType:  p.providerType ?? null,
+    teamSize:      p.teamSize ?? null,
+    industries:    p.industries ?? [],
+    website:       hideSocial ? null : (p.website ?? null),
+    serviceMode:   p.serviceMode ?? null,
     bio:           p.bio,
     location:      p.location,
     province:      loc.province,
@@ -318,12 +382,15 @@ export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
 type RawCreatorListItem = {
   id: string;
   fullName: string | null;
+  providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  teamSize?: number | null;
   bio: string | null;
   avatarUrl: string | null;
   location: string | null;
   categories: string[];
   isVerified: boolean;
   citizenshipStatus: string;
+  companyRegDocStatus?: string;
   socialAccounts: Array<{ platform: string; followers: number }>;
   distanceKm?: number;
   averageRating?: number;
@@ -336,6 +403,8 @@ export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto 
   const dto: CreatorListItemDto = {
     id:            p.id,
     fullName:      p.fullName,
+    providerType:  p.providerType ?? null,
+    teamSize:      p.teamSize ?? null,
     bio:           p.bio,
     avatarUrl:     p.avatarUrl,
     location:      p.location,

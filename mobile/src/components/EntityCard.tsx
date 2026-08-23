@@ -4,6 +4,8 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { ProviderTypeBadge } from '@/components/ProviderTypeBadge';
+import type { ProviderType } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // Shared "browse" card for both creators and businesses in the explore
@@ -47,6 +49,11 @@ type EntityCardProps = {
   ringColor:  string;
   name:       string;
   verified:   boolean;
+  /** §9 provider-type badge (Individual / Team / Agency) shown inline after the
+   *  name. Omit for entities that have no provider type (businesses, services). */
+  providerType?: ProviderType | null;
+  /** Renders as "Team · 4" inside the provider-type badge. TEAM only. */
+  teamSize?: number | null;
   /** Renders as an icon+text row under the name. Mutually exclusive with `description`. */
   locationText?: string;
   /** Renders as a plain (optionally italic) line under the name. Mutually exclusive with `locationText`. */
@@ -81,7 +88,7 @@ type EntityCardProps = {
 };
 
 export function EntityCard({
-  avatarUrl, avatarBg, initials, circularAvatar, ringColor, name, verified,
+  avatarUrl, avatarBg, initials, circularAvatar, ringColor, name, verified, providerType, teamSize,
   locationText, description, descriptionItalic, bio,
   categoryLabel, categoryIcon, categoryColor, categoryBg, extraCount = 0, categoryPills, locationBeforeCategory,
   stat, statInHeader, rating, ctaLabel, ctaStyle = 'button', onPress, action,
@@ -152,6 +159,7 @@ export function EntityCard({
             <View style={styles.nameGroup}>
               <Text style={[styles.name, { color: C.text }]} numberOfLines={1}>{name}</Text>
               {verified && <VerifiedBadge size={14} />}
+              <ProviderTypeBadge type={providerType} teamSize={teamSize} size="sm" />
             </View>
             {statInHeader && stat && (
               <View style={styles.headerStat}>

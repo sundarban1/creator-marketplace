@@ -43,8 +43,9 @@ export class CreatorRepository {
     const skip = (filters.page - 1) * filters.limit;
     const select = {
       id: true, fullName: true, bio: true, avatarUrl: true,
+      providerType: true, teamSize: true, industries: true,
       location: true, categories: true, isVerified: true,
-      citizenshipStatus: true,
+      citizenshipStatus: true, companyRegDocStatus: true,
       prefBudgetMin: true, prefBudgetMax: true,
       socialAccounts: { select: { platform: true, followers: true } },
       user: { select: { isEmailVerified: true, isPhoneVerified: true } },
@@ -101,8 +102,9 @@ export class CreatorRepository {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, userId: true, fullName: true, bio: true, avatarUrl: true,
+        providerType: true, teamSize: true, industries: true,
         location: true, categories: true, isVerified: true,
-        citizenshipStatus: true,
+        citizenshipStatus: true, companyRegDocStatus: true,
         locationLat: true, locationLng: true,
         // §79 — city/district, used to tier recommendations against the
         // admin-configured launch-priority city (see getRecommendedForCampaign).
@@ -156,6 +158,11 @@ export class CreatorRepository {
         userId: true,
         fullName: true,
         username: true,
+        providerType: true,
+        teamSize: true,
+        industries: true,
+        website: true,
+        serviceMode: true,
         bio: true,
         avatarUrl: true,
         location: true,
@@ -171,6 +178,7 @@ export class CreatorRepository {
         categories: true,
         isVerified: true,
         citizenshipStatus: true,
+        companyRegDocStatus: true,
         prefBudgetMin: true,
         prefBudgetMax: true,
         prefPlatforms: true,
@@ -196,6 +204,13 @@ export class CreatorRepository {
     });
   }
 
+  async updateCompanyRegDoc(userId: string, docUrl: string) {
+    return prisma.creatorProfile.update({
+      where: { userId },
+      data:  { companyRegDocUrl: docUrl, companyRegDocStatus: 'PENDING', companyRegDocUploadedAt: new Date() },
+    });
+  }
+
   async updatePan(userId: string, docUrl: string) {
     return prisma.creatorProfile.update({
       where: { userId },
@@ -216,6 +231,13 @@ export class CreatorRepository {
     nearbyRadiusKm:        number;
     nearbyUseHomeLocation: boolean;
     providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY';
+    teamSize: number | null;
+    industries: string[];
+    website: string | null;
+    serviceMode: 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID' | null;
+    panNo: string | null;
+    vatNo: string | null;
+    companyRegNo: string | null;
     showPublicProfile:  boolean;
     hideContactDetails: boolean;
     hideSocialLinks:    boolean;

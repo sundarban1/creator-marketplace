@@ -383,7 +383,7 @@ export class AdminService {
     return updated;
   }
 
-  async setCreatorDocumentStatus(creatorId: string, doc: 'citizenship' | 'pan', approved: boolean) {
+  async setCreatorDocumentStatus(creatorId: string, doc: 'citizenship' | 'pan' | 'companyReg', approved: boolean) {
     return this.repo.setCreatorDocumentStatus(creatorId, doc, approved);
   }
 

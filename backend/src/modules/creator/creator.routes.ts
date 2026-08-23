@@ -118,6 +118,8 @@ router.post('/avatar', uploadImage.single('avatar'), ctrl.uploadAvatar.bind(ctrl
 router.post('/cover', uploadImage.single('cover'), ctrl.uploadCoverImage.bind(ctrl));
 router.post('/citizenship', uploadImage.single('document'), ctrl.uploadCitizenship.bind(ctrl));
 router.post('/pan', uploadImage.single('document'), ctrl.uploadPan.bind(ctrl));
+// §5 — AGENCY only; the controller rejects other provider types before upload.
+router.post('/company-registration', uploadImage.single('document'), ctrl.uploadCompanyRegDoc.bind(ctrl));
 
 /**
  * @swagger

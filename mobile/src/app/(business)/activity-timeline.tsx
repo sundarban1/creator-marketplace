@@ -664,7 +664,6 @@ export default function CampaignWorkspaceScreen() {
   const [showUpload, setShowUpload]     = useState(false);
   const [showReview, setShowReview]     = useState(false);
   const [showRevision, setShowRevision] = useState(false);
-  const [showCancel, setShowCancel]     = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const autoOpenedFeedback = useRef(false);
 
@@ -1108,20 +1107,6 @@ export default function CampaignWorkspaceScreen() {
     }
   }
 
-  async function handleCancelEvent() {
-    setSubmitting(true);
-    try {
-      await campaignService.cancelCampaign(campaignId);
-      setShowCancel(false);
-      showToast(t('activityTimeline.toastCampaignCancelled'));
-      setTimeout(() => router.back(), 1500);
-    } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastCancelFailed'));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   async function handleMessage() {
     const otherProfileId = app?.creatorProfileId;
     const otherName      = isCreator ? (app?.creatorName ?? t('activityTimeline.fallbackBrand')) : (app?.creatorName ?? t('activityTimeline.fallbackCreator'));
@@ -1338,17 +1323,6 @@ export default function CampaignWorkspaceScreen() {
           onRevision={() => setShowRevision(true)}
           onViewSubmission={() => setShowReview(true)}
         />
-
-        {/* ── Cancel Event button (business only) ── */}
-        {!isCreator && ws !== 'APPROVED' && ws !== 'COMPLETED' && (
-          <Pressable
-            style={[s.cancelBtn, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}
-            onPress={() => setShowCancel(true)}
-          >
-            <FontAwesome5 name="times-circle" solid size={18} color="#EF4444" />
-            <Text style={[s.cancelBtnTxt, { color: '#EF4444' }]}>{t('activityTimeline.cancelEventBtn')}</Text>
-          </Pressable>
-        )}
 
         {/* ── Security Footer ── */}
         <View style={s.secFooter}>
@@ -2004,53 +1978,6 @@ export default function CampaignWorkspaceScreen() {
         </View>
       </BottomSheet>
 
-      {/* ── Cancel Event Modal (business) — 20% deduction warning ── */}
-      <BottomSheet visible={showCancel} onClose={() => setShowCancel(false)} title={t('activityTimeline.modalCancelTitle')}>
-        <Text style={[sh.sub, { color: '#EF4444' }]}>{t('activityTimeline.modalCancelSub')}</Text>
-
-        {paid && (
-          <View style={[sh.warnBox, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-            <FontAwesome5 name="exclamation-triangle" solid size={20} color="#EF4444" />
-            <View style={{ flex: 1 }}>
-              <Text style={[sh.warnTitle, { color: '#EF4444' }]}>{t('activityTimeline.modalCancelFeeTitle')}</Text>
-              <Text style={[sh.warnBody, { color: '#B91C1C' }]}>
-                {t('activityTimeline.modalCancelFeeBody', {
-                  deduction: Math.round(total * 0.2).toLocaleString(),
-                  refund: Math.round(total * 0.8).toLocaleString(),
-                })}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {!paid && (
-          <View style={[sh.infoBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA', marginVertical: 12 }]}>
-            <FontAwesome5 name="info-circle" solid size={15} color="#D97706" />
-            <Text style={[sh.infoTxt, { color: '#D97706' }]}>{t('activityTimeline.modalCancelNoFee')}</Text>
-          </View>
-        )}
-
-        <Text style={[sh.sub, { marginTop: 12 }]}>{t('activityTimeline.modalCancelCreatorNotified')}</Text>
-
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-          <Pressable
-            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#F3F4F6' }]}
-            onPress={() => setShowCancel(false)}
-          >
-            <Text style={[sh.primaryBtnTxt, { color: '#374151' }]}>{t('activityTimeline.modalCancelKeepBtn')}</Text>
-          </Pressable>
-          <Pressable
-            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#EF4444', opacity: submitting ? 0.75 : 1, shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
-            onPress={handleCancelEvent}
-            disabled={submitting}
-          >
-            {submitting
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalCancelConfirmBtn')}</Text>}
-          </Pressable>
-        </View>
-      </BottomSheet>
-
       <BottomSheet visible={showRatingModal} onClose={() => setShowRatingModal(false)} title={isCreator ? t('activityTimeline.rateBusinessTitle') : t('activityTimeline.rateCreatorTitle')}>
         <Text style={sh.sub}>{t('activityTimeline.rateSub')}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginVertical: 18 }}>
@@ -2153,8 +2080,6 @@ const s = StyleSheet.create({
   secFooter:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, paddingVertical: 8 },
   secFooterTxt: { fontSize: 11, fontFamily: F.regular, flex: 1 },
 
-  cancelBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderRadius: RADIUS.md, paddingVertical: 14 },
-  cancelBtnTxt: { fontSize: 15, fontFamily: F.bold },
 
   toast:    { position: 'absolute', bottom: 24, left: 24, right: 24, backgroundColor: '#1F2937', borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center' },
   toastTxt: { fontSize: 13, fontFamily: F.semibold, color: '#fff', textAlign: 'center' },

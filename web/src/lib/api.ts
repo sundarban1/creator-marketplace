@@ -60,6 +60,10 @@ export interface ApiVerificationQueueProvider {
   avatarUrl: string | null;
   citizenshipDocUrl: string | null;
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  // §5 — AGENCY providers register a company instead of proving citizenship.
+  companyRegDocUrl?: string | null;
+  companyRegDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
@@ -852,8 +856,8 @@ export const api = {
     verifyCreator: (id: string, verified: boolean) =>
       request<{ id: string; fullName: string | null; isVerified: boolean }>('PATCH', `/api/admin/creators/${id}/verify`, { verified }),
 
-    setCreatorDocumentStatus: (id: string, doc: 'citizenship' | 'pan', approved: boolean) =>
-      request<{ id: string; citizenshipStatus?: string; panDocStatus?: string }>('PATCH', `/api/admin/creators/${id}/documents/${doc}`, { approved }),
+    setCreatorDocumentStatus: (id: string, doc: 'citizenship' | 'pan' | 'companyReg', approved: boolean) =>
+      request<{ id: string; citizenshipStatus?: string; panDocStatus?: string; companyRegDocStatus?: string }>('PATCH', `/api/admin/creators/${id}/documents/${doc}`, { approved }),
 
     referrals: (status?: string) =>
       request<ApiReferral[]>('GET', '/api/admin/referrals', undefined, status ? { status } : undefined),

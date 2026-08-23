@@ -32,6 +32,7 @@ import serviceRoutes        from '../modules/service/service.routes';
 import servicePublicRoutes  from '../modules/service/service.public.routes';
 import serviceAdminRoutes   from '../modules/service/service.admin.routes';
 import portfolioRoutes      from '../modules/portfolio/portfolio.routes';
+import providerMemberRoutes from '../modules/provider-member/provider-member.routes';
 import serviceRequestRoutes from '../modules/service-request/service-request.routes';
 import reportRoutes         from '../modules/report/report.routes';
 import reportAdminRoutes    from '../modules/report/report.admin.routes';
@@ -48,6 +49,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/creator/wallet', walletRoutes);
   app.use('/api/creator/services', serviceRoutes);
   app.use('/api/creator/portfolio-items', portfolioRoutes);
+  app.use('/api/creator/team', providerMemberRoutes);
   app.use('/api/business/referral', businessReferralRoutes);
   app.use('/api/business', businessRoutes);
   app.use('/api/campaigns/ai', campaignAiRoutes);
