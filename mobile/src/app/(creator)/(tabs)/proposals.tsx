@@ -22,7 +22,7 @@ import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { AssignMembersSheet } from '@/features/creator/components/AssignMembersSheet';
-import { F, lineHeightFor, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
 
   // List — 20px horizontal gutter matches the home feed and the business
   // proposals list (was 16, an unexplained one-off on this screen).
-  list:      { paddingHorizontal: 20, paddingBottom: 80, gap: 12, paddingTop: 14 },
+  list:      { paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl, gap: SPACING.md, paddingTop: SPACING.lg },
   listEmpty: { flexGrow: 1 },
   center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
 
   // Card
   cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
-  card:     { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', padding: 16, gap: 12 },
+  card:     { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', padding: SPACING.lg, gap: 12 },
 
   // Card header — thumbnail + title block + tag badges, mirrors
   // CampaignListItem's cardHeader/thumb/titleSection/tagContainer/tagBadge

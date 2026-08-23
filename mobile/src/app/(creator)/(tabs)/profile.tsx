@@ -18,7 +18,7 @@ import { portfolioService, type ApiPortfolioItem } from '@/services/portfolio';
 import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { IconButton } from '@/components/IconButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
@@ -486,10 +486,10 @@ const s = StyleSheet.create({
   bubble1:  { width: 160, height: 160, top: -50, right: -30 },
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
-  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 10 },
+  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md },
 
   // Profile card (floats over cover)
-  profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6,
+  profileCard: { marginHorizontal: SCREEN_GUTTER, marginTop: -60, borderRadius: RADIUS.xl, padding: SPACING.lg, alignItems: 'center', gap: 6,
                  ...SHADOW.floating },
 
   // Avatar
@@ -523,7 +523,7 @@ const s = StyleSheet.create({
   statDivider:  { width: 1, height: 32 },
 
   // Section cards
-  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg, borderWidth: 1, padding: 18, ...SHADOW.card },
+  sectionCard:   { marginHorizontal: SCREEN_GUTTER, marginTop: 12, borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, ...SHADOW.card },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   sectionTitle:  { fontSize: 15, fontFamily: F.bold },
   sectionAction: { fontSize: 13, fontFamily: F.bold },

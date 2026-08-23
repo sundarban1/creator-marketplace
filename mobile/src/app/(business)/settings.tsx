@@ -32,7 +32,7 @@ import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
-import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { COLORS, F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { SupportAttachmentPicker } from '@/components/SupportAttachmentPicker';
 import { BackButton } from '@/components/BackButton';
@@ -929,7 +929,7 @@ export default function BusinessSettingsScreen() {
         <HintCard>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.helpHint')}</Text>
         </HintCard>
-        <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8, marginTop: 8 }}>
           {HELP_FAQS.map((item, i) => {
             const id = String(i);
             const open = expandedItems.has(id);
@@ -1078,7 +1078,7 @@ export default function BusinessSettingsScreen() {
 
   function renderFAQs() {
     return (
-      <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
+      <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8, marginTop: 8 }}>
         {FAQS.map((item, i) => {
           const id = `faq-${i}`;
           const open = expandedItems.has(id);
@@ -2190,7 +2190,7 @@ export default function BusinessSettingsScreen() {
     return (
       <>
         <SectionHeader title={t('businessSettings.languageSection')} />
-        <View style={{ marginHorizontal: 16, gap: 10 }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 10 }}>
           {LANGUAGE_OPTIONS.map((lang) => {
             const active = selectedLang === lang.label;
             return (
@@ -2388,13 +2388,13 @@ export default function BusinessSettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { paddingTop: 16, paddingBottom: 24 },
+  scrollContent: { paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl },
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md,
   },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
   topTitle: { fontSize: 18, fontFamily: F.bold, lineHeight: 27 },
 
   // marginHorizontal matches card/hintCard's 16 below — this used to be a
@@ -2402,15 +2402,15 @@ const styles = StyleSheet.create({
   // settings screen), so the section label sat 4px further in than the card.
   sectionHeader: {
     fontSize: 11, letterSpacing: 0,
-    marginTop: 20, marginBottom: 6, marginHorizontal: 16, fontFamily: F.bold,
+    marginTop: 20, marginBottom: 6, marginHorizontal: SCREEN_GUTTER, fontFamily: F.bold,
   },
   card: {
-    marginHorizontal: 16, borderRadius: RADIUS.md,
+    marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.md,
     ...SHADOW.card, overflow: 'hidden',
   },
-  hintCard: { marginHorizontal: 16, borderRadius: RADIUS.sm, padding: 12, marginTop: 8, marginBottom: 4 },
+  hintCard: { marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.sm, padding: SPACING.md, marginTop: 8, marginBottom: 4 },
   hintText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
-  saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
+  saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: SCREEN_GUTTER, fontFamily: F.regular },
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
   rowIconNode: { width: 24, alignItems: 'center' },
@@ -2449,7 +2449,7 @@ const styles = StyleSheet.create({
   socialIconCircle: { width: 30, height: 30, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   socialInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
 
-  actionGroup: { marginHorizontal: 16, marginTop: 20, gap: 10 },
+  actionGroup: { marginHorizontal: SCREEN_GUTTER, marginTop: 20, gap: 10 },
   primaryBtn: { borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },
   primaryBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
   secondaryBtn: { borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
@@ -2470,7 +2470,7 @@ const styles = StyleSheet.create({
   txDate: { fontSize: 12, marginTop: 2, fontFamily: F.regular },
   txAmount: { fontSize: 14, fontFamily: F.bold },
 
-  accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
+  accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: SPACING.lg, paddingBottom: 12 },
   accountAvatar: { width: 50, height: 50, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   accountAvatarText: { fontSize: 20, color: '#fff', fontFamily: F.bold },
   accountName: { fontSize: 16, fontFamily: F.bold },
@@ -2484,7 +2484,7 @@ const styles = StyleSheet.create({
   statusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   uploadBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
 
-  creatorCard: { marginHorizontal: 16, marginBottom: 12, borderRadius: RADIUS.md, padding: 14, ...SHADOW.card },
+  creatorCard: { marginHorizontal: SCREEN_GUTTER, marginBottom: 12, borderRadius: RADIUS.md, padding: SPACING.lg, ...SHADOW.card },
   creatorCardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   creatorAvatar: { width: 46, height: 46, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   creatorAvatarText: { fontSize: 16, fontFamily: F.bold },
@@ -2506,14 +2506,14 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 16, fontFamily: F.semibold },
   emptySubText: { fontSize: 13, fontFamily: F.regular },
 
-  faqCard: { borderRadius: RADIUS.md, padding: 14, gap: 6, ...SHADOW.card },
+  faqCard: { borderRadius: RADIUS.md, padding: SPACING.lg, gap: 6, ...SHADOW.card },
   faqQ: { fontSize: 14, lineHeight: 21, fontFamily: F.bold },
   faqA: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
 
   accordionCard: { borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent' },
-  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: SPACING.lg },
   accordionTitle: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.bold },
-  accordionBody: { fontSize: 13, lineHeight: 20, paddingHorizontal: 14, paddingBottom: 14, fontFamily: F.regular },
+  accordionBody: { fontSize: 13, lineHeight: 20, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg, fontFamily: F.regular },
   navIonIconWrap: { width: 34, height: 34, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
 
   toast: {
@@ -2532,7 +2532,7 @@ const styles = StyleSheet.create({
 
   langCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    borderRadius: RADIUS.md, borderWidth: 2, padding: 16,
+    borderRadius: RADIUS.md, borderWidth: 2, padding: SPACING.lg,
     ...SHADOW.card,
   },
   langFlag: { fontSize: 32 },

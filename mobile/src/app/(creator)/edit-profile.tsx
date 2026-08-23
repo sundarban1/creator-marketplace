@@ -22,7 +22,7 @@ import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { creatorService, type ServiceMode } from '@/services/creator';
 
 const SERVICE_MODES: ServiceMode[] = ['CLIENT_LOCATION', 'MY_LOCATION', 'ONLINE', 'HYBRID'];
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 
@@ -314,12 +314,12 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container:  { flex: 1 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content:    { paddingBottom: 24 },
+  content:    { paddingBottom: SPACING.xxxl },
   // marginHorizontal matches card/saveBtnWrap's 16 below — this used to be a
   // stray 20, so the section label sat 4px further in than the card under it
   // (same fix as the business side's identical edit-profile screen).
-  sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 16, fontFamily: F.bold },
-  card:       { marginHorizontal: 16, borderRadius: RADIUS.lg, borderWidth: 1, ...SHADOW.card, overflow: 'hidden' },
+  sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: SCREEN_GUTTER, fontFamily: F.bold },
+  card:       { marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.lg, borderWidth: 1, ...SHADOW.card, overflow: 'hidden' },
   field:      { padding: 16, gap: 6 },
   divider:    { height: 1 },
   label:      { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
@@ -334,5 +334,5 @@ const styles = StyleSheet.create({
   chipGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   chip:       { borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 7 },
   chipText:   { fontSize: 13, fontFamily: F.semibold },
-  saveBtnWrap:{ marginHorizontal: 16, marginTop: 20 },
+  saveBtnWrap:{ marginHorizontal: SCREEN_GUTTER, marginTop: 20 },
 });

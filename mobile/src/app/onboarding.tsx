@@ -14,7 +14,7 @@ import { sortOtherLast, useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { StepIndicator } from '@/components/StepIndicator';
 import { GroupedCategoryPicker } from '@/components/GroupedCategoryPicker';
-import { F, RADIUS, SHADOW, lineHeightFor } from '@/utilities/constants';
+import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // Three required steps, matching what's actually needed before a provider can
@@ -658,7 +658,7 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 48 },
+  scrollContent: { paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
   errorBanner: { borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
   errorBannerText: { fontSize: 13, fontFamily: F.semibold },
 
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   // title + description, trailing check) rather than the large square cards
   // on /account-type, since there are three of these instead of two.
   choiceCards: { gap: 12, marginBottom: 28 },
-  choiceCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14 },
+  choiceCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: SPACING.lg },
   choiceIcon:  { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   choiceText:  { flex: 1, gap: 2 },
   choiceTitle: { fontSize: 15, fontFamily: F.bold },

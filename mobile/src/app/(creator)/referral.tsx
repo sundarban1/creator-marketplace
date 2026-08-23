@@ -19,7 +19,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { referralService, type ApiReferralOverview } from '@/services/referral';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 
@@ -197,9 +197,9 @@ export default function ReferralScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content:   { padding: 16, paddingBottom: 32, gap: 16 },
+  content:   { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
 
-  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, gap: 8, ...SHADOW.card },
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, gap: 8, ...SHADOW.card },
   cardTitle: { fontSize: 15, fontFamily: F.bold, marginBottom: 4 },
   stepText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   conditionNote: { fontSize: 12, fontFamily: F.medium, marginTop: 6, lineHeight: 18 },

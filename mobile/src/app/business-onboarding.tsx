@@ -22,7 +22,7 @@ import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { geocodeAddress, resolvePlaceDetails, type ResolvedPlace } from '@/utilities/geolocation';
 import { StepIndicator } from '@/components/StepIndicator';
 import { GroupedCategoryPicker } from '@/components/GroupedCategoryPicker';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // The step sequence depends on the hiring type. Both start with "how are you
@@ -654,7 +654,7 @@ export default function BusinessOnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 48 },
+  scrollContent: { paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
   errorBanner: { borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
   errorBannerText: { fontSize: 13, fontFamily: F.semibold },
 
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   // title + description, trailing check), matching provider onboarding's
   // equivalent Individual/Team picker.
   choiceCards: { gap: 12, marginBottom: 28 },
-  choiceCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14 },
+  choiceCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: SPACING.lg },
   choiceIcon:  { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   choiceText:  { flex: 1, gap: 2 },
   choiceTitle: { fontSize: 15, fontFamily: F.bold },

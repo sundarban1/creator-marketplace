@@ -6,7 +6,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCloseOnScrollDown } from '@/hooks/useCloseOnScrollDown';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 type Props = {
   visible: boolean;
@@ -127,12 +127,12 @@ const s = StyleSheet.create({
   sheet:      { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, ...SHADOW.floating, shadowOffset: { width: 0, height: -6 } },
   handleWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 6 },
   handlePill: { width: 40, height: 24, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  header:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  header:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderBottomWidth: 1 },
   headerCenter: { alignItems: 'center' },
   textCenter: { textAlign: 'center' },
   title:      { fontSize: 17, fontFamily: F.extrabold },
   subtitle:   { fontSize: 12.5, fontFamily: F.regular, marginTop: 2 },
-  body:       { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 36 },
+  body:       { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.xl, paddingBottom: 36 },
   bodyFlex:   { flex: 1 },
-  footer:     { padding: 20, borderTopWidth: 1 },
+  footer:     { padding: SCREEN_GUTTER, borderTopWidth: 1 },
 });

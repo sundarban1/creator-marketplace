@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { F } from '@/utilities/constants';
+import { F, SPACING } from '@/utilities/constants';
 
 const STORE_URL = Platform.select({
   ios:     'https://apps.apple.com/app/id6792723762',
@@ -41,7 +41,7 @@ export function ForceUpdateScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content:   { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  content:   { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.xxl },
   iconWrap:  { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   title:     { fontSize: 22, fontFamily: F.bold, marginBottom: 8 },
   subtitle:  { fontSize: 14, fontFamily: F.regular, textAlign: 'center' },

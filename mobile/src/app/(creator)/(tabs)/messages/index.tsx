@@ -26,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { getConversationPreviewText } from '@/utilities/messagePreview';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
@@ -455,7 +455,7 @@ const s = StyleSheet.create({
   listEmpty:{ flexGrow: 1 },
 
   // Request card
-  reqCard:     { borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14, gap: 12, ...SHADOW.raised, overflow: 'hidden' },
+  reqCard:     { borderRadius: RADIUS.lg, borderWidth: 1.5, padding: SPACING.lg, gap: 12, ...SHADOW.raised, overflow: 'hidden' },
   reqStripe:   { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderTopLeftRadius: RADIUS.lg, borderBottomLeftRadius: RADIUS.lg },
   reqTop:      { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   reqInfo:     { flex: 1, gap: 4 },
@@ -477,14 +477,14 @@ const s = StyleSheet.create({
 
   // Chat list
   chatList: { paddingBottom: 40 },
-  sep:      { height: StyleSheet.hairlineWidth, marginLeft: 86 },
+  sep:      { height: StyleSheet.hairlineWidth, marginLeft: 90 },
 
   // Chat card — Instagram-style: plain avatar, name line, preview+time line, unread dot
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: SCREEN_GUTTER,
     gap: 14,
   },
   content:     { flex: 1, gap: 4 },

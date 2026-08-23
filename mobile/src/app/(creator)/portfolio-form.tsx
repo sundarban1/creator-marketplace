@@ -11,7 +11,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { portfolioService } from '@/services/portfolio';
 import { pickAndUpload } from '@/utilities/uploadImage';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
 export default function PortfolioFormScreen() {
   const C = useAppColors();
@@ -154,7 +154,7 @@ export default function PortfolioFormScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  form: { padding: 16, gap: 18, paddingBottom: 48 },
+  form: { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, gap: 18, paddingBottom: SPACING.xxxl },
   label: { fontSize: 14, fontFamily: F.semibold, marginBottom: 8 },
   errorText: { fontSize: 12, fontFamily: F.regular, marginTop: 6 },
 

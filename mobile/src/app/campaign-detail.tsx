@@ -23,7 +23,7 @@ import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SCREEN_GUTTER, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -634,10 +634,10 @@ const s = StyleSheet.create({
   goBackBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
   goBackBtnTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderBottomWidth: 1 },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
 
-  scroll: { paddingBottom: 20 },
+  scroll: { paddingBottom: SPACING.xxxl },
 
   hero:         { height: 180, justifyContent: 'center', alignItems: 'center', position: 'relative', overflow: 'hidden' },
   heroImgOverlay: { backgroundColor: 'rgba(0,0,0,0.28)' },
@@ -666,7 +666,7 @@ const s = StyleSheet.create({
   // marginHorizontal matches titleBlock/ctaBar's own 20px inset (SCREEN_GUTTER)
   // below — this used to be a stray 16, so card content sat 4px narrower than
   // the title/CTA above and below it instead of lining up on the same edge.
-  card:        { marginHorizontal: SCREEN_GUTTER, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, gap: 12, ...SHADOW.card },
+  card:        { marginHorizontal: SCREEN_GUTTER, marginTop: 12, borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 12, ...SHADOW.card },
   sectionLabel:{ fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: F.bold },
   templateRow: { flexDirection: 'row' },
   templateBadge:{ borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 6 },
@@ -694,7 +694,7 @@ const s = StyleSheet.create({
   benefitChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 7 },
   benefitChipTxt:{ fontSize: 13, fontFamily: F.semibold },
 
-  ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: 12, gap: 16 },
+  ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, gap: 16 },
   // Multi-role campaigns need extra vertical room for the "Roles Needed"
   // label + horizontally-scrolling role chips, unlike every other branch's
   // single-line button.

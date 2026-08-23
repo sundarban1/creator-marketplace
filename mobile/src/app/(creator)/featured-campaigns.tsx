@@ -18,7 +18,7 @@ import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const PAGE_SIZE = 6;
@@ -130,7 +130,7 @@ export default function FeaturedCampaignsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  list: { padding: 16, paddingBottom: 40 },
+  list: { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, paddingBottom: SPACING.xxxl },
   separator: { height: 12 },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 14 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   errorText: { color: '#DC2626', fontSize: 14, fontFamily: F.regular },
   retryText: { fontSize: 14, fontFamily: F.bold },
   loadMoreBtn: {
-    marginTop: 20, marginHorizontal: 20, height: 48,
+    marginTop: 20, marginHorizontal: SCREEN_GUTTER, height: 48,
     borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center',
   },
   loadMoreText: { fontSize: 14, fontFamily: F.bold },

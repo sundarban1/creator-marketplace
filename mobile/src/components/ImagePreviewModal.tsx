@@ -6,7 +6,7 @@ import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator } from 'react-native';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
 type Props = {
   visible: boolean;
@@ -78,12 +78,12 @@ export function ImagePreviewModal({ visible, url, title, onClose }: Props) {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   safe:      { flex: 1 },
-  header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, gap: 10 },
+  header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, gap: 10 },
   title:     { flex: 1, color: '#fff', fontSize: 15, fontFamily: F.semibold },
   iconBtn:   { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
   imageWrap: { flex: 1, justifyContent: 'center' },
   image:     { flex: 1 },
-  footer:    { padding: 16 },
+  footer:    { padding: SCREEN_GUTTER },
   downloadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: RADIUS.md, backgroundColor: 'rgba(255,255,255,0.12)' },
   downloadTxt: { color: '#fff', fontSize: 14, fontFamily: F.semibold },
 });

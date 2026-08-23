@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
   recommendedCardWrap: { width: 300 },
 
   // Error
-  errorCard: { backgroundColor: '#FEE2E2', borderRadius: RADIUS.md, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
+  errorCard: { backgroundColor: '#FEE2E2', borderRadius: RADIUS.md, padding: SPACING.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText: { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 
@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
   // cardWrap/card split, and its stronger SHADOW.raised.
   campaignCardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
   campaignCardWrapHalf: { width: '48%' },
-  campaignCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 18, overflow: 'hidden' },
+  campaignCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, overflow: 'hidden' },
 
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
   thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },

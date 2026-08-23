@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { getIconColor } from '@/features/creator/data/filterOptions';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 type Props = {
   emoji?:    string;
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   // used as ListEmptyComponent). The card itself — not the raw content —
   // is what's centered, so its height varying slightly (e.g. an optional
   // action button) doesn't visibly shift the icon around.
-  wrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 24 },
+  wrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.xl },
   card: { width: '100%', maxWidth: 360, alignItems: 'center', borderRadius: RADIUS.lg, borderWidth: 1, paddingHorizontal: 28, paddingVertical: 36, gap: 12 },
   iconWrap:  { width: 88, height: 88, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   emoji:     { fontSize: 40 },

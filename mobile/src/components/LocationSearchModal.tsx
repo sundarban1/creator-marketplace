@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { geocodeAddress } from '@/utilities/geolocation';
+import { SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
 const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 
@@ -192,13 +193,13 @@ export function LocationSearchModal({
 
 const lsm = StyleSheet.create({
   container:  { flex: 1 },
-  topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1 },
+  topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1 },
   cancelBtn:  { paddingVertical: 6, paddingRight: 12 },
   cancelTxt:  { fontSize: 15, fontWeight: '600' },
   title:      { fontSize: 16, fontWeight: '700' },
   inputRow:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderBottomWidth: 1 },
   input:      { flex: 1, fontSize: 15, paddingVertical: 14 },
-  row:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, gap: 12 },
+  row:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderBottomWidth: 1, gap: 12 },
   rowText:    { flex: 1, gap: 2 },
   mainTxt:    { fontSize: 14, fontWeight: '600' },
   secTxt:     { fontSize: 12 },

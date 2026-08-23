@@ -21,7 +21,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
 import { chatService } from '@/services/chat';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -537,7 +537,7 @@ const s = StyleSheet.create({
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
 
 
-  scroll: { paddingBottom: 16, gap: 12 },
+  scroll: { paddingBottom: SPACING.xxxl, gap: SPACING.md },
 
   // Hero cover
   cover:      { height: 180, overflow: 'hidden' },
@@ -545,12 +545,12 @@ const s = StyleSheet.create({
   bubble1:    { width: 160, height: 160, top: -50, right: -30 },
   bubble2:    { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:    { width: 60,  height: 60,  top: 20,   left: -20  },
-  topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
+  topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md },
   topTitleRow: { flex: 1, marginHorizontal: 8 },
   topIconSpacer: { width: 38, height: 38 },
 
   // Avatar card (floats over cover)
-  profileCard: { marginHorizontal: 16, marginTop: -72, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6, ...SHADOW.floating },
+  profileCard: { marginHorizontal: SCREEN_GUTTER, marginTop: -72, borderRadius: RADIUS.xl, padding: SPACING.lg, alignItems: 'center', gap: 6, ...SHADOW.floating },
   avatarArea:  { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
   avatar:      { width: 96, height: 96, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
                  borderWidth: 4, borderColor: '#fff', overflow: 'hidden' },
@@ -566,7 +566,7 @@ const s = StyleSheet.create({
   location:     { fontSize: 13, fontFamily: F.regular },
 
   // Sections
-  section:      { marginHorizontal: 20, borderRadius: RADIUS.lg, padding: 16, gap: 12, ...SHADOW.card },
+  section:      { marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 12, ...SHADOW.card },
   sectionTitle: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
 
   // Bio
@@ -609,7 +609,7 @@ const s = StyleSheet.create({
 
 // Message button bar
 const msgBtn = StyleSheet.create({
-  bar: { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
+  bar: { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderTopWidth: 1 },
   btn: { borderRadius: RADIUS.full, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
   txt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

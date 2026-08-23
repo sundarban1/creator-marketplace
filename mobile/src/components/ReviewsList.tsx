@@ -2,7 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SPACING } from '@/utilities/constants';
 import type { ApiReviewReceived } from '@/services/creator';
 
 // Reviews received on a public profile (§36/§60) — shared between
@@ -55,7 +55,7 @@ export function ReviewsList({ reviews }: { reviews: ApiReviewReceived[] }) {
 
 const rl = StyleSheet.create({
   empty: { fontSize: 13, fontFamily: F.regular, textAlign: 'center', paddingVertical: 8 },
-  card: { borderWidth: 1, borderRadius: RADIUS.md, padding: 12, gap: 8 },
+  card: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, gap: 8 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 32, height: 32, borderRadius: RADIUS.full },
   avatarFallback: { width: 32, height: 32, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },

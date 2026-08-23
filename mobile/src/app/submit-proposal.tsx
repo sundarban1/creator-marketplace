@@ -23,7 +23,7 @@ import { campaignService } from '@/services/campaign';
 import { contractService, type ContractPreview } from '@/services/contract';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the required-social-account check, temporarily disabled below
 import { creatorService } from '@/services/creator';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // At least one of these must be present before a creator can apply — brands
@@ -427,7 +427,7 @@ export default function SubmitProposalScreen() {
 const styles = StyleSheet.create({
   container:       { flex: 1 },
   flex:            { flex: 1 },
-  scroll:          { padding: 20, gap: 16, paddingBottom: 48 },
+  scroll:          { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxxl },
 
   campaignBadge:   { borderRadius: RADIUS.lg, padding: 16, gap: 6, borderLeftWidth: 4, ...SHADOW.card },
   badgeLabel:      { fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   budgetPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, marginTop: 2 },
   budgetText:      { fontSize: 13, fontFamily: F.bold },
 
-  tipCard:         { flexDirection: 'row', borderRadius: RADIUS.lg, borderWidth: 1, padding: 14, gap: 10, alignItems: 'flex-start' },
+  tipCard:         { flexDirection: 'row', borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, gap: 10, alignItems: 'flex-start' },
   tipText:         { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 
   form:            { gap: 20 },

@@ -33,7 +33,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { serviceService, type ApiService } from '@/services/service';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -620,18 +620,18 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4, gap: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, paddingBottom: 4, gap: 12 },
 
   searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
-  entityPillRow: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 8 },
+  entityPillRow: { flexDirection: 'row', paddingHorizontal: SCREEN_GUTTER, paddingTop: 8, paddingBottom: 8, gap: 8 },
   entityPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, borderRadius: RADIUS.full, paddingHorizontal: 14, borderWidth: 1 },
   entityPillText: { fontSize: 13, fontFamily: F.semibold },
 
-  chipRow: { paddingHorizontal: 16, paddingBottom: 8, gap: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
+  chipRow: { paddingHorizontal: SCREEN_GUTTER, paddingBottom: 8, gap: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
@@ -642,6 +642,6 @@ const s = StyleSheet.create({
   // explore-businesses.tsx list (both paddingTop: 14) — keeps the gap between
   // the category pills (or, on People, the sort row) and the first card
   // consistent with that convention instead of a smaller one-off margin.
-  list: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 40, gap: 14 },
+  list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
   listFooter: { alignItems: 'center', paddingTop: 4, paddingBottom: 8 },
 });

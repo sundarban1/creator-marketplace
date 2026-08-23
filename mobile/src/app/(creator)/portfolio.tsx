@@ -12,7 +12,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { portfolioService, type ApiPortfolioItem } from '@/services/portfolio';
 import { OfflineError } from '@/lib/api';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW } from '@/utilities/constants';
 
 const COLUMN_GAP = 12;
 
@@ -162,7 +162,7 @@ function PortfolioTile({ item, onEdit, onDelete }: {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  grid: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 48, gap: COLUMN_GAP },
+  grid: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 12, paddingBottom: 48, gap: COLUMN_GAP },
   gridEmpty: { flexGrow: 1 },
   loadingGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   loadingTile: { width: '48%', aspectRatio: 1, borderWidth: 0 },

@@ -1,7 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, SPACING } from '@/utilities/constants';
 
 type ModalType = 'danger' | 'warning' | 'info' | 'success';
 
@@ -103,7 +103,7 @@ export function AppModal({
 
 const s = StyleSheet.create({
   backdrop:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28 },
-  sheet:       { width: '100%', borderRadius: RADIUS.xl, padding: 24, alignItems: 'center', gap: 10, ...SHADOW.floating },
+  sheet:       { width: '100%', borderRadius: RADIUS.xl, padding: SPACING.xl, alignItems: 'center', gap: 10, ...SHADOW.floating },
   iconCircle:  { width: 68, height: 68, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
   title:       { fontSize: 18, fontFamily: F.extrabold, textAlign: 'center' },
   body:        { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },

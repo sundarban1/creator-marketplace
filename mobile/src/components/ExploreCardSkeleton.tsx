@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { Skeleton } from '@/components/Skeleton';
-import { RADIUS, SHADOW } from '@/utilities/constants';
+import { RADIUS, SHADOW, SPACING } from '@/utilities/constants';
 
 // Mirrors the row-card shape used by explore-creators / explore-businesses
 // (and their saved/favorite variants): ring avatar + name/location + bio +
@@ -27,7 +27,7 @@ export function ExploreCardSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  card:   { borderRadius: RADIUS.lg, padding: 16, overflow: 'hidden' },
+  card:   { borderRadius: RADIUS.lg, padding: SPACING.lg, overflow: 'hidden' },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   meta:   { flex: 1, justifyContent: 'center' },
 });

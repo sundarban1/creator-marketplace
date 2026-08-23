@@ -14,7 +14,7 @@ import { StackedBar } from '@/components/charts/StackedBar';
 import {
   analyticsService, type ApiBrandAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
@@ -162,11 +162,11 @@ export default function BusinessAnalyticsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
   topTitle:  { fontSize: 18, fontFamily: F.bold },
 
-  content: { padding: 16, paddingBottom: 32, gap: 16 },
+  content: { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
 
   grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile:        { width: '47%', borderRadius: RADIUS.lg, borderWidth: 1, padding: 14, gap: 6, ...SHADOW.card },
@@ -174,6 +174,6 @@ const s = StyleSheet.create({
   tileValue:   { fontSize: 19, fontFamily: F.bold },
   tileLabel:   { fontSize: 11, fontFamily: F.medium },
 
-  card:      { borderRadius: RADIUS.lg, padding: 18, gap: 16, ...SHADOW.card },
+  card:      { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 16, ...SHADOW.card },
   cardTitle: { fontSize: 14, fontFamily: F.bold },
 });

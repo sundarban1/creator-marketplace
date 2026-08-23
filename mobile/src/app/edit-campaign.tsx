@@ -22,7 +22,7 @@ import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SCREEN_GUTTER, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import {
   DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables, completionLabel,
@@ -853,12 +853,12 @@ const s = StyleSheet.create({
   goBackBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
   goBackBtnTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderBottomWidth: 1 },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
 
-  bodyContent: { padding: SCREEN_GUTTER, gap: 12, paddingBottom: 20 },
+  bodyContent: { padding: SCREEN_GUTTER, gap: SPACING.md, paddingBottom: SPACING.xxxl },
 
-  footer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: 12 },
+  footer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md },
 
   lockedNote: { fontSize: 11, marginTop: -8, marginBottom: 10, fontFamily: F.regular },
   label:      { fontSize: 13, marginBottom: 8, fontFamily: F.semibold },

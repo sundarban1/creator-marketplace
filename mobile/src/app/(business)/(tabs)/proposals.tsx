@@ -19,7 +19,7 @@ import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -394,13 +394,13 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
+  headerContent:  { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, paddingBottom: SPACING.md },
   pageTitle:      { fontSize: 20, fontFamily: F.bold, lineHeight: 30 },
   pageSub:        { fontSize: 13, fontFamily: F.regular, marginTop: 2 },
 
   filterRow: { ...SHADOW.card },
 
-  list:      { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 40 },
+  list:      { paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
   listEmpty: { flexGrow: 1 },
   footerLoading: { paddingVertical: 20 },
 

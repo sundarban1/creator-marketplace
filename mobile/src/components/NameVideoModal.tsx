@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, SPACING } from '@/utilities/constants';
 
 const MAX_LABEL_LENGTH = 60;
 
@@ -64,7 +64,7 @@ export function NameVideoModal({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  card: { width: '100%', maxWidth: 360, borderRadius: RADIUS.lg, padding: 20, gap: 10, ...SHADOW.floating },
+  card: { width: '100%', maxWidth: 360, borderRadius: RADIUS.lg, padding: SPACING.xl, gap: 10, ...SHADOW.floating },
   title: { fontSize: 16, fontFamily: F.bold },
   sub: { fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginBottom: 4 },
   input: { borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },

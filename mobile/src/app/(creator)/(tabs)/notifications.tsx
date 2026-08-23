@@ -13,7 +13,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { getSocket } from '@/lib/socket';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { resolveNotificationRoute } from '@/utilities/notificationRouting';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import type { AppNotification } from '@/types';
@@ -269,17 +269,17 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  headerRow:  { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
+  headerRow:  { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, paddingBottom: SPACING.md },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, minHeight: 32, justifyContent: 'center', borderRadius: RADIUS.sm, borderWidth: 1 },
   markAllText:{ fontSize: 12, fontFamily: F.semibold },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list:       { paddingBottom: 32 },
+  list:       { paddingBottom: SPACING.xxxl },
   listEmpty:  { flexGrow: 1 },
 
-  groupLabel: { fontSize: 12, paddingTop: 20, paddingBottom: 8, paddingHorizontal: 16, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
+  groupLabel: { fontSize: 12, paddingTop: 20, paddingBottom: 8, paddingHorizontal: SCREEN_GUTTER, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
 
   // Instagram-style: flat full-width row, no card border/radius/shadow
-  item:       { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 12, alignItems: 'flex-start' },
+  item:       { flexDirection: 'row', paddingHorizontal: SCREEN_GUTTER, paddingVertical: 12, gap: 12, alignItems: 'flex-start' },
   sep:        { borderTopWidth: StyleSheet.hairlineWidth },
 
   iconWrap:   { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },

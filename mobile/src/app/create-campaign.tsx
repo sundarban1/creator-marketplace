@@ -35,7 +35,7 @@ import { eventOptionLabel, eventOptionLabels } from '@/features/business/utils/e
 import { fallbackLang, genericCampaignTemplate, genericFreeEventTemplate } from '@/features/business/utils/fallbackTemplates';
 import { transcribeAudio } from '@/services/audioTranscribe';
 import { resolveFeatureImage } from '@/features/creator/data/templateImages';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabSlider } from '@/components/TabSlider';
 import { TabColors } from '@/utilities/tabColors';
@@ -745,7 +745,7 @@ function RequirementRoleEditor({
 const FORMAT_OPTIONS = ['JPG', 'PNG', 'MP4', 'PDF', 'Other'];
 
 const rq = StyleSheet.create({
-  card:       { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, gap: 8 },
+  card:       { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACING.md, gap: 8 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardTitle:  { fontSize: 13, fontFamily: F.bold },
   fieldLabel: { fontSize: 12, fontFamily: F.medium, marginTop: 4 },
@@ -4013,8 +4013,8 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   flex:      { flex: 1 },
 
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  headerDivider:{ height: 1, marginHorizontal: 20 },
+  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md },
+  headerDivider:{ height: 1, marginHorizontal: SCREEN_GUTTER },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle:  { fontSize: 18, fontFamily: F.bold },
   headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular },
@@ -4026,8 +4026,8 @@ const s = StyleSheet.create({
   progressTrack:{ height: 3 },
   progressFill: { height: 3 },
 
-  scroll:   { padding: 18, paddingBottom: 48 },
-  content:  { gap: 14 },
+  scroll:   { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, paddingBottom: SPACING.xxxl },
+  content:  { gap: SPACING.md },
 
   input:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
   textarea:  { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', fontFamily: F.regular },
@@ -4109,7 +4109,7 @@ const s = StyleSheet.create({
   // below, Android's elevation shadow renders against the pre-scale bounds for a
   // frame, showing as a grey box inside the border/padding. iOS's shadow* props
   // don't have that issue, so they're kept.
-  optionCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14, shadowColor: SHADOW.card.shadowColor, shadowOpacity: SHADOW.card.shadowOpacity, shadowRadius: SHADOW.card.shadowRadius, shadowOffset: SHADOW.card.shadowOffset },
+  optionCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: SPACING.lg, shadowColor: SHADOW.card.shadowColor, shadowOpacity: SHADOW.card.shadowOpacity, shadowRadius: SHADOW.card.shadowRadius, shadowOffset: SHADOW.card.shadowOffset },
   // shadowColor is tinted per-option (see `tone.color` below) for a soft colored glow —
   // Android's `elevation` can't be tinted and just paints a flat gray blob over the icon
   // chip instead, so it's iOS-only here; Android gets no elevation on this small chip.
@@ -4121,7 +4121,7 @@ const s = StyleSheet.create({
   // shared optionCard/optionIconWrap family above, which the 'describe'
   // phase's text/audio picker also uses) so this redesign can't shift that
   // other picker's layout.
-  typeCard:       { borderRadius: RADIUS.xl, borderWidth: 1.5, padding: 18, gap: 14, ...SHADOW.raised },
+  typeCard:       { borderRadius: RADIUS.xl, borderWidth: 1.5, padding: SPACING.lg, gap: 14, ...SHADOW.raised },
   typeCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   typeCardIconWrap: { width: 52, height: 52, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center', ...Platform.select({ ios: { shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, default: {} }) },
   typeCardTitle:  { fontSize: 17, fontFamily: F.bold, marginBottom: 3 },

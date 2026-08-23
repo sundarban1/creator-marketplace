@@ -9,7 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { authService } from '@/services/auth';
 import { withAlpha } from '@/utilities/color';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
@@ -170,7 +170,7 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
   header: { paddingTop: 8, marginBottom: 8 },
 
   illustrationWrap: { alignSelf: 'center', width: 140, height: 140, justifyContent: 'center', alignItems: 'center', marginTop: 12, marginBottom: 8 },

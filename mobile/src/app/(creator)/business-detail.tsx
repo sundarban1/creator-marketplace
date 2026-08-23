@@ -28,7 +28,7 @@ import { chatService } from '@/services/chat';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { useToast } from '@/components/Toast';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -644,13 +644,13 @@ const styles = StyleSheet.create({
   bubble1:               { width: 160, height: 160, top: -50, right: -30 },
   bubble2:               { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:               { width: 60,  height: 60,  top: 20,   left: -20  },
-  topBar:                { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
+  topBar:                { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md },
   topTitleRow:           { flex: 1, marginHorizontal: 8 },
   topIconBtn:            { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', ...SHADOW.card },
   topIconSpacer:         { width: 38, height: 38 },
 
   // Avatar card (floats over cover)
-  profileCard:           { marginHorizontal: 16, marginTop: -60, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6, ...SHADOW.floating },
+  profileCard:           { marginHorizontal: SCREEN_GUTTER, marginTop: -60, borderRadius: RADIUS.xl, padding: SPACING.lg, alignItems: 'center', gap: 6, ...SHADOW.floating },
   avatarArea:            { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
 
   heroNameRow:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
@@ -661,8 +661,8 @@ const styles = StyleSheet.create({
   heroStatLabel:         { fontSize: 10, textTransform: 'uppercase', marginTop: 1, fontFamily: F.semibold, textAlign: 'center' },
   heroStatDivider:       { width: 1, height: 28, flexShrink: 0 },
 
-  body:                  { padding: 16, gap: 12 },
-  infoCard:              { borderRadius: RADIUS.lg, padding: 16, gap: 12 },
+  body:                  { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, gap: 12 },
+  infoCard:              { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 12 },
   infoCardHeader:        { flexDirection: 'row', alignItems: 'center', gap: 10 },
   infoIconBox:           { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   infoCardTitle:         { fontSize: 14, fontFamily: F.bold },
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
   statLabel:             { fontSize: 11, fontFamily: F.medium },
   statDivider:           { width: 1, height: 30 },
 
-  websiteCard:           { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, borderWidth: 1 },
+  websiteCard:           { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 12, borderWidth: 1 },
   websiteIconBox:        { width: 44, height: 44, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   websiteText:           { flex: 1 },
   websiteLabel:          { fontSize: 10, textTransform: 'uppercase', marginBottom: 2, fontFamily: F.bold },
@@ -715,7 +715,7 @@ const styles = StyleSheet.create({
   applyNowBtnText:       { fontSize: 11, color: '#fff', fontFamily: F.bold },
 
   // Sticky message bar
-  msgBar:                { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
+  msgBar:                { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderTopWidth: 1 },
   msgBtn:                { borderRadius: RADIUS.full, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
   msgBtnText:            { color: '#fff', fontSize: 16, fontFamily: F.bold },
 

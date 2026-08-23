@@ -39,7 +39,7 @@ import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { NameVideoModal } from '@/components/NameVideoModal';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SHADOW as TOKEN_SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -2045,15 +2045,15 @@ export default function CampaignWorkspaceScreen() {
 const s = StyleSheet.create({
   screen:   { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body:     { gap: 12, paddingTop: 12, paddingHorizontal: 16 },
+  body:     { gap: 12, paddingTop: 12, paddingHorizontal: SCREEN_GUTTER },
 
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
+  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, gap: 8 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
   tabBarWrap: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   headerTitle:  { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
   iconBtn:      { padding: 8, minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
 
-  card: { borderRadius: RADIUS.lg, padding: 16, ...TOKEN_SHADOW.card, overflow: 'hidden' },
+  card: { borderRadius: RADIUS.lg, padding: SPACING.lg, ...TOKEN_SHADOW.card, overflow: 'hidden' },
   cardTitle: { fontSize: 14, fontFamily: F.bold },
   ratingCta: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.md, borderWidth: 1.5, padding: 12 },
 
@@ -2111,7 +2111,7 @@ const tl = StyleSheet.create({
 });
 
 const rv = StyleSheet.create({
-  section:          { backgroundColor: '#FAFAFA', borderRadius: RADIUS.md, padding: 12, borderWidth: 1, borderColor: '#F3F4F6' },
+  section:          { backgroundColor: '#FAFAFA', borderRadius: RADIUS.md, padding: SPACING.md, borderWidth: 1, borderColor: '#F3F4F6' },
   sectionHeader:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   sectionIcon:      { width: 26, height: 26, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   sectionTitle:     { fontSize: 13, fontFamily: F.bold, color: '#1F2937' },
@@ -2139,7 +2139,7 @@ const py = StyleSheet.create({
 });
 
 const ac = StyleSheet.create({
-  card:   { borderRadius: RADIUS.lg, padding: 18, borderLeftWidth: 4, ...TOKEN_SHADOW.raised, backgroundColor: '#fff', gap: 8 },
+  card:   { borderRadius: RADIUS.lg, padding: SPACING.lg, borderLeftWidth: 4, ...TOKEN_SHADOW.raised, backgroundColor: '#fff', gap: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBg: { width: 36, height: 36, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   heading:{ fontSize: 16, fontFamily: F.bold, flexShrink: 1 },
@@ -2150,8 +2150,8 @@ const ac = StyleSheet.create({
 });
 
 const fb = StyleSheet.create({
-  list: { gap: 12 },
-  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, gap: 8 },
+  list: { gap: SPACING.md },
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, gap: 8 },
   note: { fontSize: 14, fontFamily: F.regular, lineHeight: 21 },
   time: { fontSize: 11, fontFamily: F.medium },
 });

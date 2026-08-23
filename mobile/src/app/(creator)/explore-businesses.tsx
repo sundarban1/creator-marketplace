@@ -25,7 +25,7 @@ import { type LocationFilter } from '@/components/LocationSearchPicker';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
-import { F, RADIUS, SCREEN_GUTTER } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
@@ -453,13 +453,13 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
 
   // Header
-  savedRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, marginTop: 12, marginBottom: 4 },
+  savedRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: SCREEN_GUTTER, marginTop: 12, marginBottom: 4 },
   favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, fontFamily: F.bold },
 
   // Top row — back button + search, top right
-  topRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+  topRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
   searchBox:      { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn:      { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
@@ -478,6 +478,6 @@ const styles = StyleSheet.create({
   // paddingTop matches explore-creators.tsx's People tab list — keeps the
   // gap between the category pill row and the first card identical across
   // both tabs in the Discover shell.
-  list:           { paddingHorizontal: SCREEN_GUTTER, paddingTop: 14, paddingBottom: 48, gap: 14 },
+  list:           { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
   footerLoading:  { paddingVertical: 20 },
 });

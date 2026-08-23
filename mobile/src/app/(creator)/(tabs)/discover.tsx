@@ -905,10 +905,10 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 40 },
+  scrollContent: { paddingBottom: SPACING.xxxl },
 
   // ── Error ──
-  errorCard: { marginHorizontal: SCREEN_GUTTER, marginTop: 16, marginBottom: 0, borderRadius: RADIUS.sm, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorCard: { marginHorizontal: SCREEN_GUTTER, marginTop: 16, marginBottom: 0, borderRadius: RADIUS.sm, padding: SPACING.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   errorText:  { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText:  { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 

@@ -33,7 +33,7 @@ import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCat
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getIconColor } from '@/features/creator/data/filterOptions';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 function getInitials(name: string): string {
@@ -335,20 +335,20 @@ export default function SavedCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+  header:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, paddingBottom: SPACING.md, gap: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
 
   searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
-  countText: { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 20, marginTop: 4, marginBottom: 4 },
+  countText: { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: SCREEN_GUTTER, marginTop: 4, marginBottom: 4 },
 
-  chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
+  chipRow: { paddingHorizontal: SCREEN_GUTTER, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
-  list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 14 },
+  list:   { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
   listEmpty: { flexGrow: 1 },
 });

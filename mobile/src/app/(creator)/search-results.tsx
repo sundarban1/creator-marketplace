@@ -18,7 +18,7 @@ import { businessService, type BusinessListItem } from '@/services/business';
 import { serviceService, type ApiService } from '@/services/service';
 import { OfflineError } from '@/lib/api';
 import type { Campaign } from '@/types';
-import { F } from '@/utilities/constants';
+import { F, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
 // Each entity's own search-capable endpoint is fetched once per query and kept
 // in state — switching tabs below is purely a local re-render, no refetch.
@@ -207,8 +207,8 @@ export default function SearchResultsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md },
   title:     { flex: 1, fontSize: 18, fontFamily: F.bold },
   count:     { fontSize: 13, fontFamily: F.medium, textAlign: 'center', marginTop: 4 },
-  list:      { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 14 },
+  list:      { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
 });

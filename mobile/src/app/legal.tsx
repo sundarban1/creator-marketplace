@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { legalService, type LegalDocument, type LegalSlug } from '@/services/legal';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // Partial, not Record<LegalSlug, ...> — this route is only ever linked to with
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   root:    { flex: 1 },
   centered:{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: 32 },
 
-  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderBottomWidth: 1 },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle:  { fontSize: 18, fontFamily: F.bold },
 
@@ -168,19 +168,19 @@ const styles = StyleSheet.create({
   retryBtn:     { borderRadius: RADIUS.md, paddingHorizontal: 24, paddingVertical: 12, marginTop: 4 },
   retryBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 
-  scroll:   { padding: 16, paddingBottom: 40 },
+  scroll:   { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, paddingBottom: SPACING.xxxl },
   sections: { gap: 12 },
 
   updatedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, marginBottom: 12 },
   updatedText: { fontSize: 12, fontFamily: F.medium },
 
   accordionCard:   { borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden', ...SHADOW.card },
-  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, minHeight: 44 },
+  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: SPACING.lg, minHeight: 44 },
   indexBadge:      { width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   indexText:       { fontSize: 12, fontFamily: F.bold, marginTop: 4 },
   sectionEmoji:    { fontSize: 18 },
   accordionTitle:  { flex: 1, fontSize: 14, fontFamily: F.bold, marginTop: 9 },
-  accordionBody:   { fontSize: 14, lineHeight: 22, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
+  accordionBody:   { fontSize: 14, lineHeight: 22, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 
   footer:     { alignItems: 'center', paddingTop: 20 },
   footerText: { fontSize: 11, fontFamily: F.regular },

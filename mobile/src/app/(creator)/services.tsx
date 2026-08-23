@@ -13,7 +13,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { serviceService, type ApiService } from '@/services/service';
 import { OfflineError } from '@/lib/api';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 const PRICING_MODEL_LABEL: Record<ApiService['pricingModel'], string> = {
   PER_PROJECT:  'servicesScreen.pricingPerProject',
@@ -193,10 +193,10 @@ function ServiceCard({ item, onEdit, onDelete }: {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 48, gap: 14 },
+  list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
   listEmpty: { flexGrow: 1 },
 
-  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, gap: 10 },
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, gap: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   categoryBadge: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   headerText: { flex: 1, gap: 2 },

@@ -12,7 +12,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { categoryService, type ApiCategory } from '@/services/category';
 import { serviceService, type PricingModel } from '@/services/service';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
 const PRICING_MODELS: PricingModel[] = ['PER_PROJECT', 'PER_HOUR', 'PER_DAY', 'PER_CAMPAIGN', 'CUSTOM_QUOTE'];
 const DELIVERY_PRESETS = ['1 day', '2-3 days', '1 week', '2 weeks'];
@@ -245,7 +245,7 @@ function toLabelKey(m: PricingModel): string {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  form: { padding: 16, gap: 18, paddingBottom: 48 },
+  form: { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, gap: 18, paddingBottom: SPACING.xxxl },
   label: { fontSize: 14, fontFamily: F.semibold, marginBottom: 8 },
   fieldGroup: { gap: 4 },
   charCount: { fontSize: 11, fontFamily: F.regular, textAlign: 'right' },

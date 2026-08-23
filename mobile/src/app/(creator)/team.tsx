@@ -24,7 +24,7 @@ import {
   type ProviderType,
 } from '@/services/creator';
 import { OfflineError } from '@/lib/api';
-import { F, RADIUS, SHADOW, lineHeightFor } from '@/utilities/constants';
+import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 // OWNER is missing on purpose — the provider account itself is the owner, so
 // the API rejects it (see provider-member.schema.ts).
@@ -543,7 +543,7 @@ function InviteRow({ item, busy, onAccept, onDecline }: {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 48, gap: 12 },
+  list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
   listEmpty: { flexGrow: 1 },
 
   header: { gap: 12 },
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   switcherChip: { paddingHorizontal: 12, minHeight: 36, justifyContent: 'center', borderRadius: RADIUS.full, borderWidth: 1.5, maxWidth: '100%' },
   switcherText: { fontSize: 13, fontFamily: F.semibold },
 
-  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 14, gap: 10 },
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, gap: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 42, height: 42, borderRadius: RADIUS.full },
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },

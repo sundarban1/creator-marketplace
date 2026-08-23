@@ -16,7 +16,7 @@ import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { CategoryChipGrid } from '@/components/CategoryChipGrid';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const MAX = 5;
@@ -124,12 +124,12 @@ export default function EditBusinessCategoriesScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
   topTitle:  { fontSize: 18, fontFamily: F.bold, lineHeight: 27 },
   saveBtn:   { borderRadius: RADIUS.sm, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   saveBtnTxt:{ color: '#fff', fontSize: 14, fontFamily: F.bold },
-  content:   { padding: 20, paddingBottom: 48 },
+  content:   { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, paddingBottom: SPACING.xxxl },
   hint:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   hintTxt:   { fontSize: 13, flex: 1, fontFamily: F.regular },
   counter:   { fontSize: 13, marginLeft: 8, fontFamily: F.bold },

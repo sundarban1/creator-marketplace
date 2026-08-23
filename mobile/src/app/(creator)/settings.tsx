@@ -49,7 +49,7 @@ import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useToast } from '@/components/Toast';
-import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { COLORS, F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { SupportAttachmentPicker } from '@/components/SupportAttachmentPicker';
 import { pickAndUpload } from '@/utilities/uploadImage';
@@ -1024,7 +1024,7 @@ export default function CreatorSettingsScreen() {
   function renderHelpCenter() {
     if (helpLoading) {
       return (
-        <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8, marginTop: 8 }}>
           {[1, 2, 3, 4].map((n) => (
             <View key={n} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.accordionHeader}>
@@ -1059,7 +1059,7 @@ export default function CreatorSettingsScreen() {
         {Object.entries(grouped).map(([cat, items]) => (
           <View key={cat}>
             <SectionHeader title={cat} />
-            <View style={{ marginHorizontal: 16, gap: 8 }}>
+            <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
               {items.map((item) => (
                 <AccordionRow
                   key={item.id}
@@ -1196,7 +1196,7 @@ export default function CreatorSettingsScreen() {
   function renderFAQs() {
     if (faqLoading) {
       return (
-        <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8, marginTop: 8 }}>
           {[1, 2, 3, 4, 5].map((n) => (
             <View key={n} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.accordionHeader}>
@@ -1226,7 +1226,7 @@ export default function CreatorSettingsScreen() {
         {Object.entries(grouped).map(([cat, items]) => (
           <View key={cat}>
             <SectionHeader title={cat} />
-            <View style={{ marginHorizontal: 16, gap: 8 }}>
+            <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
               {items.map((item) => (
                 <AccordionRow
                   key={item.id}
@@ -1252,7 +1252,7 @@ export default function CreatorSettingsScreen() {
     const lastUpdated = legalLastUpdated['privacy-policy'];
     if (legalLoading && !sections) {
       return (
-        <View style={{ marginHorizontal: 16, gap: 8 }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
           {[1,2,3,4].map((i) => (
             <View key={i} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.accordionHeader}>
@@ -1264,7 +1264,7 @@ export default function CreatorSettingsScreen() {
       );
     }
     return (
-      <View style={{ marginHorizontal: 16 }}>
+      <View style={{ marginHorizontal: SCREEN_GUTTER }}>
         {lastUpdated && (
           <Text style={[styles.legalDate, { color: C.textSecondary }]}>
             Last updated: {new Date(lastUpdated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -1294,7 +1294,7 @@ export default function CreatorSettingsScreen() {
     const lastUpdated = legalLastUpdated['terms'];
     if (legalLoading && !sections) {
       return (
-        <View style={{ marginHorizontal: 16, gap: 8 }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
           {[1,2,3,4].map((i) => (
             <View key={i} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.accordionHeader}>
@@ -1306,7 +1306,7 @@ export default function CreatorSettingsScreen() {
       );
     }
     return (
-      <View style={{ marginHorizontal: 16 }}>
+      <View style={{ marginHorizontal: SCREEN_GUTTER }}>
         {lastUpdated && (
           <Text style={[styles.legalDate, { color: C.textSecondary }]}>
             Last updated: {new Date(lastUpdated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -1335,7 +1335,7 @@ export default function CreatorSettingsScreen() {
     const sections = legalSections['guidelines'];
     if (legalLoading && !sections) {
       return (
-        <View style={{ marginHorizontal: 16, gap: 8 }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
           {[1,2,3].map((i) => (
             <View key={i} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.accordionHeader}>
@@ -1347,7 +1347,7 @@ export default function CreatorSettingsScreen() {
       );
     }
     return (
-      <View style={{ marginHorizontal: 16, gap: 8 }}>
+      <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
         {(sections ?? []).map((s) => (
           <AccordionRow
             key={s.id}
@@ -2510,7 +2510,7 @@ export default function CreatorSettingsScreen() {
 
         {/* Language */}
         <SectionHeader title={t('creatorSettings.languageSection')} />
-        <View style={{ marginHorizontal: 16, gap: 10 }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 10 }}>
           {LANGUAGE_OPTIONS.map((lang) => {
             const active = selectedLang === lang.label;
             return (
@@ -2775,22 +2775,22 @@ export default function CreatorSettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { paddingTop: 16, paddingBottom: 24 },
+  scrollContent: { paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl },
 
   // marginHorizontal matches card/hintCard/saveHint's 16 below — this used to
   // be a stray 20 (same copy-pasted mismatch as edit-profile.tsx), so the
   // section label sat 4px further in than the card under it.
   sectionHeader: {
     fontSize: 11,
-    letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 16, fontFamily: F.bold,
+    letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: SCREEN_GUTTER, fontFamily: F.bold,
   },
   card: {
-    marginHorizontal: 16, borderRadius: RADIUS.lg,
+    marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.lg,
     ...SHADOW.card, overflow: 'hidden',
   },
-  hintCard: { marginHorizontal: 16, borderRadius: RADIUS.sm, padding: 12, marginTop: 8, marginBottom: 4 },
+  hintCard: { marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.sm, padding: SPACING.md, marginTop: 8, marginBottom: 4 },
   hintText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
-  saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
+  saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: SCREEN_GUTTER, fontFamily: F.regular },
   subLabel: { fontSize: 11, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   subDivider: { height: 1, marginTop: 4 },
 
@@ -2823,12 +2823,12 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent',
     ...SHADOW.card,
   },
-  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: SPACING.lg },
   accordionIconWrap: { width: 30, height: 30, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   accordionEmoji: { fontSize: 15 },
   accordionTitle: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.bold, marginTop: 9 },
   accordionChevronWrap: { width: 26, height: 26, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  accordionBody: { fontSize: 13, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
+  accordionBody: { fontSize: 13, lineHeight: 21, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   sliderSection: { paddingHorizontal: 16, paddingVertical: 16 },
@@ -2836,7 +2836,7 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.sm, borderWidth: 1.5 },
   chipText: { fontSize: 13, fontFamily: F.medium },
 
-  accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
+  accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: SPACING.lg, paddingBottom: 12 },
   accountAvatar: { width: 50, height: 50, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   accountAvatarText: { fontSize: 20, color: '#fff', fontFamily: F.bold },
   accountName: { fontSize: 16, fontFamily: F.bold },
@@ -2847,7 +2847,7 @@ const styles = StyleSheet.create({
   // Language (improved)
   langCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    borderRadius: RADIUS.lg, borderWidth: 2, padding: 16,
+    borderRadius: RADIUS.lg, borderWidth: 2, padding: SPACING.lg,
     ...SHADOW.card,
   },
   langFlag: { fontSize: 32 },
@@ -2905,12 +2905,12 @@ const styles = StyleSheet.create({
     ...SHADOW.floating,
   },
   sheetHandle: { width: 38, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.4)', alignSelf: 'center', marginTop: 10 },
-  sheetHeader: { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 18 },
+  sheetHeader: { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingHorizontal: SCREEN_GUTTER, paddingTop: 20, paddingBottom: 18 },
   sheetHeaderInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   sheetPlatformIcon: { width: 52, height: 52, borderRadius: RADIUS.lg, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   sheetTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold },
   sheetSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3, fontFamily: F.regular },
-  sheetBody: { padding: 20, paddingBottom: 36 },
+  sheetBody: { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, paddingBottom: 36 },
   sheetSection: { marginBottom: 20 },
   sheetLabel: { fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8, fontFamily: F.bold },
 
@@ -2939,11 +2939,11 @@ const styles = StyleSheet.create({
   sheetCancelBtnText: { fontSize: 14, fontFamily: F.semibold },
 
   // Add social button (dashed)
-  addSocialBtn: { marginHorizontal: 16, marginTop: 10, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 15, alignItems: 'center' },
+  addSocialBtn: { marginHorizontal: SCREEN_GUTTER, marginTop: 10, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 15, alignItems: 'center' },
   addSocialBtnText: { fontSize: 14, letterSpacing: 0.3, fontFamily: F.bold },
 
   // Empty state
-  socialEmptyState: { marginHorizontal: 16, marginBottom: 8, borderRadius: RADIUS.lg, borderWidth: 1, padding: 28, alignItems: 'center', gap: 6 },
+  socialEmptyState: { marginHorizontal: SCREEN_GUTTER, marginBottom: 8, borderRadius: RADIUS.lg, borderWidth: 1, padding: 28, alignItems: 'center', gap: 6 },
   socialEmptyTitle: { fontSize: 15, fontFamily: F.bold },
   socialEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 
@@ -2995,7 +2995,7 @@ const styles = StyleSheet.create({
   verifiedBadge: { backgroundColor: '#DCFCE7', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
 
   // FAQ / legal
-  faqCard: { borderRadius: RADIUS.lg, padding: 14, gap: 6, ...SHADOW.card },
+  faqCard: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 6, ...SHADOW.card },
   faqQ: { fontSize: 14, lineHeight: 21, fontFamily: F.bold },
   faqA: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   helpSkeletonQ: { height: 14, borderRadius: RADIUS.sm, marginBottom: 8, width: '80%' },
@@ -3007,7 +3007,7 @@ const styles = StyleSheet.create({
   legalSection: { paddingVertical: 14, borderBottomWidth: 1, gap: 6 },
   legalTitle: { fontSize: 14, fontFamily: F.bold },
   legalBody: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
-  guideCard: { borderRadius: RADIUS.lg, padding: 16, gap: 8, marginBottom: 10, ...SHADOW.card },
+  guideCard: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 8, marginBottom: 10, ...SHADOW.card },
   guideHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   guideIcon: { fontSize: 22 },
   guideTitle: { fontSize: 15, fontFamily: F.bold },

@@ -19,7 +19,7 @@ import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 function generateBusinessDescription(name: string, cats: string[]): string {
@@ -244,14 +244,14 @@ export default function EditBusinessProfileScreen() {
 const styles = StyleSheet.create({
   container:     { flex: 1 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+  topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
   topTitle:      { fontSize: 18, fontFamily: F.bold, lineHeight: 27 },
-  content:       { paddingBottom: 24 },
+  content:       { paddingBottom: SPACING.xxxl },
   // marginHorizontal matches card/topBar/saveBtn's 16 below — this used to be
   // a stray 20, so the section label sat 4px further in than the card under it.
-  sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 16, fontFamily: F.bold },
-  card:          { marginHorizontal: 16, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },
+  sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: SCREEN_GUTTER, fontFamily: F.bold },
+  card:          { marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },
   field:         { padding: 16, gap: 8 },
   divider:       { height: 1 },
   label:         { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },

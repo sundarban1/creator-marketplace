@@ -111,6 +111,27 @@ export const SHADOW = {
 
 // Shared spacing scale — pair with RADIUS/SHADOW above instead of hand-rolling
 // one-off padding/margin/gap numbers per screen.
+//
+// Which token goes where (this mapping is applied across every screen; keep new
+// screens on it so the app reads as one system):
+//
+//   Screen gutter      SCREEN_GUTTER (20)  outer horizontal inset of anything that
+//                                          touches the screen edge — scroll/list
+//                                          contentContainer, header + footer bars,
+//                                          hairline separators under a header, and
+//                                          the marginHorizontal of full-width cards
+//   Card padding       lg (16)             interior padding of a standard card
+//   Compact padding    md (12)             interior of dense rows / small cards
+//   Rows inside a card lg (16)             a row nested in a card is on the CARD
+//                                          scale, not the screen gutter — it is
+//                                          already inset by the card's own margin
+//   Bar rhythm         md (12)             paddingVertical of header/footer/CTA bars
+//   List rhythm        md (12)             gap between cards in a list
+//   List top inset     lg (16)             paddingTop of scroll/list content
+//   List bottom inset  xxxl (48)           paddingBottom of scroll/list content
+//
+// Intrinsic controls — buttons, chips, pills, badges, inputs, avatars — size
+// themselves and are deliberately NOT on this mapping; see CONTROL_HEIGHT.
 export const SPACING = {
   xs:   4,
   sm:   8,

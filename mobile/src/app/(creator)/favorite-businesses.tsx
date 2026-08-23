@@ -21,7 +21,7 @@ import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: () => void }) {
@@ -283,19 +283,19 @@ export default function FavoriteBusinessesScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
 
-  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
+  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, paddingBottom: SPACING.md, gap: 12, borderBottomWidth: 1 },
   searchBox:   { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn:   { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
-  activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
+  activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: SCREEN_GUTTER, paddingBottom: 8, gap: 8 },
   activePill:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 5 },
   activePillText: { fontSize: 12, fontFamily: F.semibold },
   clearAllText:   { fontSize: 12, fontFamily: F.bold },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list:   { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 14 },
+  list:   { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
   listEmpty: { flexGrow: 1 },
 
   empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 12 },

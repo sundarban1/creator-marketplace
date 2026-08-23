@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
-import { F } from '@/utilities/constants';
+import { F, SCREEN_GUTTER } from '@/utilities/constants';
 import { BackButton } from '@/components/BackButton';
 
 type Props = {
@@ -47,11 +47,11 @@ export function StepIndicator({ step, total, stepLabel, title, subtitle, onBack 
 }
 
 const s = StyleSheet.create({
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, gap: 12 },
+  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingTop: 8, paddingBottom: 4, gap: 12 },
   backBtnSpacer: { width: 40, height: 40 },
   progressRow: { flex: 1, flexDirection: 'row', gap: 6 },
   progressSegment: { flex: 1, height: 4, borderRadius: 2 },
-  stepHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 4 },
+  stepHeader: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 20, paddingBottom: 16, gap: 4 },
   stepNum: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4, fontFamily: F.bold },
   stepTitle: { fontSize: 24, fontFamily: F.bold },
   stepSubtitle: { fontSize: 14, lineHeight: 21, marginTop: 4, fontFamily: F.regular },

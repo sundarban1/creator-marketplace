@@ -25,7 +25,7 @@ import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { VoiceRecorderButton } from '@/features/chat/components/VoiceRecorderButton';
 import { VoiceBubblePlayer } from '@/features/chat/components/VoiceBubblePlayer';
 import { ChatLoadingView } from '@/features/chat/components/ChatLoadingView';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
@@ -144,7 +144,7 @@ function TypingDots({ avatarName, color }: { avatarName: string; color: string }
 }
 
 const td = StyleSheet.create({
-  row:     { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 16, paddingBottom: 6 },
+  row:     { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: SCREEN_GUTTER, paddingBottom: 6 },
   mini:    { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   miniTxt: { color: '#fff', fontSize: 10, fontFamily: F.bold },
   bubble:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 12, borderRadius: RADIUS.lg, borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth },
@@ -663,8 +663,8 @@ const s = StyleSheet.create({
   flex:      { flex: 1 },
 
   // Header
-  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
+  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, gap: 10 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
   headerTouch:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerAvatar:    { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
   headerAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
@@ -674,7 +674,7 @@ const s = StyleSheet.create({
   headerSub:       { fontSize: 11, fontFamily: F.medium, marginTop: 1 },
 
   // Campaign banner
-  campaignBar:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1 },
+  campaignBar:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SCREEN_GUTTER, paddingVertical: 8, borderBottomWidth: 1 },
   campaignBarTxt: { flex: 1, fontSize: 12, fontFamily: F.semibold },
 
   // Pending banner
@@ -682,10 +682,10 @@ const s = StyleSheet.create({
   pendingTxt:    { flex: 1, fontSize: 12, fontFamily: F.medium, lineHeight: 18 },
 
   // Message list
-  msgList: { padding: 12, paddingBottom: 8, gap: 2 },
+  msgList: { paddingHorizontal: 0, paddingVertical: SPACING.md, paddingBottom: 8, gap: 2 },
 
   // Date separator
-  dateSepWrap: { flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: 16, gap: 8 },
+  dateSepWrap: { flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: SCREEN_GUTTER, gap: 8 },
   dateSep:     { flex: 1, height: StyleSheet.hairlineWidth },
   datePill:    { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   dateTxt:     { fontSize: 11, fontFamily: F.medium },
@@ -755,7 +755,7 @@ const s = StyleSheet.create({
   editingBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
   editingBannerTxt: { flex: 1, fontSize: 12, fontFamily: F.semibold },
   iconBtn:   { width: 36, height: 44, justifyContent: 'center', alignItems: 'center' },
-  inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 8 },
+  inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: 8 },
   input:     { flex: 1, fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },
   charCount: { fontSize: 10, fontFamily: F.regular },
   sendBtn:   { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { Skeleton } from '@/components/Skeleton';
-import { RADIUS, SHADOW } from '@/utilities/constants';
+import { RADIUS, SHADOW, SPACING } from '@/utilities/constants';
 
 // Generic compact row skeleton — avatar/thumbnail + two text lines, optionally
 // a small trailing badge line. Covers the many list screens (messages,
@@ -32,6 +32,6 @@ export function ListRowSkeleton({
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: RADIUS.lg, padding: 16 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: RADIUS.lg, padding: SPACING.lg },
   info: { flex: 1, justifyContent: 'center' },
 });

@@ -22,7 +22,7 @@ import { LocationSearchPicker, type LocationEntry } from '@/components/LocationS
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { F, RADIUS, SCREEN_GUTTER } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { sortOtherLast, useAllCategories, useCategories } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
@@ -467,8 +467,8 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
 
-  topRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16, marginBottom: 8 },
+  topRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER, marginBottom: 8 },
   searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
@@ -483,5 +483,5 @@ const s = StyleSheet.create({
 
   // paddingTop — without it the first card sat flush against the category
   // pill row above with zero gap, reading as the card overlapping it.
-  list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 14, paddingBottom: 40, gap: 14 },
+  list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
 });

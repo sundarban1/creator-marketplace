@@ -6,7 +6,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { ProviderTypeBadge } from '@/components/ProviderTypeBadge';
 import type { ProviderType } from '@/services/creator';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, SPACING } from '@/utilities/constants';
 
 // Shared "browse" card for both creators and businesses in the explore
 // screens — covers (creator)/explore-businesses, (business)/explore-creators,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     width: 30, height: 30, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
   },
 
-  body: { flex: 1, padding: 12, gap: 6, minWidth: 0 },
+  body: { flex: 1, padding: SPACING.md, gap: 6, minWidth: 0 },
   // Extra right padding keeps name/stat text from running under the
   // absolutely-positioned chevron, which sits outside normal flow.
   bodyWithChevron: { paddingRight: 26 },

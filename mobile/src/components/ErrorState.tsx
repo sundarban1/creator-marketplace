@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 type Props = {
   icon?: keyof typeof FontAwesome5.glyphMap;
@@ -48,7 +48,7 @@ export function ErrorState({ icon = 'exclamation-triangle', title, message, acti
 const styles = StyleSheet.create({
   // Same centering contract as EmptyState — pair with `flexGrow: 1` on a
   // FlatList's contentContainerStyle when used as ListEmptyComponent.
-  wrap:     { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 24 },
+  wrap:     { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.xl },
   card:     { width: '100%', maxWidth: 360, alignItems: 'center', borderRadius: RADIUS.lg, borderWidth: 1, paddingHorizontal: 28, paddingVertical: 36, gap: 12 },
   iconWrap: { width: 88, height: 88, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   title:    { fontSize: 19, textAlign: 'center', letterSpacing: 0.1 },

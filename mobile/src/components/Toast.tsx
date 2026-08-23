@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, SPACING } from '@/utilities/constants';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     ...SHADOW.floating,
   },
-  inner:   { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 10 },
+  inner:   { flexDirection: 'row', alignItems: 'flex-start', padding: SPACING.lg, gap: 10 },
   icon:    { marginTop: 1 },
   texts:   { flex: 1 },
   title:   { fontSize: 13, marginBottom: 2, fontFamily: F.bold },

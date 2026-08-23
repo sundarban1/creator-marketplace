@@ -22,7 +22,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
@@ -358,11 +358,11 @@ const s = StyleSheet.create({
   bubble1:  { width: 160, height: 160, top: -50, right: -30 },
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
-  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 10 },
+  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md },
   topIconBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
   // Profile card (floats over cover)
-  profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6,
+  profileCard: { marginHorizontal: SCREEN_GUTTER, marginTop: -60, borderRadius: RADIUS.xl, padding: SPACING.lg, alignItems: 'center', gap: 6,
                  ...SHADOW.floating },
 
   // Logo
@@ -394,7 +394,7 @@ const s = StyleSheet.create({
   statDivider:  { width: 1, height: 32, flexShrink: 0 },
 
   // Section cards
-  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg, padding: 18, ...SHADOW.card },
+  sectionCard:   { marginHorizontal: SCREEN_GUTTER, marginTop: 12, borderRadius: RADIUS.lg, padding: SPACING.lg, ...SHADOW.card },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   sectionTitle:  { fontSize: 15, fontFamily: F.bold },
   sectionAction: { fontSize: 13, fontFamily: F.bold },

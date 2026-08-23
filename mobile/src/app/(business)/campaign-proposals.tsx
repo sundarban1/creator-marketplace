@@ -25,7 +25,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorService, type CampaignInvitee } from '@/services/creator';
 import { contractService, type Contract } from '@/services/contract';
 import { ContractModal } from '@/components/ContractModal';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
@@ -1099,14 +1099,14 @@ const styles = StyleSheet.create({
   gradientHeader: {
     paddingBottom: 16,
   },
-  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: SCREEN_GUTTER },
 
   headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: SCREEN_GUTTER,
     paddingTop: 12,
     paddingBottom: 4,
   },
@@ -1118,7 +1118,7 @@ const styles = StyleSheet.create({
   },
   totalPillText: { fontSize: 12, fontFamily: F.semibold },
 
-  headerBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, gap: 8 },
+  headerBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingTop: 8, gap: 8 },
   closeCampaignBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     marginHorizontal: 16, marginTop: 12, borderWidth: 1, borderRadius: RADIUS.md,
@@ -1143,7 +1143,7 @@ const styles = StyleSheet.create({
   statStripLabel:   { fontSize: 10, textTransform: 'uppercase', fontFamily: F.semibold },
   statStripDivider: { width: 1, height: 32 },
 
-  sectionLabelRow: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  sectionLabelRow: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 16, paddingBottom: 4 },
   sectionLabel:    { fontSize: 16, fontFamily: F.bold },
 
   // ── Filter bar ───────────────────────────────────────────────────────────────
@@ -1155,14 +1155,14 @@ const styles = StyleSheet.create({
   filterChipBadgeText: { fontSize: 11, fontFamily: F.bold },
 
   // ── List ─────────────────────────────────────────────────────────────────────
-  list:      { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 40 },
+  list:      { paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
   listEmpty: { flexGrow: 1 },
 
   // ── Proposal card ─────────────────────────────────────────────────────────────
   card: {
     borderRadius: RADIUS.lg,
     borderLeftWidth: 4,
-    padding: 14,
+    padding: SPACING.lg,
     gap: 10,
     ...SHADOW.card,
   },

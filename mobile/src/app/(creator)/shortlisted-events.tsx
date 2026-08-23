@@ -92,7 +92,7 @@ export default function ShortlistedEventsScreen() {
 
 const s = StyleSheet.create({
   container:   { flex: 1 },
-  header:      { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingHorizontal: SCREEN_GUTTER, paddingVertical: 12, borderBottomWidth: 1 },
+  header:      { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderBottomWidth: 1 },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
   headerSpacer:{ width: 40 },
 

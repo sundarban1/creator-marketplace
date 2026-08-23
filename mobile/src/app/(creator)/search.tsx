@@ -15,7 +15,7 @@ import { businessService, type BusinessListItem } from '@/services/business';
 import { serviceService, type ApiService } from '@/services/service';
 import type { Campaign } from '@/types';
 import { storage } from '@/utilities/storage';
-import { F, RECENT_SEARCHES_KEY } from '@/utilities/constants';
+import { F, RECENT_SEARCHES_KEY, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
 const MAX_RECENT   = 8;
 const SUGGEST_MIN_CHARS = 3;
@@ -232,8 +232,8 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  scroll:    { paddingHorizontal: 20, paddingBottom: 40 },
+  header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md },
+  scroll:    { paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
 
   section:          { marginTop: 20 },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },

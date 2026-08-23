@@ -12,7 +12,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { serviceRequestService, type ApiServiceRequestSent } from '@/services/serviceRequest';
 import { OfflineError } from '@/lib/api';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 const STATUS_STYLE: Record<ApiServiceRequestSent['status'], { bg: string; color: string; labelKey: string }> = {
   PENDING:  { bg: '#FFFBEB', color: '#D97706', labelKey: 'businessServiceRequests.statusPending' },
@@ -129,10 +129,10 @@ function RequestCard({ item }: { item: ApiServiceRequestSent }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 48, gap: 14 },
+  list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
   listEmpty: { flexGrow: 1 },
 
-  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, gap: 10 },
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, gap: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   avatar: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },

@@ -12,7 +12,7 @@ import { useToast } from '@/components/Toast';
 import { walletService, type ApiWalletSummary, type ApiWithdrawal } from '@/services/wallet';
 import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
 import { Skeleton } from '@/components/Skeleton';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const METHOD_META: Record<string, { icon: string; color: string }> = {
@@ -187,9 +187,9 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content:   { padding: 16, paddingBottom: 32, gap: 12 },
+  content:   { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, paddingBottom: SPACING.xxxl, gap: SPACING.md },
 
-  balanceCard: { borderRadius: RADIUS.lg, padding: 20, gap: 4, ...SHADOW.raised },
+  balanceCard: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 4, ...SHADOW.raised },
   balanceLabel: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.medium },
   balanceValue: { fontSize: 32, color: '#fff', fontFamily: F.bold, marginBottom: 12 },
   balanceStatsRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' },

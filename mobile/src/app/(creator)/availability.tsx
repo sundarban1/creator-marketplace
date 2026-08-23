@@ -13,7 +13,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiAvailabilityDay } from '@/services/creator';
 import { OfflineError } from '@/lib/api';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 type AvailabilityStatus = 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
 const STATUSES: AvailabilityStatus[] = ['AVAILABLE', 'BUSY', 'UNAVAILABLE'];
@@ -219,7 +219,7 @@ function DayTimeSheet({ dayLabel, initialFrom, initialUntil, onSave, onClose }: 
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, gap: 28, paddingBottom: 48 },
+  content: { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.lg, gap: 28, paddingBottom: SPACING.xxxl },
   sectionLabel: { fontSize: 14, fontFamily: F.semibold, marginBottom: 8 },
   sectionHint: { fontSize: 12, fontFamily: F.regular, marginTop: -6, marginBottom: 10 },
 

@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { BottomSheet } from '@/components/BottomSheet';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { contractService, type ContractTerms } from '@/services/contract';
 
 // Renders "**bold**" spans inline within a single line of text.
@@ -192,7 +192,7 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
 }
 
 const s = StyleSheet.create({
-  body:      { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 16 },
+  body:      { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.xl, paddingBottom: SPACING.xl, gap: SPACING.lg },
   termsCard: { borderWidth: 1, borderRadius: RADIUS.md, overflow: 'hidden' },
   termRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
   termLabel: { fontSize: 13, fontFamily: F.medium, flexShrink: 0 },
