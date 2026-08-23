@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -17,7 +17,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { profileService } from '@/services/profile';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories, sortOtherLast } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { geocodeAddress, resolvePlaceDetails, type ResolvedPlace } from '@/utilities/geolocation';
 import { StepIndicator } from '@/components/StepIndicator';
@@ -45,14 +45,14 @@ const MAX_INTEREST_CATEGORIES = 5;
 // industries than the edit screen will let you keep.
 const MAX_INDUSTRIES = 5;
 
-// "What are you looking for?" — Individuals only — shows provider *types*, the
-// grouped CREATOR-scope rows (Wedding Photographer, DJ, Makeup Artist, ...),
-// via the `strict` flag that opts out of useCategories' default "+ BOTH"
-// widening. Creators only ever carry CREATOR-scope categories, so feeding this
-// step an industry name like "Restaurants" would match nobody in the business
-// home screen's "Recommended for you" rail (defaultCreatorCategories[0] →
-// getRecommendedCreators({ category })). Organizations skip this step, which
-// leaves defaultCreatorCategories empty and simply hides that rail for them.
+// "What category of talent do you need?" — Individuals only — shows the
+// BOTH-scope rows (Restaurants, Hotels, Fashion & Clothing, ...) with the
+// catch-all "Other" pinned last. Note this is a broad *area* rather than a
+// provider role: providers only ever carry CREATOR-scope categories, so the
+// business home screen's "Recommended for you" rail (defaultCreatorCategories[0]
+// → getRecommendedCreators({ category })) will not match on these. Organizations
+// skip this step, which leaves defaultCreatorCategories empty and hides that
+// rail for them.
 
 // "How are you hiring?" — the two hiring types are equal-weight choices, not a
 // primary and a fallback: plenty of Nepal demand is one person hiring a
@@ -123,7 +123,8 @@ export default function BusinessOnboardingScreen() {
   const [step3Submitted, setStep3Submitted] = useState(false);
   const [step3Loading, setStep3Loading] = useState(false);
   const [step3Error, setStep3Error] = useState('');
-  const { categories: interestOptions } = useCategories('CREATOR', true);
+  const { categories: interestRows } = useCategories('BOTH');
+  const interestOptions = useMemo(() => sortOtherLast(interestRows), [interestRows]);
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -590,7 +591,7 @@ export default function BusinessOnboardingScreen() {
           </ScrollView>
         )}
 
-        {/* ────────── What are you looking for? ────────── */}
+        {/* ────────── What category of talent do you need? ────────── */}
         {stepKey === 'INTERESTS' && (
           <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 

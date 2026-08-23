@@ -574,7 +574,9 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
 
   const roles = buildRoles(C, isDark);
   const activeRole = roles.find((r) => r.key === role)!;
-  const roleLabel = role === 'CREATOR' ? t('accountType.offerTitle') : t('accountType.seekTitle');
+  // The chip names the role inline, so it takes the short one-word form of
+  // the /account-type choice rather than that screen's full card sentence.
+  const roleLabel = role === 'CREATOR' ? t('accountType.offerShort') : t('accountType.seekShort');
 
   return (
     <View style={s.formGroup}>
@@ -584,8 +586,8 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
           <Text style={s.formHeadingSubtitle}>{t('auth.signup.subtitle')}</Text>
         </View>
 
-        {/* Carries over the choice made on /account-type ("Offering services" /
-            "Looking for services") so it isn't lost once the user lands here — with
+        {/* Carries over the choice made on /account-type (Professional /
+            Business) so it isn't lost once the user lands here — with
             a way back to that screen (current choice pre-selected) if they want
             to change it. Shaped as a pill rather than a full-width row, matching
             the inline filter chips the home feed puts under its section titles. */}
@@ -938,7 +940,6 @@ export default function LoginScreen() {
                 <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline1')}</Text>
                 <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline2')}</Text>
                 <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline3')}</Text>
-                <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline4')}</Text>
               </View>
 
               {/* Hero art — replaces the flat handshake glyph this panel used

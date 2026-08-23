@@ -1,6 +1,29 @@
 import { CampaignStatus, CampaignType, ApplicationStatus, WorkStatus, PaymentStatus, Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import { expandSearchQuery, expandedTsQuerySql, matchesAny } from '../../utils/searchTerms';
 import type { DeliverableVideo, DeliverableFile } from './campaign.dto';
+
+/**
+ * A work matches when one of the roles it is hiring for matches — the role's
+ * category lives in campaign_requirements → categories.name ("Photographer",
+ * "DJ", "Wedding Planner"), which is where the specific, searchable job title
+ * actually is. Campaign.category is only the single broad legacy label, so
+ * without this a search for "camera" or "photo" missed every work looking for
+ * a photographer unless the title happened to say so. The category's group is
+ * matched alongside its name, since that's where the umbrella term lives — a
+ * work hiring a DJ has to come back for "music".
+ */
+function roleCategoryMatch(terms: string[]): Prisma.Sql {
+  return Prisma.sql`EXISTS (
+    SELECT 1 FROM campaign_requirements cr
+    JOIN categories rcat ON rcat.id = cr."categoryId"
+    WHERE cr."campaignId" = c.id
+      AND (
+        ${matchesAny(Prisma.sql`rcat.name`, terms)}
+        OR ${matchesAny(Prisma.sql`COALESCE(rcat."group", '')`, terms)}
+      )
+  )`;
+}
 
 export class CampaignRepository {
   async create(data: {
@@ -164,6 +187,56 @@ export class CampaignRepository {
   }
 
   /**
+   * The match + ranking rule for a campaign search, shared by findManySearch
+   * and findNearby so the "Find Work" browse list and the search-results
+   * screen agree on what a query means.
+   *
+   * Covers every part of a campaign: title, category and hashtags (weight A in
+   * "searchVector"), location/venue (B), description/sampleCaption/target
+   * audience/content guidelines (C), plus the posting business's name. Each is
+   * matched against the *expanded* term set — see expandSearchQuery — so a
+   * search for "coffee" also surfaces a café's latte shoot, while
+   * similarity()/ILIKE keep typos ("resturant") and partial words ("photog")
+   * working. The description also gets a plain substring check, since the
+   * tsvector only holds whole stemmed words from it.
+   *
+   * Exact hits outrank related ones: ts_rank over the user's own words is
+   * weighted 3x the rank over the expansion.
+   */
+  private searchMatchSql(search: string) {
+    const q = expandSearchQuery(search);
+    const expandedTsq = expandedTsQuerySql(q);
+
+    const condition = Prisma.sql`(
+      c."searchVector" @@ plainto_tsquery('english', ${search})
+      ${expandedTsq ? Prisma.sql`OR c."searchVector" @@ ${expandedTsq}` : Prisma.empty}
+      OR similarity(c.title, ${search}) > 0.2
+      OR similarity(c.category, ${search}) > 0.2
+      OR similarity(b."businessName", ${search}) > 0.2
+      OR ${matchesAny(Prisma.sql`c.title`, q.all)}
+      OR ${matchesAny(Prisma.sql`c.category`, q.all)}
+      OR ${matchesAny(Prisma.sql`b."businessName"`, q.all)}
+      OR c.description ILIKE ${`%${search}%`}
+      OR EXISTS (SELECT 1 FROM unnest(c.hashtags) AS tag WHERE ${matchesAny(Prisma.sql`tag`, q.all)})
+      OR ${roleCategoryMatch(q.all)}
+      OR EXISTS (SELECT 1 FROM unnest(b.categories) AS bcat WHERE ${matchesAny(Prisma.sql`bcat`, q.all)})
+    )`;
+
+    const rank = Prisma.sql`
+      ts_rank(c."searchVector", plainto_tsquery('english', ${search})) * 3
+      ${expandedTsq ? Prisma.sql`+ ts_rank(c."searchVector", ${expandedTsq})` : Prisma.empty}
+      + CASE WHEN ${roleCategoryMatch(q.all)} THEN 1 ELSE 0 END
+      + GREATEST(
+          similarity(c.title, ${search}),
+          similarity(c.category, ${search}),
+          similarity(b."businessName", ${search})
+        )
+    `;
+
+    return { condition, rank };
+  }
+
+  /**
    * Search path for findMany — full-text ranking (ts_rank over the weighted
    * "searchVector" column, see the add_campaign_fulltext_search migration)
    * combined with pg_trgm similarity on title/business name for typo
@@ -219,24 +292,10 @@ export class CampaignRepository {
       conditions.push(Prisma.sql`c.deadline <= ${filters.deadlineTo}`);
     }
 
-    // similarity() takes over where plainto_tsquery finds nothing — that's
-    // what makes a misspelled "resturant" still surface "Restaurant Launch".
-    // Hashtags are also in searchVector (weight A), but as whole tokens —
-    // a compound tag like "#FoodieKTM" won't match a search for "foodie" via
-    // full-text alone, so this adds a plain substring check across the tags too.
-    conditions.push(Prisma.sql`(
-      c."searchVector" @@ plainto_tsquery('english', ${search})
-      OR similarity(c.title, ${search}) > 0.2
-      OR similarity(b."businessName", ${search}) > 0.2
-      OR b."businessName" ILIKE ${`%${search}%`}
-      OR EXISTS (SELECT 1 FROM unnest(c.hashtags) AS tag WHERE tag ILIKE ${`%${search}%`})
-    )`);
+    const { condition, rank: rankExpr } = this.searchMatchSql(search);
+    conditions.push(condition);
 
     const whereSql = Prisma.join(conditions, ' AND ');
-    const rankExpr = Prisma.sql`
-      ts_rank(c."searchVector", plainto_tsquery('english', ${search}))
-      + GREATEST(similarity(c.title, ${search}), similarity(b."businessName", ${search}))
-    `;
     const skip = (filters.page - 1) * filters.limit;
 
     const [rows, countRows] = await Promise.all([
@@ -322,16 +381,10 @@ export class CampaignRepository {
     // filters as the main list instead of always showing everything nearby.
     const extraConditions: Prisma.Sql[] = [];
     if (search) {
-      // Same weighted full-text column + trigram fallback as findManySearch
-      // above — proximity stays the primary sort for "Nearby Events", this
+      // Exactly the same match rule as findManySearch above (expanded terms
+      // included) — proximity stays the primary sort for "Nearby Events", this
       // just decides which campaigns qualify, same as the other filters below.
-      extraConditions.push(Prisma.sql`(
-        c."searchVector" @@ plainto_tsquery('english', ${search})
-        OR similarity(c.title, ${search}) > 0.2
-        OR similarity(b."businessName", ${search}) > 0.2
-        OR b."businessName" ILIKE ${`%${search}%`}
-        OR EXISTS (SELECT 1 FROM unnest(c.hashtags) AS tag WHERE tag ILIKE ${`%${search}%`})
-      )`);
+      extraConditions.push(this.searchMatchSql(search).condition);
     }
     if (category?.length) {
       extraConditions.push(Prisma.sql`LOWER(c.category) IN (${Prisma.join(category.map((c) => c.toLowerCase()))})`);

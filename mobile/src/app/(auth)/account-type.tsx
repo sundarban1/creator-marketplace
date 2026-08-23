@@ -37,8 +37,9 @@ const CARD_IMAGE: Record<Role, number> = {
 // pinned header row, a heading that states the question, then content cards
 // (surface fill, hairline border, raised lift) each fronted by a photo band.
 //
-// Copy deliberately avoids "Creator"/"Business" terminology in favor of "Offering
-// services" / "Looking for services" — this keeps the choice legible as Kolab
+// Copy deliberately avoids "Creator"/"Business" terminology in favor of plain
+// outcome sentences ("Earn money by offering your services and skills" / "As a
+// business, find skilled people…") — this keeps the choice legible as Kolab
 // expands beyond creator-brand collaborations into a wider service marketplace,
 // without requiring a data-model rename. The underlying role stays CREATOR/BUSINESS
 // (matching the rest of the backend/mobile code, where "Provider" is already
@@ -93,28 +94,20 @@ export default function AccountTypeScreen() {
               const active = selected === r.key;
               const tint = r.grad[0];
               const cardTitle   = r.key === 'CREATOR' ? t('accountType.offerTitle')   : t('accountType.seekTitle');
-              const cardDesc    = r.key === 'CREATOR' ? t('accountType.offerDesc')    : t('accountType.seekDesc');
               const cardExample = r.key === 'CREATOR' ? t('accountType.offerExample') : t('accountType.seekExample');
               const benefits = r.key === 'CREATOR'
                 ? [t('accountType.offerBenefit1'), t('accountType.offerBenefit2'), t('accountType.offerBenefit3')]
                 : [t('accountType.seekBenefit1'), t('accountType.seekBenefit2'), t('accountType.seekBenefit3')];
               return (
                 <Fragment key={r.key}>
-                {/* Each card is introduced by its own half of what used to be
-                    one long page subtitle, in the same centred lead-in style,
-                    so the two options read as a matched pair. The business
-                    half additionally gets the "or" rule that separates them. */}
-                {r.key === 'CREATOR' && (
-                  <Text style={[s.leadIn, { color: C.textSecondary }]}>{t('accountType.offerLeadIn')}</Text>
-                )}
+                {/* Each card now leads with the full sentence that used to sit
+                    above it as a lead-in, so the choice reads straight off the
+                    card title. Only the "or" rule remains between the two. */}
                 {r.key === 'BUSINESS' && (
-                  <View style={s.orBlock}>
-                    <View style={s.orRow}>
-                      <View style={[s.orRule, { backgroundColor: C.border }]} />
-                      <Text style={[s.orText, { color: C.textSecondary }]}>{t('accountType.dividerOr')}</Text>
-                      <View style={[s.orRule, { backgroundColor: C.border }]} />
-                    </View>
-                    <Text style={[s.leadIn, { color: C.textSecondary }]}>{t('accountType.seekLeadIn')}</Text>
+                  <View style={s.orRow}>
+                    <View style={[s.orRule, { backgroundColor: C.border }]} />
+                    <Text style={[s.orText, { color: C.textSecondary }]}>{t('accountType.dividerOr')}</Text>
+                    <View style={[s.orRule, { backgroundColor: C.border }]} />
                   </View>
                 )}
                 <Pressable
@@ -150,13 +143,13 @@ export default function AccountTypeScreen() {
                       <Text style={[s.cardTitle, { color: C.text }]}>{cardTitle}</Text>
                       <FontAwesome5 name="chevron-right" solid size={14} color={active ? tint : C.textSecondary} />
                     </View>
-                    <Text style={[s.cardDesc, { color: C.textSecondary }]}>{cardDesc}</Text>
-
                     <View style={s.benefitList}>
                       {benefits.map((b) => (
                         <View key={b} style={s.benefitRow}>
-                          <FontAwesome5 name="check-circle" solid size={13} color={tint} />
-                          <Text style={[s.benefitText, { color: C.text }]} numberOfLines={1}>{b}</Text>
+                          <FontAwesome5 name="check-circle" solid size={13} color={tint} style={s.benefitIcon} />
+                          {/* Wraps to two lines: the longest benefit no longer
+                              fits on one, and clipping it would cut the copy. */}
+                          <Text style={[s.benefitText, { color: C.text }]} numberOfLines={2}>{b}</Text>
                         </View>
                       ))}
                     </View>
@@ -201,10 +194,7 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
     intro:        { gap: SPACING.xs },
     pageTitle:    { fontSize: FONT_SIZE.xxl, fontFamily: F.bold, letterSpacing: -0.2, lineHeight: lineHeightFor(FONT_SIZE.xxl) },
 
-    // ── Card lead-ins ── one line above each card, plus the "or" rule
-    //    that separates the two choices.
-    leadIn:  { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm), textAlign: 'center' },
-    orBlock: { gap: SPACING.sm },
+    // ── Card separator ── the "or" rule between the two choices.
     orRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
     orRule:  { flex: 1, height: StyleSheet.hairlineWidth },
     orText:  { fontSize: FONT_SIZE.xs, fontFamily: F.bold, letterSpacing: 0.6, textTransform: 'uppercase' },
@@ -223,10 +213,11 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
     cardBody:      { padding: SPACING.lg, gap: 6 },
     cardTitleRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
     cardTitle:     { flex: 1, fontSize: FONT_SIZE.lg, fontFamily: F.bold, letterSpacing: 0.1, lineHeight: lineHeightFor(FONT_SIZE.lg) },
-    cardDesc:      { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm) },
 
     benefitList: { gap: SPACING.sm, marginTop: SPACING.sm, marginBottom: SPACING.xs },
-    benefitRow:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+    benefitRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm },
+    // Nudged down so the tick sits on the first line's centre, not its cap.
+    benefitIcon: { marginTop: 3 },
     benefitText: { flex: 1, fontSize: FONT_SIZE.sm, fontFamily: F.medium, lineHeight: lineHeightFor(FONT_SIZE.sm) },
 
     // Example line — the home feed's inline chip: pill, tinted fill, hairline.

@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import { expandSearchQuery, expandedTsQuerySql, matchesAny } from '../../utils/searchTerms';
 
 // Shared between findMany's Prisma path and findManySearch's raw-SQL + hydrate
 // path below — keeps the two result shapes identical regardless of which path
@@ -126,25 +127,48 @@ export class BusinessRepository {
       conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM campaigns c WHERE ${Prisma.join(campaignConditions, ' AND ')})`);
     }
 
+    // Name and description are matched against the *expanded* term set (see
+    // expandSearchQuery), so "coffee" also finds a business called Himalayan
+    // Espresso Bar or one describing itself as a roastery. Location fields stay
+    // on the literal query — expanding a place name has no meaning. A business
+    // also qualifies through the work it posts, so a café whose only mention of
+    // coffee is inside a "latte art shoot" campaign still surfaces.
+    const q = expandSearchQuery(search);
+    const expandedTsq = expandedTsQuerySql(q);
+
     conditions.push(Prisma.sql`(
-      b."businessName" ILIKE ${`%${search}%`}
-      OR b.description ILIKE ${`%${search}%`}
+      ${matchesAny(Prisma.sql`b."businessName"`, q.all)}
+      OR ${matchesAny(Prisma.sql`b.description`, q.all)}
       OR b.city ILIKE ${`%${search}%`}
       OR b.district ILIKE ${`%${search}%`}
       OR b.area ILIKE ${`%${search}%`}
       OR b.address ILIKE ${`%${search}%`}
       OR similarity(b."businessName", ${search}) > 0.2
+      OR EXISTS (SELECT 1 FROM unnest(b.categories) AS cat WHERE ${matchesAny(Prisma.sql`cat`, q.all)})
+      ${expandedTsq
+        ? Prisma.sql`OR EXISTS (
+            SELECT 1 FROM campaigns bc
+            WHERE bc."businessId" = b.id
+              AND bc."deletedAt" IS NULL
+              AND bc.status = 'ACTIVE'::"CampaignStatus"
+              AND bc."searchVector" @@ ${expandedTsq}
+          )`
+        : Prisma.empty}
     )`);
 
     const whereSql = Prisma.join(conditions, ' AND ');
-    // Exact/substring name hits rank above a fuzzy match, which ranks above a
-    // hit that only landed in description/location.
+    // Ranking tiers, strongest first: the literal query in the name, a related
+    // term in the name, a fuzzy name match, then description hits (literal
+    // above related). A match that only came from the business's campaigns or
+    // location carries no bonus and falls to the bottom.
     const rankExpr = Prisma.sql`
       GREATEST(
         CASE WHEN b."businessName" ILIKE ${`%${search}%`} THEN 1 ELSE 0 END,
         similarity(b."businessName", ${search})
-      ) * 2
+      ) * 3
+      + CASE WHEN ${matchesAny(Prisma.sql`b."businessName"`, q.all)} THEN 1.5 ELSE 0 END
       + CASE WHEN b.description ILIKE ${`%${search}%`} THEN 1 ELSE 0 END
+      + CASE WHEN ${matchesAny(Prisma.sql`b.description`, q.all)} THEN 0.5 ELSE 0 END
     `;
     const skip = (params.page - 1) * params.limit;
 

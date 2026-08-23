@@ -1614,7 +1614,9 @@ model Category {
   // Section header for the provider-type picker (e.g. "Content & Media",
   // "Talent & Appearance") — only meaningful for CREATOR-scope rows; BOTH-scope
   // content-niche rows (Restaurants, Automotive, ...) leave this null, they're
-  // not grouped. Purely presentational, not queried on.
+  // not grouped. Also matched by search alongside `name`, since the group is
+  // where the umbrella term lives — "music" has to find a DJ, "photography" a
+  // Wedding Photographer.
   group        String?
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt

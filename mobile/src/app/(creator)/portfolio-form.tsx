@@ -19,9 +19,7 @@ export default function PortfolioFormScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
 
-  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [externalUrl, setExternalUrl] = useState('');
 
@@ -38,9 +36,7 @@ export default function PortfolioFormScreen() {
         if (cancelled) return;
         const existing = items.find((i) => i.id === id);
         if (!existing) { Alert.alert(t('common.error'), t('portfolioForm.notFound')); router.back(); return; }
-        setTitle(existing.title ?? '');
         setDescription(existing.description ?? '');
-        setCategory(existing.category ?? '');
         setMediaUrl(existing.mediaUrl);
         setExternalUrl(existing.externalUrl ?? '');
       })
@@ -75,9 +71,7 @@ export default function PortfolioFormScreen() {
     setSubmitting(true);
     try {
       const payload = {
-        title: title.trim() || undefined,
         description: description.trim() || undefined,
-        category: category.trim() || undefined,
         mediaUrl: mediaUrl ?? undefined,
         mediaType: mediaUrl ? ('IMAGE' as const) : undefined,
         externalUrl: externalUrl.trim() || undefined,
@@ -132,22 +126,6 @@ export default function PortfolioFormScreen() {
                 error={errors.externalUrl}
                 autoCapitalize="none"
                 keyboardType="url"
-              />
-
-              <TextInputWithLabel
-                label={t('portfolioForm.titleLabel')}
-                value={title}
-                onChangeText={setTitle}
-                placeholder={t('portfolioForm.titlePlaceholder')}
-                maxLength={150}
-              />
-
-              <TextInputWithLabel
-                label={t('portfolioForm.categoryLabel')}
-                value={category}
-                onChangeText={setCategory}
-                placeholder={t('portfolioForm.categoryPlaceholder')}
-                maxLength={100}
               />
 
               <TextInputWithLabel

@@ -1,5 +1,30 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import { expandSearchQuery, filterByTerms, substringSafeTerms } from '../../utils/searchTerms';
+
+// Distinct values of the two scalar-array label columns, so search can map a
+// query onto the labels it should match (see findMany). Cached because search
+// runs on every keystroke-debounced request while the vocabulary only changes
+// when someone onboards or edits their profile.
+const LABEL_VOCABULARY_TTL_MS = 5 * 60_000;
+let labelVocabulary: { loadedAt: number; categories: string[]; industries: string[] } | null = null;
+
+async function creatorLabelVocabulary() {
+  if (labelVocabulary && Date.now() - labelVocabulary.loadedAt < LABEL_VOCABULARY_TTL_MS) {
+    return labelVocabulary;
+  }
+  const rows = await prisma.$queryRaw<{ kind: string; value: string }[]>`
+    SELECT DISTINCT 'category' AS kind, unnest(categories) AS value FROM creator_profiles
+    UNION
+    SELECT DISTINCT 'industry' AS kind, unnest(industries) AS value FROM creator_profiles
+  `;
+  labelVocabulary = {
+    loadedAt: Date.now(),
+    categories: rows.filter((r) => r.kind === 'category').map((r) => r.value),
+    industries: rows.filter((r) => r.kind === 'industry').map((r) => r.value),
+  };
+  return labelVocabulary;
+}
 
 export class CreatorRepository {
   async findMany(filters: {
@@ -21,7 +46,52 @@ export class CreatorRepository {
     const where: Prisma.CreatorProfileWhereInput = { user: { isOnboarded: true } };
 
     if (filters.search) {
-      where.fullName = { contains: filters.search, mode: 'insensitive' };
+      // Matching the name alone meant a search for "coffee" found nobody,
+      // even though a barista, a café photographer and a food stylist are all
+      // relevant. Same concept as the works/business searches: the query is
+      // expanded into related terms (see expandSearchQuery) and matched across
+      // everything that describes the person — their bio, the services they
+      // list, those services' categories, and their portfolio — while the name
+      // and location stay on the literal query, where expansion has no meaning.
+      const q = expandSearchQuery(filters.search);
+      // Unlike the other repositories this path stays in the Prisma query
+      // builder (the price/platform/follower-sort filters around it are awkward
+      // in raw SQL), which has no regex operator — so expanded matching uses
+      // substringSafeTerms, dropping terms too short to substring-match
+      // safely. The user's own query is always matched in full alongside them.
+      const related = substringSafeTerms(q);
+      const anywhere = (term: string): Prisma.CreatorProfileWhereInput[] => [
+        { bio: { contains: term, mode: 'insensitive' } },
+        { services: { some: { name: { contains: term, mode: 'insensitive' } } } },
+        { services: { some: { description: { contains: term, mode: 'insensitive' } } } },
+        { services: { some: { category: { name: { contains: term, mode: 'insensitive' } } } } },
+        // The category's group is the umbrella term ('Photography' over
+        // Photographer/Wedding Photographer, 'Music & Audio' over DJ) — a
+        // search for "music" has to reach the DJ whose category never says it.
+        { services: { some: { category: { group: { contains: term, mode: 'insensitive' } } } } },
+        { portfolioItems: { some: { title: { contains: term, mode: 'insensitive' } } } },
+        { portfolioItems: { some: { description: { contains: term, mode: 'insensitive' } } } },
+      ];
+      // `categories`/`industries` are scalar string arrays holding display
+      // labels ("Skincare", "Events and Entertainment"), and Prisma can only
+      // match those with hasSome's exact, case-sensitive equality — so a
+      // search for "skin" or "event" found nobody, and even "Skincare" only
+      // matched because of the casing. The raw-SQL repositories solve this
+      // with `unnest(...) ~* '\m(term)'`; this path resolves the query
+      // against the label vocabulary first and feeds the exact values that
+      // matched back into hasSome, which comes to the same thing.
+      const vocabulary = await creatorLabelVocabulary();
+      const matchedCategories = filterByTerms(vocabulary.categories, q.all);
+      const matchedIndustries = filterByTerms(vocabulary.industries, q.all);
+      where.OR = [
+        { fullName: { contains: filters.search, mode: 'insensitive' } },
+        { location: { contains: filters.search, mode: 'insensitive' } },
+        { city: { contains: filters.search, mode: 'insensitive' } },
+        ...anywhere(filters.search),
+        ...related.flatMap(anywhere),
+        ...(matchedCategories.length ? [{ categories: { hasSome: matchedCategories } }] : []),
+        ...(matchedIndustries.length ? [{ industries: { hasSome: matchedIndustries } }] : []),
+      ];
     }
     if (filters.categories?.length) where.categories = { hasSome: filters.categories };
     if (filters.location) where.location = { contains: filters.location, mode: 'insensitive' };
@@ -243,6 +313,9 @@ export class CreatorRepository {
     hideSocialLinks:    boolean;
     locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
   }>) {
+    // A new category or industry has to be searchable immediately, not once
+    // the vocabulary cache above expires.
+    if (data.categories || data.industries) labelVocabulary = null;
     return prisma.creatorProfile.update({ where: { userId }, data });
   }
 

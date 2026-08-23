@@ -470,7 +470,10 @@ export default function ProposalsScreen() {
               faIcon={emptyMsg.faIcon}
               title={emptyMsg.title}
               subtitle={emptyMsg.sub}
-              action={activeTab === 'all' ? { label: t('proposal.creator.browseEvents'), onPress: () => router.push('/(creator)' as never) } : undefined}
+              // Every empty tab — not just "All" — dead-ends unless the creator
+              // goes and applies to something, so all of them offer the same way
+              // out: straight to the Find Work tab.
+              action={{ label: t('proposal.creator.browseWork'), onPress: () => router.push('/(creator)/(tabs)/discover') }}
             />
           }
         />

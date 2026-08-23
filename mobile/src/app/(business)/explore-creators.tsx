@@ -199,6 +199,14 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const [serviceCategory, setServiceCategory] = useState<string | null>(null);
 
   const filterActive = isCreatorFilterActive(activeFilter);
+  // Categories are shown as highlighted pills in the row above, never as
+  // chips, so counting them here would render a chip row holding nothing but
+  // the Clear-all pill the moment a category is tapped.
+  const chipFilterActive =
+    activeFilter.locations.length > 0 ||
+    activeFilter.platforms.length > 0 ||
+    activeFilter.priceMin > CREATOR_SLIDER_MIN ||
+    activeFilter.priceMax < CREATOR_SLIDER_MAX;
   const filterCount  = creatorFilterActiveCount(activeFilter);
 
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -448,8 +456,9 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
           (empty state / list) never gets pushed around unpredictably.
           Categories are deliberately excluded here since the CategoryPillRow
           above already highlights the selected ones; repeating them as
-          chips+Clear-all was redundant. */}
-      {entityTab === 'people' && filterActive && (
+          chips+Clear-all was redundant — which is also why the row keys off
+          chipFilterActive rather than filterActive. */}
+      {entityTab === 'people' && chipFilterActive && (
         <View style={s.chipRow}>
           {activeFilter.locations.map((loc) => (
             <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
