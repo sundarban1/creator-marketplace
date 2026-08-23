@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -70,7 +70,13 @@ export function Possibilities() {
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                   />
-                  <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+                  {/* Darker at the foot than a plain scrim needs to be, because
+                      the caption sits on top of it over four unrelated photos. */}
+                  <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                  <p className="absolute inset-x-3 bottom-3 flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-medium leading-[1.55] text-white ring-1 ring-white/25 backdrop-blur-sm">
+                    <Search size={11} className="flex-shrink-0" />
+                    <span className="min-w-0 flex-1">{copy.caption}</span>
+                  </p>
                 </div>
                 <div className="p-5">
                   <h3 className={`text-base font-bold ${accent}`}>{copy.title}</h3>

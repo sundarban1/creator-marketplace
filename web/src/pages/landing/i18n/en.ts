@@ -41,11 +41,14 @@ export const en = {
   possibilities: {
     eyebrow: 'What you can do here',
     heading: 'One place. Many possibilities.',
+    // `caption` sits on the photo itself — a real search phrase someone would
+    // type for that card, so the grid shows the intent behind each tile
+    // rather than only naming it.
     cards: {
-      people: { title: 'People', sub: 'Find the people you need.', cta: 'Explore People' },
-      services: { title: 'Services', sub: 'Find the skills you need.', cta: 'Explore Services' },
-      opportunities: { title: 'Opportunities', sub: 'Find your next opportunity.', cta: 'Explore Opportunities' },
-      events: { title: 'Events', sub: "Discover what's happening.", cta: 'Explore Events' },
+      people: { title: 'People', sub: 'Find the people you need.', cta: 'Explore People', caption: 'Looking for people to promote my cafe' },
+      services: { title: 'Services', sub: 'Find the skills you need.', cta: 'Explore Services', caption: 'Looking for a makeup artist' },
+      opportunities: { title: 'Opportunities', sub: 'Find your next opportunity.', cta: 'Explore Opportunities', caption: 'Looking for skillful people' },
+      events: { title: 'Events', sub: "Discover what's happening.", cta: 'Explore Events', caption: 'Looking for a content creator to promote my event' },
     },
   },
 
@@ -128,6 +131,30 @@ export const en = {
     ],
   },
 
+  // The creator-home replica in AppHomePreview. Strings are the app's own
+  // (mobile/src/i18n/en.ts `home.*` / `creator.home.*`) so the frame shows
+  // the shipped copy, not a paraphrase of it. `quickActions` is positionally
+  // paired with QUICK_ACTIONS in AppHomePreview.tsx — keep both at five and
+  // in the same order.
+  appPreview: {
+    label: 'The actual app',
+    greeting: 'Good morning, Aayush',
+    location: 'Kathmandu',
+    searchPlaceholder: 'Search opportunities, services, or businesses',
+    attentionTitle: 'Action Required',
+    attentionSub: 'Upload deliverables for “Momo Bar Launch”',
+    ctaTitle: 'Find your next work',
+    ctaSub: 'Discover businesses looking for people like you.',
+    ctaBtn: 'Browse Work',
+    quickActions: ['Applied Works', 'Work Requests', 'Discover', 'Businesses', 'Find People'],
+    recommended: 'Recommended',
+    seeAll: 'See all',
+    cards: [
+      { title: 'Food Creator Needed', budget: 'NPR 20,000', brand: 'Momo Bar · Kathmandu', category: 'Food' },
+      { title: 'Event Photographer', budget: 'NPR 15,000', brand: 'Hotel Mustang · Pokhara', category: 'Photography' },
+    ],
+  },
+
   opportunityFeed: {
     eyebrow: 'Never miss a fit',
     heading: 'Your next opportunity could be one swipe away.',
@@ -146,11 +173,13 @@ export const en = {
     ],
     eventsLabel: 'Find People for Your Event',
     viewAllEvents: 'View all events',
-    featuredEvent: { dateDay: '12', dateMonth: 'Sep', title: 'Grand Opening Event', location: 'Kathmandu', sub: 'Creators, Photographers, Hosts' },
+    featuredEvent: { dateDay: '12', dateMonth: 'Sep', title: 'Grand Opening Event Promotion', location: 'Kathmandu', sub: 'Creators, Photographers, Hosts' },
+    // Positionally paired with MORE_EVENT_PHOTOS in OpportunityFeed.tsx —
+    // reorder one and the other has to follow.
     moreEvents: [
-      { title: 'Music Festival', date: 'Sep 20', location: 'Pokhara' },
-      { title: 'Brand Launch Party', date: 'Sep 25', location: 'Kathmandu' },
-      { title: 'Wedding Showcase', date: 'Oct 05', location: 'Lalitpur' },
+      { title: 'Restaurant Opening', date: 'Sep 20', location: 'Pokhara' },
+      { title: 'Salon Promotion', date: 'Sep 25', location: 'Kathmandu' },
+      { title: 'Opening Clothing Store', date: 'Oct 05', location: 'Lalitpur' },
     ],
   },
 

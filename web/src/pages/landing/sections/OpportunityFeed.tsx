@@ -15,10 +15,12 @@ const OPPORTUNITY_PHOTOS = [
 const BADGE_STYLES = ['bg-violet text-white', 'bg-brand-orange text-white', 'bg-emerald-500 text-white'];
 
 const FEATURED_EVENT_PHOTO = 'https://images.pexels.com/photos/2263436/pexels-photo-2263436.jpeg?auto=compress&cs=tinysrgb&w=700&h=900&fit=crop';
+// Positionally paired with `moreEvents[i]` — a busy restaurant floor, a
+// beauty-parlour vanity, then a clothing shop interior.
 const MORE_EVENT_PHOTOS = [
-  'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&fit=crop',
-  'https://images.pexels.com/photos/2747446/pexels-photo-2747446.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&fit=crop',
-  'https://images.pexels.com/photos/265856/pexels-photo-265856.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&fit=crop',
+  'https://images.pexels.com/photos/12181619/pexels-photo-12181619.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&fit=crop',
+  'https://images.pexels.com/photos/5178007/pexels-photo-5178007.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&fit=crop',
+  'https://images.pexels.com/photos/37080685/pexels-photo-37080685.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&fit=crop',
 ];
 const MORE_OPPORTUNITY_PHOTOS = [
   'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&fit=crop',
@@ -148,7 +150,7 @@ export function OpportunityFeed() {
                 <span className="text-base font-bold text-ink">{feed.featuredEvent.dateDay}</span>
               </div>
               <div className="absolute inset-x-0 bottom-0 p-4">
-                <h4 className="text-base font-bold leading-snug text-white">{feed.featuredEvent.title}</h4>
+                <h4 className="text-base font-bold leading-[1.5] text-white">{feed.featuredEvent.title}</h4>
                 <p className="mt-1 flex items-center gap-1 text-xs text-white/80">
                   <MapPin size={11} />
                   {feed.featuredEvent.location} · {feed.featuredEvent.sub}
@@ -167,7 +169,10 @@ export function OpportunityFeed() {
                   />
                   <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-2">
-                    <p className="truncate text-[10px] font-bold leading-tight text-white">{ev.title}</p>
+                    {/* Two lines, not `truncate`: these titles name a real
+                        occasion ("Opening Clothing Store") and run longer
+                        than a ~137px tile fits on one line. */}
+                    <p className="line-clamp-2 text-[10px] font-bold leading-[1.5] text-white">{ev.title}</p>
                     <p className="truncate text-[9px] text-white/75">{ev.date} · {ev.location}</p>
                   </div>
                 </motion.div>

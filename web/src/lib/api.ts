@@ -173,6 +173,8 @@ export interface ApiCreator {
   citizenshipStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   panDocUrl?: string | null;
   panDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUrl?: string | null;
+  companyRegDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt:   string;
   user:  { id: string; email: string; phone?: string | null; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   // Provider marketplace additions — empty for providers who haven't listed
