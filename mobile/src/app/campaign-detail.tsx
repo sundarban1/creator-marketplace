@@ -164,7 +164,12 @@ export default function CampaignDetailScreen() {
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton />
         <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{campaign.title}</Text>
-        <View style={{ width: 40 }} />
+        {/* Save-for-later. The wrapper keeps its 40px slot even for a business
+            session, where ShortlistButton renders nothing, so the centred
+            title stays centred. */}
+        <View style={s.headerAction}>
+          <ShortlistButton campaignId={campaign.id} size="sm" style={s.headerSaveBtn} />
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -441,9 +446,6 @@ export default function CampaignDetailScreen() {
 
       {/* Sticky CTA */}
       <View style={[s.ctaBar, { justifyContent: 'center' }, !isBusiness && campaign.requirements && campaign.requirements.length > 0 && s.ctaBarRoles]}>
-        {/* Save-for-later, left of whichever CTA this campaign renders.
-            Creator-only — ShortlistButton renders nothing for a business. */}
-        <ShortlistButton campaignId={campaign.id} />
         {isBusiness ? (
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
@@ -636,6 +638,9 @@ const s = StyleSheet.create({
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderBottomWidth: 1 },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
+  headerAction: { width: 40, alignItems: 'flex-end' },
+  // Matches BackButton's 40px circle so the two header controls read as a pair.
+  headerSaveBtn: { width: 40, height: 40, borderRadius: 20 },
 
   scroll: { paddingBottom: SPACING.xxxl },
 
