@@ -76,6 +76,12 @@ export interface AiCampaignDraft {
   // Empty for the common single-role case — populated only when the AI
   // detected the brief clearly asks for multiple distinct provider types.
   requirements: AiRequirementDraft[];
+  // A real stock photo the backend found for this draft's subject (the model
+  // returns a search phrase, the backend resolves it — see utils/imageSearch.ts
+  // there). Null whenever the backend has no UNSPLASH_ACCESS_KEY configured or
+  // the search came back empty, in which case the local category/keyword photo
+  // map in features/creator/data/templateImages.ts takes over.
+  featureImageUrl?: string | null;
   // true when the backend's own OpenAI call failed and it served a canned
   // template instead (see campaign-ai.service.ts). Optional so an older
   // backend that doesn't send it is simply treated as a real AI draft.
@@ -109,6 +115,8 @@ export interface AiEventDraft {
   needsInput: string[];
   aiSuggestedCategories: string[];
   aiSuggestedPlatforms: string[];
+  // See AiCampaignDraft.featureImageUrl.
+  featureImageUrl?: string | null;
   // See AiCampaignDraft.aiFallback.
   aiFallback?: boolean;
 }
@@ -326,6 +334,14 @@ export const campaignService = {
       page:       res.pagination?.page       ?? 1,
       totalPages: res.pagination?.totalPages ?? 1,
     };
+  },
+
+  // The creator's own shortlist ("saved events"), newest-saved first. Ids for
+  // the card/detail bookmark icons come from useShortlistedCampaigns instead —
+  // this is the full list, for the Saved Events screen.
+  async listShortlisted(): Promise<{ campaigns: Campaign[] }> {
+    const res = await request<{ campaigns: ApiCampaign[] }>('GET', '/api/creator/campaigns/shortlist/list');
+    return { campaigns: res.data.campaigns.map(toCampaign) };
   },
 
   async getById(id: string): Promise<Campaign> {

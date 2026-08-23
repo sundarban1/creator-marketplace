@@ -29,8 +29,8 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 // the raised Post Work button sits dead centre with two tabs either side.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:          { icon: 'home',          iconActive: 'home',          label: 'Home' },
-  'find-people':  { icon: 'users',         iconActive: 'users',         label: 'Find People', color: '#7C3AED' },
   campaigns:      { icon: 'briefcase',     iconActive: 'briefcase',     label: 'My Work', color: '#059669' },
+  'find-people':  { icon: 'users',         iconActive: 'users',         label: 'Find People', color: '#7C3AED' },
   messages:       { icon: 'comment',       iconActive: 'comment',       label: 'Messages', color: '#2563EB' },
 };
 
@@ -65,8 +65,8 @@ function CustomTabBar({
 
   const labelMap: Record<string, string> = {
     index:         t('business.tab.home'),
-    'find-people': t('business.tab.findPeople'),
     campaigns:     t('business.tab.myWork'),
+    'find-people': t('business.tab.findPeople'),
     messages:      t('business.tab.messages'),
   };
 
@@ -145,10 +145,10 @@ function CustomTabBar({
           </Pressable>
         );
 
-        // Raised circular "Post Work" button, docked between Find People and
-        // My Work — replaces the old free-floating draggable FAB with a
+        // Raised circular "Post Work" button, docked between My Work and
+        // Find People — replaces the old free-floating draggable FAB with a
         // fixed spot nested in a notch cut into the bar itself.
-        if (route.name !== 'find-people') return [tabItem];
+        if (route.name !== 'campaigns') return [tabItem];
         return [
           tabItem,
           <View key="post-work" style={tabS.createWrap}>
@@ -284,8 +284,8 @@ export default function BusinessTabsLayout() {
             )}
           >
             <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
-            <Tabs.Screen name="find-people" options={{ title: t('business.tab.findPeople') }} />
             <Tabs.Screen name="campaigns" options={{ title: t('business.tab.myWork') }} />
+            <Tabs.Screen name="find-people" options={{ title: t('business.tab.findPeople') }} />
             {/* proposals.tsx stays a reachable route (linked from the home
                 quick actions and the pending-proposals banner) but is no
                 longer a bottom-tab destination — per-campaign proposals now

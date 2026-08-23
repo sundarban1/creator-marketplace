@@ -141,6 +141,12 @@ export const aiEventDraftSchema = z.object({
   venue: z.string().max(160).nullable().default(null),
   completionType: z.enum(COMPLETION_TYPES),
   completionReason: z.string().min(3).max(300),
+  // A short English subject phrase for the draft's feature photo ("momo
+  // dumplings restaurant table"), used verbatim as a stock-photo search query
+  // — see utils/imageSearch.ts. Deliberately not a URL: a model asked for one
+  // invents plausible-looking links that 404. Defaulted rather than required so
+  // a model that omits it, or a dummy-JSON fallback draft, still validates.
+  imageQuery: z.string().max(80).default(''),
   needsInput: z.array(z.enum(EVENT_NEEDS_INPUT_FIELDS)).max(2).default([]),
 });
 export type AiEventDraft = z.infer<typeof aiEventDraftSchema>;
@@ -207,6 +213,12 @@ export const aiCampaignDraftSchema = z.object({
   completionType: z.enum(COMPLETION_TYPES),
   completionReason: z.string().min(3).max(300),
   needsInput: z.array(z.enum(NEEDS_INPUT_FIELDS)).max(2).default([]),
+  // A short English subject phrase for the draft's feature photo ("momo
+  // dumplings restaurant table"), used verbatim as a stock-photo search query
+  // — see utils/imageSearch.ts. Deliberately not a URL: a model asked for one
+  // invents plausible-looking links that 404. Defaulted rather than required so
+  // a model that omits it, or a dummy-JSON fallback draft, still validates.
+  imageQuery: z.string().max(80).default(''),
   // Empty for the common single-role case — only populated when the brief
   // clearly names multiple distinct provider types/counts. See CampaignRequirement.
   requirements: z.array(aiRequirementSchema).max(10).default([]),

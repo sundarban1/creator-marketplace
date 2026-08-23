@@ -14,7 +14,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
-import { useCategories } from '@/hooks/useCategories';
+import { sortOtherLast, useCategories } from '@/hooks/useCategories';
 import { CategoryChipGrid } from '@/components/CategoryChipGrid';
 import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -25,7 +25,9 @@ export default function EditCategoriesScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
-  const { categories: catOptions } = useCategories('CREATOR');
+  // BOTH-scope industry rows only, matching the onboarding step that first sets
+  // this field — never the CREATOR-scope provider roles.
+  const { categories: catOptions } = useCategories('BOTH');
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -105,8 +107,10 @@ export default function EditCategoriesScreen() {
         </View>
 
         <CategoryChipGrid
-          categories={Array.from(new Set([...catOptions.map((c) => c.name), ...categories])).map(
-            (name) => catOptions.find((c) => c.name === name) ?? { id: name, name }
+          categories={sortOtherLast(
+            Array.from(new Set([...catOptions.map((c) => c.name), ...categories])).map(
+              (name) => catOptions.find((c) => c.name === name) ?? { id: name, name }
+            )
           )}
           selected={categories}
           onToggle={toggle}

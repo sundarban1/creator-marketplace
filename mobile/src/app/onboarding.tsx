@@ -10,7 +10,7 @@ import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { authService } from '@/services/auth';
 import { creatorService, type ProviderType } from '@/services/creator';
 import { profileService } from '@/services/profile';
-import { useCategories } from '@/hooks/useCategories';
+import { sortOtherLast, useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { StepIndicator } from '@/components/StepIndicator';
 import { GroupedCategoryPicker } from '@/components/GroupedCategoryPicker';
@@ -25,15 +25,16 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 const TOTAL_STEPS = 3;
 
 // Labels and descriptions live in the shared `providerType` namespace — the
-// Settings picker shows the same three cards and must not drift from these.
+// Settings picker shows the same cards and must not drift from these.
+// AGENCY is switched off for now (see ProviderType in services/creator.ts):
+// re-add its row here and in the Settings picker together, or the two drift.
 const PROVIDER_TYPE_OPTIONS = [
-  { key: 'INDIVIDUAL' as const, icon: 'user'     as const, titleKey: 'providerType.individual', descKey: 'providerType.individualDesc' },
-  { key: 'TEAM'       as const, icon: 'users'    as const, titleKey: 'providerType.team',       descKey: 'providerType.teamDesc' },
-  { key: 'AGENCY'     as const, icon: 'building' as const, titleKey: 'providerType.agency',     descKey: 'providerType.agencyDesc' },
+  { key: 'INDIVIDUAL' as const, icon: 'user'  as const, titleKey: 'providerType.individual', descKey: 'providerType.individualDesc' },
+  { key: 'TEAM'       as const, icon: 'users' as const, titleKey: 'providerType.team',       descKey: 'providerType.teamDesc' },
 ];
 
 // Seeded bio, editable later from edit-profile. Worded per provider type — a
-// team and an agency are a "we", and neither of them is one content creator.
+// team is a "we", not one content creator.
 function generateProviderBio(categories: string[], providerType: ProviderType | null): string {
   if (categories.length === 0) return '';
   const catStr = categories.length === 1
@@ -41,9 +42,6 @@ function generateProviderBio(categories: string[], providerType: ProviderType | 
     : categories.slice(0, -1).join(', ') + ' and ' + categories[categories.length - 1];
   if (providerType === 'TEAM') {
     return `We're a ${catStr} team that works together on every booking, from planning through final delivery. We love working with clients who care about the details and want a crew they can count on.`;
-  }
-  if (providerType === 'AGENCY') {
-    return `We're an agency offering ${catStr} services, delivered by a team of specialists. We work with businesses that want dependable execution end to end, from the first brief to the final handover.`;
   }
   return `I'm a ${catStr} content creator passionate about sharing authentic stories and engaging experiences. I love collaborating with businesses that align with my values to create content that truly connects with audiences and drives meaningful results.`;
 }
@@ -96,7 +94,7 @@ export default function OnboardingScreen() {
   // isEmailVerified: false until they add a real one — collect it here.
   const needsEmail = !user?.isEmailVerified;
 
-  // Step 1 — how they provide their services (Individual / Team / Agency)
+  // Step 1 — how they provide their services (Individual / Team)
   const [providerType, setProviderType] = useState<ProviderType | null>(null);
   const [providerTypeSubmitted, setProviderTypeSubmitted] = useState(false);
   const [providerTypeLoading,   setProviderTypeLoading]   = useState(false);
@@ -165,15 +163,11 @@ export default function OnboardingScreen() {
   const [step2Submitted, setStep2Submitted] = useState(false);
   const [step2Loading,   setStep2Loading]   = useState(false);
   const [step2Error,     setStep2Error]     = useState('');
-  // strict:true excludes BOTH-scope content-niche rows (e.g. "Hotels",
-  // "Resorts", "Restaurants") that have no group/parent — wrong to mix into
-  // this provider-type picker. See service-form.tsx for the same exclusion.
-  const { categories } = useCategories('CREATOR', true);
-  // §6 — an AGENCY also picks the industries it serves. BUSINESS scope is the
-  // industry list (Food & Restaurant, Hospitality, ...), the same rows business
-  // onboarding's Industry step shows — not the CREATOR provider types above.
-  const { categories: industryOptions } = useCategories('BUSINESS');
-  const [industries, setIndustries] = useState<string[]>([]);
+  // The step asks which industry the provider works in, so it lists exactly the
+  // BOTH-scope industry rows (e.g. "Hotels", "Restaurants", "Other") — never
+  // the CREATOR-scope provider roles, which answer a different question.
+  const { categories } = useCategories('BOTH');
+  const industryOptions = sortOtherLast(categories);
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -189,18 +183,14 @@ export default function OnboardingScreen() {
     return () => clearTimeout(id);
   }, [finished]);
 
-  const isTeam   = providerType === 'TEAM';
-  const isAgency = providerType === 'AGENCY';
+  const isTeam = providerType === 'TEAM';
 
   // Step 2 asks the same three things of everyone, but a Team enters a team
-  // name and an Agency a business name — neither is "your full name". Same
-  // branch-the-copy-not-the-form approach as business-onboarding's
-  // Individual/Organization split.
+  // name rather than "your full name". Same branch-the-copy-not-the-form
+  // approach as business-onboarding's Individual/Organization split.
   const nameCopy = isTeam
-    ? { label: t('onboarding.teamNameLabel'),   placeholder: t('onboarding.teamNamePlaceholder'),   icon: 'users'    as const, required: t('onboarding.teamNameRequired') }
-    : isAgency
-    ? { label: t('onboarding.agencyNameLabel'), placeholder: t('onboarding.agencyNamePlaceholder'), icon: 'building' as const, required: t('onboarding.agencyNameRequired') }
-    : { label: t('onboarding.fullNameLabel'),   placeholder: t('onboarding.fullNamePlaceholder'),   icon: 'user'     as const, required: t('onboarding.fullNameRequired') };
+    ? { label: t('onboarding.teamNameLabel'), placeholder: t('onboarding.teamNamePlaceholder'), icon: 'users' as const, required: t('onboarding.teamNameRequired') }
+    : { label: t('onboarding.fullNameLabel'), placeholder: t('onboarding.fullNamePlaceholder'), icon: 'user'  as const, required: t('onboarding.fullNameRequired') };
 
   // ── Step 1 validation ──
   const fullNameError = step1Submitted && !fullName.trim() ? nameCopy.required : undefined;
@@ -261,14 +251,6 @@ export default function OnboardingScreen() {
         if (requestId === emailCheckRequestId.current) setEmailChecking(false);
       }
     }, 400);
-  }
-
-  function toggleIndustry(label: string) {
-    setIndustries((prev) => {
-      if (prev.includes(label)) return prev.filter((c) => c !== label);
-      if (prev.length >= 5) return prev;
-      return [...prev, label];
-    });
   }
 
   function toggleCategory(label: string) {
@@ -337,7 +319,6 @@ export default function OnboardingScreen() {
       const bio = generateProviderBio(selectedCategories, providerType);
       await profileService.updateCreatorProfile({
         categories: selectedCategories,
-        ...(isAgency ? { industries } : {}),
         bio,
       });
       await authService.completeOnboarding();
@@ -377,10 +358,8 @@ export default function OnboardingScreen() {
   const STEP_CONFIG = [
     { title: t('onboarding.providerTypeTitle'), subtitle: t('onboarding.providerTypeSubtitle') },
     isTeam
-      ? { title: t('onboarding.step1TitleTeam'),   subtitle: t('onboarding.step1SubtitleTeam') }
-      : isAgency
-      ? { title: t('onboarding.step1TitleAgency'), subtitle: t('onboarding.step1SubtitleAgency') }
-      : { title: t('onboarding.step1Title'),       subtitle: t('onboarding.step1Subtitle') },
+      ? { title: t('onboarding.step1TitleTeam'), subtitle: t('onboarding.step1SubtitleTeam') }
+      : { title: t('onboarding.step1Title'),     subtitle: t('onboarding.step1Subtitle') },
     { title: t('onboarding.step2Title'), subtitle: t('onboarding.step2Subtitle') },
   ];
   const { title, subtitle } = STEP_CONFIG[step - 1];
@@ -403,7 +382,7 @@ export default function OnboardingScreen() {
         onBack={() => setStep((s) => s - 1)}
       />
 
-        {/* ────────── Step 1: How do you provide your services? (Individual/Team/Agency) ────────── */}
+        {/* ────────── Step 1: How do you provide your services? (Individual/Team) ────────── */}
         {step === 1 && (
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
@@ -472,7 +451,7 @@ export default function OnboardingScreen() {
 
             <View style={styles.form}>
 
-              {/* Name — full name, team name or agency name, per provider type */}
+              {/* Name — full name or team name, per provider type */}
               <TextInputWithLabel
                 label={`${nameCopy.label} *`}
                 leftIcon={nameCopy.icon}
@@ -579,7 +558,7 @@ export default function OnboardingScreen() {
 
               {/* Location */}
               <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>{isTeam || isAgency ? t('onboarding.locationLabelBased') : t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
+                <Text style={[styles.formLabel, { color: C.text }]}>{isTeam ? t('onboarding.locationLabelBased') : t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
                 <Pressable
                   style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
                   onPress={() => setLocationModalOpen(true)}>
@@ -641,27 +620,9 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            <View style={{ marginBottom: isAgency ? 20 : 28 }}>
-              <GroupedCategoryPicker categories={categories} selected={selectedCategories} onToggle={toggleCategory} max={5} variant="pill" />
+            <View style={{ marginBottom: 28 }}>
+              <GroupedCategoryPicker categories={industryOptions} selected={selectedCategories} onToggle={toggleCategory} max={5} variant="pill" />
             </View>
-
-            {/* §6 — industries an agency serves, kept on this step rather than
-                added as a fourth one: it's the same question ("what work do you
-                take on?") from the client's side. */}
-            {isAgency && (
-              <View style={{ marginBottom: 28, gap: 10 }}>
-                <View style={styles.selectionBadgeRow}>
-                  <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.industriesLabel')}</Text>
-                  <View style={[styles.selectionBadge, { backgroundColor: industries.length > 0 ? C.primaryLight : C.border }]}>
-                    <Text style={[styles.selectionText, { color: industries.length > 0 ? C.brinjal1 : C.textSecondary }]}>
-                      {t('onboarding.industriesSelected', { n: industries.length })}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.fieldHintText, { color: C.textSecondary }]}>{t('onboarding.industriesHint')}</Text>
-                <GroupedCategoryPicker categories={industryOptions} selected={industries} onToggle={toggleIndustry} max={5} variant="pill" />
-              </View>
-            )}
 
             <Pressable
               style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active },
@@ -701,7 +662,7 @@ const styles = StyleSheet.create({
   errorBanner: { borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
   errorBannerText: { fontSize: 13, fontFamily: F.semibold },
 
-  // Step 1's Individual/Team/Agency picker — a row-card per option (icon,
+  // Step 1's Individual/Team picker — a row-card per option (icon,
   // title + description, trailing check) rather than the large square cards
   // on /account-type, since there are three of these instead of two.
   choiceCards: { gap: 12, marginBottom: 28 },

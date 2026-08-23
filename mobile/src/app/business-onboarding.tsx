@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
 
   // Step 1's Organization/Individual picker — a row-card per option (icon,
   // title + description, trailing check), matching provider onboarding's
-  // equivalent Individual/Team/Agency picker.
+  // equivalent Individual/Team picker.
   choiceCards: { gap: 12, marginBottom: 28 },
   choiceCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14 },
   choiceIcon:  { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },

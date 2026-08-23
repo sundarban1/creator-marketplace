@@ -192,10 +192,10 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<CreatorFilterState>(DEFAULT_CREATOR_FILTER);
   const [tempFilter, setTempFilter] = useState<CreatorFilterState>(DEFAULT_CREATOR_FILTER);
-  // `strict` — provider-type rows only, no BOTH-scope content-niche rows mixed
-  // in. Services are categorized by the same provider types (a creator picks
-  // one when they list a service), so both tabs' pill rows share this list.
-  const { categories: adminCategories } = useCategories('CREATOR', true);
+  // BOTH-scope rows — the shared industry/niche list (Hotels, Restaurants, …)
+  // a business browses by, matching the "Find People by Category" slider on
+  // the business home. Both tabs' pill rows share this list.
+  const { categories: adminCategories } = useCategories('BOTH');
   const [serviceCategory, setServiceCategory] = useState<string | null>(null);
 
   const filterActive = isCreatorFilterActive(activeFilter);
@@ -429,9 +429,8 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
       )}
 
       {entityTab === 'services' && (
-        // Same provider-type pill row as People (scoped strictly to CREATOR
-        // categories, not the BOTH-scope content niches) — a service is
-        // categorized by the provider type its creator picked when listing it.
+        // Same BOTH-scope pill row as People, so switching tabs doesn't switch
+        // vocabularies mid-browse.
         // No wrapper margin, same as People's CategoryPillRow, so the pill
         // row sits at the identical position switching between tabs. The gap
         // before the card list now comes from list's own paddingTop (see

@@ -11,6 +11,7 @@ import {
   EXCHANGE_OPTIONS, EXCHANGE_DESCRIPTIONS,
   type AiCampaignDraft, type AiEventDraft, type AiRequirementDraft, type SuggestDescriptionInput,
 } from './campaign-ai.schema';
+import { searchStockPhoto } from '../../utils/imageSearch';
 import dummyData from './campaign-ai.dummy.json';
 
 // Thrown when the model determines the brand's prompt doesn't express any
@@ -176,7 +177,7 @@ const CAMPAIGN_LOCALIZED_FIELDS = [
 // Enum-valued fields are matched against fixed taxonomy/option lists after the
 // model responds and are rendered as chips keyed on the exact English string —
 // translating one silently drops it on the floor.
-const NEVER_TRANSLATE = 'category, secondaryCategories, platform, secondaryPlatforms, goal, targetAudience, benefits, exchangeType, completionType, needsInput, paymentType, and every requirements[] entry\'s category';
+const NEVER_TRANSLATE = 'category, secondaryCategories, platform, secondaryPlatforms, goal, targetAudience, benefits, exchangeType, completionType, needsInput, paymentType, imageQuery, and every requirements[] entry\'s category';
 
 function buildLanguageInstruction(language: string, localizedFields: string[], inputSource?: 'voice' | 'text'): string {
   const fieldList = localizedFields.join(', ');
@@ -284,6 +285,7 @@ Respond with a JSON object with EXACTLY these keys:
 - location: string or null, a city/area if inferable, otherwise null
 - completionType: "SERVICE" or "DELIVERABLE" for the campaign's main role. ${buildCompletionTypeInstruction()}
 - completionReason: string, the one-sentence explanation described above.
+- imageQuery: string, 2-5 words in ENGLISH naming the single best stock photo for this campaign, describing the photo's SUBJECT only — e.g. "momo dumplings on table", "holi festival colour powder", "himalaya trekking trail", "barista pouring latte", "jewellery display case". Concrete and photographable: no brand names, no person's name, no business or street names (a well-known natural landmark like "himalaya" is fine when it genuinely IS the subject), no words like "photo"/"image"/"banner"/"poster", no adjectives about mood. Base it on what the campaign is actually ABOUT, not on the category name — a Holi party at a cafe is "holi festival colour powder", not "cafe interior". ALWAYS English even when every other field is Nepali, because it is used verbatim as a stock-photo search query.
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category","completionType"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
 - requirements: array (0-10 items) — ONLY populate this when the brief clearly names multiple DISTINCT provider types and/or explicit counts for each (e.g. "two TikTok creators and a photographer", "1 photographer and 2 content creators", "5 content creators, 2 photographers and 1 DJ"). Each item: { "category": one of the exact Provider types listed above, "quantity": integer count needed for that role, "budgetType": "FIXED"|"RANGE"|"NEGOTIABLE", "budgetFixed": number (required if budgetType is FIXED), "budgetMin"/"budgetMax": numbers (required if budgetType is RANGE), "deliverables": object, "description": string, "completionType": "SERVICE"|"DELIVERABLE", "completionReason": string }. Each role gets its OWN completionType/completionReason, decided independently per the same rule as the campaign-level completionType above — a brief asking for "1 photographer and 1 DJ" typically yields DELIVERABLE for the photographer and SERVICE for the DJ. budgetFixed/budgetMin/budgetMax for a role are the amount paid to EACH INDIVIDUAL creator filling that role (same per-person convention as deliverables above), NOT a pool split across that role's quantity. If the brief gives ONE total budget for the whole brief (e.g. "budget is 10000" for "5 content creators, 2 photographers and 1 DJ"), do NOT copy that total into every role or divide it evenly per head — first allocate the total across roles by typical relative cost per role type (e.g. a DJ or photographer usually costs more per person than a content creator), THEN divide each role's allocated share by that role's quantity to land on a realistic per-person figure, such that summing (budgetFixed × quantity) across all roles lands close to the brief's stated total. If unclear or no total was given, use "NEGOTIABLE". If the brief describes only ONE general need (even if creatorsNeeded > 1, e.g. "3 food creators"), leave requirements as an empty array [] — do not invent a multi-role breakdown the brief doesn't support. Never leave requirements populated with a single item; use the top-level category/creatorsNeeded/budget/deliverables fields for that case instead.
   For "deliverables" and "description", exactly ONE of the two is meaningful per role, based on category:
@@ -345,6 +347,7 @@ ${EXCHANGE_OPTIONS.map((e) => `  - "${e}": ${EXCHANGE_DESCRIPTIONS[e]}`).join('\
 ${buildEventDateInstruction(today)}
 - completionType: "SERVICE" or "DELIVERABLE". ${buildCompletionTypeInstruction()}
 - completionReason: string, the one-sentence explanation described above.
+- imageQuery: string, 2-5 words in ENGLISH naming the single best stock photo for this event, describing the photo's SUBJECT only — e.g. "momo dumplings on table", "holi festival colour powder", "himalaya trekking trail", "barista pouring latte", "jewellery display case". Concrete and photographable: no brand names, no person's name, no business or street names (a well-known natural landmark like "himalaya" is fine when it genuinely IS the subject), no words like "photo"/"image"/"banner"/"poster", no adjectives about mood. Base it on what the event is actually ABOUT, not on the category name — a Holi party at a cafe is "holi festival colour powder", not "cafe interior". ALWAYS English even when every other field is Nepali, because it is used verbatim as a stock-photo search query.
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","capacity","platform","category","completionType","eventDate"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless. Include "eventDate" whenever you returned eventDate as null, so the brand is prompted to pick a date.
 
 ${buildLanguageInstruction(language, EVENT_LOCALIZED_FIELDS, inputSource)}
@@ -399,7 +402,7 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; aiFallback: boolean; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
+  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
     const [realCategories, realProviderCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       // strict:true — requirements need real provider TYPES (Photographer,
@@ -432,7 +435,29 @@ export class CampaignAiService {
       aiFallback = true;
     }
     const matched = this.matchToRealTaxonomy(draft, categoryNames, platformNames);
-    return { ...matched, aiFallback, requirements: this.resolveRequirements(draft.requirements, realProviderCategories) };
+    return {
+      ...matched,
+      ...(await this.resolveFeatureImage(draft)),
+      aiFallback,
+      requirements: this.resolveRequirements(draft.requirements, realProviderCategories),
+    };
+  }
+
+  // Turns the model's `imageQuery` subject phrase into a real photo URL. Falls
+  // back to the draft's title as the query, which is what carries a dummy-JSON
+  // fallback draft (it has no imageQuery) and any model response that omitted
+  // the field. Returns nulls rather than throwing on every failure path — the
+  // mobile client has its own local category photo map to fall back to, so a
+  // missing photo must never cost the brand their draft.
+  // imageQuery is typed non-optional but declared optional here on purpose: a
+  // dummy-JSON draft is cast to AiCampaignDraft/AiEventDraft without ever going
+  // through zod, so the key is genuinely absent at runtime on that path and a
+  // bare .trim() would throw.
+  private async resolveFeatureImage(
+    draft: { imageQuery?: string; title: string },
+  ): Promise<{ featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null }> {
+    const photo = await searchStockPhoto(draft.imageQuery?.trim() || draft.title);
+    return { featureImageUrl: photo?.url ?? null, featureImageCredit: photo?.credit ?? null };
   }
 
   // Matches each AI-guessed requirement category name to a real CREATOR
@@ -456,7 +481,7 @@ export class CampaignAiService {
     });
   }
 
-  async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; aiFallback: boolean }> {
+  async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null }> {
     const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
@@ -483,7 +508,11 @@ export class CampaignAiService {
       draft = pickDummyEventDraft(prompt, language);
       aiFallback = true;
     }
-    return { ...this.matchToRealTaxonomy(draft, categoryNames, platformNames), aiFallback };
+    return {
+      ...this.matchToRealTaxonomy(draft, categoryNames, platformNames),
+      ...(await this.resolveFeatureImage(draft)),
+      aiFallback,
+    };
   }
 
   // Fed into the system prompt so the AI can infer industry/location the

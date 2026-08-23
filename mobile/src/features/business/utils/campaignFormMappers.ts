@@ -1,6 +1,6 @@
 import type { AiCampaignDraft, AiEventDraft } from '@/services/campaign';
 import { DEFAULT_DELIVERABLES } from '@/features/business/constants/campaignForm';
-import { getTemplateImage } from '@/features/creator/data/templateImages';
+import { resolveFeatureImage } from '@/features/creator/data/templateImages';
 import type { FormData, RequirementFormItem } from '@/features/business/types/campaignForm.types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,7 +62,11 @@ export function mapAiCampaignDraftToForm(draft: AiCampaignDraft, aiPrompt: strin
     hashtags:             draft.hashtags,
     sampleCaption:        draft.sampleCaption,
     approvalRequirements: draft.approvalRequirements,
-    featureImageUrl:      prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
+    // Three tiers, most-specific first: an image the brand already uploaded, the
+    // stock photo the backend found for this draft's actual subject, then the
+    // local category/keyword map for when the backend had no search key.
+    featureImageUrl:      prev.featureImageUrl ?? draft.featureImageUrl
+      ?? resolveFeatureImage({ category: draft.category, title: draft.title, description: draft.description }),
     aiGenerated:           true,
     aiPrompt,
     aiSuggestedCategories: draft.aiSuggestedCategories,
@@ -125,7 +129,9 @@ export function mapAiEventDraftToForm(draft: AiEventDraft, aiPrompt: string, pre
     // screen — their own entry is more reliable than an inferred one.
     venue:       prev.venue.trim() || draft.venue?.trim() || draft.location?.trim() || prev.venue,
     location:    draft.location?.trim() || prev.location,
-    featureImageUrl:       prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
+    // See mapAiCampaignDraftToForm.
+    featureImageUrl:       prev.featureImageUrl ?? draft.featureImageUrl
+      ?? resolveFeatureImage({ category: draft.category, title: draft.title, description: draft.description }),
     aiGenerated:           true,
     aiPrompt,
     aiSuggestedCategories: draft.aiSuggestedCategories,

@@ -27,15 +27,14 @@ import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilitie
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
 // One color per Quick Action tile — chosen for the concept, not the brand
-// (purple/work, amber/needs-a-response, blue/discover, teal/organizations,
-// pink/people) — so five different icon shapes also read as five different
-// colors instead of one repeated brand tint.
+// (purple/work, amber/needs-a-response, blue/discover, teal/invitations)
+// — so four different icon shapes also read as four different colors
+// instead of one repeated brand tint.
 const QUICK_ACTION_COLORS = {
   myCampaigns:     { icon: '#7C3AED', bg: '#F3E8FF' },
   serviceRequests: { icon: '#D97706', bg: '#FEF3C7' },
-  campaigns:       { icon: '#0369A1', bg: '#E0F2FE' },
-  businesses:      { icon: '#0D9488', bg: '#CCFBF1' },
-  people:          { icon: '#DB2777', bg: '#FCE7F3' },
+  shortlisted:     { icon: '#0369A1', bg: '#E0F2FE' },
+  invitations:     { icon: '#0D9488', bg: '#CCFBF1' },
 } as const;
 
 function getInitials(name: string): string {
@@ -54,14 +53,14 @@ export default function HomeScreen() {
   const [profile, setProfile] = useState<ApiCreatorProfile | null>(null);
   const [yourWork, setYourWork] = useState<WorkItem[]>([]);
   const [recommended, setRecommended] = useState<Campaign[]>([]);
-  // §16 — the Team dashboard block. Only a TEAM/AGENCY has a roster, and the
+  // §16 — the Team dashboard block. Only a TEAM has a roster, and the
   // roster endpoint 400s for anyone else, so it's fetched conditionally.
   const [teamMembers, setTeamMembers] = useState<ApiProviderMember[]>([]);
-  // §16 agency dashboard. Derived from the accepted-applications fetch this
+  // §16 team dashboard. Derived from the accepted-applications fetch this
   // screen already makes — clients, projects and deliverables are all facts
   // about bookings, so none of them needed a new entity: an accepted
   // Application IS the project (§13), and deliverables already live on it.
-  const [agencyStats, setAgencyStats] = useState({ clients: 0, active: 0, deliverables: 0 });
+  const [teamStats, setTeamStats] = useState({ clients: 0, active: 0, deliverables: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -168,18 +167,18 @@ export default function HomeScreen() {
       if ((hasPhoto || hasLink) && !p.portfolioLinks?.length) missing.push(t('creator.home.fieldPortfolio'));
       setMissingFields(missing);
 
-      const isTeamOrAgency = p.providerType === 'TEAM' || p.providerType === 'AGENCY';
+      const isTeam = p.providerType === 'TEAM';
       const [applications, recs, roster] = await Promise.all([
         campaignService.getMyApplications({ status: 'ACCEPTED', limit: 10 }).catch(() => ({ proposals: [], total: 0 })),
         campaignService.recommended({ limit: 5 }).catch(() => ({ campaigns: [] })),
-        isTeamOrAgency ? creatorService.listTeamMembers().catch(() => [] as ApiProviderMember[]) : Promise.resolve([] as ApiProviderMember[]),
+        isTeam ? creatorService.listTeamMembers().catch(() => [] as ApiProviderMember[]) : Promise.resolve([] as ApiProviderMember[]),
       ]);
       setTeamMembers(roster);
       setYourWork(applications.proposals.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED'));
 
-      if (isTeamOrAgency) {
+      if (isTeam) {
         const accepted = applications.proposals;
-        setAgencyStats({
+        setTeamStats({
           clients: new Set(accepted.map((a) => a.businessId).filter(Boolean)).size,
           active: accepted.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED').length,
           deliverables: accepted.reduce((n, a) => n + (a.deliverableVideos?.length ?? 0), 0),
@@ -349,22 +348,20 @@ export default function HomeScreen() {
           </View>
 
           {/* Quick Actions — each tile gets its own icon color/tint (a small
-              fixed palette below, not the app's brand purple repeated five
+              fixed palette below, not the app's brand purple repeated four
               times) so the shapes are distinguishable at a glance instead of
               blurring into one same-colored row. No card/border around each
               tile — just the icon-circle (with a soft SHADOW.card lift) +
-              label. All five stay on screen at once (flex: 1 each, no
-              scrolling) — icon size/gap are tuned down slightly from the old
-              4-tile row so a fifth tile fits without crowding. Sits its own
-              step (marginTop: xl) below the action zone above — a distinct
-              row of shortcuts, not part of that cluster. */}
+              label. All four stay on screen at once (flex: 1 each, no
+              scrolling). Sits its own step (marginTop: xl) below the action
+              zone above — a distinct row of shortcuts, not part of that
+              cluster. */}
           <View style={styles.quickActionsRow}>
             {[
               { key: 'myCampaigns',      icon: 'briefcase'      as const, label: t('home.qaMyCampaigns'),     color: QUICK_ACTION_COLORS.myCampaigns,     onPress: () => router.push({ pathname: '/(creator)/(tabs)/proposals', params: { tab: 'accepted' } }) },
               { key: 'serviceRequests',  icon: 'clipboard-list' as const, label: t('home.qaServiceRequests'), color: QUICK_ACTION_COLORS.serviceRequests, onPress: () => router.push('/(creator)/service-requests') },
-              { key: 'campaigns',        icon: 'search'         as const, label: t('home.qaFindCampaigns'),   color: QUICK_ACTION_COLORS.campaigns,       onPress: () => router.push({ pathname: '/(creator)/(tabs)/discover', params: { tab: 'campaigns' } }) },
-              { key: 'businesses',       icon: 'building'       as const, label: t('home.qaFindBusinesses'),  color: QUICK_ACTION_COLORS.businesses,      onPress: () => router.push({ pathname: '/(creator)/(tabs)/discover', params: { tab: 'businesses' } }) },
-              { key: 'people',           icon: 'user-friends'   as const, label: t('home.qaFindPeople'),      color: QUICK_ACTION_COLORS.people,          onPress: () => router.push({ pathname: '/(creator)/(tabs)/discover', params: { tab: 'people' } }) },
+              { key: 'shortlisted',      icon: 'bookmark'       as const, label: t('home.qaShortlisted'),     color: QUICK_ACTION_COLORS.shortlisted,     onPress: () => router.push('/(creator)/shortlisted-events' as Parameters<typeof router.push>[0]) },
+              { key: 'invitations',      icon: 'envelope-open-text' as const, label: t('home.qaMyInvitations'), color: QUICK_ACTION_COLORS.invitations,   onPress: () => router.push('/(creator)/invitations') },
             ].map((qa) => (
               <Pressable
                 key={qa.key}
@@ -390,19 +387,19 @@ export default function HomeScreen() {
               </View>
             ) : (
               <View style={{ gap: SPACING.xxl }}>
-                {/* §16 — the agency/team dashboard row. Three counts, no new
+                {/* §16 — the team dashboard row. Three counts, no new
                     endpoint: all three are derived from the accepted-bookings
                     fetch above. */}
-                {(profile?.providerType === 'TEAM' || profile?.providerType === 'AGENCY') && (
+                {profile?.providerType === 'TEAM' && (
                   <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: C.text }]}>
-                      {profile?.providerType === 'AGENCY' ? t('home.agencySection') : t('home.teamStatsSection')}
+                      {t('home.teamStatsSection')}
                     </Text>
                     <View style={styles.statsRow}>
                       {[
-                        { key: 'clients',      value: agencyStats.clients,      label: t('home.statClients'),      icon: 'building'   as const },
-                        { key: 'projects',     value: agencyStats.active,       label: t('home.statProjects'),     icon: 'briefcase'  as const },
-                        { key: 'deliverables', value: agencyStats.deliverables, label: t('home.statDeliverables'), icon: 'photo-video' as const },
+                        { key: 'clients',      value: teamStats.clients,      label: t('home.statClients'),      icon: 'building'   as const },
+                        { key: 'projects',     value: teamStats.active,       label: t('home.statProjects'),     icon: 'briefcase'  as const },
+                        { key: 'deliverables', value: teamStats.deliverables, label: t('home.statDeliverables'), icon: 'photo-video' as const },
                       ].map((stat) => (
                         <Pressable
                           key={stat.key}
@@ -418,12 +415,12 @@ export default function HomeScreen() {
                 )}
 
                 {/* §16 — Team block, teams and agencies only. Deliberately a
-                    feed section rather than a sixth tab or a sixth quick
+                    feed section rather than an extra tab or an extra quick
                     action: the tab bar already carries five items, and the
-                    quick-action row is five fixed-width columns that fill the
-                    screen exactly (see quickActionTile), so a sixth of either
-                    would overflow on a small phone. */}
-                {(profile?.providerType === 'TEAM' || profile?.providerType === 'AGENCY') && (
+                    quick-action row is fixed-width columns that fill the
+                    screen exactly (see quickActionTile), so one more of
+                    either would overflow on a small phone. */}
+                {profile?.providerType === 'TEAM' && (
                   <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                       <Text style={[styles.sectionTitle, { color: C.text }]}>{t('home.teamSection')}</Text>
@@ -696,7 +693,7 @@ const styles = StyleSheet.create({
   statLabel:  { fontSize: FONT_SIZE.xs, fontFamily: F.medium, textAlign: 'center' },
 
   quickActionsRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xxl },
-  // flex: 1 (not a fixed width) — five equal-width columns that always sum
+  // flex: 1 (not a fixed width) — four equal-width columns that always sum
   // to the full row, on any screen size, with no scrolling.
   quickActionTile: { flex: 1, alignItems: 'center', gap: SPACING.sm },
   quickActionTilePressed: { opacity: 0.7 },

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { categoryService, type ApiCategory } from '@/services/category';
 
-type CacheKey = 'CREATOR' | 'BUSINESS' | 'CREATOR:strict' | 'ALL';
+type CategoryScope = 'CREATOR' | 'BUSINESS' | 'BOTH';
+
+type CacheKey = 'CREATOR' | 'BUSINESS' | 'BOTH' | 'CREATOR:strict' | 'ALL';
 
 // How long a fetched list is trusted before the next mount silently refetches
 // in the background — without this, a long-running app session would never
@@ -25,7 +27,7 @@ function isFresh(key: CacheKey) {
 // React keys in the chip rows. Keep one row per name, preferring the one whose
 // scope exactly matches what the caller asked for (so the CREATOR picker keeps
 // the grouped provider role rather than the ungrouped industry row).
-function dedupeByName(cats: ApiCategory[], scope?: 'CREATOR' | 'BUSINESS'): ApiCategory[] {
+function dedupeByName(cats: ApiCategory[], scope?: CategoryScope): ApiCategory[] {
   const byName = new Map<string, ApiCategory>();
   for (const c of cats) {
     const kept = byName.get(c.name);
@@ -34,7 +36,16 @@ function dedupeByName(cats: ApiCategory[], scope?: 'CREATOR' | 'BUSINESS'): ApiC
   return [...byName.values()];
 }
 
-function fetchScoped(key: CacheKey, scope?: 'CREATOR' | 'BUSINESS', strict?: boolean): Promise<ApiCategory[]> {
+/** Pins the catch-all "Other" row to the end of a picker instead of wherever
+ *  the API's name-ascending sort drops it — sort is stable, so every other row
+ *  keeps its alphabetical position. `key` is optional so a caller can pass a
+ *  list that mixes live rows with stale saved-name-only chips. */
+export function sortOtherLast<T extends { key?: string; name: string }>(cats: T[]): T[] {
+  const isOther = (c: T) => c.key === 'other-industry' || c.key === 'other-provider' || c.name === 'Other';
+  return [...cats].sort((a, b) => Number(isOther(a)) - Number(isOther(b)));
+}
+
+function fetchScoped(key: CacheKey, scope?: CategoryScope, strict?: boolean): Promise<ApiCategory[]> {
   if (isFresh(key)) return Promise.resolve(cache[key]!);
   if (!inflight[key]) {
     inflight[key] = categoryService.getCategories(scope, strict)
@@ -51,8 +62,9 @@ function fetchScoped(key: CacheKey, scope?: 'CREATOR' | 'BUSINESS', strict?: boo
  *  screens (onboarding, create-campaign, edit-categories, filters). Pass
  *  `strict` for CREATOR to opt out of the default "+ BOTH" widening — BOTH-scope
  *  rows are content niches (e.g. "Hotels", "Restaurants") with no group/parent,
- *  which are wrong to mix into a provider-*type* picker. */
-export function useCategories(scope: 'CREATOR' | 'BUSINESS', strict?: boolean) {
+ *  which are wrong to mix into a provider-*type* picker. Pass 'BOTH' for the
+ *  industry list on its own, with no side-specific rows mixed in. */
+export function useCategories(scope: CategoryScope, strict?: boolean) {
   const key: CacheKey = strict ? 'CREATOR:strict' : scope;
   const [categories, setCategories] = useState<ApiCategory[]>(cache[key] ?? []);
   const [loading, setLoading] = useState(!cache[key]);

@@ -22,7 +22,7 @@ import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { AssignMembersSheet } from '@/features/creator/components/AssignMembersSheet';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, lineHeightFor, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -138,25 +138,41 @@ function ProposalCard({ proposal, canAssign, onAssign }: {
             title block right, tag badges under the title) instead of the
             old cramped single-row avatar + pill. ── */}
         <View style={styles.cardHeader}>
-          <View style={[styles.thumb, { backgroundColor: `${accentColor}18` }]}>
-            <Text style={[styles.thumbInitials, { color: accentColor }]}>{brandInitials(proposal.brand)}</Text>
-            {proposal.featureImageUrl && (
-              <Image source={{ uri: proposal.featureImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
-            )}
+          {/* Avatar column — the submitted-time sits directly under the thumb
+              so the title block keeps its full width for title + badges. */}
+          <View style={styles.thumbColumn}>
+            <View style={[styles.thumb, { backgroundColor: `${accentColor}18` }]}>
+              <Text style={[styles.thumbInitials, { color: accentColor }]}>{brandInitials(proposal.brand)}</Text>
+              {proposal.featureImageUrl && (
+                <Image source={{ uri: proposal.featureImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              )}
+            </View>
+            <Text style={[styles.submittedText, { color: C.textSecondary }]}>{timeAgo(proposal.submittedAt, t)}</Text>
           </View>
+          {/* The event is what the creator applied to, so it leads; the
+              business name is the supporting line under it. */}
           <View style={styles.titleSection}>
-            <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{proposal.brand}</Text>
-            <Text style={[styles.campaignTitle, { color: C.textSecondary }]} numberOfLines={2}>{proposal.campaignTitle}</Text>
+            <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={2}>{proposal.campaignTitle}</Text>
+            <Text style={[styles.brandName, { color: C.textSecondary }]} numberOfLines={1}>{proposal.brand}</Text>
             <View style={styles.tagContainer}>
-              <View style={[styles.tagBadge, { backgroundColor: cfg.bg }]}>
+              {/* Money leads the badge row — a free event's "free" tag is the
+                  same slot, since that IS its rate. */}
+              {isFree ? (
+                <View style={[styles.tagBadge, { backgroundColor: '#F0FDF4' }]}>
+                  <FontAwesome5 name="gift" solid size={9} color="#059669" />
+                  <Text style={[styles.tagBadgeText, { color: '#059669' }]}>{t('proposal.creator.freeEventTag')}</Text>
+                </View>
+              ) : (
+                <View style={[styles.tagBadge, { backgroundColor: `${accentColor}14` }]}>
+                  <FontAwesome5 name="money-bill-alt" solid size={9} color={accentColor} />
+                  <Text style={[styles.tagBadgeText, { color: accentColor }]}>{proposal.proposedRate}</Text>
+                </View>
+              )}
+              {/* Status sits hard right, opposite the amount. */}
+              <View style={[styles.tagBadge, styles.statusBadge, { backgroundColor: cfg.bg }]}>
                 <FontAwesome5 name={cfg.icon} size={9} color={cfg.color} />
                 <Text style={[styles.tagBadgeText, { color: cfg.color }]}>{t(cfg.labelKey)}</Text>
               </View>
-              {isFree && (
-                <View style={[styles.tagBadge, { backgroundColor: '#F0FDF4' }]}>
-                  <Text style={[styles.tagBadgeText, { color: '#059669' }]}>{t('proposal.creator.freeEventTag')}</Text>
-                </View>
-              )}
             </View>
           </View>
         </View>
@@ -180,20 +196,6 @@ function ProposalCard({ proposal, canAssign, onAssign }: {
           </View>
         )}
 
-        {/* ── Details: rate/free + submitted-time ── */}
-        <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
-          <View style={styles.detailRow}>
-            <FontAwesome5 name={isFree ? 'gift' : 'money-bill-alt'} solid size={14} color={accentColor} />
-            <Text style={[styles.detailText, { color: accentColor }]}>
-              {isFree ? t('proposal.creator.freeEventTag') : proposal.proposedRate}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <FontAwesome5 name="calendar-alt" size={14} color={C.textSecondary} />
-            <Text style={[styles.detailText, { color: C.textSecondary }]}>{timeAgo(proposal.submittedAt, t)}</Text>
-          </View>
-        </View>
-
         {/* ── Accepted ──
             A free event ends here: being accepted is itself the final step,
             with nothing to start and no deliverable to submit, so the banner
@@ -211,7 +213,7 @@ function ProposalCard({ proposal, canAssign, onAssign }: {
           </View>
         )}
 
-        {/* §13 — staffing a booking the team won. Only a TEAM/AGENCY sees it:
+        {/* §13 — staffing a booking the team won. Only a TEAM sees it:
             an individual provider IS the whole provider. */}
         {proposal.status === 'accepted' && canAssign && (
           <Pressable
@@ -323,14 +325,14 @@ export default function ProposalsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]         = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('all');
-  // §13 — only a TEAM/AGENCY staffs a booking, so the profile decides whether
+  // §13 — only a TEAM staffs a booking, so the profile decides whether
   // the assign row renders at all.
   const [canAssign, setCanAssign] = useState(false);
   const [assigningId, setAssigningId] = useState<string | null>(null);
 
   useEffect(() => {
     creatorService.getProfile()
-      .then((p) => setCanAssign(p.providerType === 'TEAM' || p.providerType === 'AGENCY'))
+      .then((p) => setCanAssign(p.providerType === 'TEAM'))
       .catch(() => {});
   }, []);
   const loadingMoreRef = useRef(false);
@@ -509,24 +511,22 @@ const styles = StyleSheet.create({
   // CampaignListItem's cardHeader/thumb/titleSection/tagContainer/tagBadge
   // (the home feed's card) instead of the old cramped single-row layout.
   cardHeader:   { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  thumbColumn:  { width: 60, alignItems: 'center', gap: 5, flexShrink: 0 },
   thumb:        { width: 60, height: 60, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   thumbInitials:{ fontSize: 18, fontFamily: F.bold },
+  submittedText:{ fontSize: 10, fontFamily: F.semibold, lineHeight: lineHeightFor(10), textAlign: 'center' },
   titleSection: { flex: 1, gap: 4 },
-  brandName:    { fontSize: 15, fontFamily: F.bold },
-  campaignTitle:{ fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
+  eventTitle:   { fontSize: 15, fontFamily: F.bold, lineHeight: lineHeightFor(15) },
+  brandName:    { fontSize: 12, fontFamily: F.regular, lineHeight: lineHeightFor(12) },
   tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6, marginTop: 2 },
   tagBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
+  statusBadge:  { marginLeft: 'auto' },
   tagBadgeText: { fontSize: 11, fontFamily: F.bold },
 
   // Cover letter
   coverRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 7, borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
   coverText: { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
   seeMore:   { fontSize: 12, fontFamily: F.semibold, marginTop: 3 },
-
-  // Details section — sized to match CampaignListItem's detailsSection.
-  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, gap: 10 },
-  detailRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  detailText:     { fontSize: 13, fontFamily: F.semibold },
 
   // Track button
   trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.md, paddingVertical: 11, paddingHorizontal: 12 },

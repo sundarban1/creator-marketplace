@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { CreatorController } from './creator.controller';
 import { BusinessController } from '../business/business.controller';
 import { FavoriteController } from './favorite.controller';
+import { ShortlistController } from './shortlist.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { uploadImage } from '../../middleware/upload';
@@ -26,6 +27,7 @@ const router = Router();
 const ctrl = new CreatorController();
 const businessCtrl = new BusinessController();
 const favoriteCtrl = new FavoriteController();
+const shortlistCtrl = new ShortlistController();
 
 // All creator routes require authentication and CREATOR role
 router.use(authenticate, authorize('CREATOR'));
@@ -271,6 +273,12 @@ router.put('/availability/schedule', validate(updateAvailabilityScheduleSchema),
 // Invitations (§50) — direct business-to-creator invites, distinct from applying to a campaign
 router.get('/invitations',             ctrl.listInvitations.bind(ctrl));
 router.post('/invitations/:id/respond', validate(respondToInvitationSchema), ctrl.respondToInvitation.bind(ctrl));
+
+// Shortlisted events — the creator's own saved-for-later list. Private to
+// the creator; unrelated to a business shortlisting an applicant.
+router.get('/campaigns/shortlist',                        shortlistCtrl.listIds.bind(shortlistCtrl));
+router.get('/campaigns/shortlist/list',                   shortlistCtrl.list.bind(shortlistCtrl));
+router.post('/campaigns/:campaignId/shortlist',           shortlistCtrl.toggle.bind(shortlistCtrl));
 
 // Explore businesses (creator browsing businesses)
 router.get('/businesses',                                 businessCtrl.listBusinesses.bind(businessCtrl));

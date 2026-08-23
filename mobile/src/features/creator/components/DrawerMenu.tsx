@@ -103,7 +103,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
   const identityLine = user ? getAccountIdentityLine(user) : '';
   // An INDIVIDUAL provider has no roster of their own, so "My Team" is noise.
   const navItems = ACCOUNT_ITEMS.filter(
-    (item) => item.labelKey !== 'drawer.myTeam' || providerType === 'TEAM' || providerType === 'AGENCY',
+    (item) => item.labelKey !== 'drawer.myTeam' || providerType === 'TEAM',
   );
 
   return (

@@ -59,13 +59,13 @@ export default function TeamScreen() {
     setLoading(true);
     setError(null);
     try {
-      // The roster call is only valid for a TEAM/AGENCY (or for an ADMIN of
+      // The roster call is only valid for a TEAM (or for an ADMIN of
       // another team), so the profile has to be read first — an INDIVIDUAL with
       // no adminships still sees the invitations half.
       const profile = await creatorService.getProfile();
       setProviderType(profile.providerType);
       const target = providerId ?? null;
-      const ownCanHaveMembers = profile.providerType === 'TEAM' || profile.providerType === 'AGENCY';
+      const ownCanHaveMembers = profile.providerType === 'TEAM';
       const [invites, roster, assigned] = await Promise.all([
         creatorService.listMyMemberships(),
         target || ownCanHaveMembers
@@ -104,7 +104,7 @@ export default function TeamScreen() {
 
   // The switcher only earns its space once there's more than one roster to
   // choose between.
-  const ownCanHaveMembers = providerType === 'TEAM' || providerType === 'AGENCY';
+  const ownCanHaveMembers = providerType === 'TEAM';
   const rosterOptions = useMemo(() => [
     ...(ownCanHaveMembers ? [{ id: null as string | null, label: t('team.myTeamOption') }] : []),
     ...adminOf.map((m) => ({ id: m.providerId, label: m.provider?.fullName ?? t('team.unknownProvider') })),

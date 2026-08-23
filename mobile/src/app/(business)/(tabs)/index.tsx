@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, FONT_SIZE, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
@@ -23,7 +23,7 @@ import { notificationService } from '@/services/notifications';
 import { profileService } from '@/services/profile';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import type { Campaign } from '@/types';
-import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -48,7 +48,10 @@ export default function BusinessHomeScreen() {
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
   const { categories: allCategories } = useAllCategories();
-  const { categories: serviceCategories } = useCategories('CREATOR');
+  // BOTH-scope rows are the shared industry/niche list (Hotels, Restaurants, …)
+  // — the categories a business browses people *by*, as opposed to the
+  // CREATOR-scope provider-type rows used inside explore-creators' filters.
+  const { categories: browseCategories } = useCategories('BOTH');
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
   const name = user?.name?.split(' ')[0] ?? 'there';
@@ -348,26 +351,44 @@ export default function BusinessHomeScreen() {
 
         </View>
 
-        {/* ── Find People ── */}
-        {serviceCategories.length > 0 && (
+        {/* ── Find People by Category — horizontal slider over the full
+            BOTH-scope category list (no longer a fixed 4-tile grid, so an
+            admin adding a category surfaces here without a code change). ── */}
+        {browseCategories.length > 0 && (
           <View style={styles.findPeopleSection}>
-            <Text style={[styles.sectionTitle, { color: C.text }]}>{t('business.home.findPeople')}</Text>
-            <View style={styles.serviceGrid}>
-              {serviceCategories.slice(0, 4).map((cat) => (
-                <Pressable key={cat.id} style={styles.serviceTile} onPress={() => router.push('/(business)/explore-creators')}>
+            <View style={styles.findPeopleHeader}>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('business.home.findPeople')}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/(business)/explore-creators')}>
+                <Text style={[styles.viewAll, { color: C.brinjal1 }]}>{t('business.home.viewAll')}</Text>
+              </Pressable>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.serviceSlider}>
+              {sortOtherLast(browseCategories).map((cat) => (
+                <Pressable
+                  key={cat.id}
+                  style={styles.serviceTile}
+                  accessibilityRole="button"
+                  accessibilityLabel={cat.name}
+                  onPress={() => router.push('/(business)/explore-creators')}>
                   <View style={[styles.serviceIconWrap, { backgroundColor: cat.iconBg }, SHADOW.card]}>
                     <FontAwesome5 name={cat.icon as any} size={18} color={cat.color} />
                   </View>
-                  <Text style={[styles.serviceLabel, { color: C.text }]} numberOfLines={1}>{cat.name}</Text>
+                  <Text style={[styles.serviceLabel, { color: C.text }]} numberOfLines={2}>{cat.name}</Text>
                 </Pressable>
               ))}
-              <Pressable style={styles.serviceTile} onPress={() => router.push('/(business)/explore-creators')}>
+              <Pressable
+                style={styles.serviceTile}
+                accessibilityRole="button"
+                accessibilityLabel={t('business.home.allServicesTile')}
+                onPress={() => router.push('/(business)/explore-creators')}>
                 <View style={[styles.serviceIconWrap, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }, SHADOW.card]}>
                   <FontAwesome5 name="th-large" solid size={18} color={C.textSecondary} />
                 </View>
-                <Text style={[styles.serviceLabel, { color: C.text }]} numberOfLines={1}>{t('business.home.allServicesTile')}</Text>
+                <Text style={[styles.serviceLabel, { color: C.text }]} numberOfLines={2}>{t('business.home.allServicesTile')}</Text>
               </Pressable>
-            </View>
+            </ScrollView>
           </View>
         )}
 
@@ -694,10 +715,18 @@ const styles = StyleSheet.create({
   // action items, same gap used by every other row on the page (Recent Events,
   // Recommended) so the whole page reads on one consistent rhythm.
   findPeopleSection: { marginTop: SPACING.xxl, gap: SPACING.md },
-  serviceGrid: { flexDirection: 'row', gap: 8 },
-  serviceTile: { flex: 1, alignItems: 'center', gap: 6 },
+  // Same title/"View all" split as sectionHeader, minus its marginBottom —
+  // findPeopleSection's own `gap` already spaces the row off the slider.
+  findPeopleHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  // Horizontal slider (not a flex row) — the tile count is however many
+  // BOTH-scope categories the admin has active, so tiles get a fixed width
+  // and scroll instead of being squeezed to fit the screen.
+  serviceSlider: { flexDirection: 'row', gap: 12, paddingRight: SPACING.xs },
+  serviceTile: { width: 68, alignItems: 'center', gap: 6 },
   serviceIconWrap: { width: 52, height: 52, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center' },
-  serviceLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
+  // Two-line labels now (category names are longer than the old 4 hand-picked
+  // ones), so the Devanagari-safe lineHeight matters here — matras clip below 1.5×.
+  serviceLabel: { fontSize: 11, lineHeight: lineHeightFor(11), fontFamily: F.medium, textAlign: 'center' },
 
   // Recommended for you — horizontal EntityCard rail.
   recommendedSection: { marginTop: SPACING.xxl },

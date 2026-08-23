@@ -9,14 +9,21 @@ import { F, RADIUS, lineHeightFor } from '@/utilities/constants';
 // a provider's name on their profile and on discovery cards. `type` is null for
 // accounts onboarded before the question existed; the badge renders nothing
 // rather than assuming INDIVIDUAL.
-const META: Record<ProviderType, { icon: string; labelKey: string }> = {
+// Keyed by the raw string the API returns, not by ProviderType: the picker no
+// longer offers AGENCY, but profiles created before it was withdrawn still come
+// back as 'AGENCY' (the Prisma enum and creator.dto still carry it), so a
+// Record<ProviderType, _> lookup returned undefined and crashed the People tab.
+// Unknown values render nothing, same as a null type.
+const META: Record<string, { icon: string; labelKey: string } | undefined> = {
   INDIVIDUAL: { icon: 'user',     labelKey: 'providerType.individual' },
   TEAM:       { icon: 'users',    labelKey: 'providerType.team' },
   AGENCY:     { icon: 'building', labelKey: 'providerType.agency' },
 };
 
 export function ProviderTypeBadge({ type, teamSize, size = 'md' }: {
-  type: ProviderType | null | undefined;
+  /** Widened past ProviderType because the API can still return a withdrawn
+   *  value (e.g. 'AGENCY') for an account created before the picker changed. */
+  type: ProviderType | (string & {}) | null | undefined;
   /** Appended as the spec's "Team · 4 members" line. Ignored for non-TEAM types. */
   teamSize?: number | null;
   size?: 'sm' | 'md';
@@ -26,6 +33,8 @@ export function ProviderTypeBadge({ type, teamSize, size = 'md' }: {
   if (!type) return null;
 
   const meta = META[type];
+  if (!meta) return null;
+
   const fontSize = size === 'sm' ? 10 : 12;
   // The card badge sits on a one-line name row, so it drops the "members" word
   // the roomier profile badge keeps.

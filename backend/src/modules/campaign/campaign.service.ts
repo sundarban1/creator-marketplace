@@ -964,7 +964,12 @@ export class CampaignService {
                   title:   `"${campaign.title}" is now full`,
                   body:    'This event has reached its creator capacity.',
                   refId:   campaign.id,
-                  refType: 'event',
+                  // 'campaign_full' — not 'event'/'campaign' — because these go
+                  // out to applicants we just auto-REJECTED. The client routes
+                  // this refType to the creator's Rejected proposals tab, while
+                  // a plain 'campaign' campaign_closed (a cancellation, which
+                  // reaches ACCEPTED creators) still opens the activity timeline.
+                  refType: 'campaign_full',
                 }))
               ).catch(() => {});
             }
@@ -987,7 +992,7 @@ export class CampaignService {
                 title:   `"${campaign.title}" is now full`,
                 body:    'All creator slots for this campaign have been filled.',
                 refId:   campaign.id,
-                refType: 'campaign',
+                refType: 'campaign_full',
               }))
             ).catch(() => {});
           }
@@ -1010,7 +1015,7 @@ export class CampaignService {
               title:   `"${campaign.title}" is now full`,
               body:    'This role has been filled.',
               refId:   campaign.id,
-              refType: 'campaign',
+              refType: 'campaign_full',
             }))
           ).catch(() => {});
         }

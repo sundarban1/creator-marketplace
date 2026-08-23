@@ -86,7 +86,7 @@ export const profileService = {
     gender?:     string;
     avatarUrl?:  string;
     categories?: string[];
-    providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY';
+    providerType?: 'INDIVIDUAL' | 'TEAM';
     teamSize?: number | null;
     industries?: string[];
     serviceMode?: 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID' | null;

@@ -49,7 +49,7 @@ type EntityCardProps = {
   ringColor:  string;
   name:       string;
   verified:   boolean;
-  /** §9 provider-type badge (Individual / Team / Agency) shown inline after the
+  /** §9 provider-type badge (Individual / Team) shown inline after the
    *  name. Omit for entities that have no provider type (businesses, services). */
   providerType?: ProviderType | null;
   /** Renders as "Team · 4" inside the provider-type badge. TEAM only. */

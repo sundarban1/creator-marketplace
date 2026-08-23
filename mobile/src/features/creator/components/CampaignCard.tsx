@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ShortlistButton } from '@/components/ShortlistButton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
@@ -130,12 +131,17 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
             </View>
           </View>
 
-          <Pressable
-            style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-            onPress={goToDetail}>
-            <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
-            <FontAwesome5 name="arrow-right" solid size={13} color="#fff" />
-          </Pressable>
+          {/* Save-for-later sits before Apply, so the two ways out of a card
+              are side by side. */}
+          <View style={styles.ctaRow}>
+            <ShortlistButton campaignId={campaign.id} size="sm" />
+            <Pressable
+              style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+              onPress={goToDetail}>
+              <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
+              <FontAwesome5 name="arrow-right" solid size={13} color="#fff" />
+            </Pressable>
+          </View>
         </View>
       </Pressable>
     </View>
@@ -183,7 +189,11 @@ const styles = StyleSheet.create({
   detailItemFixed: { flex: 0 },
   detailText: { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
 
+  // Shortlist + Apply share the row; Apply takes the leftover width so the
+  // bookmark stays a fixed square at the left.
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   applyBtn: {
+    flex: 1,
     minHeight: 38, borderRadius: RADIUS.sm,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
     shadowOpacity: 0.32, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,

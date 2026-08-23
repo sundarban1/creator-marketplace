@@ -208,6 +208,7 @@ model CreatorProfile {
   conversationsAsCreator2  Conversation[]         @relation("Creator2Conversations")
   user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   favoriteBusinesses       FavoriteBusiness[]
+  shortlistedCampaigns     ShortlistedCampaign[]
   socialAccounts           SocialAccount[]
   savedBy                  SavedCreator[]
   receivedInvitations      CampaignInvitation[]
@@ -666,6 +667,7 @@ model Campaign {
   paymentTransactions   PaymentTransaction[]
   contracts             Contract[]
   requirements          CampaignRequirement[]
+  shortlistedBy         ShortlistedCampaign[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -1189,6 +1191,24 @@ model FavoriteBusiness {
 
   @@unique([creatorId, businessId])
   @@map("favorite_businesses")
+}
+
+// A creator's private shortlist of events they want to come back to — the
+// creator-side mirror of SavedCreator below (a business saving creators).
+// Unrelated to Application.status = SHORTLISTED, which is a business
+// shortlisting an applicant: this needs no application to exist and the
+// business is never told about it.
+model ShortlistedCampaign {
+  id         String         @id @default(cuid())
+  creatorId  String
+  campaignId String
+  createdAt  DateTime       @default(now())
+  campaign   Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator    CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([creatorId, campaignId])
+  @@index([creatorId, createdAt(sort: Desc)])
+  @@map("shortlisted_campaigns")
 }
 
 model SavedCreator {

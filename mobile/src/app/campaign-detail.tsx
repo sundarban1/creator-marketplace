@@ -2,6 +2,7 @@ import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
+import { ShortlistButton } from '@/components/ShortlistButton';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -440,6 +441,9 @@ export default function CampaignDetailScreen() {
 
       {/* Sticky CTA */}
       <View style={[s.ctaBar, { justifyContent: 'center' }, !isBusiness && campaign.requirements && campaign.requirements.length > 0 && s.ctaBarRoles]}>
+        {/* Save-for-later, left of whichever CTA this campaign renders.
+            Creator-only — ShortlistButton renders nothing for a business. */}
+        <ShortlistButton campaignId={campaign.id} />
         {isBusiness ? (
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
@@ -461,7 +465,7 @@ export default function CampaignDetailScreen() {
           // Multi-role campaign — the "Roles Needed" card lives here, in the
           // sticky footer, instead of the scrollable body, so applying to a
           // specific role is always one tap away regardless of scroll position.
-          <View style={{ width: '100%', gap: 8 }}>
+          <View style={{ flex: 1, gap: 8 }}>
             <Text style={[s.sectionLabel, { color: C.textSecondary, marginBottom: 0 }]}>{t('campaignDetail.sectionRolesNeeded')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.roleChipRow}>
               {campaign.requirements.map((r) => {

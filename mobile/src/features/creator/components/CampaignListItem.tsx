@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ShortlistButton } from '@/components/ShortlistButton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
@@ -97,6 +98,11 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         <View style={styles.chevronWrap}>
           <FontAwesome5 name="chevron-right" solid size={14} color={C.textSecondary} />
         </View>
+
+        {/* Save-for-later — pinned to the card's top-right corner, above the
+            chevron. Absolute rather than stacked in the chevron column so the
+            chevron keeps its own centering against the full card height. */}
+        <ShortlistButton campaignId={campaign.id} size="xs" style={styles.shortlistBtn} />
       </Pressable>
     </View>
   );
@@ -131,6 +137,7 @@ const styles = StyleSheet.create({
   detailText:  { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
 
   chevronWrap: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
+  shortlistBtn: { position: 'absolute', top: 8, right: 6 },
   tagBadge:     { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
   tagBadgeText: { fontSize: 11, fontFamily: F.bold },
 });

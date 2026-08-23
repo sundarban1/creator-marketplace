@@ -16,7 +16,7 @@ import { BottomSheet } from '@/components/BottomSheet';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
-import { useCategories } from '@/hooks/useCategories';
+import { sortOtherLast, useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -168,8 +168,10 @@ export default function EditCampaignScreen() {
   const { campaignId } = useLocalSearchParams<{ campaignId: string }>();
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
-  const { categories: liveCategories } = useCategories('BUSINESS');
-  const categoryOptions = liveCategories.map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
+  // Event Category lists the BOTH-scope industry rows only — never the
+  // BUSINESS-scope rows — with the catch-all "Other" pinned to the end.
+  const { categories: liveCategories } = useCategories('BOTH');
+  const categoryOptions = sortOtherLast(liveCategories).map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);

@@ -594,9 +594,6 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
           accessibilityRole="button"
           accessibilityLabel={`${t('auth.signup.signingUpAs')} ${roleLabel} — ${t('auth.signup.changeRole')}`}
           onPress={() => router.push({ pathname: '/account-type', params: { role } })}>
-          <LinearGradient colors={activeRole.grad} style={s.roleChipIcon} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <FontAwesome5 name={role === 'CREATOR' ? 'magic' : 'search'} size={11} color="#fff" solid />
-          </LinearGradient>
           <Text style={s.roleChipText} numberOfLines={1}>
             {t('auth.signup.signingUpAs')} <Text style={[s.roleChipTextBold, { color: activeRole.grad[0] }]}>{roleLabel}</Text>
           </Text>
@@ -1083,8 +1080,7 @@ function makeStyles(C: typeof COLORS) {
   // Role chip — confirms the choice made on /account-type and links back to it.
   // Pulled up by sm so it sits with the heading it qualifies rather than
   // floating at an equal distance between heading and fields.
-  roleChip:         { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', maxWidth: '100%', gap: SPACING.sm, borderWidth: 1, borderRadius: RADIUS.full, paddingLeft: 6, paddingRight: SPACING.md, minHeight: 40, marginTop: -SPACING.sm },
-  roleChipIcon:     { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  roleChip:         { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', maxWidth: '100%', gap: SPACING.sm, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, minHeight: 40, marginTop: -SPACING.sm },
   roleChipText:     { flexShrink: 1, fontSize: FONT_SIZE.xs, fontFamily: F.medium, color: C.textSecondary },
   roleChipTextBold: { fontFamily: F.bold },
   roleChipChange:   { fontSize: FONT_SIZE.xs, fontFamily: F.bold },

@@ -24,7 +24,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F, RADIUS, SCREEN_GUTTER } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { useAllCategories, useCategories } from '@/hooks/useCategories';
+import { sortOtherLast, useAllCategories, useCategories } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
@@ -254,7 +254,10 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterState>(DEFAULT_FILTER);
   const [tempFilter, setTempFilter] = useState<FilterState>(DEFAULT_FILTER);
-  const { categories: adminCategories } = useCategories('CREATOR');
+  // BOTH-scope industry rows only. This row filters creators by their profile
+  // `categories`, which onboarding/edit-categories now fill from that same
+  // BOTH-scope list — a CREATOR-scope provider-role pill would match nobody.
+  const { categories: adminCategories } = useCategories('BOTH');
 
   const filterActive = isFilterActive(activeFilter);
   const filterCount  = filterActiveCount(activeFilter);
@@ -399,7 +402,7 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
       {/* Category pills — single scrollable row through every category,
           matching Discover's Opportunities/Businesses tabs (no label text). */}
       <CategoryPillRow
-        categories={adminCategories}
+        categories={sortOtherLast(adminCategories)}
         activeLabels={activeFilter.categories}
         onToggle={toggleCategory}
         showAll

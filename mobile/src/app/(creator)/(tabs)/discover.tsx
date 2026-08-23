@@ -11,7 +11,7 @@ import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCard
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
 import { FilterModal, DEFAULT_EVENT_TYPES } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories, sortOtherLast } from '@/hooks/useCategories';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
@@ -26,7 +26,7 @@ import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
 import { getCached, setCached } from '@/utilities/offlineCache';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
-import { F, FONT_SIZE, RADIUS, SHADOW, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SHADOW, SCREEN_GUTTER, SPACING, lineHeightFor } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import { trendingScores } from '@/features/creator/data/trending';
 import type { Campaign } from '@/types';
@@ -454,7 +454,10 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
   // browsing opportunities; CREATOR-scope rows are provider *role* types
   // (used for onboarding/profile pickers) and don't apply here. BOTH-scope
   // rows are the ones with no `group` (see ApiCategory's own comment).
-  const visibleCategories = adminCategories.filter((cat) => cat.group === null);
+  // sortOtherLast keeps the catch-all "Other" chip pinned to the end of the
+  // slider instead of sitting alphabetically mid-row — it's the fallback
+  // bucket, so it reads last after every named niche.
+  const visibleCategories = sortOtherLast(adminCategories.filter((cat) => cat.group === null));
 
   function toggleCategory(label: string) {
     const next = activeCategories.includes(label)
@@ -1045,13 +1048,26 @@ export default function DiscoverScreen() {
           big blank gap under it. */}
       <MaxWidthContainer>
         <View style={shellStyles.titleRow}>
-          <Text style={[shellStyles.title, { color: C.text }]}>{t('creator.discover.title')}</Text>
+          <Text style={[shellStyles.title, { color: C.text }]} numberOfLines={2}>
+            {mainTab === 'businesses' ? t('creator.discover.titleBusinesses') :
+             mainTab === 'people'     ? t('creator.discover.titlePeople') :
+             t('creator.discover.title')}
+          </Text>
           {mainTab === 'businesses' && (
             <Pressable
               style={[shellStyles.savedBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
               onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
               <FontAwesome5 name="heart" solid size={14} color={C.brinjal1} />
               <Text style={[shellStyles.savedBtnText, { color: C.brinjal1 }]}>{t('explore.businesses.savedLink')}</Text>
+            </Pressable>
+          )}
+          {/* Same shortcut for events — where the bookmark icon on each card saves to. */}
+          {mainTab === 'campaigns' && (
+            <Pressable
+              style={[shellStyles.savedBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
+              onPress={() => router.push('/(creator)/shortlisted-events' as Parameters<typeof router.push>[0])}>
+              <FontAwesome5 name="bookmark" solid size={14} color={C.brinjal1} />
+              <Text style={[shellStyles.savedBtnText, { color: C.brinjal1 }]}>{t('shortlistedEvents.savedLink')}</Text>
             </Pressable>
           )}
         </View>
@@ -1098,6 +1114,8 @@ export default function DiscoverScreen() {
           </Pressable>
         </View>
 
+        {/* Tab strip gets the row to itself — the Saved shortcut now lives up
+            in the title row. */}
         <View style={shellStyles.tabsWrap}>
           <TabSlider tabs={MAIN_TABS} active={mainTab} onChange={(key) => selectTab(key as MainTab)} />
         </View>
@@ -1137,7 +1155,12 @@ export default function DiscoverScreen() {
 
 const shellStyles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingTop: 12, paddingBottom: 4 },
-  title:    { fontSize: 24, fontFamily: F.extrabold },
+  // flexShrink so the longer per-tab titles wrap instead of pushing the
+  // Businesses tab's "Saved" button off the row; lineHeight keeps Nepali
+  // matras from clipping on the wrapped second line.
+  // Matches the creator home greeting's treatment exactly (see that screen's
+  // styles.greeting) so the two pinned headers read as the same level.
+  title:    { flexShrink: 1, fontSize: FONT_SIZE.xl, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.xl) },
   savedBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   savedBtnText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: SCREEN_GUTTER, paddingTop: 10, paddingBottom: 4 },

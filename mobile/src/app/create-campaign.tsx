@@ -20,7 +20,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService, clampAiPrompt } from '@/services/campaign';
 import { ApiError, warmUpBackend } from '@/lib/api';
 import { profileService } from '@/services/profile';
-import { useCategories } from '@/hooks/useCategories';
+import { sortOtherLast, useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
@@ -34,7 +34,7 @@ import { VoiceTranscriptReview } from '@/features/business/components/VoiceTrans
 import { eventOptionLabel, eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
 import { fallbackLang, genericCampaignTemplate, genericFreeEventTemplate } from '@/features/business/utils/fallbackTemplates';
 import { transcribeAudio } from '@/services/audioTranscribe';
-import { getTemplateImage } from '@/features/creator/data/templateImages';
+import { resolveFeatureImage } from '@/features/creator/data/templateImages';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabSlider } from '@/components/TabSlider';
@@ -997,8 +997,10 @@ export default function CreateCampaignScreen() {
   // returns to the right draft screen instead of the legacy 'setup' screen.
   // Read by the header back-button and the review phase's own back link.
   const cameFromNewFlowRef = useRef<'publish' | 'inviteDraft' | null>(null);
-  const { categories: liveCategories } = useCategories('BUSINESS');
-  const categoryOptions = liveCategories.map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
+  // Event Category lists the BOTH-scope industry rows only — never the
+  // BUSINESS-scope rows — with the catch-all "Other" pinned to the end.
+  const { categories: liveCategories } = useCategories('BOTH');
+  const categoryOptions = sortOtherLast(liveCategories).map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
   const { platforms: livePlatforms } = usePlatforms();
   const platformOptions = livePlatforms.map((p) => p.name);
 
@@ -1320,7 +1322,9 @@ export default function CreateCampaignScreen() {
         hashtags:             GENERIC_AI_TEMPLATE.hashtags,
         sampleCaption:        GENERIC_AI_TEMPLATE.sampleCaption,
         approvalRequirements: GENERIC_AI_TEMPLATE.approvalRequirements,
-        featureImageUrl:      prev.featureImageUrl ?? getTemplateImage(fallbackCategory, fallbackCategory) ?? null,
+        // No AI draft to key off here, so the brand's own prompt is the only
+        // thing that makes this photo relevant to what they asked for.
+        featureImageUrl:      prev.featureImageUrl ?? resolveFeatureImage({ category: fallbackCategory, title: prompt }),
         aiGenerated:           true,
         aiPrompt:              prompt,
         aiSuggestedCategories: [],
@@ -1426,7 +1430,8 @@ export default function CreateCampaignScreen() {
           expectedContent: GENERIC_FREE_EVENT_TEMPLATE.expectedContent,
           eventDate,
           deadline:    regDeadline,
-          featureImageUrl:       prev.featureImageUrl ?? getTemplateImage(fallbackCategory, fallbackCategory) ?? null,
+          // See handleGenerateWithAi's catch above.
+          featureImageUrl:       prev.featureImageUrl ?? resolveFeatureImage({ category: fallbackCategory, title: prompt }),
           aiGenerated:           true,
           aiPrompt:              prompt,
           aiSuggestedCategories: [],

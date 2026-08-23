@@ -14,6 +14,15 @@ export type NotificationRouteInput = {
 // which fires outside that screen, sometimes before it's ever mounted —
 // resolves to the same destination as tapping the same notification in-app.
 export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: boolean): PushArg | null {
+  // "\"X\" is now full" — sent only to applicants the capacity check just
+  // auto-rejected (free event, paid campaign, or a single role). They want the
+  // rejection, not the workspace, so this lands on Proposals ▸ Rejected. Must
+  // be tested before the refType branches below: a campaign_closed with
+  // refType 'campaign' is a *cancellation* and still belongs in the timeline.
+  if (n.refType === 'campaign_full') {
+    return isCreator ? { pathname: '/(creator)/(tabs)/proposals', params: { tab: 'rejected' } } : null;
+  }
+
   // Free event notifications
   if (n.refType === 'event' && n.refId) {
     return isCreator
@@ -47,7 +56,7 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.type === 'event_expired') {
     return n.refId ? { pathname: '/campaign-detail', params: { campaignId: n.refId } } : null;
   }
-  // §4 team/agency roster — the invite lands on the invitee, the response on
+  // §4 team roster — the invite lands on the invitee, the response on
   // the team owner. Both halves live on the same screen (pending invites at
   // the top, roster below), so either tap opens it. Provider-only screen, so
   // a business account has nowhere to land.
@@ -82,8 +91,19 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.type === 'new_message') {
     return isCreator ? '/(creator)/messages/' : '/(business)/messages/';
   }
-  if (['proposal_accepted', 'proposal_rejected', 'proposal_shortlisted', 'proposal_expired', 'campaign_deadline'].includes(n.type)) {
-    return isCreator ? '/(creator)/proposals' : null;
+  // Proposals screen honours ?tab=, so open the one the notification is about
+  // instead of always landing on "All" and making them hunt for it.
+  const PROPOSAL_TAB: Record<string, string> = {
+    proposal_accepted:    'accepted',
+    proposal_rejected:    'rejected',
+    proposal_shortlisted: 'shortlisted',
+    proposal_expired:     'expired',
+  };
+  if (n.type in PROPOSAL_TAB) {
+    return isCreator ? { pathname: '/(creator)/(tabs)/proposals', params: { tab: PROPOSAL_TAB[n.type] } } : null;
+  }
+  if (n.type === 'campaign_deadline') {
+    return isCreator ? '/(creator)/(tabs)/proposals' : null;
   }
   return null;
 }

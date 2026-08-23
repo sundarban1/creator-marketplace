@@ -4,7 +4,12 @@ import type { ApiPortfolioItem } from './portfolio';
 
 export type { ApiSocialAccount };
 
-export type ProviderType = 'INDIVIDUAL' | 'TEAM' | 'AGENCY';
+// AGENCY is deliberately absent: the type still exists in the Prisma enum and
+// the API still accepts it, but the whole agency flow (onboarding option,
+// industries, legal identifiers, company-registration doc) is switched off on
+// the client for now. Re-add 'AGENCY' here first when it comes back — the
+// compiler then points at every branch that needs restoring.
+export type ProviderType = 'INDIVIDUAL' | 'TEAM';
 
 // §3 step 4 — where a provider delivers.
 export type ServiceMode = 'CLIENT_LOCATION' | 'MY_LOCATION' | 'ONLINE' | 'HYBRID';
@@ -37,12 +42,13 @@ export interface ApiCreatorProfile {
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
-  // §5 — AGENCY registration document; gates an agency's verified badge.
+  // §5 — company-registration document. Still returned by the API; nothing on
+  // the client uploads one while the agency flow is switched off.
   companyRegDocUrl: string | null;
   companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   companyRegDocUploadedAt: string | null;
   // Derived by the server (providerVerificationStatus) — never recompute the
-  // AGENCY-vs-person document rule on the client.
+  // which-document-is-required rule on the client.
   verificationStatus: 'NOT_VERIFIED' | 'PENDING' | 'VERIFIED';
   verificationRejectReason: string | null;
   verificationRejectedAt: string | null;
@@ -62,12 +68,14 @@ export interface ApiCreatorProfile {
   providerType: ProviderType | null;
   // §4 — only ever set for a TEAM; the server clears it on a switch away.
   teamSize: number | null;
-  // §6 — only ever set for an AGENCY; same clear-on-switch rule.
+  // §6 — served industries. Server-owned; no client screen writes it while the
+  // agency flow is switched off.
   industries: string[];
   website: string | null;
   serviceMode: ServiceMode | null;
-  // §5 — AGENCY legal identifiers. Private profile only; never on the public
-  // profile or discovery cards.
+  // §5 — legal identifiers. Private profile only; never on the public profile
+  // or discovery cards. Read-only on the client for now (the Settings editor
+  // went away with the agency flow).
   panNo: string | null;
   vatNo: string | null;
   companyRegNo: string | null;
@@ -157,7 +165,7 @@ export interface ApiCreatorPublicProfile {
   // §9 badge — null for accounts onboarded before the question existed.
   providerType: ProviderType | null;
   teamSize: number | null;
-  // §6 — AGENCY only, empty for every other provider type.
+  // §6 — empty unless a server-side agency record set it.
   industries: string[];
   // Null when the provider has hidden their social links.
   website: string | null;
@@ -214,7 +222,7 @@ export interface ApiCreatorListItem {
   completedEvents?: number;
 }
 
-// §4/§7 — team/agency membership. `member` is populated on the roster
+// §4/§7 — team membership. `member` is populated on the roster
 // (/team/members), `provider` on the invitee's own list (/team/memberships);
 // neither duplicates the other's profile fields.
 export type ProviderMemberRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'MEMBER';

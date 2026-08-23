@@ -41,6 +41,11 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
+  // Stock-photo search for AI-generated campaign/event drafts (see utils/imageSearch.ts).
+  // Optional: without it drafts simply carry no featureImageUrl and the mobile client
+  // falls back to its local category photo map. A free Demo app at
+  // https://unsplash.com/developers is capped at 50 requests/hour.
+  UNSPLASH_ACCESS_KEY: z.string().optional(),
   // TikTok Login Kit (creator social-account OAuth connect)
   TIKTOK_CLIENT_KEY: z.string().optional(),
   TIKTOK_CLIENT_SECRET: z.string().optional(),
