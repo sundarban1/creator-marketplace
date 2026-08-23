@@ -127,20 +127,41 @@ async function main() {
     browser = await chromium.launch();
     const page = await browser.newPage();
 
-    // The landing page's Collaboration section loads the live Google Maps JS
-    // API (useJsApiLoader). If it's allowed to load here, page.content() below
-    // captures the post-load DOM — including Maps' injected custom-element
-    // definitions — baked into the static HTML. In production that snapshot
-    // gets served first, then the real client mounts and useJsApiLoader loads
-    // Maps a *second* time into a page that already has it, which throws
-    // "already defined" / "already loaded outside @googlemaps/js-api-loader"
-    // and cascading failures. Block the request so prerender never loads Maps
-    // at all — it's decorative here and irrelevant to the SEO snapshot.
-    await page.route('**maps.googleapis.com/**', (route) => route.abort());
+    // Block every request that isn't served by the local preview server.
+    //
+    // Two reasons. First, correctness: the landing page's Collaboration
+    // section loads the live Google Maps JS API (useJsApiLoader), and if it
+    // loads here, page.content() below bakes Maps' injected custom-element
+    // definitions into the static HTML. In production that snapshot is
+    // served first, then the real client mounts and loads Maps a *second*
+    // time into a page that already has it — "already defined" / "already
+    // loaded outside @googlemaps/js-api-loader" and cascading failures.
+    //
+    // Second, reliability: the shell also pulls Google Fonts and gtag.js,
+    // and some pages reference Cloudinary/Pexels media. None of them affect
+    // the captured HTML (the <link>/<img> tags are in the DOM either way),
+    // but on a build machine any one of them can hang, and a single hanging
+    // request means the page never reaches a quiet network — which is what
+    // used to blow the navigation timeout partway through the crawl.
+    await page.route('**', (route) => {
+      const url = route.request().url();
+      if (url.startsWith(ORIGIN)) return route.continue();
+      return route.abort();
+    });
 
     for (const route of ROUTES) {
       const url = `${ORIGIN}${route}`;
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30_000 });
+      // Deliberately not `waitUntil: 'networkidle'`. Playwright itself
+      // discourages it, and here it's actively wrong: "no requests for
+      // 500ms" is a property of the whole network, so one slow or hanging
+      // resource fails the navigation even though the DOM we want to
+      // capture rendered long ago. What actually signals readiness for this
+      // app is React having mounted, so wait on that instead.
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await page.waitForFunction(() => {
+        const root = document.getElementById('root');
+        return !!root && root.childElementCount > 0;
+      }, undefined, { timeout: 30_000 });
       // Sections animate in via framer-motion whileInView — give them a beat
       // to settle so the snapshot isn't caught mid-fade for text content
       // that matters (crawlers don't care about opacity, but this also lets
