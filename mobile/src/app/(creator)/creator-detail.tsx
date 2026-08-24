@@ -77,7 +77,7 @@ function SectionTitle({ label, color }: { label: string; color: string }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CreatorPeerDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, viaTeam } = useLocalSearchParams<{ id: string; viaTeam?: string }>();
   const C = useAppColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
@@ -255,7 +255,9 @@ export default function CreatorPeerDetailScreen() {
           <View style={s.nameRow}>
             <Text style={[s.name, { color: C.text }]} numberOfLines={2}>{profile.fullName ?? 'Creator'}</Text>
             {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
-            <ProviderTypeBadge type={profile.providerType} teamSize={profile.teamSize} />
+            {!(viaTeam === '1' && profile.providerType === 'INDIVIDUAL') && (
+              <ProviderTypeBadge type={profile.providerType} teamSize={profile.teamSize} />
+            )}
           </View>
           {profile.username ? (
             <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>

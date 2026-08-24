@@ -34,7 +34,7 @@ const NO_REMOVE: RemoveState = { visible: false, member: null, submitting: false
 
 function openCreatorProfile(id?: string | null) {
   if (!id) return;
-  router.push({ pathname: '/(creator)/creator-detail', params: { id } });
+  router.push({ pathname: '/(creator)/creator-detail', params: { id, viaTeam: '1' } });
 }
 
 export default function TeamScreen() {

@@ -37,16 +37,6 @@ const QUICK_ACTION_COLORS = {
   invitations:     { icon: '#0D9488', bg: '#CCFBF1' },
 } as const;
 
-// Same per-icon tinting as QUICK_ACTION_COLORS (reusing its purple/blue/teal
-// so "projects" and "myCampaigns" — both the briefcase icon — read as the
-// same concept) so the "Your work at a glance" stat tiles pick up that same
-// visual language instead of one repeated brinjal1 icon on a flat card.
-const STAT_COLORS = {
-  clients:      { icon: '#0369A1', bg: '#E0F2FE' },
-  projects:     { icon: '#7C3AED', bg: '#F3E8FF' },
-  deliverables: { icon: '#0D9488', bg: '#CCFBF1' },
-} as const;
-
 function getInitials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 }
@@ -66,11 +56,6 @@ export default function HomeScreen() {
   // §16 — the Team dashboard block. Only a TEAM has a roster, and the
   // roster endpoint 400s for anyone else, so it's fetched conditionally.
   const [teamMembers, setTeamMembers] = useState<ApiProviderMember[]>([]);
-  // §16 team dashboard. Derived from the accepted-applications fetch this
-  // screen already makes — clients, projects and deliverables are all facts
-  // about bookings, so none of them needed a new entity: an accepted
-  // Application IS the project (§13), and deliverables already live on it.
-  const [teamStats, setTeamStats] = useState({ clients: 0, active: 0, deliverables: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -185,15 +170,6 @@ export default function HomeScreen() {
       ]);
       setTeamMembers(roster);
       setYourWork(applications.proposals.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED'));
-
-      if (isTeam) {
-        const accepted = applications.proposals;
-        setTeamStats({
-          clients: new Set(accepted.map((a) => a.businessId).filter(Boolean)).size,
-          active: accepted.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED').length,
-          deliverables: accepted.reduce((n, a) => n + (a.deliverableVideos?.length ?? 0), 0),
-        });
-      }
 
       // Same `status: 'ACCEPTED'` fetch above already has everything needed
       // to flag actions actually waiting on the creator — no separate call.
@@ -399,37 +375,6 @@ export default function HomeScreen() {
               </View>
             ) : (
               <View style={{ gap: SPACING.xxl }}>
-                {/* §16 — the team dashboard row. Three counts, no new
-                    endpoint: all three are derived from the accepted-bookings
-                    fetch above. */}
-                {profile?.providerType === 'TEAM' && (
-                  <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: C.text }]}>
-                      {t('home.teamStatsSection')}
-                    </Text>
-                    <View style={styles.statsRow}>
-                      {[
-                        { key: 'clients',      value: teamStats.clients,      label: t('home.statClients'),      icon: 'building'   as const, color: STAT_COLORS.clients },
-                        { key: 'projects',     value: teamStats.active,       label: t('home.statProjects'),     icon: 'briefcase'  as const, color: STAT_COLORS.projects },
-                        { key: 'deliverables', value: teamStats.deliverables, label: t('home.statDeliverables'), icon: 'photo-video' as const, color: STAT_COLORS.deliverables },
-                      ].map((stat) => (
-                        <Pressable
-                          key={stat.key}
-                          style={({ pressed }) => [styles.statTile, { backgroundColor: C.surface, borderColor: C.border }, pressed && styles.quickActionTilePressed]}
-                          onPress={() => router.push({ pathname: '/(creator)/(tabs)/proposals', params: { tab: 'accepted' } })}>
-                          <View style={[styles.statIconWrap, { backgroundColor: stat.color.bg }, SHADOW.card]}>
-                            <FontAwesome5 name={stat.icon} solid size={14} color={stat.color.icon} />
-                          </View>
-                          <View style={styles.statValueRow}>
-                            <Text style={[styles.statValue, { color: C.text }]}>{stat.value}</Text>
-                            <Text style={[styles.statLabel, { color: C.textSecondary }]} numberOfLines={1}>{stat.label}</Text>
-                          </View>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
                 {/* §16 — Team block, teams and agencies only. Deliberately a
                     feed section rather than an extra tab or an extra quick
                     action: the tab bar already carries five items, and the
@@ -713,18 +658,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: 11,
   },
   ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
-
-  statsRow:   { flexDirection: 'row', gap: SPACING.sm },
-  statTile:   { flex: 1, borderWidth: 1, borderRadius: RADIUS.lg, paddingVertical: SPACING.md, paddingHorizontal: SPACING.sm, alignItems: 'center', gap: SPACING.sm },
-  // Same colored-circle-with-shadow size as quickActionIconWrap (see
-  // STAT_COLORS) instead of a bare icon floating on the card.
-  statIconWrap: { width: 52, height: 52, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center' },
-  // Value + label sit on one line (not stacked) so "1 Clients" reads as a
-  // single stat instead of two centered rows. Same size/weight/lineHeight as
-  // quickActionLabel so both rows of tiles read as one consistent system.
-  statValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  statValue:  { fontSize: FONT_SIZE.xs, fontFamily: F.bold, lineHeight: 17 },
-  statLabel:  { fontSize: FONT_SIZE.xs, fontFamily: F.medium, lineHeight: 17 },
 
   quickActionsRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xxl },
   // flex: 1 (not a fixed width) — four equal-width columns that always sum

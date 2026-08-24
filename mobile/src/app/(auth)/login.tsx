@@ -904,7 +904,6 @@ export default function LoginScreen() {
             hitSlop={8}
             accessibilityRole="button"
             onPress={() => setLanguage(language === 'en' ? 'ne' : 'en')}>
-            <FontAwesome5 name="globe" solid size={11} color={C.brinjal1} />
             <Text style={[s.langChipText, { color: C.brinjal1 }]}>{LANG_LABELS[language === 'en' ? 'ne' : 'en']}</Text>
           </Pressable>
         </View>
