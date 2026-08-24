@@ -28,7 +28,7 @@ export const SECTION_IDS = {
 
 export const NAV_LINKS: { key: 'discover' | 'services' | 'opportunities' | 'events'; id: string }[] = [
   { key: 'discover', id: SECTION_IDS.possibilities },
-  { key: 'services', id: SECTION_IDS.categories },
   { key: 'opportunities', id: SECTION_IDS.opportunities },
+  { key: 'services', id: SECTION_IDS.categories },
   { key: 'events', id: SECTION_IDS.opportunities },
 ];
