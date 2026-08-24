@@ -3083,8 +3083,11 @@ const en = {
     acUploadSub:             'Share completed content links or files for the business to review.',
     acUploadBtn:             'Upload Deliverables',
     acSubmittedTitle:        'Creator Submitted Work',
-    acSubmittedSub:          'Review the submitted links, then approve or request changes within 5 days.',
+    acSubmittedSub:          'Review the submitted work, then approve or request changes within 5 days.',
     acReviewBtn:             'Review Deliverables',
+    acVideoLabel:            'Video',
+    acImageLabel:            'Image',
+    acLinksLabel:            'Links',
     acRevisionBtn:           'Request Revision',
     acApproveBtn:            'Approve',
     acAwaitingReviewTitle:   'Awaiting Review',
@@ -3139,6 +3142,7 @@ const en = {
     modalUploadNotesLabel:       'Notes to Business',
     modalUploadNotesPlaceholder: 'Any notes or instructions...',
     modalUploadSubmitBtn:        'Submit Work',
+    modalUploadUploadingBtn:     'Uploading…',
     videoLimitReached:           'You can upload up to 3 videos per submission.',
     videoRetryBtn:               'Retry',
     videoCancelling:             'Cancelling…',
@@ -3155,7 +3159,6 @@ const en = {
     modalReviewNoLinks:             'No links submitted yet',
     linkOpenFailed:                 "Couldn't open this link.",
     videoUploaded:                  'Video uploaded!',
-    modalReviewDeliverablesSection: 'What Needs to Be Delivered',
 
     // Revision modal
     modalRevisionTitle:            'Request Revision',

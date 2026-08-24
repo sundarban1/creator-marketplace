@@ -691,7 +691,6 @@ export default function CreatorDetailScreen() {
           multiline
           maxLength={500}
         />
-        <Text style={[rm.counter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
       </BottomSheet>
 
       {/* Service request modal (§33/34) */}
@@ -718,7 +717,6 @@ export default function CreatorDetailScreen() {
           multiline
           maxLength={1000}
         />
-        <Text style={[rm.counter, { color: C.textSecondary }]}>{serviceReqMessage.length}/1000</Text>
         <View style={{ marginTop: 12 }}>
           <TextInputWithLabel
             label={t('creatorDetailExtra.serviceRequestBudgetLabel')}
@@ -860,7 +858,6 @@ const msgBtn = StyleSheet.create({
 
 // Request modal
 const rm = StyleSheet.create({
-  counter: { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
   sendBtn: { borderRadius: RADIUS.full, height: 52, justifyContent: 'center', alignItems: 'center' },
   sendTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

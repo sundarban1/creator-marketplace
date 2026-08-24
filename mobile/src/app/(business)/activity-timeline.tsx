@@ -148,11 +148,6 @@ function formatDuration(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function parseDeliverables(raw?: string): string[] {
-  if (!raw) return [];
-  return raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
-}
-
 function parseUrls(raw?: string | null): string[] {
   if (!raw) return [];
   return raw.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
@@ -367,10 +362,15 @@ function ProgressTracker({ current, scrollRef, labels }: { current: number; scro
 
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
-function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, submitting, onPay, onStartWork, onUpload, onMarkComplete, onReview, onApprove, onRevision, onViewSubmission }: {
+function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, submitting, deliverableVideos, deliverableFiles, submittedUrls, onPay, onStartWork, onUpload, onMarkComplete, onApprove, onRevision, onPlayVideo, onViewImage, onViewDoc, onOpenLink }: {
   ws: WS; paid: boolean; paymentStatus: PS; isCreator: boolean; isFree: boolean; isService: boolean; submitting: boolean;
+  deliverableVideos: DeliverableVideo[]; deliverableFiles: DeliverableFile[]; submittedUrls: string[];
   onPay: () => void; onStartWork: () => void; onUpload: () => void; onMarkComplete: () => void;
-  onReview: () => void; onApprove: () => void; onRevision: () => void; onViewSubmission: () => void;
+  onApprove: () => void; onRevision: () => void;
+  onPlayVideo: (v: { url: string; label: string }) => void;
+  onViewImage: (img: { url: string; label: string }) => void;
+  onViewDoc: (doc: { url: string; label: string }) => void;
+  onOpenLink: (url: string) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -496,17 +496,67 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   );
 
   // Business: review submitted work (DELIVERABLE jobs only)
-  if (ws === 'SUBMITTED' && !isCreator) return (
+  if (ws === 'SUBMITTED' && !isCreator) {
+    const imageFiles = deliverableFiles.filter(f => f.fileType === 'IMAGE');
+    const docFiles    = deliverableFiles.filter(f => f.fileType !== 'IMAGE');
+    return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="eye" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acSubmittedSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onReview}>
-        <FontAwesome5 name="eye" solid size={16} color="#fff" />
-        <Text style={ac.btnTxt}>{t('activityTimeline.acReviewBtn')}</Text>
-      </Pressable>
+
+      {deliverableVideos.length > 0 && (
+        <View style={ac.deliverySection}>
+          <Text style={ac.deliveryLabel}>{t('activityTimeline.acVideoLabel')}</Text>
+          <View style={ac.thumbRow}>
+            {deliverableVideos.map((v) => (
+              <Pressable key={v.publicId} style={ac.thumb} onPress={() => onPlayVideo(v)}>
+                <Image source={{ uri: v.thumbnailUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                <View style={ac.thumbOverlay}>
+                  <FontAwesome5 name="play-circle" solid size={18} color="#fff" />
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {(imageFiles.length > 0 || docFiles.length > 0) && (
+        <View style={ac.deliverySection}>
+          <Text style={ac.deliveryLabel}>{t('activityTimeline.acImageLabel')}</Text>
+          <View style={ac.thumbRow}>
+            {imageFiles.map((f) => (
+              <Pressable key={f.id} style={ac.thumb} onPress={() => onViewImage({ url: f.url, label: f.originalFileName })}>
+                <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+              </Pressable>
+            ))}
+            {docFiles.map((f) => (
+              <Pressable key={f.id} style={ac.thumb} onPress={() => onViewDoc({ url: f.url, label: f.originalFileName })}>
+                <FontAwesome5 name="file-alt" solid size={20} color={docThumb(f.mimeType).color} />
+                <Text style={[up.docBadgeTxt, { color: docThumb(f.mimeType).color }]}>{docThumb(f.mimeType).label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {submittedUrls.length > 0 && (
+        <View style={ac.deliverySection}>
+          <Text style={ac.deliveryLabel}>{t('activityTimeline.acLinksLabel')}</Text>
+          <View style={{ gap: 8 }}>
+            {submittedUrls.map((url, idx) => (
+              <Pressable key={idx} style={rv.linkRow} onPress={() => onOpenLink(url)}>
+                <FontAwesome5 name={isDirectVideoUrl(url) ? 'play-circle' : 'external-link-alt'} solid size={14} color="#7C3AED" />
+                <Text style={rv.linkTxt} numberOfLines={1}>{url}</Text>
+                <FontAwesome5 name="chevron-right" solid size={13} color="#A78BFA" />
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
       <View style={ac.btnRow}>
         <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onRevision}>
           <FontAwesome5 name="edit" solid size={15} color="#fff" />
@@ -520,7 +570,8 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
         </Pressable>
       </View>
     </View>
-  );
+    );
+  }
 
   // Creator: SERVICE job awaiting the client's confirmation — nothing to view.
   if (ws === 'SUBMITTED' && isCreator && isService) return (
@@ -534,19 +585,69 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   );
 
   // Creator: awaiting review (DELIVERABLE jobs only)
-  if (ws === 'SUBMITTED' && isCreator) return (
+  if (ws === 'SUBMITTED' && isCreator) {
+    const imageFiles = deliverableFiles.filter(f => f.fileType === 'IMAGE');
+    const docFiles    = deliverableFiles.filter(f => f.fileType !== 'IMAGE');
+    return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingReviewSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#0EA5E9', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onViewSubmission}>
-        <FontAwesome5 name="eye" solid size={16} color="#fff" />
-        <Text style={ac.btnTxt}>{t('activityTimeline.acViewSubmissionBtn')}</Text>
-      </Pressable>
+
+      {deliverableVideos.length > 0 && (
+        <View style={ac.deliverySection}>
+          <Text style={ac.deliveryLabel}>{t('activityTimeline.acVideoLabel')}</Text>
+          <View style={ac.thumbRow}>
+            {deliverableVideos.map((v) => (
+              <Pressable key={v.publicId} style={ac.thumb} onPress={() => onPlayVideo(v)}>
+                <Image source={{ uri: v.thumbnailUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                <View style={ac.thumbOverlay}>
+                  <FontAwesome5 name="play-circle" solid size={18} color="#fff" />
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {(imageFiles.length > 0 || docFiles.length > 0) && (
+        <View style={ac.deliverySection}>
+          <Text style={ac.deliveryLabel}>{t('activityTimeline.acImageLabel')}</Text>
+          <View style={ac.thumbRow}>
+            {imageFiles.map((f) => (
+              <Pressable key={f.id} style={ac.thumb} onPress={() => onViewImage({ url: f.url, label: f.originalFileName })}>
+                <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+              </Pressable>
+            ))}
+            {docFiles.map((f) => (
+              <Pressable key={f.id} style={ac.thumb} onPress={() => onViewDoc({ url: f.url, label: f.originalFileName })}>
+                <FontAwesome5 name="file-alt" solid size={20} color={docThumb(f.mimeType).color} />
+                <Text style={[up.docBadgeTxt, { color: docThumb(f.mimeType).color }]}>{docThumb(f.mimeType).label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {submittedUrls.length > 0 && (
+        <View style={ac.deliverySection}>
+          <Text style={ac.deliveryLabel}>{t('activityTimeline.acLinksLabel')}</Text>
+          <View style={{ gap: 8 }}>
+            {submittedUrls.map((url, idx) => (
+              <Pressable key={idx} style={rv.linkRow} onPress={() => onOpenLink(url)}>
+                <FontAwesome5 name={isDirectVideoUrl(url) ? 'play-circle' : 'external-link-alt'} solid size={14} color="#7C3AED" />
+                <Text style={rv.linkTxt} numberOfLines={1}>{url}</Text>
+                <FontAwesome5 name="chevron-right" solid size={13} color="#A78BFA" />
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
     </View>
-  );
+    );
+  }
 
   // Disputed (§40) — no further self-service action for either side; Kolab
   // support reviews it. Shown before the payment-released check since a
@@ -716,6 +817,20 @@ export default function CampaignWorkspaceScreen() {
   const fileUploads = useDeliverableFileUploads(app?.id ?? '', app?.deliverableFiles.length ?? 0);
   // Same de-dup reasoning as persistedVideos above.
   const persistedFiles = (app?.deliverableFiles ?? []).filter(f => !fileUploads.items.some(i => i.result?.id === f.id));
+
+  // submitWork() doesn't refetch deliverableVideos/Files onto `app` (see
+  // handleSubmitWork), so right after submitting, `app.deliverableVideos`/
+  // `deliverableFiles` would still be missing anything uploaded this session.
+  // Folding in this session's finished uploads keeps the Awaiting Review
+  // card's thumbnails in sync immediately, without waiting for a refetch.
+  const allDeliverableVideos = [...persistedVideos, ...videoUploads.items.filter(i => i.status === 'done' && i.result).map(i => i.result!)];
+  const allDeliverableFiles  = [...persistedFiles, ...fileUploads.items.filter(i => i.status === 'done' && i.result).map(i => i.result!)];
+
+  // Submitting while a video/file is still compressing or uploading would
+  // lock in a submission missing that deliverable — block Submit until every
+  // in-flight item has finished (done), failed, or been cancelled.
+  const hasActiveUpload = videoUploads.items.some(i => i.status !== 'done' && i.status !== 'failed' && i.status !== 'cancelled')
+    || fileUploads.items.some(i => i.status === 'uploading');
 
   // Naming prompt — shown once per finished upload (already saved
   // server-side with an auto-generated "Video N" label by this point; Save
@@ -1020,7 +1135,7 @@ export default function CampaignWorkspaceScreen() {
   }
 
   async function handleSubmitWork() {
-    if (!app) return;
+    if (!app || hasActiveUpload) return;
     const hasDeliverable = persistedVideos.length > 0 || videoUploads.items.some(i => i.status === 'done')
       || persistedFiles.length > 0 || fileUploads.items.some(i => i.status === 'done');
     const err = validateSubmission(hasDeliverable, uploadUrls, t);
@@ -1178,7 +1293,6 @@ export default function CampaignWorkspaceScreen() {
   const vat   = Math.round(pfFee * 0.13);
   const total = crFee + pfFee + vat;
 
-  const deliverables   = parseDeliverables(campaign?.deliverables);
   const submittedUrls  = parseUrls(app?.deliverableUrls);
   const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator, t, isService, isFreeEvent);
 
@@ -1314,14 +1428,25 @@ export default function CampaignWorkspaceScreen() {
         {/* ── Current Action Card ── */}
         <ActionCard
           ws={ws} paid={paid} paymentStatus={app?.paymentStatus ?? 'UNPAID'} isCreator={isCreator} isFree={isFreeEvent} isService={isService} submitting={submitting}
+          deliverableVideos={allDeliverableVideos}
+          deliverableFiles={allDeliverableFiles}
+          submittedUrls={submittedUrls}
           onPay={() => setShowPay(true)}
           onStartWork={handleStartWork}
           onUpload={() => setShowUpload(true)}
           onMarkComplete={handleMarkComplete}
-          onReview={() => setShowReview(true)}
           onApprove={handleApprove}
           onRevision={() => setShowRevision(true)}
-          onViewSubmission={() => setShowReview(true)}
+          onPlayVideo={(v) => setPlayingVideo(v)}
+          onViewImage={(img) => setPreviewImage(img)}
+          onViewDoc={(doc) => setPreviewDoc(doc)}
+          onOpenLink={(url) => {
+            if (isDirectVideoUrl(url)) {
+              setPlayingVideo({ url: normalizeUrl(url), label: t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' }) });
+            } else {
+              Linking.openURL(normalizeUrl(url)).catch(() => showToast(t('activityTimeline.linkOpenFailed')));
+            }
+          }}
         />
 
         {/* ── Security Footer ── */}
@@ -1775,8 +1900,8 @@ export default function CampaignWorkspaceScreen() {
           </View>
         </View>
         <View style={[sh.divider, { backgroundColor: '#E5E7EB', marginVertical: 12 }]} />
-        <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleSubmitWork} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><FontAwesome5 name="cloud-upload-alt" solid size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
+        <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: (submitting || hasActiveUpload) ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleSubmitWork} disabled={submitting || hasActiveUpload}>
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><FontAwesome5 name="cloud-upload-alt" solid size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{hasActiveUpload ? t('activityTimeline.modalUploadUploadingBtn') : t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
         </Pressable>
       </BottomSheet>
 
@@ -1885,33 +2010,6 @@ export default function CampaignWorkspaceScreen() {
             <View style={rv.noLinks}>
               <FontAwesome5 name="link" solid size={20} color="#D1D5DB" />
               <Text style={rv.noLinksTxt}>{t('activityTimeline.modalReviewNoLinks')}</Text>
-            </View>
-          </View>
-        )}
-
-        {/* What needs to be delivered */}
-        {deliverables.length > 0 && (
-          <View style={[rv.section, { marginTop: 14 }]}>
-            <View style={rv.sectionHeader}>
-              <View
-                style={[
-                  rv.sectionIcon,
-                  { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-                ]}
-              >
-                <FontAwesome5 name="list" solid size={14} color="#D97706" />
-              </View>
-              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewDeliverablesSection')}</Text>
-            </View>
-            <View style={{ gap: 8 }}>
-              {deliverables.map((d, idx) => (
-                <View key={idx} style={rv.deliverableRow}>
-                  <View style={rv.deliverableNum}>
-                    <Text style={rv.deliverableNumTxt}>{idx + 1}</Text>
-                  </View>
-                  <Text style={rv.deliverableTxt}>{d}</Text>
-                </View>
-              ))}
             </View>
           </View>
         )}
@@ -2119,10 +2217,6 @@ const rv = StyleSheet.create({
   linkTxt:          { flex: 1, fontSize: 13, fontFamily: F.semibold, color: '#7C3AED', textDecorationLine: 'underline' },
   noLinks:          { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
   noLinksTxt:       { fontSize: 13, fontFamily: F.regular, color: '#9CA3AF' },
-  deliverableRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  deliverableNum:   { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#FED7AA', justifyContent: 'center', alignItems: 'center', marginTop: 1, flexShrink: 0 },
-  deliverableNumTxt:{ fontSize: 11, fontFamily: F.bold, color: '#D97706' },
-  deliverableTxt:   { flex: 1, fontSize: 13, fontFamily: F.regular, color: '#374151', lineHeight: 20 },
 });
 
 const py = StyleSheet.create({
@@ -2147,6 +2241,11 @@ const ac = StyleSheet.create({
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.full, paddingVertical: 13, marginTop: 4 },
   btnTxt: { fontSize: 14, fontFamily: F.bold, color: '#fff' },
+  deliverySection: { gap: 6, marginTop: 4 },
+  deliveryLabel:   { fontSize: 12, fontFamily: F.bold, color: '#374151' },
+  thumbRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  thumb:           { width: 56, height: 56, borderRadius: RADIUS.sm, backgroundColor: '#F5F3FF', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  thumbOverlay:    { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.15)', justifyContent: 'center', alignItems: 'center' },
 });
 
 const fb = StyleSheet.create({

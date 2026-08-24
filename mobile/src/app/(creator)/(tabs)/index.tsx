@@ -469,7 +469,18 @@ export default function HomeScreen() {
                       <Pressable
                         key={w.id}
                         style={[styles.workCard, { backgroundColor: C.surface, borderColor: C.border }, SHADOW.raised]}
-                        onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: w.campaignId } })}>
+                        onPress={() =>
+                          router.push({
+                            pathname: '/(business)/activity-timeline',
+                            params: {
+                              campaignId:    w.campaignId,
+                              campaignTitle: w.campaignTitle,
+                              role:          'CREATOR',
+                              businessId:    w.businessId,
+                              brand:         w.brand,
+                            },
+                          })
+                        }>
                         <View style={[styles.workThumb, { backgroundColor: C.primaryLight }]}>
                           {w.featureImageUrl ? (
                             <Image source={{ uri: w.featureImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
