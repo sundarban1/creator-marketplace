@@ -20,8 +20,6 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
-import { creatorService } from '@/services/creator';
-import { AssignMembersSheet } from '@/features/creator/components/AssignMembersSheet';
 import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
@@ -99,10 +97,8 @@ function brandInitials(name: string): string {
 
 // ─── Proposal Card ────────────────────────────────────────────────────────────
 
-function ProposalCard({ proposal, canAssign, onAssign }: {
+function ProposalCard({ proposal }: {
   proposal: Proposal;
-  canAssign: boolean;
-  onAssign: (applicationId: string) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -213,23 +209,6 @@ function ProposalCard({ proposal, canAssign, onAssign }: {
           </View>
         )}
 
-        {/* §13 — staffing a booking the team won. Only a TEAM sees it:
-            an individual provider IS the whole provider. */}
-        {proposal.status === 'accepted' && canAssign && (
-          <Pressable
-            style={[styles.trackBtn, { backgroundColor: `${C.brinjal1}14`, borderWidth: 1, borderColor: `${C.brinjal1}30` }]}
-            onPress={(e) => { e.stopPropagation(); onAssign(proposal.id); }}>
-            <View style={[styles.trackBtnIcon, { backgroundColor: `${C.brinjal1}1F` }]}>
-              <FontAwesome5 name="users" solid size={16} color={C.brinjal1} />
-            </View>
-            <View style={styles.trackBtnText}>
-              <Text style={[styles.trackBtnLabel, { color: C.brinjal1 }]}>{t('assign.cardLabel')}</Text>
-              <Text style={[styles.trackBtnSub, { color: C.textSecondary }]}>{t('assign.cardSub')}</Text>
-            </View>
-            <FontAwesome5 name="chevron-right" solid size={15} color={C.brinjal1} />
-          </Pressable>
-        )}
-
         {proposal.status === 'accepted' && !isFree && (<>
           <Pressable
             style={[styles.trackBtn, { backgroundColor: `${trackCfg.color}14`, borderWidth: 1, borderColor: `${trackCfg.color}30` }]}
@@ -325,16 +304,6 @@ export default function ProposalsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]         = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('all');
-  // §13 — only a TEAM staffs a booking, so the profile decides whether
-  // the assign row renders at all.
-  const [canAssign, setCanAssign] = useState(false);
-  const [assigningId, setAssigningId] = useState<string | null>(null);
-
-  useEffect(() => {
-    creatorService.getProfile()
-      .then((p) => setCanAssign(p.providerType === 'TEAM'))
-      .catch(() => {});
-  }, []);
   const loadingMoreRef = useRef(false);
   const hasLoadedOnceRef = useRef(false);
   const listRef = useRef<FlatList<Proposal>>(null);
@@ -451,7 +420,7 @@ export default function ProposalsScreen() {
           data={current.items}
           keyExtractor={(p) => p.id}
           renderItem={({ item }) => (
-            <ProposalCard proposal={item} canAssign={canAssign} onAssign={setAssigningId} />
+            <ProposalCard proposal={item} />
           )}
           contentContainerStyle={[styles.list, current.items.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
@@ -479,12 +448,6 @@ export default function ProposalsScreen() {
         />
       )}
       </MaxWidthContainer>
-
-      <AssignMembersSheet
-        visible={assigningId !== null}
-        applicationId={assigningId}
-        onClose={() => setAssigningId(null)}
-      />
     </SafeAreaView>
   );
 }

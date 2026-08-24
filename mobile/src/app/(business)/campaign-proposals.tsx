@@ -595,9 +595,9 @@ export default function CampaignProposalsScreen() {
     agreeing: boolean;
   }>({ visible: false, contract: null, proposal: null, agreeing: false });
 
-  async function load(showRefresh = false) {
-    if (showRefresh) setRefreshing(true);
-    else setLoading(true);
+  async function load(mode: 'initial' | 'refresh' | 'silent' = 'initial') {
+    if (mode === 'refresh') setRefreshing(true);
+    else if (mode === 'initial') setLoading(true);
     try {
       const [data, campaign, invitations] = await Promise.all([
         campaignService.getApplications(campaignId),
@@ -620,22 +620,25 @@ export default function CampaignProposalsScreen() {
     finally { setLoading(false); setRefreshing(false); }
   }
 
-  useEffect(() => { void load(); }, [campaignId]);
+  useEffect(() => { void load('initial'); }, [campaignId]);
 
   // The mount/campaignId effect above won't re-fire when returning to this
   // same campaign from activity-timeline (e.g. after marking work complete
   // or releasing payment) — refetch silently on every later focus so those
-  // status changes actually show up here.
+  // status changes actually show up here. This must not drive the
+  // RefreshControl's `refreshing` prop: toggling it outside of an actual
+  // pull-to-refresh gesture (e.g. right as the screen pops back into focus)
+  // can leave the native spinner visually stuck even after JS state resets.
   const hasFocusedOnceRef = useRef(false);
   useFocusEffect(useCallback(() => {
     if (!hasFocusedOnceRef.current) {
       hasFocusedOnceRef.current = true;
       return;
     }
-    void load(true);
+    void load('silent');
   }, [campaignId]));
 
-  const onRefresh = useCallback(() => void load(true), [campaignId]);
+  const onRefresh = useCallback(() => void load('refresh'), [campaignId]);
 
   async function handleAccept(p: Proposal) {
     if (campaignInactive) return;

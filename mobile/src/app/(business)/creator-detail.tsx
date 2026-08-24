@@ -88,7 +88,7 @@ const PRICING_LABEL_KEY: Record<ApiPublicService['pricingModel'], string> = {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CreatorDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, viaTeam } = useLocalSearchParams<{ id: string; viaTeam?: string }>();
   const C = useAppColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
@@ -328,7 +328,6 @@ export default function CreatorDetailScreen() {
           <View style={s.nameRow}>
             <Text style={[s.name, { color: C.text }]} numberOfLines={2}>{profile.fullName ?? 'Creator'}</Text>
             {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
-            <ProviderTypeBadge type={profile.providerType} teamSize={profile.teamSize} />
           </View>
           {profile.username ? (
             <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
@@ -339,6 +338,9 @@ export default function CreatorDetailScreen() {
               <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
             </View>
           ) : null}
+          {!(viaTeam === '1' && profile.providerType === 'INDIVIDUAL') && (
+            <ProviderTypeBadge type={profile.providerType} teamSize={profile.teamSize} />
+          )}
         </View>
 
         {/* ── Bio ── */}
@@ -456,6 +458,43 @@ export default function CreatorDetailScreen() {
                     <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                     <Text style={[s.catChipText, { color: C.brinjal1 }]}>{ind}</Text>
                   </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* ── Team members (TEAM/AGENCY only) ── */}
+        {(profile.teamMembers?.length ?? 0) > 0 && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionTeamMembers')} color={C.textSecondary} />
+            <View style={s.memberList}>
+              {profile.teamMembers!.map((m) => {
+                const memberInitials = (m.fullName ?? '?').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+                return (
+                  <Pressable
+                    key={m.id}
+                    style={[s.memberRow, { borderColor: C.border }]}
+                    onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: m.id, viaTeam: '1' } })}
+                    accessibilityRole="button">
+                    {m.avatarUrl ? (
+                      <Image source={{ uri: m.avatarUrl }} style={s.memberAvatar} />
+                    ) : (
+                      <View style={[s.memberAvatar, { backgroundColor: getAvatarBg(allCategories, m.categories) }]}>
+                        <Text style={s.memberAvatarInitial}>{memberInitials}</Text>
+                      </View>
+                    )}
+                    <View style={s.memberText}>
+                      <View style={s.memberNameRow}>
+                        <Text style={[s.memberName, { color: C.text }]} numberOfLines={1}>{m.fullName ?? '—'}</Text>
+                        {m.isVerified && <VerifiedBadge size={13} />}
+                      </View>
+                      {m.username ? (
+                        <Text style={[s.memberUsername, { color: C.textSecondary }]} numberOfLines={1}>@{m.username}</Text>
+                      ) : null}
+                    </View>
+                    <FontAwesome5 name="chevron-right" size={12} color={C.textSecondary} />
+                  </Pressable>
                 );
               })}
             </View>
@@ -806,6 +845,16 @@ const s = StyleSheet.create({
   catChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.full },
   catChipText: { fontSize: 13, fontFamily: F.semibold },
   platChip:    { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.full, borderWidth: 1.5 },
+
+  // Team members
+  memberList:        { gap: 10 },
+  memberRow:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1 },
+  memberAvatar:       { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 },
+  memberAvatarInitial: { fontSize: 15, fontFamily: F.bold, textAlign: 'center', lineHeight: 40, width: '100%' },
+  memberText:        { flex: 1, gap: 2 },
+  memberNameRow:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  memberName:        { fontSize: 14, fontFamily: F.semibold },
+  memberUsername:    { fontSize: 12, fontFamily: F.regular },
 
   // Social accounts
   socialList:      { gap: 10 },

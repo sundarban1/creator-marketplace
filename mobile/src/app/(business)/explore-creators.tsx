@@ -621,6 +621,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
         visible={filterVisible}
         temp={tempFilter}
         setTemp={setTempFilter}
+        showRemoteOption={false}
         onApply={applyFilter}
         onReset={resetFilter}
         onClose={() => setFilterVisible(false)}

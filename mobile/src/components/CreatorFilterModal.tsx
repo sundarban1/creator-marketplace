@@ -74,13 +74,17 @@ type Props = {
   /** Omit (or pass []) when category selection lives elsewhere on the page
    *  (e.g. a pill row above the list) — the section just doesn't render. */
   availableCategories?: string[];
+  /** Passed through to the location picker — false hides the "Remote" chip
+   *  for callers where it doesn't apply (e.g. Find People, which is about
+   *  where a person is based, not whether a gig can be done remotely). */
+  showRemoteOption?: boolean;
   onApply: () => void;
   onReset: () => void;
   onClose: () => void;
 };
 
 export function CreatorFilterModal({
-  visible, temp, setTemp, availableCategories = [],
+  visible, temp, setTemp, availableCategories = [], showRemoteOption = true,
   onApply, onReset, onClose,
 }: Props) {
   const C = useAppColors();
@@ -182,7 +186,7 @@ export function CreatorFilterModal({
           label={t('explore.location')}
           hint={t('explore.locationsAllowed', { count: temp.locations.length, max: CREATOR_MAX_LOCS })}
         />
-        <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} />
+        <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} showRemoteOption={showRemoteOption} />
       </View>
     </FilterSheet>
   );

@@ -39,7 +39,7 @@ const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: 
 
 function extractHandle(url: string): string {
   try {
-    const path = new URL(url).pathname.replace(/^\/|\/$/g, '');
+    const path = new URL(url).pathname.replace(/^\/|\/$/g, '').replace(/^@/, '');
     return path ? `@${path}` : url;
   } catch { return url; }
 }

@@ -14,6 +14,8 @@ import { BusinessRepository } from '../business/business.repository';
 import { PlatformRepository } from '../platform/platform.repository';
 import { ServiceRepository } from '../service/service.repository';
 import { PortfolioRepository } from '../portfolio/portfolio.repository';
+import { ProviderMemberRepository } from '../provider-member/provider-member.repository';
+import { InvitationStatus } from '@prisma/client';
 import { analyticsService } from '../analytics/analytics.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
@@ -298,6 +300,7 @@ export class CreatorService {
   private platformRepo: PlatformRepository;
   private serviceRepo: ServiceRepository;
   private portfolioRepo: PortfolioRepository;
+  private providerMemberRepo: ProviderMemberRepository;
 
   constructor() {
     this.repo = new CreatorRepository();
@@ -305,6 +308,7 @@ export class CreatorService {
     this.platformRepo = new PlatformRepository();
     this.serviceRepo = new ServiceRepository();
     this.portfolioRepo = new PortfolioRepository();
+    this.providerMemberRepo = new ProviderMemberRepository();
   }
 
   async listCreators(params: {
@@ -416,13 +420,28 @@ export class CreatorService {
     // portfolioItems are the richer, media-backed entries (PortfolioItem table)
     // — distinct from the legacy portfolioLinks label+url list already carried
     // by toPublicCreatorDto. Both are returned so viewers see the full body of work.
-    const [stats, reviews, services, portfolioItems] = await Promise.all([
+    const [stats, reviews, services, portfolioItems, members] = await Promise.all([
       analyticsService.getCreatorPublicStats(profile.userId).catch(() => null),
       analyticsService.getReviewsReceived(profile.userId).catch(() => []),
       this.serviceRepo.findActiveByCreatorProfileId(profile.id).catch(() => []),
       this.portfolioRepo.findByCreatorProfileId(profile.id).catch(() => []),
+      profile.providerType === 'TEAM' || profile.providerType === 'AGENCY'
+        ? this.providerMemberRepo.findByProviderId(profile.id).catch(() => [])
+        : Promise.resolve([]),
     ]);
-    return { ...translated, stats, reviews, services, portfolioItems };
+    // Public roster: only accepted members, and only the fields already public
+    // on the member's own profile — no jobRole/accessRole/invite metadata.
+    const teamMembers = members
+      .filter((m) => m.status === InvitationStatus.ACCEPTED)
+      .map((m) => ({
+        id: m.member.id,
+        fullName: m.member.fullName,
+        username: m.member.username,
+        avatarUrl: m.member.avatarUrl,
+        categories: m.member.categories,
+        isVerified: m.member.isVerified,
+      }));
+    return { ...translated, stats, reviews, services, portfolioItems, teamMembers };
   }
 
   async getFilterOptions() {
@@ -662,7 +681,8 @@ export class CreatorService {
     let statePayload: ReturnType<typeof verifyOAuthState>;
     try {
       statePayload = verifyOAuthState(state);
-    } catch {
+    } catch (err) {
+      logger.warn({ err }, 'TikTok OAuth state verification failed');
       throw new AppError('TikTok authorization expired — please try again', 400);
     }
     const { userId, codeVerifier, role } = statePayload;
@@ -839,7 +859,8 @@ export class CreatorService {
     let statePayload: ReturnType<typeof verifyOAuthState>;
     try {
       statePayload = verifyOAuthState(state);
-    } catch {
+    } catch (err) {
+      logger.warn({ err }, 'Instagram OAuth state verification failed');
       throw new AppError('Instagram authorization expired — please try again', 400);
     }
     const { userId, role } = statePayload;

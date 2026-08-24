@@ -37,6 +37,16 @@ const QUICK_ACTION_COLORS = {
   invitations:     { icon: '#0D9488', bg: '#CCFBF1' },
 } as const;
 
+// Same per-icon tinting as QUICK_ACTION_COLORS (reusing its purple/blue/teal
+// so "projects" and "myCampaigns" — both the briefcase icon — read as the
+// same concept) so the "Your work at a glance" stat tiles pick up that same
+// visual language instead of one repeated brinjal1 icon on a flat card.
+const STAT_COLORS = {
+  clients:      { icon: '#0369A1', bg: '#E0F2FE' },
+  projects:     { icon: '#7C3AED', bg: '#F3E8FF' },
+  deliverables: { icon: '#0D9488', bg: '#CCFBF1' },
+} as const;
+
 function getInitials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 }
@@ -225,11 +235,13 @@ export default function HomeScreen() {
   // than showing that full string — country is always the last segment
   // (search is scoped to Nepal, see LocationSearchModal), so city is the
   // segment right before it, with any trailing postal code stripped.
-  const location = profile?.city || (() => {
-    const parts = (profile?.location ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-    const city = parts.length >= 2 ? parts[parts.length - 2] : (parts[0] ?? '');
-    return city.replace(/\s*\d{4,6}\s*$/, '').trim();
-  })();
+  const location = profile?.city
+    ? [profile.city, profile.district].filter(Boolean).join(', ')
+    : (() => {
+        const parts = (profile?.location ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+        const city = parts.length >= 2 ? parts[parts.length - 2] : (parts[0] ?? '');
+        return city.replace(/\s*\d{4,6}\s*$/, '').trim();
+      })();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -397,17 +409,21 @@ export default function HomeScreen() {
                     </Text>
                     <View style={styles.statsRow}>
                       {[
-                        { key: 'clients',      value: teamStats.clients,      label: t('home.statClients'),      icon: 'building'   as const },
-                        { key: 'projects',     value: teamStats.active,       label: t('home.statProjects'),     icon: 'briefcase'  as const },
-                        { key: 'deliverables', value: teamStats.deliverables, label: t('home.statDeliverables'), icon: 'photo-video' as const },
+                        { key: 'clients',      value: teamStats.clients,      label: t('home.statClients'),      icon: 'building'   as const, color: STAT_COLORS.clients },
+                        { key: 'projects',     value: teamStats.active,       label: t('home.statProjects'),     icon: 'briefcase'  as const, color: STAT_COLORS.projects },
+                        { key: 'deliverables', value: teamStats.deliverables, label: t('home.statDeliverables'), icon: 'photo-video' as const, color: STAT_COLORS.deliverables },
                       ].map((stat) => (
                         <Pressable
                           key={stat.key}
-                          style={[styles.statTile, { backgroundColor: C.surface, borderColor: C.border }]}
+                          style={({ pressed }) => [styles.statTile, { backgroundColor: C.surface, borderColor: C.border }, pressed && styles.quickActionTilePressed]}
                           onPress={() => router.push({ pathname: '/(creator)/(tabs)/proposals', params: { tab: 'accepted' } })}>
-                          <FontAwesome5 name={stat.icon} solid size={14} color={C.brinjal1} />
-                          <Text style={[styles.statValue, { color: C.text }]}>{stat.value}</Text>
-                          <Text style={[styles.statLabel, { color: C.textSecondary }]} numberOfLines={2}>{stat.label}</Text>
+                          <View style={[styles.statIconWrap, { backgroundColor: stat.color.bg }, SHADOW.card]}>
+                            <FontAwesome5 name={stat.icon} solid size={14} color={stat.color.icon} />
+                          </View>
+                          <View style={styles.statValueRow}>
+                            <Text style={[styles.statValue, { color: C.text }]}>{stat.value}</Text>
+                            <Text style={[styles.statLabel, { color: C.textSecondary }]} numberOfLines={1}>{stat.label}</Text>
+                          </View>
                         </Pressable>
                       ))}
                     </View>
@@ -699,9 +715,16 @@ const styles = StyleSheet.create({
   ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
   statsRow:   { flexDirection: 'row', gap: SPACING.sm },
-  statTile:   { flex: 1, borderWidth: 1, borderRadius: RADIUS.lg, paddingVertical: SPACING.md, paddingHorizontal: SPACING.sm, alignItems: 'center', gap: 4 },
-  statValue:  { fontSize: FONT_SIZE.xl, fontFamily: F.bold },
-  statLabel:  { fontSize: FONT_SIZE.xs, fontFamily: F.medium, textAlign: 'center' },
+  statTile:   { flex: 1, borderWidth: 1, borderRadius: RADIUS.lg, paddingVertical: SPACING.md, paddingHorizontal: SPACING.sm, alignItems: 'center', gap: SPACING.sm },
+  // Same colored-circle-with-shadow size as quickActionIconWrap (see
+  // STAT_COLORS) instead of a bare icon floating on the card.
+  statIconWrap: { width: 52, height: 52, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center' },
+  // Value + label sit on one line (not stacked) so "1 Clients" reads as a
+  // single stat instead of two centered rows. Same size/weight/lineHeight as
+  // quickActionLabel so both rows of tiles read as one consistent system.
+  statValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  statValue:  { fontSize: FONT_SIZE.xs, fontFamily: F.bold, lineHeight: 17 },
+  statLabel:  { fontSize: FONT_SIZE.xs, fontFamily: F.medium, lineHeight: 17 },
 
   quickActionsRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xxl },
   // flex: 1 (not a fixed width) — four equal-width columns that always sum

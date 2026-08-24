@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -18,7 +18,6 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import {
   creatorService,
-  type ApiAssignment,
   type ApiProviderMember,
   type ProviderMemberRole,
   type ProviderType,
@@ -33,6 +32,11 @@ const ACCESS_ROLES: Exclude<ProviderMemberRole, 'OWNER'>[] = ['MEMBER', 'MANAGER
 type RemoveState = { visible: boolean; member: ApiProviderMember | null; submitting: boolean };
 const NO_REMOVE: RemoveState = { visible: false, member: null, submitting: false };
 
+function openCreatorProfile(id?: string | null) {
+  if (!id) return;
+  router.push({ pathname: '/(creator)/creator-detail', params: { id } });
+}
+
 export default function TeamScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -45,9 +49,6 @@ export default function TeamScreen() {
   const [activeProviderId, setActiveProviderId] = useState<string | null>(null);
   const [members, setMembers]         = useState<ApiProviderMember[]>([]);
   const [memberships, setMemberships] = useState<ApiProviderMember[]>([]);
-  // §16 "Assigned work" — bookings a team handed to this provider. Available to
-  // every provider type, since an INDIVIDUAL is exactly who gets assigned.
-  const [assignments, setAssignments] = useState<ApiAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
@@ -66,16 +67,14 @@ export default function TeamScreen() {
       setProviderType(profile.providerType);
       const target = providerId ?? null;
       const ownCanHaveMembers = profile.providerType === 'TEAM';
-      const [invites, roster, assigned] = await Promise.all([
+      const [invites, roster] = await Promise.all([
         creatorService.listMyMemberships(),
         target || ownCanHaveMembers
           ? creatorService.listTeamMembers(target ?? undefined)
           : Promise.resolve([] as ApiProviderMember[]),
-        creatorService.listMyAssignments().catch(() => [] as ApiAssignment[]),
       ]);
       setMemberships(invites);
       setMembers(roster);
-      setAssignments(assigned);
     } catch (err) {
       setError(err instanceof OfflineError
         ? t('team.errorMessage')
@@ -194,29 +193,6 @@ export default function TeamScreen() {
                   </View>
                 )}
 
-                {/* §16 — work a team assigned to this provider. */}
-                {assignments.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: C.text }]}>{t('assign.assignedSection')}</Text>
-                    {assignments.map((a) => (
-                      <View key={a.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-                        <View style={styles.cardHeader}>
-                          <Avatar url={a.application?.creator?.avatarUrl} name={a.application?.creator?.fullName} />
-                          <View style={styles.headerText}>
-                            <Text style={[styles.name, { color: C.text }]} numberOfLines={2}>
-                              {a.application?.campaign?.title ?? ''}
-                            </Text>
-                            <Text style={[styles.meta, { color: C.textSecondary }]} numberOfLines={1}>
-                              {[t('assign.assignedBy', { team: a.application?.creator?.fullName ?? '' }), a.note]
-                                .filter(Boolean).join(' · ')}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
                 {/* Teams joined as a plain member — read-only, since the API
                     only lets an ADMIN manage someone else's roster. */}
                 {memberOnlyOf.length > 0 && (
@@ -224,7 +200,7 @@ export default function TeamScreen() {
                     <Text style={[styles.sectionTitle, { color: C.text }]}>{t('team.memberOfSection')}</Text>
                     {memberOnlyOf.map((m) => (
                       <View key={m.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-                        <View style={styles.cardHeader}>
+                        <Pressable style={styles.cardHeader} onPress={() => openCreatorProfile(m.provider?.id)}>
                           <Avatar url={m.provider?.avatarUrl} name={m.provider?.fullName} />
                           <View style={styles.headerText}>
                             <Text style={[styles.name, { color: C.text }]} numberOfLines={1}>
@@ -234,7 +210,7 @@ export default function TeamScreen() {
                               {[m.jobRole, t(`team.role${m.accessRole}`)].filter(Boolean).join(' · ')}
                             </Text>
                           </View>
-                        </View>
+                        </Pressable>
                       </View>
                     ))}
                   </View>
@@ -292,7 +268,7 @@ export default function TeamScreen() {
                   title={t('team.emptyTitle')}
                   subtitle={t('team.emptySub')}
                 />
-              ) : pendingInvites.length === 0 && joined.length === 0 && assignments.length === 0 ? (
+              ) : pendingInvites.length === 0 && joined.length === 0 ? (
                 <EmptyState
                   icon="user"
                   title={t('team.individualTitle')}
@@ -467,23 +443,27 @@ function MemberRow({ item, onChangeRole, onRemove }: {
 
   return (
     <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }, SHADOW.raised]}>
-      <Pressable style={styles.cardHeader} onPress={() => setExpanded((e) => !e)}>
-        <Avatar url={item.member?.avatarUrl} name={item.member?.fullName} />
-        <View style={styles.headerText}>
-          <Text style={[styles.name, { color: C.text }]} numberOfLines={1}>
-            {item.member?.fullName ?? t('team.unknownMember')}
-          </Text>
-          <Text style={[styles.meta, { color: C.textSecondary }]} numberOfLines={1}>
-            {[item.jobRole, t(`team.role${item.accessRole}`)].filter(Boolean).join(' · ')}
-          </Text>
-        </View>
+      <View style={styles.cardHeader}>
+        <Pressable style={styles.cardHeaderPress} onPress={() => openCreatorProfile(item.member?.id)}>
+          <Avatar url={item.member?.avatarUrl} name={item.member?.fullName} />
+          <View style={styles.headerText}>
+            <Text style={[styles.name, { color: C.text }]} numberOfLines={1}>
+              {item.member?.fullName ?? t('team.unknownMember')}
+            </Text>
+            <Text style={[styles.meta, { color: C.textSecondary }]} numberOfLines={1}>
+              {[item.jobRole, t(`team.role${item.accessRole}`)].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
+        </Pressable>
         {pending && (
           <View style={[styles.statusBadge, { backgroundColor: '#FFF7ED' }]}>
             <Text style={[styles.statusText, { color: '#C2410C' }]}>{t('team.statusPending')}</Text>
           </View>
         )}
-        <FontAwesome5 name={expanded ? 'chevron-up' : 'chevron-down'} size={12} color={C.textSecondary} />
-      </Pressable>
+        <Pressable onPress={() => setExpanded((e) => !e)} hitSlop={10} accessibilityRole="button">
+          <FontAwesome5 name={expanded ? 'chevron-up' : 'chevron-down'} size={12} color={C.textSecondary} />
+        </Pressable>
+      </View>
 
       {expanded && (
         <View style={[styles.cardBody, { borderTopColor: C.border }]}>
@@ -520,7 +500,7 @@ function InviteRow({ item, busy, onAccept, onDecline }: {
 
   return (
     <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.brinjal1 }, SHADOW.raised]}>
-      <View style={styles.cardHeader}>
+      <Pressable style={styles.cardHeader} onPress={() => openCreatorProfile(item.provider?.id)}>
         <Avatar url={item.provider?.avatarUrl} name={item.provider?.fullName} />
         <View style={styles.headerText}>
           <Text style={[styles.name, { color: C.text }]} numberOfLines={1}>
@@ -532,7 +512,7 @@ function InviteRow({ item, busy, onAccept, onDecline }: {
               : t('team.invitedNoRole')}
           </Text>
         </View>
-      </View>
+      </Pressable>
       <View style={styles.actions}>
         <Button label={t('team.decline')} onPress={onDecline} variant="secondary" size="small" disabled={busy} />
         <Button label={t('team.accept')} onPress={onAccept} loading={busy} size="small" />
@@ -558,6 +538,7 @@ const styles = StyleSheet.create({
 
   card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, gap: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cardHeaderPress: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 42, height: 42, borderRadius: RADIUS.full },
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 14, fontFamily: F.bold },

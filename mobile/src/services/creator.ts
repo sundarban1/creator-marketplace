@@ -191,6 +191,17 @@ export interface ApiCreatorPublicProfile {
   // Media-backed portfolio entries (PortfolioItem table), separate from the
   // legacy label+url portfolioLinks above.
   portfolioItems?: ApiPortfolioItem[];
+  // Accepted roster, only populated when providerType is TEAM/AGENCY.
+  teamMembers?: ApiPublicTeamMember[];
+}
+
+export interface ApiPublicTeamMember {
+  id: string;
+  fullName: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+  categories: string[];
+  isVerified: boolean;
 }
 
 export interface ApiPublicService {

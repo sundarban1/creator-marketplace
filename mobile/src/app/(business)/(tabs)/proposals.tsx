@@ -275,9 +275,9 @@ export default function ProposalsScreen() {
     setPage(p);
   }
 
-  async function load(showRefresh = false) {
-    if (showRefresh) setRefreshing(true);
-    else setLoading(true);
+  async function load(mode: 'initial' | 'refresh' | 'silent' = 'initial') {
+    if (mode === 'refresh') setRefreshing(true);
+    else if (mode === 'initial') setLoading(true);
     try {
       await loadPage(1, true);
     } catch { /* empty state shows */ }
@@ -289,22 +289,25 @@ export default function ProposalsScreen() {
     }
   }
 
-  useEffect(() => { void load(); }, [languageVersion]);
+  useEffect(() => { void load('initial'); }, [languageVersion]);
 
-  // Silently refetch (pull-to-refresh spinner, not the full skeleton) every
-  // time this tab regains focus after the initial mount — accepting/
-  // rejecting a proposal from campaign-proposals.tsx and navigating back
-  // here previously left this list showing the pre-decision status.
+  // Silently refetch every time this tab regains focus after the initial
+  // mount — accepting/rejecting a proposal from campaign-proposals.tsx and
+  // navigating back here previously left this list showing the
+  // pre-decision status. Must not drive the RefreshControl's `refreshing`
+  // prop: toggling it outside of an actual pull-to-refresh gesture (e.g.
+  // right as the screen pops back into focus) can leave the native spinner
+  // visually stuck even after JS state resets.
   const hasFocusedOnceRef = useRef(false);
   useFocusEffect(useCallback(() => {
     if (!hasFocusedOnceRef.current) {
       hasFocusedOnceRef.current = true;
       return;
     }
-    void load(true);
+    void load('silent');
   }, []));
 
-  const onRefresh = useCallback(() => void load(true), []);
+  const onRefresh = useCallback(() => void load('refresh'), []);
 
   function loadMore() {
     if (loadingMoreRef.current || loadingMore || proposals.length >= total) return;

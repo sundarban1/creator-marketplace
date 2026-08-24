@@ -57,8 +57,12 @@ export interface OAuthStatePayload {
   role?: Role;
 }
 
+// 30m rather than a tighter window — TikTok/Instagram's login step frequently forces
+// a fresh sign-in (no saved session; see preferEphemeralSession on the client) and can
+// require an OTP or CAPTCHA, which routinely pushed real users past a 10m expiry and
+// surfaced as "authorization expired" right after they finished logging in.
 export function signOAuthState(payload: OAuthStatePayload): string {
-  return jwt.sign(payload, env.JWT_ACCESS_SECRET + '_oauth_state', { expiresIn: '10m' });
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET + '_oauth_state', { expiresIn: '30m' });
 }
 
 export function verifyOAuthState(token: string): OAuthStatePayload & JwtPayload {
