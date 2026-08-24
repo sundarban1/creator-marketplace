@@ -2580,7 +2580,7 @@ const ne = {
     makeEventTitle: 'इभेन्ट बनाउनुहोस्',
     aiPromptLabel: 'आफ्नो इभेन्टको बारेमा लेख्नुहोस्',
     aiExamplesLabel: 'द्रुत टेम्प्लेटहरू',
-    promptModeText: 'लेख्नुहोस्',
+    promptModeText: 'लेख्नुहोस् (सिफारिस गरिएको)',
     promptModeTextDesc: 'आफ्नो इभेन्टको बारेमा छोटकरीमा लेख्नुहोस्',
     promptModeAudio: 'बोल्नुहोस्',
     promptModeAudioDesc: 'लेख्नुको सट्टा बोलेर बताउनुहोस्',

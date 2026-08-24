@@ -2599,7 +2599,7 @@ const en = {
     makeEventTitle:      'Make Event',
     aiPromptLabel:       'Describe your event',
     aiExamplesLabel:     'Quick templates',
-    promptModeText:      'Write',
+    promptModeText:      'Write (Recommended)',
     promptModeTextDesc:  'Describe your event in a few words',
     promptModeAudio:     'Speak',
     promptModeAudioDesc: 'Speak your description instead',

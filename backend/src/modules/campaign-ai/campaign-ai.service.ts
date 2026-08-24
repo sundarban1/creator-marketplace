@@ -8,7 +8,7 @@ import { PlatformRepository } from '../platform/platform.repository';
 import { BusinessRepository } from '../business/business.repository';
 import {
   aiCampaignDraftSchema, aiEventDraftSchema, BENEFIT_OPTIONS, BENEFIT_DESCRIPTIONS,
-  EXCHANGE_OPTIONS, EXCHANGE_DESCRIPTIONS,
+  EXCHANGE_OPTIONS, EXCHANGE_DESCRIPTIONS, NEEDS_INPUT_FIELDS, EVENT_NEEDS_INPUT_FIELDS,
   type AiCampaignDraft, type AiEventDraft, type AiRequirementDraft, type SuggestDescriptionInput,
 } from './campaign-ai.schema';
 import { searchStockPhoto } from '../../utils/imageSearch';
@@ -426,7 +426,7 @@ export class CampaignAiService {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
       const raw = await this.callModel(buildSystemPrompt(categoryNames, providerCategoryNames, platformNames, language, businessContext, inputSource), prompt);
       this.assertCampaignIntent(raw);
-      draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response');
+      draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response', NEEDS_INPUT_FIELDS);
       draft = await this.localizeStragglers(draft, CAMPAIGN_LOCALIZED_KEYS);
     } catch (err) {
       if (err instanceof CampaignIntentError) throw err;
@@ -500,7 +500,7 @@ export class CampaignAiService {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
       const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language, businessContext, todayInNepal(), inputSource), prompt);
       this.assertCampaignIntent(raw);
-      draft = this.parseAndValidate(raw, aiEventDraftSchema, 'AI event response');
+      draft = this.parseAndValidate(raw, aiEventDraftSchema, 'AI event response', EVENT_NEEDS_INPUT_FIELDS);
       draft = await this.localizeStragglers(draft, EVENT_LOCALIZED_KEYS);
     } catch (err) {
       if (err instanceof CampaignIntentError) throw err;
@@ -640,7 +640,7 @@ export class CampaignAiService {
     return text;
   }
 
-  private parseAndValidate<T>(raw: string, schema: { safeParse: (v: unknown) => { success: boolean; data?: T; error?: { issues: unknown } } }, label: string): T {
+  private parseAndValidate<T>(raw: string, schema: { safeParse: (v: unknown) => { success: boolean; data?: T; error?: { issues: unknown } } }, label: string, validNeedsInputKeys?: readonly string[]): T {
     const stripped = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
     let parsed: unknown;
     try {
@@ -649,10 +649,15 @@ export class CampaignAiService {
       logger.debug({ err, raw }, `${label} was not valid JSON`);
       throw new Error(`${label} was not valid JSON`);
     }
-    // The model is asked for 0-2 needsInput entries but doesn't always obey that cap —
-    // clamp instead of rejecting an otherwise well-formed draft over a soft hint field.
+    // The model is asked for 0-2 needsInput entries from an exact key list, but it
+    // doesn't always obey either constraint — it sometimes flags a real schema field
+    // (e.g. "venue") that just isn't on the allowed list. Drop unknown keys and clamp
+    // the count instead of rejecting an otherwise well-formed draft over this soft
+    // hint field.
     if (parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).needsInput)) {
-      (parsed as Record<string, unknown>).needsInput = ((parsed as Record<string, unknown>).needsInput as unknown[]).slice(0, 2);
+      let needsInput = (parsed as Record<string, unknown>).needsInput as unknown[];
+      if (validNeedsInputKeys) needsInput = needsInput.filter((key) => validNeedsInputKeys.includes(key as string));
+      (parsed as Record<string, unknown>).needsInput = needsInput.slice(0, 2);
     }
     const result = schema.safeParse(parsed);
     if (!result.success || !result.data) {
