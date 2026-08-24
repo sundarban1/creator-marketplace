@@ -4,7 +4,10 @@ import type { FacebookPageOption, ApiReviewReceived } from '@/services/creator';
 
 export type BusinessListItem = {
   id:           string;
-  businessName: string;
+  // Nullable — a business that hasn't finished onboarding yet still has a
+  // row in the DB (schema: `businessName String?`), and can surface in
+  // public listings before it's set. Callers must fall back, not assume it.
+  businessName: string | null;
   description:  string | null;
   logoUrl:      string | null;
   website:      string | null;

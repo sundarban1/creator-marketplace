@@ -3594,6 +3594,8 @@ const en = {
     notFound: 'Service not found',
     loadFailed: 'Failed to load service',
     saveFailed: 'Failed to save. Please try again.',
+    createSuccess: 'Service created successfully.',
+    updateSuccess: 'Service updated successfully.',
     categoryLabel: 'Category',
     nameLabel: 'Service Name',
     namePlaceholder: 'e.g. Restaurant promotional photography',

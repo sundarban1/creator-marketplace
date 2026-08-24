@@ -11,7 +11,7 @@ import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCard
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
 import { FilterModal, DEFAULT_EVENT_TYPES } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
-import { useCategories, sortOtherLast } from '@/hooks/useCategories';
+import { useCategories, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
@@ -92,6 +92,10 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
 
   const [activeSearch, setActiveSearch] = useState('');
   const [activeCategories, setActiveCategories] = useState<string[]>([]);
+  // The creator's own onboarding-selected niches — surfaced first in the
+  // category pill row below, matching the business side's identical
+  // treatment (see (business)/explore-creators.tsx's businessIndustries).
+  const [myCategories, setMyCategories] = useState<string[]>([]);
   const [activeFilterTab, setActiveFilterTab] = useState('new');
   const [sortBy, setSortBy] = useState<SortOption>('date-latest');
   const [eventType, setEventType] = useState<EventTypeFilter[]>(DEFAULT_EVENT_TYPES);
@@ -302,7 +306,7 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     });
     void fetchCampaigns();
     creatorService.getProfile()
-      .then((profile) => { void initNearby(profile); })
+      .then((profile) => { setMyCategories(profile.categories ?? []); void initNearby(profile); })
       .catch(() => { setNearbyLoading(false); });
   }, [languageVersion]);
 
@@ -318,7 +322,7 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
   useFocusEffect(useCallback(() => {
     if (skipNextNearbyFocusRef.current) { skipNextNearbyFocusRef.current = false; return; }
     creatorService.getProfile()
-      .then((profile) => { void initNearby(profile, { silent: true }); })
+      .then((profile) => { setMyCategories(profile.categories ?? []); void initNearby(profile, { silent: true }); })
       .catch(() => {});
   }, []));
 
@@ -457,8 +461,11 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
   // rows are the ones with no `group` (see ApiCategory's own comment).
   // sortOtherLast keeps the catch-all "Other" chip pinned to the end of the
   // slider instead of sitting alphabetically mid-row — it's the fallback
-  // bucket, so it reads last after every named niche.
-  const visibleCategories = sortOtherLast(adminCategories.filter((cat) => cat.group === null));
+  // bucket, so it reads last after every named niche. sortSelectedFirst runs
+  // before it so the creator's own onboarding-selected niches lead the row
+  // (matching the business side's identical treatment), while a selected
+  // "Other" still ends up pinned last.
+  const visibleCategories = sortOtherLast(sortSelectedFirst(adminCategories.filter((cat) => cat.group === null), myCategories));
 
   function toggleCategory(label: string) {
     const next = activeCategories.includes(label)

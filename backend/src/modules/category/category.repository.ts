@@ -2,10 +2,8 @@ import { CategoryScope, CategoryStatus } from '@prisma/client';
 import prisma from '../../prisma';
 
 export class CategoryRepository {
-  // `strict` opts out of the default "scope OR BOTH" widening — e.g. the
-  // provider-Service category picker needs exactly CREATOR-scope rows
-  // (provider types), never BOTH-scope rows (content niches), even though
-  // most other CREATOR-scoped pickers in the app do want niches included.
+  // `strict` opts out of the default "scope OR BOTH" widening for pickers
+  // that need exactly one scope's rows and nothing else.
   async findManyPublic(scope?: CategoryScope, strict = false) {
     return prisma.category.findMany({
       where: {

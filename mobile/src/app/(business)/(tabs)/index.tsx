@@ -23,7 +23,7 @@ import { notificationService } from '@/services/notifications';
 import { profileService } from '@/services/profile';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import type { Campaign } from '@/types';
-import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
+import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -65,6 +65,10 @@ export default function BusinessHomeScreen() {
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [businessName, setBusinessName] = useState('');
   const [businessLocation, setBusinessLocation] = useState('');
+  // The industry/industries the business selected during onboarding
+  // (`profile.categories`) — surfaced first in "Find People by Category"
+  // below so the business doesn't have to scroll to its own niche.
+  const [businessIndustries, setBusinessIndustries] = useState<string[]>([]);
   const [recommendedProviders, setRecommendedProviders] = useState<ApiCreatorListItem[]>([]);
   // Count of accepted applications actually waiting on a business action
   // (payment due, or submitted work awaiting review) — not the raw
@@ -151,6 +155,7 @@ export default function BusinessHomeScreen() {
       .then((profile) => {
         setBusinessName(profile.businessName);
         setBusinessLocation(profile.location ?? '');
+        setBusinessIndustries(profile.categories ?? []);
         const missing: string[] = [];
         if (!profile.logoUrl)            missing.push(t('business.home.fieldLogo'));
         if (!profile.description)        missing.push(t('business.home.fieldDescription'));
@@ -365,7 +370,7 @@ export default function BusinessHomeScreen() {
               </Pressable>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.serviceSlider}>
-              {sortOtherLast(browseCategories).map((cat) => (
+              {sortOtherLast(sortSelectedFirst(browseCategories, businessIndustries)).map((cat) => (
                 <Pressable
                   key={cat.id}
                   style={styles.serviceTile}

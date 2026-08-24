@@ -45,6 +45,16 @@ export function sortOtherLast<T extends { key?: string; name: string }>(cats: T[
   return [...cats].sort((a, b) => Number(isOther(a)) - Number(isOther(b)));
 }
 
+/** Pulls the business's own onboarding-selected industry/industries to the
+ *  front of a picker — sort is stable, so every other row keeps its
+ *  alphabetical position. Run before `sortOtherLast` so a selected "Other"
+ *  still ends up pinned last, matching every other picker's convention. */
+export function sortSelectedFirst<T extends { key?: string; name: string }>(cats: T[], selectedNames: string[]): T[] {
+  if (selectedNames.length === 0) return cats;
+  const isSelected = (c: T) => selectedNames.includes(c.name);
+  return [...cats].sort((a, b) => Number(isSelected(b)) - Number(isSelected(a)));
+}
+
 function fetchScoped(key: CacheKey, scope?: CategoryScope, strict?: boolean): Promise<ApiCategory[]> {
   if (isFresh(key)) return Promise.resolve(cache[key]!);
   if (!inflight[key]) {

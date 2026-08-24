@@ -206,7 +206,7 @@ export default function BusinessDetailScreen() {
       if (conv.status === 'ACCEPTED') {
         router.push({
           pathname: '/(creator)/chat/[id]' as never,
-          params: { id: conv.id, name: business.businessName, avatar: business.logoUrl ?? '', status: conv.status, participantId: business.id, participantRole: 'BUSINESS' },
+          params: { id: conv.id, name: business.businessName ?? 'Business', avatar: business.logoUrl ?? '', status: conv.status, participantId: business.id, participantRole: 'BUSINESS' },
         } as never);
       }
     } catch (err) {
@@ -220,7 +220,7 @@ export default function BusinessDetailScreen() {
     if (!convId || !business || business.isPrivate) return;
     router.push({
       pathname: '/(creator)/chat/[id]' as never,
-      params: { id: convId, name: business.businessName, avatar: business.logoUrl ?? '', status: convStatus ?? 'ACCEPTED', participantId: business.id, participantRole: 'BUSINESS' },
+      params: { id: convId, name: business.businessName ?? 'Business', avatar: business.logoUrl ?? '', status: convStatus ?? 'ACCEPTED', participantId: business.id, participantRole: 'BUSINESS' },
     } as never);
   }
 
@@ -349,10 +349,10 @@ export default function BusinessDetailScreen() {
         {/* ── Avatar card (overlaps cover) ── */}
         <View style={[styles.profileCard, { backgroundColor: C.surface }]}>
           <View style={styles.avatarArea}>
-            <BusinessAvatar name={business.businessName} logoUrl={business.logoUrl} size={96} />
+            <BusinessAvatar name={business.businessName ?? 'Business'} logoUrl={business.logoUrl} size={96} />
           </View>
           <View style={styles.heroNameRow}>
-            <Text style={[styles.heroName, { color: C.text, textAlign: 'center' }]} numberOfLines={2}>{business.businessName}</Text>
+            <Text style={[styles.heroName, { color: C.text, textAlign: 'center' }]} numberOfLines={2}>{business.businessName ?? 'Business'}</Text>
             {(business.fullyVerified || business.isVerified) && <VerifiedBadge size={16} />}
           </View>
 
@@ -598,7 +598,7 @@ export default function BusinessDetailScreen() {
         visible={showMsgModal}
         onClose={() => setShowMsgModal(false)}
         title={t('businessDetail.messageRequestTitle')}
-        subtitle={t('businessDetail.messageRequestSubtitle', { name: business.businessName })}
+        subtitle={t('businessDetail.messageRequestSubtitle', { name: business.businessName ?? 'Business' })}
         footer={
           <Pressable
             style={[

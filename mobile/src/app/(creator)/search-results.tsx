@@ -46,7 +46,7 @@ function BusinessResultCard({ item }: { item: BusinessListItem }) {
   const { t } = useLanguage();
   const { categories: businessCategories } = useCategories('BUSINESS');
   const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
-  const initials = item.businessName.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const initials = (item.businessName ?? 'Business').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
   return (
     <EntityCard
@@ -55,7 +55,7 @@ function BusinessResultCard({ item }: { item: BusinessListItem }) {
       initials={initials}
       circularAvatar
       ringColor={primaryMeta?.color ?? C.brinjal1}
-      name={item.businessName}
+      name={item.businessName ?? 'Business'}
       verified={item.fullyVerified || item.isVerified}
       description={item.description || t('explore.businesses.noDescription')}
       descriptionItalic={!item.description}

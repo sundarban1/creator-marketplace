@@ -12,6 +12,9 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { categoryService, type ApiCategory } from '@/services/category';
 import { serviceService, type PricingModel } from '@/services/service';
+import { creatorService } from '@/services/creator';
+import { sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
+import { useToast } from '@/components/Toast';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
 const PRICING_MODELS: PricingModel[] = ['PER_PROJECT', 'PER_HOUR', 'PER_DAY', 'PER_CAMPAIGN', 'CUSTOM_QUOTE'];
@@ -21,18 +24,25 @@ const MAX_INCLUDED = 10;
 export default function ServiceFormScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
 
-  // Deliberately not the shared useCategories('CREATOR') hook — that widens
-  // to "CREATOR or BOTH" (BOTH-scope rows are content niches like
-  // "Restaurants", shared with the general profile/campaign category
-  // pickers), which would put niches in a provider-*type* picker. Fetched
-  // directly with strict=true instead, uncached — this screen is opened
-  // rarely enough that the shared hook's cross-screen caching isn't worth
-  // complicating for one caller's different filter.
+  // Deliberately not the shared useCategories('CREATOR') hook — this screen
+  // is opened rarely enough that the shared hook's cross-screen caching
+  // isn't worth complicating for one caller. `strict` BOTH-only, per
+  // product direction — a Service is tagged with a content niche
+  // (Restaurants, ...), not a provider-role category — matching the
+  // backend's assertCategoryUsable() (service.service.ts).
   const [categories, setCategories] = useState<ApiCategory[]>([]);
-  useEffect(() => { categoryService.getCategories('CREATOR', true).then(setCategories).catch(() => {}); }, []);
+  useEffect(() => { categoryService.getCategories('BOTH', true).then(setCategories).catch(() => {}); }, []);
+
+  // The category/categories the creator selected during onboarding —
+  // surfaced first in the chip row below, mirroring the business home's
+  // "Find People by Category" slider.
+  const [creatorCategories, setCreatorCategories] = useState<string[]>([]);
+  useEffect(() => { creatorService.getProfile().then((p) => setCreatorCategories(p.categories ?? [])).catch(() => {}); }, []);
+  const orderedCategories = sortOtherLast(sortSelectedFirst(categories, creatorCategories));
 
   const [categoryKey, setCategoryKey] = useState('');
   const [name, setName] = useState('');
@@ -102,9 +112,10 @@ export default function ServiceFormScreen() {
       };
       if (isEdit && id) await serviceService.update(id, payload);
       else await serviceService.create(payload);
+      toast.success(isEdit ? t('serviceForm.updateSuccess') : t('serviceForm.createSuccess'));
       router.back();
     } catch (err) {
-      Alert.alert(t('common.error'), err instanceof Error ? err.message : t('serviceForm.saveFailed'));
+      toast.error(err instanceof Error ? err.message : t('serviceForm.saveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -119,13 +130,26 @@ export default function ServiceFormScreen() {
             <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
               <View>
                 <Text style={[styles.label, { color: C.text }]}>{t('serviceForm.categoryLabel')}</Text>
-                <ChipGroup
-                  options={categories.map((c) => c.name)}
-                  value={categories.find((c) => c.key === categoryKey)?.name ?? ''}
-                  onChange={(name) => setCategoryKey(categories.find((c) => c.name === name)?.key ?? '')}
-                  colors={C}
-                  error={errors.category}
-                />
+                <View style={styles.chipWrap}>
+                  {orderedCategories.map((c) => {
+                    const sel = c.key === categoryKey;
+                    return (
+                      <Pressable
+                        key={c.key}
+                        style={[
+                          styles.categoryChip,
+                          { borderColor: sel ? c.color : C.border, backgroundColor: sel ? `${c.color}1A` : C.surface },
+                        ]}
+                        onPress={() => setCategoryKey(c.key)}>
+                        <View style={[styles.categoryIconWrap, { backgroundColor: `${c.color}26` }]}>
+                          <FontAwesome5 name={c.icon as any} solid size={12} color={c.color} />
+                        </View>
+                        <Text style={[styles.categoryChipText, { color: sel ? c.color : C.text }]} numberOfLines={1}>{c.name}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {errors.category && <Text style={[styles.charCount, { color: C.error, textAlign: 'left' }]}>{errors.category}</Text>}
               </View>
 
               <View style={styles.fieldGroup}>
@@ -251,6 +275,9 @@ const styles = StyleSheet.create({
   charCount: { fontSize: 11, fontFamily: F.regular, textAlign: 'right' },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 6, paddingRight: 14, paddingVertical: 6, borderRadius: RADIUS.full, borderWidth: 1.5 },
+  categoryIconWrap: { width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  categoryChipText: { fontSize: 13, fontFamily: F.medium },
   includedChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.sm, borderWidth: 1.5, maxWidth: 220 },
   includedChipText: { fontSize: 13, fontFamily: F.medium, flexShrink: 1 },
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

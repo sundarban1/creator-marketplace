@@ -10,17 +10,14 @@ export class ServiceService {
   private creatorRepo = new CreatorRepository();
   private categoryRepo = new CategoryRepository();
 
-  // Strict CREATOR-only — not "CREATOR or BOTH" like most other scope checks
-  // in this codebase. BOTH-scope rows are content niches (Restaurants,
-  // Automotive, ...) shared with campaign/profile category pickers, not
-  // provider *types*; a Service must be categorized as an actual provider
-  // type (Photographer, Videographer, ...), never a niche. See the comment
-  // above CATEGORIES in prisma/seeds/categories.ts for the same distinction.
+  // Strict BOTH-only, per product direction — a Service is tagged with a
+  // content niche (Restaurants, Automotive, ...), not a CREATOR-scope
+  // provider-role category (Photographer, Videographer, ...).
   private async assertCategoryUsable(categoryId: string) {
     const category = await this.categoryRepo.findById(categoryId);
     if (!category) throw new AppError('Category not found', 404);
     if (category.status !== CategoryStatus.ACTIVE) throw new AppError('Category is not active', 400);
-    if (category.scope !== CategoryScope.CREATOR) throw new AppError('Category is not usable for provider services', 400);
+    if (category.scope !== CategoryScope.BOTH) throw new AppError('Category is not usable for provider services', 400);
     return category;
   }
 

@@ -23,11 +23,12 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { type LocationFilter } from '@/components/LocationSearchPicker';
 import { businessService, type BusinessListItem } from '@/services/business';
+import { creatorService } from '@/services/creator';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useCategories, getCategoryMeta, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
 import { ResultCountPill } from '@/components/ResultCountPill';
 
@@ -53,7 +54,7 @@ function BusinessCard({
   const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
   const extraCats = item.categories.length - 1;
   const hasEvents = item._count.campaigns > 0;
-  const initials = item.businessName.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const initials = (item.businessName ?? 'Business').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
   return (
     <EntityCard
@@ -62,7 +63,7 @@ function BusinessCard({
       initials={initials}
       circularAvatar
       ringColor={primaryMeta?.color ?? C.brinjal1}
-      name={item.businessName}
+      name={item.businessName ?? 'Business'}
       verified={item.fullyVerified || item.isVerified}
       locationText={item.city ?? item.district ?? undefined}
       locationBeforeCategory
@@ -110,6 +111,16 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
   const toast  = useToast();
   const { favoriteIds, toggle, reloadIds } = useFavoriteBusinesses();
   const { categories: businessCategories } = useCategories('BUSINESS');
+  // The creator's own onboarding-selected niches — surfaced first in the
+  // pill row below, matching the business side's identical treatment (see
+  // (business)/explore-creators.tsx's businessIndustries).
+  const [myCategories, setMyCategories] = useState<string[]>([]);
+  useFocusEffect(useCallback(() => {
+    creatorService.getProfile()
+      .then((profile) => setMyCategories(profile.categories ?? []))
+      .catch(() => {});
+  }, []));
+  const pillCategories = sortOtherLast(sortSelectedFirst(businessCategories, myCategories));
 
   const [businesses, setBusinesses] = useState<BusinessListItem[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -322,7 +333,7 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
           matching Discover's Opportunities/People tabs exactly (same shared
           component, not just a similar look). */}
       <CategoryPillRow
-        categories={businessCategories}
+        categories={pillCategories}
         activeLabels={category ? [category] : []}
         onToggle={toggleCategory}
         showAll

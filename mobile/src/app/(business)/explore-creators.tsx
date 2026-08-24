@@ -36,7 +36,8 @@ import { serviceService, type ApiService } from '@/services/service';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { getIconColor } from '@/features/creator/data/filterOptions';
-import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
+import { profileService } from '@/services/profile';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
@@ -207,6 +208,18 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   // the business home. Both tabs' pill rows share this list.
   const { categories: adminCategories } = useCategories('BOTH');
   const [serviceCategory, setServiceCategory] = useState<string | null>(null);
+  // The industry/industries the business selected during onboarding —
+  // surfaced first in both tabs' category pill rows below, mirroring the
+  // business home's "Find People by Category" slider.
+  const [businessIndustries, setBusinessIndustries] = useState<string[]>([]);
+  useFocusEffect(useCallback(() => {
+    profileService.getBusinessProfile()
+      .then((profile) => setBusinessIndustries(profile.categories ?? []))
+      .catch(() => {});
+  }, []));
+  // Computed once and shared by both tabs' CategoryPillRow so People and
+  // Services always show the identical pill order.
+  const pillCategories = sortOtherLast(sortSelectedFirst(adminCategories, businessIndustries));
 
   const filterActive = isCreatorFilterActive(activeFilter);
   // Categories are shown as highlighted pills in the row above, never as
@@ -440,7 +453,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
         // Category pills — single scrollable row, matching Discover's
         // "Opportunities" tab pill style.
         <CategoryPillRow
-          categories={adminCategories}
+          categories={pillCategories}
           activeLabels={activeFilter.categories}
           onToggle={toggleCategory}
           autoScrollToActive
@@ -456,7 +469,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
         // styles) rather than a margin here, matching the creator-side
         // Discover tabs' convention.
         <CategoryPillRow
-          categories={adminCategories}
+          categories={pillCategories}
           activeLabels={serviceCategory ? [serviceCategory] : []}
           onToggle={toggleServiceCategory}
         />

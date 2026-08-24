@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
@@ -24,7 +24,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { sortOtherLast, useAllCategories, useCategories } from '@/hooks/useCategories';
+import { sortOtherLast, sortSelectedFirst, useAllCategories, useCategories } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
@@ -215,6 +215,15 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
   // `categories`, which onboarding/edit-categories now fill from that same
   // BOTH-scope list — a CREATOR-scope provider-role pill would match nobody.
   const { categories: adminCategories } = useCategories('BOTH');
+  // The creator's own onboarding-selected niches — surfaced first in the
+  // pill row below, mirroring the business side's identical treatment (see
+  // (business)/explore-creators.tsx's businessIndustries).
+  const [myCategories, setMyCategories] = useState<string[]>([]);
+  useFocusEffect(useCallback(() => {
+    creatorService.getProfile()
+      .then((profile) => setMyCategories(profile.categories ?? []))
+      .catch(() => {});
+  }, []));
 
   const filterActive = isFilterActive(activeFilter);
   const filterCount  = filterActiveCount(activeFilter);
@@ -356,7 +365,7 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
       {/* Category pills — single scrollable row through every category,
           matching Discover's Opportunities/Businesses tabs (no label text). */}
       <CategoryPillRow
-        categories={sortOtherLast(adminCategories)}
+        categories={sortOtherLast(sortSelectedFirst(adminCategories, myCategories))}
         activeLabels={activeFilter.categories}
         onToggle={toggleCategory}
         showAll

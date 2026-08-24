@@ -47,7 +47,12 @@ export class BusinessRepository {
       return this.findManySearch({ ...params, search: params.search.trim() });
     }
 
-    const where: Prisma.BusinessProfileWhereInput = { showPublicProfile: true };
+    // A business that never finished onboarding has no businessName yet —
+    // showing it in Explore Businesses is just a blank/broken card (and
+    // crashes anything that assumes businessName is non-null), so it's
+    // excluded here rather than filtered client-side (keeps pagination
+    // totals correct). Mirrors CreatorRepository's identical exclusion.
+    const where: Prisma.BusinessProfileWhereInput = { showPublicProfile: true, user: { isOnboarded: true } };
 
     if (params.category) {
       where.categories = { has: params.category };
@@ -105,7 +110,13 @@ export class BusinessRepository {
     limit:      number;
   }) {
     const { search } = params;
-    const conditions: Prisma.Sql[] = [Prisma.sql`b."showPublicProfile" = true`];
+    // Same "finished onboarding" exclusion as the Prisma path above — kept in
+    // sync so a search query can't surface a blank/broken card the plain
+    // listing already hides.
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`b."showPublicProfile" = true`,
+      Prisma.sql`EXISTS (SELECT 1 FROM users u WHERE u.id = b."userId" AND u."isOnboarded" = true)`,
+    ];
 
     if (params.category) {
       conditions.push(Prisma.sql`${params.category} = ANY(b.categories)`);

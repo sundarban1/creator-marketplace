@@ -163,7 +163,7 @@ export default function CampaignDetailScreen() {
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton />
-        <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{campaign.title}</Text>
+        <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{t('campaignDetail.headerTitle')}</Text>
         {/* Save-for-later. The wrapper keeps its 40px slot even for a business
             session, where ShortlistButton renders nothing, so the centred
             title stays centred. */}
