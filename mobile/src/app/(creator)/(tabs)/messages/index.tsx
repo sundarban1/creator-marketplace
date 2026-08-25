@@ -241,7 +241,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
           // participantRole is passed through either way).
           router.push({
             pathname: '/(creator)/chat/[id]' as never,
-            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', participantId: conv.participantId, status: conv.status, campaignTitle: conv.campaignTitle ?? '', participantRole: conv.participantRole, focusInput: 'true' },
+            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', participantId: conv.participantId, status: conv.status, campaignTitle: conv.campaignTitle ?? '', participantRole: conv.participantRole },
           })
         }>
         {/* Avatar — plain, no ring/stripe/badge clutter */}

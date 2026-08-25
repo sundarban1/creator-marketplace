@@ -2,6 +2,7 @@ import { request, API_BASE }                from '@/lib/api';
 import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { storage }           from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY }  from '@/utilities/constants';
 import { requestVideoUploadSignature } from '@/services/cloudinaryVideoUpload';
@@ -90,9 +91,18 @@ export function createVideoUploadTask(
       const signature = await requestVideoUploadSignature(conversationId, info.size, mimeType === 'video/quicktime' ? 'video/quicktime' : 'video/mp4');
       if (cancelled) throw new Error('Video upload cancelled');
 
+      // Best-effort poster frame — a failure here (corrupt frame, unsupported
+      // codec, etc.) must never block the video send itself, only the chat
+      // bubble ends up blank instead of showing a thumbnail.
+      let thumbnailUri: string | undefined;
+      try {
+        thumbnailUri = (await VideoThumbnails.getThumbnailAsync(fileUri, { time: 0, quality: 0.6 })).uri;
+      } catch { /* proceed without a thumbnail */ }
+      if (cancelled) throw new Error('Video upload cancelled');
+
       innerTask = startBackgroundChunkedUpload(
         { targetType: 'chat', conversationId, caption, durationSec },
-        fileUri, mimeType, signature, onProgress, onFinalizing,
+        fileUri, mimeType, signature, onProgress, onFinalizing, thumbnailUri,
       );
       const apiMessage = await innerTask.result as ApiMessage;
       return toMessage(apiMessage);

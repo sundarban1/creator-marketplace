@@ -2,6 +2,7 @@ import { request, API_BASE, ensureFreshAccessToken } from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign }    from '@/types';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
 import type { VideoUploadPlan } from '@/services/cloudinaryVideoUpload';
 import type { PickedFile } from '@/utilities/chatAttachments';
@@ -11,8 +12,10 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/utilities/constants';
 export interface DeliverableVideo {
   publicId:    string;
   url:         string;
-  // Absent for an R2-stored video — no auto poster-frame the way Cloudinary
-  // provides (the grid tile below never rendered this as an image anyway).
+  // Cloudinary derives this automatically. For an R2-stored video it's the
+  // client's own locally-extracted poster frame (see
+  // createDeliverableVideoUploadTask below) — absent if that best-effort
+  // upload failed or was skipped.
   thumbnailUrl?: string;
   durationSec: number;
   format:      string;
@@ -672,9 +675,19 @@ export const campaignService = {
         const signature = await campaignService.requestDeliverableVideoSignature(appId, info.size, mimeType);
         if (cancelled) throw new Error('Upload cancelled');
 
+        // Best-effort poster frame, same as chat's createVideoUploadTask — a
+        // failure here (corrupt frame, unsupported codec, etc.) must never
+        // block the deliverable submission itself, only the review cards end
+        // up showing a plain placeholder instead of a thumbnail.
+        let thumbnailUri: string | undefined;
+        try {
+          thumbnailUri = (await VideoThumbnails.getThumbnailAsync(fileUri, { time: 0, quality: 0.6 })).uri;
+        } catch { /* proceed without a thumbnail */ }
+        if (cancelled) throw new Error('Upload cancelled');
+
         innerTask = startBackgroundChunkedUpload(
           { targetType: 'deliverable', appId, durationSec },
-          fileUri, mimeType, signature, onProgress, onFinalizing,
+          fileUri, mimeType, signature, onProgress, onFinalizing, thumbnailUri,
         );
         return await innerTask.result as DeliverableVideo;
       },

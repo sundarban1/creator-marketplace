@@ -31,8 +31,16 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
   // Same fix as LocationSearchModal.
   const insets = useSafeAreaInsets();
 
+  // Autoplay as soon as a source is set — useVideoPlayer (see its
+  // useReleasingSharedObject dep on JSON.stringify(source)) tears down and
+  // recreates the native player whenever `url` changes, so this setup runs
+  // again for every video without needing a separate effect. `play()` before
+  // the asset is ready just queues playback for the moment it buffers, which
+  // is also what kicks off loading immediately rather than waiting for the
+  // viewer to press the native play button.
   const player = useVideoPlayer(url ?? null, (p) => {
     p.loop = false;
+    p.play();
   });
   const { status } = useEvent(player, 'statusChange', { status: player.status });
 

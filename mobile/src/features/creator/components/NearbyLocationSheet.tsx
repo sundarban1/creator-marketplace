@@ -181,6 +181,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
       onClose={onClose}
       title={t('nearbyLocationSheet.title')}
       scrollable={false}
+      closeOnScrollDown
       footer={
         <Pressable
           style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, (pressed || locatingCurrent || !displayCoords) && { opacity: 0.88 }]}
@@ -189,8 +190,13 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
           <Text style={styles.applyBtnText}>{t('nearbyLocationSheet.applyBtn')}</Text>
         </Pressable>
       }>
+      {({ panHandlers }) => (
         <View style={styles.body}>
-          <View style={styles.sourceToggleRow}>
+          {/* panHandlers spread only on the non-interactive rows below (toggle
+              row, section label/hint) — the map and RadiusSlider keep their
+              own drag gestures untouched, so a downward swipe closes the
+              sheet from anywhere else in the body without fighting them. */}
+          <View style={styles.sourceToggleRow} {...panHandlers}>
             <Pressable
               style={[styles.sourceToggle, { borderColor: draftSource === 'current' ? C.brinjal1 : C.border, backgroundColor: draftSource === 'current' ? C.primaryLight : C.background }]}
               disabled={locatingCurrent}
@@ -217,10 +223,12 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
             </Pressable>
           </View>
 
-          <Text style={[styles.sectionLabel, { color: C.textSecondary }]}>{t('nearbyLocationSheet.changeLocation')}</Text>
-          <Text style={[styles.sectionHint, { color: C.textSecondary }]}>
-            {draftSource === 'custom' ? t('nearbyLocationSheet.customPointHint') : t('nearbyLocationSheet.dragMapHint')}
-          </Text>
+          <View {...panHandlers}>
+            <Text style={[styles.sectionLabel, { color: C.textSecondary }]}>{t('nearbyLocationSheet.changeLocation')}</Text>
+            <Text style={[styles.sectionHint, { color: C.textSecondary }]}>
+              {draftSource === 'custom' ? t('nearbyLocationSheet.customPointHint') : t('nearbyLocationSheet.dragMapHint')}
+            </Text>
+          </View>
 
           <View style={[styles.mapWrap, { borderColor: draftSource === 'custom' ? C.brinjal1 : C.border }]}>
             {displayCoords ? (
@@ -270,6 +278,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
 
           <RadiusSlider value={draftRadius} onChange={setDraftRadius} min={1} max={100} />
         </View>
+      )}
     </BottomSheet>
   );
 }

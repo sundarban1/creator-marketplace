@@ -396,7 +396,7 @@ export class CampaignRepository {
       ? Prisma.join(extraConditions.map((c) => Prisma.sql`AND ${c}`), ' ')
       : Prisma.empty;
 
-    const [rows, countRows] = await Promise.all([
+    const [rows, countRows, newestRows] = await Promise.all([
       prisma.$queryRaw<{ id: string; distanceKm: number }[]>(Prisma.sql`
         SELECT c.id, ${distanceExpr} AS "distanceKm"
         FROM campaigns c
@@ -415,23 +415,48 @@ export class CampaignRepository {
           AND (${distanceExpr}) <= ${radiusKm}
           ${extraWhere}
       `),
+      // Only needed to pin onto page 1 (see below) — skipped on later pages
+      // since none of this app's callers paginate past page 1 today, and
+      // pinning there too would risk the same campaign appearing on two pages.
+      page === 1
+        ? prisma.$queryRaw<{ id: string; distanceKm: number }[]>(Prisma.sql`
+            SELECT c.id, ${distanceExpr} AS "distanceKm"
+            FROM campaigns c
+            JOIN business_profiles b ON b.id = c."businessId"
+            WHERE ${boundingBoxWhere}
+              AND (${distanceExpr}) <= ${radiusKm}
+              ${extraWhere}
+            ORDER BY c."createdAt" DESC
+            LIMIT 1
+          `)
+        : Promise.resolve([]),
     ]);
 
     const total = Number(countRows[0]?.count ?? 0);
     if (rows.length === 0) return { campaigns: [], total };
 
-    const distanceById = new Map(rows.map((r) => [r.id, r.distanceKm]));
+    // Pin the single most-recently-created campaign in this radius into slot
+    // one of page 1 — proximity is otherwise the only ranking signal here, so
+    // a brand-new listing that's merely farther away than the nearest handful
+    // would never surface at all. Mirrors getRecommendedForCreator's same
+    // guarantee for the Recommended rail.
+    const newest = newestRows[0];
+    const finalRows = newest && !rows.some((r) => r.id === newest.id)
+      ? [newest, ...rows.slice(0, Math.max(0, limit - 1))]
+      : rows;
+
+    const distanceById = new Map(finalRows.map((r) => [r.id, r.distanceKm]));
     const hydrated = await prisma.campaign.findMany({
-      where: { id: { in: rows.map((r) => r.id) } },
+      where: { id: { in: finalRows.map((r) => r.id) } },
       include: {
         business: { select: { businessName: true, logoUrl: true } },
         _count: { select: { applications: true } },
       },
     });
 
-    // findMany doesn't preserve `in` order, so re-sort to match the distance-ranked SQL result
+    // findMany doesn't preserve `in` order, so re-sort to match finalRows' order
     const byId = new Map(hydrated.map((c) => [c.id, c]));
-    const campaigns = rows
+    const campaigns = finalRows
       .map((r) => byId.get(r.id))
       .filter((c): c is NonNullable<typeof c> => c != null)
       .map((c) => ({ ...c, distanceKm: distanceById.get(c.id)! }));

@@ -68,42 +68,47 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <Animated.View style={{ flex: 1, width: '100%', opacity: contentOpacity, justifyContent: 'center' }}>
+        <Animated.View style={{ flex: 1, width: '100%', opacity: contentOpacity }}>
 
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={onScrollEnd}
-            style={styles.carousel}>
-            {SLIDES.map((slide, i) => (
-              <View key={i} style={[styles.slide, { width }]}>
+          {/* Slideshow — centered in the space above the CTAs, which stay
+              pinned to the bottom of the screen rather than floating just
+              under the carousel. */}
+          <View style={styles.slideshow}>
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={onScrollEnd}
+              style={styles.carousel}>
+              {SLIDES.map((slide, i) => (
+                <View key={i} style={[styles.slide, { width }]}>
 
-                {/* ─── Illustration ─── */}
-                <View style={styles.photoWrap}>
-                  <Image source={slide.image} style={styles.heroImage} resizeMode="contain" />
+                  {/* ─── Illustration ─── */}
+                  <View style={styles.photoWrap}>
+                    <Image source={slide.image} style={styles.heroImage} resizeMode="contain" />
+                  </View>
+
+                  {/* ─── Headline ─── */}
+                  <Text style={styles.headline}>
+                    {t(slide.headlineKey)}{'\n'}
+                    <Text style={{ color: HIGHLIGHT }}>{t(slide.highlightKey)}</Text>
+                  </Text>
+                  <Text style={styles.subtitle}>{t(slide.subtitleKey)}</Text>
                 </View>
+              ))}
+            </ScrollView>
 
-                {/* ─── Headline ─── */}
-                <Text style={styles.headline}>
-                  {t(slide.headlineKey)}{'\n'}
-                  <Text style={{ color: HIGHLIGHT }}>{t(slide.highlightKey)}</Text>
-                </Text>
-                <Text style={styles.subtitle}>{t(slide.subtitleKey)}</Text>
-              </View>
-            ))}
-          </ScrollView>
-
-          <View style={styles.dots}>
-            {SLIDES.map((_, i) => (
-              <Pressable key={i} onPress={() => goToSlide(i)} hitSlop={8}>
-                <View style={[styles.dot, i === slideIndex && styles.dotActive]} />
-              </Pressable>
-            ))}
+            <View style={styles.dots}>
+              {SLIDES.map((_, i) => (
+                <Pressable key={i} onPress={() => goToSlide(i)} hitSlop={8}>
+                  <View style={[styles.dot, i === slideIndex && styles.dotActive]} />
+                </Pressable>
+              ))}
+            </View>
           </View>
 
-          {/* ─── Entry CTAs ─── */}
+          {/* ─── Entry CTAs ─── pinned to the bottom of the screen. */}
           <View style={styles.ctaBlock}>
             {slideIndex === LAST_SLIDE ? (
               <Pressable
@@ -135,6 +140,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BACKGROUND },
   safe: { flex: 1, alignItems: 'center' },
 
+  slideshow: { flex: 1, width: '100%', justifyContent: 'center' },
   carousel: { flexGrow: 0 },
   slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.xl },
 
@@ -154,7 +160,7 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(23,19,33,0.15)' },
   dotActive: { width: 20, backgroundColor: HIGHLIGHT },
 
-  ctaBlock: { width: '100%', paddingHorizontal: SPACING.xl, marginTop: SPACING.xxl, gap: SPACING.md },
+  ctaBlock: { width: '100%', paddingHorizontal: SPACING.xl, paddingTop: SPACING.xxl, gap: SPACING.md },
 
   primaryBtn:     { height: 54, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', backgroundColor: HIGHLIGHT },
   primaryBtnText: { fontSize: FONT_SIZE.md, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },

@@ -27,13 +27,20 @@ type Props = {
   // screen they came from already caps its own content this way.
   maxWidth?: number;
   dismissOnBackdropPress?: boolean;
-  // Opt-in: dragging the scrollable body down once it's already at the top
-  // closes the sheet, like a native pull-to-dismiss. Off by default so this
-  // doesn't change behavior for every existing consumer of this shell —
-  // enable it deliberately per sheet (filter sheets do).
+  // Opt-in: dragging down from the handle/header, or from the scrollable
+  // body once it's already at the top, closes the sheet, like a native
+  // pull-to-dismiss. Off by default so this doesn't change behavior for
+  // every existing consumer of this shell — enable it deliberately per
+  // sheet (filter sheets and the nearby-location sheet do).
   closeOnScrollDown?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
-  children: ReactNode;
+  // Plain ReactNode for most sheets. When a non-scrollable sheet has
+  // interactive content that must keep its own drag gestures (a draggable
+  // map, a slider), pass a render function instead — it receives the same
+  // `panHandlers` the handle/header use, to spread only onto the safe
+  // (non-interactive) regions of the body so a downward swipe closes the
+  // sheet from those spots without fighting the interactive ones.
+  children: ReactNode | ((bag: { panHandlers: ReturnType<typeof useCloseOnScrollDown>['panHandlers'] }) => ReactNode);
 };
 
 // Shared shell for every bottom-sheet-style modal in the app — backdrop,
@@ -63,6 +70,7 @@ export function BottomSheet({
   const { t } = useLanguage();
   const keyboardOffset = useKeyboardOffset();
   const { dragY, panHandlers, onScroll } = useCloseOnScrollDown(onClose);
+  const resolvedChildren = typeof children === 'function' ? children({ panHandlers }) : children;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -83,14 +91,15 @@ export function BottomSheet({
           onPress={onClose}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel={t('common.close')}>
+          accessibilityLabel={t('common.close')}
+          {...(closeOnScrollDown ? panHandlers : null)}>
           <View style={[s.handlePill, { backgroundColor: C.border }]}>
             <FontAwesome5 name="chevron-down" solid size={16} color={C.textSecondary} />
           </View>
         </Pressable>
 
         {(title || headerRight) && (
-          <View style={[s.header, { borderBottomColor: C.border }]}>
+          <View style={[s.header, { borderBottomColor: C.border }]} {...(closeOnScrollDown ? panHandlers : null)}>
             <View style={[{ flex: 1 }, centerTitle && s.headerCenter]}>
               {title && <Text style={[s.title, { color: C.text }, centerTitle && s.textCenter]} numberOfLines={2}>{title}</Text>}
               {subtitle && <Text style={[s.subtitle, { color: C.textSecondary }, centerTitle && s.textCenter]}>{subtitle}</Text>}
@@ -108,10 +117,10 @@ export function BottomSheet({
             contentContainerStyle={[s.body, contentContainerStyle]}
             {...(closeOnScrollDown ? panHandlers : null)}
           >
-            {children}
+            {resolvedChildren}
           </ScrollView>
         ) : (
-          <View style={[s.bodyFlex, contentContainerStyle]}>{children}</View>
+          <View style={[s.bodyFlex, contentContainerStyle]}>{resolvedChildren}</View>
         )}
 
         {footer && (

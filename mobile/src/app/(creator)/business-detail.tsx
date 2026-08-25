@@ -27,6 +27,7 @@ import { campaignService } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -78,6 +79,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
   const { categories } = useAllCategories();
   const catMeta = getCategoryMeta(categories, campaign.category);
   const catBg = CATEGORY_BG[campaign.category] ?? '#F2F0DC';
+  const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.category);
   const deadline = daysLeft(campaign.deadline);
 
   function goToDetail() {
@@ -93,6 +95,9 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
         {/* ── Thumbnail (left) ── */}
         <View style={[styles.campaignThumb, { backgroundColor: catBg }]}>
           <FontAwesome5 name={catMeta.icon as any} size={28} color={catMeta.color} style={styles.campaignThumbIcon} />
+          {cardImage && (
+            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          )}
           {campaign.isFeatured && (
             <View style={[styles.featuredRibbon, { backgroundColor: '#F59E0B' }]}>
               <FontAwesome5 name="star" size={8} color="#fff" solid />

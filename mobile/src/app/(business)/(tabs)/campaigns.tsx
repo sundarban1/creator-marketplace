@@ -499,8 +499,10 @@ export default function CampaignsScreen() {
                 <Pressable
                   style={({ pressed }) => [styles.cardContent, hasFooterActions && styles.cardContentTightFooter, pressed && { opacity: 0.92 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
-                  {/* Header — thumbnail on the left, title + tags on the right */}
+                  {/* Header — title on its own row, thumbnail + tags below */}
                   <View style={styles.cardHeader}>
+                    <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
+                    <View style={styles.cardHeaderRow}>
                     <View style={styles.thumbColumn}>
                       <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
                         <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
@@ -511,7 +513,6 @@ export default function CampaignsScreen() {
                       <Text style={[styles.postedDay, { color: C.textSecondary }]} numberOfLines={1}>{timeAgo(c.createdAt)}</Text>
                     </View>
                     <View style={styles.titleSection}>
-                      <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
                       {c.campaignType !== 'OPEN_EVENT' && (
                         <View style={[styles.statChip, { backgroundColor: `${C.brinjal1}14`, alignSelf: 'flex-start' }]}>
                           <FontAwesome5 name="money-bill-wave" size={12} color={C.brinjal1} />
@@ -555,6 +556,7 @@ export default function CampaignsScreen() {
                           )}
                         </View>
                       )}
+                    </View>
                     </View>
                   </View>
 
@@ -824,7 +826,8 @@ const styles = StyleSheet.create({
   cardContent: { padding: SPACING.lg },
   cardContentTightFooter: { paddingBottom: SPACING.sm },
 
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.md },
+  cardHeader: { marginBottom: SPACING.md, gap: SPACING.sm },
+  cardHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md },
   titleSection: { flex: 1, gap: 8 },
   eventTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, lineHeight: 26 },
   tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },

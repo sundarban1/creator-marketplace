@@ -179,6 +179,11 @@ export const deliverableVideoCompleteSchema = z.object({
   publicId: z.string().min(1).optional(),
   key:      z.string().min(1).optional(),
   uploadId: z.string().min(1).optional(),
+  // R2 only — the client's locally-extracted poster frame, already uploaded
+  // to the presigned thumbnailKey from the signature step (see r2Media.ts /
+  // thumbnailKey/thumbnailUploadUrl). Best-effort: omitted or unverifiable
+  // never fails the request, just leaves the video without a thumbnail.
+  thumbnailKey: z.string().min(1).optional(),
   // Client-measured duration, used only as a display fallback for the narrow
   // window where Cloudinary hasn't finished indexing the asset yet — see
   // completeDeliverableVideo. Cloudinary's own duration wins when present.

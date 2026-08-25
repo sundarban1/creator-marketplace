@@ -30,6 +30,8 @@ export type BusinessActiveCampaign = {
   contentType: string;
   isFeatured:  boolean;
   location:    string | null;
+  featureImageUrl: string | null;
+  template:    string | null;
   _count:      { applications: number };
 };
 

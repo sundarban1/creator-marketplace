@@ -24,6 +24,8 @@ export type VideoUploadPlan =
       key:       string;
       uploadUrl: string;
       expiresIn: number;
+      thumbnailKey?:       string;
+      thumbnailUploadUrl?: string;
     }
   | {
       provider:  'r2';
@@ -33,6 +35,8 @@ export type VideoUploadPlan =
       partSize:  number;
       parts:     { partNumber: number; url: string }[];
       expiresIn: number;
+      thumbnailKey?:       string;
+      thumbnailUploadUrl?: string;
     };
 
 export async function requestVideoUploadSignature(conversationId: string, sizeBytes: number, mimeType: string): Promise<VideoUploadPlan> {

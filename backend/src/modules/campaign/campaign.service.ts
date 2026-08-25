@@ -452,11 +452,21 @@ export class CampaignService {
           },
         ),
       }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, cappedLimit)
-      .map((r) => r.campaign);
+      .sort((a, b) => b.score - a.score);
 
-    const dtos = ranked.map(toCampaignDto);
+    // The candidate pool is newest-first (see findCandidatesForRecommendation),
+    // so its head is the single most recently created eligible campaign. Pin
+    // it into slot one even when its content-fit score wouldn't otherwise earn
+    // a spot in the top `cappedLimit` — a brand-new listing should never be
+    // invisible to creators just because it doesn't match their profile well
+    // yet (nobody's applied to it to build that signal either).
+    const newest = candidates[0];
+    const rest = newest ? ranked.filter((r) => r.campaign.id !== newest.id) : ranked;
+    const top = newest
+      ? [ranked.find((r) => r.campaign.id === newest.id)!, ...rest.slice(0, cappedLimit - 1)]
+      : ranked.slice(0, cappedLimit);
+
+    const dtos = top.map((r) => r.campaign).map(toCampaignDto);
     return translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
   }
 
@@ -1529,12 +1539,13 @@ export class CampaignService {
   // Cloudinary branch: unchanged — everything (duration/size/format/url) is
   // read back from Cloudinary's own Admin API. R2 branch: only object
   // existence + real byte size (HeadObject) can be independently verified —
-  // duration is trusted from the client, and there's no auto poster-frame
-  // (the deliverable grid tile never rendered thumbnailUrl as an image anyway).
+  // duration is trusted from the client; the poster frame (if any) is the
+  // client's own locally-extracted thumbnail, verified the same way as
+  // chat's completeVideoAttachment (see below).
   async completeDeliverableVideo(
     appId: string,
     userId: string,
-    ref: { publicId?: string; key?: string; uploadId?: string },
+    ref: { publicId?: string; key?: string; uploadId?: string; thumbnailKey?: string },
     clientDurationSec?: number,
   ) {
     // Re-checked fresh here, not just at signature time — a 500MB upload can
@@ -1572,12 +1583,25 @@ export class CampaignService {
       }
 
       url          = result.url;
-      thumbnailUrl = undefined;
       durationSec  = Math.round(clientDurationSec || 0);
       format       = ref.key.endsWith('.mov') ? 'mov' : 'mp4';
       sizeBytes    = result.sizeBytes;
       provider     = 'R2';
       storedId     = ref.key;
+
+      // Best-effort — same verification as messaging.service.ts's
+      // completeVideoAttachment. A missing/unverifiable thumbnail never fails
+      // the submission, the deliverable grid tile just falls back to a plain
+      // placeholder.
+      thumbnailUrl = undefined;
+      if (ref.thumbnailKey?.startsWith(`users/${userId}/thumbnails/`)) {
+        try {
+          const thumb = await finalizeR2Object(ref.thumbnailKey);
+          thumbnailUrl = thumb.url ?? undefined;
+        } catch (err) {
+          logger.warn({ err, thumbnailKey: ref.thumbnailKey }, 'Could not verify deliverable video thumbnail upload — saving without one');
+        }
+      }
     } else {
       const publicId = ref.publicId!;
       const expectedPrefix = 'campaigns/deliverables/deliverable_';

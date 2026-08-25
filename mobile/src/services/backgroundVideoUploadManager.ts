@@ -43,6 +43,10 @@ type PendingVideoUpload = {
   signature:      VideoUploadPlan;
   sourceFileUri:  string;
   createdAt:      string; // ISO — used to cap how long a resume is attempted
+  // R2 only — set once the locally-extracted poster-frame jpeg has been
+  // uploaded to signature.thumbnailUploadUrl (see uploadThumbnailToR2).
+  // Persisted so a resumed-after-kill upload still reports it in /complete.
+  thumbnailKey?:  string;
 };
 
 const STORAGE_KEY = 'pendingVideoUploads';
@@ -363,7 +367,11 @@ async function uploadOneChunk(
 // carries the finished-asset info; see uploadOneChunk's header comment.
 async function completeUpload(pending: PendingVideoUpload, cloudinaryResult?: { publicId: string }): Promise<unknown> {
   const ref = pending.signature.provider === 'r2'
-    ? { key: pending.signature.key, uploadId: pending.signature.mode === 'multipart' ? pending.signature.uploadId : undefined }
+    ? {
+        key: pending.signature.key,
+        uploadId: pending.signature.mode === 'multipart' ? pending.signature.uploadId : undefined,
+        thumbnailKey: pending.thumbnailKey,
+      }
     : { publicId: cloudinaryResult!.publicId };
 
   const target = pending.target;
@@ -479,6 +487,38 @@ export function getActiveUploadResult(localUploadId: string): Promise<unknown> |
   return inFlightDrives.get(localUploadId);
 }
 
+// Raw (non-multipart-form) PUT of the locally-extracted poster-frame jpeg to
+// R2's presigned thumbnailUploadUrl — same 'raw' react-native-background-upload
+// primitive as uploadVoiceToR2 (cloudinaryVoiceUpload.ts), so it inherits the
+// same proven completion/error handling instead of gambling on RN fetch/XHR
+// raw-body-from-file-uri support. Best-effort by design: the caller swallows
+// a rejection here and simply sends the video without a thumbnail rather than
+// failing the whole send over a non-essential poster frame.
+function uploadThumbnailToR2(thumbnailUri: string, uploadUrl: string): Promise<void> {
+  const nativeUploadId = `thumb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  return new Promise<void>((resolve, reject) => {
+    const subs = [
+      Upload.addListener('error', nativeUploadId, (data) => { cleanup(); reject(new Error(data.error || 'Thumbnail upload failed')); }),
+      Upload.addListener('cancelled', nativeUploadId, () => { cleanup(); reject(new Error('Thumbnail upload cancelled')); }),
+      Upload.addListener('completed', nativeUploadId, (data) => {
+        cleanup();
+        if (data.responseCode >= 200 && data.responseCode < 300) resolve();
+        else reject(new Error(`Thumbnail upload failed (HTTP ${data.responseCode})`));
+      }),
+    ];
+    function cleanup() { subs.forEach((s) => s.remove()); }
+
+    Upload.startUpload({
+      url:            uploadUrl,
+      path:           thumbnailUri,
+      method:         'PUT',
+      type:           'raw',
+      customUploadId: nativeUploadId,
+      headers:        { 'Content-Type': 'image/jpeg' },
+    }).catch((err) => { cleanup(); reject(err); });
+  });
+}
+
 // ── Public entry point ───────────────────────────────────────────────────────
 export function startBackgroundChunkedUpload(
   target: BackgroundUploadTarget,
@@ -487,6 +527,7 @@ export function startBackgroundChunkedUpload(
   signature: VideoUploadPlan,
   onProgress: (fraction: number) => void,
   onFinalizing?: () => void,
+  thumbnailUri?: string,
 ): { localUploadId: string; result: Promise<unknown>; cancel: () => void } {
   const localUploadId = makeLocalUploadId();
   let cancelled = false;
@@ -495,6 +536,16 @@ export function startBackgroundChunkedUpload(
     const info = await FileSystem.getInfoAsync(fileUri);
     if (!info.exists || info.isDirectory) throw new Error('Video file could not be read for upload');
     if (cancelled) throw new Error('Video upload cancelled');
+
+    let thumbnailKey: string | undefined;
+    if (thumbnailUri && signature.provider === 'r2' && signature.thumbnailKey && signature.thumbnailUploadUrl) {
+      try {
+        await uploadThumbnailToR2(thumbnailUri, signature.thumbnailUploadUrl);
+        thumbnailKey = signature.thumbnailKey;
+      } catch {
+        // Non-fatal — the video still sends, just without a thumbnail.
+      }
+    }
 
     const totalBytes = info.size;
     // Chunk/part layout is dictated by the upload plan itself for R2 (one
@@ -519,6 +570,7 @@ export function startBackgroundChunkedUpload(
       signature,
       sourceFileUri:  fileUri,
       createdAt:      new Date().toISOString(),
+      thumbnailKey,
     };
     // Persisted before the first chunk starts, so even a kill during chunk 0
     // leaves a record boot-time reconciliation can pick up.

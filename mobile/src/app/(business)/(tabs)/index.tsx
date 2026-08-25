@@ -412,7 +412,7 @@ export default function BusinessHomeScreen() {
           />
         ) : (
           <View
-            style={[styles.typeFilterWrap, { backgroundColor: C.background }]}
+            style={[styles.typeFilterWrapInline, { backgroundColor: C.background }]}
             onLayout={(e) => { tabFilterOnRowLayout(e); tabFilterSetOffsetY(e.nativeEvent.layout.y); }}
           >
             <TabSlider
@@ -639,7 +639,7 @@ export default function BusinessHomeScreen() {
 
       </ScrollView>
       {tabFilterStuck && (
-        <View style={[styles.typeFilterWrap, styles.stickyOverlay, { backgroundColor: C.background }]}>
+        <View style={[styles.typeFilterWrapSticky, styles.stickyOverlay, { backgroundColor: C.background }]}>
           <TabSlider
             tabs={TYPE_TABS}
             active={typeFilter}
@@ -745,12 +745,21 @@ const styles = StyleSheet.create({
 
   // Type filter — flush with the page (no card/shadow), horizontally aligned
   // with Recent Events below it. TabSlider's own wrapper adds 3px of internal
-  // padding around the tabs, so the outer inset is trimmed to 17px to land
-  // the tab edges exactly on the same 20px line as the campaign cards.
+  // padding around the tabs, which the two placements below cancel out
+  // differently depending on what horizontal inset they already sit inside.
+  //
+  // Inline (still scrolling with the page): already lives inside the
+  // ScrollView's own SCREEN_GUTTER padding, so it only needs to cancel
+  // TabSlider's 3px via a negative margin — adding SCREEN_GUTTER again here
+  // double-inset the tabs past the campaign cards below.
+  typeFilterWrapInline: { marginHorizontal: -3, paddingBottom: SPACING.md },
+  // Sticky (pinned below the header, outside the ScrollView): has no
+  // surrounding padding to inherit, so it supplies the full SCREEN_GUTTER
+  // inset itself, trimmed by TabSlider's 3px to land on the same edge.
   // Padding (not margin) so the opaque background set at the call site spans
-  // the full width when this block is pinned (see useStickyBelowHeader) — a
-  // transparent side margin would let scrolled-under content peek through.
-  typeFilterWrap: { paddingHorizontal: SCREEN_GUTTER - 3, paddingBottom: SPACING.md },
+  // the full width while pinned (see useStickyBelowHeader) — a transparent
+  // side margin would let scrolled-under content peek through.
+  typeFilterWrapSticky: { paddingHorizontal: SCREEN_GUTTER - 3, paddingBottom: SPACING.md },
   stickyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, ...SHADOW.card },
 
   // Campaign cards

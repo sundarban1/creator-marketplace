@@ -115,6 +115,8 @@ export interface PublicBusinessDto {
     contentType: string;
     isFeatured: boolean;
     location: string | null;
+    featureImageUrl: string | null;
+    template: string | null;
     _count: { applications: number };
   }>;
   _count: { campaigns: number };
@@ -276,6 +278,8 @@ type RawPublicBusiness = {
     contentType: string;
     isFeatured: boolean;
     location: string | null;
+    featureImageUrl: string | null;
+    template: string | null;
     _count: { applications: number };
   }>;
   _count: { campaigns: number; favoritedBy?: number; savedCreators?: number };

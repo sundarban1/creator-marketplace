@@ -40,6 +40,11 @@ export const videoCompleteSchema = z.object({
   publicId: z.string().min(1).optional(),
   key:      z.string().min(1).optional(),
   uploadId: z.string().min(1).optional(),
+  // R2 only — key of the jpeg poster frame the client extracted locally and
+  // uploaded alongside the video (see r2Media.createVideoUploadPlan's
+  // thumbnailKey/thumbnailUploadUrl). Best-effort: omitted or unverifiable
+  // means the message is simply sent without a thumbnail.
+  thumbnailKey: z.string().min(1).optional(),
   caption:  z.string().max(500).optional(),
   // Client-measured duration (from the picker, before upload) — used only as
   // a fallback display/validation value for the narrow window where

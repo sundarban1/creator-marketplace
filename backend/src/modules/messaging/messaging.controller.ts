@@ -143,7 +143,7 @@ export class MessagingController {
     try {
       const message = await messagingService.completeVideoAttachment(
         req.params.id, req.user!.id, req.user!.role,
-        { publicId: req.body.publicId, key: req.body.key, uploadId: req.body.uploadId },
+        { publicId: req.body.publicId, key: req.body.key, uploadId: req.body.uploadId, thumbnailKey: req.body.thumbnailKey },
         req.body.caption, req.body.clientDurationSec,
       );
       success(res, message, 'Video sent', 201);

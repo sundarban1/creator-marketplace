@@ -13,10 +13,10 @@ export const deliverableVideoSchema = z.object({
   // remove/renameDeliverableVideo look entries up by.
   publicId:     z.string(),
   url:          z.string(),
-  // R2 has no auto-derived poster-frame the way Cloudinary does (see
-  // CampaignService.completeDeliverableVideo) — the deliverable grid tile
-  // never actually renders this as an image anyway, so it's simply absent
-  // for R2 entries.
+  // Cloudinary derives this automatically (a URL transform). R2 has no
+  // auto-derived poster-frame, so this comes from the client's own
+  // locally-extracted thumbnail instead — absent when that upload failed or
+  // was never provided (see CampaignService.completeDeliverableVideo).
   thumbnailUrl: z.string().optional(),
   durationSec:  z.number(),
   format:       z.string(),

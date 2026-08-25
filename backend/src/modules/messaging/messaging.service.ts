@@ -1,5 +1,6 @@
 import { ConversationStatus, Role } from '@prisma/client';
 import { AppError } from '../../middleware/error';
+import { logger } from '../../config/logger';
 import { toConversationDto, toMessageDto } from './messaging.dto';
 import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
@@ -18,6 +19,7 @@ import {
   createVoiceUploadPlan, createVideoUploadPlan, finalizeR2Object, completeR2Multipart,
   deleteR2Object, abortR2Multipart, type VoiceUploadPlan, type VideoUploadPlan,
 } from '../../utils/r2Media';
+import { deleteAttachmentStorage } from '../../utils/attachmentCleanup';
 
 // MP4 (H.264/AAC) is the preferred format; MOV is accepted and delivered as
 // MP4 via videoPlaybackUrl. Legacy/poorly-supported formats (AVI, MKV, FLV,
@@ -426,6 +428,7 @@ export class MessagingService {
     if (message.senderId !== userId) throw new AppError('You can only delete your own messages for everyone', 403);
 
     await this.repo.softDeleteMessage(messageId, userId);
+    deleteAttachmentStorage(message);
 
     // Live-update whichever side didn't just perform the delete.
     const [pA, pB] = this.participantsOf(conversation);
@@ -765,7 +768,7 @@ export class MessagingService {
     conversationId: string,
     userId: string,
     role: Role,
-    ref: { publicId?: string; key?: string; uploadId?: string },
+    ref: { publicId?: string; key?: string; uploadId?: string; thumbnailKey?: string },
     caption?: string,
     clientDurationSec?: number,
   ) {
@@ -815,7 +818,20 @@ export class MessagingService {
       attachmentSize          = result.sizeBytes;
       attachmentFormat        = ref.key.endsWith('.mov') ? 'mov' : 'mp4';
       attachmentName          = ref.key.split('/').pop()!;
-      attachmentThumbnailUrl  = undefined;
+
+      // Best-effort — the client uploads its locally-extracted poster frame
+      // to the presigned thumbnailKey from the signature step (see
+      // r2Media.createVideoUploadPlan). A missing/unverifiable thumbnail
+      // never fails the video send, since the chat bubble tolerates null.
+      attachmentThumbnailUrl = undefined;
+      if (ref.thumbnailKey?.startsWith(`users/${userId}/thumbnails/`)) {
+        try {
+          const thumb = await finalizeR2Object(ref.thumbnailKey);
+          attachmentThumbnailUrl = thumb.url ?? undefined;
+        } catch (err) {
+          logger.warn({ err, thumbnailKey: ref.thumbnailKey }, 'Could not verify video thumbnail upload — sending without one');
+        }
+      }
     } else {
       const publicId = ref.publicId!;
       const expectedPrefix = 'messages/attachments/video_';

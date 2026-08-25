@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  InputAccessoryView,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -28,6 +29,7 @@ import { chatService } from '@/services/chat';
 import { VoiceRecorderButton } from '@/features/chat/components/VoiceRecorderButton';
 import { VoiceBubblePlayer } from '@/features/chat/components/VoiceBubblePlayer';
 import { ChatLoadingView } from '@/features/chat/components/ChatLoadingView';
+import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { notificationService } from '@/services/notifications';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -35,6 +37,7 @@ import { BackButton } from '@/components/BackButton';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import { useChatConversation } from '@/hooks/useChatConversation';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { chatScreenOpenEvents } from '@/lib/chatScreenOpenEvents';
 import type { Message } from '@/types';
 
@@ -46,6 +49,11 @@ const AVATAR_COLORS = ['#7C3AED', '#0EA5E9', '#059669', '#D97706', '#EC4899', '#
 // at rest, MAX caps growth before the text scrolls internally.
 const MIN_INPUT_HEIGHT = 20;
 const MAX_INPUT_HEIGHT = 100;
+
+// Attaching a (visually empty) accessory view replaces iOS's default
+// QuickType predictive-text bar above the keyboard — without one, that grey
+// suggestion strip renders between the composer and the keyboard.
+const COMPOSER_ACCESSORY_ID = 'creatorChatComposer';
 
 function avatarColor(name: string) {
   let h = 0;
@@ -180,11 +188,12 @@ function LocalVideoPreview({ uri, style }: { uri: string; style: object }) {
 // ── Message Bubble ─────────────────────────────────────────────────────────────
 
 function MessageBubble({
-  msg, isSent, showAvatar, isLast, personName, personColor, personAvatar, onLongPress, onRetryUpload, onDeleteFailed, onCancelUpload,
+  msg, isSent, showAvatar, isLast, personName, personColor, personAvatar, onLongPress, onRetryUpload, onDeleteFailed, onCancelUpload, onImagePress,
 }: {
   msg: Message; isSent: boolean; showAvatar: boolean; isLast: boolean;
   personName: string; personColor: string; personAvatar?: string; onLongPress: () => void;
   onRetryUpload: (msg: Message) => void; onDeleteFailed: (id: string) => void; onCancelUpload: (msg: Message) => void;
+  onImagePress: (url: string) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -238,7 +247,7 @@ function MessageBubble({
       <View style={[s.bubbleWrap, isSent ? s.bubbleWrapSent : s.bubbleWrapReceived]}>
         {isImage ? (
           <Pressable
-            onPress={() => msg.attachmentUrl && !isPending && Linking.openURL(msg.attachmentUrl)}
+            onPress={() => msg.attachmentUrl && !isPending && onImagePress(msg.attachmentUrl)}
             onLongPress={isPending ? undefined : onLongPress} delayLongPress={350}>
             <View style={s.imageBubble}>
               <Image source={{ uri: msg.attachmentUrl! }} style={s.attachmentImage} resizeMode="cover" />
@@ -349,11 +358,20 @@ function MessageBubble({
                 : { backgroundColor: C.surface, borderColor: C.border, borderWidth: StyleSheet.hairlineWidth },
             ]}>
             {msg.status === 'failed' ? (
-              <View style={s.voiceFailedRow}>
-                <FontAwesome5 name="exclamation-circle" solid size={16} color={isSent ? '#fff' : '#EF4444'} />
-                <Text style={[s.voiceFailedTxt, { color: isSent ? '#fff' : C.text }]} numberOfLines={1}>
-                  {t('messages.uploadFailed')}
-                </Text>
+              <View>
+                <View style={s.voiceFailedRow}>
+                  <FontAwesome5 name="exclamation-circle" solid size={16} color={isSent ? '#fff' : '#EF4444'} />
+                  <Text style={[s.voiceFailedTxt, { color: isSent ? '#fff' : C.text }]} numberOfLines={1}>
+                    {t('messages.uploadFailed')}
+                  </Text>
+                </View>
+                {msg.errorDetail && (
+                  <Text
+                    style={[s.voiceFailedDetailTxt, { color: isSent ? 'rgba(255,255,255,0.75)' : C.textSecondary }]}
+                    numberOfLines={2}>
+                    {msg.errorDetail}
+                  </Text>
+                )}
               </View>
             ) : isPending ? (
               <View style={s.voiceUploadingRow}>
@@ -433,6 +451,12 @@ export default function CreatorChatRoomScreen() {
   const C        = useAppColors();
   const insets   = useSafeAreaInsets();
   const { flags } = usePlatformFlags();
+  // Android only — the keyboard already covers the gesture-nav-bar area,
+  // so keeping the safe-area padding on top of it leaves a stray gap
+  // between the composer and the keyboard. iOS's KeyboardAvoidingView
+  // already accounts for this correctly on its own.
+  const keyboardVisible = useKeyboardVisible();
+  const androidKeyboardVisible = Platform.OS === 'android' && keyboardVisible;
 
   const [blockStatus, setBlockStatus] = useState<{ blockedByMe: boolean; blockedByOther: boolean } | null>(null);
 
@@ -483,6 +507,7 @@ export default function CreatorChatRoomScreen() {
   const personColor = avatarColor(personName);
   const personAvatar = avatar || undefined;
   const [personAvatarFailed, setPersonAvatarFailed] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   // Video is only allowed when chatting with a business — not creator<->creator.
   const allowVideo = participantRole !== 'CREATOR';
@@ -667,6 +692,7 @@ export default function CreatorChatRoomScreen() {
                 onRetryUpload={(msg) => void (msg.type === 'VOICE' ? chat.runVoiceSend(msg) : chat.runVideoSend(msg))}
                 onDeleteFailed={(msgId) => chat.setMessages((prev) => prev.filter((m) => m.id !== msgId))}
                 onCancelUpload={(msg) => chat.uploadTasks.current[msg.id]?.cancel()}
+                onImagePress={setPreviewImageUrl}
               />
             );
           }}
@@ -703,12 +729,12 @@ export default function CreatorChatRoomScreen() {
 
         {/* ── Input bar ── */}
         {chat.status === 'ACCEPTED' && !flags.messagingEnabled && (
-          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
+          <View style={[s.inputBar, { backgroundColor: C.surface, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
             <Text style={[s.charCount, { color: C.textSecondary }]}>{t('messages.messagingDisabled')}</Text>
           </View>
         )}
         {chat.status === 'ACCEPTED' && flags.messagingEnabled && (blockStatus?.blockedByMe || blockStatus?.blockedByOther) && (
-          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
+          <View style={[s.inputBar, { backgroundColor: C.surface, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
             <Text style={[s.charCount, { color: C.textSecondary }]}>
               {blockStatus.blockedByMe ? t('messages.youBlockedUser') : t('messages.blockedByOther')}
             </Text>
@@ -725,7 +751,7 @@ export default function CreatorChatRoomScreen() {
                 </Pressable>
               </View>
             )}
-            <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: chat.emojiOpen ? 8 : insets.bottom + 8 }]}>
+            <View style={[s.inputBar, { backgroundColor: C.surface, paddingBottom: (chat.emojiOpen || androidKeyboardVisible) ? 20 : insets.bottom + 8 }]}>
               <Pressable style={s.iconBtn} onPress={chat.handleCameraPress} hitSlop={4}>
                 <FontAwesome5 name="camera" solid size={24} color={C.brinjal1} />
               </Pressable>
@@ -748,7 +774,15 @@ export default function CreatorChatRoomScreen() {
                   multiline
                   maxLength={1000}
                   returnKeyType="default"
+                  autoCorrect={false}
+                  spellCheck={false}
+                  inputAccessoryViewID={Platform.OS === 'ios' ? COMPOSER_ACCESSORY_ID : undefined}
                 />
+                {Platform.OS === 'ios' && (
+                  <InputAccessoryView nativeID={COMPOSER_ACCESSORY_ID}>
+                    <View style={{ height: 0 }} />
+                  </InputAccessoryView>
+                )}
                 {chat.text.length > 900 && (
                   <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - chat.text.length}</Text>
                 )}
@@ -783,6 +817,12 @@ export default function CreatorChatRoomScreen() {
         )}
       </KeyboardAvoidingView>
       </MaxWidthContainer>
+      <ImagePreviewModal
+        visible={!!previewImageUrl}
+        url={previewImageUrl}
+        title={personName}
+        onClose={() => setPreviewImageUrl(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -849,7 +889,7 @@ const s = StyleSheet.create({
   bubbleTime: { fontSize: 10, fontFamily: F.regular },
 
   // Attachments
-  imageBubble:          { width: 210, height: 210, borderRadius: RADIUS.lg, overflow: 'hidden' },
+  imageBubble:          { width: 210, height: 210, borderRadius: RADIUS.lg, overflow: 'hidden', backgroundColor: '#1c1c1e' },
   attachmentImage:      { width: '100%', height: '100%' },
   imageUploadingOverlay:{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', gap: 6 },
   captionBubble:        { marginTop: 4 },
@@ -873,6 +913,7 @@ const s = StyleSheet.create({
   voiceUploadingTxt: { fontSize: 12, fontFamily: F.medium },
   voiceFailedRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
   voiceFailedTxt:   { flex: 1, fontSize: 12, fontFamily: F.medium },
+  voiceFailedDetailTxt: { fontSize: 10, fontFamily: F.regular, marginTop: 2, paddingLeft: 24 },
   voiceFailedActions:  { flexDirection: 'row', gap: 8, marginTop: 6 },
   voiceFailedActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   voiceFailedActionTxt: { fontSize: 11, fontFamily: F.semibold },
@@ -887,7 +928,7 @@ const s = StyleSheet.create({
   retryBtnText: { fontSize: 14, fontFamily: F.bold },
 
   // Input
-  inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 10, paddingBottom: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 6 },
+  inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 10, paddingBottom: 16, gap: 6 },
   editingBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
   editingBannerTxt: { flex: 1, fontSize: 12, fontFamily: F.semibold },
   iconBtn:   { width: 36, height: 44, justifyContent: 'center', alignItems: 'center' },

@@ -306,8 +306,8 @@ export class CampaignController {
 
   async completeDeliverableVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { publicId, key, uploadId, clientDurationSec } = req.body as DeliverableVideoCompleteInput;
-      const result = await campaignService.completeDeliverableVideo(req.params.appId, req.user!.id, { publicId, key, uploadId }, clientDurationSec);
+      const { publicId, key, uploadId, thumbnailKey, clientDurationSec } = req.body as DeliverableVideoCompleteInput;
+      const result = await campaignService.completeDeliverableVideo(req.params.appId, req.user!.id, { publicId, key, uploadId, thumbnailKey }, clientDurationSec);
       success(res, result, 'Video attached', 201);
     } catch (err) {
       next(err);
