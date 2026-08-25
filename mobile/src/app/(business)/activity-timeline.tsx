@@ -2086,6 +2086,22 @@ export default function CampaignWorkspaceScreen() {
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1, shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={isService ? handleReportIssue : handleRevision} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{isService ? t('activityTimeline.modalIssueSendBtn') : t('activityTimeline.modalRevisionSendBtn')}</Text>}
         </Pressable>
+
+        {/* Full history right in the composer, newest first — same rows as
+            the standalone Feedback modal, so this needs no extra fetch. */}
+        {(app?.revisionNotes ?? []).length > 0 && (
+          <View style={{ marginTop: 20 }}>
+            <Text style={sh.sectionLabel}>{t('activityTimeline.previousFeedback')}</Text>
+            <View style={fb.list}>
+              {(app?.revisionNotes ?? []).map((r, i) => (
+                <View key={i} style={[fb.card, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+                  <Text style={[fb.note, { color: '#78350F' }]}>{r.note}</Text>
+                  <Text style={[fb.time, { color: '#B45309' }]}>{fmtNPT(r.createdAt)}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </BottomSheet>
 
       {/* ── Feedback Modal — full revision-request history, newest first, either side ── */}

@@ -3007,6 +3007,7 @@ const en = {
     campaignProgress:      'Event Progress',
     revisionFeedback:      'Revision Feedback',
     viewRevisionFeedback:  'View Feedback',
+    previousFeedback:      'Previous Feedback',
     sectionTimeline:       'Activity Timeline',
     badgeDone:             'Done',
     badgeCurrent:          'Current',
@@ -3162,12 +3163,12 @@ const en = {
     videoUploaded:                  'Video uploaded!',
 
     // Revision modal
-    modalRevisionTitle:            'Give Feedback',
+    modalRevisionTitle:            'Give Work Feedback',
     modalRevisionSub:              'Describe the changes you need the creator to make.',
     modalRevisionNotesLabel:       'Revision Notes *',
     modalRevisionNotesPlaceholder: 'Please change the caption to... The video needs to be...',
     modalRevisionVideoNotice:      "Submitting this will remove the creator's currently uploaded video(s). They'll get a copy in chat so they can download it first.",
-    modalRevisionSendBtn:          'Send Revision Request',
+    modalRevisionSendBtn:          'Send',
 
     // Report an Issue modal (SERVICE jobs — see completionType)
     modalIssueTitle:            'Report an Issue',
