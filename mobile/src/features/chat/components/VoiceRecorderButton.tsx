@@ -45,6 +45,18 @@ type Props = {
   // hold-then-review flow this component's recording engine is modeled on.
   onRecorded: (result: VoiceRecorderResult) => void;
   disabled?: boolean;
+  // Idle mic button footprint — defaults match the original standalone
+  // composer-slot size. The chat screens now pass a smaller size to match
+  // the inline camera/attach icons it sits next to inside the input pill;
+  // the recording overlay/locked bar are unaffected, only this idle circle.
+  size?: number;
+  iconSize?: number;
+  // Drops the filled circle behind the idle icon so it reads as a plain
+  // glyph, matching the bare camera/attach icons it sits next to inside the
+  // composer pill. Only affects the resting (phase === 'idle') look — press
+  // ing to record still shows the colored circle (and red while cancelling)
+  // for the same tactile feedback as before.
+  bare?: boolean;
 };
 
 // `useAudioRecorder` below constructs a native AudioRecorder object
@@ -61,6 +73,7 @@ type Props = {
 export function VoiceRecorderButton(props: Props) {
   const C = useAppColors();
   const [ready, setReady] = useState(false);
+  const { size = 44, iconSize = 18, bare = false, disabled } = props;
 
   useEffect(() => {
     // TEMP DIAGNOSTIC — measuring how long the InteractionManager queue takes
@@ -77,8 +90,13 @@ export function VoiceRecorderButton(props: Props) {
   if (!ready) {
     return (
       <View style={s.wrap}>
-        <View style={[s.micBtn, { backgroundColor: C.border }]}>
-          <FontAwesome5 name="microphone" solid size={18} color="#fff" />
+        <View
+          style={[
+            s.micBtn,
+            { width: size, height: size, borderRadius: size / 2 },
+            bare ? { backgroundColor: 'transparent' } : { backgroundColor: C.border },
+          ]}>
+          <FontAwesome5 name="microphone" solid size={iconSize} color={bare ? (disabled ? C.textSecondary : C.brinjal1) : '#fff'} />
         </View>
       </View>
     );
@@ -86,7 +104,7 @@ export function VoiceRecorderButton(props: Props) {
   return <VoiceRecorderButtonReady {...props} />;
 }
 
-function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
+function VoiceRecorderButtonReady({ onRecorded, disabled, size = 44, iconSize = 18, bare = false }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
   const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
@@ -317,7 +335,7 @@ function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
   return (
     <View style={s.wrap}>
       {isHolding && (
-        <View style={s.overlay} pointerEvents="none">
+        <View style={[s.overlay, { bottom: size }]} pointerEvents="none">
           <View style={[s.meterCard, { backgroundColor: '#fff' }]}>
             {phase === 'cancelling' ? (
               <View style={s.cancelHintRow}>
@@ -345,7 +363,7 @@ function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
         </View>
       )}
       {permissionError && (
-        <View style={s.overlay} pointerEvents="none">
+        <View style={[s.overlay, { bottom: size }]} pointerEvents="none">
           <View style={[s.meterCard, { backgroundColor: '#FEF2F2' }]}>
             <Text style={s.permissionErrorText}>{permissionError}</Text>
           </View>
@@ -355,10 +373,18 @@ function VoiceRecorderButtonReady({ onRecorded, disabled }: Props) {
         <Animated.View
           style={[
             s.micBtn,
-            { backgroundColor: phase === 'cancelling' ? '#EF4444' : busy ? C.border : C.brinjal1 },
+            { width: size, height: size, borderRadius: size / 2 },
+            bare && phase === 'idle'
+              ? { backgroundColor: 'transparent' }
+              : { backgroundColor: phase === 'cancelling' ? '#EF4444' : busy ? C.border : C.brinjal1 },
             micStyle,
           ]}>
-          <FontAwesome5 name="microphone" solid size={18} color="#fff" />
+          <FontAwesome5
+            name="microphone"
+            solid
+            size={iconSize}
+            color={bare && phase === 'idle' ? (busy ? C.textSecondary : C.brinjal1) : '#fff'}
+          />
         </Animated.View>
       </GestureDetector>
     </View>

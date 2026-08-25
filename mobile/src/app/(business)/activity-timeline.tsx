@@ -905,6 +905,21 @@ export default function CampaignWorkspaceScreen() {
   }
 
   const progressScrollRef = useRef<ScrollView>(null);
+  const bodyScrollRef = useRef<ScrollView>(null);
+
+  // Android's ScrollView caches "content fits on screen, no scroll needed" from
+  // its first layout. Submitting work swaps the short "Upload" ActionCard for
+  // the much taller "Awaiting Review" card in the same mount (no navigation),
+  // so the cached measurement goes stale and the view refuses to scroll until
+  // a fresh layout pass — nudge it here so submitting doesn't require leaving
+  // and re-entering the screen to unlock scrolling.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      bodyScrollRef.current?.scrollTo({ y: 1, animated: false });
+      bodyScrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, 0);
+    return () => clearTimeout(id);
+  }, [app?.workStatus]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -1359,7 +1374,7 @@ export default function CampaignWorkspaceScreen() {
         />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
+      <ScrollView ref={bodyScrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
 
         {activeTab === 'overview' && (<>
         {/* ── Campaign Summary Card ── */}

@@ -624,12 +624,6 @@ export default function BusinessChatRoomScreen() {
               </View>
             )}
             <View style={[s.inputBar, { backgroundColor: C.surface, paddingBottom: (chat.emojiOpen || androidKeyboardVisible) ? 20 : insets.bottom + 8 }]}>
-              <Pressable style={s.iconBtn} onPress={chat.handleCameraPress} hitSlop={4}>
-                <FontAwesome5 name="camera" solid size={24} color={C.brinjal1} />
-              </Pressable>
-              <Pressable style={s.iconBtn} onPress={chat.handleAttachmentPress} disabled={hasActiveUpload} hitSlop={4}>
-                <FontAwesome5 name="images" solid size={24} color={hasActiveUpload ? C.textSecondary : C.brinjal1} />
-              </Pressable>
               <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
                 <Pressable onPress={chat.toggleEmojiPanel} hitSlop={4}>
                   <FontAwesome5 name={chat.emojiOpen ? 'smile' : 'smile'} size={20} color={C.textSecondary} />
@@ -657,15 +651,28 @@ export default function BusinessChatRoomScreen() {
                 {chat.text.length > 900 && (
                   <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - chat.text.length}</Text>
                 )}
+                {/* Instagram-style: camera/attach/mic live inside the pill and
+                    hide the moment there's text (or an edit) to compose — the
+                    send button (below) takes over that same visual weight, and
+                    clearing the text after a send reverts to this row on its own. */}
+                {!(chat.text.trim() || chat.editingMessage) && (
+                  <View style={s.inlineIconRow}>
+                    <Pressable style={s.inlineIconBtn} onPress={chat.handleCameraPress} hitSlop={4}>
+                      <FontAwesome5 name="camera" solid size={20} color={C.brinjal1} />
+                    </Pressable>
+                    <Pressable style={s.inlineIconBtn} onPress={chat.handleAttachmentPress} disabled={hasActiveUpload} hitSlop={4}>
+                      <FontAwesome5 name="paperclip" solid size={20} color={hasActiveUpload ? C.textSecondary : C.brinjal1} />
+                    </Pressable>
+                    <VoiceRecorderButton disabled={hasActiveUpload || chat.isSending.current} onRecorded={chat.handleSendVoiceAttachment} size={32} iconSize={20} bare />
+                  </View>
+                )}
               </View>
-              {chat.text.trim() || chat.editingMessage ? (
+              {(chat.text.trim() || chat.editingMessage) && (
                 <Pressable
                   style={[s.sendBtn, { backgroundColor: C.brinjal1 }]}
                   onPress={chat.handleSend}>
                   <FontAwesome5 name={chat.editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
                 </Pressable>
-              ) : (
-                <VoiceRecorderButton disabled={hasActiveUpload || chat.isSending.current} onRecorded={chat.handleSendVoiceAttachment} />
               )}
             </View>
 
@@ -722,7 +729,7 @@ const s = StyleSheet.create({
   pendingTxt:    { flex: 1, fontSize: 12, fontFamily: F.medium, lineHeight: 18 },
 
   // Message list
-  msgList: { paddingHorizontal: 0, paddingVertical: SPACING.md, paddingBottom: 8, gap: 2 },
+  msgList: { paddingHorizontal: 0, paddingVertical: SPACING.md, paddingBottom: 2, gap: 2 },
 
   // Date separator
   dateSepWrap: { flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: SCREEN_GUTTER, gap: 8 },
@@ -792,11 +799,12 @@ const s = StyleSheet.create({
   retryBtnText: { fontSize: 14, fontFamily: F.bold },
 
   // Input
-  inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 10, paddingBottom: 16, gap: 6 },
+  inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingTop: 6, paddingBottom: 16, gap: 6 },
   editingBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
   editingBannerTxt: { flex: 1, fontSize: 12, fontFamily: F.semibold },
-  iconBtn:   { width: 36, height: 44, justifyContent: 'center', alignItems: 'center' },
   inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: 8 },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  inlineIconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
   input:     { flex: 1, fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },
   charCount: { fontSize: 10, fontFamily: F.regular },
   sendBtn:   { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
