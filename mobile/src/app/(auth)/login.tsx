@@ -6,6 +6,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   Animated,
+  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -692,6 +693,22 @@ export default function LoginScreen() {
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
 
+  // The footer's bottom padding normally reserves room for the home-indicator
+  // safe area — but once the keyboard is up, KeyboardAvoidingView has already
+  // pushed the footer above it, so that inset is dead space that shows as a
+  // gap between the footer text and the keyboard. Drop it while typing.
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   // account-type.tsx sends the user back here via router.replace('/login', { tab: 'signup', role })
   // after they pick a role — but replace commonly reuses this screen's already-mounted instance
   // (it was pushed underneath when "Sign up" was tapped), so the useState initializer above never
@@ -983,7 +1000,7 @@ export default function LoginScreen() {
             inside it, so the "switch to the other tab" escape hatch is always
             reachable without scrolling past the form. */}
         <Pressable
-          style={[s.footerBar, { backgroundColor: C.background, borderTopColor: C.border, paddingBottom: insets.bottom + SPACING.md }]}
+          style={[s.footerBar, { backgroundColor: C.background, borderTopColor: C.border, paddingBottom: keyboardVisible ? SPACING.md : insets.bottom + SPACING.md }]}
           accessibilityRole="button"
           onPress={() => tab === 'login' ? router.push('/account-type') : setTab('login')}>
           <Text style={s.switchTabText}>

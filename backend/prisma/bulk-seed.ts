@@ -7,9 +7,11 @@
  * business names, and event copy are generated from word banks so the data
  * reads like real profiles rather than "Test #123" placeholders.
  *
- * Not idempotent — re-running with the same counts creates a second batch of
- * users with fresh emails/phones (a per-run tag is embedded in both), so it's
- * safe to re-run, it just adds more rows rather than upserting.
+ * Not idempotent — re-running adds a second batch of users rather than
+ * upserting. Phones are always fresh (randomly generated per run), but emails
+ * are name-derived (firstname.lastname@gmail.com, like a real signup) with no
+ * run tag, so re-running without wiping the DB first risks email collisions
+ * once name pools repeat. Pair with wipe-marketplace-data.ts when reseeding.
  *
  * Usage: npx tsx prisma/bulk-seed.ts [creators=1000] [businesses=creators] [events=businesses]
  */
@@ -29,6 +31,20 @@ const NEPAL_MOBILE_PREFIXES = ['980', '981', '982', '984', '985', '986', '988'];
 const LAT_MIN = 26.3, LAT_MAX = 30.4;
 const LNG_MIN = 80.0, LNG_MAX = 88.2;
 
+// Real-looking placeholder photos — no Cloudinary upload needed, these are
+// stable public URLs. pravatar gives real human headshots (70 available,
+// cycled deterministically per row); picsum gives real stock photos keyed by
+// seed so the same row always gets the same image on re-reads.
+function avatarUrlFor(seedIndex: number): string {
+  return `https://i.pravatar.cc/400?img=${(seedIndex % 70) + 1}`;
+}
+function logoUrlFor(businessId: string, name: string): string {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=256&bold=true&format=png`;
+}
+function photoUrlFor(seed: string, w: number, h: number): string {
+  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
+}
+
 function rand<T>(arr: readonly T[]): T { return arr[Math.floor(Math.random() * arr.length)]!; }
 function randInt(min: number, max: number) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function randFloat(min: number, max: number) { return min + Math.random() * (max - min); }
@@ -37,6 +53,19 @@ function pickSubset<T>(arr: readonly T[], n: number): T[] {
 }
 function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '');
+}
+
+// firstname.lastname@gmail.com, the way a real signup reads. Shared across
+// creators and businesses (both draw from the same User.email uniqueness),
+// with a Gmail-style numeric suffix only on an actual repeat name.
+function makeEmailFactory(domain: string) {
+  const seen = new Map<string, number>();
+  return (name: string): string => {
+    const base = slugify(name);
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    return `${n === 1 ? base : `${base}${n}`}@${domain}`;
+  };
 }
 
 async function createManyChunked<T extends Record<string, unknown>>(
@@ -167,7 +196,7 @@ async function main() {
   const creatorCount = parseInt(process.argv[2] ?? '1000', 10);
   const businessCount = parseInt(process.argv[3] ?? String(creatorCount), 10);
   const eventCount = parseInt(process.argv[4] ?? String(businessCount), 10);
-  const runTag = Date.now();
+  const emailFor = makeEmailFactory('gmail.com');
 
   // Categories are admin-owned (see backend/prisma/seeds/categories.ts and the
   // web admin's Categories page) — pull the live, active set instead of a
@@ -183,7 +212,7 @@ async function main() {
     throw new Error('No active categories found — seed the categories table first (npx tsx prisma/seeds/categories.ts).');
   }
 
-  console.log(`Bulk-seeding ${creatorCount} creators, ${businessCount} businesses, ${eventCount} events (run ${runTag})...`);
+  console.log(`Bulk-seeding ${creatorCount} creators, ${businessCount} businesses, ${eventCount} events...`);
   console.log(`Using ${creatorCategories.length} creator-facing and ${businessCategories.length} business-facing categories from the database.`);
 
   const creatorPw  = await bcrypt.hash('Creator@123', 12);
@@ -200,9 +229,9 @@ async function main() {
   // ── Creators ──────────────────────────────────────────────────────────────
   console.log('Creating creator users...');
   const creatorNames = Array.from({ length: creatorCount }, () => fullName());
-  const creatorUsers = creatorNames.map((name, i) => ({
+  const creatorUsers = creatorNames.map((name) => ({
     id: randomUUID(),
-    email: `${slugify(name)}.${runTag}.${i}@example.com`,
+    email: emailFor(name),
     phone: uniquePhone(),
     password: creatorPw,
     role: Role.CREATOR,
@@ -221,6 +250,8 @@ async function main() {
       userId: u.id,
       fullName: creatorNames[i]!,
       bio: rand(CREATOR_BIO_TEMPLATES)(categories[0]!, city),
+      avatarUrl: avatarUrlFor(i),
+      coverImageUrl: photoUrlFor(`creator-cover-${u.id}`, 800, 400),
       location: hasCoords ? `${city}, Nepal` : null,
       locationLat: hasCoords ? randFloat(LAT_MIN, LAT_MAX) : null,
       locationLng: hasCoords ? randFloat(LNG_MIN, LNG_MAX) : null,
@@ -236,9 +267,9 @@ async function main() {
   console.log('Creating business users...');
   const businessCategoryPicks = Array.from({ length: businessCount }, () => rand(businessCategories));
   const businessNames = businessCategoryPicks.map((cat) => businessName(cat));
-  const businessUsers = businessNames.map((name, i) => ({
+  const businessUsers = businessNames.map((name) => ({
     id: randomUUID(),
-    email: `${slugify(name)}.${runTag}.${i}@example.com`,
+    email: emailFor(name),
     phone: uniquePhone(),
     password: businessPw,
     role: Role.BUSINESS,
@@ -253,11 +284,14 @@ async function main() {
     const city = rand(CITIES);
     const category = businessCategoryPicks[i]!;
     const name = businessNames[i]!;
+    const id = randomUUID();
     return {
-      id: randomUUID(),
+      id,
       userId: u.id,
       businessName: name,
       description: rand(BUSINESS_DESC_TEMPLATES)(name, category, city),
+      logoUrl: logoUrlFor(id, name),
+      coverImageUrl: photoUrlFor(`business-cover-${id}`, 800, 400),
       location: hasCoords ? `${city}, Nepal` : null,
       categories: pickSubset(businessCategories.filter((c) => c !== category), randInt(0, 1)).concat(category),
       isVerified: Math.random() < 0.3,
@@ -280,8 +314,9 @@ async function main() {
     const location = hasCoords ? `${rand(CITIES)}, Nepal` : null;
     const deadline = new Date(Date.now() + randInt(3, 60) * 86400000);
 
+    const campaignId = randomUUID();
     const base = {
-      id: randomUUID(),
+      id: campaignId,
       businessId: biz.id,
       category,
       platforms: pickSubset(PLATFORMS, randInt(1, 2)),
@@ -293,6 +328,7 @@ async function main() {
       isFeatured: Math.random() < 0.1,
       eventStatus: 'OPEN' as const,
       paymentStatus: 'UNPAID' as const,
+      featureImageUrl: photoUrlFor(`campaign-${campaignId}`, 800, 600),
     };
 
     if (isOpenEvent) {
@@ -340,7 +376,7 @@ async function main() {
   console.log(`  Creators:   ${creatorCount}`);
   console.log(`  Businesses: ${businessCount}`);
   console.log(`  Events:     ${eventCount}  (${openCount} open events, ${eventCount - openCount} paid campaigns, across ${businessProfiles.length} businesses)`);
-  console.log('  Seeded logins use password Creator@123 / Business@123 (emails are name-based, e.g. aarav.sharma.<run>.<n>@example.com)');
+  console.log('  Seeded logins use password Creator@123 / Business@123 (emails are name-based, e.g. aarav.sharma@gmail.com)');
   process.exit(0);
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useContext, useRef, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -43,6 +43,14 @@ function getInitials(name: string): string {
 
 type WorkItem = Awaited<ReturnType<typeof campaignService.getMyApplications>>['proposals'][number];
 
+// Screens elsewhere in the (creator) stack reach a tab via `router.push`,
+// which — crossing from a sibling Stack.Screen into this Tabs group — mounts
+// a brand-new instance of this whole navigator (including this screen)
+// rather than refocusing the existing one, so a plain component ref can't
+// remember "already loaded" across that. Module scope survives it; keying by
+// user id makes it correctly re-arm the skeleton on a different login.
+let creatorHomeLoadedForUserId: string | null = null;
+
 export default function HomeScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -62,11 +70,6 @@ export default function HomeScreen() {
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work'; title: string }>>([]);
-  // Tab switches (e.g. Find Work → back to Home) refocus this screen without
-  // remounting it, so `load()` fires again with data already sitting in state.
-  // This tracks whether that first load has happened yet, so only it shows the
-  // skeleton — later refocuses refetch silently instead of flashing back to it.
-  const hasLoadedOnceRef = useRef(false);
 
   // ── Nearby Opportunities ──
   const [nearbyCampaigns, setNearbyCampaigns] = useState<Campaign[]>([]);
@@ -147,7 +150,7 @@ export default function HomeScreen() {
   }
 
   const load = useCallback(async (isRefresh = false) => {
-    const isFirstLoad = !hasLoadedOnceRef.current;
+    const isFirstLoad = creatorHomeLoadedForUserId !== user?.id;
     if (isRefresh) setRefreshing(true);
     else if (isFirstLoad) setLoading(true);
     try {
@@ -201,13 +204,13 @@ export default function HomeScreen() {
       // screen on one failed fetch — each section already has its own empty
       // state, and this is a low-stakes landing screen, not a form.
     } finally {
-      hasLoadedOnceRef.current = true;
+      creatorHomeLoadedForUserId = user?.id ?? null;
       setLoading(false);
       setRefreshing(false);
     }
   // `t` changes reference on every language switch (see LanguageContext) — depending
   // on it here re-runs the missing-fields check so those labels stay translated.
-  }, [t]);
+  }, [t, user?.id]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
