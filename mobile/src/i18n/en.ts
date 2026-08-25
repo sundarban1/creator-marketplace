@@ -3089,7 +3089,7 @@ const en = {
     acVideoLabel:            'Video',
     acImageLabel:            'Image',
     acLinksLabel:            'Links',
-    acRevisionBtn:           'Request Revision',
+    acRevisionBtn:           'Give Feedback',
     acApproveBtn:            'Approve',
     acAwaitingReviewTitle:   'Awaiting Review',
     acAwaitingReviewSub:     'Business is reviewing your work. Auto-approved in 5 days if no response.',
@@ -3162,7 +3162,7 @@ const en = {
     videoUploaded:                  'Video uploaded!',
 
     // Revision modal
-    modalRevisionTitle:            'Request Revision',
+    modalRevisionTitle:            'Give Feedback',
     modalRevisionSub:              'Describe the changes you need the creator to make.',
     modalRevisionNotesLabel:       'Revision Notes *',
     modalRevisionNotesPlaceholder: 'Please change the caption to... The video needs to be...',
