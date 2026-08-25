@@ -5,10 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
-    "scheme": ["kolab", "com.sundarban.kolab"],
+    "scheme": ["kolab", "com.kolab.app"],
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.sundarban.kolab",
+      "bundleIdentifier": "com.kolab.app",
       "supportsTablet": true,
       "requireFullScreen": true,
       "config": {
