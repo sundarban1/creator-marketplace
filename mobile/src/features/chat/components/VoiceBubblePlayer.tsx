@@ -1,5 +1,5 @@
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { RADIUS } from '@/utilities/constants';
@@ -39,9 +39,16 @@ export function VoiceBubblePlayer({ url, waveform, durationSec, isSent, activeCo
   // of leaving the bubble stuck looking like silent playback.
   const hasError = status.error != null;
 
-  function togglePlayback() {
+  // Only the recorder ever calls setAudioModeAsync({ playsInSilentMode: true }).
+  // Until a user has recorded something in the current app session, playback
+  // inherits the native default of respecting the hardware mute switch — the
+  // player reports `playing: true` and the bar advances with zero audio
+  // actually coming out. Set it here too so playback is audible regardless of
+  // recorder history.
+  async function togglePlayback() {
     if (hasError) {
       try {
+        await setAudioModeAsync({ playsInSilentMode: true });
         player.replace({ uri: url });
         player.play();
       } catch { /* native object not ready — nothing to retry */ }
@@ -52,6 +59,7 @@ export function VoiceBubblePlayer({ url, waveform, durationSec, isSent, activeCo
         player.pause();
       } else {
         if (status.didJustFinish || (total > 0 && position >= total)) player.seekTo(0);
+        await setAudioModeAsync({ playsInSilentMode: true });
         player.play();
       }
     } catch { /* native object not ready — nothing to play/pause */ }

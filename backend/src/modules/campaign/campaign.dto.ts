@@ -8,9 +8,16 @@ import { z } from 'zod';
 // columns (socialHandles, goals, ...) which are just free-text user prefs —
 // a shape mismatch here would otherwise crash the player screen.
 export const deliverableVideoSchema = z.object({
+  // For a CLOUDINARY entry this is Cloudinary's public_id; for an R2 entry
+  // it's the R2 object key — either way, the one identifier
+  // remove/renameDeliverableVideo look entries up by.
   publicId:     z.string(),
   url:          z.string(),
-  thumbnailUrl: z.string(),
+  // R2 has no auto-derived poster-frame the way Cloudinary does (see
+  // CampaignService.completeDeliverableVideo) — the deliverable grid tile
+  // never actually renders this as an image anyway, so it's simply absent
+  // for R2 entries.
+  thumbnailUrl: z.string().optional(),
   durationSec:  z.number(),
   format:       z.string(),
   sizeBytes:    z.number(),
@@ -20,6 +27,12 @@ export const deliverableVideoSchema = z.object({
   // default them to READY rather than failing the `.catch([])` parse the
   // caller wraps this schema in (see toApplicationDto).
   status:       z.enum(['PROCESSING', 'READY', 'FAILED']).default('READY'),
+  // Entries persisted before this field existed were all Cloudinary —
+  // default accordingly so remove/renameDeliverableVideo route old rows correctly.
+  provider:     z.enum(['CLOUDINARY', 'R2']).default('CLOUDINARY'),
+  // Only present for an R2 multipart entry — needed if a later cleanup pass
+  // ever needs to abort/inspect the underlying multipart upload.
+  uploadId:     z.string().optional(),
 });
 export type DeliverableVideo = z.infer<typeof deliverableVideoSchema>;
 

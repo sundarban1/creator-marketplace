@@ -5,7 +5,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
-import type { SubmitReviewInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput } from './campaign.schema';
+import type { SubmitReviewInput, DeliverableVideoSignatureRequestInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
 const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
@@ -296,7 +296,8 @@ export class CampaignController {
 
   async getDeliverableVideoSignature(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await campaignService.requestDeliverableVideoSignature(req.params.appId, req.user!.id);
+      const { sizeBytes, mimeType } = req.body as DeliverableVideoSignatureRequestInput;
+      const result = await campaignService.requestDeliverableVideoSignature(req.params.appId, req.user!.id, sizeBytes, mimeType);
       success(res, result, 'Upload signature issued');
     } catch (err) {
       next(err);
@@ -305,8 +306,8 @@ export class CampaignController {
 
   async completeDeliverableVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { publicId, clientDurationSec } = req.body as DeliverableVideoCompleteInput;
-      const result = await campaignService.completeDeliverableVideo(req.params.appId, req.user!.id, publicId, clientDurationSec);
+      const { publicId, key, uploadId, clientDurationSec } = req.body as DeliverableVideoCompleteInput;
+      const result = await campaignService.completeDeliverableVideo(req.params.appId, req.user!.id, { publicId, key, uploadId }, clientDurationSec);
       success(res, result, 'Video attached', 201);
     } catch (err) {
       next(err);

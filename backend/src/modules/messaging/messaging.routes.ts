@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { uploadChatFile } from '../../middleware/upload';
 import { perUserMessageLimiter } from '../../middleware/rateLimit';
-import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema, editMessageSchema, videoCompleteSchema, voiceCompleteSchema } from './messaging.schema';
+import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema, editMessageSchema, videoSignatureRequestSchema, videoCompleteSchema, voiceCompleteSchema } from './messaging.schema';
 
 const router = Router();
 const ctrl   = new MessagingController();
@@ -45,7 +45,7 @@ router.post('/conversations/:id/attachments/voice/complete',  validate(voiceComp
 // Render request-size/timeout limits on large files). Mobile calls /signature
 // first, uploads straight to Cloudinary with the returned credentials, then
 // calls /complete so the server can verify the asset and create the message.
-router.post('/conversations/:id/attachments/video/signature', ctrl.getVideoUploadSignature.bind(ctrl));
+router.post('/conversations/:id/attachments/video/signature', validate(videoSignatureRequestSchema), ctrl.getVideoUploadSignature.bind(ctrl));
 router.post('/conversations/:id/attachments/video/complete',  validate(videoCompleteSchema), ctrl.completeVideoAttachment.bind(ctrl));
 // Delete a single message — body: { forEveryone?: boolean } (sender-only; defaults to "delete for me")
 router.delete('/conversations/:id/messages/:messageId', ctrl.deleteMessage.bind(ctrl));

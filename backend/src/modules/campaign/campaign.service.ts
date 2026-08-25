@@ -3,7 +3,8 @@ import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
 import { toCampaignDto, toApplicationDto, toActivityLogDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
-import { generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, uploadImage as uploadImageToCloudinary, uploadRawFile, deleteImage, deleteRawFile } from '../../utils/cloudinary';
+import { videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, uploadImage as uploadImageToCloudinary, uploadRawFile, deleteImage, deleteRawFile } from '../../utils/cloudinary';
+import { createVideoUploadPlan, finalizeR2Object, completeR2Multipart, deleteR2Object, abortR2Multipart } from '../../utils/r2Media';
 import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
@@ -1509,66 +1510,133 @@ export class CampaignService {
     return app;
   }
 
-  async requestDeliverableVideoSignature(appId: string, userId: string) {
-    const app = await this.assertCanUploadDeliverable(appId, userId);
+  async requestDeliverableVideoSignature(
+    appId: string,
+    userId: string,
+    sizeBytes: number,
+    mimeType: 'video/mp4' | 'video/quicktime',
+  ) {
+    await this.assertCanUploadDeliverable(appId, userId);
     const existing = await this.repo.getDeliverableVideos(appId);
     if (existing.length >= 3) throw new AppError('Maximum of 3 videos already uploaded for this application', 409);
+    if (sizeBytes > MAX_VIDEO_SIZE_BYTES) throw new AppError('Video exceeds the 500MB limit', 400);
 
+    const ext = mimeType === 'video/quicktime' ? 'mov' : 'mp4';
     const publicId = `deliverable_${appId}_${Date.now()}_${randomUUID()}`;
-    return generateVideoUploadSignature('campaigns/deliverables', publicId);
+    return createVideoUploadPlan(userId, ext, mimeType, sizeBytes, { folder: 'campaigns/deliverables', publicId });
   }
 
-  async completeDeliverableVideo(appId: string, userId: string, publicId: string, clientDurationSec?: number) {
+  // Cloudinary branch: unchanged — everything (duration/size/format/url) is
+  // read back from Cloudinary's own Admin API. R2 branch: only object
+  // existence + real byte size (HeadObject) can be independently verified —
+  // duration is trusted from the client, and there's no auto poster-frame
+  // (the deliverable grid tile never rendered thumbnailUrl as an image anyway).
+  async completeDeliverableVideo(
+    appId: string,
+    userId: string,
+    ref: { publicId?: string; key?: string; uploadId?: string },
+    clientDurationSec?: number,
+  ) {
     // Re-checked fresh here, not just at signature time — a 500MB upload can
     // take minutes, during which the business could approve the work.
     await this.assertCanUploadDeliverable(appId, userId);
-
-    const expectedPrefix = 'campaigns/deliverables/deliverable_';
-    if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${appId}_`)) {
-      throw new AppError('Invalid upload reference', 400);
-    }
-
-    let resource;
-    try {
-      resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
-    } catch {
-      throw new AppError('Could not verify the uploaded video. Please try again.', 400);
-    }
-
-    if (!ALLOWED_DELIVERABLE_VIDEO_FORMATS.has((resource.format ?? '').toLowerCase())) {
-      await deleteVideo(publicId);
-      throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
-    }
-
-    // Client-side picker already caps size at 500MB, but that check is trivially
-    // bypassable — the server is the only source of truth, same as the format check above.
-    if ((resource.bytes ?? 0) > MAX_VIDEO_SIZE_BYTES) {
-      await deleteVideo(publicId);
-      throw new AppError('Video exceeds the 500MB limit', 400);
-    }
-
     const existing = await this.repo.getDeliverableVideos(appId);
-    const entry: DeliverableVideo = {
-      publicId,
-      url:          videoPlaybackUrl(resource.secure_url),
-      thumbnailUrl: videoThumbnailUrl(resource.secure_url),
+
+    let url:          string;
+    let thumbnailUrl: string | undefined;
+    let durationSec:  number;
+    let format:       string;
+    let sizeBytes:    number;
+    let provider:     'CLOUDINARY' | 'R2';
+    let storedId:     string;
+
+    if (ref.key) {
+      if (!ref.key.startsWith(`users/${userId}/videos/`)) {
+        throw new AppError('Invalid upload reference', 400);
+      }
+
+      let result;
+      try {
+        result = ref.uploadId ? await completeR2Multipart(ref.key, ref.uploadId) : await finalizeR2Object(ref.key);
+      } catch {
+        if (ref.uploadId) await abortR2Multipart(ref.key, ref.uploadId);
+        throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+      }
+      if (!result.url) {
+        await deleteR2Object(ref.key);
+        throw new AppError('Video storage is not fully configured yet. Please try again later.', 500);
+      }
+      if (result.sizeBytes > MAX_VIDEO_SIZE_BYTES) {
+        await deleteR2Object(ref.key);
+        throw new AppError('Video exceeds the 500MB limit', 400);
+      }
+
+      url          = result.url;
+      thumbnailUrl = undefined;
+      durationSec  = Math.round(clientDurationSec || 0);
+      format       = ref.key.endsWith('.mov') ? 'mov' : 'mp4';
+      sizeBytes    = result.sizeBytes;
+      provider     = 'R2';
+      storedId     = ref.key;
+    } else {
+      const publicId = ref.publicId!;
+      const expectedPrefix = 'campaigns/deliverables/deliverable_';
+      if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${appId}_`)) {
+        throw new AppError('Invalid upload reference', 400);
+      }
+
+      let resource;
+      try {
+        resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
+      } catch {
+        throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+      }
+
+      if (!ALLOWED_DELIVERABLE_VIDEO_FORMATS.has((resource.format ?? '').toLowerCase())) {
+        await deleteVideo(publicId);
+        throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
+      }
+
+      // Client-side picker already caps size at 500MB, but that check is trivially
+      // bypassable — the server is the only source of truth, same as the format check above.
+      if ((resource.bytes ?? 0) > MAX_VIDEO_SIZE_BYTES) {
+        await deleteVideo(publicId);
+        throw new AppError('Video exceeds the 500MB limit', 400);
+      }
+
+      url          = videoPlaybackUrl(resource.secure_url);
+      thumbnailUrl = videoThumbnailUrl(resource.secure_url);
       // Cloudinary's own duration wins when present — see messaging.service.ts's
       // completeVideoAttachment for why the client-reported value is the
       // fallback rather than always 0 while the asset is still being indexed.
-      durationSec:  Math.round(resource.duration || clientDurationSec || 0),
-      format:       'mp4', // matches url — always delivered as MP4 regardless of source format
-      sizeBytes:    resource.bytes ?? 0,
-      label:        `Video ${existing.length + 1}`,
-      uploadedAt:   new Date().toISOString(),
+      durationSec  = Math.round(resource.duration || clientDurationSec || 0);
+      format       = 'mp4'; // matches url — always delivered as MP4 regardless of source format
+      sizeBytes    = resource.bytes ?? 0;
+      provider     = 'CLOUDINARY';
+      storedId     = publicId;
+    }
+
+    const entry: DeliverableVideo = {
+      publicId: storedId,
+      url,
+      thumbnailUrl,
+      durationSec,
+      format,
+      sizeBytes,
+      label:      `Video ${existing.length + 1}`,
+      uploadedAt: new Date().toISOString(),
       // Set to READY synchronously here — the checks above (format/size, plus
       // the duration check for chat) are all we verify today, no async job
       // exists yet. See VideoAssetStatus's schema comment for the future path.
-      status:       'READY',
+      status:     'READY',
+      provider,
+      uploadId:   ref.uploadId,
     };
 
     const appended = await this.repo.appendDeliverableVideo(appId, entry);
     if (!appended) {
-      await deleteVideo(publicId);
+      if (provider === 'R2') await deleteR2Object(storedId);
+      else await deleteVideo(storedId);
       throw new AppError('Maximum of 3 videos already uploaded for this application', 409);
     }
 
@@ -1577,7 +1645,10 @@ export class CampaignService {
 
   async removeDeliverableVideo(appId: string, userId: string, publicId: string) {
     await this.assertCanUploadDeliverable(appId, userId);
-    await deleteVideo(publicId).catch(() => {});
+    const existing = await this.repo.getDeliverableVideos(appId);
+    const entry = existing.find((v) => v.publicId === publicId);
+    if (entry?.provider === 'R2') await deleteR2Object(publicId).catch(() => {});
+    else await deleteVideo(publicId).catch(() => {});
     const updated = await this.repo.removeDeliverableVideo(appId, publicId);
     return toApplicationDto(updated);
   }

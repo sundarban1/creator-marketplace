@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -62,6 +62,11 @@ export default function HomeScreen() {
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work'; title: string }>>([]);
+  // Tab switches (e.g. Find Work → back to Home) refocus this screen without
+  // remounting it, so `load()` fires again with data already sitting in state.
+  // This tracks whether that first load has happened yet, so only it shows the
+  // skeleton — later refocuses refetch silently instead of flashing back to it.
+  const hasLoadedOnceRef = useRef(false);
 
   // ── Nearby Opportunities ──
   const [nearbyCampaigns, setNearbyCampaigns] = useState<Campaign[]>([]);
@@ -142,7 +147,9 @@ export default function HomeScreen() {
   }
 
   const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true); else setLoading(true);
+    const isFirstLoad = !hasLoadedOnceRef.current;
+    if (isRefresh) setRefreshing(true);
+    else if (isFirstLoad) setLoading(true);
     try {
       const p = await creatorService.getProfile();
       setProfile(p);
@@ -188,12 +195,13 @@ export default function HomeScreen() {
       setPendingActions(actions);
 
       setRecommended(recs.campaigns);
-      void initNearby(p, { silent: isRefresh });
+      void initNearby(p, { silent: !isFirstLoad });
     } catch {
       // Dashboard sections degrade to empty rather than blocking the whole
       // screen on one failed fetch — each section already has its own empty
       // state, and this is a low-stakes landing screen, not a form.
     } finally {
+      hasLoadedOnceRef.current = true;
       setLoading(false);
       setRefreshing(false);
     }

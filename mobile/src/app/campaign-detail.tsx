@@ -356,7 +356,7 @@ export default function CampaignDetailScreen() {
         {isOpenEvent ? (
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCompletion')}</Text>
-            <ShareCompletionNote platforms={campaign.platforms} C={C} t={t} />
+            <ShareCompletionNote C={C} t={t} />
           </View>
         ) : campaign.requirements && campaign.requirements.length > 0
           ? campaign.requirements.some((r) => r.completionType) && (
@@ -557,16 +557,15 @@ function DetailRow({ icon, label, value, C }: { icon: string; label: string; val
 // work stage to run (acceptance is final, see CampaignService), so attending
 // and posting about it IS the whole ask — stated once, the same way for every
 // free event, rather than classified per role like a paid campaign.
-const DEFAULT_SHARE_PLATFORMS = ['Facebook', 'Instagram', 'TikTok', 'YouTube'];
+// Every free event asks for the same four platforms regardless of what the
+// business entered at creation (see comment above) — so this list is fixed,
+// not sourced from campaign.platforms.
+const SHARE_PLATFORMS = ['Instagram', 'Facebook', 'YouTube', 'TikTok'];
 
-function ShareCompletionNote({ platforms, C, t }: {
-  platforms: string[];
+function ShareCompletionNote({ C, t }: {
   C: any;
   t: (key: string) => string;
 }) {
-  // The business picks the platforms it cares about at creation; fall back to
-  // the big four when an older event didn't record any.
-  const list = platforms && platforms.length > 0 ? platforms : DEFAULT_SHARE_PLATFORMS;
   return (
     <View style={{ gap: 10 }}>
       <View style={s.completionRow}>
@@ -579,8 +578,9 @@ function ShareCompletionNote({ platforms, C, t }: {
         </View>
       </View>
       <View style={s.benefitsWrap}>
-        {list.map((p) => (
+        {SHARE_PLATFORMS.map((p) => (
           <View key={p} style={[s.benefitChip, { backgroundColor: '#F0FDF4', borderColor: '#A7F3D0' }]}>
+            <FontAwesome5 name={p.toLowerCase()} brand size={12} color={getIconColor(p.toLowerCase())} />
             <Text style={[s.benefitChipTxt, { color: '#065F46' }]}>{p}</Text>
           </View>
         ))}

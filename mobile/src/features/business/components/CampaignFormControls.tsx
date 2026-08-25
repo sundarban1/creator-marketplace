@@ -467,7 +467,6 @@ export function FeaturedToggle({ value, onChange, quota, colors, t, labelKey = '
       onPress={() => { if (!locked) onChange(!value); }}
       disabled={locked}>
       <View style={ft.left}>
-        <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
         <View style={{ flex: 1, gap: 3 }}>
           <View style={ft.labelRow}>
             <Text style={[ft.label, { color: C.text }]}>{t(labelKey)}</Text>

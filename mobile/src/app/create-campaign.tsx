@@ -1847,13 +1847,14 @@ export default function CreateCampaignScreen() {
   // EVENT_NEEDS_INPUT_FIELDS on the backend) — category/location are the
   // "what/where" required tier here; venue is the defensive local check
   // (inviteDescribe has no venue field, mirroring the Paid flow's location check).
-  // 'completionType' is deliberately absent: a free event always completes the
-  // same way (attend + share), so the flow never asks the business for it even
-  // when the AI flags it as uncertain. 'eventDate' IS in the tier: when the
+  // 'completionType' is included like the Paid flow — an event can now be
+  // switched to Service/Deliverable completion on the Publish screen instead
+  // of the default "attend and share" expectation, so an uncertain AI guess
+  // is worth flagging same as there. 'eventDate' IS in the tier: when the
   // brand never said when the event is, the date on the draft is a bare
   // seven-days-out placeholder, and publishing that unchallenged is exactly
   // how an invitation goes out on a day nobody chose.
-  const inviteDraftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'location' || f === 'eventDate')
+  const inviteDraftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'location' || f === 'eventDate' || f === 'completionType')
     || (form.locationType === 'ONSITE' && !form.venue.trim());
 
   // Three independent "tracks" now share this one screen: the new 3-step
@@ -2668,14 +2669,16 @@ export default function CreateCampaignScreen() {
                   colors={C}
                   onPress={() => setEditingField('exchangeType')}
                 />
-                {/* Free events complete one way only — attend and post about
-                    it — so this states the expectation instead of offering
-                    the paid flow's Service/Deliverable choice. */}
                 <PreviewRow
-                  icon="share-alt"
+                  icon={form.completionType === 'SERVICE' ? 'handshake'
+                    : form.completionType === 'DELIVERABLE' ? 'cloud-upload-alt'
+                    : 'share-alt'}
                   label={t('createOpportunity.completionLabel')}
-                  value={t('campaignDetail.freeCompletionTitle')}
+                  value={form.completionType === 'SERVICE' ? t('createOpportunity.completionServiceTitle')
+                    : form.completionType === 'DELIVERABLE' ? t('createOpportunity.completionDeliverableTitle')
+                    : t('campaignDetail.freeCompletionTitle')}
                   colors={C}
+                  onPress={() => setEditingField('completionType')}
                 />
                 <PreviewRow
                   icon="map-marker-alt"

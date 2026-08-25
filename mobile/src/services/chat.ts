@@ -1,11 +1,12 @@
 import { request, API_BASE }                from '@/lib/api';
 import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
+import * as FileSystem from 'expo-file-system/legacy';
 import { storage }           from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY }  from '@/utilities/constants';
 import { requestVideoUploadSignature } from '@/services/cloudinaryVideoUpload';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
-import { requestVoiceUploadSignature, uploadVoiceToCloudinary } from '@/services/cloudinaryVoiceUpload';
+import { requestVoiceUploadSignature, uploadVoice } from '@/services/cloudinaryVoiceUpload';
 import {
   registerActiveVoiceUpload, unregisterActiveVoiceUpload, reportVoiceUploadProgress,
   subscribeToVoiceUploadProgress, setActiveVoiceUploadResult,
@@ -84,7 +85,9 @@ export function createVideoUploadTask(
   return {
     start: async () => {
       if (cancelled) throw new Error('Video upload cancelled');
-      const signature = await requestVideoUploadSignature(conversationId);
+      const info = await FileSystem.getInfoAsync(fileUri);
+      if (!info.exists || info.isDirectory) throw new Error('Video file could not be read for upload');
+      const signature = await requestVideoUploadSignature(conversationId, info.size, mimeType === 'video/quicktime' ? 'video/quicktime' : 'video/mp4');
       if (cancelled) throw new Error('Video upload cancelled');
 
       innerTask = startBackgroundChunkedUpload(
@@ -134,11 +137,11 @@ export function createVoiceUploadTask(
           if (cancelled) throw new Error('Voice upload cancelled');
           const signature = await requestVoiceUploadSignature(conversationId);
           if (cancelled) throw new Error('Voice upload cancelled');
-          const uploaded = await uploadVoiceToCloudinary(fileUri, signature, (p) => reportVoiceUploadProgress(localUploadId, p));
+          const uploaded = await uploadVoice(fileUri, signature, (p) => reportVoiceUploadProgress(localUploadId, p));
           if (cancelled) throw new Error('Voice upload cancelled');
           const res = await request<ApiMessage>(
             'POST', `/api/messaging/conversations/${conversationId}/attachments/voice/complete`,
-            { publicId: uploaded.publicId, clientDurationSec: durationSec, waveform: waveform.map((v) => v.toFixed(2)).join(',') },
+            { ...uploaded, clientDurationSec: durationSec, waveform: waveform.map((v) => v.toFixed(2)).join(',') },
           );
           return toMessage(res.data);
         } finally {

@@ -13,7 +13,11 @@ import { emitToUser } from '../../socket';
 import prisma from '../../prisma';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
-import { uploadImage as uploadToCloudinary, uploadRawFile, generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, type VideoUploadSignature } from '../../utils/cloudinary';
+import { uploadImage as uploadToCloudinary, uploadRawFile, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES } from '../../utils/cloudinary';
+import {
+  createVoiceUploadPlan, createVideoUploadPlan, finalizeR2Object, completeR2Multipart,
+  deleteR2Object, abortR2Multipart, type VoiceUploadPlan, type VideoUploadPlan,
+} from '../../utils/r2Media';
 
 // MP4 (H.264/AAC) is the preferred format; MOV is accepted and delivered as
 // MP4 via videoPlaybackUrl. Legacy/poorly-supported formats (AVI, MKV, FLV,
@@ -606,108 +610,162 @@ export class MessagingService {
     }, pushBody);
   }
 
-  // Voice is uploaded directly from the mobile client to Cloudinary, same
-  // signed-upload pattern as video (no proxy through this server) — this
-  // method only issues the credentials; the message isn't created until
-  // completeVoiceAttachment runs afterward. A single-shot upload (not the
-  // chunked/background-survival machinery video uses) is enough since a clip
-  // is capped at 15MB/2min, nowhere near video's 500MB ceiling.
-  async requestVoiceUploadSignature(conversationId: string, userId: string, role: Role): Promise<VideoUploadSignature> {
+  // Voice is uploaded directly from the mobile client — R2 when configured
+  // (single presigned PUT, see r2Media.createVoiceUploadPlan), transparently
+  // falling back to the Cloudinary signed-upload pattern otherwise. Either
+  // way this method only issues the upload credentials; the message isn't
+  // created until completeVoiceAttachment runs afterward. Always a
+  // single-shot upload (not the chunked/background-survival machinery video
+  // uses) since a clip is capped at 15MB/2min, nowhere near video's ceiling.
+  async requestVoiceUploadSignature(conversationId: string, userId: string, role: Role): Promise<VoiceUploadPlan> {
     await this.assertMessagingEnabled();
     await this.assertConversationSendable(conversationId, userId, role);
 
     const publicId = `voice_${conversationId}_${Date.now()}_${randomUUID()}`;
-    return generateVideoUploadSignature('messages/attachments', publicId);
+    return createVoiceUploadPlan(userId, 'm4a', 'audio/m4a', { folder: 'messages/attachments', publicId });
   }
 
-  // Called after the client's direct-to-Cloudinary upload succeeds. Mirrors
-  // completeVideoAttachment's shape — publicId is validated against this
-  // conversation, everything else (format/size/duration/url) is read back
-  // from Cloudinary's own Admin API rather than trusted from the client.
+  // Called after the client's direct upload succeeds — `ref.key` for R2,
+  // `ref.publicId` for the Cloudinary fallback. The R2 branch can only
+  // independently verify object existence + real byte size (HeadObject) —
+  // there's no Admin API to re-derive format/duration the way Cloudinary's
+  // branch does, so duration is trusted from the client there (still clamped
+  // to the same 1-120s rule). The Cloudinary branch is unchanged from before.
   async completeVoiceAttachment(
     conversationId: string,
     userId: string,
     role: Role,
-    publicId: string,
+    ref: { publicId?: string; key?: string },
     clientDurationSec?: number,
     waveform?: string,
   ) {
     const conversation = await this.prepareSend(conversationId, userId, role);
-
-    const expectedPrefix = 'messages/attachments/voice_';
-    if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${conversationId}_`)) {
-      throw new AppError('Invalid upload reference', 400);
-    }
-
-    let resource;
-    try {
-      resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
-    } catch {
-      throw new AppError('Could not verify the uploaded voice message. Please try again.', 400);
-    }
-
-    if (!ALLOWED_VOICE_FORMATS.has((resource.format ?? '').toLowerCase())) {
-      await deleteVideo(publicId);
-      throw new AppError('Unsupported audio format', 400);
-    }
-
-    if ((resource.bytes ?? 0) > MAX_VOICE_SIZE_BYTES) {
-      await deleteVideo(publicId);
-      throw new AppError('Voice message exceeds the 15MB limit', 400);
-    }
-
-    // Cloudinary's own duration wins when present (occasionally not yet
-    // populated immediately after upload, same race completeVideoAttachment
-    // handles) — clamped to the 1-120s rule either way, since the server must
-    // never trust an out-of-range value regardless of which source it came from.
-    const rawDurationSec = resource.duration || clientDurationSec || 0;
-    if (rawDurationSec < 1 || rawDurationSec > 120) {
-      await deleteVideo(publicId);
-      throw new AppError('Voice message must be between 1 and 120 seconds', 400);
-    }
 
     // Defensive cap in case of a malformed client payload — 28 bars * ~5 chars
     // ("0.99,") is ~140 chars, so 500 leaves generous headroom without letting
     // an arbitrary string balloon the row.
     const safeWaveform = waveform?.slice(0, 500);
 
+    let attachmentUrl: string;
+    let attachmentSize: number | undefined;
+    let attachmentFormat: string | undefined;
+    let rawDurationSec: number;
+
+    if (ref.key) {
+      if (!ref.key.startsWith(`users/${userId}/audio/`)) {
+        throw new AppError('Invalid upload reference', 400);
+      }
+
+      let result;
+      try {
+        result = await finalizeR2Object(ref.key);
+      } catch {
+        throw new AppError('Could not verify the uploaded voice message. Please try again.', 400);
+      }
+      if (!result.url) {
+        await deleteR2Object(ref.key);
+        throw new AppError('Voice storage is not fully configured yet. Please try again later.', 500);
+      }
+      if (result.sizeBytes > MAX_VOICE_SIZE_BYTES) {
+        await deleteR2Object(ref.key);
+        throw new AppError('Voice message exceeds the 15MB limit', 400);
+      }
+
+      // No independent duration source for R2 — trust the client's
+      // recorder-measured value, still clamped below like every other source.
+      rawDurationSec = clientDurationSec || 0;
+      attachmentUrl    = result.url;
+      attachmentSize   = result.sizeBytes;
+      attachmentFormat = 'm4a';
+    } else {
+      const publicId = ref.publicId!;
+      const expectedPrefix = 'messages/attachments/voice_';
+      if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${conversationId}_`)) {
+        throw new AppError('Invalid upload reference', 400);
+      }
+
+      let resource;
+      try {
+        resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
+      } catch {
+        throw new AppError('Could not verify the uploaded voice message. Please try again.', 400);
+      }
+
+      if (!ALLOWED_VOICE_FORMATS.has((resource.format ?? '').toLowerCase())) {
+        await deleteVideo(publicId);
+        throw new AppError('Unsupported audio format', 400);
+      }
+
+      if ((resource.bytes ?? 0) > MAX_VOICE_SIZE_BYTES) {
+        await deleteVideo(publicId);
+        throw new AppError('Voice message exceeds the 15MB limit', 400);
+      }
+
+      // Cloudinary's own duration wins when present (occasionally not yet
+      // populated immediately after upload, same race completeVideoAttachment
+      // handles) — clamped to the 1-120s rule either way, since the server must
+      // never trust an out-of-range value regardless of which source it came from.
+      rawDurationSec = resource.duration || clientDurationSec || 0;
+      attachmentUrl    = resource.secure_url;
+      attachmentSize   = resource.bytes;
+      attachmentFormat = resource.format;
+    }
+
+    if (rawDurationSec < 1 || rawDurationSec > 120) {
+      if (ref.key) await deleteR2Object(ref.key);
+      else await deleteVideo(ref.publicId!);
+      throw new AppError('Voice message must be between 1 and 120 seconds', 400);
+    }
+
     return this.persistAndBroadcast(conversation, userId, role, {
       content:               '',
       type:                  'VOICE',
-      attachmentUrl:         resource.secure_url,
+      attachmentUrl,
       attachmentDurationSec: Math.round(rawDurationSec),
-      attachmentSize:        resource.bytes,
-      attachmentFormat:      resource.format,
+      attachmentSize,
+      attachmentFormat,
       attachmentWaveform:    safeWaveform,
     }, 'Voice message');
   }
 
-  // Video is uploaded directly from the mobile client to Cloudinary (never
-  // through this server — avoids proxying up to 500MB through Render). This
-  // method only issues the signed credentials the client needs to do that
-  // upload itself; the actual message isn't created until completeVideoAttachment
-  // runs afterward. No analytics here — nothing has been sent yet.
-  async requestVideoUploadSignature(conversationId: string, userId: string, role: Role): Promise<VideoUploadSignature> {
+  // Video is uploaded directly from the mobile client — R2 when configured
+  // (single presigned PUT or multipart, see r2Media.createVideoUploadPlan),
+  // transparently falling back to the Cloudinary signed-upload pattern
+  // otherwise — never through this server either way (avoids proxying up to
+  // 500MB through Render). This method only issues the upload plan; the
+  // actual message isn't created until completeVideoAttachment runs
+  // afterward. No analytics here — nothing has been sent yet.
+  async requestVideoUploadSignature(
+    conversationId: string,
+    userId: string,
+    role: Role,
+    sizeBytes: number,
+    mimeType: 'video/mp4' | 'video/quicktime',
+  ): Promise<VideoUploadPlan> {
     await this.assertMessagingEnabled();
     const conversation = await this.assertConversationSendable(conversationId, userId, role);
     // Video is only allowed in creator<->business conversations, not creator<->creator.
     if (conversation.creatorId2 != null) throw new AppError('Video is not available in creator-to-creator conversations', 403);
+    if (sizeBytes > MAX_VIDEO_SIZE_BYTES) throw new AppError('Video exceeds the 500MB limit', 400);
 
+    const ext = mimeType === 'video/quicktime' ? 'mov' : 'mp4';
     const publicId = `video_${conversationId}_${Date.now()}_${randomUUID()}`;
-    return generateVideoUploadSignature('messages/attachments', publicId);
+    return createVideoUploadPlan(userId, ext, mimeType, sizeBytes, { folder: 'messages/attachments', publicId });
   }
 
-  // Called after the client's direct-to-Cloudinary upload succeeds. Mirrors
-  // sendAttachment's shape but never trusts client-submitted metadata — the
-  // publicId is the only thing taken on faith (and even that is validated
-  // against this conversation below), everything else (duration/size/dimensions/
-  // format/url) is read back from Cloudinary's own Admin API, the same "server
-  // is the source of truth" principle the old disk-upload path used.
+  // Called after the client's direct upload succeeds. Mirrors sendAttachment's
+  // shape but never trusts client-submitted metadata beyond what each branch
+  // can independently verify. Cloudinary branch: unchanged — everything
+  // (duration/size/dimensions/format/url) is read back from Cloudinary's own
+  // Admin API. R2 branch: only object existence + real byte size (HeadObject)
+  // can be independently verified — there's no Admin API equivalent, so
+  // duration is trusted from the client (still no auto poster-frame/transcode;
+  // the chat video bubble already tolerates a null thumbnail).
   async completeVideoAttachment(
     conversationId: string,
     userId: string,
     role: Role,
-    publicId: string,
+    ref: { publicId?: string; key?: string; uploadId?: string },
     caption?: string,
     clientDurationSec?: number,
   ) {
@@ -715,53 +773,102 @@ export class MessagingService {
     // Video is only allowed in creator<->business conversations, not creator<->creator.
     if (conversation.creatorId2 != null) throw new AppError('Video is not available in creator-to-creator conversations', 403);
 
-    const expectedPrefix = 'messages/attachments/video_';
-    if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${conversationId}_`)) {
-      throw new AppError('Invalid upload reference', 400);
-    }
-
-    let resource;
-    try {
-      resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
-    } catch {
-      throw new AppError('Could not verify the uploaded video. Please try again.', 400);
-    }
-
-    if (!ALLOWED_VIDEO_FORMATS.has((resource.format ?? '').toLowerCase())) {
-      await deleteVideo(publicId);
-      throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
-    }
-
-    // Client-side picker already caps size at 500MB, but that check is trivially
-    // bypassable — the server is the only source of truth, same as the format check above.
-    if ((resource.bytes ?? 0) > MAX_VIDEO_SIZE_BYTES) {
-      await deleteVideo(publicId);
-      throw new AppError('Video exceeds the 500MB limit', 400);
-    }
-
-    // Cloudinary's own duration wins when present — it's occasionally not
-    // populated yet immediately after the last chunk lands (asset still being
-    // indexed), in which case the client's own picker-measured duration is
-    // the best available fallback rather than silently showing/validating 0.
-    const durationSec = Math.round(resource.duration || clientDurationSec || 0);
-
     const content  = caption?.trim() ?? '';
     const pushBody = content || 'Video';
-    // Always deliver as MP4/H.264+AAC for universal playback, even when the
-    // source upload was MOV — see videoPlaybackUrl for how.
-    const playbackUrl = videoPlaybackUrl(resource.secure_url);
+
+    let attachmentUrl:          string;
+    let attachmentSize:         number | undefined;
+    let attachmentFormat:       string | undefined;
+    let attachmentName:         string;
+    let attachmentThumbnailUrl: string | undefined;
+    let attachmentWidth:        number | undefined;
+    let attachmentHeight:       number | undefined;
+    let rawDurationSec:         number;
+
+    if (ref.key) {
+      if (!ref.key.startsWith(`users/${userId}/videos/`)) {
+        throw new AppError('Invalid upload reference', 400);
+      }
+
+      let result;
+      try {
+        result = ref.uploadId ? await completeR2Multipart(ref.key, ref.uploadId) : await finalizeR2Object(ref.key);
+      } catch {
+        if (ref.uploadId) await abortR2Multipart(ref.key, ref.uploadId);
+        throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+      }
+      if (!result.url) {
+        await deleteR2Object(ref.key);
+        throw new AppError('Video storage is not fully configured yet. Please try again later.', 500);
+      }
+      // Client-side picker already caps size at 500MB, but that check is trivially
+      // bypassable — HeadObject's real byte size is the source of truth here.
+      if (result.sizeBytes > MAX_VIDEO_SIZE_BYTES) {
+        await deleteR2Object(ref.key);
+        throw new AppError('Video exceeds the 500MB limit', 400);
+      }
+
+      // No independent duration/dimension source for R2 — trust the client's
+      // picker-measured duration; width/height are simply unavailable.
+      rawDurationSec          = clientDurationSec || 0;
+      attachmentUrl           = result.url;
+      attachmentSize          = result.sizeBytes;
+      attachmentFormat        = ref.key.endsWith('.mov') ? 'mov' : 'mp4';
+      attachmentName          = ref.key.split('/').pop()!;
+      attachmentThumbnailUrl  = undefined;
+    } else {
+      const publicId = ref.publicId!;
+      const expectedPrefix = 'messages/attachments/video_';
+      if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${conversationId}_`)) {
+        throw new AppError('Invalid upload reference', 400);
+      }
+
+      let resource;
+      try {
+        resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
+      } catch {
+        throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+      }
+
+      if (!ALLOWED_VIDEO_FORMATS.has((resource.format ?? '').toLowerCase())) {
+        await deleteVideo(publicId);
+        throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
+      }
+
+      // Client-side picker already caps size at 500MB, but that check is trivially
+      // bypassable — the server is the only source of truth, same as the format check above.
+      if ((resource.bytes ?? 0) > MAX_VIDEO_SIZE_BYTES) {
+        await deleteVideo(publicId);
+        throw new AppError('Video exceeds the 500MB limit', 400);
+      }
+
+      // Cloudinary's own duration wins when present — it's occasionally not
+      // populated yet immediately after the last chunk lands (asset still being
+      // indexed), in which case the client's own picker-measured duration is
+      // the best available fallback rather than silently showing/validating 0.
+      rawDurationSec = resource.duration || clientDurationSec || 0;
+      // Always deliver as MP4/H.264+AAC for universal playback, even when the
+      // source upload was MOV — see videoPlaybackUrl for how.
+      attachmentUrl           = videoPlaybackUrl(resource.secure_url);
+      attachmentSize          = resource.bytes;
+      attachmentFormat        = 'mp4'; // matches playbackUrl — always delivered as MP4 regardless of the source format
+      attachmentName          = `${publicId.split('/').pop()}.mp4`;
+      attachmentThumbnailUrl  = videoThumbnailUrl(resource.secure_url);
+      attachmentWidth         = resource.width;
+      attachmentHeight        = resource.height;
+    }
 
     return this.persistAndBroadcast(conversation, userId, role, {
       content,
       type: 'VIDEO',
-      attachmentUrl:          playbackUrl,
-      attachmentName:         `${publicId.split('/').pop()}.mp4`,
-      attachmentThumbnailUrl: videoThumbnailUrl(resource.secure_url),
-      attachmentDurationSec:  durationSec,
-      attachmentWidth:        resource.width,
-      attachmentHeight:       resource.height,
-      attachmentSize:         resource.bytes,
-      attachmentFormat:       'mp4', // matches playbackUrl — always delivered as MP4 regardless of the source format
+      attachmentUrl,
+      attachmentName,
+      attachmentThumbnailUrl,
+      attachmentDurationSec: Math.round(rawDurationSec),
+      attachmentWidth,
+      attachmentHeight,
+      attachmentSize,
+      attachmentFormat,
       // Set to READY synchronously here — the checks above (format/duration/size)
       // are all we verify today, no async job exists yet. See VideoAssetStatus's
       // schema comment for the future path.

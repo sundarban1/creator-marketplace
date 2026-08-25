@@ -15,9 +15,12 @@
     "db:seed:admin": "tsx prisma/seed-admin.ts",
     "db:seed:platforms": "tsx prisma/seed-platforms.ts",
     "db:seed:success-stories": "tsx prisma/seed-success-stories.ts",
-    "db:seed:bulk": "tsx prisma/bulk-seed.ts"
+    "db:seed:bulk": "tsx prisma/bulk-seed.ts",
+    "r2:setup-lifecycle": "tsx scripts/setupR2Lifecycle.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1116.0",
+    "@aws-sdk/s3-request-presigner": "^3.1116.0",
     "@prisma/client": "^6.19.3",
     "@sentry/node": "^10.69.0",
     "@socket.io/redis-adapter": "^8.3.0",

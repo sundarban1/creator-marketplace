@@ -513,7 +513,13 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
           <View style={ac.thumbRow}>
             {deliverableVideos.map((v) => (
               <Pressable key={v.publicId} style={ac.thumb} onPress={() => onPlayVideo(v)}>
-                <Image source={{ uri: v.thumbnailUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                {v.thumbnailUrl ? (
+                  <Image source={{ uri: v.thumbnailUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                ) : (
+                  // No auto poster-frame for an R2-stored video — a plain
+                  // placeholder in place of the (unavailable) thumbnail image.
+                  <View style={{ width: '100%', height: '100%', backgroundColor: '#F5F3FF' }} />
+                )}
                 <View style={ac.thumbOverlay}>
                   <FontAwesome5 name="play-circle" solid size={18} color="#fff" />
                 </View>
@@ -602,7 +608,13 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
           <View style={ac.thumbRow}>
             {deliverableVideos.map((v) => (
               <Pressable key={v.publicId} style={ac.thumb} onPress={() => onPlayVideo(v)}>
-                <Image source={{ uri: v.thumbnailUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                {v.thumbnailUrl ? (
+                  <Image source={{ uri: v.thumbnailUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                ) : (
+                  // No auto poster-frame for an R2-stored video — a plain
+                  // placeholder in place of the (unavailable) thumbnail image.
+                  <View style={{ width: '100%', height: '100%', backgroundColor: '#F5F3FF' }} />
+                )}
                 <View style={ac.thumbOverlay}>
                   <FontAwesome5 name="play-circle" solid size={18} color="#fff" />
                 </View>
@@ -878,7 +890,8 @@ export default function CampaignWorkspaceScreen() {
       else void fetch(f.url, { headers: { Range: 'bytes=0-1048575' } }).catch(() => {});
     });
     app.deliverableVideos.forEach((v) => {
-      void Image.prefetch(v.thumbnailUrl);
+      // Absent for an R2-stored video — no auto poster-frame the way Cloudinary provides.
+      if (v.thumbnailUrl) void Image.prefetch(v.thumbnailUrl);
       void fetch(v.url, { headers: { Range: 'bytes=0-1048575' } }).catch(() => {});
     });
   }, [isCreator, app]);

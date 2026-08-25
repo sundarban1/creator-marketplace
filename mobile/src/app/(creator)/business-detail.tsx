@@ -68,6 +68,10 @@ function BusinessAvatar({ name, logoUrl, size = 88 }: { name: string; logoUrl: s
   );
 }
 
+// Booking-site style row (matches the Find Work feed's CampaignListItem):
+// fixed-width thumbnail on the left, title + budget/days-left up top, a meta
+// line with a status tag, a bordered details row, and a chevron vertically
+// centered against the full card height.
 function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaign; isApplied: boolean }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -81,63 +85,71 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
   }
 
   return (
-    <Pressable
-      style={[styles.campaignCard, { backgroundColor: C.surface }]}
-      onPress={goToDetail}>
+    <View style={[styles.campaignCardWrap, { backgroundColor: C.surface }]}>
+      <Pressable
+        style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
+        onPress={goToDetail}>
 
-      {/* Category thumbnail */}
-      <View style={[styles.campaignThumb, { backgroundColor: catBg }]}>
-        <FontAwesome5 name={catMeta.icon as any} size={32} color={catMeta.color} />
-        {campaign.isFeatured && (
-          <View style={styles.featuredDot}>
-            <FontAwesome5 name="star" size={9} color="#fff" solid />
-          </View>
-        )}
-      </View>
-
-      <View style={styles.campaignBody}>
-        <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
-        <Text style={[styles.campaignMeta, { color: C.textSecondary }]}>
-          {campaign.category} · {campaign.contentType}
-        </Text>
-        <View style={styles.campaignFooter}>
-          <Text style={[styles.campaignBudget, { color: C.brinjal1 }]}>
-            Rs {campaign.budgetMin.toLocaleString()}–{campaign.budgetMax.toLocaleString()}
-          </Text>
-          <View style={[styles.deadlinePill, { backgroundColor: deadline.urgent ? '#FEF2F2' : C.primaryLight, borderColor: deadline.urgent ? '#FECACA' : 'transparent', borderWidth: 1 }]}>
-            <Text style={[styles.deadlineText, { color: deadline.urgent ? '#DC2626' : C.brinjal1 }]}>{deadline.text}</Text>
-          </View>
+        {/* ── Thumbnail (left) ── */}
+        <View style={[styles.campaignThumb, { backgroundColor: catBg }]}>
+          <FontAwesome5 name={catMeta.icon as any} size={28} color={catMeta.color} style={styles.campaignThumbIcon} />
+          {campaign.isFeatured && (
+            <View style={[styles.featuredRibbon, { backgroundColor: '#F59E0B' }]}>
+              <FontAwesome5 name="star" size={8} color="#fff" solid />
+            </View>
+          )}
         </View>
-        {(campaign.locationType === 'REMOTE' || campaign.location) && (
-          <View style={styles.locationRow}>
-            <FontAwesome5 name={campaign.locationType === 'REMOTE' ? 'globe' : 'map-marker-alt'} solid size={11} color={C.textSecondary} />
-            <Text style={[styles.campaignLocation, { color: C.textSecondary }]}>
-              {campaign.locationType === 'REMOTE' ? t('createEvent.locationRemote') : campaign.location}
+
+        {/* ── Body (right) ── */}
+        <View style={styles.campaignBody}>
+          <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={1}>{campaign.title}</Text>
+
+          <View style={styles.campaignAmountRow}>
+            <Text style={[styles.campaignBudget, { color: C.text }]} numberOfLines={1}>
+              Rs {campaign.budgetMin.toLocaleString()}–{campaign.budgetMax.toLocaleString()}
             </Text>
+            <View style={styles.campaignDaysLeftWrap}>
+              <FontAwesome5 name="clock" size={10} color={deadline.urgent ? '#DC2626' : C.textSecondary} />
+              <Text style={[styles.campaignDetailText, { color: deadline.urgent ? '#DC2626' : C.textSecondary }]} numberOfLines={1}>{deadline.text}</Text>
+            </View>
           </View>
-        )}
 
-        {/* Apply / Applied status */}
-        {isApplied ? (
-          <View style={styles.appliedPill}>
-            <FontAwesome5 name="check-circle" solid size={13} color="#059669" />
-            <Text style={styles.appliedPillText}>{t('businessDetail.applied')}</Text>
+          <View style={styles.campaignMetaRow}>
+            <Text style={[styles.campaignMetaLine, { color: C.textSecondary }]} numberOfLines={1}>
+              {campaign.category} · {campaign.contentType}
+            </Text>
+            {isApplied ? (
+              <View style={[styles.campaignTagBadge, { backgroundColor: '#F0FDF4' }]}>
+                <Text style={[styles.campaignTagBadgeText, { color: '#059669' }]}>{t('businessDetail.applied')}</Text>
+              </View>
+            ) : (
+              <Pressable
+                style={[styles.campaignTagBadge, { backgroundColor: C.primaryLight }]}
+                hitSlop={8}
+                onPress={(e) => { e.stopPropagation(); goToDetail(); }}>
+                <Text style={[styles.campaignTagBadgeText, { color: C.brinjal1 }]}>{t('businessDetail.applyNow')}</Text>
+              </Pressable>
+            )}
           </View>
-        ) : (
-          <Pressable
-            style={[styles.applyNowBtn, { backgroundColor: C.brinjal1 }]}
-            hitSlop={8}
-            onPress={(e) => { e.stopPropagation(); goToDetail(); }}>
-            <Text style={styles.applyNowBtnText}>{t('businessDetail.applyNow')}</Text>
-            <FontAwesome5 name="arrow-right" solid size={12} color="#fff" />
-          </Pressable>
-        )}
-      </View>
 
-      <View style={styles.campaignRight}>
-        <FontAwesome5 name="chevron-right" solid size={18} color={C.border} />
-      </View>
-    </Pressable>
+          {campaign.location && (
+            <View style={[styles.campaignDetailsRow, { borderTopColor: C.border }]}>
+              <View style={styles.campaignDetailItem}>
+                <FontAwesome5 name="map-marker-alt" solid size={10} color={C.textSecondary} />
+                <Text style={[styles.campaignDetailText, { color: C.textSecondary }]} numberOfLines={1}>
+                  {campaign.location}
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* ── Chevron (vertically centered against the full card height) ── */}
+        <View style={styles.campaignChevronWrap}>
+          <FontAwesome5 name="chevron-right" solid size={14} color={C.textSecondary} />
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
@@ -695,24 +707,28 @@ const styles = StyleSheet.create({
   noCampaignsTitle:      { fontSize: 16, fontFamily: F.bold },
   noCampaignsSub:        { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 
-  campaignCard:          { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.card },
-  campaignThumb:         { width: 72, alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' },
-  featuredDot:           { position: 'absolute', top: 6, right: 4, backgroundColor: '#F59E0B', borderRadius: RADIUS.full, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
-  campaignBody:          { flex: 1, padding: 10, gap: 3 },
-  campaignTitle:         { fontSize: 14, lineHeight: 21, fontFamily: F.bold },
-  campaignMeta:          { fontSize: 11, marginTop: 0, fontFamily: F.regular },
-  campaignFooter:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' },
-  campaignBudget:        { fontSize: 13, fontFamily: F.bold },
-  deadlinePill:          { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2 },
-  deadlineText:          { fontSize: 11, fontFamily: F.bold },
-  locationRow:           { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 },
-  campaignLocation:      { fontSize: 11, fontFamily: F.regular },
-  campaignRight:         { paddingVertical: 10, paddingRight: 12, alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 },
-
-  appliedPill:           { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginTop: 2 },
-  appliedPillText:       { fontSize: 11, color: '#059669', fontFamily: F.bold },
-  applyNowBtn:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginTop: 2 },
-  applyNowBtnText:       { fontSize: 11, color: '#fff', fontFamily: F.bold },
+  // Mirrors features/creator/components/CampaignListItem.tsx's card exactly
+  // (see this screen's file-header comment) — same radius/shadow/thumb width/
+  // type scale, so the Active Events cards here read as the same design
+  // system as the Find Work feed's cards.
+  campaignCardWrap:      { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  campaignCard:          { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1 },
+  campaignThumb:         { width: 96, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, position: 'relative' },
+  campaignThumbIcon:     { opacity: 0.35 },
+  featuredRibbon:        { position: 'absolute', top: 8, left: 8, borderRadius: RADIUS.sm, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  campaignBody:          { flex: 1, padding: 12, gap: 6, minWidth: 0 },
+  campaignTitle:         { fontSize: 14.5, lineHeight: 22, letterSpacing: -0.2, fontFamily: F.bold },
+  campaignBudget:        { fontSize: 14, fontFamily: F.bold, flexShrink: 1, minWidth: 0 },
+  campaignAmountRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  campaignDaysLeftWrap:  { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
+  campaignMetaRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  campaignMetaLine:      { fontSize: 11.5, fontFamily: F.regular, flexShrink: 1 },
+  campaignDetailsRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: 1, paddingTop: 6, marginTop: 2 },
+  campaignDetailItem:    { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, minWidth: 0 },
+  campaignDetailText:    { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
+  campaignChevronWrap:   { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
+  campaignTagBadge:      { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
+  campaignTagBadgeText:  { fontSize: 11, fontFamily: F.bold },
 
   // Sticky message bar
   msgBar:                { paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderTopWidth: 1 },

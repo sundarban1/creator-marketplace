@@ -40,6 +40,20 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
+  // Cloudflare R2 (S3-compatible) — primary storage for chat/deliverable video
+  // and chat voice recordings only (see utils/r2Media.ts). All optional: when
+  // unset, those two flows transparently fall back to the Cloudinary signed-
+  // upload path above instead of failing.
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
+  // Public base URL the `R2_BUCKET_NAME` bucket is reachable at (R2.dev
+  // subdomain or a custom domain, with public access enabled) — required for
+  // uploaded video/voice to actually be viewable; without it, uploads still
+  // succeed but stored URLs won't resolve.
+  R2_PUBLIC_URL: z.string().optional(),
+  R2_PRESIGNED_URL_EXPIRY: z.string().default('900'),
   OPENAI_API_KEY: z.string().optional(),
   // Stock-photo search for AI-generated campaign/event drafts (see utils/imageSearch.ts).
   // Optional: without it drafts simply carry no featureImageUrl and the mobile client

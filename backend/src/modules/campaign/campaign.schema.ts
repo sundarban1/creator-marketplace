@@ -165,13 +165,26 @@ export const submitReviewSchema = z.object({
   comment: z.string().max(1000).optional(),
 });
 
+// Requesting an upload plan needs to know the file's size up front — mirrors
+// messaging.schema.ts's videoSignatureRequestSchema (see r2Media.createVideoUploadPlan).
+export const deliverableVideoSignatureRequestSchema = z.object({
+  sizeBytes: z.number().min(1).max(500 * 1024 * 1024),
+  mimeType:  z.enum(['video/mp4', 'video/quicktime']).default('video/mp4'),
+});
+
 export const deliverableVideoCompleteSchema = z.object({
-  publicId: z.string().min(1),
+  // Exactly one of these — publicId for the Cloudinary fallback path, key
+  // (+ uploadId for a multipart upload) for R2 (see r2Media.ts /
+  // CampaignService.completeDeliverableVideo).
+  publicId: z.string().min(1).optional(),
+  key:      z.string().min(1).optional(),
+  uploadId: z.string().min(1).optional(),
   // Client-measured duration, used only as a display fallback for the narrow
   // window where Cloudinary hasn't finished indexing the asset yet — see
   // completeDeliverableVideo. Cloudinary's own duration wins when present.
+  // For R2, there is no independent source at all — this is trusted directly.
   clientDurationSec: z.number().min(0).max(7200).optional(),
-});
+}).refine((d) => !!d.publicId || !!d.key, { message: 'publicId or key is required' });
 
 export const renameDeliverableVideoSchema = z.object({
   publicId: z.string().min(1),
@@ -184,5 +197,6 @@ export type CampaignListQuery = z.infer<typeof campaignListQuerySchema>;
 export type NearbyQuery = z.infer<typeof nearbyQuerySchema>;
 export type ApplyToCampaignInput = z.infer<typeof applyToCampaignSchema>;
 export type SubmitReviewInput = z.infer<typeof submitReviewSchema>;
+export type DeliverableVideoSignatureRequestInput = z.infer<typeof deliverableVideoSignatureRequestSchema>;
 export type DeliverableVideoCompleteInput = z.infer<typeof deliverableVideoCompleteSchema>;
 export type RenameDeliverableVideoInput   = z.infer<typeof renameDeliverableVideoSchema>;

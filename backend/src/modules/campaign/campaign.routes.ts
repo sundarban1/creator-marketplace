@@ -10,6 +10,7 @@ import {
   applyToCampaignSchema,
   nearbyQuerySchema,
   submitReviewSchema,
+  deliverableVideoSignatureRequestSchema,
   deliverableVideoCompleteSchema,
   renameDeliverableVideoSchema,
 } from './campaign.schema';
@@ -361,6 +362,7 @@ router.post(
   '/applications/:appId/deliverables/video/signature',
   authenticate,
   authorize('CREATOR'),
+  validate(deliverableVideoSignatureRequestSchema),
   ctrl.getDeliverableVideoSignature.bind(ctrl)
 );
 

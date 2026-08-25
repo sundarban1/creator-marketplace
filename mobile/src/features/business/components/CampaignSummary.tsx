@@ -189,7 +189,7 @@ export function PreviewRow({
         </View>
         <Text style={[s.summaryLabel, { width: undefined, color: C.textSecondary }]}>{label}</Text>
       </View>
-      <Text style={[s.summaryValue, { color: C.text, flex: onPress ? 1 : undefined }]} numberOfLines={3}>{value}</Text>
+      <Text style={[s.summaryValue, { color: C.text }]} numberOfLines={3}>{value}</Text>
       {onPress && <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />}
     </View>
   );

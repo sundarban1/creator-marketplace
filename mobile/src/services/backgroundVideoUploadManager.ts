@@ -2,14 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import Upload from 'react-native-background-upload';
 import { request } from '@/lib/api';
-import type { VideoUploadSignature } from '@/services/cloudinaryVideoUpload';
+import type { VideoUploadPlan } from '@/services/cloudinaryVideoUpload';
 
 // ── Persisted pending-upload bookkeeping ────────────────────────────────────
-// A video upload here is a sequence of Cloudinary "chunked upload" requests
-// (see cloudinaryVideoUpload.ts's header comment for why chunking is
-// mandatory above ~100MB) sent via react-native-background-upload's native
-// NSURLSession/WorkManager transport instead of a JS-thread XHR, so the OS
-// keeps moving bytes even if the app backgrounds or is killed mid-transfer.
+// A video upload here is a sequence of chunk/part requests — Cloudinary's
+// "chunked upload" protocol (see cloudinaryVideoUpload.ts's header comment
+// for why chunking is mandatory above ~100MB) when `signature.provider` is
+// 'cloudinary', or R2/S3 multipart parts when it's 'r2' with mode
+// 'multipart' (a single whole-file PUT, no chunking, when mode is 'single')
+// — sent via react-native-background-upload's native NSURLSession/WorkManager
+// transport instead of a JS-thread XHR, so the OS keeps moving bytes even if
+// the app backgrounds or is killed mid-transfer.
 //
 // The catch: surviving an app kill means the JS callback that was awaiting
 // each chunk is gone too. So before the first chunk starts, the whole upload's
@@ -28,15 +31,16 @@ type PendingVideoUpload = {
   totalBytes:     number;
   chunkSizeBytes: number;
   totalChunks:    number;
-  // Indices already accepted by Cloudinary — not a single "next" cursor,
-  // since chunks upload concurrently (see driveChunkSequence) and can land
-  // out of order. Live-verified against the real Cloudinary API that chunks
-  // for one X-Unique-Upload-Id reassemble correctly by their declared
+  // Indices already accepted by the storage provider — not a single "next"
+  // cursor, since chunks upload concurrently (see driveChunkSequence) and can
+  // land out of order. Live-verified against the real Cloudinary API that
+  // chunks for one X-Unique-Upload-Id reassemble correctly by their declared
   // Content-Range regardless of arrival order (a reversed-order 2-chunk
   // upload came back byte-for-byte identical, sha256-verified, to the
-  // original file) — safe to parallelize on that basis.
+  // original file) — safe to parallelize on that basis. R2 multipart parts
+  // are inherently order-independent (each is its own numbered part).
   completedChunks: number[];
-  signature:      VideoUploadSignature;
+  signature:      VideoUploadPlan;
   sourceFileUri:  string;
   createdAt:      string; // ISO — used to cap how long a resume is attempted
 };
@@ -222,21 +226,38 @@ function chunkRange(index: number, chunkSizeBytes: number, totalBytes: number) {
   return { start, end, length: end - start + 1 };
 }
 
-// ── One chunk, via react-native-background-upload ──────────────────────────
+// A single R2-single-mode "chunk" covers the whole file — sliced it would
+// just be a wasteful full-file copy, so that one case uploads sourceFileUri
+// directly and skips the temp-file dance (and its cleanup) entirely.
+function isWholeFileChunk(pending: PendingVideoUpload): boolean {
+  return pending.signature.provider === 'r2' && pending.signature.mode === 'single';
+}
+
+// ── One chunk/part, via react-native-background-upload ─────────────────────
 // `index` is explicit (not implied by a shared cursor) since multiple chunks
-// of the same upload run concurrently. Completion is detected from the
-// response body itself (Cloudinary returns the finished asset — public_id +
-// secure_url — on whichever request happens to deliver the last outstanding
-// byte range, not necessarily the highest-indexed chunk), not by assuming
-// "the highest index is always last to finish".
+// of the same upload run concurrently.
+//
+// Cloudinary: completion is detected from the response body itself (it
+// returns the finished asset — public_id + secure_url — on whichever request
+// happens to deliver the last outstanding byte range, not necessarily the
+// highest-indexed chunk), not by assuming "the highest index is always last
+// to finish".
+//
+// R2: a part PUT's response carries nothing useful (S3/R2 returns an empty
+// 200 with the ETag only in a response *header*, which this upload library
+// doesn't expose — see r2.service.ts's listParts comment for how the backend
+// works around that during completion). So an R2 chunk/part only ever
+// signals success/failure here, never "the asset is done" — that determination
+// is made once by driveChunkSequence after every part has succeeded.
 async function uploadOneChunk(
   pending: PendingVideoUpload,
   index: number,
   onChunkProgress: (bytesForThisChunk: number) => void,
 ): Promise<{ isAssetComplete: boolean; publicId?: string; secureUrl?: string }> {
   const { start, end, length } = chunkRange(index, pending.chunkSizeBytes, pending.totalBytes);
+  const wholeFile = isWholeFileChunk(pending);
   const chunkName = `chunk_${pending.localUploadId}_${index}`;
-  const chunkUri = await sliceChunkToTempFile(pending.sourceFileUri, start, length, chunkName);
+  const chunkUri  = wholeFile ? pending.sourceFileUri : await sliceChunkToTempFile(pending.sourceFileUri, start, length, chunkName);
   // Known ahead of time (rather than reading back startUpload's resolved id) so
   // the completion/error/progress listeners can be attached before the native
   // upload actually starts — no window where an instant failure/completion
@@ -270,28 +291,52 @@ async function uploadOneChunk(
       ];
       function cleanup() { subs.forEach((s) => s.remove()); }
 
-      Upload.startUpload({
-        url:            pending.signature.uploadUrl,
-        path:           chunkUri,
-        method:         'POST',
-        type:           'multipart',
-        field:          'file',
-        customUploadId: nativeUploadId,
-        headers: {
-          'X-Unique-Upload-Id': pending.localUploadId,
-          'Content-Range':      `bytes ${start}-${end}/${pending.totalBytes}`,
-        },
-        parameters: {
-          api_key:   pending.signature.apiKey,
-          timestamp: String(pending.signature.timestamp),
-          signature: pending.signature.signature,
-          folder:    pending.signature.folder,
-          public_id: pending.signature.publicId,
-        },
-      }).catch((err) => { cleanup(); reject(err); });
+      if (pending.signature.provider === 'r2') {
+        // Raw PUT straight to R2's presigned URL — a whole-file PUT for
+        // 'single' mode, or one numbered part's URL for 'multipart' (parts
+        // are 1-indexed; `index` here is 0-indexed).
+        const url = pending.signature.mode === 'single'
+          ? pending.signature.uploadUrl
+          : pending.signature.parts.find((p) => p.partNumber === index + 1)?.url;
+        if (!url) { cleanup(); reject(new Error('Missing presigned URL for this part')); return; }
+
+        Upload.startUpload({
+          url,
+          path:           chunkUri,
+          method:         'PUT',
+          type:           'raw',
+          customUploadId: nativeUploadId,
+          // Content-Type is only meaningful (and only was signed) for the
+          // single-PUT case — S3/R2 multipart parts don't take a per-part
+          // content-type, it's fixed once at CreateMultipartUpload instead.
+          headers: pending.signature.mode === 'single' ? { 'Content-Type': pending.mimeType } : undefined,
+        }).catch((err) => { cleanup(); reject(err); });
+      } else {
+        Upload.startUpload({
+          url:            pending.signature.uploadUrl,
+          path:           chunkUri,
+          method:         'POST',
+          type:           'multipart',
+          field:          'file',
+          customUploadId: nativeUploadId,
+          headers: {
+            'X-Unique-Upload-Id': pending.localUploadId,
+            'Content-Range':      `bytes ${start}-${end}/${pending.totalBytes}`,
+          },
+          parameters: {
+            api_key:   pending.signature.apiKey,
+            timestamp: String(pending.signature.timestamp),
+            signature: pending.signature.signature,
+            folder:    pending.signature.folder,
+            public_id: pending.signature.publicId,
+          },
+        }).catch((err) => { cleanup(); reject(err); });
+      }
     });
 
     onChunkProgress(length);
+
+    if (pending.signature.provider === 'r2') return { isAssetComplete: false };
 
     let parsed: { public_id?: string; secure_url?: string } = {};
     try { parsed = JSON.parse(responseBody); } catch { /* not every chunk's ack has a body */ }
@@ -301,7 +346,7 @@ async function uploadOneChunk(
     return { isAssetComplete: false };
   } finally {
     activeNativeUploadIds.get(pending.localUploadId)?.delete(nativeUploadId);
-    await FileSystem.deleteAsync(chunkUri, { idempotent: true });
+    if (!wholeFile) await FileSystem.deleteAsync(chunkUri, { idempotent: true });
   }
 }
 
@@ -311,17 +356,27 @@ async function uploadOneChunk(
 // campaign.ts and chat.ts, and must also be able to finish an upload entirely
 // on its own during boot-time reconciliation, long after the screen that
 // started it is gone.
-async function completeUpload(target: BackgroundUploadTarget, publicId: string): Promise<unknown> {
+//
+// `cloudinaryResult` is only present (and only used) for the Cloudinary
+// branch — R2's reference is derived straight from `pending.signature`
+// instead, since (unlike Cloudinary) no individual part/chunk response ever
+// carries the finished-asset info; see uploadOneChunk's header comment.
+async function completeUpload(pending: PendingVideoUpload, cloudinaryResult?: { publicId: string }): Promise<unknown> {
+  const ref = pending.signature.provider === 'r2'
+    ? { key: pending.signature.key, uploadId: pending.signature.mode === 'multipart' ? pending.signature.uploadId : undefined }
+    : { publicId: cloudinaryResult!.publicId };
+
+  const target = pending.target;
   if (target.targetType === 'chat') {
     const res = await request(
       'POST', `/api/messaging/conversations/${target.conversationId}/attachments/video/complete`,
-      { publicId, caption: target.caption?.trim() || undefined, clientDurationSec: target.durationSec },
+      { ...ref, caption: target.caption?.trim() || undefined, clientDurationSec: target.durationSec },
     );
     return res.data;
   }
   const res = await request(
     'POST', `/api/campaigns/applications/${target.appId}/deliverables/video/complete`,
-    { publicId, clientDurationSec: target.durationSec },
+    { ...ref, clientDurationSec: target.durationSec },
   );
   return res.data;
 }
@@ -394,10 +449,17 @@ function driveChunkSequence(localUploadId: string): Promise<unknown> {
     const workerCount = Math.min(CHUNK_CONCURRENCY, remaining.length);
     await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
-    const finalResult = completions[0];
-    if (!finalResult) throw new Error('Video upload did not complete — missing asset reference from Cloudinary');
     reportFinalizing(localUploadId);
-    const completed = await completeUpload(pending.target, finalResult.publicId);
+    // R2: every chunk/part having succeeded (checked above via completedSet)
+    // is itself the completion signal — there's no per-chunk asset reference
+    // to look for, unlike Cloudinary.
+    const completed = pending.signature.provider === 'r2'
+      ? await completeUpload(pending)
+      : await completeUpload(pending, (() => {
+          const finalResult = completions[0];
+          if (!finalResult) throw new Error('Video upload did not complete — missing asset reference from Cloudinary');
+          return { publicId: finalResult.publicId };
+        })());
     await removePending(localUploadId);
     return completed;
   })();
@@ -422,7 +484,7 @@ export function startBackgroundChunkedUpload(
   target: BackgroundUploadTarget,
   fileUri: string,
   mimeType: string,
-  signature: VideoUploadSignature,
+  signature: VideoUploadPlan,
   onProgress: (fraction: number) => void,
   onFinalizing?: () => void,
 ): { localUploadId: string; result: Promise<unknown>; cancel: () => void } {
@@ -435,13 +497,24 @@ export function startBackgroundChunkedUpload(
     if (cancelled) throw new Error('Video upload cancelled');
 
     const totalBytes = info.size;
+    // Chunk/part layout is dictated by the upload plan itself for R2 (one
+    // whole-file PUT for 'single', or exactly the parts the backend already
+    // pre-signed for 'multipart' — their count and size must match what it
+    // computed server-side, since each part URL is only valid for its own
+    // partNumber). Cloudinary keeps the existing fixed-size chunking.
+    const { chunkSizeBytes, totalChunks } = signature.provider === 'r2'
+      ? signature.mode === 'single'
+        ? { chunkSizeBytes: totalBytes, totalChunks: 1 }
+        : { chunkSizeBytes: signature.partSize, totalChunks: signature.parts.length }
+      : { chunkSizeBytes: CHUNK_SIZE_BYTES, totalChunks: Math.max(1, Math.ceil(totalBytes / CHUNK_SIZE_BYTES)) };
+
     const pending: PendingVideoUpload = {
       localUploadId,
       target,
       mimeType,
       totalBytes,
-      chunkSizeBytes: CHUNK_SIZE_BYTES,
-      totalChunks:    Math.max(1, Math.ceil(totalBytes / CHUNK_SIZE_BYTES)),
+      chunkSizeBytes,
+      totalChunks,
       completedChunks: [],
       signature,
       sourceFileUri:  fileUri,

@@ -1,8 +1,9 @@
 import { request, API_BASE, ensureFreshAccessToken } from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign }    from '@/types';
+import * as FileSystem from 'expo-file-system/legacy';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
-import type { VideoUploadSignature } from '@/services/cloudinaryVideoUpload';
+import type { VideoUploadPlan } from '@/services/cloudinaryVideoUpload';
 import type { PickedFile } from '@/utilities/chatAttachments';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/utilities/constants';
@@ -10,7 +11,9 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/utilities/constants';
 export interface DeliverableVideo {
   publicId:    string;
   url:         string;
-  thumbnailUrl: string;
+  // Absent for an R2-stored video — no auto poster-frame the way Cloudinary
+  // provides (the grid tile below never rendered this as an image anyway).
+  thumbnailUrl?: string;
   durationSec: number;
   format:      string;
   sizeBytes:   number;
@@ -569,8 +572,11 @@ export const campaignService = {
   // once up front and caches the result, so a retry re-uploads the same
   // compressed file instead of recompressing the original on every attempt.
 
-  async requestDeliverableVideoSignature(appId: string): Promise<VideoUploadSignature> {
-    const res = await request<VideoUploadSignature>('POST', `/api/campaigns/applications/${appId}/deliverables/video/signature`);
+  async requestDeliverableVideoSignature(appId: string, sizeBytes: number, mimeType: string): Promise<VideoUploadPlan> {
+    const res = await request<VideoUploadPlan>(
+      'POST', `/api/campaigns/applications/${appId}/deliverables/video/signature`,
+      { sizeBytes, mimeType: mimeType === 'video/quicktime' ? 'video/quicktime' : 'video/mp4' },
+    );
     return res.data;
   },
 
@@ -661,7 +667,9 @@ export const campaignService = {
     return {
       start: async () => {
         if (cancelled) throw new Error('Upload cancelled');
-        const signature = await campaignService.requestDeliverableVideoSignature(appId);
+        const info = await FileSystem.getInfoAsync(fileUri);
+        if (!info.exists || info.isDirectory) throw new Error('Video file could not be read for upload');
+        const signature = await campaignService.requestDeliverableVideoSignature(appId, info.size, mimeType);
         if (cancelled) throw new Error('Upload cancelled');
 
         innerTask = startBackgroundChunkedUpload(
