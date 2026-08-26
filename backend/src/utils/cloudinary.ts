@@ -8,7 +8,7 @@ cloudinary.config({
   api_secret: env.CLOUDINARY_API_SECRET,
 });
 
-export type UploadFolder = 'creators/avatars' | 'creators/covers' | 'businesses/logos' | 'businesses/covers' | 'creators/citizenship' | 'creators/pan' | 'creators/company-registration' | 'businesses/pan' | 'businesses/company-reg' | 'businesses/identity' | 'campaigns/features' | 'messages/attachments' | 'campaigns/deliverables' | 'success-stories/photos' | 'contracts/pdfs' | 'support/attachments' | 'creators/portfolio' | 'payment-methods/icons';
+export type UploadFolder = 'creators/avatars' | 'creators/covers' | 'businesses/logos' | 'businesses/covers' | 'creators/citizenship' | 'creators/pan' | 'creators/company-registration' | 'businesses/pan' | 'businesses/company-reg' | 'businesses/identity' | 'campaigns/features' | 'messages/attachments' | 'campaigns/deliverables' | 'success-stories/photos' | 'contracts/pdfs' | 'support/attachments' | 'creators/portfolio' | 'payment-methods/icons' | 'withdrawals/proofs';
 
 const DEFAULT_TRANSFORMATION = [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }];
 

@@ -14,24 +14,11 @@
       ],
       "title": "Sip & Share: New Coffee Launch",
       "description": "Creators will visit and feature our new coffee blend through authentic, visually engaging content. We're looking for genuine reactions and lifestyle-style shots that make viewers want to try it themselves.",
-      "objective": "Build local buzz and drive foot traffic for the new coffee launch",
       "category": "Food & Beverage",
       "secondaryCategories": [
         "Lifestyle"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok"
-      ],
-      "contentGuidelines": [
-        "Show the coffee being made or poured",
-        "Include at least one clear shot of the cup/branding",
-        "Keep the tone warm and casual, not overly scripted",
-        "Mention the flavor notes in the caption"
-      ],
-      "targetAudience": [
-        "Food Creator"
-      ],
       "suggestedDurationDays": 14,
       "creatorsNeeded": 4,
       "budgetMin": 8000,
@@ -55,7 +42,6 @@
         "SupportLocal"
       ],
       "sampleCaption": "Found my new favorite morning ritual ☕️ This new blend has the smoothest finish - if you're a coffee person you need to try this.",
-      "approvalRequirements": "Brand will review draft content within 24 hours before it's posted",
       "location": null,
       "needsInput": [
         "location"
@@ -141,25 +127,11 @@
       ],
       "title": "Taste the New Menu",
       "description": "Creators will dine in and showcase our newest menu items through short-form video and photo content, highlighting flavor, presentation, and the overall dining experience.",
-      "objective": "Drive awareness and reservations for the new menu launch",
       "category": "Food & Beverage",
       "secondaryCategories": [
         "Events"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok",
-        "YouTube"
-      ],
-      "contentGuidelines": [
-        "Capture at least 2 signature dishes up close",
-        "Include the restaurant's ambience/interior briefly",
-        "React authentically to the taste - no overacting",
-        "Tag the restaurant's location"
-      ],
-      "targetAudience": [
-        "Food Creator"
-      ],
       "suggestedDurationDays": 21,
       "creatorsNeeded": 5,
       "budgetMin": 10000,
@@ -183,7 +155,6 @@
         "MustTry"
       ],
       "sampleCaption": "This new menu is NOT playing around 🔥 Every dish we tried was better than the last - full review in my stories!",
-      "approvalRequirements": "Brand will review content before posting to ensure dishes are represented accurately",
       "location": null,
       "needsInput": [
         "location"
@@ -225,24 +196,11 @@
       ],
       "title": "Style Drop: New Collection",
       "description": "Creators will style and feature pieces from our new collection in real-life outfits, showing versatility and fit through lookbook-style content.",
-      "objective": "Increase visibility and sales for the new clothing collection",
       "category": "Fashion",
       "secondaryCategories": [
         "Lifestyle"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok"
-      ],
-      "contentGuidelines": [
-        "Style at least 2 different outfit combinations",
-        "Show fit from multiple angles",
-        "Mention sizing and fabric feel in caption",
-        "Keep lighting natural and true-to-color"
-      ],
-      "targetAudience": [
-        "Fashion Creator"
-      ],
       "suggestedDurationDays": 14,
       "creatorsNeeded": 6,
       "budgetMin": 6000,
@@ -266,7 +224,6 @@
         "FashionFinds"
       ],
       "sampleCaption": "Obsessed with how this new drop fits 😍 Styled it two ways - swipe to see both looks!",
-      "approvalRequirements": "Brand will review styling and photos before the post goes live",
       "location": null,
       "needsInput": [
         "location"
@@ -307,24 +264,11 @@
       ],
       "title": "Train With Us: Membership Push",
       "description": "Creators will experience a session at our facility and share their honest workout experience, highlighting the equipment, coaching, and overall vibe to drive membership sign-ups.",
-      "objective": "Grow new membership sign-ups through authentic creator experiences",
       "category": "Health & Fitness",
       "secondaryCategories": [
         "Lifestyle"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "YouTube"
-      ],
-      "contentGuidelines": [
-        "Show a real training or class segment",
-        "Capture the facility/equipment briefly",
-        "Share one genuine result or feeling after the session",
-        "Avoid overly polished, ad-like delivery"
-      ],
-      "targetAudience": [
-        "Fitness Creator"
-      ],
       "suggestedDurationDays": 21,
       "creatorsNeeded": 3,
       "budgetMin": 9000,
@@ -348,7 +292,6 @@
         "HealthyLifestyle"
       ],
       "sampleCaption": "First session done and I already feel the difference 💪 The coaching here is next level - full experience in my story.",
-      "approvalRequirements": "Brand will review the session recap before posting",
       "location": null,
       "needsInput": [
         "location"
@@ -388,24 +331,11 @@
       ],
       "title": "Glow Up: Product Feature",
       "description": "Creators will incorporate our product into their skincare/beauty routine and share honest before-and-after style content over a short period.",
-      "objective": "Build trust and drive trial for the featured beauty product",
       "category": "Beauty",
       "secondaryCategories": [
         "Lifestyle"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok"
-      ],
-      "contentGuidelines": [
-        "Show the product being used in a real routine",
-        "Share honest first impressions",
-        "Close-up shots of texture/application",
-        "No exaggerated claims - keep it authentic"
-      ],
-      "targetAudience": [
-        "Lifestyle Creator"
-      ],
       "suggestedDurationDays": 14,
       "creatorsNeeded": 5,
       "budgetMin": 7000,
@@ -429,7 +359,6 @@
         "HonestReview"
       ],
       "sampleCaption": "Been using this for a week and my skin already feels different ✨ Full routine breakdown in my stories.",
-      "approvalRequirements": "Brand will review the content before it's posted",
       "location": null,
       "needsInput": [
         "location"
@@ -456,22 +385,9 @@
       "keywords": [],
       "title": "Spread the Word: Brand Campaign",
       "description": "Creators will create engaging content that introduces our brand to their audience, highlighting what makes it worth trying and encouraging followers to check it out.",
-      "objective": "Increase brand awareness and drive first-time engagement",
       "category": "Lifestyle",
       "secondaryCategories": [],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok"
-      ],
-      "contentGuidelines": [
-        "Introduce the brand naturally within the content",
-        "Highlight one clear reason to try it",
-        "Keep the tone authentic and conversational",
-        "Include a clear call-to-action in the caption"
-      ],
-      "targetAudience": [
-        "Any Creator"
-      ],
       "suggestedDurationDays": 14,
       "creatorsNeeded": 4,
       "budgetMin": 6000,
@@ -494,7 +410,6 @@
         "SupportLocal"
       ],
       "sampleCaption": "Just discovered this and had to share 👀 If you're into this kind of thing, you're going to love it.",
-      "approvalRequirements": "Brand will review draft content before it's posted",
       "location": null,
       "needsInput": [
         "location",
@@ -552,9 +467,6 @@
         "Lifestyle"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok"
-      ],
       "benefits": [
         "Food & Drinks",
         "Free Products / Gifts"
@@ -603,9 +515,6 @@
         "Lifestyle"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok"
-      ],
       "benefits": [
         "Free Products / Gifts",
         "Product Launch / Preview"
@@ -653,9 +562,6 @@
         "Lifestyle"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "YouTube"
-      ],
       "benefits": [
         "Free Service / Experience",
         "Free Event Access"
@@ -701,9 +607,6 @@
         "Lifestyle"
       ],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok"
-      ],
       "benefits": [
         "Free Service / Experience",
         "Free Products / Gifts"
@@ -735,9 +638,6 @@
       "category": "Lifestyle",
       "secondaryCategories": [],
       "platform": "Instagram",
-      "secondaryPlatforms": [
-        "TikTok"
-      ],
       "benefits": [
         "Free Event Access",
         "Free Products / Gifts"

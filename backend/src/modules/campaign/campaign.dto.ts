@@ -88,16 +88,12 @@ export interface CampaignDto {
   // Platform commission %, snapshotted at creation — added on top of what the
   // business pays; creators always receive the full proposedRate.
   commissionRate: number | null;
-  objective: string | null;
-  contentGuidelines: string[];
   targetAudience: string[];
   hashtags: string[];
   sampleCaption: string | null;
-  approvalRequirements: string | null;
   aiGenerated: boolean;
   aiPrompt: string | null;
   aiSuggestedCategories: string[];
-  aiSuggestedPlatforms: string[];
   completionType: string | null;
   completionReason: string | null;
   createdAt: string;
@@ -228,16 +224,12 @@ type RawCampaign = {
   paidAt: Date | null;
   paymentMethod: string | null;
   commissionRate: number | null;
-  objective: string | null;
-  contentGuidelines: string[];
   targetAudience: string[];
   hashtags: string[];
   sampleCaption: string | null;
-  approvalRequirements: string | null;
   aiGenerated: boolean;
   aiPrompt: string | null;
   aiSuggestedCategories: string[];
-  aiSuggestedPlatforms: string[];
   completionType: string | null;
   completionReason: string | null;
   createdAt: Date;
@@ -302,16 +294,12 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     paidAt:         c.paidAt ? c.paidAt.toISOString() : null,
     paymentMethod:  c.paymentMethod,
     commissionRate: c.commissionRate ?? null,
-    objective:            c.objective,
-    contentGuidelines:    c.contentGuidelines ?? [],
     targetAudience:       c.targetAudience ?? [],
     hashtags:             c.hashtags ?? [],
     sampleCaption:        c.sampleCaption,
-    approvalRequirements: c.approvalRequirements,
     aiGenerated:           c.aiGenerated,
     aiPrompt:              c.aiPrompt,
     aiSuggestedCategories: c.aiSuggestedCategories ?? [],
-    aiSuggestedPlatforms:  c.aiSuggestedPlatforms ?? [],
     completionType:   c.completionType,
     completionReason: c.completionReason,
     createdAt:      c.createdAt.toISOString(),

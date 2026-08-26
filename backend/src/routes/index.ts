@@ -40,6 +40,7 @@ import providerMemberRoutes from '../modules/provider-member/provider-member.rou
 import serviceRequestRoutes from '../modules/service-request/service-request.routes';
 import reportRoutes         from '../modules/report/report.routes';
 import reportAdminRoutes    from '../modules/report/report.admin.routes';
+import withdrawalAdminRoutes from '../modules/withdrawal/withdrawal.admin.routes';
 
 export function registerApiRoutes(app: Express): void {
   app.use('/api/auth', authRoutes);
@@ -72,6 +73,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/admin/visitor-chats', visitorChatAdminRoutes);
   app.use('/api/admin/services', serviceAdminRoutes);
   app.use('/api/admin/reports', reportAdminRoutes);
+  app.use('/api/admin/withdrawals', withdrawalAdminRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/platforms', platformRoutes);

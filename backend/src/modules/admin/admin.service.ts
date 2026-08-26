@@ -1,7 +1,8 @@
 import { CampaignStatus, ReferralStatus } from '@prisma/client';
 import { AdminRepository } from './admin.repository';
 import { ReferralRepository } from '../referral/referral.repository';
-import { isCreatorProfileComplete } from '../referral/referral.service';
+import { isCreatorProfileComplete, REFERRED_FIRST_EVENT_BONUS } from '../referral/referral.service';
+import { recordWalletTransactionIdempotent } from '../wallet/wallet.ledger';
 import { BusinessReferralRepository } from '../business-referral/business-referral.repository';
 import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-referral/business-referral.service';
 import { CampaignRepository } from '../campaign/campaign.repository';
@@ -284,11 +285,37 @@ export class AdminService {
     const firstEventCompleted = await this.referralRepo.hasApprovedApplication(referral.referredId);
     if (!firstEventCompleted) throw new AppError('Referred creator has not completed a first event yet', 400);
 
-    return this.referralRepo.updateReferralStatus(referralId, {
+    const updated = await this.referralRepo.updateReferralStatus(referralId, {
       status: 'COMPLETED',
       completedAt: new Date(),
       reviewedBy: adminUserId,
     });
+
+    // Credit the creator wallet ledger — both the referrer's Rs. 500 reward and
+    // the referred creator's one-time first-event bonus become real here.
+    // Idempotent via WalletTransaction's (referenceId, type) unique index.
+    await recordWalletTransactionIdempotent({
+      creatorId:        referral.referrerId,
+      type:             'REFERRAL_REWARD',
+      direction:        'CREDIT',
+      amount:           Number(referral.rewardAmount),
+      description:      'Referral reward',
+      referenceType:    'referral',
+      referenceId:      referral.id,
+      createdByAdminId: adminUserId,
+    });
+    await recordWalletTransactionIdempotent({
+      creatorId:        referral.referredId,
+      type:             'REFERRAL_BONUS',
+      direction:        'CREDIT',
+      amount:           REFERRED_FIRST_EVENT_BONUS,
+      description:      'First event bonus',
+      referenceType:    'referral',
+      referenceId:      referral.id,
+      createdByAdminId: adminUserId,
+    });
+
+    return updated;
   }
 
   // Payment release is the project's final stage — no separate creator
@@ -313,6 +340,19 @@ export class AdminService {
       creatorId:     app.creatorId,
       adminId:       adminUserId,
       amount:        app.proposedRate,
+    });
+    // Credit the creator wallet ledger — this is the point the payout becomes
+    // spendable. Idempotent via WalletTransaction's (referenceId, type) unique
+    // index, so a retried release never double-credits.
+    await recordWalletTransactionIdempotent({
+      creatorId:        app.creatorId,
+      type:             'CAMPAIGN_PAYOUT',
+      direction:        'CREDIT',
+      amount:           app.proposedRate,
+      description:      `Payment for "${app.campaign.title}"`,
+      referenceType:    'application',
+      referenceId:      appId,
+      createdByAdminId: adminUserId,
     });
 
     logActivity({ userId: adminUserId, action: ActivityAction.PAYMENT_RELEASED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, amount: app.proposedRate } });

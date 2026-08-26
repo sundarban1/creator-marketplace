@@ -133,11 +133,10 @@ const REPAIR_TIMEOUT_MS = 8_000;
 // The free-text fields of an EVENT draft — every field the brand actually
 // reads as prose. Kept as an explicit per-draft-type list because the language
 // rule below is shared by both prompts, and a single campaign-shaped list was
-// naming four fields that don't exist on an event draft (objective,
-// contentGuidelines, sampleCaption, approvalRequirements) while never
-// mentioning three that do. Those three were left unconstrained, so a brand who
-// spoke Nepali got a Nepali title and description alongside an English venue,
-// expectedContent and completionReason.
+// naming a field that doesn't exist on an event draft (sampleCaption) while
+// never mentioning three that do. Those three were left unconstrained, so a
+// brand who spoke Nepali got a Nepali title and description alongside an
+// English venue, expectedContent and completionReason.
 const EVENT_LOCALIZED_FIELDS = ['title', 'description', 'expectedContent', 'venue', 'location', 'completionReason'];
 
 // The same event fields as real object keys, for the post-generation
@@ -148,8 +147,7 @@ const EVENT_LOCALIZED_KEYS = ['title', 'description', 'expectedContent', 'venue'
 // Campaign equivalent. requirements[] descriptions are nested rather than
 // top-level and are left to the prompt alone.
 const CAMPAIGN_LOCALIZED_KEYS = [
-  'title', 'description', 'objective', 'contentGuidelines', 'sampleCaption', 'approvalRequirements',
-  'location', 'completionReason',
+  'title', 'description', 'sampleCaption', 'location', 'completionReason',
 ] as const;
 
 const DEVANAGARI = /[\u0900-\u097F]/;
@@ -170,14 +168,13 @@ function isPopulatedText(value: unknown): boolean {
 // requirements[] entry's description are prose the brand reads too, and were
 // missing from the old shared list for the same reason.
 const CAMPAIGN_LOCALIZED_FIELDS = [
-  'title', 'description', 'objective', 'contentGuidelines', 'sampleCaption',
-  'approvalRequirements', 'location', 'completionReason', 'every requirements[] entry\'s description',
+  'title', 'description', 'sampleCaption', 'location', 'completionReason', 'every requirements[] entry\'s description',
 ];
 
 // Enum-valued fields are matched against fixed taxonomy/option lists after the
 // model responds and are rendered as chips keyed on the exact English string —
 // translating one silently drops it on the floor.
-const NEVER_TRANSLATE = 'category, secondaryCategories, platform, secondaryPlatforms, goal, targetAudience, benefits, exchangeType, completionType, needsInput, paymentType, imageQuery, and every requirements[] entry\'s category';
+const NEVER_TRANSLATE = 'category, secondaryCategories, platform, goal, benefits, exchangeType, completionType, needsInput, paymentType, imageQuery, and every requirements[] entry\'s category';
 
 function buildLanguageInstruction(language: string, localizedFields: string[], inputSource?: 'voice' | 'text'): string {
   const fieldList = localizedFields.join(', ');
@@ -265,14 +262,10 @@ ${businessContext}
 Respond with a JSON object with EXACTLY these keys:
 - title: string, a punchy campaign title
 - description: string, 2-4 sentences describing what creators should do
-- objective: string, one sentence describing the campaign's goal
 - category: string, best-fit category
 - secondaryCategories: string[] (0-3), other categories that could also fit
 - platform: string, the single best platform for this campaign
-- secondaryPlatforms: string[] (0-3), other platforms worth considering
-- contentGuidelines: string[] (2-6 short bullet points)
 - goal: string, EXACTLY ONE of: "Brand Awareness", "More Customers", "Sales", "Followers & Engagement" — whichever best matches the campaign's main aim
-- targetAudience: string[] (1-3 items), which CREATORS should promote this (not the end consumer) — EXACTLY from this list only: "Food Creator", "Travel Creator", "Lifestyle Creator", "Fashion Creator", "Tech Creator", "Fitness Creator", "Student Creator", "Any Creator". Use "Any Creator" alone only if no specific type fits better; never combine it with other types.
 - suggestedDurationDays: number, how many days the campaign should run (typically 7-30)
 - creatorsNeeded: number, how many creators to recruit (typically 1-10)
 - budgetMin: number, suggested minimum budget in NPR (Nepali Rupees) for the whole campaign
@@ -281,7 +274,6 @@ Respond with a JSON object with EXACTLY these keys:
 - deliverables: object with EXACTLY these integer keys, each 0-10: "REEL", "STORY", "PHOTO_POST", "VISIT_STORE", "PRODUCT_REVIEW_VIDEO", "EVENT_COVERAGE_VIDEO", "MENTION_IN_CAPTION", "TAG_BUSINESS", "GOOGLE_REVIEW". Each number is how many pieces of that content type EACH INDIVIDUAL creator should produce (not multiplied by creatorsNeeded, not a campaign-wide total) — keep these small and realistic, typically 1-3 for the 2-3 content types that best fit the brief, 0 for everything else. At least one key must be > 0.
 - hashtags: string[] (3-8 relevant hashtags, no # needed but allowed)
 - sampleCaption: string, a ready-to-use example caption a creator could post
-- approvalRequirements: string, one sentence about whether/how the brand wants to review content before it's posted
 - location: string or null, a city/area if inferable, otherwise null
 - completionType: "SERVICE" or "DELIVERABLE" for the campaign's main role. ${buildCompletionTypeInstruction()}
 - completionReason: string, the one-sentence explanation described above.
@@ -335,7 +327,6 @@ Respond with a JSON object with EXACTLY these keys:
 - category: string, best-fit category
 - secondaryCategories: string[] (0-3), other categories that could also fit
 - platform: string, the single best platform for creators to post about this event
-- secondaryPlatforms: string[] (0-3), other platforms worth considering
 - benefits: string[] (1-4 items) — what the brand is offering creators in return for attending, EXACTLY from this list only:
 ${BENEFIT_OPTIONS.map((b) => `  - "${b}": ${BENEFIT_DESCRIPTIONS[b]}`).join('\n')}
 - exchangeType: string[] (1-6 items) — what the business wants attendees/creators to do in return for the free experience, EXACTLY from this list only:
@@ -402,7 +393,7 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
+  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
     const [realCategories, realProviderCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       // strict:true — requirements need real provider TYPES (Photographer,
@@ -481,7 +472,7 @@ export class CampaignAiService {
     });
   }
 
-  async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null }> {
+  async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null }> {
     const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
@@ -667,11 +658,11 @@ export class CampaignAiService {
     return result.data;
   }
 
-  private matchToRealTaxonomy<T extends { category: string; secondaryCategories: string[]; platform: string; secondaryPlatforms: string[]; needsInput: string[] }>(
+  private matchToRealTaxonomy<T extends { category: string; secondaryCategories: string[]; platform: string; needsInput: string[] }>(
     draft: T,
     realCategories: string[],
     realPlatforms: string[],
-  ): T & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] } {
+  ): T & { aiSuggestedCategories: string[]; platforms: string[] } {
     // Nothing matched at all means the fallback below is an arbitrary pick, not
     // a near-miss — so flag the field for the brand to confirm instead of
     // presenting the first taxonomy row as if the AI had chosen it. Without
@@ -695,8 +686,6 @@ export class CampaignAiService {
 
     const aiSuggestedCategories = [draft.category, ...draft.secondaryCategories]
       .filter((c) => c !== matchedCategory);
-    const aiSuggestedPlatforms = [draft.platform, ...draft.secondaryPlatforms]
-      .filter((p) => p !== matchedPlatform);
 
     return {
       ...draft,
@@ -707,7 +696,6 @@ export class CampaignAiService {
       // is sized for that, so keep the AI's own flags first and only top up.
       needsInput: [...draft.needsInput, ...unconfirmed.filter((f) => !draft.needsInput.includes(f))].slice(0, 2),
       aiSuggestedCategories,
-      aiSuggestedPlatforms,
     };
   }
 }

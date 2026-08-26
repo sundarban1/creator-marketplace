@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
-// Validated dynamically against the admin-managed PaymentMethod catalog (and
-// against the creator's own saved methods) in WalletService.withdraw — see
-// creator.schema.ts's updatePaymentMethodsSchema for the same pattern.
-export const withdrawSchema = z.object({
-  amount: z.number().positive('Amount must be greater than zero'),
-  method: z.string().min(1, 'Payment method is required'),
+// A manual withdrawal request. The amount is re-validated server-side in
+// WalletService.createWithdrawalRequest against the configured minimum and the
+// creator's live withdrawable balance — the client value is never trusted.
+export const createWithdrawalSchema = z.object({
+  amount:         z.number().positive('Amount must be greater than zero').finite(),
+  payoutMethodId: z.string().min(1, 'Select a payout method'),
 });
 
-export type WithdrawInput = z.infer<typeof withdrawSchema>;
+export type CreateWithdrawalInput = z.infer<typeof createWithdrawalSchema>;

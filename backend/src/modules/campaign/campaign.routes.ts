@@ -299,7 +299,7 @@ router.get('/my', authenticate, authorize('BUSINESS'), ctrl.getMyCampaigns.bind(
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Free quota, how many have been used, how many remain, and the price per feature beyond that
+ *         description: Whether the paywall is on, the free quota, how many have been used, how many remain, and the price per feature beyond that
  */
 router.get('/featured-quota', authenticate, authorize('BUSINESS'), ctrl.getFeaturedQuota.bind(ctrl));
 

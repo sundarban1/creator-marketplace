@@ -1,71 +1,154 @@
+import prisma from '../../prisma';
 import { AppError } from '../../middleware/error';
 import { WalletRepository } from './wallet.repository';
+import { PayoutMethodRepository } from '../payout-method/payout-method.repository';
+import { buildUnifiedStatement, toWithdrawalDto } from './wallet.dto';
 import { REFERRED_FIRST_EVENT_BONUS } from '../referral/referral.service';
 import { notificationService } from '../notifications/notification.service';
-import type { WithdrawInput } from './wallet.schema';
+import { getCachedSettings } from '../../utils/settingsCache';
+import type { PayoutMethod, Prisma } from '@prisma/client';
+import type { CreateWithdrawalInput } from './wallet.schema';
+
+const DEFAULT_MIN_WITHDRAWAL = 500;
+
+function snapshotOf(m: PayoutMethod): Prisma.InputJsonValue {
+  return {
+    type:          m.type,
+    label:         m.label,
+    accountName:   m.accountName,
+    bankName:      m.bankName,
+    branch:        m.branch,
+    accountNumber: m.accountNumber,
+    walletId:      m.walletId,
+  };
+}
 
 export class WalletService {
   private repo: WalletRepository;
+  private payoutRepo: PayoutMethodRepository;
 
   constructor() {
     this.repo = new WalletRepository();
+    this.payoutRepo = new PayoutMethodRepository();
   }
 
+  // Wallet balance model (Kolab V1):
+  //  - availableBalance   = realized ledger (Σ COMPLETED credits − Σ COMPLETED
+  //                         debits). Debits are PAID withdrawals only, so this
+  //                         still includes money reserved by an in-flight
+  //                         withdrawal request.
+  //  - pendingWithdrawals = amount reserved by PENDING/PROCESSING requests.
+  //  - withdrawableBalance= what the creator can actually request right now.
+  //  - pendingEarnings    = escrowed, not yet released by an admin — derived
+  //                         from Application, never in the ledger.
   private async computeBalances(creatorId: string) {
-    const [pendingEarnings, releasedTotal, withdrawn, referrerRewards, hasReferredBonus] = await Promise.all([
+    const [pendingEarnings, ledger, reserved] = await Promise.all([
       this.repo.sumProposedRateByPaymentStatus(creatorId, 'PAID'),
-      this.repo.sumProposedRateByPaymentStatus(creatorId, 'RELEASED'),
-      this.repo.sumWithdrawn(creatorId),
-      this.repo.sumCompletedReferrerRewards(creatorId),
-      this.repo.hasCompletedReferredBonus(creatorId),
+      this.repo.sumLedger(creatorId),
+      this.repo.sumReservedWithdrawals(creatorId),
     ]);
-    const referredBonus = hasReferredBonus ? REFERRED_FIRST_EVENT_BONUS : 0;
+
+    const availableBalance = ledger.net;
+    const withdrawableBalance = Math.max(0, availableBalance - reserved);
 
     return {
-      totalEarned: pendingEarnings + releasedTotal + referrerRewards + referredBonus,
+      totalEarned:        ledger.credits + pendingEarnings,
       pendingEarnings,
-      availableBalance: releasedTotal - withdrawn + referrerRewards + referredBonus,
+      availableBalance,
+      pendingWithdrawals: reserved,
+      withdrawableBalance,
     };
   }
 
-  async getWalletSummary(userId: string) {
-    const profile = await this.repo.findCreatorProfileByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
-
-    const balances = await this.computeBalances(profile.id);
-    return { ...balances, paymentMethods: profile.paymentMethods };
+  private async getMinWithdrawal() {
+    const settings = await getCachedSettings();
+    const value = Number(settings['wallet.minWithdrawal']);
+    return Number.isFinite(value) && value > 0 ? value : DEFAULT_MIN_WITHDRAWAL;
   }
 
-  async withdraw(userId: string, input: WithdrawInput) {
+  private async resolveCreatorId(userId: string) {
     const profile = await this.repo.findCreatorProfileByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
+    return profile;
+  }
 
-    if (!profile.paymentMethods.includes(input.method)) {
-      throw new AppError(`Add ${input.method} as a payment method before withdrawing to it`, 400);
+  async getWalletSummary(userId: string) {
+    const profile = await this.resolveCreatorId(userId);
+    const [balances, minWithdrawal] = await Promise.all([
+      this.computeBalances(profile.id),
+      this.getMinWithdrawal(),
+    ]);
+    return { ...balances, minWithdrawal };
+  }
+
+  async createWithdrawalRequest(userId: string, input: CreateWithdrawalInput) {
+    const profile = await this.resolveCreatorId(userId);
+
+    const payoutMethod = await this.payoutRepo.findById(input.payoutMethodId);
+    if (!payoutMethod || payoutMethod.creatorId !== profile.id) {
+      throw new AppError('Payout method not found', 404);
     }
 
-    const { availableBalance } = await this.computeBalances(profile.id);
-    if (input.amount > availableBalance) {
-      throw new AppError('Insufficient balance for this withdrawal', 400);
+    const minWithdrawal = await this.getMinWithdrawal();
+    if (input.amount < minWithdrawal) {
+      throw new AppError(`Minimum withdrawal is Rs. ${minWithdrawal.toLocaleString()}`, 400);
     }
 
-    await this.repo.createWithdrawal(profile.id, input.amount, input.method);
-    const balances = await this.computeBalances(profile.id);
+    // Auto-generated at request time — the creator sees it immediately and the
+    // admin sees the same code on the request. Not the external transfer id.
+    const referenceCode = await this.repo.generateWithdrawalReference();
+
+    // Serialize withdrawal creation per-creator with a transaction-scoped
+    // advisory lock so two concurrent requests can't each reserve the same
+    // funds (spec §5/§24). The lock is held until this transaction commits;
+    // the next waiter then sees this new PENDING row in its own balance check.
+    const withdrawal = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`withdrawal:${profile.id}`}))`;
+
+      const { withdrawableBalance } = await this.computeBalances(profile.id);
+      if (input.amount > withdrawableBalance) {
+        throw new AppError('Amount exceeds your withdrawable balance', 400);
+      }
+
+      return tx.withdrawal.create({
+        data: {
+          creatorId:      profile.id,
+          amount:         input.amount,
+          method:         payoutMethod.type,
+          referenceCode,
+          payoutMethodId: payoutMethod.id,
+          payoutSnapshot: snapshotOf(payoutMethod),
+          status:         'PENDING',
+        },
+      });
+    });
 
     notificationService.createForAdmins({
-      type:    'money_withdrawn',
-      title:   'Withdrawal Requested',
-      body:    `${profile.fullName ?? 'A creator'} withdrew Rs. ${input.amount.toLocaleString()} via ${input.method}.`,
-      refId:   profile.id,
-      refType: 'creator',
+      type:    'withdrawal_requested',
+      title:   'New Withdrawal Request',
+      body:    `${profile.fullName ?? 'A creator'} requested Rs. ${input.amount.toLocaleString()} via ${payoutMethod.type} (${withdrawal.referenceCode}).`,
+      refId:   withdrawal.id,
+      refType: 'withdrawal',
     }).catch(() => {});
 
-    return { ...balances, paymentMethods: profile.paymentMethods };
+    const balances = await this.computeBalances(profile.id);
+    // `minWithdrawal` (resolved above) is included so the payload matches the
+    // full wallet-summary shape the mobile client refreshes its state from.
+    return { withdrawal: toWithdrawalDto(withdrawal), ...balances, minWithdrawal };
+  }
+
+  async listWithdrawals(userId: string) {
+    const profile = await this.resolveCreatorId(userId);
+    const withdrawals = await this.repo.listWithdrawals(profile.id);
+    return withdrawals.map(toWithdrawalDto);
   }
 
   async listTransactions(userId: string) {
-    const profile = await this.repo.findCreatorProfileByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
-    return this.repo.listWithdrawals(profile.id);
+    const profile = await this.resolveCreatorId(userId);
+    const [ledger, withdrawals] = await Promise.all([
+      this.repo.listLedger(profile.id),
+      this.repo.listWithdrawals(profile.id),
+    ]);
+    return buildUnifiedStatement(ledger, withdrawals);
   }
 }

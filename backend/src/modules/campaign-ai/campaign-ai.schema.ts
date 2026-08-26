@@ -120,7 +120,6 @@ export const aiEventDraftSchema = z.object({
   category: z.string().min(1),
   secondaryCategories: z.array(z.string()).max(3).default([]),
   platform: z.string().min(1),
-  secondaryPlatforms: z.array(z.string()).max(3).default([]),
   benefits: z.array(z.enum(BENEFIT_OPTIONS)).min(1).max(6),
   exchangeType: z.array(z.enum(EXCHANGE_OPTIONS)).min(1).max(6),
   expectedContent: z.string().max(300).default(''),
@@ -161,7 +160,13 @@ const aiRequirementSchema = z.object({
   category: z.string().min(1),
   quantity: z.number().int().positive().max(20),
   budgetType: z.enum(['FIXED', 'RANGE', 'NEGOTIABLE']).default('FIXED'),
-  budgetFixed: z.number().positive().optional(),
+  // Field-level checks only rule out negative numbers — the model reliably
+  // zero-fills whichever of these three doesn't apply to this role's
+  // budgetType (e.g. budgetFixed: 0 on a NEGOTIABLE role) instead of omitting
+  // it, and a stricter check here (e.g. .positive()) rejected that otherwise
+  // valid draft outright before the budgetType-scoped .refine()s below ever
+  // got a chance to say it was fine.
+  budgetFixed: z.number().min(0).optional(),
   budgetMin: z.number().min(0).optional(),
   budgetMax: z.number().min(0).optional(),
   // This role's own content ask — same shape/keys as the top-level
@@ -189,17 +194,10 @@ export type AiRequirementDraft = z.infer<typeof aiRequirementSchema>;
 export const aiCampaignDraftSchema = z.object({
   title: z.string().min(3).max(120),
   description: z.string().min(10).max(2000),
-  objective: z.string().min(3).max(300),
   category: z.string().min(1),
   secondaryCategories: z.array(z.string()).max(3).default([]),
   platform: z.string().min(1),
-  secondaryPlatforms: z.array(z.string()).max(3).default([]),
-  contentGuidelines: z.array(z.string().max(200)).min(1).max(8),
   goal: z.enum(GOAL_OPTIONS),
-  targetAudience: z.array(z.enum(CREATOR_TYPES)).min(1).max(3)
-    .refine((arr) => !(arr.includes('Any Creator') && arr.length > 1), {
-      message: '"Any Creator" cannot be combined with other creator types',
-    }),
   suggestedDurationDays: z.number().int().min(1).max(180),
   creatorsNeeded: z.number().int().min(1).max(50),
   budgetMin: z.number().min(0),
@@ -208,7 +206,6 @@ export const aiCampaignDraftSchema = z.object({
   deliverables: deliverablesSchema,
   hashtags: z.array(z.string().regex(/^#?[A-Za-z0-9_]+$/).max(40)).min(1).max(10),
   sampleCaption: z.string().min(5).max(600),
-  approvalRequirements: z.string().min(3).max(400),
   location: z.string().max(120).nullable().default(null),
   completionType: z.enum(COMPLETION_TYPES),
   completionReason: z.string().min(3).max(300),

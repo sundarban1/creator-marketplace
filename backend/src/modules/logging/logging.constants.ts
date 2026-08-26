@@ -37,6 +37,9 @@ export const AuditAction = {
   ACCOUNT_REACTIVATED:      'account.reactivated',
   ACCOUNT_DELETED_BY_ADMIN: 'account.deleted_by_admin',
   REPORT_REVIEWED:          'report.reviewed',
+  WITHDRAWAL_PROCESSING:    'withdrawal.processing',
+  WITHDRAWAL_PAID:          'withdrawal.paid',
+  WITHDRAWAL_REJECTED:      'withdrawal.rejected',
 } as const;
 
 export const EntityType = {

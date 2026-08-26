@@ -55,16 +55,12 @@ export class CampaignRepository {
     benefits?: string[];
     status?: 'DRAFT' | 'ACTIVE' | 'PENDING_APPROVAL';
     commissionRate?: number;
-    objective?: string;
-    contentGuidelines?: string[];
     targetAudience?: string[];
     hashtags?: string[];
     sampleCaption?: string;
-    approvalRequirements?: string;
     aiGenerated?: boolean;
     aiPrompt?: string;
     aiSuggestedCategories?: string[];
-    aiSuggestedPlatforms?: string[];
     aiNeedsInputFields?: string[];
     completionType?: 'SERVICE' | 'DELIVERABLE';
     completionReason?: string;
@@ -562,8 +558,6 @@ export class CampaignRepository {
     venue: string | null;
     benefits: string[];
     eventStatus: 'OPEN' | 'FULL' | 'CLOSED';
-    objective: string;
-    contentGuidelines: string[];
     targetAudience: string[];
     hashtags: string[];
     completionType: 'SERVICE' | 'DELIVERABLE' | null;

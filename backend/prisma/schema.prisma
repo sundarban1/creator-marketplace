@@ -109,35 +109,35 @@ model Block {
 }
 
 model CreatorProfile {
-  id                       String                 @id @default(cuid())
-  userId                   String                 @unique
+  id                       String                  @id @default(cuid())
+  userId                   String                  @unique
   fullName                 String?
   bio                      String?
   location                 String?
   avatarUrl                String?
   coverImageUrl            String?
   categories               String[]
-  socialLinks              Json                   @default("{}")
-  portfolioLinks           Json                   @default("[]")
-  isVerified               Boolean                @default(false)
-  createdAt                DateTime               @default(now())
-  updatedAt                DateTime               @updatedAt
-  username                 String?                @unique
-  paymentMethods           String[]               @default([])
-  prefPlatforms            String[]               @default([])
-  prefLocations            String[]               @default([])
-  prefBudgetMin            Float                  @default(0)
-  prefBudgetMax            Float                  @default(500)
+  socialLinks              Json                    @default("{}")
+  portfolioLinks           Json                    @default("[]")
+  isVerified               Boolean                 @default(false)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  username                 String?                 @unique
+  paymentMethods           String[]                @default([])
+  prefPlatforms            String[]                @default([])
+  prefLocations            String[]                @default([])
+  prefBudgetMin            Float                   @default(0)
+  prefBudgetMax            Float                   @default(500)
   locationLat              Float?
   locationLng              Float?
-  nearbyRadiusKm           Int                    @default(25)
-  nearbyUseHomeLocation    Boolean                @default(false)
-  referralCode             String?                @unique
+  nearbyRadiusKm           Int                     @default(25)
+  nearbyUseHomeLocation    Boolean                 @default(false)
+  referralCode             String?                 @unique
   citizenshipDocUrl        String?
-  citizenshipStatus        CitizenshipStatus      @default(NONE)
+  citizenshipStatus        CitizenshipStatus       @default(NONE)
   citizenshipUploadedAt    DateTime?
   panDocUrl                String?
-  panDocStatus             DocumentStatus         @default(NONE)
+  panDocStatus             DocumentStatus          @default(NONE)
   panDocUploadedAt         DateTime?
   // Parity with BusinessProfile's equivalent pair, added later — BusinessProfile
   // has always had these, Creator never did until the Provider-marketplace work.
@@ -150,15 +150,15 @@ model CreatorProfile {
   city                     String?
   area                     String?
   address                  String?
-  locationVisibility       LocationVisibility     @default(CITY)
+  locationVisibility       LocationVisibility      @default(CITY)
   // §61 — parity with BusinessProfile's equivalent trio, added later:
   // BusinessProfile has always had these, providers never did until now.
   // The public profile endpoint gates on showPublicProfile the same way
   // business.service.ts's getBusinessPublic already does.
-  showPublicProfile        Boolean                @default(true)
-  hideContactDetails       Boolean                @default(false)
-  hideSocialLinks          Boolean                @default(false)
-  availabilityStatus       AvailabilityStatus     @default(AVAILABLE)
+  showPublicProfile        Boolean                 @default(true)
+  hideContactDetails       Boolean                 @default(false)
+  hideSocialLinks          Boolean                 @default(false)
+  availabilityStatus       AvailabilityStatus      @default(AVAILABLE)
   // Collected as the first step of provider onboarding, right after signup.
   providerType             ProviderType?
   // §4 — how many people are in the team. A plain count, not a bucketed enum
@@ -174,7 +174,7 @@ model CreatorProfile {
   // BusinessProfile already makes between its industry `categories` and
   // `defaultCreatorCategories`. AGENCY-only: cleared by
   // CreatorService.updateProfile on any switch away, like teamSize above.
-  industries               String[]               @default([])
+  industries               String[]                @default([])
   // §5 step 2 — an AGENCY's legal identifiers. Never public (a PAN is not
   // public data): private DTO only, used for verification and payouts.
   // AGENCY-only on write, but deliberately NOT wiped when the provider type
@@ -197,24 +197,26 @@ model CreatorProfile {
   // of BusinessProfile.companyRegDoc*. Optional: it gates the verified badge
   // for an agency, never profile creation (§18).
   companyRegDocUrl         String?
-  companyRegDocStatus      DocumentStatus         @default(NONE)
+  companyRegDocStatus      DocumentStatus          @default(NONE)
   companyRegDocUploadedAt  DateTime?
   // What this provider charges, distinct from prefBudgetMin/Max above (what
   // they're willing to accept on a campaign).
   startingRate             Float?
-  negotiable               Boolean                @default(true)
+  negotiable               Boolean                 @default(true)
   applications             Application[]
-  conversations            Conversation[]         @relation("CreatorConversations")
-  conversationsAsCreator2  Conversation[]         @relation("Creator2Conversations")
-  user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations            Conversation[]          @relation("CreatorConversations")
+  conversationsAsCreator2  Conversation[]          @relation("Creator2Conversations")
+  user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   favoriteBusinesses       FavoriteBusiness[]
   shortlistedCampaigns     ShortlistedCampaign[]
   socialAccounts           SocialAccount[]
   savedBy                  SavedCreator[]
   receivedInvitations      CampaignInvitation[]
-  referralsMade            Referral[]             @relation("ReferralsMade")
-  referralsReceived        Referral?              @relation("ReferralsReceived")
+  referralsMade            Referral[]              @relation("ReferralsMade")
+  referralsReceived        Referral?               @relation("ReferralsReceived")
   withdrawals              Withdrawal[]
+  payoutMethods            PayoutMethod[]
+  walletTransactions       WalletTransaction[]
   profileViews             ProfileView[]
   paymentTransactions      PaymentTransaction[]
   contracts                Contract[]
@@ -222,9 +224,9 @@ model CreatorProfile {
   portfolioItems           PortfolioItem[]
   availabilitySchedule     AvailabilitySchedule[]
   serviceRequests          ServiceRequest[]
-  members                  ProviderMember[]       @relation("ProviderMembers")
+  members                  ProviderMember[]        @relation("ProviderMembers")
   assignedWork             ApplicationAssignment[] @relation("AssignedWork")
-  memberOf                 ProviderMember[]       @relation("ProviderMemberships")
+  memberOf                 ProviderMember[]        @relation("ProviderMemberships")
 
   @@index([isVerified])
   @@map("creator_profiles")
@@ -390,17 +392,140 @@ model AvailabilitySchedule {
   @@map("availability_schedules")
 }
 
+// A manual creator payout request (Kolab V1 — no automated payout APIs). The
+// creator submits it; the amount is *reserved* (not deducted) while status is
+// PENDING/PROCESSING; an admin transfers the money out-of-band and then marks it
+// PAID, which is the only point the wallet is permanently debited (see
+// WalletTransaction). REJECTED/CANCELLED release the reservation.
 model Withdrawal {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   creatorId String
   amount    Float
+  // Human-readable request reference (e.g. "WD-A7K2QP9M"), auto-generated the
+  // moment the creator submits. Distinct from `transactionReference` below,
+  // which is the external bank/wallet transfer id an admin records only at
+  // "Mark as Paid". This is the shared handle the creator, an admin and support
+  // all use to talk about one request.
+  referenceCode String        @unique
+  // Denormalised payout channel — 'BANK' | 'ESEWA' | 'KHALTI' (PayoutMethodType).
+  // Kept as a plain string for cheap filtering/display; the structured account
+  // details live on the linked PayoutMethod and are snapshotted below.
   method    String
-  createdAt DateTime @default(now())
+  status    WithdrawalStatus @default(PENDING)
+
+  payoutMethodId String?
+  payoutMethod   PayoutMethod? @relation(fields: [payoutMethodId], references: [id], onDelete: SetNull)
+  // Account details captured at request time, so a later edit/delete of the
+  // PayoutMethod never rewrites the record of where money was actually sent.
+  payoutSnapshot Json?
+
+  // Set by the admin on "Mark as Paid".
+  transactionReference String?
+  paymentDate          DateTime?
+  screenshotUrl        String?
+  processedByAdminId   String?
+  adminNotes           String?
+  // Set by the admin on "Reject".
+  rejectionReason      String?
+
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
   @@index([creatorId])
+  @@index([status, createdAt(sort: Desc)])
   @@map("withdrawals")
+}
+
+// A creator's saved payout account. Fixed set of channels (BANK/ESEWA/KHALTI) —
+// deliberately NOT driven by the admin PaymentMethod catalog, which governs the
+// business→platform payin side only.
+model PayoutMethod {
+  id            String           @id @default(cuid())
+  creatorId     String
+  type          PayoutMethodType
+  label         String?
+  // Account holder name — used by all three types.
+  accountName   String
+  // BANK only.
+  bankName      String?
+  branch        String?
+  accountNumber String?
+  // ESEWA / KHALTI only — the wallet ID or mobile number.
+  walletId      String?
+  isDefault     Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  creator     CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  withdrawals Withdrawal[]
+
+  @@index([creatorId])
+  @@map("payout_methods")
+}
+
+// Immutable creator-wallet ledger. Realized wallet balance = Σ COMPLETED rows
+// signed by `direction`. Rows are append-only by convention — there is
+// deliberately no update/delete method anywhere in the wallet module (same rule
+// as audit.service.ts). Distinct from PaymentTransaction, which is the
+// business-side campaign escrow ledger.
+model WalletTransaction {
+  id               String                  @id @default(cuid())
+  creatorId        String
+  type             WalletTransactionType
+  direction        WalletDirection
+  // Always positive; the sign is carried by `direction`.
+  amount           Float
+  status           WalletTransactionStatus @default(COMPLETED)
+  description      String
+  // e.g. 'application' | 'referral' | 'withdrawal' + the source row id. The
+  // unique index below is the idempotency backstop: one CAMPAIGN_PAYOUT per
+  // application, one WITHDRAWAL per withdrawal. NULL-reference rows (manual
+  // ADJUSTMENT) stay unconstrained — Postgres treats NULLs as distinct.
+  referenceType    String?
+  referenceId      String?
+  createdByAdminId String?
+  createdAt        DateTime                @default(now())
+
+  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([referenceId, type])
+  @@index([creatorId, createdAt(sort: Desc)])
+  @@map("wallet_transactions")
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+enum PayoutMethodType {
+  BANK
+  ESEWA
+  KHALTI
+}
+
+enum WalletTransactionType {
+  CAMPAIGN_PAYOUT
+  REFERRAL_REWARD
+  REFERRAL_BONUS
+  WITHDRAWAL
+  ADJUSTMENT
+}
+
+enum WalletDirection {
+  CREDIT
+  DEBIT
+}
+
+enum WalletTransactionStatus {
+  COMPLETED
+  REVERSED
 }
 
 model Referral {
@@ -686,62 +811,62 @@ model Campaign {
 }
 
 model Application {
-  id                  String               @id @default(cuid())
-  campaignId          String
+  id                   String                  @id @default(cuid())
+  campaignId           String
   // Set only for campaigns using CampaignRequirement (multi-role campaigns) —
   // null for the simple single-category campaigns that predate it and remain
   // the common case. See the two-part uniqueness note below @@index.
-  requirementId       String?
-  creatorId           String
-  coverLetter         String
-  proposedRate        Float
-  timeline            String
-  socialHandles       Json                 @default("{}")
-  portfolioUrl        String?
-  status              ApplicationStatus    @default(PENDING)
-  workStatus          WorkStatus           @default(NONE)
-  workNote            String?
-  revisionRequestedAt DateTime?
-  submittedAt         DateTime?
-  deliverableUrls     String?
+  requirementId        String?
+  creatorId            String
+  coverLetter          String
+  proposedRate         Float
+  timeline             String
+  socialHandles        Json                    @default("{}")
+  portfolioUrl         String?
+  status               ApplicationStatus       @default(PENDING)
+  workStatus           WorkStatus              @default(NONE)
+  workNote             String?
+  revisionRequestedAt  DateTime?
+  submittedAt          DateTime?
+  deliverableUrls      String?
   // Up to 3 entries: { publicId, url, thumbnailUrl, durationSec, format, sizeBytes, label, uploadedAt }.
   // Appended via a conditional SQL update capped at 3 (see CampaignRepository.appendDeliverableVideo)
   // rather than a plain read-modify-write, since two uploads completing near-simultaneously would
   // otherwise race and silently drop one. Cleared (with the underlying Cloudinary assets deleted) on
   // requestRevision — see CampaignService.requestRevision.
-  deliverableVideos   Json                 @default("[]")
+  deliverableVideos    Json                    @default("[]")
   // Up to 10 entries: { id, publicId, url, fileType, originalFileName, mimeType, sizeBytes, uploadedAt }.
   // Images/PDF/DOCX are <=5MB and proxied through this server (multer), unlike
   // deliverableVideos' direct-to-Cloudinary signed flow. Cleared alongside
   // deliverableVideos on requestRevision.
-  deliverableFiles    Json                 @default("[]")
-  paymentStatus       PaymentStatus        @default(UNPAID)
-  paidAt              DateTime?
+  deliverableFiles     Json                    @default("[]")
+  paymentStatus        PaymentStatus           @default(UNPAID)
+  paidAt               DateTime?
   // esewa | khalti | fonepay — set once payForApplication (mock) or a real
   // gateway (Khalti) actually completes the payment.
-  paymentMethod       String?
+  paymentMethod        String?
   // Khalti's payment identifier for the most recent initiate call — overwritten
   // on every retry so only the latest attempt's callback can complete the
   // payment (an older, abandoned pidx can never be replayed to mark this paid).
-  khaltiPidx          String?              @unique
+  khaltiPidx           String?                 @unique
   // eSewa's transaction_uuid for the most recent initiate call — same
   // overwrite-on-retry role as khaltiPidx above, verified against eSewa's
   // signed redirect + status-check API in confirmEsewaPayment.
-  esewaTransactionUuid String?             @unique
+  esewaTransactionUuid String?                 @unique
   // Set only when an admin manually releases the held escrow payment —
   // brand approval no longer releases funds automatically, see approveWork().
-  releasedAt          DateTime?
-  releasedByAdminId   String?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  campaign            Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  requirement         CampaignRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
-  creator             CreatorProfile       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  reviews             Review[]
-  paymentTransactions PaymentTransaction[]
-  revisionNotes       RevisionNote[]
-  assignments         ApplicationAssignment[]
-  contract            Contract?
+  releasedAt           DateTime?
+  releasedByAdminId    String?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  campaign             Campaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  requirement          CampaignRequirement?    @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  creator              CreatorProfile          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  reviews              Review[]
+  paymentTransactions  PaymentTransaction[]
+  revisionNotes        RevisionNote[]
+  assignments          ApplicationAssignment[]
+  contract             Contract?
 
   // True uniqueness is enforced by two hand-written partial indexes, not a
   // plain @@unique — Prisma can't express "unique except when null" and a

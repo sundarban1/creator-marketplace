@@ -14,10 +14,19 @@ export class WalletController {
     }
   }
 
-  async withdraw(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async createWithdrawal(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const summary = await walletService.withdraw(req.user!.id, req.body);
-      success(res, summary, 'Withdrawal successful');
+      const result = await walletService.createWithdrawalRequest(req.user!.id, req.body);
+      success(res, result, 'Withdrawal request submitted', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async listWithdrawals(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const withdrawals = await walletService.listWithdrawals(req.user!.id);
+      success(res, withdrawals, 'Withdrawals retrieved');
     } catch (err) {
       next(err);
     }

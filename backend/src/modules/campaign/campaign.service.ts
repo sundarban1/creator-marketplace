@@ -45,7 +45,7 @@ import {
 // business chose (a proper noun, same category as a person's name), not
 // descriptive prose; translating it would show creators a name the business
 // never wrote.
-const CAMPAIGN_FIELDS = ['description', 'category', 'goals', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits', 'contentGuidelines'] as const;
+const CAMPAIGN_FIELDS = ['description', 'category', 'goals', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
 
 // Mirrors the fee breakdown shown to the business in the pay modal (mobile
 // activity-timeline.tsx's crFee/pfFee/vat/total) — must stay in lockstep with
@@ -220,26 +220,34 @@ export class CampaignService {
   // yet — payment isn't wired up, this is purely informational/for the lock
   // in the mobile create-event UI). Drafts don't consume quota — see
   // CampaignRepository.countFeaturedCampaigns.
+  //
+  // The 'featuredEvent.paywallEnabled' master switch gates the whole thing:
+  // when it's off (default), every business features without limit or charge;
+  // when it's on, allowlisted brands still feature for free and everyone else
+  // gets `freeQuota` free features before the toggle locks behind `price`.
   async getFeaturedQuota(userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) throw new AppError('Business profile not found', 404);
 
-    const [freeQuotaSetting, priceSetting, unlimitedEmailsSetting, used] = await Promise.all([
+    const [paywallSetting, freeQuotaSetting, priceSetting, unlimitedEmailsSetting, used] = await Promise.all([
+      this.adminRepo.getSetting('featuredEvent.paywallEnabled'),
       this.adminRepo.getSetting('featuredEvent.freeQuota'),
       this.adminRepo.getSetting('featuredEvent.price'),
       this.adminRepo.getSetting('featuredEvent.unlimitedEmails'),
       this.repo.countFeaturedCampaigns(business.id),
     ]);
+    const paywallEnabled = paywallSetting === true;
     const freeQuota = Number(freeQuotaSetting) || 0;
     const price     = Number(priceSetting) || 0;
     const unlimitedEmails = Array.isArray(unlimitedEmailsSetting) ? unlimitedEmailsSetting as string[] : [];
-    const unlimited = unlimitedEmails.some((e) => e.toLowerCase() === business.user.email.toLowerCase());
+    const emailAllowlisted = unlimitedEmails.some((e) => e.toLowerCase() === business.user.email.toLowerCase());
+    const unlimited = !paywallEnabled || emailAllowlisted;
     // A large finite sentinel, not Infinity — Infinity serializes to `null`
     // over JSON, which would break every `remaining > 0` / `<= 0` check that
     // already exists downstream (create(), the mobile lock/paywall UI).
     const remaining = unlimited ? Number.MAX_SAFE_INTEGER : Math.max(0, freeQuota - used);
 
-    return { freeQuota, used, remaining, price, unlimited };
+    return { paywallEnabled, freeQuota, used, remaining, price, unlimited };
   }
 
   // Broadcasts a newly-live campaign to creators — shared by create(), the

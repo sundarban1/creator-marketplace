@@ -24,14 +24,21 @@ const DEFAULTS: Record<string, unknown> = {
   'security.ipAllowlist':          false,
   'security.auditLogging':         true,
   'security.sessionTimeout':       true,
-  // Number of events a business can feature for free before they're
-  // charged; 'featuredEvent.price' is what they'd pay per feature after
-  // that (Rs.). See CampaignService.getFeaturedQuota.
+  // Master switch for the featured-event paywall. OFF (default) = every
+  // business can feature unlimited events for free. ON = each business gets
+  // 'featuredEvent.freeQuota' free features, then the mobile toggle locks
+  // behind 'featuredEvent.price' (Rs. per feature — informational only, no
+  // charge is collected yet). See CampaignService.getFeaturedQuota.
+  'featuredEvent.paywallEnabled':  false,
+  // Only apply when 'featuredEvent.paywallEnabled' is true.
   'featuredEvent.freeQuota':       3,
   'featuredEvent.price':           1000,
+  // Minimum a creator can request per manual withdrawal (Rs.). Enforced
+  // server-side in WalletService.createWithdrawalRequest.
+  'wallet.minWithdrawal':          500,
   // Businesses whose account email appears here bypass the free quota above
-  // entirely — always allowed to feature, no charge. See
-  // CampaignService.getFeaturedQuota. Lowercased on comparison.
+  // entirely — always allowed to feature for free, even while the paywall is
+  // on. See CampaignService.getFeaturedQuota. Lowercased on comparison.
   'featuredEvent.unlimitedEmails': [] as string[],
 
   // ── Marketplace ──────────────────────────────────────────────────────────
