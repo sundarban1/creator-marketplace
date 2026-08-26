@@ -492,6 +492,9 @@ export class MessagingService {
     if (conversation.status === 'DECLINED') {
       throw new AppError('This conversation request was declined', 403);
     }
+    if (conversation.status === 'CLOSED') {
+      throw new AppError('This collaboration has ended. Accept a new proposal to chat again.', 403);
+    }
 
     return conversation;
   }
@@ -962,14 +965,15 @@ export class MessagingService {
   }
 
   // Called once a project is completed and its payment released — the conversation
-  // reverts to PENDING so either side must send a fresh request before chatting again.
+  // is closed and leaves both inboxes. Accepting a new proposal from the same
+  // creator (or a fresh message request from either side) opens it again.
   async closeConversationAfterCompletion(
     creatorUserId: string,
     businessUserId: string,
     creatorId: string,
     businessId: string,
   ) {
-    const conversationId = await this.repo.resetToPendingAfterCompletion(creatorId, businessId);
+    const conversationId = await this.repo.closeAfterCompletion(creatorId, businessId);
     if (conversationId) {
       emitToUser(creatorUserId,  'conversation:update', { conversationId });
       emitToUser(businessUserId, 'conversation:update', { conversationId });

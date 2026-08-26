@@ -31,7 +31,7 @@ import { RangeDropdown } from '@/components/RangeDropdown';
 import { ResultCountPill } from '@/components/ResultCountPill';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { creatorService, type ApiCreatorListItem } from '@/services/creator';
+import { creatorService, type ApiCreatorListItem, type SavedCreatorItem } from '@/services/creator';
 import { serviceService, type ApiService } from '@/services/service';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -64,6 +64,26 @@ function getInitials(name: string): string {
   const first = words[0][0];
   const last = words.length > 1 ? words[words.length - 1][0] : '';
   return (first + last).toUpperCase();
+}
+
+// The saved-creators endpoint returns a slimmer creator shape than the browse
+// list — map it onto ApiCreatorListItem so the same CreatorCard renders it.
+// Fields the saved payload omits (providerType/teamSize/bio/rating) fall back
+// to null/undefined, which CreatorCard already tolerates.
+function savedItemToListItem(s: SavedCreatorItem): ApiCreatorListItem {
+  return {
+    id: s.creator.id,
+    fullName: s.creator.fullName,
+    providerType: null,
+    teamSize: null,
+    bio: null,
+    avatarUrl: s.creator.avatarUrl,
+    location: s.creator.location,
+    categories: s.creator.categories,
+    isVerified: s.creator.isVerified,
+    fullyVerified: false,
+    socialAccounts: s.creator.socialAccounts,
+  };
 }
 
 // ─── Creator Card ─────────────────────────────────────────────────────────────
@@ -175,7 +195,18 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const [search, setSearch] = useState('');
   const [searchDebounced] = useDebouncedValue(search, 400);
 
-  const [entityTab, setEntityTab] = useState<EntityTab>('people');
+  // People/Services switching is disabled for now (see the commented-out pills
+  // in the render) — the tab is pinned to 'people'. Re-add `setEntityTab` here
+  // when restoring the switcher.
+  const [entityTab] = useState<EntityTab>('people');
+
+  // "Saved Creators" pill — an in-place filter, not a separate screen. When on,
+  // the People list is replaced by the business's saved creators (same card,
+  // same search/category/filter controls, no sort or pagination).
+  const [savedOnly, setSavedOnly] = useState(false);
+  const [savedCreators, setSavedCreators] = useState<ApiCreatorListItem[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedError, setSavedError] = useState('');
   const [services, setServices] = useState<ApiService[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [servicesLoadingMore, setServicesLoadingMore] = useState(false);
@@ -246,11 +277,14 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
 
   async function handleToggleSave(creatorId: string) {
     const wasSaved = savedIds.has(creatorId);
+    const removed = wasSaved ? savedCreators.find((c) => c.id === creatorId) : undefined;
     setSavedIds((prev) => {
       const next = new Set(prev);
       wasSaved ? next.delete(creatorId) : next.add(creatorId);
       return next;
     });
+    // In the saved-only view, un-saving drops the card from the list immediately.
+    if (wasSaved) setSavedCreators((prev) => prev.filter((c) => c.id !== creatorId));
     try {
       await creatorService.toggleSaveCreator(creatorId);
     } catch {
@@ -259,6 +293,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
         wasSaved ? next.add(creatorId) : next.delete(creatorId);
         return next;
       });
+      if (removed) setSavedCreators((prev) => (prev.some((c) => c.id === creatorId) ? prev : [removed, ...prev]));
     }
   }
 
@@ -305,11 +340,43 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
     void fetchCreators(1, true, activeFilter, searchDebounced, sort);
   }, [entityTab, searchDebounced, activeFilter, sort]);
 
+  // Saved-only view. Honours the same search + category + filter controls as the
+  // browse list (the saved endpoint accepts them); no sort, no pagination.
+  async function fetchSaved(filter: CreatorFilterState, nameSearch: string) {
+    setSavedLoading(true);
+    setSavedError('');
+    try {
+      const locationText = filter.locations.length > 0
+        ? filter.locations.filter((l) => l.label !== 'Remote').map((l) => l.label).join(',')
+        : undefined;
+      const data = await creatorService.getSavedCreators({
+        search: nameSearch.trim() || undefined,
+        location: locationText || undefined,
+        categories: filter.categories.length ? filter.categories : undefined,
+        platforms: filter.platforms.length ? filter.platforms : undefined,
+        priceMin: filter.priceMin > CREATOR_SLIDER_MIN ? filter.priceMin : undefined,
+        priceMax: filter.priceMax < CREATOR_SLIDER_MAX ? filter.priceMax : undefined,
+      });
+      setSavedCreators(data.map(savedItemToListItem));
+    } catch (e) {
+      setSavedError(e instanceof Error ? e.message : 'Failed to load saved creators');
+    } finally {
+      setSavedLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!savedOnly) return;
+    void fetchSaved(activeFilter, searchDebounced);
+  }, [savedOnly, searchDebounced, activeFilter]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    if (entityTab === 'people') void fetchCreators(1, true, activeFilter, searchDebounced, sort);
+    if (savedOnly) void fetchSaved(activeFilter, searchDebounced);
+    else if (entityTab === 'people') void fetchCreators(1, true, activeFilter, searchDebounced, sort);
     else void fetchServices(1, true, searchDebounced, serviceCategory);
-  }, [entityTab, searchDebounced, activeFilter, sort, serviceCategory]);
+  }, [savedOnly, entityTab, searchDebounced, activeFilter, sort, serviceCategory]);
 
   function loadMore() {
     if (loadingMoreRef.current || page >= Math.ceil(total / PAGE_SIZE)) return;
@@ -391,6 +458,14 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
     }
   }
 
+  // The People list swaps its data source when the Saved Creators pill is on.
+  // Saved results aren't paginated, so loadMore / the loading-more spinner are
+  // suppressed in that mode.
+  const peopleData     = savedOnly ? savedCreators : creators;
+  const peopleLoading  = savedOnly ? savedLoading : loading;
+  const peopleError    = savedOnly ? savedError : error;
+  const peopleCount    = savedOnly ? savedCreators.length : total;
+
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
@@ -426,23 +501,41 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
         </View>
       </View>
 
-      {/* People / Services pills — switches what the search bar above and the
-          list below operate on. People stays the default landing view since
-          hiring creators is this screen's primary job. */}
+      {/* Row that used to switch People / Services. Both switcher pills are
+          commented out; it now holds a single "Saved Creators" toggle that
+          filters the list below in place, plus the sort control. */}
       <View style={s.entityPillRow}>
+        {/* "People" tab replaced by the Saved Creators pill below.
         <Pressable
           style={[s.entityPill, { backgroundColor: entityTab === 'people' ? C.brinjal1 : C.surface, borderColor: entityTab === 'people' ? C.brinjal1 : C.border }]}
           onPress={() => setEntityTab('people')}>
           <FontAwesome5 name="users" solid size={13} color={entityTab === 'people' ? '#fff' : C.text} />
           <Text style={[s.entityPillText, { color: entityTab === 'people' ? '#fff' : C.text }]}>{t('explore.tabPeople')}</Text>
         </Pressable>
+        */}
+        {/* Services tab hidden for now — business "Find People" shows People only.
         <Pressable
           style={[s.entityPill, { backgroundColor: entityTab === 'services' ? C.brinjal1 : C.surface, borderColor: entityTab === 'services' ? C.brinjal1 : C.border }]}
           onPress={() => setEntityTab('services')}>
           <FontAwesome5 name="briefcase" solid size={13} color={entityTab === 'services' ? '#fff' : C.text} />
           <Text style={[s.entityPillText, { color: entityTab === 'services' ? '#fff' : C.text }]}>{t('explore.tabServices')}</Text>
         </Pressable>
-        {entityTab === 'people' && (
+        */}
+        <Pressable
+          style={[s.entityPill, { backgroundColor: savedOnly ? C.brinjal1 : C.surface, borderColor: savedOnly ? C.brinjal1 : C.border }]}
+          onPress={() => {
+            // Show the skeleton immediately on turn-on so there's no flash of
+            // the "no saved creators" empty state before the fetch effect runs.
+            if (!savedOnly) setSavedLoading(true);
+            setSavedOnly((v) => !v);
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: savedOnly }}
+          accessibilityLabel={t('explore.tabSavedCreators')}>
+          <FontAwesome5 name="bookmark" solid size={13} color={savedOnly ? '#fff' : C.brinjal1} />
+          <Text style={[s.entityPillText, { color: savedOnly ? '#fff' : C.text }]}>{t('explore.tabSavedCreators')}</Text>
+        </Pressable>
+        {entityTab === 'people' && !savedOnly && (
           <View style={{ marginLeft: 'auto' }}>
             <RangeDropdown value={sort} options={sortOptions} onChange={setSort} />
           </View>
@@ -520,28 +613,32 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
           row above it is. */}
       <View style={{ flex: 1 }}>
         {entityTab === 'people' ? (
-          loading ? (
+          peopleLoading ? (
             <View style={s.list}>
               {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
             </View>
-          ) : error ? (
+          ) : peopleError ? (
             <EmptyState
               icon="exclamation-circle"
               title={t('common.error')}
-              subtitle={error}
-              action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced, sort) }}
+              subtitle={peopleError}
+              action={{ label: t('common.retry'), onPress: () => (savedOnly ? fetchSaved(activeFilter, searchDebounced) : fetchCreators(1, true, activeFilter, searchDebounced, sort)) }}
             />
-          ) : creators.length === 0 ? (
+          ) : peopleData.length === 0 ? (
             <EmptyState
-              faIcon="users"
-              title={t('explore.noCreators')}
-              subtitle={filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
+              faIcon={savedOnly ? 'bookmark' : 'users'}
+              title={savedOnly ? t('savedCreators.empty') : t('explore.noCreators')}
+              subtitle={
+                savedOnly
+                  ? (filterActive || search ? t('explore.adjustFilters') : t('savedCreators.emptySub'))
+                  : (filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet'))
+              }
               action={(filterActive || search) ? { label: t('explore.clearFilters'), onPress: () => { setSearch(''); setActiveFilter(DEFAULT_CREATOR_FILTER); } } : undefined}
             />
           ) : (
             <FlatList
               style={{ flex: 1 }}
-              data={creators}
+              data={peopleData}
               keyExtractor={(item) => item.id}
               contentContainerStyle={s.list}
               showsVerticalScrollIndicator={false}
@@ -553,7 +650,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
                   onToggleSave={() => handleToggleSave(item.id)}
                 />
               )}
-              onEndReached={loadMore}
+              onEndReached={savedOnly ? undefined : loadMore}
               onEndReachedThreshold={0.3}
               initialNumToRender={8}
               maxToRenderPerBatch={8}
@@ -561,9 +658,9 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
               removeClippedSubviews={Platform.OS === 'android'}
               ListFooterComponent={
                 <View style={s.listFooter}>
-                  {loadingMore && <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />}
+                  {!savedOnly && loadingMore && <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />}
                   <ResultCountPill
-                    label={total !== 1 ? t('explore.creatorsFoundPlural', { count: total }) : t('explore.creatorsFound', { count: total })}
+                    label={peopleCount !== 1 ? t('explore.creatorsFoundPlural', { count: peopleCount }) : t('explore.creatorsFound', { count: peopleCount })}
                   />
                 </View>
               }

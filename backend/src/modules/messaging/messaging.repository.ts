@@ -46,8 +46,8 @@ export class MessagingRepository {
     });
 
     if (existing) {
-      // Re-open a declined conversation as a new request
-      if (existing.status === 'DECLINED') {
+      // Re-open a declined or completed-and-closed conversation as a new request
+      if (existing.status === 'DECLINED' || existing.status === 'CLOSED') {
         return prisma.conversation.update({
           where: { id: existing.id },
           data: { status: initialStatus, requestMessage: requestMessage ?? null },
@@ -173,10 +173,13 @@ export class MessagingRepository {
   }
 
   // Once a project is completed and paid out, a conversation that was only ever
-  // auto-accepted (never a real chat request/accept) reverts to PENDING — messaging
-  // is paused until either side sends a fresh request. A genuinely-accepted
-  // conversation (autoAccepted: false) is left untouched.
-  async resetToPendingAfterCompletion(creatorId: string, businessId: string): Promise<string | null> {
+  // auto-accepted (never a real chat request/accept) is closed — it drops out of
+  // both inboxes entirely, rather than reverting to PENDING where it would
+  // resurface as a bogus request/pending row. A genuinely-accepted conversation
+  // (autoAccepted: false) is left untouched. Accepting a fresh proposal
+  // reactivates it (findOrCreateAcceptedConversation); either side can also send
+  // a new message request, which re-opens it as PENDING (findOrCreateConversation).
+  async closeAfterCompletion(creatorId: string, businessId: string): Promise<string | null> {
     const existing = await prisma.conversation.findUnique({
       where: { creatorId_businessId: { creatorId, businessId } },
       select: { id: true, status: true, autoAccepted: true },
@@ -185,7 +188,7 @@ export class MessagingRepository {
 
     await prisma.conversation.update({
       where: { id: existing.id },
-      data: { status: 'PENDING', autoAccepted: false, requestMessage: null },
+      data: { status: 'CLOSED', autoAccepted: false, requestMessage: null },
     });
     return existing.id;
   }

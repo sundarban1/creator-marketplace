@@ -22,12 +22,13 @@ function initials(name: string) {
 }
 
 const STATUS_CFG = {
-  PENDING:  { label: 'Pending',  bg: 'bg-amber-100',  text: 'text-amber-700',  icon: Clock       },
-  ACCEPTED: { label: 'Active',   bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle },
-  DECLINED: { label: 'Declined', bg: 'bg-red-100',     text: 'text-red-700',    icon: XCircle     },
+  PENDING:  { label: 'Pending',   bg: 'bg-amber-100',   text: 'text-amber-700',   icon: Clock       },
+  ACCEPTED: { label: 'Active',    bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle },
+  DECLINED: { label: 'Declined',  bg: 'bg-red-100',     text: 'text-red-700',     icon: XCircle     },
+  CLOSED:   { label: 'Completed', bg: 'bg-gray-100',    text: 'text-gray-600',    icon: CheckCircle },
 };
 
-function StatusBadge({ status }: { status: 'PENDING' | 'ACCEPTED' | 'DECLINED' }) {
+function StatusBadge({ status }: { status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED' }) {
   const cfg  = STATUS_CFG[status] ?? STATUS_CFG.PENDING;
   const Icon = cfg.icon;
   return (
@@ -76,7 +77,7 @@ function formatTime(iso?: string | null) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-type StatusFilter = '' | 'PENDING' | 'ACCEPTED' | 'DECLINED';
+type StatusFilter = '' | 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED';
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
@@ -148,9 +149,9 @@ export function Conversations() {
       <PageHeader title="Conversations" subtitle="Monitor and moderate all creator–business conversations" />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 xl:grid-cols-6 gap-4 mb-6">
         {statsLoading ? (
-          Array.from({ length: 5 }).map((_, i) => (
+          Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse h-20" />
           ))
         ) : (
@@ -159,6 +160,7 @@ export function Conversations() {
             <StatCard label="Active Chats"        value={stats?.accepted      ?? 0} color="text-emerald-600" />
             <StatCard label="Pending Requests"    value={stats?.pending       ?? 0} sub="Awaiting response" color="text-amber-600" />
             <StatCard label="Declined"            value={stats?.declined      ?? 0} color="text-red-500" />
+            <StatCard label="Completed"           value={stats?.closed        ?? 0} sub="Paid & closed" color="text-gray-600" />
             <StatCard label="Total Messages"      value={stats?.totalMessages ?? 0} color="text-sky-600" />
           </>
         )}
@@ -185,6 +187,7 @@ export function Conversations() {
           <option value="PENDING">Pending</option>
           <option value="ACCEPTED">Active</option>
           <option value="DECLINED">Declined</option>
+          <option value="CLOSED">Completed</option>
         </select>
         <button
           onClick={() => { void fetchList(); void fetchStats(); }}

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { Animated, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '@/components/BackButton';
 import { EntityCard } from '@/components/EntityCard';
@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/ErrorState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabSlider } from '@/components/TabSlider';
+import { useTabTransition } from '@/hooks/useTabTransition';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -35,6 +36,9 @@ const PRICING_MODEL_LABEL: Record<ApiService['pricingModel'], string> = {
 };
 
 type Tab = 'opportunities' | 'businesses' | 'services';
+
+// Left-to-right order — drives the slide direction when switching results.
+const TAB_ORDER: readonly Tab[] = ['opportunities', 'businesses', 'services'];
 
 type Row =
   | { kind: 'campaign'; campaign: Campaign }
@@ -114,6 +118,7 @@ export default function SearchResultsScreen() {
   const query = q ?? '';
 
   const [tab, setTab]         = useState<Tab>('opportunities');
+  const panelStyle = useTabTransition(tab, TAB_ORDER);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
@@ -171,35 +176,37 @@ export default function SearchResultsScreen() {
           <TabSlider tabs={tabs} active={tab} onChange={(key) => setTab(key as Tab)} justify />
         </View>
 
-        {loading ? (
-          <View style={styles.list}>
-            {[0, 1, 2].map((i) => <ListRowSkeleton key={i} />)}
-          </View>
-        ) : error ? (
-          <ErrorState
-            title={t('search.errorTitle')}
-            message={error}
-            actionLabel={t('search.retry')}
-            onAction={() => void load()}
-          />
-        ) : rows.length === 0 ? (
-          <EmptyState icon="search" title={t('search.emptyTitle')} subtitle={t('search.emptySub')} />
-        ) : (
-          <FlatList
-            data={rows}
-            keyExtractor={(row) => row.kind === 'campaign' ? `c-${row.campaign.id}` : row.kind === 'business' ? `b-${row.business.id}` : `s-${row.service.id}`}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => {
-              if (item.kind === 'campaign') return <CampaignListItem campaign={item.campaign} />;
-              if (item.kind === 'business') return <BusinessResultCard item={item.business} />;
-              return <ServiceResultCard item={item.service} />;
-            }}
-            ListFooterComponent={
-              <Text style={[styles.count, { color: C.textSecondary }]}>{t('search.resultsCount', { n: activeCount })}</Text>
-            }
-          />
-        )}
+        <Animated.View style={[styles.panel, panelStyle]}>
+          {loading ? (
+            <View style={styles.list}>
+              {[0, 1, 2].map((i) => <ListRowSkeleton key={i} />)}
+            </View>
+          ) : error ? (
+            <ErrorState
+              title={t('search.errorTitle')}
+              message={error}
+              actionLabel={t('search.retry')}
+              onAction={() => void load()}
+            />
+          ) : rows.length === 0 ? (
+            <EmptyState icon="search" title={t('search.emptyTitle')} subtitle={t('search.emptySub')} />
+          ) : (
+            <FlatList
+              data={rows}
+              keyExtractor={(row) => row.kind === 'campaign' ? `c-${row.campaign.id}` : row.kind === 'business' ? `b-${row.business.id}` : `s-${row.service.id}`}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => {
+                if (item.kind === 'campaign') return <CampaignListItem campaign={item.campaign} />;
+                if (item.kind === 'business') return <BusinessResultCard item={item.business} />;
+                return <ServiceResultCard item={item.service} />;
+              }}
+              ListFooterComponent={
+                <Text style={[styles.count, { color: C.textSecondary }]}>{t('search.resultsCount', { n: activeCount })}</Text>
+              }
+            />
+          )}
+        </Animated.View>
       </MaxWidthContainer>
     </SafeAreaView>
   );
@@ -207,6 +214,7 @@ export default function SearchResultsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  panel:     { flex: 1 },
   header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md },
   title:     { flex: 1, fontSize: 18, fontFamily: F.bold },
   count:     { fontSize: 13, fontFamily: F.medium, textAlign: 'center', marginTop: 4 },

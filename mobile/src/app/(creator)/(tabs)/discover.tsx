@@ -1,7 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Keyboard, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -19,6 +19,7 @@ import { ResultCountPill } from '@/components/ResultCountPill';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
+import { useTabTransition } from '@/hooks/useTabTransition';
 import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
 import { TabSlider } from '@/components/TabSlider';
 import { RangeDropdown } from '@/components/RangeDropdown';
@@ -987,6 +988,9 @@ const styles = StyleSheet.create({
 // and filters instead of refetching. ────────────────────────────────────────
 type MainTab = 'campaigns' | 'businesses' | 'people';
 
+// Left-to-right tab order — drives the slide direction when switching panels.
+const MAIN_TAB_ORDER: readonly MainTab[] = ['campaigns', 'businesses', 'people'];
+
 export default function DiscoverScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -1048,6 +1052,11 @@ export default function DiscoverScreen() {
 
   const activeFilterCount = filterCounts[mainTab] ?? 0;
   const isFilterActive = activeFilterCount > 0;
+
+  // Cross-fade + slide the panel stack on tab change so the switch glides
+  // instead of popping. Only the visible panel actually shows the motion —
+  // the other two are display:none behind it.
+  const panelStyle = useTabTransition(mainTab, MAIN_TAB_ORDER);
 
   const MAIN_TABS = [
     { key: 'campaigns',   label: t('creator.discover.tabCampaigns'),   color: C.brinjal1 },
@@ -1137,7 +1146,7 @@ export default function DiscoverScreen() {
           <TabSlider tabs={MAIN_TABS} active={mainTab} onChange={(key) => selectTab(key as MainTab)} />
         </View>
 
-        <View style={{ flex: 1 }}>
+        <Animated.View style={[{ flex: 1 }, panelStyle]}>
           {visited.businesses && (
             <View style={[{ flex: 1 }, mainTab !== 'businesses' && shellStyles.hidden]}>
               <ExploreBusinessesScreen
@@ -1164,7 +1173,7 @@ export default function DiscoverScreen() {
               />
             </View>
           )}
-        </View>
+        </Animated.View>
       </MaxWidthContainer>
     </SafeAreaView>
   );

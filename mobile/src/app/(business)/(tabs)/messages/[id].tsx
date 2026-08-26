@@ -466,6 +466,7 @@ export default function BusinessChatRoomScreen() {
 
   const isPending  = chat.status === 'PENDING';
   const isDeclined = chat.status === 'DECLINED';
+  const isClosed   = chat.status === 'CLOSED';
   const listItems  = buildItems(chat.messages, user?.id ?? '', chat.otherTyping);
   // Blocks starting a second video while one is already compressing/uploading/sending.
   const hasActiveUpload = chat.messages.some((m) => m.status === 'compressing' || m.status === 'uploading' || m.status === 'finalizing' || m.status === 'sending');
@@ -500,6 +501,8 @@ export default function BusinessChatRoomScreen() {
                 )
                 : isDeclined
                 ? <Text style={[s.headerSub, { color: C.error }]}>{t('messages.requestDeclined')}</Text>
+                : isClosed
+                ? <Text style={[s.headerSub, { color: C.textSecondary }]}>{t('messages.collaborationClosed')}</Text>
                 : (() => {
                     const label = chat.presence ? formatPresence(t, chat.presence.online, chat.presence.lastSeenAt) : null;
                     return label

@@ -36,7 +36,7 @@ function isTransientNetworkError(e: unknown): boolean {
   return !/limit|not supported|not allowed|cancelled/i.test(msg);
 }
 
-export type ChatStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED';
+export type ChatStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED';
 
 type UseChatConversationOptions = {
   conversationId: string;

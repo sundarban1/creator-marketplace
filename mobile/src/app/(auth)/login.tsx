@@ -56,15 +56,16 @@ const FACEBOOK_LOGIN_ENABLED = false;
 // Same logo backs both the sign-in and create-account headers.
 const HERO_IMAGE = require('@/assets/images/logo.png');
 
-// The hero panel's artwork — Kolab's own collaboration illustration, matted to
-// a transparent background (the wordmark is cropped out, since the header
-// already carries the logo) so it can sit directly on the purple gradient
-// instead of inside a white box.
-const HERO_ART = require('@/assets/images/login/collaborate.png');
+// The hero panel's backdrop — a single full-bleed photo sitting behind the
+// brand headline. A diagonal brand wash is layered over the top (see the hero
+// JSX) so the white headline stays legible and the panel still reads as the
+// same brand surface the app opens on, rather than the flat gradient it used
+// to carry.
+const HERO_PHOTO = require('@/assets/images/login/kid.jpg');
 
-// Far end of the hero gradient — the same brand-purple diagonal the creator
-// home feed's primary CTA card uses, so the first surface a signed-out user
-// sees is the one they'll meet again once they're inside the app.
+// Far end of the hero wash — the same brand-purple the creator home feed's
+// primary CTA card uses, so the first surface a signed-out user sees is the one
+// they'll meet again once they're inside the app.
 const HERO_GRADIENT_END = '#7C3AED';
 
 // Role card accents pull straight from the active theme's own primary/accent tokens
@@ -942,37 +943,30 @@ export default function LoginScreen() {
               },
             ]}>
 
-            {/* ── Hero ── the gradient panel that opens the creator home feed,
-                reused here to carry the brand headline: diagonal brand
-                gradient, hero-level padding, the collaboration artwork bled
-                into the bottom-right corner and a floating lift. */}
-            <LinearGradient
-              colors={[C.brinjal1, HERO_GRADIENT_END]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={s.heroCard}>
-              {/* Grouped so the card's own `gap` spaces the headline block as
-                  a whole — the three lines themselves stay set solid. */}
-              <View>
-                <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline1')}</Text>
-                <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline2')}</Text>
-                <Text style={s.heroHeadlineLine}>{t('auth.login.heroHeadline3')}</Text>
+            {/* ── Hero ── the panel that opens the creator home feed, reused
+                here to carry the brand headline. Its flat brand gradient is now
+                backed by a full-bleed photo of a creator at work, with a
+                diagonal brand wash over the top so the white headline stays
+                legible and the panel still reads as the same surface the app
+                opens on. */}
+            <View style={s.heroCard}>
+              <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <ExpoImage source={HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
+                <LinearGradient
+                  colors={[withAlpha(C.brinjal2, 0.88), withAlpha(C.brinjal1, 0.72), withAlpha(HERO_GRADIENT_END, 0.5)]}
+                  locations={[0, 0.5, 1]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
               </View>
 
-              {/* Hero art — replaces the flat handshake glyph this panel used
-                  to carry. It bleeds into the card's bottom-right corner, and
-                  a second white-to-transparent gradient washes underneath so
-                  the illustration lifts off the purple rather than looking
-                  pasted onto it. Decorative: the headline above already says
-                  everything the picture says. */}
-              <View style={s.heroArtWrap} pointerEvents="none">
-                <LinearGradient
-                  colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0.20)']}
-                  start={{ x: 0.1, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={s.heroArtWash}
-                />
-                <ExpoImage source={HERO_ART} style={s.heroArt} contentFit="contain" accessible={false} />
+              {/* Two lines, set solid — grouped in a View so the card's own
+                  `gap` never spaces them apart. */}
+              <View>
+                <Text style={s.heroHeadline}>{t('auth.login.heroHeadline1')}</Text>
+                <Text style={s.heroHeadline}>{t('auth.login.heroHeadline2')}</Text>
               </View>
-            </LinearGradient>
+            </View>
 
             {/* Form — crossfades between the two tabs */}
             <Animated.View
@@ -1073,15 +1067,12 @@ function makeStyles(C: typeof COLORS) {
   heroGroup: { gap: SPACING.lg },
 
   // ── Hero ── the creator home CTA card, reused as the brand statement:
-  // diagonal brand gradient, hero-level padding, translucent glyph circle,
-  // floating lift.
-  heroCard:         { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.md, overflow: 'hidden', ...SHADOW.floating },
-  heroHeadlineLine: { fontSize: FONT_SIZE.xl, fontFamily: F.extrabold, color: '#fff', lineHeight: lineHeightFor(FONT_SIZE.xl) },
-  // Bled into the card's bottom-right corner — the negative margins cancel the
-  // card's own padding so the artwork meets the rounded edge.
-  heroArtWrap:      { alignSelf: 'flex-end', width: 196, height: 104, marginRight: -SPACING.xl, marginBottom: -SPACING.xl },
-  heroArtWash:      { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  heroArt:          { width: '100%', height: '100%' },
+  // hero-level padding, floating lift, a full-bleed photo under a diagonal
+  // brand wash. minHeight gives the photo room to read; the brinjal2 fill is
+  // the base colour behind it while it decodes. The headline sits at the
+  // bottom of the panel, centred — the photo fills the space above it.
+  heroCard:     { borderRadius: RADIUS.xl, padding: SPACING.xl, minHeight: 220, overflow: 'hidden', justifyContent: 'flex-end', backgroundColor: C.brinjal2, ...SHADOW.floating },
+  heroHeadline: { fontSize: FONT_SIZE.xl, fontFamily: F.extrabold, color: '#fff', textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
 
   // ── Form ── a standard content card (surface + hairline + raised lift), the
   // same object the home feed stacks its rows and sections out of. One flat

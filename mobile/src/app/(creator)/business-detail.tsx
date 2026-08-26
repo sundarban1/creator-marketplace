@@ -172,7 +172,7 @@ export default function BusinessDetailScreen() {
 
   // Message request state
   const [convId, setConvId]         = useState<string | null>(null);
-  const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
+  const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED' | null>(null);
   const [showMsgModal, setShowMsgModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [requestMsg, setRequestMsg]     = useState('');
@@ -579,35 +579,42 @@ export default function BusinessDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Sticky message bar */}
-      <View style={[styles.msgBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
-        {convStatus === 'ACCEPTED' ? (
-          <Pressable style={[
-              styles.msgBtn,
-              {
-                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-              },
-            ]} onPress={openChat}>
-            <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
-            <Text style={styles.msgBtnText}>{t('businessDetail.openChat')}</Text>
-          </Pressable>
-        ) : convStatus === 'PENDING' ? (
-          <View style={[styles.msgBtn, { backgroundColor: C.border }]}>
-            <Text style={[styles.msgBtnText, { color: '#fff' }]}>{t('businessDetail.requestSent')}</Text>
-          </View>
-        ) : (
-          <Pressable style={[
-              styles.msgBtn,
-              {
-                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-              },
-            ]} onPress={() => setShowMsgModal(true)}>
-            <Text style={styles.msgBtnText}>{t('businessDetail.sendMessage')}</Text>
-          </Pressable>
-        )}
-      </View>
+      {/* Sticky message bar. The "Send Message" button (the else branch below,
+          onPress={() => setShowMsgModal(true)}) is commented out for now —
+          creators can no longer initiate a message request to a business. The
+          bar still renders Open Chat / Request Sent for existing conversations,
+          and is hidden entirely otherwise. */}
+      {(convStatus === 'ACCEPTED' || convStatus === 'PENDING') && (
+        <View style={[styles.msgBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+          {convStatus === 'ACCEPTED' ? (
+            <Pressable style={[
+                styles.msgBtn,
+                {
+                  backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                  shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]} onPress={openChat}>
+              <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
+              <Text style={styles.msgBtnText}>{t('businessDetail.openChat')}</Text>
+            </Pressable>
+          ) : (
+            <View style={[styles.msgBtn, { backgroundColor: C.border }]}>
+              <Text style={[styles.msgBtnText, { color: '#fff' }]}>{t('businessDetail.requestSent')}</Text>
+            </View>
+          )}
+        </View>
+      )}
+      {/* Send Message request button — hidden for now:
+      <Pressable style={[
+          styles.msgBtn,
+          {
+            backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+            shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+          },
+        ]} onPress={() => setShowMsgModal(true)}>
+        <Text style={styles.msgBtnText}>{t('businessDetail.sendMessage')}</Text>
+      </Pressable>
+      */}
       </MaxWidthContainer>
 
       {/* Request message modal */}

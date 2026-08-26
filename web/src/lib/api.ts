@@ -665,7 +665,7 @@ export interface PlatformFlags {
 
 export interface ApiConversationAdmin {
   id:            string;
-  status:        'PENDING' | 'ACCEPTED' | 'DECLINED';
+  status:        'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED';
   requestMessage?: string | null;
   lastMessageAt?:  string | null;
   createdAt:     string;
@@ -683,6 +683,7 @@ export interface ConversationStats {
   pending:       number;
   accepted:      number;
   declined:      number;
+  closed:        number;
   totalMessages: number;
 }
 

@@ -36,6 +36,9 @@ export interface UnifiedTransaction {
   // (PENDING/PROCESSING/REJECTED/CANCELLED) for in-flight requests.
   status: string;
   title: string;
+  // The campaign name for a CAMPAIGN_PAYOUT row (null for every other kind) —
+  // lets the mobile statement show which campaign a payout was for.
+  campaignTitle: string | null;
   method: string | null;
   reference: string | null;
   // The admin's transfer-proof screenshot for a PAID withdrawal (null otherwise).
@@ -52,6 +55,7 @@ const IN_FLIGHT_STATUSES = ['PENDING', 'PROCESSING', 'REJECTED', 'CANCELLED'];
 export function buildUnifiedStatement(
   ledger: WalletTransaction[],
   withdrawals: Withdrawal[],
+  campaignTitles: Map<string, string> = new Map(),
 ): UnifiedTransaction[] {
   const withdrawalById = new Map(withdrawals.map((w) => [w.id, w]));
 
@@ -68,6 +72,9 @@ export function buildUnifiedStatement(
         amount:    tx.amount,
         status:    'COMPLETED',
         title:     tx.description,
+        campaignTitle: tx.referenceType === 'application' && tx.referenceId
+          ? campaignTitles.get(tx.referenceId) ?? null
+          : null,
         method:    w?.method ?? null,
         reference: w?.referenceCode ?? w?.transactionReference ?? null,
         proofUrl:  w?.screenshotUrl ?? null,
@@ -84,6 +91,7 @@ export function buildUnifiedStatement(
       amount:    w.amount,
       status:    w.status,
       title:     `Withdrawal via ${w.method}`,
+      campaignTitle: null,
       method:    w.method,
       reference: w.referenceCode,
       proofUrl:  null,

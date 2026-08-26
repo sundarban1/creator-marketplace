@@ -33,7 +33,8 @@ const ACCOUNT_ITEMS: NavItem[] = [
   // { iconName: 'images',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
   { iconName: 'gift',   faName: 'gift',          labelKey: 'drawer.referAFriend',      route: '/(creator)/referral',                   color: '#EC4899' },
   { iconName: 'envelope-open-text', faName: 'envelope-open-text', labelKey: 'drawer.invitations', route: '/(creator)/invitations', color: '#0EA5E9' },
-  { iconName: 'briefcase',   faName: 'briefcase',   labelKey: 'drawer.myServices',        route: '/(creator)/services',                   color: '#7C3AED' },
+  // Hidden from the drawer for now (My Services — service catalogue, not ready to display in the mobile UI).
+  // { iconName: 'briefcase',   faName: 'briefcase',   labelKey: 'drawer.myServices',        route: '/(creator)/services',                   color: '#7C3AED' },
   { iconName: 'users',       faName: 'users',       labelKey: 'drawer.myTeam',            route: '/(creator)/team',                       color: '#0D9488' },
   { iconName: 'th-large',    faName: 'th-large',    labelKey: 'drawer.myPortfolio',       route: '/(creator)/portfolio',                  color: '#F59E0B' },
   // Hidden from the drawer for now (Weekly working-hours/blocked-dates editor — its own standalone route, not a settings section).

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, useAnimatedValue, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppColors } from '@/context/ThemeContext';
@@ -22,11 +22,19 @@ type Props = {
   justify?: boolean;
 };
 
+// The indicator pill is a fixed-width layer moved with translateX + scaleX so
+// the whole animation can run on the native driver — switching tabs usually
+// fires a heavy re-render on the JS thread (the incoming tab mounts its list),
+// and a JS-driven left/width tween would stutter right when it matters most.
+const BASE_W = 120;
+
 export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
   const C = useAppColors();
   const scrollRef    = useRef<ScrollView>(null);
-  const indicatorX   = useRef(new Animated.Value(0)).current;
-  const indicatorW   = useRef(new Animated.Value(0)).current;
+  const indicatorTX  = useAnimatedValue(0);
+  // Starts at 0 (collapsed / invisible) until the first tab measures — avoids a
+  // one-frame flash of a full BASE_W pill parked at the left edge on mount.
+  const indicatorSX  = useAnimatedValue(0);
   const tabLayouts   = useRef<{ x: number; width: number }[]>([]);
   const [showLeftFade, setShowLeftFade]   = useState(false);
   const [showRightFade, setShowRightFade] = useState(!justify && tabs.length > 3);
@@ -34,34 +42,39 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
   const activeTab = tabs.find((t) => t.key === active) ?? tabs[0];
   const activeColor = activeTab?.color ?? '#4F46E5';
 
+  function moveIndicator(layout: { x: number; width: number }, animated: boolean) {
+    const toTX = layout.x + 2;
+    const toSX = Math.max(0.01, (layout.width - 4) / BASE_W);
+    if (animated) {
+      Animated.spring(indicatorTX, { toValue: toTX, useNativeDriver: true, speed: 20, bounciness: 4 }).start();
+      Animated.spring(indicatorSX, { toValue: toSX, useNativeDriver: true, speed: 20, bounciness: 4 }).start();
+    } else {
+      indicatorTX.setValue(toTX);
+      indicatorSX.setValue(toSX);
+    }
+  }
+
   // Keeps the indicator pill in sync when `active` changes from outside
   // (e.g. a quick-action deep-link setting the tab via a URL param) rather
   // than from a press here — handlePress already animates for the press case.
   useEffect(() => {
     const idx = tabs.findIndex((t) => t.key === active);
     const layout = idx >= 0 ? tabLayouts.current[idx] : undefined;
-    if (layout) {
-      Animated.spring(indicatorX, { toValue: layout.x + 2, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
-      Animated.spring(indicatorW, { toValue: layout.width - 4, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
-    }
+    if (layout) moveIndicator(layout, true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
   function handleLayout(idx: number, e: LayoutChangeEvent) {
     const { x, width } = e.nativeEvent.layout;
     tabLayouts.current[idx] = { x, width };
-    if (tabs[idx].key === active) {
-      indicatorX.setValue(x + 2);
-      indicatorW.setValue(width - 4);
-    }
+    if (tabs[idx].key === active) moveIndicator({ x, width }, false);
   }
 
   function handlePress(tab: TabDef, idx: number) {
     onChange(tab.key);
     const layout = tabLayouts.current[idx];
     if (layout) {
-      Animated.spring(indicatorX, { toValue: layout.x + 2, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
-      Animated.spring(indicatorW, { toValue: layout.width - 4, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
+      moveIndicator(layout, true);
       if (!justify) scrollRef.current?.scrollTo({ x: Math.max(0, layout.x - 40), animated: true });
     }
   }
@@ -111,7 +124,7 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
       {justify ? (
         <View style={s.row}>
           <Animated.View
-            style={[s.indicator, SHADOW.raised, { backgroundColor: activeColor, left: indicatorX, width: indicatorW }]}
+            style={[s.indicator, SHADOW.raised, { backgroundColor: activeColor, transform: [{ translateX: indicatorTX }, { scaleX: indicatorSX }] }]}
             pointerEvents="none"
           />
           {tabItems}
@@ -128,7 +141,7 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
             bounces={false}
           >
             <Animated.View
-              style={[s.indicator, SHADOW.raised, { backgroundColor: activeColor, left: indicatorX, width: indicatorW }]}
+              style={[s.indicator, SHADOW.raised, { backgroundColor: activeColor, transform: [{ translateX: indicatorTX }, { scaleX: indicatorSX }] }]}
               pointerEvents="none"
             />
             {tabItems}
@@ -170,7 +183,7 @@ const s = StyleSheet.create({
   tabLabel:       { fontSize: 13, fontFamily: F.bold },
   badge:          { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center' },
   badgeTxt:       { fontSize: 10, fontFamily: F.extrabold },
-  indicator:      { position: 'absolute', top: 3, bottom: 3, borderRadius: 10 },
+  indicator:      { position: 'absolute', top: 3, bottom: 3, left: 0, width: BASE_W, borderRadius: 10, transformOrigin: 'left' },
   fade:           { position: 'absolute', top: 0, bottom: 0, width: 24 },
   fadeLeft:       { left: 0 },
   fadeRight:      { right: 0 },

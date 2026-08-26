@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { AppModal } from '@/components/AppModal';
+import { useToast } from '@/components/Toast';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCampaignInvitation } from '@/services/creator';
@@ -27,6 +28,7 @@ const INITIAL_MODAL: ModalState = { visible: false, status: 'ACCEPTED', invitati
 export default function InvitationsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const [invitations, setInvitations] = useState<ApiCampaignInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -57,11 +59,19 @@ export default function InvitationsScreen() {
 
   async function confirmRespond() {
     if (!modal.invitation) return;
+    const { status } = modal;
     setModal((m) => ({ ...m, submitting: true }));
     try {
-      const updated = await creatorService.respondToInvitation(modal.invitation.id, modal.status);
-      setInvitations((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+      const updated = await creatorService.respondToInvitation(modal.invitation.id, status);
+      // Merge rather than replace: guard against a response payload that omits
+      // the campaign/business relations, which would blank the card on re-render.
+      setInvitations((prev) => prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i)));
       setModal(INITIAL_MODAL);
+      toast.success(
+        status === 'ACCEPTED'
+          ? t('invitations.acceptedToast')
+          : t('invitations.declinedToast'),
+      );
     } catch (err) {
       setModal((m) => ({ ...m, submitting: false }));
       Alert.alert(t('common.error'), err instanceof Error ? err.message : t('invitations.respondFailed'));

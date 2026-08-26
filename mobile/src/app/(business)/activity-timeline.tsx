@@ -764,6 +764,7 @@ export default function CampaignWorkspaceScreen() {
   const [loading, setLoading]   = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast]       = useState('');
+  const [toastTone, setToastTone] = useState<'default' | 'error'>('default');
 
   // §52 — Overview/Chat/Deliverables/Payment/Agreement/Activity tabs. Purely
   // a render-layer split: every state/handler above and below is shared
@@ -930,9 +931,10 @@ export default function CampaignWorkspaceScreen() {
     return () => clearTimeout(id);
   }, [app?.workStatus]);
 
-  function showToast(msg: string) {
+  function showToast(msg: string, tone: 'default' | 'error' = 'default') {
     setToast(msg);
-    setTimeout(() => setToast(''), 3200);
+    setToastTone(tone);
+    setTimeout(() => setToast(''), tone === 'error' ? 4500 : 3200);
   }
 
   // Single entry point behind the one "+" tile in the combined deliverables
@@ -1181,7 +1183,12 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       const paymentUrl = await campaignService.initiateEsewaPayment(app.id);
-      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, 'kolab://esewa-callback', { preferEphemeralSession: true });
+      // NOT ephemeral (unlike Khalti): eSewa's checkout is a multi-step login
+      // (eSewa ID → password → OTP token) and an ephemeral ASWebAuthenticationSession
+      // can drop the session cookie between steps, bouncing the payment to
+      // failure_url. eSewa also has no "silently reuse the logged-in account"
+      // risk here the way Khalti does — it always prompts for the token.
+      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, 'kolab://esewa-callback', { preferEphemeralSession: false });
       if (result.type === 'success' && result.url) {
         const parsed = new URL(result.url);
         const success = parsed.searchParams.get('success') === 'true';
@@ -1190,12 +1197,14 @@ export default function CampaignWorkspaceScreen() {
           setShowPay(false);
           showToast(t('activityTimeline.toastPaySuccess'));
         } else {
-          const error = parsed.searchParams.get('error') ?? t('activityTimeline.toastPayFailed');
-          showToast(error);
+          // eSewa bounced us back without completing — the raw reason
+          // (payment_failed / canceled / …) isn't useful to the business, so
+          // show one calm, generic message.
+          showToast(t('activityTimeline.toastEsewaIssue'), 'error');
         }
       }
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastPayFailed'));
+      showToast(e?.message ?? t('activityTimeline.toastEsewaIssue'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -1737,8 +1746,11 @@ export default function CampaignWorkspaceScreen() {
 
       {/* ── Toast ── */}
       {toast ? (
-        <View style={s.toast} pointerEvents="none">
-          <Text style={s.toastTxt}>{toast}</Text>
+        <View style={[s.toast, toastTone === 'error' && s.toastError]} pointerEvents="none">
+          {toastTone === 'error' && (
+            <FontAwesome5 name="exclamation-circle" solid size={15} color="#FCA5A5" style={{ marginRight: 9 }} />
+          )}
+          <Text style={[s.toastTxt, toastTone === 'error' && s.toastTxtError]}>{toast}</Text>
         </View>
       ) : null}
 
@@ -2293,8 +2305,10 @@ const s = StyleSheet.create({
   secFooterTxt: { fontSize: 11, fontFamily: F.regular, flex: 1 },
 
 
-  toast:    { position: 'absolute', bottom: 24, left: 24, right: 24, backgroundColor: '#1F2937', borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center' },
-  toastTxt: { fontSize: 13, fontFamily: F.semibold, color: '#fff', textAlign: 'center' },
+  toast:    { position: 'absolute', bottom: 24, left: 24, right: 24, backgroundColor: '#1F2937', borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  toastTxt: { fontSize: 13, fontFamily: F.semibold, color: '#fff', textAlign: 'center', flexShrink: 1 },
+  toastError:    { backgroundColor: '#3F1D1D', borderWidth: 1, borderColor: '#7F1D1D' },
+  toastTxtError: { color: '#FEE2E2', textAlign: 'left' },
 });
 
 const pt = StyleSheet.create({

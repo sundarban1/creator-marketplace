@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SearchInput } from '@/components/SearchInput';
 import { AttentionBanner } from '@/components/AttentionBanner';
 import { PromoBanner } from '@/components/PromoBanner';
@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { TabSlider } from '@/components/TabSlider';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
+import { useTabTransition } from '@/hooks/useTabTransition';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -42,6 +43,10 @@ const STATUS_STYLE = {
 // Tablet/iPad: two cards per row in Recent Events, matching the events tab's
 // own grid. 768 matches the breakpoint used there.
 const TABLET_BREAKPOINT = 768;
+
+// Left-to-right order of the Recent Events type filter — drives the slide
+// direction of the panel transition (see useTabTransition).
+const TYPE_TAB_ORDER = ['All', 'Paid', 'Open'] as const;
 
 export default function BusinessHomeScreen() {
   const { user } = useAuth();
@@ -214,6 +219,9 @@ export default function BusinessHomeScreen() {
   };
 
   const [typeFilter, setTypeFilter] = useState<'All' | 'Paid' | 'Open'>('All');
+  // Cross-fade + slide the Recent Events list when the type filter changes, so
+  // the tab switch glides instead of the list popping to new contents.
+  const recentListStyle = useTabTransition(typeFilter, TYPE_TAB_ORDER);
 
   function matchesType(c: Campaign) {
     if (typeFilter === 'All')  return true;
@@ -423,6 +431,7 @@ export default function BusinessHomeScreen() {
           </View>
         )}
 
+        <Animated.View style={recentListStyle}>
         {loading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={C.brinjal1} />
@@ -564,6 +573,7 @@ export default function BusinessHomeScreen() {
             })}
           </View>
         )}
+        </Animated.View>
 
         {/* ── Recommended for you — based on "What do you usually need help
             with?" from onboarding (BusinessProfile.defaultCreatorCategories).

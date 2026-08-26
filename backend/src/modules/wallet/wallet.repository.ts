@@ -87,6 +87,21 @@ export class WalletRepository {
     });
   }
 
+  /**
+   * Campaign titles keyed by application id, for the given application ids.
+   * Used to label CAMPAIGN_PAYOUT ledger rows in the creator's statement with
+   * the actual campaign name. Missing ids (deleted applications) are simply
+   * absent from the map.
+   */
+  async campaignTitlesForApplications(applicationIds: string[]) {
+    if (applicationIds.length === 0) return new Map<string, string>();
+    const apps = await prisma.application.findMany({
+      where:  { id: { in: applicationIds } },
+      select: { id: true, campaign: { select: { title: true } } },
+    });
+    return new Map(apps.map((a) => [a.id, a.campaign.title]));
+  }
+
   /** Rs. 500 rewards earned as the referrer, once each referral is admin-released. */
   async sumCompletedReferrerRewards(creatorId: string) {
     const result = await prisma.referral.aggregate({

@@ -386,8 +386,9 @@ export class AdminService {
       .catch(() => {});
 
     // A conversation that was only ever auto-accepted (never a real chat request/accept)
-    // pauses back to PENDING now that the project is done and paid — a genuinely-accepted
-    // conversation is left open as-is.
+    // is closed now that the project is done and paid — it leaves both inboxes rather
+    // than lingering as a request/pending row. A genuinely-accepted conversation is
+    // left open as-is. Accepting a new proposal from this creator reopens it.
     this.messagingService
       .closeConversationAfterCompletion(creatorUserId, businessUserId, app.creator.id, app.campaign.business.id)
       .catch(() => {});

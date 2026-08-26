@@ -151,7 +151,7 @@ export interface ApiConversation {
   creatorId2?:    string | null;
   businessId:     string | null;
   campaignId?:    string | null;
-  status:         'PENDING' | 'ACCEPTED' | 'DECLINED';
+  status:         'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED';
   requestMessage?: string | null;
   lastMessageAt?:  string | null;
   createdAt:      string;

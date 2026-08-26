@@ -33,7 +33,8 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
     labelKey: 'drawer.accountGroup',
     items: [
       { iconName: 'share-alt',     labelKey: 'drawer.socialAccounts',    route: '/(business)/settings?section=social',        color: '#E1306C' },
-      { iconName: 'paper-plane', faName: 'paper-plane', labelKey: 'drawer.serviceRequests',  route: '/(business)/service-requests',              color: '#7C3AED' },
+      // Service Requests hidden for now — do not display in the business drawer.
+      // { iconName: 'paper-plane', faName: 'paper-plane', labelKey: 'drawer.serviceRequests',  route: '/(business)/service-requests',              color: '#7C3AED' },
       { iconName: 'check-circle', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },
       { iconName: 'wallet', faName: 'wallet',      labelKey: 'drawer.payment',        route: '/(business)/settings?section=payment',       color: '#3B82F6' },
       { iconName: 'gift', faName: 'gift',          labelKey: 'drawer.referBusiness',   route: '/(business)/refer',                          color: '#EC4899' },

@@ -27,12 +27,12 @@ import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilitie
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
 // One color per Quick Action tile — chosen for the concept, not the brand
-// (purple/work, amber/needs-a-response, blue/discover, teal/invitations)
+// (purple/work, amber/portfolio, blue/discover, teal/invitations)
 // — so four different icon shapes also read as four different colors
 // instead of one repeated brand tint.
 const QUICK_ACTION_COLORS = {
   myCampaigns:     { icon: '#7C3AED', bg: '#F3E8FF' },
-  serviceRequests: { icon: '#D97706', bg: '#FEF3C7' },
+  portfolio:       { icon: '#D97706', bg: '#FEF3C7' },
   shortlisted:     { icon: '#0369A1', bg: '#E0F2FE' },
   invitations:     { icon: '#0D9488', bg: '#CCFBF1' },
 } as const;
@@ -364,8 +364,8 @@ export default function HomeScreen() {
               cluster. */}
           <View style={styles.quickActionsRow}>
             {[
+              { key: 'portfolio',        icon: 'images'         as const, label: t('home.qaMyPortfolio'),    color: QUICK_ACTION_COLORS.portfolio,       onPress: () => router.push('/(creator)/portfolio' as Parameters<typeof router.push>[0]) },
               { key: 'myCampaigns',      icon: 'briefcase'      as const, label: t('home.qaMyCampaigns'),     color: QUICK_ACTION_COLORS.myCampaigns,     onPress: () => router.push({ pathname: '/(creator)/(tabs)/proposals', params: { tab: 'accepted' } }) },
-              { key: 'serviceRequests',  icon: 'clipboard-list' as const, label: t('home.qaServiceRequests'), color: QUICK_ACTION_COLORS.serviceRequests, onPress: () => router.push('/(creator)/service-requests') },
               { key: 'shortlisted',      icon: 'bookmark'       as const, label: t('home.qaShortlisted'),     color: QUICK_ACTION_COLORS.shortlisted,     onPress: () => router.push('/(creator)/shortlisted-events' as Parameters<typeof router.push>[0]) },
               { key: 'invitations',      icon: 'envelope-open-text' as const, label: t('home.qaMyInvitations'), color: QUICK_ACTION_COLORS.invitations,   onPress: () => router.push('/(creator)/invitations') },
             ].map((qa) => (

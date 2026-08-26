@@ -1501,6 +1501,12 @@ enum ConversationStatus {
   PENDING
   ACCEPTED
   DECLINED
+  // A collaboration that ran its course — work delivered and payment released.
+  // The thread drops out of both inboxes entirely (PENDING would resurface it
+  // as a bogus "request"/"pending" row). Accepting a fresh proposal from the
+  // same creator flips it back to ACCEPTED and chat resumes; either side can
+  // also send a new message request, which re-opens it as PENDING.
+  CLOSED
 }
 
 enum MessageType {

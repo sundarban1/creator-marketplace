@@ -19,11 +19,11 @@ const LANG_LABELS = { en: 'Eng', ne: 'ने' } as const;
 // Same logo mark the login header carries.
 const LOGO = require('@/assets/images/logo.png');
 
-// Placeholder stock photos standing in for each role until Kolab has its own
-// commissioned illustrations/photography — swap these out when that's ready.
+// Photo band fronting each choice card — a creator-at-work shot for the "offer
+// your skills" side, a business scene for the "hire" side.
 const CARD_IMAGE: Record<Role, number> = {
-  CREATOR: require('@/assets/images/account-type/offer-services.jpg'),
-  BUSINESS: require('@/assets/images/account-type/find-services.jpg'),
+  CREATOR: require('@/assets/images/login/camera.jpg'),
+  BUSINESS: require('@/assets/images/login/business.jpg'),
 };
 
 // The most important screen in the signup flow — it's what determines whether

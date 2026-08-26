@@ -171,7 +171,7 @@ export function createVoiceUploadTask(
 
 export const chatService = {
   async getConversations(
-    status?: 'PENDING' | 'ACCEPTED' | 'DECLINED',
+    status?: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED',
     params?: { page?: number; limit?: number },
   ): Promise<{ conversations: Conversation[]; total: number }> {
     const res = await request<ApiConversation[]>(
@@ -199,8 +199,8 @@ export const chatService = {
 
   async checkConversation(
     creatorProfileId: string,
-  ): Promise<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null> {
-    const res = await request<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null>(
+  ): Promise<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED' } | null> {
+    const res = await request<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED' } | null>(
       'GET', `/api/messaging/conversations/check/${creatorProfileId}`,
     );
     return res.data;
@@ -219,8 +219,8 @@ export const chatService = {
 
   async checkCreatorConversation(
     creatorProfileId: string,
-  ): Promise<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null> {
-    const res = await request<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null>(
+  ): Promise<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED' } | null> {
+    const res = await request<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED' } | null>(
       'GET', `/api/messaging/conversations/check-creator/${creatorProfileId}`,
     );
     return res.data;

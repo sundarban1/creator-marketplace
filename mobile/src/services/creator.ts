@@ -556,9 +556,11 @@ export const creatorService = {
     return res.data.ids;
   },
 
-  async inviteCreators(campaignId: string, creatorIds: string[], message?: string): Promise<{ invited: number }> {
-    const res = await request<{ invited: number }>('POST', `/api/business/campaigns/${campaignId}/invite`, { creatorIds, message });
-    return res.data;
+  // `skipped` counts creators who were already invited to this campaign — the
+  // backend never sends a second invitation to the same creator for one campaign.
+  async inviteCreators(campaignId: string, creatorIds: string[], message?: string): Promise<{ invited: number; skipped: number }> {
+    const res = await request<{ invited: number; skipped?: number }>('POST', `/api/business/campaigns/${campaignId}/invite`, { creatorIds, message });
+    return { invited: res.data.invited, skipped: res.data.skipped ?? 0 };
   },
 
   // Business-side view of one campaign's invitations — who was invited and how

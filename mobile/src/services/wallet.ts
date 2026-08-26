@@ -50,8 +50,12 @@ export interface ApiWalletTransaction {
   /** 'COMPLETED' for ledger rows; the withdrawal's own status for in-flight requests. */
   status: string;
   title: string;
+  /** The campaign name for a CAMPAIGN_PAYOUT row; null for every other kind. */
+  campaignTitle: string | null;
   method: string | null;
   reference: string | null;
+  /** Admin's transfer-proof screenshot for a PAID withdrawal; null otherwise. */
+  proofUrl: string | null;
   createdAt: string;
 }
 

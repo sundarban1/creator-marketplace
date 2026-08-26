@@ -91,6 +91,11 @@ export default function CampaignsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
+  // The category filter beside the search bar offers BOTH-scope (industry)
+  // categories only — the same set work/events are created with
+  // (create-campaign uses useCategories('BOTH')). CREATOR-scope provider-type
+  // rows are deliberately excluded; a business never filters its own work by them.
+  const filterCategories = allCategories.filter((c) => c.scope === 'BOTH');
   const toast = useToast();
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
@@ -130,6 +135,9 @@ export default function CampaignsScreen() {
   const [recommendedCreators, setRecommendedCreators] = useState<ApiCreatorListItem[]>([]);
   const [recommendedLoading, setRecommendedLoading]   = useState(false);
   const [selectedCreators, setSelectedCreators]     = useState<Set<string>>(new Set());
+  // Creator ids already invited to the open campaign — shown as locked "Invited"
+  // rows so a business can't re-select and re-invite them.
+  const [invitedCreators, setInvitedCreators]       = useState<Set<string>>(new Set());
   const [inviteSending, setInviteSending]           = useState(false);
   const [inviteSuccess, setInviteSuccess]           = useState(false);
 
@@ -237,10 +245,15 @@ export default function CampaignsScreen() {
   async function openInvite(c: Campaign) {
     setInviteCampaign(c);
     setSelectedCreators(new Set());
+    setInvitedCreators(new Set());
     setInviteSuccess(false);
     setListMode('saved');
     setRecommendedCreators([]);
     setSavedLoading(true);
+    // Who's already been invited — used to lock those rows in the picker.
+    creatorService.listCampaignInvitations(c.id)
+      .then((rows) => setInvitedCreators(new Set(rows.map((r) => r.creator.id))))
+      .catch(() => {});
     try {
       const data = await creatorService.getSavedCreators();
       setSavedCreators(data);
@@ -269,6 +282,7 @@ export default function CampaignsScreen() {
   }
 
   function toggleCreator(creatorId: string) {
+    if (invitedCreators.has(creatorId)) return;
     setSelectedCreators((prev) => {
       const next = new Set(prev);
       if (next.has(creatorId)) next.delete(creatorId);
@@ -281,9 +295,19 @@ export default function CampaignsScreen() {
     if (!inviteCampaign || selectedCreators.size === 0 || inviteSending) return;
     setInviteSending(true);
     try {
-      await creatorService.inviteCreators(inviteCampaign.id, Array.from(selectedCreators));
-      setInviteSuccess(true);
-      setTimeout(() => setInviteCampaign(null), 1500);
+      const picked = Array.from(selectedCreators);
+      const { invited, skipped } = await creatorService.inviteCreators(inviteCampaign.id, picked);
+      // Backend refuses a second invitation to an already-invited creator; fold
+      // those back into the locked list so the picker stays truthful.
+      setInvitedCreators((prev) => new Set([...prev, ...picked]));
+      if (invited === 0 && skipped > 0) {
+        toast.info(t('campaigns.allAlreadyInvitedSub'), t('campaigns.allAlreadyInvited'));
+        setSelectedCreators(new Set());
+      } else {
+        if (skipped > 0) toast.info(t('campaigns.invitationSentSomeSkipped', { skipped }));
+        setInviteSuccess(true);
+        setTimeout(() => setInviteCampaign(null), 1500);
+      }
     } catch { /* ignore */ } finally {
       setInviteSending(false);
     }
@@ -333,10 +357,12 @@ export default function CampaignsScreen() {
     return true;
   });
 
-  function openCategorySheet() {
-    setTempCategoryFilter(categoryFilter);
-    setCategorySheetVisible(true);
-  }
+  // Hidden for now — the category filter trigger button (right of the search
+  // bar) is commented out, so this is unused. Kept for easy re-enable.
+  // function openCategorySheet() {
+  //   setTempCategoryFilter(categoryFilter);
+  //   setCategorySheetVisible(true);
+  // }
   function applyCategoryFilter() {
     setCategoryFilter(tempCategoryFilter);
     setCategorySheetVisible(false);
@@ -366,6 +392,9 @@ export default function CampaignsScreen() {
               autoCorrect={false}
             />
           </View>
+          {/* Category filter button — hidden for now (don't display the tag icon
+              on the right of the search bar). The FilterSheet below is kept but
+              unreachable; uncomment this + openCategorySheet() to restore.
           <Pressable
             style={[
               styles.filterBtn,
@@ -376,6 +405,7 @@ export default function CampaignsScreen() {
             hitSlop={6}>
             <FontAwesome5 name="tag" solid size={17} color={categoryFilter ? '#fff' : C.brinjal1} />
           </Pressable>
+          */}
         </Pressable>
       </View>
 
@@ -632,7 +662,7 @@ export default function CampaignsScreen() {
         <View>
           <FilterSectionHeader icon="tag" label={t('campaigns.filterCategory')} />
           <View style={styles.categoryChipGrid}>
-            {allCategories.map((cat) => {
+            {filterCategories.map((cat) => {
               const active = tempCategoryFilter === cat.name;
               return (
                 <Pressable
@@ -724,13 +754,19 @@ export default function CampaignsScreen() {
                     ? recommendedCreators.map((c) => ({ id: c.id, fullName: c.fullName, isVerified: c.isVerified, socialAccounts: c.socialAccounts, distanceKm: c.distanceKm }))
                     : savedCreators.map(({ creator }) => ({ id: creator.id, fullName: creator.fullName, isVerified: creator.isVerified, socialAccounts: creator.socialAccounts, distanceKm: undefined as number | undefined }))
                   ).map((creator) => {
+                    const invited = invitedCreators.has(creator.id);
                     const sel = selectedCreators.has(creator.id);
                     const topAcc = [...(creator.socialAccounts ?? [])].sort((a, b) => b.followers - a.followers)[0];
                     const abbr = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
                     return (
                       <Pressable
                         key={creator.id}
-                        style={[styles.creatorPickRow, { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border }]}
+                        style={[
+                          styles.creatorPickRow,
+                          { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border },
+                          invited && { opacity: 0.55 },
+                        ]}
+                        disabled={invited}
                         onPress={() => toggleCreator(creator.id)}>
                         <View style={[styles.pickAvatar, { backgroundColor: C.brinjal1 }]}>
                           <Text style={styles.pickAvatarText}>{abbr}</Text>
@@ -747,9 +783,15 @@ export default function CampaignsScreen() {
                             </Text>
                           )}
                         </View>
-                        <View style={[styles.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
-                          {sel && <FontAwesome5 name="check" solid size={14} color="#fff" />}
-                        </View>
+                        {invited ? (
+                          <View style={[styles.invitedTag, { backgroundColor: C.primaryLight }]}>
+                            <Text style={[styles.invitedTagText, { color: C.brinjal1 }]}>{t('campaigns.alreadyInvitedBadge')}</Text>
+                          </View>
+                        ) : (
+                          <View style={[styles.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
+                            {sel && <FontAwesome5 name="check" solid size={14} color="#fff" />}
+                          </View>
+                        )}
                       </Pressable>
                     );
                   })}
@@ -875,6 +917,8 @@ const styles = StyleSheet.create({
   pickName: { fontSize: FONT_SIZE.md, fontFamily: F.bold },
   pickSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular },
   checkbox: { width: 22, height: 22, borderRadius: RADIUS.full, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  invitedTag: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
+  invitedTagText: { fontSize: FONT_SIZE.xs, fontFamily: F.semibold },
 
   sendInviteBtn: { borderRadius: RADIUS.full, paddingVertical: SPACING.md, alignItems: 'center' },
   sendInviteBtnText: { color: '#fff', fontSize: FONT_SIZE.md, fontFamily: F.bold },

@@ -149,6 +149,10 @@ export class WalletService {
       this.repo.listLedger(profile.id),
       this.repo.listWithdrawals(profile.id),
     ]);
-    return buildUnifiedStatement(ledger, withdrawals);
+    const applicationIds = ledger
+      .filter((tx) => tx.referenceType === 'application' && tx.referenceId)
+      .map((tx) => tx.referenceId as string);
+    const campaignTitles = await this.repo.campaignTitlesForApplications(applicationIds);
+    return buildUnifiedStatement(ledger, withdrawals, campaignTitles);
   }
 }

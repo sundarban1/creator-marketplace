@@ -85,7 +85,7 @@ export type Conversation = {
   participantAvatar?: string;
   participantUserId?: string;
   participantRole: 'CREATOR' | 'BUSINESS';
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED';
   requestMessage?: string | null;
   lastMessage: string;
   lastMessageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';

@@ -89,7 +89,7 @@ export default function CreatorPeerDetailScreen() {
 
   // Message request state
   const [convId, setConvId]       = useState<string | null>(null);
-  const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
+  const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED' | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [requestMsg, setRequestMsg] = useState('');
   const [sending, setSending]     = useState(false);
@@ -129,13 +129,16 @@ export default function CreatorPeerDetailScreen() {
     }
   }
 
-  function openRequestModal() {
-    if (!requestMsg.trim()) {
-      const firstName = profile?.fullName?.split(' ')[0] ?? 'there';
-      setRequestMsg(t('creatorDetailExtra.messageRequestDefault', { firstName }));
-    }
-    setShowModal(true);
-  }
+  // Hidden for now — creators can no longer initiate a message request to
+  // another creator, so the only caller (the sticky-bar "Send Message" button)
+  // is commented out. Kept here to make re-enabling trivial.
+  // function openRequestModal() {
+  //   if (!requestMsg.trim()) {
+  //     const firstName = profile?.fullName?.split(' ')[0] ?? 'there';
+  //     setRequestMsg(t('creatorDetailExtra.messageRequestDefault', { firstName }));
+  //   }
+  //   setShowModal(true);
+  // }
 
   function openChat() {
     if (!convId || !profile) return;
@@ -467,35 +470,42 @@ export default function CreatorPeerDetailScreen() {
 
       </ScrollView>
 
-      {/* Sticky action bar */}
-      <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: Math.max(14, insets.bottom) }]}>
-        {convStatus === 'ACCEPTED' ? (
-          <Pressable style={[
-              msgBtn.btn,
-              {
-                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-              },
-            ]} onPress={openChat}>
-            <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
-            <Text style={msgBtn.txt}>{t('creatorDetailExtra.openChat')}</Text>
-          </Pressable>
-        ) : convStatus === 'PENDING' ? (
-          <View style={[msgBtn.btn, { backgroundColor: C.border }]}>
-            <Text style={[msgBtn.txt, { color: '#fff' }]}>{t('creatorDetailExtra.requestSent')}</Text>
-          </View>
-        ) : (
-          <Pressable style={[
-              msgBtn.btn,
-              {
-                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-              },
-            ]} onPress={openRequestModal}>
-            <Text style={msgBtn.txt}>{t('creatorDetailExtra.sendMessage')}</Text>
-          </Pressable>
-        )}
-      </View>
+      {/* Sticky action bar. The "Send Message" button (the else branch below,
+          onPress={openRequestModal}) is commented out for now — creators can no
+          longer initiate a message request to another creator. The bar still
+          renders Open Chat / Request Sent for existing conversations, and is
+          hidden entirely otherwise. */}
+      {(convStatus === 'ACCEPTED' || convStatus === 'PENDING') && (
+        <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: Math.max(14, insets.bottom) }]}>
+          {convStatus === 'ACCEPTED' ? (
+            <Pressable style={[
+                msgBtn.btn,
+                {
+                  backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                  shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]} onPress={openChat}>
+              <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
+              <Text style={msgBtn.txt}>{t('creatorDetailExtra.openChat')}</Text>
+            </Pressable>
+          ) : (
+            <View style={[msgBtn.btn, { backgroundColor: C.border }]}>
+              <Text style={[msgBtn.txt, { color: '#fff' }]}>{t('creatorDetailExtra.requestSent')}</Text>
+            </View>
+          )}
+        </View>
+      )}
+      {/* Send Message request button — hidden for now:
+      <Pressable style={[
+          msgBtn.btn,
+          {
+            backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+            shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+          },
+        ]} onPress={openRequestModal}>
+        <Text style={msgBtn.txt}>{t('creatorDetailExtra.sendMessage')}</Text>
+      </Pressable>
+      */}
       </MaxWidthContainer>
 
       {/* Request message modal */}

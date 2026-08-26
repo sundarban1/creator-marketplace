@@ -631,14 +631,15 @@ export class AdminRepository {
   // ── Admin Conversations ──────────────────────────────────────────────────────
 
   async getConversationStats() {
-    const [total, pending, accepted, declined, totalMessages] = await Promise.all([
+    const [total, pending, accepted, declined, closed, totalMessages] = await Promise.all([
       prisma.conversation.count(),
       prisma.conversation.count({ where: { status: 'PENDING' } }),
       prisma.conversation.count({ where: { status: 'ACCEPTED' } }),
       prisma.conversation.count({ where: { status: 'DECLINED' } }),
+      prisma.conversation.count({ where: { status: 'CLOSED' } }),
       prisma.message.count(),
     ]);
-    return { total, pending, accepted, declined, totalMessages };
+    return { total, pending, accepted, declined, closed, totalMessages };
   }
 
   async getAllConversations(page: number, limit: number, status?: string, search?: string) {
