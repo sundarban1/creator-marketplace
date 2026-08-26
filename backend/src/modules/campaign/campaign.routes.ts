@@ -358,6 +358,13 @@ router.post(
   ctrl.initiateKhaltiPayment.bind(ctrl)
 );
 
+router.post(
+  '/applications/:appId/pay/esewa/initiate',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.initiateEsewaPayment.bind(ctrl)
+);
+
 router.put(
   '/applications/:appId/submit',
   authenticate,

@@ -99,6 +99,17 @@ const envSchema = z.object({
   // user's browser here directly after payment, no Authorization header — same
   // pattern as TIKTOK_REDIRECT_URI/INSTAGRAM_REDIRECT_URI above).
   KHALTI_RETURN_URL: z.string().optional(),
+  // eSewa ePay v2 — business pays to start a paid application (see utils/esewa.ts),
+  // same role as the Khalti block above. Optional: without ESEWA_SECRET_KEY /
+  // ESEWA_RETURN_BASE_URL, selecting eSewa at pay time fails with a clear error.
+  ESEWA_SECRET_KEY: z.string().optional(),
+  ESEWA_MERCHANT_CODE: z.string().default('EPAYTEST'),
+  ESEWA_BASE_URL: z.string().default('https://rc-epay.esewa.com.np/api/epay/main/v2/form'),
+  ESEWA_STATUS_URL: z.string().default('https://rc.esewa.com.np/api/epay/transaction/status/'),
+  // Absolute origin of this backend — used to build the checkout/success/failure
+  // URLs eSewa's browser flow needs (unlike Khalti, eSewa gives no single
+  // "initiate" API call that returns a hosted URL for us).
+  ESEWA_RETURN_BASE_URL: z.string().optional(),
   // Sparrow SMS (Nepal) — not wired up yet; sendSms() logs instead of sending until both are set.
   SPARROW_SMS_TOKEN: z.string().optional(),
   SPARROW_SMS_FROM: z.string().optional(),

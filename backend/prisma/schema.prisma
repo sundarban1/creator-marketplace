@@ -724,6 +724,10 @@ model Application {
   // on every retry so only the latest attempt's callback can complete the
   // payment (an older, abandoned pidx can never be replayed to mark this paid).
   khaltiPidx          String?              @unique
+  // eSewa's transaction_uuid for the most recent initiate call — same
+  // overwrite-on-retry role as khaltiPidx above, verified against eSewa's
+  // signed redirect + status-check API in confirmEsewaPayment.
+  esewaTransactionUuid String?             @unique
   // Set only when an admin manually releases the held escrow payment —
   // brand approval no longer releases funds automatically, see approveWork().
   releasedAt          DateTime?

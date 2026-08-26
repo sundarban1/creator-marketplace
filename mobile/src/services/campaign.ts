@@ -570,6 +570,13 @@ export const campaignService = {
     return res.data.paymentUrl;
   },
 
+  // eSewa — same "backend hands back a browser URL, we open it, the redirect
+  // lands on our API" pattern as Khalti above.
+  async initiateEsewaPayment(appId: string): Promise<string> {
+    const res = await request<{ paymentUrl: string }>('POST', `/api/campaigns/applications/${appId}/pay/esewa/initiate`);
+    return res.data.paymentUrl;
+  },
+
   async submitWork(appId: string, data: { note?: string; urls?: string }): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/submit`, data);
   },

@@ -746,12 +746,20 @@ async function request<T>(
 async function uploadFile<T>(path: string, file: File, fieldName: string): Promise<ApiResponse<T>> {
   const form = new FormData();
   form.append(fieldName, file);
-  const token = getAccessToken();
-  const res = await fetch(`${BASE}${path}`, {
+
+  // Mirrors request()'s 401→refresh→retry — an idle tab's access token expires
+  // after 15m, and without this the raw "Token has expired" surfaces to the UI.
+  const send = (token: string | null) => fetch(`${BASE}${path}`, {
     method:  'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body:    form,
   });
+
+  let res = await send(getAccessToken());
+  if (res.status === 401) {
+    res = await send(await ensureFreshAccessToken());
+  }
+
   const json = await res.json() as ApiResponse<T>;
   if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
   return json;

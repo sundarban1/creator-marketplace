@@ -6,6 +6,7 @@ import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
 import { env } from '../../config/env';
+import { buildEsewaCheckoutHtml } from '../../utils/esewa';
 import type { SubmitReviewInput, DeliverableVideoSignatureRequestInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
@@ -411,6 +412,60 @@ export class CampaignController {
       const message = err instanceof AppError ? err.message : 'Could not confirm the Khalti payment';
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
     }
+  }
+
+  async initiateEsewaPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.initiateEsewaPayment(req.params.appId, req.user!.id);
+      success(res, result, 'eSewa payment initiated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Public — this is the page the mobile WebBrowser session actually opens: an
+  // auto-submitting HTML form that POSTs straight to eSewa's hosted checkout
+  // (eSewa's ePay v2 flow has no "give me a hosted URL" API the way Khalti does).
+  // Errors here render as a plain HTML message rather than going through the
+  // JSON error handler — the user is looking at a browser tab, not an API call.
+  async esewaCheckoutPage(req: Request, res: Response): Promise<void> {
+    try {
+      const fields = await campaignService.getEsewaCheckoutForm(req.params.appId);
+      res.type('html').send(buildEsewaCheckoutHtml(fields));
+    } catch (err) {
+      const message = err instanceof AppError ? err.message : 'Could not start the eSewa payment. Please try again.';
+      res.status(err instanceof AppError ? err.statusCode : 500).type('html').send(
+        `<!doctype html><html><head><meta charset="utf-8" /><title>Payment error</title></head><body style="font-family:sans-serif;text-align:center;padding:48px 24px;color:#374151;"><p>${message}</p></body></html>`
+      );
+    }
+  }
+
+  // Public — eSewa redirects the user's browser here directly after payment,
+  // with no Authorization header (same pattern as khaltiCallback above). The
+  // appId travels in the URL path (not the query string) since eSewa appends
+  // its own `data` query param to whatever success_url we gave it.
+  async esewaSuccessCallback(req: Request, res: Response): Promise<void> {
+    const { appId } = req.params;
+    const { data } = req.query as { data?: string };
+    const redirectBase = `${env.APP_SCHEME}://esewa-callback`;
+
+    if (!data) {
+      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent('missing_payment_reference')}`);
+      return;
+    }
+    try {
+      await campaignService.confirmEsewaPayment(appId, data);
+      res.redirect(`${redirectBase}?success=true`);
+    } catch (err) {
+      const message = err instanceof AppError ? err.message : 'Could not confirm the eSewa payment';
+      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
+    }
+  }
+
+  // Public — eSewa's failure redirect; nothing to verify, the payment simply
+  // didn't happen.
+  async esewaFailureCallback(_req: Request, res: Response): Promise<void> {
+    res.redirect(`${env.APP_SCHEME}://esewa-callback?success=false&error=${encodeURIComponent('payment_failed')}`);
   }
 
   async getApplicationActivity(req: Request, res: Response, next: NextFunction): Promise<void> {

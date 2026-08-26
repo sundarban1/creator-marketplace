@@ -1031,7 +1031,7 @@ export class CampaignRepository {
   async payForApplication(appId: string, method: string) {
     return prisma.application.update({
       where: { id: appId },
-      data: { paymentStatus: 'PAID', paidAt: new Date(), paymentMethod: method, khaltiPidx: null },
+      data: { paymentStatus: 'PAID', paidAt: new Date(), paymentMethod: method, khaltiPidx: null, esewaTransactionUuid: null },
     });
   }
 
@@ -1039,6 +1039,13 @@ export class CampaignRepository {
     return prisma.application.update({
       where: { id: appId },
       data: { khaltiPidx: pidx },
+    });
+  }
+
+  async setEsewaTransactionUuid(appId: string, uuid: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { esewaTransactionUuid: uuid },
     });
   }
 

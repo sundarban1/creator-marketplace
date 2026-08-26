@@ -23,6 +23,7 @@ import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
 import { env } from '../../config/env';
 import { initiateKhaltiPayment as khaltiInitiate, lookupKhaltiPayment as khaltiLookup } from '../../utils/khalti';
+import { buildEsewaSignedFields, decodeEsewaResponse, verifyEsewaSignature, checkEsewaStatus, parseEsewaAmount, friendlyEsewaStatusMessage, type EsewaFormFields } from '../../utils/esewa';
 import {
   sendPaymentSecuredEmail,
   sendWorkStartedEmail,
@@ -1360,6 +1361,106 @@ export class CampaignService {
       creatorUserId:  (application.creator as any)?.userId,
       proposedRate:   application.proposedRate,
       method:         'khalti',
+    });
+  }
+
+  // Shared validation for both payment initiate paths (Khalti above, eSewa
+  // below) — business owns the campaign, the creator's already accepted, and
+  // nothing's been paid yet.
+  private async validatePendingPayment(appId: string, userId: string) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError('Business profile not found', 404);
+
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError('Application not found', 404);
+
+    const campaign = await this.repo.findById(application.campaignId);
+    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
+    if (application.status !== 'ACCEPTED') throw new AppError('Creator must be accepted first', 400);
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
+      throw new AppError('Payment already made for this application', 400);
+    }
+
+    return { business, application, campaign };
+  }
+
+  // Step 1 of the eSewa flow: unlike Khalti there's no "initiate" API call that
+  // hands back a hosted URL — eSewa needs the browser to POST a signed form
+  // directly to it, so this just records a fresh transaction_uuid and points
+  // the client at our own checkout page (getEsewaCheckoutForm), which renders
+  // that form. Nothing is marked paid here — see confirmEsewaPayment.
+  async initiateEsewaPayment(appId: string, userId: string): Promise<{ paymentUrl: string }> {
+    if (!env.ESEWA_RETURN_BASE_URL) throw new AppError('eSewa is not configured on the server yet.', 503);
+
+    await this.validatePendingPayment(appId, userId);
+
+    const transactionUuid = randomUUID();
+    await this.repo.setEsewaTransactionUuid(appId, transactionUuid);
+
+    return { paymentUrl: `${env.ESEWA_RETURN_BASE_URL}/api/payments/esewa/checkout/${appId}` };
+  }
+
+  // Renders the auto-submitting form the checkout page opens — re-validates
+  // the application is still pending so a stale/replayed checkout link can't
+  // resurrect a transaction_uuid after payment already completed elsewhere.
+  async getEsewaCheckoutForm(appId: string): Promise<EsewaFormFields> {
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError('Application not found', 404);
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
+      throw new AppError('Payment already made for this application', 400);
+    }
+    if (!application.esewaTransactionUuid) {
+      throw new AppError('No pending eSewa payment for this application.', 400);
+    }
+
+    return buildEsewaSignedFields({
+      appId,
+      transactionUuid: application.esewaTransactionUuid,
+      totalAmountNpr: applicationTotalNpr(application.proposedRate),
+    });
+  }
+
+  // Step 2: eSewa redirects the browser back with a signed `data` param — this
+  // verifies the signature, matches it to our stored transaction_uuid, then
+  // re-checks with eSewa's own status API (never trusting the redirect alone,
+  // same principle as confirmKhaltiPayment's lookup call) before finalizing.
+  async confirmEsewaPayment(appId: string, rawDataParam: string): Promise<void> {
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError('Application not found', 404);
+
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') return;
+
+    const decoded = decodeEsewaResponse(rawDataParam);
+    verifyEsewaSignature(decoded);
+
+    if (!application.esewaTransactionUuid || decoded.transaction_uuid !== application.esewaTransactionUuid) {
+      throw new AppError('This eSewa payment does not match any pending payment.', 400);
+    }
+
+    const expectedNpr = applicationTotalNpr(application.proposedRate);
+    const result = await checkEsewaStatus({ transactionUuid: application.esewaTransactionUuid, totalAmountNpr: expectedNpr });
+    if (result.status !== 'COMPLETE') {
+      throw new AppError(friendlyEsewaStatusMessage(result.status), 400);
+    }
+
+    if (decoded.total_amount && parseEsewaAmount(decoded.total_amount) !== expectedNpr) {
+      logger.error({ appId, expectedNpr, got: decoded.total_amount }, 'eSewa payment amount mismatch');
+      throw new AppError('The paid amount does not match what was due.', 400);
+    }
+
+    const campaign = application.campaign as any;
+    await this.finalizeApplicationPayment({
+      appId,
+      campaignId:     application.campaignId,
+      campaignTitle:  campaign.title,
+      businessId:     campaign.business.id,
+      businessUserId: campaign.business.userId,
+      businessName:   campaign.business.businessName ?? 'Business',
+      creatorId:      application.creatorId,
+      creatorUserId:  (application.creator as any)?.userId,
+      proposedRate:   application.proposedRate,
+      method:         'esewa',
     });
   }
 

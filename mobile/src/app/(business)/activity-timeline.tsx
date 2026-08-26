@@ -1175,9 +1175,36 @@ export default function CampaignWorkspaceScreen() {
     }
   }
 
+  // eSewa needs the same hosted-checkout round trip as Khalti above.
+  async function handlePayEsewa() {
+    if (!app) return;
+    setSubmitting(true);
+    try {
+      const paymentUrl = await campaignService.initiateEsewaPayment(app.id);
+      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, 'kolab://esewa-callback', { preferEphemeralSession: true });
+      if (result.type === 'success' && result.url) {
+        const parsed = new URL(result.url);
+        const success = parsed.searchParams.get('success') === 'true';
+        if (success) {
+          setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
+          setShowPay(false);
+          showToast(t('activityTimeline.toastPaySuccess'));
+        } else {
+          const error = parsed.searchParams.get('error') ?? t('activityTimeline.toastPayFailed');
+          showToast(error);
+        }
+      }
+    } catch (e: any) {
+      showToast(e?.message ?? t('activityTimeline.toastPayFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handlePay() {
     if (!app) return;
     if (payMethod === 'khalti') return handlePayKhalti();
+    if (payMethod === 'esewa') return handlePayEsewa();
     setSubmitting(true);
     try {
       await campaignService.payForApplication(app.id, payMethod);

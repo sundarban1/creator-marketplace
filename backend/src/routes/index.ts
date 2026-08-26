@@ -10,6 +10,7 @@ import walletRoutes from '../modules/wallet/wallet.routes';
 import businessRoutes from '../modules/business/business.routes';
 import campaignRoutes from '../modules/campaign/campaign.routes';
 import khaltiCallbackRoutes from '../modules/campaign/khalti-callback.routes';
+import esewaCallbackRoutes from '../modules/campaign/esewa-callback.routes';
 import campaignAiRoutes from '../modules/campaign-ai/campaign-ai.routes';
 import aiAssistantRoutes from '../modules/ai-assistant/ai-assistant.routes';
 import messagingRoutes from '../modules/messaging/messaging.routes';
@@ -58,6 +59,8 @@ export function registerApiRoutes(app: Express): void {
   // Public — Khalti's browser redirect lands here directly with no auth header,
   // same reasoning as the TikTok/Instagram callbacks above.
   app.use('/api/payments/khalti', khaltiCallbackRoutes);
+  // Public — same reasoning, for eSewa's checkout page + browser redirect.
+  app.use('/api/payments/esewa', esewaCallbackRoutes);
   app.use('/api/campaigns/ai', campaignAiRoutes);
   app.use('/api/ai-assistant', aiAssistantRoutes);
   app.use('/api/campaigns', campaignRoutes);
