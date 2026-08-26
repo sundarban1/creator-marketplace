@@ -93,7 +93,12 @@ export default function HomeScreen() {
     } catch {
       if (!silent) setNearbyCampaigns([]);
     } finally {
-      if (!silent) setNearbyLoading(false);
+      // Always clear — `silent` only suppresses the skeleton *transition* (we
+      // never set loading true on that path), never the completion. Leaving it
+      // set strands the section on its skeleton whenever a silent fetch lands
+      // on a freshly-mounted screen where nearbyLoading is still at its `true`
+      // default (Fast Refresh, re-login, a failed earlier load).
+      setNearbyLoading(false);
     }
   }
 
@@ -203,6 +208,8 @@ export default function HomeScreen() {
       // Dashboard sections degrade to empty rather than blocking the whole
       // screen on one failed fetch — each section already has its own empty
       // state, and this is a low-stakes landing screen, not a form.
+      // initNearby never ran, so clear its skeleton here too (mirrors discover.tsx).
+      setNearbyLoading(false);
     } finally {
       creatorHomeLoadedForUserId = user?.id ?? null;
       setLoading(false);
