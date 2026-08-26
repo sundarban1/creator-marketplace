@@ -70,6 +70,11 @@ function assertConfigured(): { secretKey: string; returnBaseUrl: string } {
   return { secretKey: env.ESEWA_SECRET_KEY, returnBaseUrl: env.ESEWA_RETURN_BASE_URL };
 }
 
+// Two decimal places — the eSewa signature is computed over this exact string
+// in buildEsewaSignedFields, and checkEsewaStatus sends the same format, so the
+// two must never diverge. (Tested against eSewa's rc-epay form endpoint: both
+// "100" and "100.00" are accepted, so this format is not what bounces a
+// transaction to failure_url.)
 function formatAmount(amountNpr: number): string {
   return amountNpr.toFixed(2);
 }

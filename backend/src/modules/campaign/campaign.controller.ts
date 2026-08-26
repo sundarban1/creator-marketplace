@@ -6,7 +6,8 @@ import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
 import { env } from '../../config/env';
-import { buildEsewaCheckoutHtml } from '../../utils/esewa';
+import { logger } from '../../config/logger';
+import { buildEsewaCheckoutHtml, decodeEsewaResponse } from '../../utils/esewa';
 import type { SubmitReviewInput, DeliverableVideoSignatureRequestInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
@@ -431,8 +432,21 @@ export class CampaignController {
   async esewaCheckoutPage(req: Request, res: Response): Promise<void> {
     try {
       const fields = await campaignService.getEsewaCheckoutForm(req.params.appId);
+      logger.info(
+        {
+          appId:            req.params.appId,
+          esewaFormAction:  env.ESEWA_BASE_URL,
+          total_amount:     fields.total_amount,
+          transaction_uuid: fields.transaction_uuid,
+          product_code:     fields.product_code,
+          success_url:      fields.success_url,
+          failure_url:      fields.failure_url,
+        },
+        'eSewa checkout page rendered — auto-submitting form to eSewa',
+      );
       res.type('html').send(buildEsewaCheckoutHtml(fields));
     } catch (err) {
+      logger.warn({ appId: req.params.appId, err }, 'eSewa checkout page could not render');
       const message = err instanceof AppError ? err.message : 'Could not start the eSewa payment. Please try again.';
       res.status(err instanceof AppError ? err.statusCode : 500).type('html').send(
         `<!doctype html><html><head><meta charset="utf-8" /><title>Payment error</title></head><body style="font-family:sans-serif;text-align:center;padding:48px 24px;color:#374151;"><p>${message}</p></body></html>`
@@ -449,6 +463,8 @@ export class CampaignController {
     const { data } = req.query as { data?: string };
     const redirectBase = `${env.APP_SCHEME}://esewa-callback`;
 
+    logger.info({ appId, hasData: !!data }, 'eSewa success callback hit');
+
     if (!data) {
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent('missing_payment_reference')}`);
       return;
@@ -458,13 +474,30 @@ export class CampaignController {
       res.redirect(`${redirectBase}?success=true`);
     } catch (err) {
       const message = err instanceof AppError ? err.message : 'Could not confirm the eSewa payment';
+      logger.warn({ appId, err }, 'eSewa success callback: confirmation failed');
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
     }
   }
 
-  // Public — eSewa's failure redirect; nothing to verify, the payment simply
-  // didn't happen.
-  async esewaFailureCallback(_req: Request, res: Response): Promise<void> {
+  // Public — eSewa's failure redirect. The payment didn't complete, so there's
+  // nothing to finalize — decode eSewa's `data` payload (when present) into the
+  // logs for diagnosis, then bounce straight back into the app, which shows a
+  // generic "eSewa is having issues" toast (the raw reason isn't user-facing).
+  async esewaFailureCallback(req: Request, res: Response): Promise<void> {
+    const { appId } = req.params;
+    const { data } = req.query as { data?: string };
+
+    if (data) {
+      try {
+        const decoded = decodeEsewaResponse(data);
+        logger.warn({ appId, esewa: decoded }, 'eSewa payment failed / not completed');
+      } catch (err) {
+        logger.warn({ appId, err, rawData: data }, 'eSewa failure callback: could not decode data payload');
+      }
+    } else {
+      logger.warn({ appId, query: req.query }, 'eSewa failure callback with no data payload');
+    }
+
     res.redirect(`${env.APP_SCHEME}://esewa-callback?success=false&error=${encodeURIComponent('payment_failed')}`);
   }
 

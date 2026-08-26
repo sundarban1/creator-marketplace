@@ -85,37 +85,53 @@ export class SavedCreatorController {
         throw new AppError('Campaign not found', 404);
       }
 
-      await Promise.all(
-        creatorIds.map((creatorId) =>
-          prisma.campaignInvitation.upsert({
-            where: { campaignId_creatorId: { campaignId, creatorId } },
-            update: { message: message ?? null, businessId: business.id },
-            create: { campaignId, creatorId, businessId: business.id, message: message ?? null },
+      // A creator can only be invited to a campaign once. Anyone who already has
+      // an invitation — however they responded, or still pending — is skipped:
+      // re-sending must not overwrite their message or fire a second notification.
+      const requestedIds = [...new Set(creatorIds)];
+      const existing = await prisma.campaignInvitation.findMany({
+        where: { campaignId, creatorId: { in: requestedIds } },
+        select: { creatorId: true },
+      });
+      const alreadyInvited = new Set(existing.map((e) => e.creatorId));
+      const newCreatorIds = requestedIds.filter((id) => !alreadyInvited.has(id));
+
+      if (newCreatorIds.length > 0) {
+        await prisma.campaignInvitation.createMany({
+          data: newCreatorIds.map((creatorId) => ({
+            campaignId,
+            creatorId,
+            businessId: business.id,
+            message: message ?? null,
+          })),
+          skipDuplicates: true,
+        });
+
+        await Promise.all(
+          newCreatorIds.map(async (creatorId) => {
+            const creator = await prisma.creatorProfile.findUnique({
+              where: { id: creatorId },
+              select: { userId: true },
+            });
+            if (creator) {
+              analyticsService.incrInvitationReceived(creator.userId);
+              notificationService.create({
+                userId:  creator.userId,
+                type:    'campaign_invitation',
+                title:   `${business.businessName} invited you to a campaign`,
+                body:    `You've been invited to: ${campaign.title}`,
+                refId:   campaignId,
+                refType: 'campaign',
+              }).catch(() => {});
+            }
           })
-        )
-      );
+        );
+      }
 
-      await Promise.all(
-        creatorIds.map(async (creatorId) => {
-          const creator = await prisma.creatorProfile.findUnique({
-            where: { id: creatorId },
-            select: { userId: true },
-          });
-          if (creator) {
-            analyticsService.incrInvitationReceived(creator.userId);
-            notificationService.create({
-              userId:  creator.userId,
-              type:    'campaign_invitation',
-              title:   `${business.businessName} invited you to a campaign`,
-              body:    `You've been invited to: ${campaign.title}`,
-              refId:   campaignId,
-              refType: 'campaign',
-            }).catch(() => {});
-          }
-        })
-      );
-
-      res.json({ success: true, data: { invited: creatorIds.length } });
+      res.json({
+        success: true,
+        data: { invited: newCreatorIds.length, skipped: alreadyInvited.size },
+      });
     } catch (err) { next(err); }
   }
 

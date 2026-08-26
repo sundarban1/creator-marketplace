@@ -540,6 +540,7 @@ export class CreatorRepository {
     return prisma.campaignInvitation.update({
       where: { id },
       data: { status, respondedAt: new Date() },
+      include: { campaign: true, business: { select: { id: true, businessName: true, logoUrl: true } } },
     });
   }
 }

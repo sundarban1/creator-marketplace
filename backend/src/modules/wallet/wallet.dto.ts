@@ -12,6 +12,8 @@ export function toWithdrawalDto(w: Withdrawal) {
     payoutSnapshot:       w.payoutSnapshot,
     transactionReference: w.transactionReference,
     paymentDate:          w.paymentDate,
+    // Admin's transfer-proof screenshot, uploaded at "Mark as Paid".
+    screenshotUrl:        w.screenshotUrl,
     rejectionReason:      w.rejectionReason,
     processedAt:          w.processedAt,
     createdAt:            w.createdAt,
@@ -36,6 +38,9 @@ export interface UnifiedTransaction {
   title: string;
   method: string | null;
   reference: string | null;
+  // The admin's transfer-proof screenshot for a PAID withdrawal (null otherwise).
+  // Drives the creator's "View Transaction Details" preview in the wallet.
+  proofUrl: string | null;
   createdAt: Date;
 }
 
@@ -65,6 +70,7 @@ export function buildUnifiedStatement(
         title:     tx.description,
         method:    w?.method ?? null,
         reference: w?.referenceCode ?? w?.transactionReference ?? null,
+        proofUrl:  w?.screenshotUrl ?? null,
         createdAt: tx.createdAt,
       };
     });
@@ -80,6 +86,7 @@ export function buildUnifiedStatement(
       title:     `Withdrawal via ${w.method}`,
       method:    w.method,
       reference: w.referenceCode,
+      proofUrl:  null,
       createdAt: w.createdAt,
     }));
 
