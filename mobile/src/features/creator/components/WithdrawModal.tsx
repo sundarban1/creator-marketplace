@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   InputAccessoryView,
@@ -16,15 +15,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
-import { isPaymentMethodId } from '@/utilities/paymentMethods';
+import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
 import { confirmSensitiveAction } from '@/services/biometric';
 import { F } from '@/utilities/constants';
-
-const METHOD_META: Record<string, { icon: string; label: string; color: string }> = {
-  esewa:   { icon: 'wallet',          label: 'eSewa',   color: '#60BB46' },
-  khalti:  { icon: 'money-check-alt', label: 'Khalti',  color: '#5C2D91' },
-  fonepay: { icon: 'credit-card',     label: 'FonePay', color: '#003087' },
-};
 
 // decimal-pad has no "Done" key on iOS at all, so the keyboard has no way to
 // dismiss itself without this accessory toolbar.
@@ -46,6 +39,11 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
   const [amountText, setAmountText] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [methodCatalog, setMethodCatalog] = useState<ApiPaymentMethod[]>([]);
+
+  useEffect(() => {
+    paymentMethodService.getPaymentMethods().then(setMethodCatalog).catch(() => {});
+  }, []);
 
   function handleClose() {
     Keyboard.dismiss();
@@ -122,22 +120,19 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
               <Text style={[styles.label, { color: C.textSecondary }]}>{t('wallet.selectMethod')}</Text>
               <View style={styles.methodRow}>
                 {paymentMethods.map((m) => {
-                  const meta = METHOD_META[m] ?? { icon: 'credit-card', label: m, color: C.brinjal1 };
+                  const meta = methodCatalog.find((c) => c.key === m);
+                  const color = meta?.color ?? C.brinjal1;
                   const active = method === m;
                   return (
                     <Pressable
                       key={m}
                       style={[
                         styles.methodChip,
-                        { borderColor: active ? meta.color : C.border, backgroundColor: active ? `${meta.color}15` : C.background },
+                        { borderColor: active ? color : C.border, backgroundColor: active ? `${color}15` : C.background },
                       ]}
                       onPress={() => setMethod(m)}>
-                      {isPaymentMethodId(m) ? (
-                        <PaymentMethodIcon method={m} size={26} />
-                      ) : (
-                        <FontAwesome5 name={meta.icon} size={16} color={meta.color} />
-                      )}
-                      <Text style={[styles.methodLabel, { color: active ? meta.color : C.text }]}>{meta.label}</Text>
+                      <PaymentMethodIcon method={m} label={meta?.name} iconUrl={meta?.iconUrl} color={color} size={26} />
+                      <Text style={[styles.methodLabel, { color: active ? color : C.text }]}>{meta?.name ?? m}</Text>
                     </Pressable>
                   );
                 })}

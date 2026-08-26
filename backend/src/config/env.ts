@@ -90,6 +90,15 @@ const envSchema = z.object({
   GOOGLE_IOS_CLIENT_ID: z.string().optional(),
   // Custom URL scheme the TikTok/Instagram callbacks redirect back into on mobile (see app.json "scheme")
   APP_SCHEME: z.string().default('kolab'),
+  // Khalti ePayment (KPG-2) — business pays to start a paid application (see
+  // utils/khalti.ts). Optional: without KHALTI_SECRET_KEY, selecting Khalti at
+  // pay time fails with a clear error instead of the app crashing.
+  KHALTI_SECRET_KEY: z.string().optional(),
+  KHALTI_BASE_URL: z.string().default('https://dev.khalti.com/api/v2'),
+  // Full absolute URL to CampaignController.khaltiCallback (Khalti redirects the
+  // user's browser here directly after payment, no Authorization header — same
+  // pattern as TIKTOK_REDIRECT_URI/INSTAGRAM_REDIRECT_URI above).
+  KHALTI_RETURN_URL: z.string().optional(),
   // Sparrow SMS (Nepal) — not wired up yet; sendSms() logs instead of sending until both are set.
   SPARROW_SMS_TOKEN: z.string().optional(),
   SPARROW_SMS_FROM: z.string().optional(),

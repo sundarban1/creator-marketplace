@@ -14,6 +14,7 @@
     "db:seed:essentials": "tsx prisma/seed-essentials.ts",
     "db:seed:admin": "tsx prisma/seed-admin.ts",
     "db:seed:platforms": "tsx prisma/seed-platforms.ts",
+    "db:seed:payment-methods": "tsx prisma/seed-payment-methods.ts",
     "db:seed:success-stories": "tsx prisma/seed-success-stories.ts",
     "db:seed:bulk": "tsx prisma/bulk-seed.ts",
     "r2:setup-lifecycle": "tsx scripts/setupR2Lifecycle.ts"

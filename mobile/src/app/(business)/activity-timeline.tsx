@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as WebBrowser from 'expo-web-browser';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { BackButton } from '@/components/BackButton';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
-import { isPaymentMethodId } from '@/utilities/paymentMethods';
+import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -789,7 +790,15 @@ export default function CampaignWorkspaceScreen() {
   const [ratingComment, setRatingComment] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
 
-  const [payMethod, setPayMethod]       = useState<'esewa' | 'khalti' | 'fonepay'>('esewa');
+  const [payMethod, setPayMethod]       = useState('esewa');
+  const [methodCatalog, setMethodCatalog] = useState<ApiPaymentMethod[]>([]);
+  useEffect(() => {
+    paymentMethodService.getPaymentMethods().then((methods) => {
+      setMethodCatalog(methods);
+      if (methods.length && !methods.some((m) => m.key === payMethod)) setPayMethod(methods[0].key);
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [uploadUrls, setUploadUrls]     = useState('');
   const [uploadNotes, setUploadNotes]   = useState('');
   const [urlError, setUrlError]         = useState('');
@@ -1133,11 +1142,45 @@ export default function CampaignWorkspaceScreen() {
     }
   }, [loading, app, campaign]);
 
-  async function handlePay() {
+  // Khalti needs a real hosted checkout (open it, wait for the redirect back
+  // into the app) — every other method here is still the mock instant-pay
+  // path below it, unchanged.
+  async function handlePayKhalti() {
     if (!app) return;
     setSubmitting(true);
     try {
-      await campaignService.payForApplication(app.id);
+      const paymentUrl = await campaignService.initiateKhaltiPayment(app.id);
+      // preferEphemeralSession (iOS) matches the TikTok/Instagram connect flows —
+      // stops Khalti from silently reusing whatever account is already logged
+      // into the shared browser session.
+      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, 'kolab://khalti-callback', { preferEphemeralSession: true });
+      if (result.type === 'success' && result.url) {
+        const parsed = new URL(result.url);
+        const success = parsed.searchParams.get('success') === 'true';
+        if (success) {
+          setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
+          setShowPay(false);
+          showToast(t('activityTimeline.toastPaySuccess'));
+        } else {
+          const error = parsed.searchParams.get('error') ?? t('activityTimeline.toastPayFailed');
+          showToast(error);
+        }
+      }
+      // result.type === 'cancel' | 'dismiss' — the business backed out of Khalti's
+      // page without finishing; nothing changed, so just stop the spinner below.
+    } catch (e: any) {
+      showToast(e?.message ?? t('activityTimeline.toastPayFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handlePay() {
+    if (!app) return;
+    if (payMethod === 'khalti') return handlePayKhalti();
+    setSubmitting(true);
+    try {
+      await campaignService.payForApplication(app.id, payMethod);
       setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
       setShowPay(false);
       showToast(t('activityTimeline.toastPaySuccess'));
@@ -1684,15 +1727,15 @@ export default function CampaignWorkspaceScreen() {
         </View>
         <Text style={sh.sectionLabel}>{t('activityTimeline.modalPayWith')}</Text>
         <View style={{ gap: 8, marginBottom: 16 }}>
-          {([['esewa', 'eSewa'], ['khalti', 'Khalti'], ['fonepay', 'Fonepay QR']] as [typeof payMethod, string][]).map(([m, label]) => (
-            <Pressable key={m}
-              style={[sh.methodBtn, { borderColor: payMethod === m ? '#7C3AED' : '#E5E7EB', backgroundColor: payMethod === m ? '#EEF2FF' : '#fff' }]}
-              onPress={() => setPayMethod(m)}>
+          {methodCatalog.map((m) => (
+            <Pressable key={m.key}
+              style={[sh.methodBtn, { borderColor: payMethod === m.key ? '#7C3AED' : '#E5E7EB', backgroundColor: payMethod === m.key ? '#EEF2FF' : '#fff' }]}
+              onPress={() => setPayMethod(m.key)}>
               <View style={sh.methodLeft}>
-                <PaymentMethodIcon method={m} size={22} />
-                <Text style={[sh.methodTxt, { color: payMethod === m ? '#7C3AED' : '#374151' }]}>{label}</Text>
+                <PaymentMethodIcon method={m.key} label={m.name} iconUrl={m.iconUrl} color={m.color} size={22} />
+                <Text style={[sh.methodTxt, { color: payMethod === m.key ? '#7C3AED' : '#374151' }]}>{m.name}</Text>
               </View>
-              {payMethod === m && <FontAwesome5 name="check-circle" solid size={18} color="#7C3AED" />}
+              {payMethod === m.key && <FontAwesome5 name="check-circle" solid size={18} color="#7C3AED" />}
             </Pressable>
           ))}
         </View>

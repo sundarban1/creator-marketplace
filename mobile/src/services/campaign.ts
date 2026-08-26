@@ -558,8 +558,16 @@ export const campaignService = {
     await request('POST', `/api/campaigns/${campaignId}/pay`, { method });
   },
 
-  async payForApplication(appId: string): Promise<void> {
-    await request('PUT', `/api/campaigns/applications/${appId}/pay`);
+  async payForApplication(appId: string, method?: string): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/pay`, method ? { method } : undefined);
+  },
+
+  // Khalti only (see getTiktokAuthorizeUrl above for the same "backend hands
+  // back a browser URL, we open it, the redirect lands on our API" pattern) —
+  // other payment methods still go through the mock payForApplication above.
+  async initiateKhaltiPayment(appId: string): Promise<string> {
+    const res = await request<{ paymentUrl: string }>('POST', `/api/campaigns/applications/${appId}/pay/khalti/initiate`);
+    return res.data.paymentUrl;
   },
 
   async submitWork(appId: string, data: { note?: string; urls?: string }): Promise<void> {

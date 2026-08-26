@@ -3015,7 +3015,7 @@ const en = {
 
     // Payment details card
     paymentDetails:         'Payment Details',
-    paymentCreatorFee:      'Creator Fee',
+    paymentCreatorFee:      'Service Fee',
     paymentPlatformFee:     'Platform Fee (5%)',
     paymentVat:             'VAT (13% of fee)',
     paymentTotal:           'Total',
@@ -3125,7 +3125,7 @@ const en = {
     modalPaySub:        'Funds are held securely until you approve the work.',
     modalPayWith:       'Pay with',
     modalPayConfirmBtn: 'Confirm Payment · NPR {{amount}}',
-    feeCreator:         'Creator Fee',
+    feeCreator:         'Service Fee',
     feePlatform:        'Platform Fee (5%)',
     feeVat:             'VAT (13%)',
     feeTotal:           'Total',

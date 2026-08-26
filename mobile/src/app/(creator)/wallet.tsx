@@ -2,8 +2,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
-import { isPaymentMethodId } from '@/utilities/paymentMethods';
-import { useCallback, useRef, useState } from 'react';
+import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
@@ -14,12 +14,6 @@ import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
 import { Skeleton } from '@/components/Skeleton';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-
-const METHOD_META: Record<string, { icon: string; color: string }> = {
-  esewa:   { icon: 'wallet', color: '#60BB46' },
-  khalti:  { icon: 'money-check-alt', color: '#5C2D91' },
-  fonepay: { icon: 'mobile-alt', color: '#003087' },
-};
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -34,6 +28,11 @@ export default function WalletScreen() {
   const [summary, setSummary] = useState<ApiWalletSummary | null>(null);
   const [transactions, setTransactions] = useState<ApiWithdrawal[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [methodCatalog, setMethodCatalog] = useState<ApiPaymentMethod[]>([]);
+
+  useEffect(() => {
+    paymentMethodService.getPaymentMethods().then(setMethodCatalog).catch(() => {});
+  }, []);
 
   function loadAll() {
     return Promise.all([walletService.getSummary(), walletService.getTransactions()])
@@ -138,26 +137,12 @@ export default function WalletScreen() {
           ) : (
             <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
               {transactions.map((tx, i) => {
-                const meta = METHOD_META[tx.method] ?? { icon: 'credit-card', color: C.brinjal1 };
+                const meta = methodCatalog.find((c) => c.key === tx.method);
                 return (
                   <View key={tx.id} style={[styles.txRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.border }]}>
-                    {isPaymentMethodId(tx.method) ? (
-                      <PaymentMethodIcon method={tx.method} size={36} />
-                    ) : (
-                      <View
-                        style={[
-                          styles.txIconWrap,
-                          {
-                            backgroundColor: `${meta.color}18`, shadowColor: meta.color,
-                            shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                          },
-                        ]}
-                      >
-                        <FontAwesome5 name={meta.icon} size={14} color={meta.color} />
-                      </View>
-                    )}
+                    <PaymentMethodIcon method={tx.method} label={meta?.name} iconUrl={meta?.iconUrl} color={meta?.color ?? C.brinjal1} size={36} />
                     <View style={styles.txInfo}>
-                      <Text style={[styles.txMethod, { color: C.text }]}>{tx.method.charAt(0).toUpperCase() + tx.method.slice(1)}</Text>
+                      <Text style={[styles.txMethod, { color: C.text }]}>{meta?.name ?? tx.method.charAt(0).toUpperCase() + tx.method.slice(1)}</Text>
                       <Text style={[styles.txDate, { color: C.textSecondary }]}>{formatDate(tx.createdAt)}</Text>
                     </View>
                     <Text style={styles.txAmount}>− Rs. {tx.amount.toLocaleString()}</Text>
@@ -211,7 +196,6 @@ const styles = StyleSheet.create({
   emptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
 
   txRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
-  txIconWrap: { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   txInfo: { flex: 1, gap: 2 },
   txMethod: { fontSize: 13, fontFamily: F.semibold },
   txDate: { fontSize: 11, fontFamily: F.regular },

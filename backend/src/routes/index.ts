@@ -9,6 +9,7 @@ import businessReferralRoutes from '../modules/business-referral/business-referr
 import walletRoutes from '../modules/wallet/wallet.routes';
 import businessRoutes from '../modules/business/business.routes';
 import campaignRoutes from '../modules/campaign/campaign.routes';
+import khaltiCallbackRoutes from '../modules/campaign/khalti-callback.routes';
 import campaignAiRoutes from '../modules/campaign-ai/campaign-ai.routes';
 import aiAssistantRoutes from '../modules/ai-assistant/ai-assistant.routes';
 import messagingRoutes from '../modules/messaging/messaging.routes';
@@ -17,6 +18,8 @@ import categoryRoutes from '../modules/category/category.routes';
 import categoryAdminRoutes from '../modules/category/category.admin.routes';
 import platformRoutes from '../modules/platform/platform.routes';
 import platformAdminRoutes from '../modules/platform/platform.admin.routes';
+import paymentMethodRoutes from '../modules/payment-method/payment-method.routes';
+import paymentMethodAdminRoutes from '../modules/payment-method/payment-method.admin.routes';
 import successStoryRoutes from '../modules/success-story/success-story.routes';
 import successStoryAdminRoutes from '../modules/success-story/success-story.admin.routes';
 import publicRoutes from '../modules/public/public.routes';
@@ -52,12 +55,16 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/creator/team', providerMemberRoutes);
   app.use('/api/business/referral', businessReferralRoutes);
   app.use('/api/business', businessRoutes);
+  // Public — Khalti's browser redirect lands here directly with no auth header,
+  // same reasoning as the TikTok/Instagram callbacks above.
+  app.use('/api/payments/khalti', khaltiCallbackRoutes);
   app.use('/api/campaigns/ai', campaignAiRoutes);
   app.use('/api/ai-assistant', aiAssistantRoutes);
   app.use('/api/campaigns', campaignRoutes);
   app.use('/api/messaging', messagingRoutes);
   app.use('/api/admin/categories', categoryAdminRoutes);
   app.use('/api/admin/platforms', platformAdminRoutes);
+  app.use('/api/admin/payment-methods', paymentMethodAdminRoutes);
   app.use('/api/admin/success-stories', successStoryAdminRoutes);
   app.use('/api/admin/visitor-chats', visitorChatAdminRoutes);
   app.use('/api/admin/services', serviceAdminRoutes);
@@ -65,6 +72,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/admin', adminRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/platforms', platformRoutes);
+  app.use('/api/payment-methods', paymentMethodRoutes);
   app.use('/api/services', servicePublicRoutes);
   app.use('/api/service-requests', serviceRequestRoutes);
   app.use('/api/reports', reportRoutes);

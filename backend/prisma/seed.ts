@@ -3,6 +3,7 @@ import { seedUsers } from './seeds/users';
 import { seedHelpArticles, seedLegalContent } from './seeds/content';
 import { seedCategories } from './seeds/categories';
 import { seedPlatforms } from './seeds/platforms';
+import { seedPaymentMethods } from './seeds/payment-methods';
 import { seedSuccessStories } from './seeds/success-stories';
 import { seedContracts } from './seeds/contracts';
 
@@ -18,6 +19,9 @@ async function main() {
 
   console.log('\n── Platforms ────────────────────────────────────────────');
   await seedPlatforms(prisma);
+
+  console.log('\n── Payment Methods ──────────────────────────────────────');
+  await seedPaymentMethods(prisma);
 
   console.log('\n── Admin ────────────────────────────────────────────────');
   await seedUsers(prisma);

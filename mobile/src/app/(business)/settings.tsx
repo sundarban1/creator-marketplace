@@ -19,7 +19,7 @@ import {
 import { AppModal } from '@/components/AppModal';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
-import { isPaymentMethodId } from '@/utilities/paymentMethods';
+import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
 import { formatPhoneDisplay, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -63,12 +63,6 @@ const ColorCtx = createContext<ColorsType>(COLORS);
 const MAX_BIZ_CATEGORIES = 5;
 
 const BUDGET_RANGES = ['Under NPR 5,000', 'NPR 5,000–15,000', 'NPR 15,000–50,000', 'NPR 50,000+'];
-
-const NEPAL_PAYMENTS = [
-  { id: 'esewa',    icon: 'wallet',          label: 'eSewa',   color: '#60BB46' },
-  { id: 'khalti',   icon: 'money-check-alt', label: 'Khalti',  color: '#5C2D91' },
-  { id: 'fonepay',  icon: 'mobile-alt',      label: 'Fonepay', color: '#EE3124' },
-];
 
 // ── Social Accounts (Connect Accounts) — mirrors (creator)/settings.tsx's section
 // of the same name; see that file for the OAuth flow details/comments.
@@ -349,6 +343,7 @@ export default function BusinessSettingsScreen() {
 
   // ── Section 4: Payment ──
   const [nepalPayments, setNepalPayments] = useState<string[]>(['esewa']);
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<ApiPaymentMethod[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryEntry[]>([]);
   const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(true);
 
@@ -681,6 +676,7 @@ export default function BusinessSettingsScreen() {
       .then(setPaymentHistory)
       .catch(() => {})
       .finally(() => setPaymentHistoryLoading(false));
+    paymentMethodService.getPaymentMethods().then(setAvailablePaymentMethods).catch(() => {});
   }, []);
 
   // ── Support forms ──
@@ -1656,21 +1652,15 @@ export default function BusinessSettingsScreen() {
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.paymentMethodsHint')}</Text>
         </HintCard>
         <Card>
-          {NEPAL_PAYMENTS.map((m, idx) => {
-            const selected = nepalPayments.includes(m.id);
+          {availablePaymentMethods.map((m, idx) => {
+            const selected = nepalPayments.includes(m.key);
             return (
               <Pressable
-                key={m.id}
-                style={[styles.row, idx < NEPAL_PAYMENTS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-                onPress={() => toggleAndSave(nepalPayments, setNepalPayments, m.id, (next) => profileService.updateBusinessProfile({ paymentMethods: next }))}>
-                {isPaymentMethodId(m.id) ? (
-                  <PaymentMethodIcon method={m.id} size={38} />
-                ) : (
-                  <View style={[styles.paymentIcon, { backgroundColor: m.color + '18' }]}>
-                    <FontAwesome5 name={m.icon} size={16} color={m.color} />
-                  </View>
-                )}
-                <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{m.label}</Text>
+                key={m.key}
+                style={[styles.row, idx < availablePaymentMethods.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+                onPress={() => toggleAndSave(nepalPayments, setNepalPayments, m.key, (next) => profileService.updateBusinessProfile({ paymentMethods: next }))}>
+                <PaymentMethodIcon method={m.key} label={m.name} iconUrl={m.iconUrl} color={m.color} size={38} />
+                <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{m.name}</Text>
                 <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
                   {selected ? <FontAwesome5 name="check" solid size={13} color="#fff" /> : null}
                 </View>
@@ -2459,8 +2449,6 @@ const styles = StyleSheet.create({
   formField: { gap: 5 },
   formFieldLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   formInput: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
-
-  paymentIcon: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   checkboxOuter: { width: 22, height: 22, borderRadius: RADIUS.sm, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   radioOuter: { width: 22, height: 22, borderRadius: RADIUS.full, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   radioInner: { width: 11, height: 11, borderRadius: RADIUS.full },

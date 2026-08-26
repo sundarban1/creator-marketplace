@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { AuthProvider } from './context/AuthContext';
 import { CategoriesProvider } from './context/CategoriesContext';
 import { PlatformsProvider } from './context/PlatformsContext';
+import { PaymentMethodsProvider } from './context/PaymentMethodsContext';
 import { SuccessStoriesProvider } from './context/SuccessStoriesContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -69,11 +70,13 @@ function AdminProviders() {
   return (
     <CategoriesProvider>
       <PlatformsProvider>
-        <SuccessStoriesProvider>
-          <NotificationProvider>
-            <Outlet />
-          </NotificationProvider>
-        </SuccessStoriesProvider>
+        <PaymentMethodsProvider>
+          <SuccessStoriesProvider>
+            <NotificationProvider>
+              <Outlet />
+            </NotificationProvider>
+          </SuccessStoriesProvider>
+        </PaymentMethodsProvider>
       </PlatformsProvider>
     </CategoriesProvider>
   );

@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
-const VALID_PAYMENT_METHODS = ['esewa', 'khalti', 'fonepay'] as const;
-
+// Validated dynamically against the admin-managed PaymentMethod catalog (and
+// against the creator's own saved methods) in WalletService.withdraw — see
+// creator.schema.ts's updatePaymentMethodsSchema for the same pattern.
 export const withdrawSchema = z.object({
   amount: z.number().positive('Amount must be greater than zero'),
-  method: z.enum(VALID_PAYMENT_METHODS, { errorMap: () => ({ message: 'Invalid payment method' }) }),
+  method: z.string().min(1, 'Payment method is required'),
 });
 
 export type WithdrawInput = z.infer<typeof withdrawSchema>;

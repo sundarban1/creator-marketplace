@@ -296,6 +296,18 @@ export interface ApiPlatform {
   campaignCount?: number;
 }
 
+export interface ApiPaymentMethod {
+  id: string;
+  key: string;
+  name: string;
+  iconUrl: string | null;
+  color: string;
+  order: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  usageCount?: number;
+}
+
 export interface ApiBusiness {
   id:           string;
   userId:       string;
@@ -932,6 +944,24 @@ export const api = {
 
     deletePlatform: (id: string) =>
       request<null>('DELETE', `/api/admin/platforms/${id}`),
+
+    paymentMethods: () =>
+      request<ApiPaymentMethod[]>('GET', '/api/admin/payment-methods'),
+
+    createPaymentMethod: (data: { key: string; name: string; iconUrl?: string | null; color: string; order: number; status: string }) =>
+      request<ApiPaymentMethod>('POST', '/api/admin/payment-methods', data),
+
+    updatePaymentMethod: (id: string, data: { key: string; name: string; iconUrl?: string | null; color: string; order: number; status: string }) =>
+      request<ApiPaymentMethod>('PUT', `/api/admin/payment-methods/${id}`, data),
+
+    togglePaymentMethodStatus: (id: string, status: string) =>
+      request<ApiPaymentMethod>('PATCH', `/api/admin/payment-methods/${id}/status`, { status }),
+
+    deletePaymentMethod: (id: string) =>
+      request<null>('DELETE', `/api/admin/payment-methods/${id}`),
+
+    uploadPaymentMethodIcon: (file: File) =>
+      uploadFile<{ iconUrl: string }>('/api/admin/payment-methods/icon', file, 'icon'),
 
     successStories: () =>
       request<ApiSuccessStory[]>('GET', '/api/admin/success-stories'),

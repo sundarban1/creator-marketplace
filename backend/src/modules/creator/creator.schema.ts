@@ -102,10 +102,10 @@ export const connectInstagramAccountSchema = z.object({
   pageId:      z.string().min(1, 'Page id is required'),
 });
 
-const VALID_PAYMENT_METHODS = ['esewa', 'khalti', 'fonepay'] as const;
-
+// Validated dynamically against the admin-managed PaymentMethod catalog in
+// CreatorService, same pattern as prefPlatforms below.
 export const updatePaymentMethodsSchema = z.object({
-  methods: z.array(z.enum(VALID_PAYMENT_METHODS)).min(0),
+  methods: z.array(z.string()).min(0),
 });
 
 const VALID_LOCATIONS = ['Kathmandu', 'Pokhara', 'Lalitpur', 'Bhaktapur', 'Butwal', 'Biratnagar', 'Remote'] as const;

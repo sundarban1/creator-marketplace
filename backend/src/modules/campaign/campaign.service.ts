@@ -21,6 +21,8 @@ import { logActivity, getActivityForEntity } from '../logging/activity.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
+import { env } from '../../config/env';
+import { initiateKhaltiPayment as khaltiInitiate, lookupKhaltiPayment as khaltiLookup } from '../../utils/khalti';
 import {
   sendPaymentSecuredEmail,
   sendWorkStartedEmail,
@@ -43,6 +45,15 @@ import {
 // descriptive prose; translating it would show creators a name the business
 // never wrote.
 const CAMPAIGN_FIELDS = ['description', 'category', 'goals', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits', 'contentGuidelines'] as const;
+
+// Mirrors the fee breakdown shown to the business in the pay modal (mobile
+// activity-timeline.tsx's crFee/pfFee/vat/total) — must stay in lockstep with
+// that formula since this is the amount actually charged through Khalti.
+function applicationTotalNpr(proposedRate: number): number {
+  const platformFee = Math.round(proposedRate * 0.05);
+  const vat = Math.round(platformFee * 0.13);
+  return proposedRate + platformFee + vat;
+}
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered as MP4 via
 // videoPlaybackUrl. Mirrors messaging.service.ts's same allow-list.
@@ -1192,7 +1203,53 @@ export class CampaignService {
     return toCampaignDto(updated);
   }
 
-  async payForApplication(appId: string, userId: string) {
+  // Shared by the mock instant-pay path (payForApplication) and the real
+  // Khalti path (confirmKhaltiPayment) — everything that happens once a
+  // payment is actually confirmed, regardless of which method got it there.
+  private async finalizeApplicationPayment(params: {
+    appId: string;
+    campaignId: string;
+    campaignTitle: string;
+    businessId: string;
+    businessUserId: string;
+    businessName: string;
+    creatorId: string;
+    creatorUserId?: string;
+    proposedRate: number;
+    method: string;
+  }) {
+    await this.repo.payForApplication(params.appId, params.method);
+    await this.repo.createEscrowTransaction({
+      applicationId: params.appId,
+      campaignId:    params.campaignId,
+      businessId:    params.businessId,
+      creatorId:     params.creatorId,
+      amount:        params.proposedRate,
+      method:        params.method,
+    });
+
+    logActivity({
+      userId:     params.businessUserId,
+      action:     ActivityAction.PAYMENT_ESCROWED,
+      entityType: EntityType.APPLICATION,
+      entityId:   params.appId,
+      metadata:   { campaignId: params.campaignId, amount: params.proposedRate, method: params.method },
+    });
+
+    if (params.creatorUserId) {
+      analyticsService.incrPaymentPaid(params.creatorUserId, params.proposedRate);
+      notificationService.create({
+        userId:  params.creatorUserId,
+        type:    'payment_released',
+        title:   `Payment secured for "${params.campaignTitle}"`,
+        body:    `${params.businessName} has made the payment. You can now start creating content!`,
+        refId:   params.campaignId,
+        refType: 'campaign',
+      }).catch(() => {});
+    }
+  }
+
+  async payForApplication(appId: string, userId: string, method = 'esewa') {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) throw new AppError('Business profile not found', 404);
 
@@ -1203,33 +1260,107 @@ export class CampaignService {
     if (!campaign) throw new AppError('Campaign not found', 404);
     if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
     if (application.status !== 'ACCEPTED') throw new AppError('Creator must be accepted first', 400);
-
-    await this.repo.payForApplication(appId);
-    await this.repo.createEscrowTransaction({
-      applicationId: appId,
-      campaignId:    application.campaignId,
-      businessId:    business.id,
-      creatorId:     application.creatorId,
-      amount:        application.proposedRate,
-    });
-
-    logActivity({ userId, action: ActivityAction.PAYMENT_ESCROWED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: application.campaignId, amount: application.proposedRate } });
-
-    // Notify creator
-    const creatorUserId = (application.creator as any)?.userId as string | undefined;
-    if (creatorUserId) {
-      analyticsService.incrPaymentPaid(creatorUserId, application.proposedRate);
-      notificationService.create({
-        userId:  creatorUserId,
-        type:    'payment_released',
-        title:   `Payment secured for "${campaign.title}"`,
-        body:    `${business.businessName} has made the payment. You can now start creating content!`,
-        refId:   application.campaignId,
-        refType: 'campaign',
-      }).catch(() => {});
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
+      throw new AppError('Payment already made for this application', 400);
     }
 
+    await this.finalizeApplicationPayment({
+      appId,
+      campaignId:     application.campaignId,
+      campaignTitle:  campaign.title,
+      businessId:     business.id,
+      businessUserId: userId,
+      businessName:   business.businessName ?? 'Business',
+      creatorId:      application.creatorId,
+      creatorUserId:  (application.creator as any)?.userId,
+      proposedRate:   application.proposedRate,
+      method,
+    });
+
     return { success: true };
+  }
+
+  // Step 1 of the Khalti flow: validate + charge the same amount the pay modal
+  // showed the business, hand back Khalti's hosted checkout URL. Nothing is
+  // marked paid here — that only happens once confirmKhaltiPayment verifies the
+  // payment actually completed (see khaltiCallback in the controller).
+  async initiateKhaltiPayment(appId: string, userId: string): Promise<{ paymentUrl: string }> {
+    if (!env.KHALTI_RETURN_URL) throw new AppError('Khalti is not configured on the server yet.', 503);
+
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError('Business profile not found', 404);
+
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError('Application not found', 404);
+
+    const campaign = await this.repo.findById(application.campaignId);
+    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
+    if (application.status !== 'ACCEPTED') throw new AppError('Creator must be accepted first', 400);
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
+      throw new AppError('Payment already made for this application', 400);
+    }
+
+    const businessUser = (business as any).user as { email?: string | null; phone?: string | null } | undefined;
+    const totalNpr = applicationTotalNpr(application.proposedRate);
+
+    const { pidx, paymentUrl } = await khaltiInitiate({
+      amountPaisa:       Math.round(totalNpr * 100),
+      purchaseOrderId:   appId,
+      purchaseOrderName: `Payment for "${campaign.title}"`,
+      returnUrl:         env.KHALTI_RETURN_URL,
+      websiteUrl:        env.FRONTEND_URL.split(',')[0].trim(),
+      customerInfo: {
+        name:  business.businessName ?? undefined,
+        email: businessUser?.email ?? undefined,
+        phone: businessUser?.phone ?? undefined,
+      },
+    });
+
+    await this.repo.setKhaltiPidx(appId, pidx);
+
+    return { paymentUrl };
+  }
+
+  // Step 2: the browser lands back on khaltiCallback with `pidx` — this looks
+  // it up against Khalti's own server (never trusting the redirect's query
+  // params alone) before finalizing anything.
+  async confirmKhaltiPayment(appId: string, pidx: string): Promise<void> {
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError('Application not found', 404);
+
+    // Already finalized — a reloaded callback or a double-redirect lands here
+    // as a harmless no-op instead of double-charging the escrow ledger.
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') return;
+
+    if (!application.khaltiPidx || application.khaltiPidx !== pidx) {
+      throw new AppError('This Khalti payment does not match any pending payment.', 400);
+    }
+
+    const result = await khaltiLookup(pidx);
+    if (result.status !== 'Completed') {
+      throw new AppError(`Khalti payment ${result.status}`, 400);
+    }
+
+    const expectedPaisa = Math.round(applicationTotalNpr(application.proposedRate) * 100);
+    if (result.totalAmountPaisa !== expectedPaisa) {
+      logger.error({ appId, pidx, expectedPaisa, got: result.totalAmountPaisa }, 'Khalti payment amount mismatch');
+      throw new AppError('The paid amount does not match what was due.', 400);
+    }
+
+    const campaign = application.campaign as any;
+    await this.finalizeApplicationPayment({
+      appId,
+      campaignId:     application.campaignId,
+      campaignTitle:  campaign.title,
+      businessId:     campaign.business.id,
+      businessUserId: campaign.business.userId,
+      businessName:   campaign.business.businessName ?? 'Business',
+      creatorId:      application.creatorId,
+      creatorUserId:  (application.creator as any)?.userId,
+      proposedRate:   application.proposedRate,
+      method:         'khalti',
+    });
   }
 
   // Job/Application Activity tab — either participant (the applying creator

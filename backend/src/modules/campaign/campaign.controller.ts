@@ -5,6 +5,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
+import { env } from '../../config/env';
 import type { SubmitReviewInput, DeliverableVideoSignatureRequestInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
@@ -374,9 +375,42 @@ export class CampaignController {
 
   async payForApplication(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await campaignService.payForApplication(req.params.appId, req.user!.id);
+      const { method } = req.body as { method?: string };
+      const result = await campaignService.payForApplication(req.params.appId, req.user!.id, method);
       res.json({ success: true, data: result });
     } catch (e) { next(e); }
+  }
+
+  async initiateKhaltiPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.initiateKhaltiPayment(req.params.appId, req.user!.id);
+      success(res, result, 'Khalti payment initiated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Public — Khalti redirects the user's browser here directly after payment,
+  // with no Authorization header (same pattern as CreatorController.tiktokCallback).
+  // Identity is carried via `purchase_order_id`, which is the application id we
+  // passed at initiate time; the pidx query param is then verified against
+  // Application.khaltiPidx and re-checked with Khalti's own lookup API before
+  // anything is marked paid — see CampaignService.confirmKhaltiPayment.
+  async khaltiCallback(req: Request, res: Response): Promise<void> {
+    const { pidx, purchase_order_id: appId } = req.query as { pidx?: string; purchase_order_id?: string };
+    const redirectBase = `${env.APP_SCHEME}://khalti-callback`;
+
+    if (!pidx || !appId) {
+      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent('missing_payment_reference')}`);
+      return;
+    }
+    try {
+      await campaignService.confirmKhaltiPayment(appId, pidx);
+      res.redirect(`${redirectBase}?success=true`);
+    } catch (err) {
+      const message = err instanceof AppError ? err.message : 'Could not confirm the Khalti payment';
+      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
+    }
   }
 
   async getApplicationActivity(req: Request, res: Response, next: NextFunction): Promise<void> {

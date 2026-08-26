@@ -351,6 +351,13 @@ router.put(
   ctrl.payForApplication.bind(ctrl)
 );
 
+router.post(
+  '/applications/:appId/pay/khalti/initiate',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.initiateKhaltiPayment.bind(ctrl)
+);
+
 router.put(
   '/applications/:appId/submit',
   authenticate,

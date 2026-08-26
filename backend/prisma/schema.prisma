@@ -717,6 +717,13 @@ model Application {
   deliverableFiles    Json                 @default("[]")
   paymentStatus       PaymentStatus        @default(UNPAID)
   paidAt              DateTime?
+  // esewa | khalti | fonepay — set once payForApplication (mock) or a real
+  // gateway (Khalti) actually completes the payment.
+  paymentMethod       String?
+  // Khalti's payment identifier for the most recent initiate call — overwritten
+  // on every retry so only the latest attempt's callback can complete the
+  // payment (an older, abandoned pidx can never be replayed to mark this paid).
+  khaltiPidx          String?              @unique
   // Set only when an admin manually releases the held escrow payment —
   // brand approval no longer releases funds automatically, see approveWork().
   releasedAt          DateTime?
@@ -1647,6 +1654,30 @@ model Platform {
   updatedAt DateTime       @updatedAt
 
   @@map("platforms")
+}
+
+enum PaymentMethodStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// Admin-managed source of truth for payment methods (eSewa, Khalti, Fonepay, ...)
+// shown wherever the app needs to collect or display one — creator/business
+// payout & payin method pickers, wallet withdrawals, event payment. Only
+// ACTIVE rows are offered to the mobile app; disabling one here hides it from
+// new selections without touching profiles that already picked it.
+model PaymentMethod {
+  id        String              @id @default(cuid())
+  key       String              @unique
+  name      String
+  iconUrl   String?
+  color     String              @default("#6B7280")
+  order     Int                 @default(0)
+  status    PaymentMethodStatus @default(ACTIVE)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@map("payment_methods")
 }
 
 enum SuccessStoryStatus {

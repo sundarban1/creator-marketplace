@@ -1028,10 +1028,17 @@ export class CampaignRepository {
     return (app?.deliverableFiles as DeliverableFile[] | null) ?? [];
   }
 
-  async payForApplication(appId: string) {
+  async payForApplication(appId: string, method: string) {
     return prisma.application.update({
       where: { id: appId },
-      data: { paymentStatus: 'PAID', paidAt: new Date() },
+      data: { paymentStatus: 'PAID', paidAt: new Date(), paymentMethod: method, khaltiPidx: null },
+    });
+  }
+
+  async setKhaltiPidx(appId: string, pidx: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { khaltiPidx: pidx },
     });
   }
 
@@ -1052,11 +1059,13 @@ export class CampaignRepository {
     businessId: string;
     creatorId: string;
     amount: number;
+    method: string;
   }) {
     return prisma.paymentTransaction.create({
       data: {
         type:          'ESCROW_IN',
         amount:        params.amount,
+        method:        params.method,
         applicationId: params.applicationId,
         campaignId:    params.campaignId,
         businessId:    params.businessId,

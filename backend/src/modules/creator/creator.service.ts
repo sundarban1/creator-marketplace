@@ -12,6 +12,7 @@ const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
 import { CreatorRepository } from './creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { PlatformRepository } from '../platform/platform.repository';
+import { PaymentMethodRepository } from '../payment-method/payment-method.repository';
 import { ServiceRepository } from '../service/service.repository';
 import { PortfolioRepository } from '../portfolio/portfolio.repository';
 import { ProviderMemberRepository } from '../provider-member/provider-member.repository';
@@ -298,6 +299,7 @@ export class CreatorService {
   private repo: CreatorRepository;
   private businessRepo: BusinessRepository;
   private platformRepo: PlatformRepository;
+  private paymentMethodRepo: PaymentMethodRepository;
   private serviceRepo: ServiceRepository;
   private portfolioRepo: PortfolioRepository;
   private providerMemberRepo: ProviderMemberRepository;
@@ -306,6 +308,7 @@ export class CreatorService {
     this.repo = new CreatorRepository();
     this.businessRepo = new BusinessRepository();
     this.platformRepo = new PlatformRepository();
+    this.paymentMethodRepo = new PaymentMethodRepository();
     this.serviceRepo = new ServiceRepository();
     this.portfolioRepo = new PortfolioRepository();
     this.providerMemberRepo = new ProviderMemberRepository();
@@ -1148,6 +1151,14 @@ export class CreatorService {
   async updatePaymentMethods(userId: string, input: UpdatePaymentMethodsInput) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
+
+    if (input.methods.length) {
+      const methods = await this.paymentMethodRepo.findManyPublic();
+      const validKeys = new Set(methods.map((m) => m.key));
+      const invalid = input.methods.filter((m) => !validKeys.has(m));
+      if (invalid.length) throw new AppError(`Invalid payment method(s): ${invalid.join(', ')}`, 400);
+    }
+
     return toCreatorProfileDto(await this.repo.updatePaymentMethods(userId, input.methods));
   }
 

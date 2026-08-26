@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
-import { isPaymentMethodId } from '@/utilities/paymentMethods';
+import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -131,12 +131,6 @@ function buildPortfolioUrl(type: string, idOrUrl: string): string {
 function PlatformIcon({ iconName, size, color, style }: { iconName: string; iconLib?: 'fa5' | 'ion'; size: number; color: string; style?: any }) {
   return <FontAwesome5 name={iconName as any} size={size} color={color} style={style} />;
 }
-
-const PAYMENT_METHODS = [
-  { id: 'esewa',   icon: 'wallet',       label: 'eSewa',   color: '#60BB46' },
-  { id: 'khalti',  icon: 'money-check-alt', label: 'Khalti',  color: '#5C2D91' },
-  { id: 'fonepay', icon: 'credit-card',  label: 'FonePay', color: '#003087' },
-] as const;
 
 const LANGUAGE_OPTIONS = [
   { label: 'English', native: 'English', flag: '🇬🇧', desc: 'Default app language', future: false },
@@ -393,6 +387,7 @@ export default function CreatorSettingsScreen() {
 
   // Earnings / payment
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<ApiPaymentMethod[]>([]);
   const [earningsSummary, setEarningsSummary] = useState<{ totalEarned: number; pendingEarnings: number; totalApplications: number } | null>(null);
   const [earningsLoading, setEarningsLoading] = useState(false);
   const paymentSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -539,6 +534,7 @@ export default function CreatorSettingsScreen() {
     creatorService.getSocialAccounts().then((accounts) => {
       setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
     }).catch(() => {});
+    paymentMethodService.getPaymentMethods().then(setAvailablePaymentMethods).catch(() => {});
     creatorService.getProfile().then((profile) => {
       if (profile.portfolioLinks?.length) {
         setPortfolio(profile.portfolioLinks.map((l) => ({ id: l.id, label: l.label, url: l.url })));
@@ -1725,21 +1721,15 @@ export default function CreatorSettingsScreen() {
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.paymentMethodsHint')}</Text>
         </View>
         <Card>
-          {PAYMENT_METHODS.map((m, idx) => {
-            const selected = paymentMethods.includes(m.id);
+          {availablePaymentMethods.map((m, idx) => {
+            const selected = paymentMethods.includes(m.key);
             return (
               <Pressable
-                key={m.id}
-                style={[styles.row, idx < PAYMENT_METHODS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-                onPress={() => togglePayment(m.id)}>
-                {isPaymentMethodId(m.id) ? (
-                  <PaymentMethodIcon method={m.id} size={38} />
-                ) : (
-                  <View style={[styles.paymentIcon, { backgroundColor: m.color + '18' }]}>
-                    <FontAwesome5 name={m.icon} size={16} color={m.color} />
-                  </View>
-                )}
-                <Text style={[styles.rowLabel, { color: C.text }]}>{m.label}</Text>
+                key={m.key}
+                style={[styles.row, idx < availablePaymentMethods.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+                onPress={() => togglePayment(m.key)}>
+                <PaymentMethodIcon method={m.key} label={m.name} iconUrl={m.iconUrl} color={m.color} size={38} />
+                <Text style={[styles.rowLabel, { color: C.text }]}>{m.name}</Text>
                 <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
                   {selected ? <FontAwesome5 name="check" solid size={13} color="#fff" /> : null}
                 </View>
@@ -2988,8 +2978,6 @@ const styles = StyleSheet.create({
   earningsValue: { fontSize: 22, fontFamily: F.bold },
   earningsLabel: { fontSize: 11, textAlign: 'center', fontFamily: F.semibold },
   earningsSkeletonValue: { width: 52, height: 26, borderRadius: RADIUS.sm, marginBottom: 2 },
-
-  paymentIcon: { width: 38, height: 38, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   checkboxOuter: { width: 22, height: 22, borderRadius: RADIUS.sm, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
 
   verifiedBadge: { backgroundColor: '#DCFCE7', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
