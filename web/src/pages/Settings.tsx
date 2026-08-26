@@ -190,6 +190,9 @@ const DEFAULTS: PlatformSettings = {
   'platform.commission':         '12',
   'platform.description':        'Kolab connects brands with top creators for authentic events.',
   'marketplace.launchPriorityCity': 'Itahari',
+  'featuredEvent.paywallEnabled': false,
+  'featuredEvent.freeQuota':      3,
+  'featuredEvent.price':          1000,
   'featuredEvent.unlimitedEmails': [] as string[],
   'app.minVersion.ios':           '',
   'app.minVersion.android':       '',
@@ -378,14 +381,31 @@ export function Settings() {
         </SectionCard>
 
         {/* Featured Events */}
-        <SectionCard title="Unlimited Featured Events" subtitle="Businesses on this list can feature unlimited events for free, bypassing the standard free-quota limit">
-          <EmailListField
-            label="Allowlisted business emails"
-            description="Must match the email the business signs in with. Case-insensitive."
-            settingKey="featuredEvent.unlimitedEmails"
-            settings={settings}
-            onChange={setArray}
+        <SectionCard title="Featured Events" subtitle="Control whether businesses pay to feature events, or feature them for free">
+          <Toggle
+            label="Featured Event Paywall"
+            description="Off — every business can feature unlimited events for free. On — each business gets a limited number of free features, then must pay to feature more."
+            value={bool('featuredEvent.paywallEnabled')}
+            onChange={(v) => toggle('featuredEvent.paywallEnabled', v)}
           />
+
+          {bool('featuredEvent.paywallEnabled') && (
+            <div className="pt-4">
+              <InputField label="Free featured events per business" settingKey="featuredEvent.freeQuota" settings={settings} onChange={setString} type="number" />
+              <InputField label="Price to feature after the free quota (Rs.)" settingKey="featuredEvent.price" settings={settings} onChange={setString} type="number" />
+              <p className="text-xs text-gray-400 -mt-2 mb-4">
+                No charge is collected automatically yet — the price is shown to the business in the app as the amount they'd owe to feature beyond the free quota.
+              </p>
+
+              <EmailListField
+                label="Allowlisted business emails"
+                description="Businesses on this list always feature for free, even while the paywall is on. Must match the email the business signs in with. Case-insensitive."
+                settingKey="featuredEvent.unlimitedEmails"
+                settings={settings}
+                onChange={setArray}
+              />
+            </div>
+          )}
         </SectionCard>
 
         {/* App Version */}

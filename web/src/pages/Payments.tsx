@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { PaymentTransactionsTab } from './payments/PaymentTransactionsTab';
 import { PaymentMethodsTab } from './payments/PaymentMethodsTab';
+import { WithdrawalsTab } from './payments/WithdrawalsTab';
 
 const TABS = [
   { key: 'transactions', label: 'Transactions' },
+  { key: 'withdrawals',  label: 'Withdrawal Requests' },
   { key: 'methods',      label: 'Payment Methods' },
 ] as const;
 
@@ -31,7 +33,9 @@ export function Payments() {
         ))}
       </div>
 
-      {tab === 'transactions' ? <PaymentTransactionsTab /> : <PaymentMethodsTab />}
+      {tab === 'transactions' && <PaymentTransactionsTab />}
+      {tab === 'withdrawals'  && <WithdrawalsTab />}
+      {tab === 'methods'      && <PaymentMethodsTab />}
     </div>
   );
 }

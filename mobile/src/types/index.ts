@@ -55,15 +55,11 @@ export type Campaign = {
   paymentStatus?: 'UNPAID' | 'PAID' | 'RELEASED';
   paidAt?:        string | null;
   creatorsNeeded?: number;
-  objective?:            string;
-  contentGuidelines?:    string[];
   targetAudience?:       string[];
   hashtags?:             string[];
   sampleCaption?:        string;
-  approvalRequirements?: string;
   aiGenerated?:           boolean;
   aiSuggestedCategories?: string[];
-  aiSuggestedPlatforms?:  string[];
   distanceKm?:            number;
   // Present only for multi-role campaigns — see ApiCampaignRequirement.
   requirements?: import('@/lib/api').ApiCampaignRequirement[];

@@ -55,13 +55,9 @@ export function mapAiCampaignDraftToForm(draft: AiCampaignDraft, aiPrompt: strin
     budget:      '',
     creatorsNeeded: draft.creatorsNeeded,
     deadline:    dayStart(new Date(Date.now() + draft.suggestedDurationDays * 24 * 60 * 60 * 1000)),
-    objective:            draft.objective,
-    contentGuidelines:    draft.contentGuidelines,
-    targetAudience:       draft.targetAudience,
     deliverables:         { ...DEFAULT_DELIVERABLES, ...draft.deliverables },
     hashtags:             draft.hashtags,
     sampleCaption:        draft.sampleCaption,
-    approvalRequirements: draft.approvalRequirements,
     // Three tiers, most-specific first: an image the brand already uploaded, the
     // stock photo the backend found for this draft's actual subject, then the
     // local category/keyword map for when the backend had no search key.
@@ -70,7 +66,6 @@ export function mapAiCampaignDraftToForm(draft: AiCampaignDraft, aiPrompt: strin
     aiGenerated:           true,
     aiPrompt,
     aiSuggestedCategories: draft.aiSuggestedCategories,
-    aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
     needsInput:            draft.needsInput,
     aiBudgetMin: draft.budgetMin,
     aiBudgetMax: draft.budgetMax,
@@ -135,7 +130,6 @@ export function mapAiEventDraftToForm(draft: AiEventDraft, aiPrompt: string, pre
     aiGenerated:           true,
     aiPrompt,
     aiSuggestedCategories: draft.aiSuggestedCategories,
-    aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
     completionType:   draft.completionType,
     completionReason: draft.completionReason,
     needsInput:            draft.needsInput,

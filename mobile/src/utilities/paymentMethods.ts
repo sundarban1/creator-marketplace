@@ -3,7 +3,7 @@ import type { ImageSourcePropType } from 'react-native';
 export type PaymentMethodId = 'esewa' | 'khalti' | 'fonepay';
 
 export const PAYMENT_METHOD_IMAGES: Record<PaymentMethodId, ImageSourcePropType> = {
-  esewa:   require('@/assets/images/payments/esewa.jpeg'),
+  esewa:   require('@/assets/images/payments/esewa.png'),
   khalti:  require('@/assets/images/payments/khalti.png'),
   fonepay: require('@/assets/images/payments/fonepay.png'),
 };

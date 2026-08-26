@@ -105,5 +105,10 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.type === 'campaign_deadline') {
     return isCreator ? '/(creator)/(tabs)/proposals' : null;
   }
+  // Withdrawal lifecycle (processing / paid / rejected) — all land on the
+  // creator's wallet, where the request's status and any admin note live.
+  if (n.refType === 'withdrawal' || n.type.startsWith('withdrawal_')) {
+    return isCreator ? '/(creator)/wallet' : null;
+  }
   return null;
 }

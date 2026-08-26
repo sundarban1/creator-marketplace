@@ -400,6 +400,49 @@ export interface ApiPaymentTransaction {
   createdAt: string;
 }
 
+export type WithdrawalStatus = 'PENDING' | 'PROCESSING' | 'PAID' | 'REJECTED' | 'CANCELLED';
+
+export interface ApiAdminWithdrawal {
+  id:                   string;
+  amount:               number;
+  method:               string;
+  status:               WithdrawalStatus;
+  account:              string;
+  accountName:          string | null;
+  /** Auto-generated request reference (e.g. "WD-A7K2QP9M"), set when the creator submits. */
+  referenceCode:        string;
+  /** External bank/wallet transfer id — only set once an admin marks it paid. */
+  transactionReference: string | null;
+  createdAt:            string;
+  processedAt:          string | null;
+  creator:             { id: string; name: string | null; avatarUrl: string | null };
+}
+
+export interface ApiAdminWithdrawalDetail extends ApiAdminWithdrawal {
+  payoutSnapshot: {
+    type?: string;
+    label?: string | null;
+    accountName?: string | null;
+    bankName?: string | null;
+    branch?: string | null;
+    accountNumber?: string | null;
+    walletId?: string | null;
+  };
+  screenshotUrl:      string | null;
+  paymentDate:        string | null;
+  adminNotes:         string | null;
+  rejectionReason:    string | null;
+  processedByAdminId: string | null;
+}
+
+export interface ApiWithdrawalList {
+  withdrawals: ApiAdminWithdrawal[];
+  total:       number;
+  counts:      Record<string, number>;
+  page:        number;
+  limit:       number;
+}
+
 export interface ApiNotification {
   id:        string;
   userId:    string;
@@ -488,16 +531,12 @@ export interface ApiCampaignDetail {
   eventDate?:     string | null;
   venue?:         string | null;
   benefits:       string[];
-  objective?:            string | null;
-  contentGuidelines?:    string[];
   targetAudience?:       string[];
   hashtags?:             string[];
   sampleCaption?:        string | null;
-  approvalRequirements?: string | null;
   aiGenerated?:           boolean;
   aiPrompt?:              string | null;
   aiSuggestedCategories?: string[];
-  aiSuggestedPlatforms?:  string[];
   commissionRate?: number | null;
   createdAt:      string;
   updatedAt:      string;
@@ -765,6 +804,23 @@ async function uploadFile<T>(path: string, file: File, fieldName: string): Promi
   return json;
 }
 
+// Multipart POST with a file plus arbitrary text fields (e.g. withdrawal
+// "Mark as Paid" — screenshot + transaction reference + payment date).
+async function uploadForm<T>(path: string, form: FormData): Promise<ApiResponse<T>> {
+  const send = (token: string | null) => fetch(`${BASE}${path}`, {
+    method:  'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body:    form,
+  });
+  let res = await send(getAccessToken());
+  if (res.status === 401) {
+    res = await send(await ensureFreshAccessToken());
+  }
+  const json = await res.json() as ApiResponse<T>;
+  if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
+  return json;
+}
+
 // ── API surface ────────────────────────────────────────────────────────────────
 
 export const api = {
@@ -919,6 +975,28 @@ export const api = {
     payments: (params?: { page?: number; limit?: number; type?: string; search?: string }) =>
       request<ApiPaymentTransaction[]>('GET', '/api/admin/payments', undefined,
         params as Record<string, string | number | undefined>),
+
+    withdrawals: (params?: { page?: number; limit?: number; status?: string; search?: string }) =>
+      request<ApiWithdrawalList>('GET', '/api/admin/withdrawals', undefined,
+        params as Record<string, string | number | undefined>),
+
+    withdrawal: (id: string) =>
+      request<ApiAdminWithdrawalDetail>('GET', `/api/admin/withdrawals/${id}`),
+
+    processWithdrawal: (id: string) =>
+      request<ApiAdminWithdrawalDetail>('POST', `/api/admin/withdrawals/${id}/process`),
+
+    rejectWithdrawal: (id: string, reason: string) =>
+      request<ApiAdminWithdrawalDetail>('POST', `/api/admin/withdrawals/${id}/reject`, { reason }),
+
+    markWithdrawalPaid: (id: string, fields: { transactionReference: string; paymentDate: string; adminNotes?: string }, screenshot: File) => {
+      const form = new FormData();
+      form.append('screenshot', screenshot);
+      form.append('transactionReference', fields.transactionReference);
+      form.append('paymentDate', fields.paymentDate);
+      if (fields.adminNotes) form.append('adminNotes', fields.adminNotes);
+      return uploadForm<ApiAdminWithdrawalDetail>(`/api/admin/withdrawals/${id}/mark-paid`, form);
+    },
 
     analytics: (userId: string, range?: AnalyticsRange) =>
       request<ApiUserAnalytics>('GET', `/api/admin/analytics/${userId}`, undefined, range ? { range } : undefined),

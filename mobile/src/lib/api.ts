@@ -106,15 +106,11 @@ export interface ApiCampaign {
   paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
   paidAt:        string | null;
   paymentMethod: string | null;
-  objective?:            string | null;
-  contentGuidelines?:    string[];
   targetAudience?:       string[];
   hashtags?:             string[];
   sampleCaption?:        string | null;
-  approvalRequirements?: string | null;
   aiGenerated?:           boolean;
   aiSuggestedCategories?: string[];
-  aiSuggestedPlatforms?:  string[];
   // AI-determined (or business-corrected) job-completion type for the simple
   // single-category case — null until classified. Multi-requirement
   // campaigns use each ApiCampaignRequirement's own fields instead.

@@ -433,14 +433,6 @@ export default function CampaignDetailScreen() {
           </View>
         )}
 
-        {/* Approval Requirements */}
-        {campaign.approvalRequirements && (
-          <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionApprovalRequirements')}</Text>
-            <Text style={[s.description, { color: C.text }]}>{campaign.approvalRequirements}</Text>
-          </View>
-        )}
-
         <View style={{ height: 24 }} />
       </ScrollView>
 

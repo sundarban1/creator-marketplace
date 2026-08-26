@@ -41,14 +41,6 @@ export function genericCampaignTemplate(lang: Lang) {
   return {
     title:       str(lang, 'campaignTitle'),
     description: str(lang, 'campaignDescription'),
-    objective:   str(lang, 'campaignObjective'),
-    contentGuidelines: [
-      str(lang, 'campaignGuideline1'),
-      str(lang, 'campaignGuideline2'),
-      str(lang, 'campaignGuideline3'),
-      str(lang, 'campaignGuideline4'),
-    ],
-    targetAudience: ['Any Creator'],
     suggestedDurationDays: 14,
     creatorsNeeded: 4,
     budgetMin: 6000,
@@ -56,8 +48,7 @@ export function genericCampaignTemplate(lang: Lang) {
     deliverables: { REEL: 1, STORY: 2 } as Record<string, number>,
     // Hashtags stay Latin in both languages — they're literal social handles.
     hashtags: ['NewBrand', 'MustTry', 'SupportLocal'],
-    sampleCaption:        str(lang, 'campaignCaption'),
-    approvalRequirements: str(lang, 'campaignApproval'),
+    sampleCaption: str(lang, 'campaignCaption'),
   };
 }
 

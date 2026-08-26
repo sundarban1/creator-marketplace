@@ -628,14 +628,6 @@ export function CampaignDetail() {
               </div>
             )}
 
-            {/* Objective */}
-            {campaign.objective && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Objective</p>
-                <p className="text-sm text-gray-700 leading-relaxed">{campaign.objective}</p>
-              </div>
-            )}
-
             {/* Target Audience */}
             {!!campaign.targetAudience?.length && (
               <div>
@@ -645,16 +637,6 @@ export function CampaignDetail() {
                     <span key={a} className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full">{a}</span>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Content Guidelines */}
-            {!!campaign.contentGuidelines?.length && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Content Guidelines</p>
-                <ul className="text-sm text-gray-700 leading-relaxed list-disc list-inside space-y-0.5">
-                  {campaign.contentGuidelines.map((g, i) => <li key={i}>{g}</li>)}
-                </ul>
               </div>
             )}
 
@@ -686,14 +668,6 @@ export function CampaignDetail() {
               </div>
             )}
 
-            {/* Approval Requirements */}
-            {campaign.approvalRequirements && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Brand Approval Requirements</p>
-                <p className="text-sm text-gray-700 leading-relaxed">{campaign.approvalRequirements}</p>
-              </div>
-            )}
-
             {/* Quick-create provenance */}
             {campaign.aiGenerated && (
               <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2.5 flex items-start gap-2">
@@ -701,9 +675,9 @@ export function CampaignDetail() {
                 <div className="text-xs text-indigo-700">
                   <span className="font-semibold">Created from a quick description</span>
                   {campaign.aiPrompt && <p className="text-indigo-600 mt-0.5">&ldquo;{campaign.aiPrompt}&rdquo;</p>}
-                  {(!!campaign.aiSuggestedCategories?.length || !!campaign.aiSuggestedPlatforms?.length) && (
+                  {!!campaign.aiSuggestedCategories?.length && (
                     <p className="text-indigo-500 mt-1">
-                      Also relevant: {[...(campaign.aiSuggestedCategories ?? []), ...(campaign.aiSuggestedPlatforms ?? [])].join(', ')}
+                      Also relevant: {campaign.aiSuggestedCategories.join(', ')}
                     </p>
                   )}
                 </div>

@@ -58,12 +58,9 @@ export interface AiRequirementDraft {
 export interface AiCampaignDraft {
   title: string;
   description: string;
-  objective: string;
   category: string;
   platforms: string[];
-  contentGuidelines: string[];
   goal: string;
-  targetAudience: string[];
   suggestedDurationDays: number;
   creatorsNeeded: number;
   budgetMin: number;
@@ -72,13 +69,11 @@ export interface AiCampaignDraft {
   deliverables: Record<string, number>;
   hashtags: string[];
   sampleCaption: string;
-  approvalRequirements: string;
   location: string | null;
   completionType: 'SERVICE' | 'DELIVERABLE';
   completionReason: string;
   needsInput: string[];
   aiSuggestedCategories: string[];
-  aiSuggestedPlatforms: string[];
   // Empty for the common single-role case — populated only when the AI
   // detected the brief clearly asks for multiple distinct provider types.
   requirements: AiRequirementDraft[];
@@ -120,7 +115,6 @@ export interface AiEventDraft {
   completionReason: string;
   needsInput: string[];
   aiSuggestedCategories: string[];
-  aiSuggestedPlatforms: string[];
   // See AiCampaignDraft.featureImageUrl.
   featureImageUrl?: string | null;
   // See AiCampaignDraft.aiFallback.
@@ -228,15 +222,11 @@ export function toCampaign(api: ApiCampaign): Campaign {
     paymentStatus: api.paymentStatus ?? 'UNPAID',
     paidAt:        api.paidAt ?? null,
     creatorsNeeded: api.creatorsNeeded,
-    objective:            api.objective ?? undefined,
-    contentGuidelines:    api.contentGuidelines ?? [],
     targetAudience:       api.targetAudience ?? [],
     hashtags:             api.hashtags ?? [],
     sampleCaption:        api.sampleCaption ?? undefined,
-    approvalRequirements: api.approvalRequirements ?? undefined,
     aiGenerated:           api.aiGenerated ?? false,
     aiSuggestedCategories: api.aiSuggestedCategories ?? [],
-    aiSuggestedPlatforms:  api.aiSuggestedPlatforms ?? [],
     distanceKm:            api.distanceKm,
     requirements:          api.requirements,
     completionType:   api.completionType ?? null,
@@ -368,8 +358,8 @@ export const campaignService = {
     await request('POST', `/api/campaigns/${campaignId}/apply`, payload);
   },
 
-  async getFeaturedQuota(): Promise<{ freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean }> {
-    const res = await request<{ freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean }>('GET', '/api/campaigns/featured-quota');
+  async getFeaturedQuota(): Promise<{ paywallEnabled: boolean; freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean }> {
+    const res = await request<{ paywallEnabled: boolean; freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean }>('GET', '/api/campaigns/featured-quota');
     return res.data;
   },
 
@@ -400,16 +390,12 @@ export const campaignService = {
     venue?:        string;
     benefits?:     string[];
     status?:               'DRAFT' | 'ACTIVE';
-    objective?:            string;
-    contentGuidelines?:    string[];
     targetAudience?:       string[];
     hashtags?:             string[];
     sampleCaption?:        string;
-    approvalRequirements?: string;
     aiGenerated?:           boolean;
     aiPrompt?:              string;
     aiSuggestedCategories?: string[];
-    aiSuggestedPlatforms?:  string[];
     // Omit for the single-role campaigns every existing campaign uses — see
     // CampaignRequirement. When present, category/budgetMin/budgetMax/
     // creatorsNeeded above are still sent as an informational summary.
@@ -459,8 +445,6 @@ export const campaignService = {
     minFollowers?: number;
     contentType?: string;
     deliverables?: string;
-    objective?: string;
-    contentGuidelines?: string[];
     targetAudience?: string[];
     hashtags?: string[];
     paymentType?: string;

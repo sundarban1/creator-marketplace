@@ -1,7 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
-import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -385,12 +383,9 @@ export default function CreatorSettingsScreen() {
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const portfolioSheetAnim = useRef(new Animated.Value(0)).current;
 
-  // Earnings / payment
-  const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
-  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<ApiPaymentMethod[]>([]);
+  // Earnings
   const [earningsSummary, setEarningsSummary] = useState<{ totalEarned: number; pendingEarnings: number; totalApplications: number } | null>(null);
   const [earningsLoading, setEarningsLoading] = useState(false);
-  const paymentSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Help Center
   const [helpArticles, setHelpArticles] = useState<{ id: string; question: string; answer: string; category: string }[]>([]);
@@ -534,12 +529,10 @@ export default function CreatorSettingsScreen() {
     creatorService.getSocialAccounts().then((accounts) => {
       setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
     }).catch(() => {});
-    paymentMethodService.getPaymentMethods().then(setAvailablePaymentMethods).catch(() => {});
     creatorService.getProfile().then((profile) => {
       if (profile.portfolioLinks?.length) {
         setPortfolio(profile.portfolioLinks.map((l) => ({ id: l.id, label: l.label, url: l.url })));
       }
-      if (profile.paymentMethods?.length) setPaymentMethods(profile.paymentMethods);
       // Email verified status from DB
       if (profile.user?.isEmailVerified != null) setEmailVerified(profile.user.isEmailVerified);
       if (profile.user?.email) setEmailInput(profile.user.email);
@@ -616,18 +609,6 @@ export default function CreatorSettingsScreen() {
 
   function toggleChip(arr: string[], setArr: (v: string[]) => void, val: string) {
     setArr(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
-  }
-
-  function togglePayment(id: string) {
-    setPaymentMethods((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      // debounced save — clears any pending call then fires 600ms after last toggle
-      if (paymentSaveTimer.current) clearTimeout(paymentSaveTimer.current);
-      paymentSaveTimer.current = setTimeout(() => {
-        creatorService.updatePaymentMethods(next).catch(() => {});
-      }, 600);
-      return next;
-    });
   }
 
   function handleConnectYoutube() {
@@ -1717,25 +1698,13 @@ export default function CreatorSettingsScreen() {
           )}
         </Card>
         <SectionHeader title={t('creatorSettings.paymentMethodsSection')} />
-        <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.paymentMethodsHint')}</Text>
-        </View>
         <Card>
-          {availablePaymentMethods.map((m, idx) => {
-            const selected = paymentMethods.includes(m.key);
-            return (
-              <Pressable
-                key={m.key}
-                style={[styles.row, idx < availablePaymentMethods.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-                onPress={() => togglePayment(m.key)}>
-                <PaymentMethodIcon method={m.key} label={m.name} iconUrl={m.iconUrl} color={m.color} size={38} />
-                <Text style={[styles.rowLabel, { color: C.text }]}>{m.name}</Text>
-                <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
-                  {selected ? <FontAwesome5 name="check" solid size={13} color="#fff" /> : null}
-                </View>
-              </Pressable>
-            );
-          })}
+          <NavRow
+            faIcon="money-check-alt"
+            label={t('payoutMethods.manage')}
+            onPress={() => router.push('/(creator)/payout-methods')}
+            isLast
+          />
         </Card>
       </>
     );

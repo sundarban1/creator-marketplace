@@ -34,16 +34,11 @@ export type FormData = {
   // Who the business wants to invite (role-type chips) — sent as targetAudience.
   roleTypes: string[];
   // AI-generated fields (PAID_CAMPAIGN only)
-  objective: string;
-  contentGuidelines: string[];
-  targetAudience: string[];
   hashtags: string[];
   sampleCaption: string;
-  approvalRequirements: string;
   aiGenerated: boolean;
   aiPrompt: string;
   aiSuggestedCategories: string[];
-  aiSuggestedPlatforms: string[];
   needsInput: string[];
   aiBudgetMin: number;
   aiBudgetMax: number;

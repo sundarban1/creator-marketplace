@@ -1029,16 +1029,11 @@ export default function CreateCampaignScreen() {
     expectedContent: '',
     roleTypes:    ['Content Creators'],
     // AI-generated fields
-    objective: '',
-    contentGuidelines: [],
-    targetAudience: [],
     hashtags: [],
     sampleCaption: '',
-    approvalRequirements: '',
     aiGenerated: false,
     aiPrompt: '',
     aiSuggestedCategories: [],
-    aiSuggestedPlatforms: [],
     needsInput: [],
     aiBudgetMin: 0,
     aiBudgetMax: 0,
@@ -1070,11 +1065,15 @@ export default function CreateCampaignScreen() {
 
   // Fails open (stays null → toggle isn't locked) if this errors — the
   // backend still enforces the quota server-side on publish either way.
-  const [featuredQuota, setFeaturedQuota] = useState<{ freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean } | null>(null);
+  const [featuredQuota, setFeaturedQuota] = useState<{ paywallEnabled: boolean; freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean } | null>(null);
   useEffect(() => {
     campaignService.getFeaturedQuota().then(setFeaturedQuota).catch(() => {});
   }, []);
   const featuredLocked = featuredQuota !== null && !featuredQuota.unlimited && featuredQuota.remaining <= 0;
+  // When the admin paywall is off, the Featured toggle is just a plain toggle —
+  // no remaining-count pill, no lock. Passing null gives FeaturedToggle exactly
+  // that (it renders no pill / no lock for a null quota).
+  const featuredQuotaDisplay = featuredQuota?.paywallEnabled ? featuredQuota : null;
 
   // 'single' (default, every existing campaign) vs 'multiple' distinct
   // provider roles (§ CampaignRequirement) — an opt-in toggle so the
@@ -1225,16 +1224,11 @@ export default function CreateCampaignScreen() {
       exchangeType:   [],
       expectedContent: '',
       roleTypes:      ['Content Creators'],
-      objective: '',
-      contentGuidelines: [],
-      targetAudience: [],
       hashtags: [],
       sampleCaption: '',
-      approvalRequirements: '',
       aiGenerated: false,
       aiPrompt: '',
       aiSuggestedCategories: [],
-      aiSuggestedPlatforms: [],
       needsInput: [],
       aiBudgetMin: 0,
       aiBudgetMax: 0,
@@ -1315,20 +1309,15 @@ export default function CreateCampaignScreen() {
         budget:      '',
         creatorsNeeded: GENERIC_AI_TEMPLATE.creatorsNeeded,
         deadline:    dayStart(new Date(Date.now() + GENERIC_AI_TEMPLATE.suggestedDurationDays * 24 * 60 * 60 * 1000)),
-        objective:            GENERIC_AI_TEMPLATE.objective,
-        contentGuidelines:    GENERIC_AI_TEMPLATE.contentGuidelines,
-        targetAudience:       GENERIC_AI_TEMPLATE.targetAudience,
         deliverables:         { ...DEFAULT_DELIVERABLES, ...GENERIC_AI_TEMPLATE.deliverables },
         hashtags:             GENERIC_AI_TEMPLATE.hashtags,
         sampleCaption:        GENERIC_AI_TEMPLATE.sampleCaption,
-        approvalRequirements: GENERIC_AI_TEMPLATE.approvalRequirements,
         // No AI draft to key off here, so the brand's own prompt is the only
         // thing that makes this photo relevant to what they asked for.
         featureImageUrl:      prev.featureImageUrl ?? resolveFeatureImage({ category: fallbackCategory, title: prompt }),
         aiGenerated:           true,
         aiPrompt:              prompt,
         aiSuggestedCategories: [],
-        aiSuggestedPlatforms:  [],
         needsInput:            ['budgetMin', 'category'],
         aiBudgetMin: GENERIC_AI_TEMPLATE.budgetMin,
         aiBudgetMax: GENERIC_AI_TEMPLATE.budgetMax,
@@ -1435,7 +1424,6 @@ export default function CreateCampaignScreen() {
           aiGenerated:           true,
           aiPrompt:              prompt,
           aiSuggestedCategories: [],
-          aiSuggestedPlatforms:  [],
           needsInput:            [],
         };
       });
@@ -1615,14 +1603,10 @@ export default function CreateCampaignScreen() {
       creatorsNeeded: isMultiRole ? form.requirements.reduce((sum, r) => sum + r.quantity, 0) : form.creatorsNeeded,
       isFeatured:     form.isFeatured,
       campaignType:   'PAID_CAMPAIGN' as const,
-      objective:            form.objective || undefined,
-      contentGuidelines:    form.contentGuidelines,
-      targetAudience:       form.targetAudience,
       hashtags:             form.hashtags,
       aiGenerated:           form.aiGenerated,
       aiPrompt:              form.aiGenerated ? form.aiPrompt : undefined,
       aiSuggestedCategories: form.aiGenerated ? form.aiSuggestedCategories : undefined,
-      aiSuggestedPlatforms:  form.aiGenerated ? form.aiSuggestedPlatforms : undefined,
       completionType:   form.completionType ?? undefined,
       completionReason: form.completionType ? (form.completionReason || undefined) : undefined,
       requirements: isMultiRole
@@ -2319,7 +2303,7 @@ export default function CreateCampaignScreen() {
               <FeaturedToggle
                 value={form.isFeatured}
                 onChange={(v) => update('isFeatured', v)}
-                quota={featuredQuota}
+                quota={featuredQuotaDisplay}
                 colors={C}
                 t={t}
                 labelKey="createOpportunity.featuredLabel"
@@ -2708,7 +2692,7 @@ export default function CreateCampaignScreen() {
               <FeaturedToggle
                 value={form.isFeatured}
                 onChange={(v) => update('isFeatured', v)}
-                quota={featuredQuota}
+                quota={featuredQuotaDisplay}
                 colors={C}
                 t={t}
                 labelKey="createInvitation.featuredLabel"
@@ -3529,7 +3513,7 @@ export default function CreateCampaignScreen() {
                   <FeaturedToggle
                     value={form.isFeatured}
                     onChange={(v) => update('isFeatured', v)}
-                    quota={featuredQuota}
+                    quota={featuredQuotaDisplay}
                     colors={C}
                     t={t}
                   />
@@ -3619,7 +3603,7 @@ export default function CreateCampaignScreen() {
               <FeaturedToggle
                 value={form.isFeatured}
                 onChange={(v) => update('isFeatured', v)}
-                quota={featuredQuota}
+                quota={featuredQuotaDisplay}
                 colors={C}
                 t={t}
               />
