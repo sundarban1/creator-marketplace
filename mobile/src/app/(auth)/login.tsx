@@ -72,14 +72,14 @@ const TEMPLE_FRIEZE = require('@/assets/images/login/bottom_temple.png');
 // keeps a soft cream ground for the white card to sit on.
 const ACCENT           = COLORS.brinjal1; // indigo — Log In, links, active checkbox
 const ACCENT_2         = COLORS.brinjal2; // far end of the Log In gradient
-// Green hero wash, pulled from the app's business theme (BUSINESS_COLORS) so it
-// reads as the same green authenticated business users see.
-const HERO_WASH_1      = BUSINESS_COLORS.brinjal1; // green wash over the hero photo (top)
-const HERO_WASH_2      = BUSINESS_COLORS.brinjal2; // deep-green wash over the hero photo (body)
-const ON_HERO          = '#FFFFFF';                // brand text / hairlines over that wash
+// The hero photo is a pale, hazy Himalayan sky, so it carries a brinjal wash
+// deep enough for white brand text to sit on it cleanly.
+const ON_HERO          = '#FFFFFF'; // brand text / hairlines over the hero photo
 const FIELD_BORDER     = '#E7DAC0';       // soft hairline on the white input fields
 
 // Traditional lung-ta order for the prayer-flag garland strung over the hero.
+// Kept for when PrayerFlagGarland (currently hidden) is restored.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const FLAG_COLORS = ['#2E6FB7', '#F4F4F2', '#E0392E', '#3FA24B', '#F2C230'] as const;
 
 // Role card accents pull straight from the active theme's own primary/accent tokens
@@ -381,21 +381,25 @@ function BrandMark() {
 // the mock drapes one over its skyline. Each flag is a soft rounded panel in
 // the traditional five-colour order, tilted a touch so the string reads as
 // slack rather than taut.
-
-function PrayerFlagGarland() {
-  const s = useMemo(() => makeStyles(COLORS), []);
-  const flags = [...FLAG_COLORS, ...FLAG_COLORS, ...FLAG_COLORS.slice(0, 3)];
-  return (
-    <View style={s.garland} pointerEvents="none">
-      <View style={s.garlandString} />
-      <View style={s.garlandRow}>
-        {flags.map((c, i) => (
-          <View key={i} style={[s.flag, { backgroundColor: c }, i % 2 ? s.flagTiltA : s.flagTiltB]} />
-        ))}
-      </View>
-    </View>
-  );
-}
+//
+// Hidden for now — the hero shows just the logo over the photo wash. Uncomment
+// this component and its <PrayerFlagGarland /> in the hero to bring it back
+// (FLAG_COLORS and the garland/flag* styles are kept for that).
+//
+// function PrayerFlagGarland() {
+//   const s = useMemo(() => makeStyles(COLORS), []);
+//   const flags = [...FLAG_COLORS, ...FLAG_COLORS, ...FLAG_COLORS.slice(0, 3)];
+//   return (
+//     <View style={s.garland} pointerEvents="none">
+//       <View style={s.garlandString} />
+//       <View style={s.garlandRow}>
+//         {flags.map((c, i) => (
+//           <View key={i} style={[s.flag, { backgroundColor: c }, i % 2 ? s.flagTiltA : s.flagTiltB]} />
+//         ))}
+//       </View>
+//     </View>
+//   );
+// }
 
 // ── Temple skyline ───────────────────────────────────────────────────────────
 // A faint line-art frieze of tiered pagodas along the very bottom edge, echoing
@@ -1159,17 +1163,16 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          {/* ── Hero ── a full-bleed Himalayan skyline under a deep-brinjal wash
-              (the same treatment the Get Started screen gives its photo), a
-              prayer-flag garland strung across it, and the brand block resting
-              on top in white. The wash resolves to the cream form ground at the
-              very bottom edge, where the white card pulls up over it. */}
+          {/* ── Hero ── a full-bleed Himalayan skyline, a prayer-flag garland
+              strung across it, and the brand block resting on top. Only a light
+              brinjal wash sits over the photo — it deepens near the bottom so
+              the image dissolves into the page ground under the white card. */}
           <View style={[s.hero, { paddingTop: insets.top + SPACING.lg }]}>
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               <ExpoImage source={HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
               <LinearGradient
-                colors={[withAlpha(HERO_WASH_1, 0.25), withAlpha(HERO_WASH_2, 0.72), withAlpha(HERO_WASH_2, 0.9), withAlpha(HERO_WASH_2, 0.1)]}
-                locations={[0, 0.5, 0.86, 1]}
+                colors={[withAlpha(COLORS.brinjal2, 0.35), withAlpha(COLORS.brinjal2, 0.62), withAlpha(COLORS.brinjal2, 0.78), withAlpha(COLORS.brinjal2, 0.14)]}
+                locations={[0, 0.5, 0.88, 1]}
                 style={StyleSheet.absoluteFill}
               />
             </View>
@@ -1186,14 +1189,22 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            <PrayerFlagGarland />
+            <Animated.View
+              style={[s.brandLogoWrap, {
+                opacity: cardAnim,
+                transform: [{ translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+              }]}>
+              <BrandMark />
+            </Animated.View>
+
+            {/* Prayer-flag garland hidden for now — restore <PrayerFlagGarland /> here to bring it back */}
+            {/* <PrayerFlagGarland /> */}
 
             <Animated.View
               style={[s.brandBlock, {
                 opacity: cardAnim,
                 transform: [{ translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
               }]}>
-              <BrandMark />
               <View style={s.headlineWrap}>
                 <Text style={s.headline}>{t('auth.login.brandHeadline1')}</Text>
                 <View style={s.headline2Wrap}>
@@ -1312,7 +1323,7 @@ function makeStyles(C: typeof COLORS) {
 
   // ── Hero ── a full-bleed Himalayan skyline that fades up into the paper
   // ground; the brand block rests on top and defines the height.
-  hero:        { overflow: 'hidden', alignItems: 'center', backgroundColor: HERO_WASH_2 },
+  hero:        { overflow: 'hidden', alignItems: 'center', backgroundColor: COLORS.brinjal2 },
 
   // Floating controls over the scene — back button + language toggle. The
   // toggle shows the language you'd switch TO.
@@ -1322,7 +1333,7 @@ function makeStyles(C: typeof COLORS) {
   langChipText:{ fontSize: FONT_SIZE.xs, fontFamily: F.bold, color: ACCENT_2 },
 
   // Prayer-flag garland strung across the top of the hero.
-  garland:       { height: 72, alignSelf: 'stretch', marginTop: -SPACING.lg, marginBottom: SPACING.sm },
+  garland:       { height: 72, alignSelf: 'stretch', marginTop: SPACING.sm, marginBottom: SPACING.sm },
   garlandString: { position: 'absolute', top: 28, left: 0, right: 0, height: 2, backgroundColor: withAlpha(ON_HERO, 0.45) },
   garlandRow:    { flexDirection: 'row', justifyContent: 'center', paddingTop: 27 },
   flag:          { width: 19, height: 25, marginHorizontal: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2, borderBottomLeftRadius: 6, borderBottomRightRadius: 6, opacity: 0.92 },
@@ -1331,6 +1342,8 @@ function makeStyles(C: typeof COLORS) {
 
   // ── Brand block ──
   brandBlock:   { alignItems: 'center', gap: SPACING.md, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
+  // Pulled up level with the back/language controls so the mark reads first.
+  brandLogoWrap: { marginTop: -SPACING.xxl, marginBottom: SPACING.xxl, alignItems: 'center' },
   brandLogo:    { width: 208, height: 74 },
 
   headlineWrap:      { alignItems: 'center' },
