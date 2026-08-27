@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image as ExpoImage } from 'expo-image';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect, type ReactNode } from 'react';
 import {
   Animated,
   Keyboard,
@@ -55,20 +55,26 @@ const LANG_LABELS: Record<Lang, string> = { en: 'Eng', ne: 'ने' };
 // yet) — flip this back on once that's sorted, no other code changes needed.
 const FACEBOOK_LOGIN_ENABLED = false;
 
-// Same logo backs both the sign-in and create-account headers.
-const HERO_IMAGE = require('@/assets/images/logo.png');
+// Full-bleed backdrop behind the brand block — a hazy Himalayan skyline that
+// fades up into the page's warm paper ground through the wash layered over it
+// (see the hero JSX). CC0 (StockSnap, "Himalayas Poonhill").
+const HERO_PHOTO = require('@/assets/images/login/himalaya.jpg');
 
-// The hero panel's backdrop — a single full-bleed photo sitting behind the
-// brand headline. A diagonal brand wash is layered over the top (see the hero
-// JSX) so the white headline stays legible and the panel still reads as the
-// same brand surface the app opens on, rather than the flat gradient it used
-// to carry.
-const HERO_PHOTO = require('@/assets/images/login/kid.jpg');
+// ── Local brand palette ──────────────────────────────────────────────────────
+// The signed-out screen commits to Nepal's flag colours — deep pine green for
+// the wordmark and headings, warm saffron for every action — rather than the
+// app's indigo `brinjal`, which only takes over once the user is inside. The
+// ground is a soft Himalayan-dawn cream. All local to this screen.
+const BRAND_GREEN      = '#1C3B2E';
+const BRAND_GREEN_SOFT = '#2F5744';
+const ACCENT           = '#F26B1D'; // saffron — Log In, links, active checkbox
+const ACCENT_2         = '#F59E42'; // far end of the Log In gradient
+const PAPER            = '#F7EFE1'; // screen ground
+const CARD_BORDER      = '#EBDFC8'; // hairline on paper-toned surfaces
+const FIELD_BORDER     = '#E7DAC0';
 
-// Far end of the hero wash — the same brand-purple the creator home feed's
-// primary CTA card uses, so the first surface a signed-out user sees is the one
-// they'll meet again once they're inside the app.
-const HERO_GRADIENT_END = '#7C3AED';
+// Traditional lung-ta order for the prayer-flag garland strung over the hero.
+const FLAG_COLORS = ['#2E6FB7', '#F4F4F2', '#E0392E', '#3FA24B', '#F2C230'] as const;
 
 // Role card accents pull straight from the active theme's own primary/accent tokens
 // (light or dark) instead of a hardcoded palette, so the cards stay in sync with
@@ -117,8 +123,9 @@ function getPwErrorKey(p: string): string | undefined {
 // home screen puts at the top of its feed. Local to this screen only; the rest
 // of the app keeps using the icon+label TextInputWithLabel.
 
-function FlatInput({ value, onChangeText, placeholder, icon, secureToggle, secureTextEntry, error, onFocus, onBlur, ...rest }: TextInputProps & {
+function FlatInput({ value, onChangeText, placeholder, icon, trailing, secureToggle, secureTextEntry, error, onFocus, onBlur, ...rest }: TextInputProps & {
   icon?: keyof typeof FontAwesome5.glyphMap;
+  trailing?: ReactNode;
   secureToggle?: boolean;
   error?: string;
 }) {
@@ -131,11 +138,11 @@ function FlatInput({ value, onChangeText, placeholder, icon, secureToggle, secur
     <View>
       <View style={[
         s.flatInputRow,
-        { backgroundColor: C.primaryLight, borderColor: focused ? C.brinjal1 : 'transparent' },
+        { backgroundColor: '#FFFFFF', borderColor: focused ? ACCENT : FIELD_BORDER },
         !!error && { borderColor: C.error },
       ]}>
         {!!icon && (
-          <FontAwesome5 name={icon} solid size={15} color={error ? C.error : focused ? C.brinjal1 : C.textSecondary} />
+          <FontAwesome5 name={icon} solid size={15} color={error ? C.error : focused ? ACCENT : C.textSecondary} />
         )}
         <TextInput
           value={value}
@@ -148,6 +155,7 @@ function FlatInput({ value, onChangeText, placeholder, icon, secureToggle, secur
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
           {...rest}
         />
+        {trailing}
         {secureToggle && (
           <Pressable onPress={() => setHidden((v) => !v)} hitSlop={10} style={s.flatInputEyeBtn}>
             <FontAwesome5 name={hidden ? 'eye' : 'eye-slash'} size={16} color={C.textSecondary} />
@@ -307,6 +315,12 @@ function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel,
     ? EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart))
     : [];
 
+  // The field takes an email or a phone number; while it still looks like a
+  // phone (empty, or no "@" yet) it carries a Nepal dial-code affordance the
+  // way the mock's phone-first field does. Display-only for now — Nepal is the
+  // only market — so it reads as context, not a live picker.
+  const showDialCode = identifierChannel(value) === 'phone';
+
   return (
     <View>
       <FlatInput
@@ -314,10 +328,17 @@ function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel,
         onChangeText={onChangeText}
         placeholder={placeholder}
         accessibilityLabel={accessibilityLabel}
+        trailing={showDialCode ? (
+          <View style={s.dialCode}>
+            <Text style={s.dialCodeFlag}>🇳🇵</Text>
+            <Text style={s.dialCodeText}>+977</Text>
+            <FontAwesome5 name="chevron-down" size={9} color={C.textSecondary} />
+          </View>
+        ) : undefined}
         // Switches with what the user is actually typing — the field accepts
         // either an email or a phone number, so the glyph tracks the channel
         // rather than committing to one of them up front.
-        icon={value.length === 0 ? 'user' : identifierChannel(value) === 'email' ? 'envelope' : 'phone-alt'}
+        icon={value.length === 0 ? 'phone-alt' : identifierChannel(value) === 'email' ? 'envelope' : 'phone-alt'}
         autoCapitalize="none"
         autoCorrect={false}
         error={error}
@@ -339,6 +360,69 @@ function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel,
           </View>
         </View>
       )}
+    </View>
+  );
+}
+
+// ── Brand mark ───────────────────────────────────────────────────────────────
+// The mock's identity: an angular saffron "K" monogram built from three
+// rounded bars, next to the KOLAB wordmark set in pine green. Drawn rather than
+// shipped as art so it stays crisp at any size and tracks the palette above.
+
+function BrandMark() {
+  const s = useMemo(() => makeStyles(COLORS), []);
+  return (
+    <View style={s.brandRow}>
+      <View style={s.markBox}>
+        <View style={s.markStem} />
+        <View style={s.markChevron}>
+          <View style={[s.markArm, s.markArmUp]} />
+          <View style={[s.markArm, s.markArmDown]} />
+        </View>
+      </View>
+      <Text style={s.wordmark}>KOLAB</Text>
+    </View>
+  );
+}
+
+// ── Prayer-flag garland ──────────────────────────────────────────────────────
+// A lung-ta line strung from the top-left corner down across the hero, the way
+// the mock drapes one over its skyline. Each flag is a soft rounded panel in
+// the traditional five-colour order, tilted a touch so the string reads as
+// slack rather than taut.
+
+function PrayerFlagGarland() {
+  const s = useMemo(() => makeStyles(COLORS), []);
+  const flags = [...FLAG_COLORS, ...FLAG_COLORS, ...FLAG_COLORS.slice(0, 3)];
+  return (
+    <View style={s.garland} pointerEvents="none">
+      <View style={s.garlandString} />
+      <View style={s.garlandRow}>
+        {flags.map((c, i) => (
+          <View key={i} style={[s.flag, { backgroundColor: c }, i % 2 ? s.flagTiltA : s.flagTiltB]} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ── Temple skyline ───────────────────────────────────────────────────────────
+// A faint row of tiered pagoda roofs along the very bottom edge, echoing the
+// line-art border in the mock. Sits behind the footer at low opacity so it
+// registers as texture, not content.
+
+function TempleSkyline() {
+  const s = useMemo(() => makeStyles(COLORS), []);
+  return (
+    <View style={s.temple} pointerEvents="none">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <View key={i} style={s.pagoda}>
+          <View style={[s.roof, s.roof1]} />
+          <View style={[s.roof, s.roof2]} />
+          <View style={[s.roof, s.roof3]} />
+          <View style={s.pagodaBody} />
+        </View>
+      ))}
     </View>
   );
 }
@@ -474,16 +558,22 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           />
         </View>
 
-        <Pressable
-          style={s.checkRow}
-          onPress={() => setRememberMe((v) => !v)}
-          hitSlop={8}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: rememberMe }}
-          accessibilityLabel={t('auth.login.rememberMe')}>
-          <FontAwesome5 name={rememberMe ? 'check-square' : 'square'} solid={rememberMe} size={19} color={rememberMe ? C.brinjal1 : C.textSecondary} />
-          <Text style={s.checkRowText}>{t('auth.login.rememberMe')}</Text>
-        </Pressable>
+        {/* Remember me + Forgot password share a row, as in the mock. */}
+        <View style={s.optionRow}>
+          <Pressable
+            style={s.checkRow}
+            onPress={() => setRememberMe((v) => !v)}
+            hitSlop={8}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: rememberMe }}
+            accessibilityLabel={t('auth.login.rememberMe')}>
+            <FontAwesome5 name={rememberMe ? 'check-square' : 'square'} solid={rememberMe} size={18} color={rememberMe ? ACCENT : C.textSecondary} />
+            <Text style={s.checkRowText}>{t('auth.login.rememberMe')}</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/forgot-password')} hitSlop={8}>
+            <Text style={s.forgotText}>{t('auth.login.forgotPassword')}</Text>
+          </Pressable>
+        </View>
 
         {/* Primary action — solid brand pill with a coloured glow, the same
             emphasis treatment the home feed gives its own primary buttons. */}
@@ -492,18 +582,11 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           accessibilityRole="button"
           accessibilityLabel={t('auth.login.loginBtn')}
           style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-          <View style={[s.primaryBtn, { backgroundColor: C.brinjal1 }]}>
+          <LinearGradient colors={[ACCENT, ACCENT_2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.primaryBtn}>
             {loading
               ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
-              : <>
-                  <Text style={s.primaryBtnText}>{t('auth.login.loginBtn')}</Text>
-                  <FontAwesome5 name="arrow-right" solid size={13} color="#fff" />
-                </>}
-          </View>
-        </Pressable>
-
-        <Pressable style={s.forgotWrap} onPress={() => router.push('/forgot-password')} hitSlop={8}>
-          <Text style={s.forgotText}>{t('auth.login.forgotPassword')}</Text>
+              : <Text style={s.primaryBtnText}>{t('auth.login.loginBtn')}</Text>}
+          </LinearGradient>
         </Pressable>
       </View>
 
@@ -706,14 +789,11 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
           accessibilityRole="button"
           accessibilityLabel={t('auth.signup.createAccountBtn')}
           style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-          <View style={[s.primaryBtn, { backgroundColor: C.brinjal1 }]}>
+          <LinearGradient colors={[ACCENT, ACCENT_2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.primaryBtn}>
             {loading
               ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
-              : <>
-                  <Text style={s.primaryBtnText}>{t('auth.signup.createAccountBtn')}</Text>
-                  <FontAwesome5 name="arrow-right" solid size={13} color="#fff" />
-                </>}
-          </View>
+              : <Text style={s.primaryBtnText}>{t('auth.signup.createAccountBtn')}</Text>}
+          </LinearGradient>
         </Pressable>
       </View>
 
@@ -1069,32 +1149,11 @@ export default function LoginScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style="dark" />
 
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <MaxWidthContainer>
         <View style={s.flex}>
-
-        {/* Header — pinned above the scroll rather than scrolling with it, the
-            same anatomy as the creator home header: a circular surface button
-            on the left, the identity in the middle, a pill control on the
-            right. */}
-        <View style={[s.headerRow, { backgroundColor: C.background, paddingTop: insets.top + SPACING.md }]}>
-          {canGoBack && <BackButton fallback="/" />}
-          <View style={s.headerBrand}>
-            <ExpoImage source={HERO_IMAGE} style={s.headerLogo} contentFit="contain" />
-          </View>
-
-          {/* Lang toggle — shows the language you'd switch TO, not the current
-              one; tapping applies that switch. */}
-          <Pressable
-            style={[s.langChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
-            hitSlop={8}
-            accessibilityRole="button"
-            onPress={() => setLanguage(language === 'en' ? 'ne' : 'en')}>
-            <Text style={[s.langChipText, { color: C.brinjal1 }]}>{LANG_LABELS[language === 'en' ? 'ne' : 'en']}</Text>
-          </Pressable>
-        </View>
 
         <ScrollView
           style={s.flex}
@@ -1102,78 +1161,83 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          <Animated.View
-            style={[
-              s.heroGroup,
-              {
-                opacity: cardAnim,
-                transform: [{
-                  translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }),
-                }],
-              },
-            ]}>
-
-            {/* ── Hero ── the panel that opens the creator home feed, reused
-                here to carry the brand headline. Its flat brand gradient is now
-                backed by a full-bleed photo of a creator at work, with a
-                diagonal brand wash over the top so the white headline stays
-                legible and the panel still reads as the same surface the app
-                opens on. */}
-            <View style={s.heroCard}>
-              <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <ExpoImage source={HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
-                <LinearGradient
-                  colors={[withAlpha(C.brinjal2, 0.88), withAlpha(C.brinjal1, 0.72), withAlpha(HERO_GRADIENT_END, 0.5)]}
-                  locations={[0, 0.5, 1]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
-
-              {/* Two lines, set solid — grouped in a View so the card's own
-                  `gap` never spaces them apart. */}
-              <View>
-                <Text style={s.heroHeadline}>{t('auth.login.heroHeadline1')}</Text>
-                <Text style={s.heroHeadline}>{t('auth.login.heroHeadline2')}</Text>
-              </View>
+          {/* ── Hero ── a full-bleed Himalayan skyline that dissolves up into
+              the paper ground, a prayer-flag garland strung across it, and the
+              brand block resting on top. */}
+          <View style={[s.hero, { paddingTop: insets.top + SPACING.lg }]}>
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              <ExpoImage source={HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
+              <LinearGradient
+                colors={[withAlpha(PAPER, 0.12), withAlpha(PAPER, 0.5), PAPER]}
+                locations={[0, 0.62, 1]}
+                style={StyleSheet.absoluteFill}
+              />
             </View>
 
-            {/* Form — crossfades between the two tabs */}
-            <Animated.View
-              style={{
-                opacity: formAnim,
-                transform: [{
-                  translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }),
-                }],
-              }}>
-              {tab === 'login'
-                ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} onLoginSuccess={finishAppleLinkIfPending} />
-                : <SignupForm key={params.role} initialRole={params.role === 'BUSINESS' ? 'BUSINESS' : params.role === 'CREATOR' ? 'CREATOR' : undefined} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} />}
-            </Animated.View>
+            {/* Controls — back + language toggle, sitting above the garland */}
+            <View style={s.floatBar} pointerEvents="box-none">
+              {canGoBack ? <BackButton fallback="/" /> : <View style={s.floatSpacer} />}
+              <Pressable
+                style={s.langChip}
+                hitSlop={8}
+                accessibilityRole="button"
+                onPress={() => setLanguage(language === 'en' ? 'ne' : 'en')}>
+                <Text style={s.langChipText}>{LANG_LABELS[language === 'en' ? 'ne' : 'en']}</Text>
+              </Pressable>
+            </View>
 
-            {/* Reassurance line — closes the page the way the home feed closes
-                its own: a quiet, non-actionable row after the content. */}
+            <PrayerFlagGarland />
+
+            <Animated.View
+              style={[s.brandBlock, {
+                opacity: cardAnim,
+                transform: [{ translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+              }]}>
+              <BrandMark />
+              <View style={s.headlineWrap}>
+                <Text style={s.headline}>{t('auth.login.brandHeadline1')}</Text>
+                <View style={s.headline2Wrap}>
+                  <Text style={[s.headline, s.headline2]}>{t('auth.login.brandHeadline2')}</Text>
+                  <View style={s.headlineUnderline} />
+                </View>
+              </View>
+              <Text style={s.brandSub}>{t('auth.login.brandSubtitle')}</Text>
+            </Animated.View>
+          </View>
+
+          {/* Form — crossfades between the two tabs, pulled up over the hero */}
+          <Animated.View
+            style={[s.formShell, {
+              opacity: formAnim,
+              transform: [{ translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+            }]}>
+            {tab === 'login'
+              ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} onLoginSuccess={finishAppleLinkIfPending} />
+              : <SignupForm key={params.role} initialRole={params.role === 'BUSINESS' ? 'BUSINESS' : params.role === 'CREATOR' ? 'CREATOR' : undefined} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} />}
+
+            {/* Reassurance line — quiet, non-actionable, closes the page. */}
             <View style={s.trustRow}>
-              <FontAwesome5 name="shield-alt" solid size={11} color={C.textSecondary} />
+              <FontAwesome5 name="shield-alt" solid size={12} color={BRAND_GREEN_SOFT} />
               <Text style={s.trustText}>{t('auth.login.footer')}</Text>
             </View>
           </Animated.View>
         </ScrollView>
 
-        {/* ── Fixed footer ── pinned below the scroll content instead of living
-            inside it, so the "switch to the other tab" escape hatch is always
-            reachable without scrolling past the form. */}
-        <Pressable
-          style={[s.footerBar, { backgroundColor: C.background, borderTopColor: C.border, paddingBottom: keyboardVisible ? SPACING.md : insets.bottom + SPACING.md }]}
-          accessibilityRole="button"
-          onPress={() => tab === 'login' ? router.push('/account-type') : setTab('login')}>
-          <Text style={s.switchTabText}>
-            {tab === 'login' ? t('auth.login.noAccount') : t('welcome.alreadyHaveAccount')}{' '}
-            <Text style={[s.switchTabLink, { color: C.brinjal1 }]}>
-              {tab === 'login' ? t('auth.login.signUpLink') : t('auth.login.signIn')}
+        {/* ── Fixed footer ── pinned below the scroll, the temple frieze from
+            the mock running faintly behind the "switch tab" prompt. */}
+        <View style={[s.footerBar, { paddingBottom: keyboardVisible ? SPACING.md : insets.bottom + SPACING.md }]}>
+          <TempleSkyline />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => tab === 'login' ? router.push('/account-type') : setTab('login')}>
+            <Text style={s.switchTabText}>
+              {tab === 'login' ? t('auth.login.noAccount') : t('welcome.alreadyHaveAccount')}{' '}
+              <Text style={s.switchTabLink}>
+                {tab === 'login' ? t('auth.login.signUpLink') : t('auth.login.signIn')}
+              </Text>
             </Text>
-          </Text>
-        </Pressable>
+          </Pressable>
+        </View>
         </View>
         </MaxWidthContainer>
       </KeyboardAvoidingView>
@@ -1232,42 +1296,56 @@ export default function LoginScreen() {
 
 function makeStyles(C: typeof COLORS) {
   return StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.background },
+  root: { flex: 1, backgroundColor: PAPER },
   flex: { flex: 1 },
-  // Same gutter and bottom breathing room the home feeds use, so a user who
-  // signs in doesn't watch the content shift sideways underneath them.
-  scrollContent: { flexGrow: 1, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxl },
+  // The hero is full-bleed, so the screen carries no horizontal padding — each
+  // block below the hero re-applies the gutter itself.
+  scrollContent: { flexGrow: 1, paddingBottom: SPACING.xxl },
 
-  // ── Header ── pinned above the ScrollView (not scrolled with it), matching
-  // the creator home header row: circular surface button, identity, pill.
-  headerRow:     { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.lg },
-  headerBrand:   { flex: 1 },
-  headerLogo:    { width: 84, height: 28 },
-  // Lang toggle — a brand-tinted pill, the same chip shape the home feed uses
-  // for its inline filters. Shows only the language you'd switch TO.
-  langChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, minHeight: 36, justifyContent: 'center' },
-  langChipText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
+  // ── Hero ── a full-bleed Himalayan skyline that fades up into the paper
+  // ground; the brand block rests on top and defines the height.
+  hero:        { overflow: 'hidden', alignItems: 'center', backgroundColor: PAPER },
 
-  // ── Layout rhythm ── one step (lg) between the hero, the form and the
-  // closing reassurance line, so the page reads as three stacked blocks.
-  heroGroup: { gap: SPACING.lg },
+  // Floating controls over the scene — back button + language toggle. The
+  // toggle shows the language you'd switch TO.
+  floatBar:    { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, marginBottom: SPACING.xs, zIndex: 6 },
+  floatSpacer: { width: 36, height: 36 },
+  langChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, minHeight: 36, justifyContent: 'center', backgroundColor: withAlpha('#FFFFFF', 0.72), borderWidth: 1, borderColor: withAlpha('#FFFFFF', 0.9) },
+  langChipText:{ fontSize: FONT_SIZE.xs, fontFamily: F.bold, color: BRAND_GREEN },
 
-  // ── Hero ── the creator home CTA card, reused as the brand statement:
-  // hero-level padding, floating lift, a full-bleed photo under a diagonal
-  // brand wash. minHeight gives the photo room to read; the brinjal2 fill is
-  // the base colour behind it while it decodes. The headline sits at the
-  // bottom of the panel, centred — the photo fills the space above it.
-  heroCard:     { borderRadius: RADIUS.xl, padding: SPACING.xl, minHeight: 220, overflow: 'hidden', justifyContent: 'flex-end', backgroundColor: C.brinjal2, ...SHADOW.floating },
-  heroHeadline: { fontSize: FONT_SIZE.xl, fontFamily: F.extrabold, color: '#fff', textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
+  // Prayer-flag garland strung across the top of the hero.
+  garland:       { height: 72, alignSelf: 'stretch', marginBottom: SPACING.sm },
+  garlandString: { position: 'absolute', top: 28, left: 0, right: 0, height: 2, backgroundColor: withAlpha(BRAND_GREEN, 0.38) },
+  garlandRow:    { flexDirection: 'row', justifyContent: 'center', paddingTop: 27 },
+  flag:          { width: 19, height: 25, marginHorizontal: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2, borderBottomLeftRadius: 6, borderBottomRightRadius: 6, opacity: 0.92 },
+  flagTiltA:     { transform: [{ rotate: '4deg' }, { translateY: 1 }] },
+  flagTiltB:     { transform: [{ rotate: '-4deg' }, { translateY: 3 }] },
 
-  // ── Form ── a standard content card (surface + hairline + raised lift), the
-  // same object the home feed stacks its rows and sections out of. One flat
-  // `gap` inside it instead of per-child margins.
+  // ── Brand block ──
+  brandBlock:   { alignItems: 'center', gap: SPACING.md, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
+  brandRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  markBox:      { width: 42, height: 44, marginRight: 11, justifyContent: 'center' },
+  markStem:     { position: 'absolute', left: 1, top: 1, bottom: 1, width: 9, borderRadius: 4.5, backgroundColor: ACCENT },
+  markChevron:  { position: 'absolute', left: 7, top: 0, bottom: 0, right: 0, justifyContent: 'center' },
+  markArm:      { position: 'absolute', left: 0, width: 28, height: 9, borderRadius: 4.5, backgroundColor: ACCENT },
+  markArmUp:    { top: 4, transform: [{ rotate: '-54deg' }] },
+  markArmDown:  { bottom: 4, transform: [{ rotate: '54deg' }] },
+  wordmark:     { fontSize: 30, fontFamily: F.extrabold, color: BRAND_GREEN, letterSpacing: 1 },
+
+  headlineWrap:      { alignItems: 'center' },
+  headline:          { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: BRAND_GREEN, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
+  headline2Wrap:     { alignItems: 'center' },
+  headline2:         { color: ACCENT },
+  headlineUnderline: { marginTop: 2, width: 52, height: 3, borderRadius: 2, backgroundColor: ACCENT },
+  brandSub:          { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: BRAND_GREEN_SOFT, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm), maxWidth: 320, marginTop: 2 },
+
+  // ── Form ── a white card pulled up over the lower edge of the hero.
+  formShell: { paddingHorizontal: SCREEN_GUTTER, marginTop: -SPACING.xl, gap: SPACING.lg },
   formGroup: { gap: SPACING.lg },
-  formCard:  { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, gap: SPACING.lg },
+  formCard:  { borderRadius: RADIUS.xl, borderWidth: 1, padding: SPACING.xl, gap: SPACING.lg },
 
   formHeading:         { gap: 2, alignItems: 'center' },
-  formHeadingTitle:    { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: C.text, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
+  formHeadingTitle:    { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: BRAND_GREEN, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
   formHeadingSubtitle: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
 
   // Role chip — confirms the choice made on /account-type and links back to it.
@@ -1286,11 +1364,15 @@ function makeStyles(C: typeof COLORS) {
 
   form: { gap: SPACING.md },
 
-  // Filled field — SearchInput's shape (primaryLight fill, RADIUS.lg, 1.5
-  // hairline that lights up on focus) with a leading glyph.
-  flatInputRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: SPACING.lg, minHeight: 52 },
+  // Filled field — white on the paper card, RADIUS.lg, a 1.5 hairline that
+  // warms to saffron on focus, with a leading glyph.
+  flatInputRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: SPACING.lg, minHeight: 54 },
   flatInput:      { flex: 1, fontSize: FONT_SIZE.md, paddingVertical: SPACING.md },
   flatInputEyeBtn:{ paddingLeft: SPACING.xs },
+  // Nepal dial-code affordance on the phone-shaped identifier.
+  dialCode:      { flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: SPACING.sm, marginLeft: SPACING.xs, borderLeftWidth: 1, borderLeftColor: FIELD_BORDER },
+  dialCodeFlag:  { fontSize: 14 },
+  dialCodeText:  { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, color: C.text },
   feedbackRow:    { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 6, paddingHorizontal: 2 },
   errorText:      { fontSize: FONT_SIZE.xs, fontFamily: F.medium, lineHeight: lineHeightFor(FONT_SIZE.xs) },
 
@@ -1302,6 +1384,7 @@ function makeStyles(C: typeof COLORS) {
 
   // Checkbox rows — "Remember me" and the terms consent. minHeight 44 keeps
   // the whole row a valid touch target, not just the 19px glyph.
+  optionRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   checkRow:     { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, minHeight: 44 },
   checkRowTop:  { alignItems: 'flex-start', paddingTop: 2 },
   checkRowText: { fontSize: FONT_SIZE.sm, fontFamily: F.medium, color: C.text },
@@ -1312,28 +1395,24 @@ function makeStyles(C: typeof COLORS) {
   rulePill: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, borderRadius: RADIUS.full, borderWidth: 1, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
   ruleText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium },
 
-  // Primary action — solid brand pill under a coloured glow, the same emphasis
-  // the home feed gives its own primary buttons.
-  primaryBtnWrap: { borderRadius: RADIUS.full, shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
-  primaryBtn:     { minHeight: 52, borderRadius: RADIUS.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm },
+  // Primary action — saffron gradient pill under a warm glow.
+  primaryBtnWrap: { borderRadius: RADIUS.full, shadowColor: ACCENT, shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 6 },
+  primaryBtn:     { minHeight: 54, borderRadius: RADIUS.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, overflow: 'hidden' },
   primaryBtnText: { fontSize: FONT_SIZE.md, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3, lineHeight: lineHeightFor(FONT_SIZE.md) },
 
-  // "Forgot password?" — pulled up so it reads as a tail on the button above
-  // rather than a third, equally-weighted action.
-  forgotWrap: { alignItems: 'center', justifyContent: 'center', minHeight: 32, marginTop: -SPACING.sm },
-  forgotText: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, color: C.brinjal1 },
+  forgotText: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, color: ACCENT },
 
-  // ── Social auth ──
+  // ── Social auth ── full-width stacked cards, as in the mock.
   socialGroup:       { gap: SPACING.md },
   divider:           { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   dividerLine:       { flex: 1, height: 1 },
-  dividerText:       { fontSize: FONT_SIZE.xs, color: C.textSecondary, fontFamily: F.medium },
-  socialCardRow:     { flexDirection: 'row', gap: SPACING.md },
-  socialCardBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, minHeight: 52, borderRadius: RADIUS.md, borderWidth: 1 },
+  dividerText:       { fontSize: FONT_SIZE.xs, color: C.textSecondary, fontFamily: F.semibold, letterSpacing: 1, textTransform: 'uppercase' },
+  socialCardRow:     { flexDirection: 'column', gap: SPACING.md },
+  socialCardBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, minHeight: 54, borderRadius: RADIUS.lg, borderWidth: 1 },
   socialCardBtnFull: { flex: 0 },
-  // Sign in with Apple button — full width, same 52 height as the primary CTA.
-  appleBtn:          { width: '100%', height: 52 },
-  appleBtnRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, borderRadius: RADIUS.md, borderWidth: 1 },
+  // Sign in with Apple button — full width, same height as the primary CTA.
+  appleBtn:          { width: '100%', height: 54 },
+  appleBtnRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, borderRadius: RADIUS.lg, borderWidth: 1 },
   socialCardIcon:    { width: 18, height: 18 },
   socialCardText:    { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
 
@@ -1341,18 +1420,26 @@ function makeStyles(C: typeof COLORS) {
   // third-party brand mark, not part of the app's own color system.
   fbBadgeSmall: { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
   fbF:          { color: '#fff', fontSize: FONT_SIZE.sm, fontFamily: F.bold },
-  spinner:      { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: C.border, borderTopColor: C.brinjal1 },
+  spinner:      { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: C.border, borderTopColor: ACCENT },
 
-  // Closing reassurance line
+  // Closing reassurance line — "Secure & trusted login" under a green shield.
   trustRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: SPACING.xs },
-  trustText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, color: C.textSecondary, textAlign: 'center' },
+  trustText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, color: BRAND_GREEN_SOFT, textAlign: 'center' },
 
-  // Switch-tab bar — pinned outside the scroll content at the bottom of the
-  // screen (hairline divider + centered prompt) so the escape hatch to the
-  // other tab is always reachable without scrolling past the form.
-  footerBar:     { alignItems: 'center', justifyContent: 'center', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: SPACING.md, paddingHorizontal: SCREEN_GUTTER },
+  // Switch-tab bar — pinned below the scroll, the temple frieze running faintly
+  // behind the "Create an account" prompt.
+  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: PAPER, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD_BORDER, paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
   switchTabText: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
-  switchTabLink: { fontFamily: F.bold },
+  switchTabLink: { fontFamily: F.bold, color: ACCENT },
+
+  // Temple frieze — a faint row of tiered pagoda roofs along the bottom edge.
+  temple:     { position: 'absolute', left: 0, right: 0, bottom: 0, height: 62, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', opacity: 0.1 },
+  pagoda:     { alignItems: 'center', justifyContent: 'flex-end' },
+  roof:       { backgroundColor: BRAND_GREEN, height: 6, marginBottom: 2, borderRadius: 1 },
+  roof1:      { width: 42 },
+  roof2:      { width: 31 },
+  roof3:      { width: 20 },
+  pagodaBody: { width: 15, height: 18, backgroundColor: BRAND_GREEN },
 
   // ── Role modal ── the two cards borrow the home feed's Quick Action tile:
   // a rounded-square coloured glyph over a short label.
