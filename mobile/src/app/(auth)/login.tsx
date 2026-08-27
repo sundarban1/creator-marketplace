@@ -321,12 +321,6 @@ function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel,
     ? EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart))
     : [];
 
-  // The field takes an email or a phone number; while it still looks like a
-  // phone (empty, or no "@" yet) it carries a Nepal dial-code affordance the
-  // way the mock's phone-first field does. Display-only for now — Nepal is the
-  // only market — so it reads as context, not a live picker.
-  const showDialCode = identifierChannel(value) === 'phone';
-
   return (
     <View>
       <FlatInput
@@ -334,13 +328,6 @@ function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel,
         onChangeText={onChangeText}
         placeholder={placeholder}
         accessibilityLabel={accessibilityLabel}
-        trailing={showDialCode ? (
-          <View style={s.dialCode}>
-            <Text style={s.dialCodeFlag}>🇳🇵</Text>
-            <Text style={s.dialCodeText}>+977</Text>
-            <FontAwesome5 name="chevron-down" size={9} color={C.textSecondary} />
-          </View>
-        ) : undefined}
         // Switches with what the user is actually typing — the field accepts
         // either an email or a phone number, so the glyph tracks the channel
         // rather than committing to one of them up front.
@@ -1239,15 +1226,11 @@ export default function LoginScreen() {
         {/* ── Fixed footer ── pinned below the scroll, the temple frieze from
             the mock running faintly behind the "switch tab" prompt. */}
         <View style={[s.footerBar, { paddingBottom: keyboardVisible ? SPACING.md : insets.bottom + SPACING.md }]}>
-          {/* Same light-brinjal wash as the rest of the page, then the temple
-              frieze over it at low opacity so this bar matches the body tint. */}
-          <LinearGradient
-            colors={[withAlpha(COLORS.brinjal1, 0.08), withAlpha(COLORS.brinjal2, 0.08)]}
-            style={s.pageWash}
-            pointerEvents="none"
-          />
+          {/* Bar is transparent so the page's light-brinjal wash carries through;
+              the temple frieze sits over it and the prompt rides in a white pill. */}
           <TempleSkyline />
           <Pressable
+            style={s.switchTabPill}
             accessibilityRole="button"
             onPress={() => tab === 'login' ? router.push('/account-type') : setTab('login')}>
             <Text style={s.switchTabText}>
@@ -1398,10 +1381,6 @@ function makeStyles(C: typeof COLORS) {
   flatInputRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: SPACING.lg, minHeight: 54 },
   flatInput:      { flex: 1, fontSize: FONT_SIZE.md, paddingVertical: SPACING.md },
   flatInputEyeBtn:{ paddingLeft: SPACING.xs },
-  // Nepal dial-code affordance on the phone-shaped identifier.
-  dialCode:      { flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: SPACING.sm, marginLeft: SPACING.xs, borderLeftWidth: 1, borderLeftColor: FIELD_BORDER },
-  dialCodeFlag:  { fontSize: 14 },
-  dialCodeText:  { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, color: C.text },
   feedbackRow:    { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 6, paddingHorizontal: 2 },
   errorText:      { fontSize: FONT_SIZE.xs, fontFamily: F.medium, lineHeight: lineHeightFor(FONT_SIZE.xs) },
 
@@ -1457,7 +1436,9 @@ function makeStyles(C: typeof COLORS) {
 
   // Switch-tab bar — pinned below the scroll, the temple frieze running faintly
   // behind the "Create an account" prompt.
-  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(COLORS.brinjal2, 0.14), paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
+  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(COLORS.brinjal2, 0.14), paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
+  // The prompt sits in a white pill so it stays legible over the temple frieze.
+  switchTabPill: { backgroundColor: '#FFFFFF', borderRadius: RADIUS.full, borderWidth: 1, borderColor: withAlpha(COLORS.brinjal2, 0.14), paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg },
   switchTabText: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
   switchTabLink: { fontFamily: F.bold, color: ACCENT },
 

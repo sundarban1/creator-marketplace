@@ -14,6 +14,9 @@ import { COLORS, F, FONT_SIZE, RADIUS, SPACING, lineHeightFor } from '@/utilitie
 const HERO = require('@/assets/images/login/login.jpg');
 const HIGHLIGHT = COLORS.brinjal1;
 
+// Language toggle shows the language you'd switch TO — same as login / account-type.
+const LANG_LABELS = { en: 'Eng', ne: 'ने' } as const;
+
 // ─── Welcome Screen ───────────────────────────────────────────────────────────
 
 // Single intro screen + entry CTAs. Navigation away from here (once the user
@@ -24,7 +27,7 @@ const HIGHLIGHT = COLORS.brinjal1;
 // screen was never actually seen; RootNavigator now leaves unauthenticated
 // users parked here until they choose Get Started or Log in.
 export default function WelcomeScreen() {
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const contentOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -47,6 +50,17 @@ export default function WelcomeScreen() {
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <Animated.View style={{ flex: 1, width: '100%', opacity: contentOpacity }}>
+          {/* Language toggle — top-right over the hero, translucent on the wash */}
+          <View style={styles.topBar}>
+            <Pressable
+              style={styles.langChip}
+              hitSlop={8}
+              accessibilityRole="button"
+              onPress={() => setLanguage(language === 'en' ? 'ne' : 'en')}>
+              <Text style={styles.langChipText}>{LANG_LABELS[language === 'en' ? 'ne' : 'en']}</Text>
+            </Pressable>
+          </View>
+
           <View style={styles.spacer} />
 
           <View style={styles.content}>
@@ -77,6 +91,15 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.brinjal2 },
   safe: { flex: 1 },
+
+  topBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: SPACING.xl, paddingTop: SPACING.sm },
+  langChip: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, minHeight: 36,
+    backgroundColor: withAlpha('#FFFFFF', 0.18),
+    borderWidth: 1, borderColor: withAlpha('#FFFFFF', 0.35),
+  },
+  langChipText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold, color: '#fff' },
 
   spacer: { flex: 1 },
   content: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.md, gap: SPACING.md },
