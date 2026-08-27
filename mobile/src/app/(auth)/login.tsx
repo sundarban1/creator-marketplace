@@ -60,6 +60,11 @@ const FACEBOOK_LOGIN_ENABLED = false;
 // (see the hero JSX). CC0 (StockSnap, "Himalayas Poonhill").
 const HERO_PHOTO = require('@/assets/images/login/himalaya.jpg');
 
+// Line-art temple frieze that sits faintly behind the "switch tab" prompt in
+// the fixed footer (see TempleSkyline). Warm tan drawing on a cream ground that
+// matches the page's PAPER, so it blends into the footer bar as texture.
+const TEMPLE_FRIEZE = require('@/assets/images/login/bottom_temple.png');
+
 // ── Local brand palette ──────────────────────────────────────────────────────
 // The signed-out screen commits to Nepal's flag colours — deep pine green for
 // the wordmark and headings, warm saffron for every action — rather than the
@@ -365,23 +370,21 @@ function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel,
 }
 
 // ── Brand mark ───────────────────────────────────────────────────────────────
-// The mock's identity: an angular saffron "K" monogram built from three
-// rounded bars, next to the KOLAB wordmark set in pine green. Drawn rather than
-// shipped as art so it stays crisp at any size and tracks the palette above.
+// The KOLAB logo lockup (monogram + wordmark), shipped as the shared brand SVG
+// so it stays identical to the rest of the app rather than being redrawn here.
+
+const BRAND_LOGO = require('@/assets/images/logo.svg');
 
 function BrandMark() {
   const s = useMemo(() => makeStyles(COLORS), []);
   return (
-    <View style={s.brandRow}>
-      <View style={s.markBox}>
-        <View style={s.markStem} />
-        <View style={s.markChevron}>
-          <View style={[s.markArm, s.markArmUp]} />
-          <View style={[s.markArm, s.markArmDown]} />
-        </View>
-      </View>
-      <Text style={s.wordmark}>KOLAB</Text>
-    </View>
+    <ExpoImage
+      source={BRAND_LOGO}
+      style={s.brandLogo}
+      contentFit="contain"
+      accessible
+      accessibilityLabel="KOLAB"
+    />
   );
 }
 
@@ -407,22 +410,21 @@ function PrayerFlagGarland() {
 }
 
 // ── Temple skyline ───────────────────────────────────────────────────────────
-// A faint row of tiered pagoda roofs along the very bottom edge, echoing the
-// line-art border in the mock. Sits behind the footer at low opacity so it
+// A faint line-art frieze of tiered pagodas along the very bottom edge, echoing
+// the border in the mock. Sits behind the footer prompt at low opacity so it
 // registers as texture, not content.
 
 function TempleSkyline() {
   const s = useMemo(() => makeStyles(COLORS), []);
   return (
     <View style={s.temple} pointerEvents="none">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <View key={i} style={s.pagoda}>
-          <View style={[s.roof, s.roof1]} />
-          <View style={[s.roof, s.roof2]} />
-          <View style={[s.roof, s.roof3]} />
-          <View style={s.pagodaBody} />
-        </View>
-      ))}
+      <ExpoImage
+        source={TEMPLE_FRIEZE}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        contentPosition="bottom"
+        accessible={false}
+      />
     </View>
   );
 }
@@ -1314,7 +1316,7 @@ function makeStyles(C: typeof COLORS) {
   langChipText:{ fontSize: FONT_SIZE.xs, fontFamily: F.bold, color: BRAND_GREEN },
 
   // Prayer-flag garland strung across the top of the hero.
-  garland:       { height: 72, alignSelf: 'stretch', marginBottom: SPACING.sm },
+  garland:       { height: 72, alignSelf: 'stretch', marginTop: -SPACING.lg, marginBottom: SPACING.sm },
   garlandString: { position: 'absolute', top: 28, left: 0, right: 0, height: 2, backgroundColor: withAlpha(BRAND_GREEN, 0.38) },
   garlandRow:    { flexDirection: 'row', justifyContent: 'center', paddingTop: 27 },
   flag:          { width: 19, height: 25, marginHorizontal: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2, borderBottomLeftRadius: 6, borderBottomRightRadius: 6, opacity: 0.92 },
@@ -1323,20 +1325,24 @@ function makeStyles(C: typeof COLORS) {
 
   // ── Brand block ──
   brandBlock:   { alignItems: 'center', gap: SPACING.md, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
-  brandRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  markBox:      { width: 42, height: 44, marginRight: 11, justifyContent: 'center' },
-  markStem:     { position: 'absolute', left: 1, top: 1, bottom: 1, width: 9, borderRadius: 4.5, backgroundColor: ACCENT },
-  markChevron:  { position: 'absolute', left: 7, top: 0, bottom: 0, right: 0, justifyContent: 'center' },
-  markArm:      { position: 'absolute', left: 0, width: 28, height: 9, borderRadius: 4.5, backgroundColor: ACCENT },
-  markArmUp:    { top: 4, transform: [{ rotate: '-54deg' }] },
-  markArmDown:  { bottom: 4, transform: [{ rotate: '54deg' }] },
-  wordmark:     { fontSize: 30, fontFamily: F.extrabold, color: BRAND_GREEN, letterSpacing: 1 },
+  brandLogo:    { width: 208, height: 74 },
 
   headlineWrap:      { alignItems: 'center' },
   headline:          { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: BRAND_GREEN, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
   headline2Wrap:     { alignItems: 'center' },
   headline2:         { color: ACCENT },
-  headlineUnderline: { marginTop: 2, width: 52, height: 3, borderRadius: 2, backgroundColor: ACCENT },
+  // Amazon-style swoosh — a shallow smile arc under the headline. Built from a
+  // rounded box showing only its bottom edge, so the coloured stroke curves up
+  // at both ends instead of sitting flat.
+  headlineUnderline: {
+    marginTop: 3,
+    width: 96,
+    height: 18,
+    borderWidth: 3,
+    borderRadius: 48,
+    borderColor: 'transparent',
+    borderBottomColor: ACCENT,
+  },
   brandSub:          { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: BRAND_GREEN_SOFT, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm), maxWidth: 320, marginTop: 2 },
 
   // ── Form ── a white card pulled up over the lower edge of the hero.
@@ -1432,14 +1438,8 @@ function makeStyles(C: typeof COLORS) {
   switchTabText: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
   switchTabLink: { fontFamily: F.bold, color: ACCENT },
 
-  // Temple frieze — a faint row of tiered pagoda roofs along the bottom edge.
-  temple:     { position: 'absolute', left: 0, right: 0, bottom: 0, height: 62, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', opacity: 0.1 },
-  pagoda:     { alignItems: 'center', justifyContent: 'flex-end' },
-  roof:       { backgroundColor: BRAND_GREEN, height: 6, marginBottom: 2, borderRadius: 1 },
-  roof1:      { width: 42 },
-  roof2:      { width: 31 },
-  roof3:      { width: 20 },
-  pagodaBody: { width: 15, height: 18, backgroundColor: BRAND_GREEN },
+  // Temple frieze — a faint line-art pagoda skyline along the bottom edge.
+  temple:     { position: 'absolute', left: 0, right: 0, bottom: 0, height: 88, opacity: 0.85 },
 
   // ── Role modal ── the two cards borrow the home feed's Quick Action tile:
   // a rounded-square coloured glyph over a short label.
