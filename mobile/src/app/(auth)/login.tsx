@@ -61,22 +61,20 @@ const FACEBOOK_LOGIN_ENABLED = false;
 const HERO_PHOTO = require('@/assets/images/login/himalaya.jpg');
 
 // Line-art temple frieze that sits faintly behind the "switch tab" prompt in
-// the fixed footer (see TempleSkyline). Warm tan drawing on a cream ground that
-// matches the page's PAPER, so it blends into the footer bar as texture.
+// the fixed footer (see TempleSkyline), reading as texture over the page wash.
 const TEMPLE_FRIEZE = require('@/assets/images/login/bottom_temple.png');
 
 // ── Local brand palette ──────────────────────────────────────────────────────
-// The signed-out screen commits to Nepal's flag colours — deep pine green for
-// the wordmark and headings, warm saffron for every action — rather than the
-// app's indigo `brinjal`, which only takes over once the user is inside. The
-// ground is a soft Himalayan-dawn cream. All local to this screen.
-const BRAND_GREEN      = '#1C3B2E';
-const BRAND_GREEN_SOFT = '#2F5744';
-const ACCENT           = '#F26B1D'; // saffron — Log In, links, active checkbox
-const ACCENT_2         = '#F59E42'; // far end of the Log In gradient
-const PAPER            = '#F7EFE1'; // screen ground
-const CARD_BORDER      = '#EBDFC8'; // hairline on paper-toned surfaces
-const FIELD_BORDER     = '#E7DAC0';
+// The signed-out screen now carries the app's own indigo `brinjal` identity —
+// the same deep-brinjal photo wash and solid-brinjal primary button the Get
+// Started screen (src/app/index.tsx) uses — so the brand reads consistently
+// from the very first screen through the rest of the app. The lower form area
+// keeps a soft cream ground for the white card to sit on.
+const ACCENT           = COLORS.brinjal1; // indigo — Log In, links, active checkbox
+const ACCENT_2         = COLORS.brinjal2; // far end of the Log In gradient
+const HERO_WASH        = COLORS.brinjal2; // deep-brinjal wash layered over the hero photo
+const ON_HERO          = '#FFFFFF';       // brand text / hairlines over that wash
+const FIELD_BORDER     = '#E7DAC0';       // soft hairline on the white input fields
 
 // Traditional lung-ta order for the prayer-flag garland strung over the hero.
 const FLAG_COLORS = ['#2E6FB7', '#F4F4F2', '#E0392E', '#3FA24B', '#F2C230'] as const;
@@ -1151,7 +1149,15 @@ export default function LoginScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
+
+      {/* Light-brinjal wash behind the entire screen — held at the same low
+          opacity top to bottom so the whole page reads as one even tint. */}
+      <LinearGradient
+        colors={[withAlpha(COLORS.brinjal1, 0.08), withAlpha(COLORS.brinjal2, 0.08)]}
+        style={s.pageWash}
+        pointerEvents="none"
+      />
 
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <MaxWidthContainer>
@@ -1163,22 +1169,24 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          {/* ── Hero ── a full-bleed Himalayan skyline that dissolves up into
-              the paper ground, a prayer-flag garland strung across it, and the
-              brand block resting on top. */}
+          {/* ── Hero ── a full-bleed Himalayan skyline under a deep-brinjal wash
+              (the same treatment the Get Started screen gives its photo), a
+              prayer-flag garland strung across it, and the brand block resting
+              on top in white. The wash resolves to the cream form ground at the
+              very bottom edge, where the white card pulls up over it. */}
           <View style={[s.hero, { paddingTop: insets.top + SPACING.lg }]}>
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               <ExpoImage source={HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
               <LinearGradient
-                colors={[withAlpha(PAPER, 0.12), withAlpha(PAPER, 0.5), PAPER]}
-                locations={[0, 0.62, 1]}
+                colors={[withAlpha(HERO_WASH, 0.2), withAlpha(HERO_WASH, 0.72), withAlpha(HERO_WASH, 0.92), withAlpha(HERO_WASH, 0.12)]}
+                locations={[0, 0.5, 0.86, 1]}
                 style={StyleSheet.absoluteFill}
               />
             </View>
 
             {/* Controls — back + language toggle, sitting above the garland */}
             <View style={s.floatBar} pointerEvents="box-none">
-              {canGoBack ? <BackButton fallback="/" /> : <View style={s.floatSpacer} />}
+              {canGoBack ? <BackButton fallback="/" variant="overlay" /> : <View style={s.floatSpacer} />}
               <Pressable
                 style={s.langChip}
                 hitSlop={8}
@@ -1219,7 +1227,7 @@ export default function LoginScreen() {
 
             {/* Reassurance line — quiet, non-actionable, closes the page. */}
             <View style={s.trustRow}>
-              <FontAwesome5 name="shield-alt" solid size={12} color={BRAND_GREEN_SOFT} />
+              <FontAwesome5 name="shield-alt" solid size={12} color={ACCENT} />
               <Text style={s.trustText}>{t('auth.login.footer')}</Text>
             </View>
           </Animated.View>
@@ -1298,7 +1306,12 @@ export default function LoginScreen() {
 
 function makeStyles(C: typeof COLORS) {
   return StyleSheet.create({
-  root: { flex: 1, backgroundColor: PAPER },
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
+  // Light-brinjal wash carried behind the whole screen (not just the hero) —
+  // sits on the white root, deepening slightly toward the bottom. Every layer
+  // above it (scroll body, form shell, footer) is transparent so it shows
+  // through; only the hero photo-wash and the white form card paint over it.
+  pageWash: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   flex: { flex: 1 },
   // The hero is full-bleed, so the screen carries no horizontal padding — each
   // block below the hero re-applies the gutter itself.
@@ -1306,18 +1319,18 @@ function makeStyles(C: typeof COLORS) {
 
   // ── Hero ── a full-bleed Himalayan skyline that fades up into the paper
   // ground; the brand block rests on top and defines the height.
-  hero:        { overflow: 'hidden', alignItems: 'center', backgroundColor: PAPER },
+  hero:        { overflow: 'hidden', alignItems: 'center', backgroundColor: HERO_WASH },
 
   // Floating controls over the scene — back button + language toggle. The
   // toggle shows the language you'd switch TO.
   floatBar:    { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, marginBottom: SPACING.xs, zIndex: 6 },
   floatSpacer: { width: 36, height: 36 },
   langChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, minHeight: 36, justifyContent: 'center', backgroundColor: withAlpha('#FFFFFF', 0.72), borderWidth: 1, borderColor: withAlpha('#FFFFFF', 0.9) },
-  langChipText:{ fontSize: FONT_SIZE.xs, fontFamily: F.bold, color: BRAND_GREEN },
+  langChipText:{ fontSize: FONT_SIZE.xs, fontFamily: F.bold, color: ACCENT_2 },
 
   // Prayer-flag garland strung across the top of the hero.
   garland:       { height: 72, alignSelf: 'stretch', marginTop: -SPACING.lg, marginBottom: SPACING.sm },
-  garlandString: { position: 'absolute', top: 28, left: 0, right: 0, height: 2, backgroundColor: withAlpha(BRAND_GREEN, 0.38) },
+  garlandString: { position: 'absolute', top: 28, left: 0, right: 0, height: 2, backgroundColor: withAlpha(ON_HERO, 0.45) },
   garlandRow:    { flexDirection: 'row', justifyContent: 'center', paddingTop: 27 },
   flag:          { width: 19, height: 25, marginHorizontal: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2, borderBottomLeftRadius: 6, borderBottomRightRadius: 6, opacity: 0.92 },
   flagTiltA:     { transform: [{ rotate: '4deg' }, { translateY: 1 }] },
@@ -1328,9 +1341,9 @@ function makeStyles(C: typeof COLORS) {
   brandLogo:    { width: 208, height: 74 },
 
   headlineWrap:      { alignItems: 'center' },
-  headline:          { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: BRAND_GREEN, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
+  headline:          { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: ON_HERO, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
   headline2Wrap:     { alignItems: 'center' },
-  headline2:         { color: ACCENT },
+  headline2:         { color: ON_HERO },
   // Amazon-style swoosh — a shallow smile arc under the headline. Built from a
   // rounded box showing only its bottom edge, so the coloured stroke curves up
   // at both ends instead of sitting flat.
@@ -1341,9 +1354,9 @@ function makeStyles(C: typeof COLORS) {
     borderWidth: 3,
     borderRadius: 48,
     borderColor: 'transparent',
-    borderBottomColor: ACCENT,
+    borderBottomColor: withAlpha(ON_HERO, 0.9),
   },
-  brandSub:          { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: BRAND_GREEN_SOFT, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm), maxWidth: 320, marginTop: 2 },
+  brandSub:          { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: withAlpha(ON_HERO, 0.85), textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm), maxWidth: 320, marginTop: 2 },
 
   // ── Form ── a white card pulled up over the lower edge of the hero.
   formShell: { paddingHorizontal: SCREEN_GUTTER, marginTop: -SPACING.xl, gap: SPACING.lg },
@@ -1351,7 +1364,7 @@ function makeStyles(C: typeof COLORS) {
   formCard:  { borderRadius: RADIUS.xl, borderWidth: 1, padding: SPACING.xl, gap: SPACING.lg },
 
   formHeading:         { gap: 2, alignItems: 'center' },
-  formHeadingTitle:    { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: BRAND_GREEN, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
+  formHeadingTitle:    { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: ACCENT, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
   formHeadingSubtitle: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
 
   // Role chip — confirms the choice made on /account-type and links back to it.
@@ -1430,11 +1443,11 @@ function makeStyles(C: typeof COLORS) {
 
   // Closing reassurance line — "Secure & trusted login" under a green shield.
   trustRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: SPACING.xs },
-  trustText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, color: BRAND_GREEN_SOFT, textAlign: 'center' },
+  trustText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, color: C.textSecondary, textAlign: 'center' },
 
   // Switch-tab bar — pinned below the scroll, the temple frieze running faintly
   // behind the "Create an account" prompt.
-  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: PAPER, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: CARD_BORDER, paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
+  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(COLORS.brinjal2, 0.14), paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
   switchTabText: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
   switchTabLink: { fontFamily: F.bold, color: ACCENT },
 
