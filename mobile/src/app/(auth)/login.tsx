@@ -72,8 +72,11 @@ const TEMPLE_FRIEZE = require('@/assets/images/login/bottom_temple.png');
 // keeps a soft cream ground for the white card to sit on.
 const ACCENT           = COLORS.brinjal1; // indigo — Log In, links, active checkbox
 const ACCENT_2         = COLORS.brinjal2; // far end of the Log In gradient
-const HERO_WASH        = COLORS.brinjal2; // deep-brinjal wash layered over the hero photo
-const ON_HERO          = '#FFFFFF';       // brand text / hairlines over that wash
+// Green hero wash, pulled from the app's business theme (BUSINESS_COLORS) so it
+// reads as the same green authenticated business users see.
+const HERO_WASH_1      = BUSINESS_COLORS.brinjal1; // green wash over the hero photo (top)
+const HERO_WASH_2      = BUSINESS_COLORS.brinjal2; // deep-green wash over the hero photo (body)
+const ON_HERO          = '#FFFFFF';                // brand text / hairlines over that wash
 const FIELD_BORDER     = '#E7DAC0';       // soft hairline on the white input fields
 
 // Traditional lung-ta order for the prayer-flag garland strung over the hero.
@@ -1178,7 +1181,7 @@ export default function LoginScreen() {
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               <ExpoImage source={HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
               <LinearGradient
-                colors={[withAlpha(HERO_WASH, 0.2), withAlpha(HERO_WASH, 0.72), withAlpha(HERO_WASH, 0.92), withAlpha(HERO_WASH, 0.12)]}
+                colors={[withAlpha(HERO_WASH_1, 0.25), withAlpha(HERO_WASH_2, 0.72), withAlpha(HERO_WASH_2, 0.9), withAlpha(HERO_WASH_2, 0.1)]}
                 locations={[0, 0.5, 0.86, 1]}
                 style={StyleSheet.absoluteFill}
               />
@@ -1236,6 +1239,13 @@ export default function LoginScreen() {
         {/* ── Fixed footer ── pinned below the scroll, the temple frieze from
             the mock running faintly behind the "switch tab" prompt. */}
         <View style={[s.footerBar, { paddingBottom: keyboardVisible ? SPACING.md : insets.bottom + SPACING.md }]}>
+          {/* Same light-brinjal wash as the rest of the page, then the temple
+              frieze over it at low opacity so this bar matches the body tint. */}
+          <LinearGradient
+            colors={[withAlpha(COLORS.brinjal1, 0.08), withAlpha(COLORS.brinjal2, 0.08)]}
+            style={s.pageWash}
+            pointerEvents="none"
+          />
           <TempleSkyline />
           <Pressable
             accessibilityRole="button"
@@ -1319,7 +1329,7 @@ function makeStyles(C: typeof COLORS) {
 
   // ── Hero ── a full-bleed Himalayan skyline that fades up into the paper
   // ground; the brand block rests on top and defines the height.
-  hero:        { overflow: 'hidden', alignItems: 'center', backgroundColor: HERO_WASH },
+  hero:        { overflow: 'hidden', alignItems: 'center', backgroundColor: HERO_WASH_2 },
 
   // Floating controls over the scene — back button + language toggle. The
   // toggle shows the language you'd switch TO.
@@ -1447,12 +1457,12 @@ function makeStyles(C: typeof COLORS) {
 
   // Switch-tab bar — pinned below the scroll, the temple frieze running faintly
   // behind the "Create an account" prompt.
-  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(COLORS.brinjal2, 0.14), paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
+  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(COLORS.brinjal2, 0.14), paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
   switchTabText: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
   switchTabLink: { fontFamily: F.bold, color: ACCENT },
 
   // Temple frieze — a faint line-art pagoda skyline along the bottom edge.
-  temple:     { position: 'absolute', left: 0, right: 0, bottom: 0, height: 88, opacity: 0.85 },
+  temple:     { position: 'absolute', left: 0, right: 0, bottom: 0, height: 88, opacity: 0.5 },
 
   // ── Role modal ── the two cards borrow the home feed's Quick Action tile:
   // a rounded-square coloured glyph over a short label.
