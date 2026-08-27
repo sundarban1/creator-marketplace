@@ -272,7 +272,7 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
           accessibilityLabel={appleLabel}>
           {appleLoading
             ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.appleCardIcon} contentFit="cover" />}
+            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.appleCardIcon} contentFit="contain" />}
           <Text style={[s.socialCardText, { color: C.text }]}>{appleLabel}</Text>
         </Pressable>
       )}
@@ -1335,10 +1335,9 @@ function makeStyles(C: typeof COLORS) {
   appleBtn:          { width: '100%', height: 52 },
   appleBtnRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, borderRadius: RADIUS.md, borderWidth: 1 },
   socialCardIcon:    { width: 18, height: 18 },
-  // The Apple SVG is a tall 24×44 canvas with wide top/bottom whitespace and a
-  // small glyph — `contain` at icon size renders it tiny. A square box + `cover`
-  // crops the dead space so the mark reads at the same weight as Google's "G".
-  appleCardIcon:     { width: 32, height: 32 },
+  // apple.svg is cropped tight to the glyph (no white bg, no padding), so it can
+  // render bigger than Google's "G" here for equal visual weight.
+  appleCardIcon:     { width: 20, height: 20 },
   socialCardText:    { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
 
   // Facebook badge keeps Facebook's own brand blue regardless of theme — this is a
