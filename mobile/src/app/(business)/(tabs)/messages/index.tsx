@@ -13,7 +13,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { TabSlider } from '@/components/TabSlider';
+// import { TabSlider } from '@/components/TabSlider'; // hidden for now
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { SwipeableChatRow } from '@/components/SwipeableChatRow';
@@ -223,7 +223,8 @@ export default function BusinessChatListScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [tab, setTab]               = useState<Tab>('chats');
+  // Tab slider hidden for now — screen locked to the 'chats' view.
+  const [tab]                       = useState<Tab>('chats');
   const [tabData, setTabData]       = useState<Record<Tab, TabState>>({ chats: emptyTabState(), pending: emptyTabState() });
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -322,13 +323,13 @@ export default function BusinessChatListScreen() {
 
   const pending = tabData.pending.items;
   const chats   = tabData.chats.items;
-  const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0);
+  // const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0); // used by hidden tab slider
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
-      {/* ── Tab slider ── */}
-      <View style={s.tabSliderWrap}>
+      {/* ── Tab slider ── (hidden for now — Messages/Requests slider not shown in UI) */}
+      {/* <View style={s.tabSliderWrap}>
         <TabSlider
           justify
           tabs={[
@@ -338,7 +339,7 @@ export default function BusinessChatListScreen() {
           active={tab}
           onChange={(key) => setTab(key as Tab)}
         />
-      </View>
+      </View> */}
 
       {loading ? (
         <View style={s.reqList}>

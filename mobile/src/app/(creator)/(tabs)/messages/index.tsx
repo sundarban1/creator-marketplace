@@ -3,7 +3,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { TabSlider } from '@/components/TabSlider';
+// import { TabSlider } from '@/components/TabSlider'; // hidden for now
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { SwipeableChatRow } from '@/components/SwipeableChatRow';
@@ -29,7 +29,7 @@ import { chatService } from '@/services/chat';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { getConversationPreviewText } from '@/utilities/messagePreview';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { TabColors } from '@/utilities/tabColors';
+// import { TabColors } from '@/utilities/tabColors'; // hidden for now (tab slider)
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
 
@@ -285,7 +285,8 @@ export default function CreatorMessagesScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [tab, setTab]               = useState<Tab>('chats');
+  // Tab slider hidden for now — screen locked to the 'chats' view.
+  const [tab]                       = useState<Tab>('chats');
   const [requests, setRequests]     = useState<Conversation[]>([]);
   const [chats, setChats]           = useState<Conversation[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -365,13 +366,13 @@ export default function CreatorMessagesScreen() {
     setChats((prev) => prev.filter((c) => c.id !== conversationId));
   }
 
-  const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0);
+  // const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0); // used by hidden tab slider
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
-      {/* ── Tab slider ── */}
-      <View style={s.tabSliderWrap}>
+      {/* ── Tab slider ── (hidden for now — Messages/Requests slider not shown in UI) */}
+      {/* <View style={s.tabSliderWrap}>
         <TabSlider
           justify
           tabs={[
@@ -381,7 +382,7 @@ export default function CreatorMessagesScreen() {
           active={tab}
           onChange={(key) => setTab(key as Tab)}
         />
-      </View>
+      </View> */}
 
       {loading ? (
         <View style={s.reqList}>

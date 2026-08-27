@@ -154,6 +154,14 @@ services:
       - key: GOOGLE_IOS_CLIENT_ID
         value: "543768819635-fuslrtr8mt6bmi2jslc3h3hcqg4drhdk.apps.googleusercontent.com"
 
+      # ── Sign in with Apple. APPLE_CLIENT_ID is the iOS bundle id and is the
+      # `aud` every Apple identity token is verified against — sign-in returns
+      # 503 without it. Not a secret. Add APPLE_TEAM_ID / APPLE_KEY_ID /
+      # APPLE_PRIVATE_KEY (.p8 contents) via the dashboard only once token
+      # revocation or the server-to-server webhook is turned on.
+      - key: APPLE_CLIENT_ID
+        value: com.sundarban.kolab
+
   # marketplace-web — added as a NEW service, deliberately separate from
   # whatever dashboard-managed static site currently serves ourkolab.com.
   # Its static-file fallback was serving dist/index.html (the homepage) for
