@@ -235,7 +235,7 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
           {googleLoading
             ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
             : <ExpoImage source={require('@/assets/images/google.png')} style={s.socialCardIcon} contentFit="contain" />}
-          <Text style={[s.socialCardText, { color: C.text }]}>Google</Text>
+          <Text style={[s.socialCardText, { color: C.text }]}>{googleLabel}</Text>
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
           <Pressable
@@ -250,7 +250,7 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
             {facebookLoading
               ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
               : <View style={s.fbBadgeSmall}><Text style={s.fbF}>f</Text></View>}
-            <Text style={[s.socialCardText, { color: C.text }]}>Facebook</Text>
+            <Text style={[s.socialCardText, { color: C.text }]}>{facebookLabel}</Text>
           </Pressable>
         )}
       </View>
@@ -272,7 +272,7 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
           accessibilityLabel={appleLabel}>
           {appleLoading
             ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.appleCardIcon} contentFit="contain" />}
+            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.socialCardIcon} contentFit="contain" />}
           <Text style={[s.socialCardText, { color: C.text }]}>{appleLabel}</Text>
         </Pressable>
       )}
@@ -1335,9 +1335,6 @@ function makeStyles(C: typeof COLORS) {
   appleBtn:          { width: '100%', height: 52 },
   appleBtnRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, borderRadius: RADIUS.md, borderWidth: 1 },
   socialCardIcon:    { width: 18, height: 18 },
-  // apple.svg is cropped tight to the glyph (no white bg, no padding), so it can
-  // render bigger than Google's "G" here for equal visual weight.
-  appleCardIcon:     { width: 20, height: 20 },
   socialCardText:    { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
 
   // Facebook badge keeps Facebook's own brand blue regardless of theme — this is a
