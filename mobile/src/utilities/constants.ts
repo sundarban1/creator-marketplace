@@ -193,6 +193,10 @@ export const BIOMETRIC_ENABLED_KEY  = 'ch_biometric_enabled';
 // set whether the user taps Enable or Not now, so the offer never nags twice.
 export const BIOMETRIC_OFFERED_KEY  = 'ch_biometric_offered';
 export const RECENT_SEARCHES_KEY    = 'ch_recent_searches';
+// Apple's stable user id (`sub`) for whoever is signed in, when they've linked
+// Apple. Lets the app poll AppleAuthentication.getCredentialStateAsync on
+// launch/foreground and react if the user revoked access from iOS Settings.
+export const APPLE_USER_ID_KEY      = 'ch_apple_user_id';
 
 // User roles — use these instead of the bare 'CREATOR'/'BUSINESS' string literals
 export const ROLE = {

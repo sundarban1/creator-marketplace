@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Facebook from 'expo-auth-session/providers/facebook';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { exchangeCodeAsync } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +29,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useAppColors, useIsDark, BUSINESS_DARK_COLORS } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
+import { ApiError } from '@/lib/api';
 
 const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
 import type { Lang } from '@/i18n';
@@ -193,7 +195,7 @@ function FormBanner({ tone, icon, text }: {
 // (surface fill, hairline border, SHADOW.card), same as the list rows on the
 // creator home feed.
 
-function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError }: {
+function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, appleLabel, onApplePress, appleLoading, appleError }: {
   orLabel: string;
   googleLabel: string;
   facebookLabel: string;
@@ -203,6 +205,11 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
   onFacebookPress: () => void;
   facebookLoading: boolean;
   facebookError: string;
+  appleAvailable: boolean;
+  appleLabel: string;
+  onApplePress: () => void;
+  appleLoading: boolean;
+  appleError: string;
 }) {
   const C = useAppColors();
   const s = useMemo(() => makeStyles(C), [C]);
@@ -248,8 +255,31 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
         )}
       </View>
 
+      {/* Sign in with Apple — iOS 13+ only (hidden everywhere else). Full-width
+          card directly under the Google/Facebook row, same neutral surface
+          treatment as those buttons. */}
+      {appleAvailable && (
+        <Pressable
+          style={({ pressed }) => [
+            s.appleBtn, s.appleBtnRow,
+            { borderColor: C.border, backgroundColor: C.surface },
+            SHADOW.card,
+            appleLoading && { opacity: 0.6 },
+            pressed && !appleLoading && { backgroundColor: C.primaryLight, transform: [{ scale: 0.98 }] },
+          ]}
+          onPress={onApplePress} disabled={appleLoading}
+          accessibilityRole="button"
+          accessibilityLabel={appleLabel}>
+          {appleLoading
+            ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
+            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.appleCardIcon} contentFit="cover" />}
+          <Text style={[s.socialCardText, { color: C.text }]}>{appleLabel}</Text>
+        </Pressable>
+      )}
+
       {!!googleError && <FormBanner tone="error" icon="exclamation-circle" text={googleError} />}
       {FACEBOOK_LOGIN_ENABLED && !!facebookError && <FormBanner tone="error" icon="exclamation-circle" text={facebookError} />}
+      {!!appleError && <FormBanner tone="error" icon="exclamation-circle" text={appleError} />}
     </View>
   );
 }
@@ -315,7 +345,7 @@ function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel,
 
 // ── Login form ────────────────────────────────────────────────────────────────
 
-function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError }: {
+function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, onApplePress, appleLoading, appleError, onLoginSuccess }: {
   verified?: string;
   onGooglePress: () => void;
   googleLoading: boolean;
@@ -323,6 +353,13 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   onFacebookPress: () => void;
   facebookLoading: boolean;
   facebookError: string;
+  appleAvailable: boolean;
+  onApplePress: () => void;
+  appleLoading: boolean;
+  appleError: string;
+  // Runs right after a successful password login — used to finish an in-progress
+  // "link Apple to my existing account" flow before the screen navigates away.
+  onLoginSuccess?: () => Promise<void> | void;
 }) {
   const C = useAppColors();
   const s = useMemo(() => makeStyles(C), [C]);
@@ -381,6 +418,9 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
     try {
       const identifier = channel === 'email' ? { email: trimmedIdentifier } : { phone: normalizePhoneForSubmit(trimmedIdentifier) };
       await login(identifier, password, rememberMe);
+      // Session token is now stored — finish any pending "connect Apple" step
+      // before RootNavigator redirects this screen away.
+      await onLoginSuccess?.();
     } catch (e) {
       const message = e instanceof Error ? e.message : t('auth.login.requiredError');
       if (/suspended/i.test(message)) {
@@ -491,6 +531,9 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         facebookLabel={t('auth.login.continueFacebook')}
         onGooglePress={onGooglePress} googleLoading={googleLoading} googleError={googleError}
         onFacebookPress={onFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError}
+        appleAvailable={appleAvailable}
+        appleLabel={t('auth.login.continueApple')}
+        onApplePress={onApplePress} appleLoading={appleLoading} appleError={appleError}
       />
 
       {/* Suspended-account modal — shown instead of the inline banner when the
@@ -519,7 +562,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
 // ── Create Account form ───────────────────────────────────────────────────────
 
-function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError }: {
+function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, onApplePress, appleLoading, appleError }: {
   initialRole?: 'CREATOR' | 'BUSINESS';
   onGooglePress: () => void;
   googleLoading: boolean;
@@ -527,6 +570,10 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
   onFacebookPress: () => void;
   facebookLoading: boolean;
   facebookError: string;
+  appleAvailable: boolean;
+  onApplePress: () => void;
+  appleLoading: boolean;
+  appleError: string;
 }) {
   const C = useAppColors();
   const { isDark } = useIsDark();
@@ -676,6 +723,9 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
         facebookLabel={t('auth.signup.continueFacebook')}
         onGooglePress={onGooglePress} googleLoading={googleLoading} googleError={googleError}
         onFacebookPress={onFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError}
+        appleAvailable={appleAvailable}
+        appleLabel={t('auth.signup.continueApple')}
+        onApplePress={onApplePress} appleLoading={appleLoading} appleError={appleError}
       />
     </View>
   );
@@ -735,9 +785,31 @@ export default function LoginScreen() {
   const [googleError,     setGoogleError]     = useState('');
   const [facebookLoading, setFacebookLoading] = useState(false);
   const [facebookError,   setFacebookError]   = useState('');
+  const [appleLoading,    setAppleLoading]    = useState(false);
+  const [appleError,      setAppleError]      = useState('');
+  const [appleAvailable,  setAppleAvailable]  = useState(false);
+  // Set when the backend returns ACCOUNT_LINKING_REQUIRED — holds the short-lived
+  // link token; while it's set the "sign in to connect Apple" sheet shows and a
+  // successful password login finishes the link.
+  const [applePending,     setApplePending]     = useState('');
+  const [applePendingCode, setApplePendingCode] = useState('');
+  const [applePendingUser, setApplePendingUser] = useState('');
+  const [appleLinkSheet,  setAppleLinkSheet]  = useState(false);
   const [roleModal,       setRoleModal]       = useState(false);
   const [pendingToken,    setPendingToken]    = useState('');
-  const [pendingProvider, setPendingProvider] = useState<'google' | 'facebook'>('google');
+  const [pendingProvider, setPendingProvider] = useState<'google' | 'facebook' | 'apple'>('google');
+  // Apple hands back the name/email only on the first response, so a role-select
+  // re-submit has to resend the whole credential, not just a token.
+  const [pendingAppleCred, setPendingAppleCred] = useState<AppleAuthentication.AppleAuthenticationCredential | null>(null);
+
+  // Sign in with Apple is iOS 13+ only — the button stays hidden everywhere else.
+  useEffect(() => {
+    let active = true;
+    AppleAuthentication.isAvailableAsync()
+      .then((ok) => { if (active) setAppleAvailable(ok); })
+      .catch(() => { if (active) setAppleAvailable(false); });
+    return () => { active = false; };
+  }, []);
 
   // Google's iOS OAuth client validates the redirect URI against the *reversed client ID*
   // scheme (this is why native Google Sign-In SDKs require a REVERSED_CLIENT_ID URL type in
@@ -886,10 +958,108 @@ export default function LoginScreen() {
     void googlePromptAsync();
   }
 
+  async function handleAppleToken(
+    cred: AppleAuthentication.AppleAuthenticationCredential,
+    role?: 'CREATOR' | 'BUSINESS',
+  ) {
+    if (!cred.identityToken) {
+      setAppleError(t('auth.login.appleFailed'));
+      setAppleLoading(false);
+      return;
+    }
+    setAppleLoading(true);
+    setAppleError('');
+    try {
+      const result = await authService.appleAuth({
+        identityToken:     cred.identityToken,
+        authorizationCode: cred.authorizationCode ?? undefined,
+        fullName:          cred.fullName
+          ? { givenName: cred.fullName.givenName, familyName: cred.fullName.familyName }
+          : undefined,
+        email:             cred.email,
+        role,
+        appleUserId:       cred.user,
+      });
+      if (result.needsRole) {
+        setPendingAppleCred(cred);
+        setPendingProvider('apple');
+        setRoleModal(true);
+        setAppleLoading(false);
+        return;
+      }
+      await reloadUser();
+    } catch (e) {
+      // The Apple email already belongs to a Kolab account — never merge on
+      // email. Route the user through "sign in with your existing method, then
+      // connect Apple" instead.
+      if (e instanceof ApiError && e.code === 'ACCOUNT_LINKING_REQUIRED') {
+        const token = typeof e.details?.appleLinkToken === 'string' ? e.details.appleLinkToken : '';
+        if (token) {
+          setApplePending(token);
+          // Keep the (still-unused) auth code so the eventual link can capture a
+          // refresh token for later Apple-side revocation, plus the Apple user id
+          // for the credential watcher.
+          setApplePendingCode(cred.authorizationCode ?? '');
+          setApplePendingUser(cred.user ?? '');
+          setAppleLinkSheet(true);
+          setTab('login');
+          setAppleLoading(false);
+          return;
+        }
+      }
+      setAppleError(e instanceof Error ? e.message : t('auth.login.appleFailed'));
+      setAppleLoading(false);
+    }
+  }
+
+  async function handleApplePress() {
+    setAppleError('');
+    setAppleLoading(true);
+    try {
+      const cred = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      await handleAppleToken(cred);
+    } catch (e) {
+      // Tapping "Cancel" in Apple's sheet is a normal outcome, not a failure.
+      if (e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
+        setAppleLoading(false);
+        return;
+      }
+      setAppleError(t('auth.login.appleFailed'));
+      setAppleLoading(false);
+    }
+  }
+
+  // Finishes an in-progress "connect Apple to my existing account" flow right
+  // after the user signs in with their existing method (see LoginForm).
+  async function finishAppleLinkIfPending() {
+    if (!applePending) return;
+    try {
+      await authService.appleLink({
+        appleLinkToken: applePending,
+        authorizationCode: applePendingCode || undefined,
+        appleUserId: applePendingUser || undefined,
+      });
+    } catch {
+      // Non-fatal: the next Apple sign-in just re-triggers the same linking flow.
+    } finally {
+      setApplePending('');
+      setApplePendingCode('');
+      setApplePendingUser('');
+      setAppleLinkSheet(false);
+    }
+  }
+
   async function handleRoleSelect(selectedRole: 'CREATOR' | 'BUSINESS') {
     setRoleModal(false);
     if (pendingProvider === 'facebook') {
       await handleFacebookToken(pendingToken, selectedRole);
+    } else if (pendingProvider === 'apple') {
+      if (pendingAppleCred) await handleAppleToken(pendingAppleCred, selectedRole);
     } else {
       await handleGoogleToken(pendingToken, selectedRole);
     }
@@ -977,8 +1147,8 @@ export default function LoginScreen() {
                 }],
               }}>
               {tab === 'login'
-                ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />
-                : <SignupForm key={params.role} initialRole={params.role === 'BUSINESS' ? 'BUSINESS' : params.role === 'CREATOR' ? 'CREATOR' : undefined} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />}
+                ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} onLoginSuccess={finishAppleLinkIfPending} />
+                : <SignupForm key={params.role} initialRole={params.role === 'BUSINESS' ? 'BUSINESS' : params.role === 'CREATOR' ? 'CREATOR' : undefined} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} />}
             </Animated.View>
 
             {/* Reassurance line — closes the page the way the home feed closes
@@ -1038,6 +1208,22 @@ export default function LoginScreen() {
         <Pressable style={s.modalCancel} onPress={() => setRoleModal(false)}>
           <Text style={s.modalCancelText}>{t('auth.login.roleModalCancel')}</Text>
         </Pressable>
+      </BottomSheet>
+
+      {/* Shown when Apple returns an identity whose email already belongs to a
+          Kolab account — the user signs in with their existing method and the
+          Apple identity is linked automatically (see finishAppleLinkIfPending). */}
+      <BottomSheet visible={appleLinkSheet} onClose={() => setAppleLinkSheet(false)} contentContainerStyle={{ gap: 4 }}>
+        <View style={s.suspendedSheet}>
+          <View style={[s.suspendedIconWrap, { backgroundColor: withAlpha(C.brinjal1, 0.12) }]}>
+            <FontAwesome5 name="link" size={20} color={C.brinjal1} solid />
+          </View>
+          <Text style={s.modalTitle}>{t('auth.login.appleLinkTitle')}</Text>
+          <Text style={s.modalSub}>{t('auth.login.appleLinkBody')}</Text>
+          <Pressable style={s.modalCancel} onPress={() => setAppleLinkSheet(false)}>
+            <Text style={[s.modalCancelText, { color: C.brinjal1 }]}>{t('auth.login.appleLinkCta')}</Text>
+          </Pressable>
+        </View>
       </BottomSheet>
 
     </View>
@@ -1145,7 +1331,14 @@ function makeStyles(C: typeof COLORS) {
   socialCardRow:     { flexDirection: 'row', gap: SPACING.md },
   socialCardBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, minHeight: 52, borderRadius: RADIUS.md, borderWidth: 1 },
   socialCardBtnFull: { flex: 0 },
+  // Sign in with Apple button — full width, same 52 height as the primary CTA.
+  appleBtn:          { width: '100%', height: 52 },
+  appleBtnRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, borderRadius: RADIUS.md, borderWidth: 1 },
   socialCardIcon:    { width: 18, height: 18 },
+  // The Apple SVG is a tall 24×44 canvas with wide top/bottom whitespace and a
+  // small glyph — `contain` at icon size renders it tiny. A square box + `cover`
+  // crops the dead space so the mark reads at the same weight as Google's "G".
+  appleCardIcon:     { width: 32, height: 32 },
   socialCardText:    { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
 
   // Facebook badge keeps Facebook's own brand blue regardless of theme — this is a

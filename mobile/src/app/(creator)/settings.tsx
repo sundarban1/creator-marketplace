@@ -36,6 +36,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 import { AppModal } from '@/components/AppModal';
+import { LoginMethodsCard } from '@/components/LoginMethodsCard';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
@@ -2069,6 +2070,9 @@ export default function CreatorSettingsScreen() {
             />
           )}
         </Card>
+
+        <SectionHeader title={t('loginMethods.sectionTitle')} />
+        <LoginMethodsCard />
 
         <SectionHeader title={t('creatorSettings.verificationSection')} />
         <Card>

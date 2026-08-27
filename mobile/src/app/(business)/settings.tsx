@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { AppModal } from '@/components/AppModal';
+import { LoginMethodsCard } from '@/components/LoginMethodsCard';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
@@ -1592,6 +1593,9 @@ export default function BusinessSettingsScreen() {
           )}
         </Card>
 
+        <SectionHeader title={t('loginMethods.sectionTitle')} />
+        <LoginMethodsCard />
+
         <SectionHeader title={t('businessSettings.actionsSection')} />
         <Card>
           <NavRow faIcon="pause-circle" label={t('businessSettings.deactivateAccountLabel')} sub={t('businessSettings.deactivateAccountSub')} onPress={handleDeactivateAccount} danger />
@@ -1695,11 +1699,13 @@ export default function BusinessSettingsScreen() {
             ))
           )}
         </Card>
+        {/* Receipts & Invoices — hidden for now
         <View style={{ height: 12 }} />
         <Card>
           <NavRow faIcon="receipt" ionIconColor="#6366F1" label={t('businessSettings.receiptsLabel')} onPress={() => showToast(t('businessSettings.noReceiptsToast'))} />
           <NavRow faIcon="file-invoice" ionIconColor="#6366F1" label={t('businessSettings.invoicesLabel')} onPress={() => showToast(t('businessSettings.noInvoicesToast'))} isLast />
         </Card>
+        */}
       </>
     );
   }

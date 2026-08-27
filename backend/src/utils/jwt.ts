@@ -44,6 +44,28 @@ export function verifyPasswordResetToken(token: string): { id: string; email: st
   return jwt.verify(token, env.JWT_ACCESS_SECRET + '_reset') as { id: string; email: string } & JwtPayload;
 }
 
+// Bridges the "Sign in with Apple returned a brand-new Apple identity, but its
+// email already belongs to an existing Kolab account" case: the backend has
+// verified the Apple token but must NOT auto-link on email alone. It hands the
+// client this short-lived token carrying the verified Apple claims; the client
+// makes the user sign in with their existing method, then calls
+// POST /api/auth/apple/link with this token to attach the Apple identity to the
+// now-authenticated account. 10m is plenty for a single sign-in step and keeps
+// the window for replay small.
+export interface AppleLinkPayload {
+  sub: string;
+  email?: string;
+  name?: string;
+}
+
+export function signAppleLinkToken(payload: AppleLinkPayload): string {
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET + '_apple_link', { expiresIn: '10m' });
+}
+
+export function verifyAppleLinkToken(token: string): AppleLinkPayload & JwtPayload {
+  return jwt.verify(token, env.JWT_ACCESS_SECRET + '_apple_link') as AppleLinkPayload & JwtPayload;
+}
+
 // Carries the requesting user (+ PKCE code_verifier, for providers that need it, e.g.
 // TikTok) across the redirect to a third-party OAuth provider and back to our
 // callback, since that round trip happens in a browser with no Authorization header

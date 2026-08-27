@@ -138,6 +138,51 @@ export class AuthController {
     }
   }
 
+  async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.appleAuth(req.body);
+      success(res, result, result.needsRole ? 'Role selection required' : 'Apple sign-in successful');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async appleLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.appleLink(req.user!.id, req.body);
+      success(res, result, 'Apple account linked');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async appleNotifications(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.handleAppleNotification(req.body);
+      success(res, result, 'Notification received');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getAuthMethods(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.getAuthMethods(req.user!.id);
+      success(res, result, 'Login methods');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async unlinkProvider(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.unlinkProvider(req.user!.id, req.params as { provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK' });
+      success(res, result, 'Login method disconnected');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async requestPhoneOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.requestPhoneOtp(req.user!.id, req.body);

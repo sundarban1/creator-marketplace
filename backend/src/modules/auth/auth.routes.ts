@@ -17,6 +17,10 @@ import {
   verifyEmailOtpSchema,
   googleAuthSchema,
   facebookAuthSchema,
+  appleAuthSchema,
+  appleLinkSchema,
+  appleNotificationSchema,
+  unlinkProviderSchema,
 } from './auth.schema';
 
 const router = Router();
@@ -440,5 +444,70 @@ router.post('/verify-email-otp',    authenticate, validate(verifyEmailOtpSchema)
 
 router.post('/google',              validate(googleAuthSchema),          ctrl.googleAuth.bind(ctrl));
 router.post('/facebook',            validate(facebookAuthSchema),        ctrl.facebookAuth.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/apple:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Sign in with Apple
+ *     description: >
+ *       Verifies an Apple identity token server-side and either authenticates the
+ *       existing Apple-linked user, creates a new account, asks for a role
+ *       (needsRole), or returns 409 ACCOUNT_LINKING_REQUIRED with a short-lived
+ *       appleLinkToken when the Apple email already belongs to another account.
+ *     responses:
+ *       200: { description: Authenticated or role selection required }
+ *       401: { description: Unable to authenticate with Apple }
+ *       409: { description: Account linking required }
+ */
+router.post('/apple',               validate(appleAuthSchema),           ctrl.appleAuth.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/apple/link:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Link a verified Apple identity to the authenticated account
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Apple account linked }
+ *       409: { description: Apple account already linked elsewhere }
+ */
+router.post('/apple/link',          authenticate, validate(appleLinkSchema), ctrl.appleLink.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/apple/notifications:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Apple server-to-server notification webhook (no auth — verified by JWT signature)
+ *     description: Handles email-disabled/enabled, consent-revoked and account-delete events. Idempotent.
+ *     responses:
+ *       200: { description: Notification received }
+ *       400: { description: Invalid notification signature/shape }
+ */
+router.post('/apple/notifications', validate(appleNotificationSchema), ctrl.appleNotifications.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/methods:
+ *   get:
+ *     tags: [Auth]
+ *     summary: List the current user's login methods (password + linked providers)
+ *     security: [{ bearerAuth: [] }]
+ */
+router.get('/methods',              authenticate, ctrl.getAuthMethods.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/methods/{provider}:
+ *   delete:
+ *     tags: [Auth]
+ *     summary: Disconnect a linked login provider (GOOGLE | APPLE | FACEBOOK)
+ *     description: Rejected with 409 LAST_LOGIN_METHOD if it would leave the account with no way to sign in.
+ *     security: [{ bearerAuth: [] }]
+ */
+router.delete('/methods/:provider', authenticate, validate(unlinkProviderSchema, 'params'), ctrl.unlinkProvider.bind(ctrl));
 
 export default router;

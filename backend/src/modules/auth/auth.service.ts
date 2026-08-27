@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { Role } from '@prisma/client';
+import { AuthProvider, Prisma, Role } from '@prisma/client';
 import { AppError } from '../../middleware/error';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
@@ -10,7 +10,10 @@ import {
   verifyRefreshToken,
   signPasswordResetToken,
   verifyPasswordResetToken,
+  signAppleLinkToken,
+  verifyAppleLinkToken,
 } from '../../utils/jwt';
+import { verifyAppleIdentityToken, exchangeAppleAuthCode, revokeAppleToken, verifyAppleNotification } from '../../utils/apple';
 import { sendPasswordResetOtpEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
 import { AuthRepository } from './auth.repository';
 import { AdminRepository } from '../admin/admin.repository';
@@ -36,6 +39,10 @@ import type {
   VerifyEmailOtpInput,
   GoogleAuthInput,
   FacebookAuthInput,
+  AppleAuthInput,
+  AppleLinkInput,
+  UnlinkProviderInput,
+  AppleNotificationInput,
 } from './auth.schema';
 
 type Channel = 'email' | 'phone';
@@ -337,6 +344,15 @@ export class AuthService {
   async deleteAccount(userId: string) {
     const user = await this.repo.findUserById(userId);
     if (!user) throw new AppError('User not found', 404);
+
+    // Sever the Apple ↔ Kolab link so that Apple ID can't sign back into the
+    // deleted account (App Store requirement, spec §26). Best-effort — never
+    // blocks the deletion. The AuthAccount row itself goes with the cascade.
+    const appleAccount = await this.repo.findUserAuthAccount(userId, AuthProvider.APPLE);
+    if (appleAccount?.refreshToken) {
+      await revokeAppleToken(appleAccount.refreshToken, 'refresh_token');
+    }
+
     await this.repo.deleteAccount(userId);
 
     notificationService.createForAdmins({
@@ -455,6 +471,18 @@ export class AuthService {
     return { message: 'Email verified successfully' };
   }
 
+  // Records the provider identity for a social sign-in without ever failing the
+  // sign-in itself — the pre-existing Google/Facebook flows matched purely on
+  // email and never stored the provider id, so this backfills the AuthAccount
+  // row lazily as those users sign in again.
+  private async recordProviderAccount(userId: string, provider: AuthProvider, providerUserId: string, email?: string | null) {
+    try {
+      await this.repo.upsertAuthAccount({ userId, provider, providerUserId, email });
+    } catch (err) {
+      logger.warn({ err, userId, provider }, 'Failed to record provider auth account (non-fatal)');
+    }
+  }
+
   async googleAuth(input: GoogleAuthInput) {
     const googleRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${input.accessToken}` },
@@ -474,6 +502,7 @@ export class AuthService {
         await this.repo.reactivateAccount(existing.id);
       }
       const user = await this.repo.findUserById(existing.id);
+      await this.recordProviderAccount(user!.id, AuthProvider.GOOGLE, gUser.id, gUser.email);
       const payload = { id: user!.id, email: user!.email, role: user!.role };
       const accessToken  = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
@@ -502,6 +531,8 @@ export class AuthService {
 
     // Google has already verified the email — mark it verified without OTP
     const verifiedUser = await this.repo.verifyEmail(createdUser.id);
+    await this.repo.setHasPassword(verifiedUser.id, false);
+    await this.recordProviderAccount(verifiedUser.id, AuthProvider.GOOGLE, gUser.id, gUser.email);
 
     const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
     const accessToken  = signAccessToken(payload);
@@ -530,6 +561,7 @@ export class AuthService {
         await this.repo.reactivateAccount(existing.id);
       }
       const user = await this.repo.findUserById(existing.id);
+      await this.recordProviderAccount(user!.id, AuthProvider.FACEBOOK, fbUser.id, fbUser.email);
       const payload = { id: user!.id, email: user!.email, role: user!.role };
       const accessToken  = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
@@ -557,6 +589,8 @@ export class AuthService {
     }
 
     const verifiedUser = await this.repo.verifyEmail(createdUser.id);
+    await this.repo.setHasPassword(verifiedUser.id, false);
+    await this.recordProviderAccount(verifiedUser.id, AuthProvider.FACEBOOK, fbUser.id, fbUser.email);
 
     const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
     const accessToken  = signAccessToken(payload);
@@ -564,6 +598,264 @@ export class AuthService {
     await this.repo.createSession(verifiedUser.id, refreshToken);
 
     return { needsRole: false as const, user: toUserDto(verifiedUser), accessToken, refreshToken, isNewUser: true };
+  }
+
+  // ── Sign in with Apple ─────────────────────────────────────────────────────
+  //
+  // Unlike Google/Facebook above, Apple identity is keyed on the verified `sub`
+  // in an AuthAccount row — never on email (which can be a throwaway private
+  // relay alias, and may already belong to a different Kolab account).
+
+  async appleAuth(input: AppleAuthInput) {
+    const { sub, email: tokenEmail } = await verifyAppleIdentityToken(input.identityToken);
+
+    // Apple only returns the name on the very first authorization — keep it if we got it.
+    const nameFromClient = [input.fullName?.givenName, input.fullName?.familyName]
+      .filter(Boolean).join(' ').trim() || undefined;
+
+    // 1. Known Apple identity → straight in.
+    const linked = await this.repo.findAuthAccount(AuthProvider.APPLE, sub);
+    if (linked) {
+      const user = linked.user;
+      if (!user.isActive) {
+        if (user.suspendedAt) {
+          throw new AppError('Your account has been suspended. Please contact admin support.', 403);
+        }
+        await this.repo.reactivateAccount(user.id);
+      }
+      const fresh = await this.repo.findUserById(user.id);
+      const payload = { id: fresh!.id, email: fresh!.email, role: fresh!.role };
+      const accessToken  = signAccessToken(payload);
+      const refreshToken = signRefreshToken(payload);
+      await this.repo.createSession(fresh!.id, refreshToken);
+      logger.info({ userId: fresh!.id }, 'Apple authentication successful (existing)');
+      return { needsRole: false as const, user: toUserDto(fresh!), accessToken, refreshToken, isNewUser: false };
+    }
+
+    // 2. New Apple identity. Prefer the email Apple signed into the token; fall
+    //    back to the client-supplied one only when the token carried none.
+    const resolvedEmail = (tokenEmail ?? (typeof input.email === 'string' ? input.email.toLowerCase() : undefined))?.trim() || undefined;
+
+    // 2a. Email already belongs to a Kolab account → never merge silently.
+    //     Hand back a short-lived link token; the client makes the user sign in
+    //     with their existing method, then calls /apple/link (spec §14–16).
+    if (resolvedEmail) {
+      const emailOwner = await this.repo.findUserByEmail(resolvedEmail);
+      if (emailOwner) {
+        logger.info({ userId: emailOwner.id }, 'Apple sign-in requires account linking');
+        throw new AppError(
+          'This Apple account needs to be linked to an existing Kolab account.',
+          409,
+          true,
+          { code: 'ACCOUNT_LINKING_REQUIRED', appleLinkToken: signAppleLinkToken({ sub, email: resolvedEmail, name: nameFromClient }) },
+        );
+      }
+    }
+
+    // 2b. Genuinely new user, but no role picked yet → let the client ask.
+    if (!input.role) {
+      return {
+        needsRole: true as const,
+        email: resolvedEmail ?? '',
+        name: nameFromClient ?? (resolvedEmail ? resolvedEmail.split('@')[0] : ''),
+      };
+    }
+
+    // 2c. Create the account. Apple gives no usable email only in rare re-auth
+    //     edge cases; without one we can't seed the required unique User.email.
+    if (!resolvedEmail) {
+      logger.warn({ sub: sub.slice(0, 6) }, 'Apple first sign-in returned no email');
+      throw new AppError('Unable to authenticate with Apple. Please try again.', 400);
+    }
+
+    await this.assertRegistrationEnabled(input.role);
+    const hashedPassword = await hashPassword(crypto.randomBytes(32).toString('hex'));
+
+    // Exchange the one-time auth code for a refresh token now — it's the only
+    // handle Apple's revoke endpoint accepts on account deletion. Best-effort.
+    const { refreshToken: appleRefreshToken } = input.authorizationCode
+      ? await exchangeAppleAuthCode(input.authorizationCode)
+      : {};
+
+    try {
+      const user = await this.repo.createUserWithProfileAndAppleAccount({
+        email: resolvedEmail,
+        password: hashedPassword,
+        role: input.role === 'CREATOR' ? Role.CREATOR : Role.BUSINESS,
+        sub,
+        providerEmail: resolvedEmail,
+        providerRefreshToken: appleRefreshToken ?? null,
+        fullName: input.role === 'CREATOR' ? nameFromClient : undefined,
+        businessName: input.role === 'BUSINESS' ? nameFromClient : undefined,
+      });
+      const payload = { id: user!.id, email: user!.email, role: user!.role };
+      const accessToken  = signAccessToken(payload);
+      const refreshToken = signRefreshToken(payload);
+      await this.repo.createSession(user!.id, refreshToken);
+      logger.info({ userId: user!.id }, 'Apple account created');
+      return { needsRole: false as const, user: toUserDto(user!), accessToken, refreshToken, isNewUser: true };
+    } catch (err) {
+      // Race: a concurrent first sign-in for the same sub won the unique
+      // constraint. Re-resolve and log that user in (spec §28).
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const raced = await this.repo.findAuthAccount(AuthProvider.APPLE, sub);
+        if (raced) {
+          const payload = { id: raced.user.id, email: raced.user.email, role: raced.user.role };
+          const accessToken  = signAccessToken(payload);
+          const refreshToken = signRefreshToken(payload);
+          await this.repo.createSession(raced.user.id, refreshToken);
+          return { needsRole: false as const, user: toUserDto(raced.user), accessToken, refreshToken, isNewUser: false };
+        }
+      }
+      throw err;
+    }
+  }
+
+  // Attach a verified Apple identity to the already-authenticated user. The
+  // route's auth middleware IS the proof of ownership of the existing account —
+  // email similarity alone never grants this (spec §16).
+  async appleLink(userId: string, input: AppleLinkInput) {
+    // The identity comes from one of two places: the short-lived link token the
+    // /apple endpoint minted during the sign-in linking flow, or a fresh
+    // identityToken from a "Connect Apple" tap in Settings.
+    let sub: string;
+    let email: string | undefined;
+    if (input.appleLinkToken) {
+      try {
+        const decoded = verifyAppleLinkToken(input.appleLinkToken);
+        sub = decoded.sub;
+        email = decoded.email;
+      } catch {
+        throw new AppError('This Apple link request has expired. Please try again.', 400);
+      }
+    } else {
+      const verified = await verifyAppleIdentityToken(input.identityToken!);
+      sub = verified.sub;
+      email = verified.email;
+    }
+
+    const already = await this.repo.findAuthAccount(AuthProvider.APPLE, sub);
+    if (already) {
+      if (already.userId === userId) {
+        return { user: toUserDto((await this.repo.findUserById(userId))!) };
+      }
+      throw new AppError('This Apple account is already linked to a different Kolab account.', 409);
+    }
+
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+
+    // Settings "Connect Apple" also passes the auth code → exchange it now so a
+    // later account deletion can revoke the Apple link. Best-effort.
+    const { refreshToken: appleRefreshToken } = input.authorizationCode
+      ? await exchangeAppleAuthCode(input.authorizationCode)
+      : {};
+
+    try {
+      await this.repo.createAuthAccount({
+        userId,
+        provider: AuthProvider.APPLE,
+        providerUserId: sub,
+        email: email ?? null,
+        refreshToken: appleRefreshToken ?? null,
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new AppError('This Apple account is already linked to a Kolab account.', 409);
+      }
+      throw err;
+    }
+
+    logAudit({ userId, action: AuditAction.APPLE_ACCOUNT_LINKED, performedBy: userId });
+    logger.info({ userId }, 'Apple account linked');
+    return { user: toUserDto(user) };
+  }
+
+  // Apple's server-to-server webhook. Every branch is idempotent (deleteMany /
+  // plain logging) so Apple's retries are harmless — no event-dedupe table
+  // needed. Never throws for a recognised-but-unhandled event: returning 2xx
+  // stops Apple re-sending.
+  async handleAppleNotification(input: AppleNotificationInput) {
+    const evt = await verifyAppleNotification(input.payload);
+    const account = await this.repo.findAuthAccount(AuthProvider.APPLE, evt.sub);
+
+    switch (evt.type) {
+      case 'account-delete':
+      case 'consent-revoked': {
+        // The user pulled the plug on Apple's side — sever the link so that
+        // Apple ID can't sign back in. We do NOT delete the Kolab user: they
+        // may still have a password / phone / Google.
+        if (account) {
+          await this.repo.deleteAuthAccountByProviderUserId(AuthProvider.APPLE, evt.sub);
+          logAudit({ userId: account.userId, action: AuditAction.APPLE_ACCOUNT_UNLINKED, performedBy: account.userId });
+          logger.info({ userId: account.userId, type: evt.type }, 'Apple link removed via S2S notification');
+        }
+        break;
+      }
+      case 'email-disabled':
+      case 'email-enabled': {
+        // Hide My Email forwarding toggled. Informational for now — wiring this
+        // into transactional-email suppression is a follow-up.
+        logger.info({ userId: account?.userId, type: evt.type }, 'Apple email-forwarding notification');
+        break;
+      }
+      default: {
+        logger.warn({ type: evt.type }, 'Unhandled Apple S2S notification type');
+      }
+    }
+
+    return { received: true };
+  }
+
+  // ── Manage login methods (Settings → Security) ─────────────────────────────
+
+  async getAuthMethods(userId: string) {
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+    const accounts = await this.repo.listAuthAccounts(userId);
+    return {
+      hasPassword: user.hasPassword,
+      email: user.email,
+      phone: user.phone,
+      providers: accounts.map((a) => ({
+        provider: a.provider,
+        email: a.email,
+        linkedAt: a.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  async unlinkProvider(userId: string, input: UnlinkProviderInput) {
+    const provider = input.provider as AuthProvider;
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+
+    const accounts = await this.repo.listAuthAccounts(userId);
+    const target = accounts.find((a) => a.provider === provider);
+    if (!target) throw new AppError('That login method is not connected to your account.', 404);
+
+    // Never leave the account with no way back in (spec §25). A usable method is
+    // a real password or any OTHER linked provider.
+    const remaining = (user.hasPassword ? 1 : 0) + accounts.filter((a) => a.provider !== provider).length;
+    if (remaining === 0) {
+      throw new AppError(
+        'Add a password or another login method before disconnecting this one.',
+        409,
+        true,
+        { code: 'LAST_LOGIN_METHOD' },
+      );
+    }
+
+    // Best-effort Apple-side revoke so the disconnected Apple ID can't silently
+    // stay authorized (spec §25/§26).
+    if (provider === AuthProvider.APPLE) {
+      const account = await this.repo.findUserAuthAccount(userId, AuthProvider.APPLE);
+      if (account?.refreshToken) await revokeAppleToken(account.refreshToken, 'refresh_token');
+    }
+
+    await this.repo.deleteAuthAccount(userId, provider);
+    logger.info({ userId, provider }, 'Login method unlinked');
+    return this.getAuthMethods(userId);
   }
 
   async resetPassword(input: ResetPasswordInput) {
@@ -579,6 +871,9 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(input.newPassword);
     await this.repo.updatePassword(user.id, hashedPassword);
+    // A social-only account that just set a real password now has a
+    // password login method.
+    if (!user.hasPassword) await this.repo.setHasPassword(user.id, true);
     await this.repo.deleteAllSessions(user.id);
 
     logAudit({ userId: user.id, action: AuditAction.PASSWORD_RESET, performedBy: user.id });

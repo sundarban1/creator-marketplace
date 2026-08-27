@@ -29,13 +29,6 @@ const textKf = new Keyframe({
   100: { opacity: 1, transform: [{ translateY: 0 }] },
 });
 
-const dotsKf = new Keyframe({
-  0: { opacity: 0 },
-  55: { opacity: 0 },
-  80: { opacity: 1 },
-  100: { opacity: 1 },
-});
-
 export function SplashScreen() {
   const { t } = useLanguage();
   const [visible, setVisible] = useState(true);
@@ -65,13 +58,6 @@ export function SplashScreen() {
       {/* Text */}
       <Animated.View entering={textKf.duration(TOTAL)} style={styles.textBlock}>
         <Text style={styles.tagline}>{t('splash.tagline')}</Text>
-      </Animated.View>
-
-      {/* Dots */}
-      <Animated.View entering={dotsKf.duration(TOTAL)} style={styles.dotsRow}>
-        <View style={[styles.dot, styles.dotSm]} />
-        <View style={styles.dot} />
-        <View style={[styles.dot, styles.dotSm]} />
       </Animated.View>
     </Animated.View>
   );
@@ -147,24 +133,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: 'rgba(255,255,255,0.72)',
     letterSpacing: 0.2,
-  },
-  dotsRow: {
-    position: 'absolute',
-    bottom: 64,
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-  },
-  dotSm: {
-    width: 6,
-    height: 6,
-    borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(255,255,255,0.5)',
   },
 });

@@ -112,6 +112,55 @@ export const facebookAuthSchema = z.object({
   role: z.enum(['CREATOR', 'BUSINESS']).optional(),
 });
 
+// Sign in with Apple. Only `identityToken` is trusted — it's verified against
+// Apple's JWKS server-side. `fullName` / `email` are whatever the Apple SDK
+// handed the client on the FIRST authorization and are supplemental only (used
+// to seed the profile when the verified token carries no email of its own).
+export const appleAuthSchema = z.object({
+  identityToken: z.string().min(1, 'Apple identity token is required'),
+  authorizationCode: z.string().min(1).optional(),
+  fullName: z
+    .object({
+      givenName: z.string().nullish(),
+      familyName: z.string().nullish(),
+    })
+    .nullish(),
+  email: z.string().nullish(),
+  role: z.enum(['CREATOR', 'BUSINESS']).optional(),
+});
+
+// Attaches a verified Apple identity to the *currently authenticated* user — the
+// auth middleware on the route is the proof of ownership of the existing
+// account. Either source of the identity is accepted: the short-lived
+// `appleLinkToken` the /apple endpoint issues during the sign-in linking flow,
+// or a fresh `identityToken` from a "Connect Apple" action in Settings.
+export const appleLinkSchema = z
+  .object({
+    appleLinkToken:    z.string().min(1).optional(),
+    identityToken:     z.string().min(1).optional(),
+    // Only meaningful alongside identityToken (the Settings "Connect Apple"
+    // path) — exchanged server-side for a refresh token used to revoke later.
+    authorizationCode: z.string().min(1).optional(),
+  })
+  .refine((d) => Boolean(d.appleLinkToken) !== Boolean(d.identityToken), {
+    message: 'Provide exactly one of appleLinkToken or identityToken',
+    path: ['identityToken'],
+  });
+
+// Apple's server-to-server webhook body — a single signed JWT.
+export const appleNotificationSchema = z.object({
+  payload: z.string().min(1),
+});
+
+// Which login methods a user can unlink from Settings. `provider` arrives as a
+// URL path segment, so tolerate any casing.
+export const unlinkProviderSchema = z.object({
+  provider: z
+    .string()
+    .transform((s) => s.toUpperCase())
+    .pipe(z.enum(['GOOGLE', 'APPLE', 'FACEBOOK'])),
+});
+
 export type RegisterInput         = z.infer<typeof registerSchema>;
 export type LoginInput            = z.infer<typeof loginSchema>;
 export type RefreshTokenInput     = z.infer<typeof refreshTokenSchema>;
@@ -126,3 +175,7 @@ export type RequestEmailOtpInput  = z.infer<typeof requestEmailOtpSchema>;
 export type VerifyEmailOtpInput   = z.infer<typeof verifyEmailOtpSchema>;
 export type GoogleAuthInput       = z.infer<typeof googleAuthSchema>;
 export type FacebookAuthInput     = z.infer<typeof facebookAuthSchema>;
+export type AppleAuthInput        = z.infer<typeof appleAuthSchema>;
+export type AppleLinkInput        = z.infer<typeof appleLinkSchema>;
+export type UnlinkProviderInput   = z.infer<typeof unlinkProviderSchema>;
+export type AppleNotificationInput = z.infer<typeof appleNotificationSchema>;

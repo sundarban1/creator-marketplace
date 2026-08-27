@@ -17,11 +17,16 @@ export class OfflineError extends Error {
 export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
-  constructor(message: string, status: number, code?: string) {
+  // The rest of the error envelope (AppError's `data` fields are spread onto it
+  // server-side) — e.g. Sign in with Apple's ACCOUNT_LINKING_REQUIRED carries an
+  // `appleLinkToken` here alongside `code`.
+  readonly details?: Record<string, unknown>;
+  constructor(message: string, status: number, code?: string, details?: Record<string, unknown>) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -387,7 +392,12 @@ export async function request<T>(
 
   if (!res.ok) {
     const fieldErrors = json.errors?.map((e) => e.message).join('. ');
-    throw new ApiError(fieldErrors ?? json.message ?? `Request failed (${res.status})`, res.status, json.code);
+    throw new ApiError(
+      fieldErrors ?? json.message ?? `Request failed (${res.status})`,
+      res.status,
+      json.code,
+      json as unknown as Record<string, unknown>,
+    );
   }
 
   return json;

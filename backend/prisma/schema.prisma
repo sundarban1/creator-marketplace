@@ -29,6 +29,10 @@ model User {
   // trigger (see AuthService.login); not a lockout by itself.
   failedLoginCount          Int               @default(0)
   lastFailedLoginAt         DateTime?
+  // False for accounts created purely through a social provider (Apple/Google) —
+  // they hold a random unusable password. Flips true once the user sets one via
+  // password reset. Drives the "don't unlink your only login method" guard.
+  hasPassword               Boolean           @default(true)
   deviceId                  String?
   // Updated on socket connect/disconnect — drives the chat "Active now" / "Active Xm ago" status.
   lastSeenAt                DateTime?
@@ -53,9 +57,51 @@ model User {
   sessions                  Session[]
   pushTokens                PushToken[]
   reportsFiled              Report[]          @relation("ReportsFiled")
+  authAccounts              AuthAccount[]
 
   @@index([role])
   @@map("users")
+}
+
+// One row per external identity a user can authenticate with (Apple, Google,
+// Facebook). Email/password stays on `User` itself — this table is for
+// provider-issued identities where the stable id (not the email) is canonical.
+//
+// Apple in particular: Apple's `sub` is the identity, the email can be a
+// throwaway `@privaterelay.appleid.com` alias, and the same email may already
+// belong to a phone/password account — so we never merge on email, we match on
+// (provider, providerUserId).
+enum AuthProvider {
+  PHONE
+  GOOGLE
+  APPLE
+  FACEBOOK
+}
+
+model AuthAccount {
+  id             String       @id @default(cuid())
+  userId         String
+  provider       AuthProvider
+  // Apple `sub`, Google `id`, Facebook `id` — the provider's own stable user id.
+  providerUserId String
+  // Best-effort: whatever email the provider handed us when the link was made
+  // (may be a private-relay alias, may be null). Never used for lookup.
+  email          String?
+  // Apple's OAuth refresh token from the sign-in authorization-code exchange —
+  // the only handle Apple's /auth/revoke endpoint accepts, so it's needed to
+  // sever the Apple ↔ Kolab link on account deletion (App Store requirement).
+  // Plaintext like SocialAccount.refreshToken; never exposed in any DTO.
+  refreshToken   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // The one hard guarantee: a given provider identity maps to exactly one Kolab
+  // user, and is the race-condition backstop for concurrent first sign-ins.
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("auth_accounts")
 }
 
 // One row per logged-in device — replaces the old single `User.refreshToken`
@@ -398,20 +444,20 @@ model AvailabilitySchedule {
 // PAID, which is the only point the wallet is permanently debited (see
 // WalletTransaction). REJECTED/CANCELLED release the reservation.
 model Withdrawal {
-  id        String           @id @default(cuid())
-  creatorId String
-  amount    Float
+  id            String           @id @default(cuid())
+  creatorId     String
+  amount        Float
   // Human-readable request reference (e.g. "WD-A7K2QP9M"), auto-generated the
   // moment the creator submits. Distinct from `transactionReference` below,
   // which is the external bank/wallet transfer id an admin records only at
   // "Mark as Paid". This is the shared handle the creator, an admin and support
   // all use to talk about one request.
-  referenceCode String        @unique
+  referenceCode String           @unique
   // Denormalised payout channel — 'BANK' | 'ESEWA' | 'KHALTI' (PayoutMethodType).
   // Kept as a plain string for cheap filtering/display; the structured account
   // details live on the linked PayoutMethod and are snapshotted below.
-  method    String
-  status    WithdrawalStatus @default(PENDING)
+  method        String
+  status        WithdrawalStatus @default(PENDING)
 
   payoutMethodId String?
   payoutMethod   PayoutMethod? @relation(fields: [payoutMethodId], references: [id], onDelete: SetNull)

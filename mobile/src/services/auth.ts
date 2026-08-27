@@ -1,11 +1,20 @@
 import { request, API_BASE }                              from '@/lib/api';
 import { storage }                                        from '@/utilities/storage';
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY } from '@/utilities/constants';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY, APPLE_USER_ID_KEY } from '@/utilities/constants';
 import type { ApiLoginResponse }                          from '@/lib/api';
 import type { User }                                      from '@/types';
 
 // Every identifier-based call takes exactly one of `email` or `phone` — never both.
 export type Identifier = { email: string; phone?: never } | { phone: string; email?: never };
+
+export type AuthProviderName = 'GOOGLE' | 'APPLE' | 'FACEBOOK';
+
+export type AuthMethods = {
+  hasPassword: boolean;
+  email: string;
+  phone: string | null;
+  providers: { provider: AuthProviderName; email: string | null; linkedAt: string }[];
+};
 
 function toUser(apiUser: ApiLoginResponse['user']): User {
   return {
@@ -106,7 +115,7 @@ export const authService = {
   },
 
   async getStoredUser(): Promise<User | null> {
-    await storage.hydrate([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY]);
+    await storage.hydrate([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY, APPLE_USER_ID_KEY]);
     return storage.getJSON<User>(USER_KEY);
   },
 
@@ -162,6 +171,73 @@ export const authService = {
     const user = toUser(apiUser);
     await storage.setJSON(USER_KEY, user);
     return { needsRole: false, user };
+  },
+
+  async appleAuth(payload: {
+    identityToken: string;
+    authorizationCode?: string;
+    fullName?: { givenName?: string | null; familyName?: string | null } | null;
+    email?: string | null;
+    role?: 'CREATOR' | 'BUSINESS';
+    // Apple's stable user id — stored locally so the app can detect a later
+    // revocation from iOS Settings. Not sent to the backend.
+    appleUserId?: string;
+  }): Promise<{ needsRole: true; email: string; name: string } | { needsRole: false; user: User }> {
+    // A 409 ACCOUNT_LINKING_REQUIRED surfaces as an ApiError (carrying
+    // `appleLinkToken` in `.details`) — the caller catches and routes into the
+    // "sign in with your existing method, then link" flow.
+    const { appleUserId, ...body } = payload;
+    const res = await request<
+      | { needsRole: true; email: string; name: string }
+      | (ApiLoginResponse & { needsRole: false; isNewUser: boolean })
+    >('POST', '/api/auth/apple', body);
+
+    if (res.data.needsRole) {
+      return { needsRole: true, email: res.data.email, name: res.data.name };
+    }
+
+    const { accessToken, refreshToken, user: apiUser } = res.data as ApiLoginResponse & { needsRole: false };
+    await Promise.all([
+      storage.set(ACCESS_TOKEN_KEY,  accessToken),
+      storage.set(REFRESH_TOKEN_KEY, refreshToken),
+      appleUserId ? storage.set(APPLE_USER_ID_KEY, appleUserId) : Promise.resolve(),
+    ]);
+    const user = toUser(apiUser);
+    await storage.setJSON(USER_KEY, user);
+    return { needsRole: false, user };
+  },
+
+  // Attaches a verified Apple identity to the account the caller is already
+  // signed into. Two entry points: `appleLinkToken` from the sign-in linking
+  // flow, or a fresh `identityToken` from "Connect Apple" in Settings.
+  async appleLink(payload: ({ appleLinkToken: string } | { identityToken: string }) & { authorizationCode?: string; appleUserId?: string }): Promise<User> {
+    const { appleUserId, ...body } = payload;
+    const res = await request<{ user: ApiLoginResponse['user'] }>('POST', '/api/auth/apple/link', body);
+    const user = toUser(res.data.user);
+    await storage.setJSON(USER_KEY, user);
+    if (appleUserId) await storage.set(APPLE_USER_ID_KEY, appleUserId);
+    return user;
+  },
+
+  // ── Login methods (Settings → Security) ─────────────────────────────────────
+
+  async getAuthMethods(): Promise<AuthMethods> {
+    const res = await request<AuthMethods>('GET', '/api/auth/methods');
+    return res.data;
+  },
+
+  async unlinkAuthProvider(provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK'): Promise<AuthMethods> {
+    const res = await request<AuthMethods>('DELETE', `/api/auth/methods/${provider}`);
+    if (provider === 'APPLE') await storage.remove(APPLE_USER_ID_KEY).catch(() => {});
+    return res.data;
+  },
+
+  // Called by the Apple credential watcher when iOS reports the Sign in with
+  // Apple grant was revoked from Settings — best-effort backend unlink; the
+  // local session teardown is the watcher's job.
+  async notifyAppleRevoked(): Promise<void> {
+    await request('DELETE', '/api/auth/methods/APPLE').catch(() => {});
+    await storage.remove(APPLE_USER_ID_KEY).catch(() => {});
   },
 
   // ── Add & verify a phone number on the logged-in account ─────────────────────
@@ -221,9 +297,13 @@ export const authService = {
       // ignore — server-side invalidation is best-effort
     }
     await Promise.all(
-      [ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY].map((k) =>
+      [ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, APPLE_USER_ID_KEY].map((k) =>
         storage.remove(k).catch(() => {})
       )
     );
+  },
+
+  getStoredAppleUserId(): string | null {
+    return storage.get(APPLE_USER_ID_KEY) ?? null;
   },
 };

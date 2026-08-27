@@ -31,6 +31,7 @@ import { GlobalUploadBanner } from '@/components/GlobalUploadBanner';
 import { ToastProvider } from '@/components/Toast';
 import { syncBiometricLoginWithDevice } from '@/services/biometric';
 import { authService } from '@/services/auth';
+import { useAppleCredentialWatch } from '@/hooks/useAppleCredentialWatch';
 import { initBackgroundVideoUploadManager } from '@/services/backgroundVideoUploadManager';
 import { initSentry } from '@/utilities/sentry';
 import { isVersionBelowMinimum } from '@/utilities/versionCheck';
@@ -109,6 +110,9 @@ function RootNavigator() {
   const segments = useSegments();
   const router = useRouter();
   const C = useAppColors();
+
+  // Reacts if the user revokes Sign in with Apple from iOS Settings.
+  useAppleCredentialWatch();
 
   function onboardingEnabledFor(role: UserRole): boolean {
     return role === 'CREATOR' ? flags.creatorOnboardingEnabled : flags.businessOnboardingEnabled;

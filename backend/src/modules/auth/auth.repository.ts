@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { AuthProvider, Role } from '@prisma/client';
 import prisma from '../../prisma';
 
 const profileSelect = {
@@ -59,6 +59,128 @@ export class AuthRepository {
 
   async createSession(userId: string, refreshToken: string, deviceId?: string) {
     return prisma.session.create({ data: { userId, refreshToken, deviceId } });
+  }
+
+  // ── Provider identities (Apple / Google / Facebook) ─────────────────────────
+
+  async listAuthAccounts(userId: string) {
+    return prisma.authAccount.findMany({
+      where: { userId },
+      select: { provider: true, email: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async deleteAuthAccount(userId: string, provider: AuthProvider) {
+    return prisma.authAccount.deleteMany({ where: { userId, provider } });
+  }
+
+  // By provider identity rather than userId — used by the Apple S2S webhook,
+  // which only knows the `sub`. deleteMany keeps it idempotent under retries.
+  async deleteAuthAccountByProviderUserId(provider: AuthProvider, providerUserId: string) {
+    return prisma.authAccount.deleteMany({ where: { provider, providerUserId } });
+  }
+
+  // Includes `refreshToken` (unlike listAuthAccounts) — used only where a
+  // provider-side revoke needs it (account deletion, unlink).
+  async findUserAuthAccount(userId: string, provider: AuthProvider) {
+    return prisma.authAccount.findFirst({ where: { userId, provider } });
+  }
+
+  async setAuthAccountRefreshToken(userId: string, provider: AuthProvider, refreshToken: string | null) {
+    return prisma.authAccount.updateMany({ where: { userId, provider }, data: { refreshToken } });
+  }
+
+  async setHasPassword(userId: string, hasPassword: boolean) {
+    return prisma.user.update({ where: { id: userId }, data: { hasPassword } });
+  }
+
+  async findAuthAccount(provider: AuthProvider, providerUserId: string) {
+    return prisma.authAccount.findUnique({
+      where: { provider_providerUserId: { provider, providerUserId } },
+      include: { user: { include: profileSelect } },
+    });
+  }
+
+  async createAuthAccount(data: {
+    userId: string;
+    provider: AuthProvider;
+    providerUserId: string;
+    email?: string | null;
+    refreshToken?: string | null;
+  }) {
+    return prisma.authAccount.create({
+      data: {
+        userId: data.userId,
+        provider: data.provider,
+        providerUserId: data.providerUserId,
+        email: data.email ?? null,
+        refreshToken: data.refreshToken ?? null,
+      },
+    });
+  }
+
+  // Best-effort convergence for the pre-existing Google/Facebook flows, which
+  // historically matched purely on email and never recorded the provider id.
+  // Called after a successful social sign-in so the row exists going forward;
+  // never throws into the sign-in path.
+  async upsertAuthAccount(data: {
+    userId: string;
+    provider: AuthProvider;
+    providerUserId: string;
+    email?: string | null;
+  }) {
+    return prisma.authAccount.upsert({
+      where: { provider_providerUserId: { provider: data.provider, providerUserId: data.providerUserId } },
+      create: {
+        userId: data.userId,
+        provider: data.provider,
+        providerUserId: data.providerUserId,
+        email: data.email ?? null,
+      },
+      update: { email: data.email ?? null },
+    });
+  }
+
+  // Creates the User (+ role profile) and its Apple AuthAccount in one
+  // transaction — never leaves a user without the provider row that identifies
+  // how they signed up (spec §29). Email is marked verified: Apple verified it.
+  async createUserWithProfileAndAppleAccount(data: {
+    email: string;
+    password: string;
+    role: Role;
+    sub: string;
+    providerEmail?: string | null;
+    providerRefreshToken?: string | null;
+    fullName?: string | null;
+    businessName?: string | null;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          isEmailVerified: true,
+          // Random unusable password — this is a social-only account until the
+          // user runs a password reset.
+          hasPassword: false,
+          ...(data.role === Role.CREATOR
+            ? { creatorProfile: { create: { fullName: data.fullName ?? null } } }
+            : { businessProfile: { create: { businessName: data.businessName ?? null } } }),
+        },
+      });
+      await tx.authAccount.create({
+        data: {
+          userId: created.id,
+          provider: AuthProvider.APPLE,
+          providerUserId: data.sub,
+          email: data.providerEmail ?? null,
+          refreshToken: data.providerRefreshToken ?? null,
+        },
+      });
+      return tx.user.findUnique({ where: { id: created.id }, include: profileSelect });
+    });
   }
 
   async findSessionByRefreshToken(refreshToken: string) {

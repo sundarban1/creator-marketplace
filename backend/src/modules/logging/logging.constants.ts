@@ -31,6 +31,8 @@ export const AuditAction = {
   PASSWORD_RESET:           'password.reset',
   PHONE_CHANGED:            'phone.changed',
   EMAIL_CHANGED:            'email.changed',
+  APPLE_ACCOUNT_LINKED:     'apple.account_linked',
+  APPLE_ACCOUNT_UNLINKED:   'apple.account_unlinked',
   VERIFICATION_APPROVED:    'verification.approved',
   VERIFICATION_REJECTED:    'verification.rejected',
   ACCOUNT_SUSPENDED:        'account.suspended',

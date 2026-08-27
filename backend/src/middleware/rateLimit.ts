@@ -126,6 +126,10 @@ export function applyRateLimits(app: Express): void {
   app.use('/api/auth/forgot-password', authLimiter);
   app.use('/api/auth/verify-otp',      otpLimiter);
   app.use('/api/auth/resend-otp',      otpLimiter);
+  // Social sign-in endpoints — same brute-force surface as password login.
+  app.use('/api/auth/google',          authLimiter);
+  app.use('/api/auth/facebook',        authLimiter);
+  app.use('/api/auth/apple',           authLimiter);
 
   // Upload endpoints
   app.use('/api/creator/avatar',          uploadLimiter);

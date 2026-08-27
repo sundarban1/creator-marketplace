@@ -88,6 +88,15 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_ANDROID_CLIENT_ID: z.string().optional(),
   GOOGLE_IOS_CLIENT_ID: z.string().optional(),
+  // Sign in with Apple. APPLE_CLIENT_ID is the iOS Bundle ID (com.sundarban.kolab)
+  // and is the `aud` the identity token is verified against — sign-in fails
+  // outright without it. TEAM_ID / KEY_ID / PRIVATE_KEY (the .p8 contents, with
+  // literal \n) are only needed for the server-side client-secret JWT used by
+  // token revocation and server-to-server notifications — not wired up yet.
+  APPLE_CLIENT_ID: z.string().optional(),
+  APPLE_TEAM_ID: z.string().optional(),
+  APPLE_KEY_ID: z.string().optional(),
+  APPLE_PRIVATE_KEY: z.string().optional(),
   // Custom URL scheme the TikTok/Instagram callbacks redirect back into on mobile (see app.json "scheme")
   APP_SCHEME: z.string().default('kolab'),
   // Khalti ePayment (KPG-2) — business pays to start a paid application (see
