@@ -968,7 +968,7 @@ const en = {
       statusPaused: '⏸ Paused',
  statusClosed: 'Closed',
       statusExpired: 'Expired',
-      badgeFree: 'Free',
+      badgeFree: 'Open',
       badgePaid: '$ Paid',
       proposalsLabel: 'Proposals',
       viewProposalsBtn: 'View {{n}} Proposal',

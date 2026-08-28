@@ -342,11 +342,13 @@ export default function BusinessHomeScreen() {
           {/* ── Primary CTA ── */}
           <Pressable onPress={() => router.push('/create-campaign')}>
             <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaCard}>
-              <Text style={styles.ctaTitle}>{t('business.home.heroCtaTitle')}</Text>
-              <View style={styles.ctaBtn}>
-                <FontAwesome5 name="clipboard-list" solid size={13} color={C.brinjal2} />
-                <Text style={[styles.ctaBtnText, { color: C.brinjal2 }]}>{t('business.home.heroCtaBtn')}</Text>
-                <FontAwesome5 name="plus" solid size={13} color={C.brinjal2} />
+              <View style={styles.ctaInner}>
+                <Text style={styles.ctaTitle}>{t('business.home.heroCtaTitle')}</Text>
+                <View style={styles.ctaBtn}>
+                  <FontAwesome5 name="clipboard-list" solid size={13} color={C.brinjal2} />
+                  <Text style={[styles.ctaBtnText, { color: C.brinjal2 }]}>{t('business.home.heroCtaBtn')}</Text>
+                  <FontAwesome5 name="plus" solid size={13} color={C.brinjal2} />
+                </View>
               </View>
             </LinearGradient>
           </Pressable>
@@ -707,13 +709,16 @@ const styles = StyleSheet.create({
   // single source of truth and adapts correctly in dark mode. Generous
   // padding (SPACING.xl) since this is the single most important action on
   // the screen — hero-level, not standard-card.
-  ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, alignItems: 'center', ...SHADOW.floating },
+  ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, alignItems: 'center', ...SHADOW.floating },
+  // Wrapper shrinks to the width of its widest child (the title), so the
+  // button below can stretch to exactly match the title's width.
+  ctaInner: { alignSelf: 'center', alignItems: 'stretch', gap: SPACING.lg },
   ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff', lineHeight: 26, textAlign: 'center' },
   ctaBtn: {
-    flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: SPACING.sm,
+    flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', gap: SPACING.sm,
     backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: 11,
   },
-  ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
+  ctaBtnText: { fontSize: FONT_SIZE.md, fontFamily: F.bold },
 
   // Section headers — margin-free (spacing supplied by the surrounding
   // block, e.g. an explicit marginTop override or the parent section's own

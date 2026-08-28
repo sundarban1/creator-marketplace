@@ -959,7 +959,7 @@ const ne = {
       statusPaused: '⏸ रोकिएको',
  statusClosed: 'बन्द',
       statusExpired: 'म्याद सकियो',
-      badgeFree: 'फ्री',
+      badgeFree: 'खुला',
       badgePaid: '$ पेड',
       proposalsLabel: 'प्रपोजल',
       viewProposalsBtn: '{{n}} प्रपोजल हेर्नुहोस्',
