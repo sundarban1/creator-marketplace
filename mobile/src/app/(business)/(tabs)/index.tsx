@@ -339,16 +339,9 @@ export default function BusinessHomeScreen() {
           {/* ── Primary CTA ── */}
           <Pressable onPress={() => router.push('/create-campaign')}>
             <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaCard}>
-              <View style={styles.ctaTop}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.ctaTitle}>{t('business.home.heroCtaTitle')}</Text>
-                  <Text style={styles.ctaSub}>{t('business.home.heroCtaSub')}</Text>
-                </View>
-                <View style={styles.ctaIconWrap}>
-                  <FontAwesome5 name="clipboard-list" solid size={22} color="#fff" />
-                </View>
-              </View>
+              <Text style={styles.ctaTitle}>{t('business.home.heroCtaTitle')}</Text>
               <View style={styles.ctaBtn}>
+                <FontAwesome5 name="clipboard-list" solid size={13} color={C.brinjal2} />
                 <Text style={[styles.ctaBtnText, { color: C.brinjal2 }]}>{t('business.home.heroCtaBtn')}</Text>
                 <FontAwesome5 name="plus" solid size={13} color={C.brinjal2} />
               </View>
@@ -711,13 +704,10 @@ const styles = StyleSheet.create({
   // single source of truth and adapts correctly in dark mode. Generous
   // padding (SPACING.xl) since this is the single most important action on
   // the screen — hero-level, not standard-card.
-  ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, ...SHADOW.floating },
-  ctaTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff', lineHeight: 26 },
-  ctaSub: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 20 },
-  ctaIconWrap: { width: 48, height: 48, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, alignItems: 'center', ...SHADOW.floating },
+  ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff', lineHeight: 26, textAlign: 'center' },
   ctaBtn: {
-    flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm,
+    flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: SPACING.sm,
     backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: 11,
   },
   ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
