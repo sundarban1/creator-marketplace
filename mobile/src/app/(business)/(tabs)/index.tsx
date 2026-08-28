@@ -645,6 +645,7 @@ export default function BusinessHomeScreen() {
               subtitleSuffix={suffix}
               onPress={() => router.push('/(business)/refer')}
               onDismiss={() => setReferralBannerDismissed(true)}
+              borderColor="business"
               style={{ marginHorizontal: 0, marginTop: SPACING.xxl }}
             />
           );

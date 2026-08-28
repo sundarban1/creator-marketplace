@@ -524,7 +524,6 @@ export default function CampaignsScreen() {
             return (
               <View style={[styles.cardWrap, numColumns === 2 && styles.cardWrapHalf]}>
               <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
                 <View style={styles.cardBody}>
                 <Pressable
                   style={({ pressed }) => [styles.cardContent, hasFooterActions && styles.cardContentTightFooter, pressed && { opacity: 0.92 }]}
@@ -859,11 +858,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
   },
-  cardAccent: { width: 4 },
-  // Column wrapper for everything right of the accent stripe — the tappable
-  // content (Pressable) plus the action buttons and proposals footer below
-  // it, kept out of `card`'s own row flexDirection so they stack vertically
-  // instead of sitting beside it.
+  // Column wrapper for the whole card — the tappable content (Pressable) plus
+  // the action buttons and proposals footer below it, kept out of `card`'s own
+  // row flexDirection so they stack vertically.
   cardBody: { flex: 1 },
   cardContent: { padding: SPACING.lg },
   cardContentTightFooter: { paddingBottom: SPACING.sm },

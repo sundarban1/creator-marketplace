@@ -13,7 +13,11 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 // visually distinct from both the purple/green brand and the amber
 // AttentionBanner so it never gets mistaken for either.
 const ACCENT = '#EC4899';
-const ACCENT_BG = '#FCE7F3';
+// Thin hairline around the whole card — sets the referral promo apart from the
+// borderless brand/attention banners on the same feed. Blue on the creator
+// home, green on the business home (see `borderColor` prop).
+const BORDER = '#3B82F6';
+const BORDER_BUSINESS = '#22C55E';
 
 type Props = {
   icon: IoniconName;
@@ -25,6 +29,9 @@ type Props = {
   subtitleSuffix: string;
   onPress: () => void;
   onDismiss: () => void;
+  // Hairline border color. Defaults to blue (creator home); pass `'business'`
+  // for the green variant on the business home.
+  borderColor?: 'blue' | 'business';
   // Horizontal/vertical inset — defaults to the app's shared screen gutter
   // and spacing so this lines up with everything else on the page without
   // the caller having to remember the value. Pass { marginHorizontal: 0,
@@ -33,12 +40,13 @@ type Props = {
   style?: { marginHorizontal?: number; marginTop?: number };
 };
 
-export function PromoBanner({ icon, title, subtitlePrefix, subtitleAmount, subtitleSuffix, onPress, onDismiss, style }: Props) {
+export function PromoBanner({ icon, title, subtitlePrefix, subtitleAmount, subtitleSuffix, onPress, onDismiss, borderColor, style }: Props) {
   const C = useAppColors();
   return (
     <Pressable
       style={[
         s.banner,
+        { borderColor: borderColor === 'business' ? BORDER_BUSINESS : BORDER },
         { backgroundColor: C.surface, marginHorizontal: style?.marginHorizontal ?? SCREEN_GUTTER, marginTop: style?.marginTop ?? SPACING.lg },
         SHADOW.card,
       ]}
@@ -64,9 +72,10 @@ export function PromoBanner({ icon, title, subtitlePrefix, subtitleAmount, subti
 const s = StyleSheet.create({
   banner: {
     flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg,
-    padding: SPACING.md, gap: SPACING.sm, borderLeftWidth: 4, borderLeftColor: ACCENT,
+    padding: SPACING.md, gap: SPACING.sm,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  iconWrap: { width: 38, height: 38, borderRadius: RADIUS.md, backgroundColor: ACCENT_BG, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  iconWrap: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   text:  { flex: 1, gap: 2 },
   title: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
   sub:   { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: 20, opacity: 0.75 },
