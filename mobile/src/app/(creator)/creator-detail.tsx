@@ -23,6 +23,7 @@ import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator
 import { chatService } from '@/services/chat';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { SeeMoreText } from '@/components/SeeMoreText';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
@@ -277,7 +278,7 @@ export default function CreatorPeerDetailScreen() {
         {profile.bio ? (
           <View style={[s.section, { backgroundColor: C.surface }]}>
             <SectionTitle label={t('creatorDetailExtra.sectionAbout')} color={C.textSecondary} />
-            <Text style={[s.bioText, { color: C.text }]}>{profile.bio}</Text>
+            <SeeMoreText style={[s.bioText, { color: C.text }]}>{profile.bio}</SeeMoreText>
           </View>
         ) : null}
 

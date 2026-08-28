@@ -1,14 +1,26 @@
 import { FontAwesome5 } from '@expo/vector-icons';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F, RADIUS, SPACING } from '@/utilities/constants';
+import { SeeMoreText } from '@/components/SeeMoreText';
 import type { ApiReviewReceived } from '@/services/creator';
 
 // Reviews received on a public profile (§36/§60) — shared between
 // (business)/creator-detail.tsx and (creator)/business-detail.tsx since both
 // render the exact same list shape for whichever side is being viewed.
-export function ReviewsList({ reviews }: { reviews: ApiReviewReceived[] }) {
+//
+// `limit` caps how many cards render inline; when there are more than that and
+// `onSeeAll` is provided, a "See all N reviews" row is appended — used on the
+// profile pages to push the full list to a dedicated screen.
+export function ReviewsList({
+  reviews, seeMore, limit, onSeeAll,
+}: {
+  reviews: ApiReviewReceived[];
+  seeMore?: boolean;
+  limit?: number;
+  onSeeAll?: () => void;
+}) {
   const C = useAppColors();
   const { t } = useLanguage();
 
@@ -18,9 +30,12 @@ export function ReviewsList({ reviews }: { reviews: ApiReviewReceived[] }) {
     );
   }
 
+  const shown = limit != null ? reviews.slice(0, limit) : reviews;
+  const hasMore = limit != null && reviews.length > limit && !!onSeeAll;
+
   return (
     <View style={{ gap: 12 }}>
-      {reviews.map((r) => {
+      {shown.map((r) => {
         const name = r.from.name ?? t('reviewsList.anonymous');
         const initials = name.slice(0, 2).toUpperCase();
         return (
@@ -45,10 +60,26 @@ export function ReviewsList({ reviews }: { reviews: ApiReviewReceived[] }) {
                 {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
               </Text>
             </View>
-            {r.comment ? <Text style={[rl.comment, { color: C.textSecondary }]}>{r.comment}</Text> : null}
+            {r.comment ? (
+              seeMore
+                ? <SeeMoreText style={[rl.comment, { color: C.textSecondary }]}>{r.comment}</SeeMoreText>
+                : <Text style={[rl.comment, { color: C.textSecondary }]}>{r.comment}</Text>
+            ) : null}
           </View>
         );
       })}
+
+      {hasMore && (
+        <Pressable
+          style={[rl.seeAllBtn, { borderColor: C.border }]}
+          onPress={onSeeAll}
+          accessibilityRole="button">
+          <Text style={[rl.seeAllTxt, { color: C.brinjal1 }]}>
+            {t('reviewsList.seeAll', { count: reviews.length })}
+          </Text>
+          <FontAwesome5 name="chevron-right" solid size={12} color={C.brinjal1} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -63,4 +94,9 @@ const rl = StyleSheet.create({
   name: { fontSize: 13, fontFamily: F.semibold },
   date: { fontSize: 11, fontFamily: F.regular },
   comment: { fontSize: 13, fontFamily: F.regular, lineHeight: 20 },
+  seeAllBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 12, borderRadius: RADIUS.md, borderWidth: 1, marginTop: 2,
+  },
+  seeAllTxt: { fontSize: 13, fontFamily: F.semibold },
 });

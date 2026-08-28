@@ -154,7 +154,7 @@ function FlatInput({ value, onChangeText, placeholder, icon, trailing, secureTog
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={C.textSecondary}
+          placeholderTextColor={C.textPlaceholder}
           style={[s.flatInput, { color: C.text, fontFamily: F.regular }]}
           secureTextEntry={secureToggle ? hidden : secureTextEntry}
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}

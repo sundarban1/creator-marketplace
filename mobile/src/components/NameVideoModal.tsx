@@ -43,7 +43,7 @@ export function NameVideoModal({
             value={label}
             onChangeText={(v) => setLabel(v.slice(0, MAX_LABEL_LENGTH))}
             placeholder={initialLabel}
-            placeholderTextColor={C.textSecondary}
+            placeholderTextColor={C.textPlaceholder}
             autoFocus
             returnKeyType="done"
             onSubmitEditing={handleSave}

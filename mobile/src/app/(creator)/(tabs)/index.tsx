@@ -311,6 +311,9 @@ export default function HomeScreen() {
               <AttentionBanner
                 icon="exclamation-circle"
                 title={t('creator.home.actionRequired')}
+                titleColor="#A0522D"
+                subtitleColor={C.text}
+                iconColor="#A0522D"
                 subtitle={
                   pendingActions.length === 1
                     ? pendingActions[0]!.type === 'start_work'

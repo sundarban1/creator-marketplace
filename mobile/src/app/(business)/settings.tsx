@@ -1412,7 +1412,7 @@ export default function BusinessSettingsScreen() {
               <TextInput
                 style={[styles.formInput, { color: C.text, borderColor: emailError ? C.error : C.border, backgroundColor: C.background, letterSpacing: 8, textAlign: 'center', fontSize: 20 }]}
                 placeholder="------"
-                placeholderTextColor={C.textSecondary}
+                placeholderTextColor={C.textPlaceholder}
                 keyboardType="number-pad"
                 maxLength={6}
                 value={emailOtp}
@@ -1553,7 +1553,7 @@ export default function BusinessSettingsScreen() {
               <TextInput
                 style={[styles.formInput, { color: C.text, borderColor: phoneError ? C.error : C.border, backgroundColor: C.background, letterSpacing: 8, textAlign: 'center', fontSize: 20 }]}
                 placeholder="------"
-                placeholderTextColor={C.textSecondary}
+                placeholderTextColor={C.textPlaceholder}
                 keyboardType="number-pad"
                 maxLength={6}
                 value={phoneOtp}

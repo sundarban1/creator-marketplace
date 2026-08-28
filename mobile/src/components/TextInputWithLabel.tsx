@@ -88,7 +88,7 @@ export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInpu
             multiline && styles.inputMultiline,
             style,
           ]}
-          placeholderTextColor={C.textSecondary}
+          placeholderTextColor={C.textPlaceholder}
           secureTextEntry={secureToggle ? hidden : secureTextEntry}
           multiline={multiline}
           onFocus={onFocus}

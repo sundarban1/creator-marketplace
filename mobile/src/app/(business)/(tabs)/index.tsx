@@ -325,6 +325,9 @@ export default function BusinessHomeScreen() {
             <AttentionBanner
               icon="building"
               title={t('business.home.completeProfile')}
+              titleColor="#A0522D"
+              subtitleColor={C.text}
+              iconColor="#A0522D"
               subtitle={t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
               numberOfLines={2}
               onPress={() => router.push('/(business)/edit-profile' as never)}

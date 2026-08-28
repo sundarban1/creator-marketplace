@@ -97,7 +97,7 @@ export function ReportModal({ visible, onClose, targetType, targetId }: {
         value={description}
         onChangeText={(v) => setDescription(v.slice(0, 1000))}
         placeholder={t('reportModal.descriptionPlaceholder')}
-        placeholderTextColor={C.textSecondary}
+        placeholderTextColor={C.textPlaceholder}
         multiline
         numberOfLines={3}
       />

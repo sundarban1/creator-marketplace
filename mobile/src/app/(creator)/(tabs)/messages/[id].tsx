@@ -767,7 +767,7 @@ export default function CreatorChatRoomScreen() {
                   onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
                   onFocus={() => chat.setEmojiOpen(false)}
                   placeholder={t('messages.typePlaceholder')}
-                  placeholderTextColor={C.textSecondary}
+                  placeholderTextColor={C.textPlaceholder}
                   multiline
                   maxLength={1000}
                   returnKeyType="default"

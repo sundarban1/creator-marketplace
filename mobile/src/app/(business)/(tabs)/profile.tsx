@@ -350,7 +350,19 @@ export default function BusinessProfileScreen() {
                   </Text>
                 </View>
               ) : null}
-              <ReviewsList reviews={profile.reviews} />
+              <ReviewsList
+                reviews={profile.reviews}
+                seeMore
+                limit={5}
+                onSeeAll={() => router.push({
+                  pathname: '/(business)/reviews',
+                  params: {
+                    reviews: JSON.stringify(profile.reviews ?? []),
+                    rating: String(profile.reviewSummary?.averageRating ?? ''),
+                    count: String(profile.reviewSummary?.reviewCount ?? (profile.reviews ?? []).length),
+                  },
+                } as never)}
+              />
             </SectionCard>
           </View>
         )}

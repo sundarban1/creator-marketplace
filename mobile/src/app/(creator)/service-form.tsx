@@ -239,7 +239,7 @@ export default function ServiceFormScreen() {
                       value={newIncluded}
                       onChangeText={setNewIncluded}
                       placeholder={t('serviceForm.includedPlaceholder')}
-                      placeholderTextColor={C.textSecondary}
+                      placeholderTextColor={C.textPlaceholder}
                       onSubmitEditing={addIncluded}
                     />
                     <Pressable style={[styles.addBtn, { backgroundColor: C.brinjal1 }]} onPress={addIncluded}>

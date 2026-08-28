@@ -411,7 +411,7 @@ export function HashtagEditor({ hashtags, onChange, colors, t }: {
           value={newHashtag}
           onChangeText={setNewHashtag}
           placeholder={t('createEvent.addHashtagPlaceholder')}
-          placeholderTextColor={C.textSecondary}
+          placeholderTextColor={C.textPlaceholder}
           autoCapitalize="none"
           onSubmitEditing={addHashtag}
         />

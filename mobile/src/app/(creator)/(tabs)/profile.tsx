@@ -10,6 +10,7 @@ import { useToast } from '@/components/Toast';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { SectionEmptyState } from '@/components/SectionEmptyState';
 import { ReviewsList } from '@/components/ReviewsList';
+import { SeeMoreText } from '@/components/SeeMoreText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -253,7 +254,7 @@ export default function CreatorProfileScreen() {
             </View>
           ) : null}
           {displayBio ? (
-            <Text style={[s.bio, { color: C.textSecondary }]}>{displayBio}</Text>
+            <SeeMoreText style={[s.bio, { color: C.textSecondary }]}>{displayBio}</SeeMoreText>
           ) : null}
 
           {/* Edit profile / Analytics buttons */}
@@ -478,7 +479,19 @@ export default function CreatorProfileScreen() {
                   </Text>
                 </View>
               ) : null}
-              <ReviewsList reviews={profile.reviews} />
+              <ReviewsList
+                reviews={profile.reviews}
+                seeMore
+                limit={5}
+                onSeeAll={() => router.push({
+                  pathname: '/(creator)/reviews',
+                  params: {
+                    reviews: JSON.stringify(profile.reviews ?? []),
+                    rating: String(profile.reviewSummary?.averageRating ?? ''),
+                    count: String(profile.reviewSummary?.reviewCount ?? (profile.reviews ?? []).length),
+                  },
+                } as never)}
+              />
             </SectionCard>
           </View>
         )}

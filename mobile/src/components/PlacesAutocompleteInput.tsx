@@ -115,7 +115,7 @@ export function PlacesAutocompleteInput({
         onFocus={onFocus}
         onBlur={handleBlur}
         placeholder={placeholder}
-        placeholderTextColor={C.textSecondary}
+        placeholderTextColor={C.textPlaceholder}
         autoCapitalize={autoCapitalize}
         autoCorrect={autoCorrect}
         style={[styles.input, { backgroundColor: C.background, borderColor: error ? C.error : C.border, color: C.text }]}

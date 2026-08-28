@@ -32,6 +32,8 @@ const en = {
     saveChanges: 'Save Changes',
     viewAll: 'View All',
     more: 'More',
+    seeMore: 'See more',
+    seeLess: 'See less',
     clearAll: 'Clear all',
     noResults: 'No results found',
     somethingWentWrong: 'Something went wrong. Please try again.',

@@ -154,7 +154,7 @@ export function LocationSearchModal({
             value={query}
             onChangeText={handleChangeText}
             placeholder={t('profile.editCreator.locationModalPlaceholder')}
-            placeholderTextColor={C.textSecondary}
+            placeholderTextColor={C.textPlaceholder}
             returnKeyType="search"
             clearButtonMode="while-editing"
           />

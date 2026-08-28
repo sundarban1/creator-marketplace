@@ -465,7 +465,18 @@ export default function BusinessDetailScreen() {
                 </View>
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionReviews')}</Text>
               </View>
-              <ReviewsList reviews={business.reviews} />
+              <ReviewsList
+                reviews={business.reviews}
+                seeMore
+                limit={5}
+                onSeeAll={() => router.push({
+                  pathname: '/(creator)/reviews',
+                  params: {
+                    reviews: JSON.stringify(business.reviews ?? []),
+                    count: String((business.reviews ?? []).length),
+                  },
+                } as never)}
+              />
             </View>
           )}
 

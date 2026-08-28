@@ -2135,7 +2135,7 @@ export default function CreatorSettingsScreen() {
                   value={emailOtp}
                   onChangeText={(v) => setEmailOtp(v.replace(/[^0-9]/g, '').slice(0, 6))}
                   placeholder="------"
-                  placeholderTextColor={C.textSecondary}
+                  placeholderTextColor={C.textPlaceholder}
                   keyboardType="number-pad"
                   maxLength={6}
                   autoFocus
@@ -2249,7 +2249,7 @@ export default function CreatorSettingsScreen() {
                   value={phoneOtp}
                   onChangeText={(t) => setPhoneOtp(t.replace(/\D/g, '').slice(0, 6))}
                   placeholder="------"
-                  placeholderTextColor={C.textSecondary}
+                  placeholderTextColor={C.textPlaceholder}
                   keyboardType="number-pad"
                   maxLength={6}
                   autoFocus

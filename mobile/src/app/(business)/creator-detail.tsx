@@ -4,6 +4,7 @@ import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { ProviderTypeBadge } from '@/components/ProviderTypeBadge';
 import { ReviewsList } from '@/components/ReviewsList';
+import { SeeMoreText } from '@/components/SeeMoreText';
 import { ReportModal } from '@/components/ReportModal';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
@@ -368,7 +369,7 @@ export default function CreatorDetailScreen() {
         {profile.bio ? (
           <View style={[s.section, { backgroundColor: C.surface }]}>
             <SectionTitle label={t('creatorDetailExtra.sectionAbout')} color={C.textSecondary} />
-            <Text style={[s.bioText, { color: C.text }]}>{profile.bio}</Text>
+            <SeeMoreText style={[s.bioText, { color: C.text }]}>{profile.bio}</SeeMoreText>
           </View>
         ) : null}
 
@@ -667,7 +668,18 @@ export default function CreatorDetailScreen() {
         {!!profile.reviews?.length && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
             <SectionTitle label={t('creatorDetailExtra.sectionReviews')} color={C.textSecondary} />
-            <ReviewsList reviews={profile.reviews} />
+            <ReviewsList
+              reviews={profile.reviews}
+              seeMore
+              limit={5}
+              onSeeAll={() => router.push({
+                pathname: '/(business)/reviews',
+                params: {
+                  reviews: JSON.stringify(profile.reviews ?? []),
+                  count: String((profile.reviews ?? []).length),
+                },
+              } as never)}
+            />
           </View>
         )}
 

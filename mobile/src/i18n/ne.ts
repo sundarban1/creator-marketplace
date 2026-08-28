@@ -33,6 +33,8 @@ const ne = {
     saveChanges: 'सेभ गर्नुहोस्',
     viewAll: 'सबै हेर्नुहोस्',
     more: 'थप',
+    seeMore: 'थप हेर्नुहोस्',
+    seeLess: 'कम देखाउनुहोस्',
     clearAll: 'सबै हटाउनुहोस्',
     noResults: 'केही भेटिएन',
     somethingWentWrong: 'केही समस्या भयो। फेरि प्रयास गर्नुहोस्।',

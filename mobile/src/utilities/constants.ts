@@ -22,7 +22,11 @@ export const COLORS = {
 
   // Typography
   text:          '#0F172A',
-  textSecondary: '#64748B',
+  // Secondary/caption text (recommendation reasons, card meta rows, sub-labels)
+  // renders near-black for both roles rather than a washed-out grey. Input
+  // placeholders stay grey — use `textPlaceholder`, never `textSecondary`.
+  textSecondary: '#1E293B',
+  textPlaceholder: '#94A3B8',
 
   // Status
   active: '#10B981',
