@@ -8,13 +8,6 @@ config({ path: resolve(__dirname, '../../.env') });
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3000'),
-  // This backend's own public origin (no trailing slash), e.g.
-  // http://localhost:3000 in local dev or https://<app>.onrender.com on Render.
-  // Used to derive the third-party OAuth callback URLs below so each environment
-  // sends TikTok/Instagram back to the SAME backend that started the flow (the
-  // one whose JWT_ACCESS_SECRET signed the `state`) instead of a hard-coded host.
-  // Falls back to http://localhost:<PORT> when unset.
-  PUBLIC_BASE_URL: z.string().optional(),
   DATABASE_URL: z.string({
     required_error: 'DATABASE_URL is required',
   }),
@@ -70,15 +63,12 @@ const envSchema = z.object({
   // TikTok Login Kit (creator social-account OAuth connect)
   TIKTOK_CLIENT_KEY: z.string().optional(),
   TIKTOK_CLIENT_SECRET: z.string().optional(),
-  // Optional explicit override. Normally left unset and derived from
-  // PUBLIC_BASE_URL (see below) so it always matches the current environment.
   TIKTOK_REDIRECT_URI: z.string().optional(),
   // Instagram API with Instagram Login (direct connect — no Facebook account/Page
   // required, unlike the Facebook Login + Pages flow above). A separate product
   // under the same Meta App, with its own Instagram App ID/Secret.
   INSTAGRAM_APP_ID: z.string().optional(),
   INSTAGRAM_APP_SECRET: z.string().optional(),
-  // Optional explicit override — normally derived from PUBLIC_BASE_URL, same as TIKTOK_REDIRECT_URI.
   INSTAGRAM_REDIRECT_URI: z.string().optional(),
   // Facebook Login (creator social-account OAuth connect) — the mobile app only
   // needs the App ID (public), but exchanging the client's short-lived user token
@@ -149,20 +139,4 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-// This backend's public origin, trailing slash stripped. Everything that has to
-// hand a third party an absolute URL back into THIS server derives from here.
-const publicBaseUrl = (parsed.data.PUBLIC_BASE_URL ?? `http://localhost:${parsed.data.PORT}`).replace(/\/+$/, '');
-
-export const env = {
-  ...parsed.data,
-  PUBLIC_BASE_URL: publicBaseUrl,
-  // Derived per-environment so the OAuth round trip always returns to the same
-  // backend that signed the `state` JWT. An explicit *_REDIRECT_URI still wins
-  // (e.g. pointing local dev at a tunnel host registered in the provider portal).
-  // NOTE: whatever value this resolves to must also be registered as an allowed
-  // redirect URI in the TikTok / Instagram developer portal.
-  TIKTOK_REDIRECT_URI:
-    parsed.data.TIKTOK_REDIRECT_URI ?? `${publicBaseUrl}/api/creator/social-accounts/tiktok/callback`,
-  INSTAGRAM_REDIRECT_URI:
-    parsed.data.INSTAGRAM_REDIRECT_URI ?? `${publicBaseUrl}/api/creator/social-accounts/instagram-login/callback`,
-};
+export const env = parsed.data;
