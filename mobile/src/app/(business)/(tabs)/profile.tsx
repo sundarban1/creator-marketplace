@@ -1,9 +1,10 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { SectionEmptyState } from '@/components/SectionEmptyState';
-import { useCallback, useState } from 'react';
+import { ReviewsList } from '@/components/ReviewsList';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -26,7 +27,7 @@ import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import { logger } from '@/utilities/logger';
 import { getCached, setCached } from '@/utilities/offlineCache';
 
@@ -41,6 +42,23 @@ export default function BusinessProfileScreen() {
   const [savedCreatorsCount, setSavedCreatorsCount] = useState(0);
   const [logoUploading, setLogoUploading]     = useState(false);
   const [coverUploading, setCoverUploading]   = useState(false);
+
+  // A review_received notification deep-links here with ?focus=reviews — scroll
+  // the reviews section into view once it (and the profile data behind it) lands.
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
+  const reviewsY = useRef(0);
+  const didScrollToReviews = useRef(false);
+  useEffect(() => {
+    if (focus !== 'reviews' || didScrollToReviews.current) return;
+    if (!profile?.reviews?.length) return;
+    didScrollToReviews.current = true;
+    // Defer past layout so reviewsY is populated.
+    const id = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(reviewsY.current - 12, 0), animated: true });
+    }, 350);
+    return () => clearTimeout(id);
+  }, [focus, profile?.reviews?.length]);
 
   async function handleLogoPress() {
     setLogoUploading(true);
@@ -97,7 +115,7 @@ export default function BusinessProfileScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
         {/* ── Hero Cover ── */}
         <LinearGradient
@@ -296,7 +314,7 @@ export default function BusinessProfileScreen() {
           C={C}>
           {(profile?.categories.length ?? 0) > 0 ? (
             <View style={s.chipWrap}>
-              {profile!.categories.map((cat) => {
+              {sortOtherLast(profile!.categories).map((cat) => {
                 const meta = getCategoryMeta(allCategories, cat);
                 return (
                   <View key={cat} style={[s.chip, { backgroundColor: meta.bg }]}>
@@ -315,6 +333,27 @@ export default function BusinessProfileScreen() {
               onPress={() => router.push('/(business)/edit-categories' as never)} />
           )}
         </SectionCard>
+
+        {/* ── Reviews (kept last) — every review this business has received,
+              latest first (backend orders by createdAt desc) ── */}
+        {!!profile?.reviews?.length && (
+          <View onLayout={(e) => { reviewsY.current = e.nativeEvent.layout.y; }}>
+            <SectionCard title={t('reviewsList.title')} C={C}>
+              {profile.reviewSummary && profile.reviewSummary.reviewCount > 0 ? (
+                <View style={[s.reviewSummaryRow, { borderBottomColor: C.border }]}>
+                  <FontAwesome5 name="star" solid size={13} color="#F59E0B" />
+                  <Text style={[s.reviewSummaryText, { color: C.textSecondary }]}>
+                    {t('reviewsList.summary', {
+                      rating: profile.reviewSummary.averageRating.toFixed(1),
+                      count: profile.reviewSummary.reviewCount,
+                    })}
+                  </Text>
+                </View>
+              ) : null}
+              <ReviewsList reviews={profile.reviews} />
+            </SectionCard>
+          </View>
+        )}
 
       </ScrollView>
       </MaxWidthContainer>
@@ -399,6 +438,10 @@ const s = StyleSheet.create({
   sectionTitle:  { fontSize: 15, fontFamily: F.bold },
   sectionAction: { fontSize: 13, fontFamily: F.bold },
   aboutText:     { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
+
+  // Reviews
+  reviewSummaryRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, paddingBottom: 12, marginBottom: 12, borderBottomWidth: 1 },
+  reviewSummaryText: { fontSize: 13, fontFamily: F.semibold },
 
   // Category chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

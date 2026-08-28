@@ -44,7 +44,10 @@ export function GroupedCategoryPicker({ categories, selected, onToggle, max, onM
       {ungrouped.length > 0 && (
         <CategoryChipGrid categories={ungrouped} selected={selected} onToggle={onToggle} max={max} onMaxReached={onMaxReached} variant={variant} />
       )}
-      {[...groups.entries()].map(([group, items]) => (
+      {[...groups.entries()]
+        // The "Other" group section always renders after every named group.
+        .sort(([a], [b]) => Number(a === 'Other') - Number(b === 'Other'))
+        .map(([group, items]) => (
         <View key={group} style={s.section}>
           <Text style={[s.sectionTitle, { color: C.textSecondary }]}>{group.toUpperCase()}</Text>
           <CategoryChipGrid categories={items} selected={selected} onToggle={onToggle} max={max} onMaxReached={onMaxReached} variant={variant} />

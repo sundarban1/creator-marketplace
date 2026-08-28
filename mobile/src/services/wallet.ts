@@ -9,7 +9,20 @@ export interface ApiWalletSummary {
   pendingWithdrawals: number;
   /** availableBalance − pendingWithdrawals — what can actually be requested now. */
   withdrawableBalance: number;
+  /** Smallest amount allowed per withdrawal request (Rs.). */
   minWithdrawal: number;
+  /** Largest amount allowed in a single withdrawal request (Rs.). */
+  maxWithdrawal: number;
+  /** Max total that can be requested in a rolling 24h window (Rs.). */
+  dailyLimit: number;
+  /** Amount already requested in the current 24h window (Rs.). */
+  dailyWithdrawalUsed: number;
+  /** dailyLimit − dailyWithdrawalUsed — headroom left today (Rs.). */
+  dailyWithdrawalLeft: number;
+  /** True when today's requests leave less headroom than minWithdrawal — no more requests possible today. */
+  dailyLimitReached: boolean;
+  /** True while a PENDING/PROCESSING request exists — only one is allowed at a time. */
+  hasPendingWithdrawal: boolean;
 }
 
 export type WithdrawalStatus = 'PENDING' | 'PROCESSING' | 'PAID' | 'REJECTED' | 'CANCELLED';

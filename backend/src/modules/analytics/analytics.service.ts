@@ -4,6 +4,7 @@ import { CampaignRepository } from '../campaign/campaign.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { parseRange, rangeStart, bucketGranularity, bucketKey, type AnalyticsRange } from './dateRange';
+import { notificationService } from '../notifications/notification.service';
 
 const PROFILE_VIEW_DEDUP_MS = 24 * 60 * 60 * 1000;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -139,6 +140,23 @@ export class AnalyticsService {
       await this.repo.applyCreatorRatingSample(creatorUserId, rating);
     }
 
+    // Tell the rated party — bell + push. Deep-links to the project's activity
+    // timeline, where the received-review card shows the stars and comment.
+    const raterName = fromUserId === creatorUserId
+      ? app.creator.fullName
+      : app.campaign.business.businessName;
+    const stars = '★'.repeat(rating);
+    notificationService.create({
+      userId:  toUserId,
+      type:    'review_received',
+      title:   'New Review',
+      body:    comment?.trim()
+        ? `${raterName} rated you ${stars} for "${app.campaign.title}" — "${comment.trim()}"`
+        : `${raterName} rated you ${stars} for "${app.campaign.title}".`,
+      refId:   app.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
     return review;
   }
 
@@ -148,8 +166,24 @@ export class AnalyticsService {
     return this.repo.findExistingReview(appId, userId);
   }
 
-  async getReviewsReceived(userId: string) {
-    const rows = await this.repo.findReviewsReceived(userId);
+  // The review the OTHER party left for `userId` on this application. Null when
+  // they haven't rated yet — a normal state for the client's timeline card.
+  async getReviewReceivedForApp(appId: string, userId: string) {
+    const r = await this.repo.findReviewForApp(appId, userId);
+    if (!r) return null;
+    return {
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt.toISOString(),
+      from: r.fromUser.creatorProfile
+        ? { name: r.fromUser.creatorProfile.fullName, avatarUrl: r.fromUser.creatorProfile.avatarUrl }
+        : { name: r.fromUser.businessProfile?.businessName ?? null, avatarUrl: r.fromUser.businessProfile?.logoUrl ?? null },
+    };
+  }
+
+  async getReviewsReceived(userId: string, limit: number | null = 10) {
+    const rows = await this.repo.findReviewsReceived(userId, limit);
     return rows.map((r) => ({
       id: r.id,
       rating: r.rating,

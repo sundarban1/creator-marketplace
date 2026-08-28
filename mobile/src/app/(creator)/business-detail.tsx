@@ -26,7 +26,7 @@ import { businessService, type BusinessDetailResult, type BusinessActiveCampaign
 import { campaignService } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
@@ -537,7 +537,7 @@ export default function BusinessDetailScreen() {
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionIndustries')}</Text>
               </View>
               <View style={styles.categoriesWrap}>
-                {business.categories.map((cat) => (
+                {sortOtherLast(business.categories).map((cat) => (
                   <View key={cat} style={[styles.categoryChip, { backgroundColor: CATEGORY_BG[cat] ?? C.primaryLight }]}>
                     <Text style={[styles.categoryChipText, { color: C.text }]}>{cat}</Text>
                   </View>

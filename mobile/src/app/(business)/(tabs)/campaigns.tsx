@@ -25,7 +25,7 @@ import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem, type ApiCreatorListItem } from '@/services/creator';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { FilterSheet, FilterSectionHeader } from '@/components/FilterSheet';
@@ -95,7 +95,7 @@ export default function CampaignsScreen() {
   // categories only — the same set work/events are created with
   // (create-campaign uses useCategories('BOTH')). CREATOR-scope provider-type
   // rows are deliberately excluded; a business never filters its own work by them.
-  const filterCategories = allCategories.filter((c) => c.scope === 'BOTH');
+  const filterCategories = sortOtherLast(allCategories.filter((c) => c.scope === 'BOTH'));
   const toast = useToast();
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;

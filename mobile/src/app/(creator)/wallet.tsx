@@ -78,19 +78,12 @@ export default function WalletScreen() {
   }, []));
 
   async function handleWithdraw(amount: number, payoutMethodId: string) {
-    const res = await walletService.createWithdrawal(amount, payoutMethodId);
-    setSummary((prev) => ({
-      totalEarned:         res.totalEarned,
-      pendingEarnings:     res.pendingEarnings,
-      availableBalance:    res.availableBalance,
-      pendingWithdrawals:  res.pendingWithdrawals,
-      withdrawableBalance: res.withdrawableBalance,
-      minWithdrawal:       res.minWithdrawal ?? prev?.minWithdrawal ?? 0,
-    }));
+    const { withdrawal, ...nextSummary } = await walletService.createWithdrawal(amount, payoutMethodId);
+    setSummary(nextSummary);
     setTransactions(await walletService.getTransactions());
     toast.success(t('wallet.withdrawSubmitted', {
       amount: amount.toLocaleString(),
-      ref: res.withdrawal.referenceCode,
+      ref: withdrawal.referenceCode,
     }));
   }
 
@@ -185,6 +178,11 @@ export default function WalletScreen() {
           onClose={() => setModalVisible(false)}
           withdrawableBalance={summary.withdrawableBalance}
           minWithdrawal={summary.minWithdrawal}
+          maxWithdrawal={summary.maxWithdrawal}
+          dailyLimit={summary.dailyLimit}
+          dailyWithdrawalLeft={summary.dailyWithdrawalLeft}
+          dailyLimitReached={summary.dailyLimitReached}
+          hasPendingWithdrawal={summary.hasPendingWithdrawal}
           payoutMethods={payoutMethods}
           onWithdraw={handleWithdraw}
           onManageMethods={() => router.push('/(creator)/payout-methods')}
@@ -303,8 +301,22 @@ function TransactionDetailsModal({
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailBody}>
               <DetailRow label={t('wallet.txDetailAmount')} value={`Rs. ${tx.amount.toLocaleString()}`} />
               {!!tx.method && <DetailRow label={t('wallet.txDetailMethod')} value={tx.method} />}
-              {!!tx.reference && <DetailRow label={t('wallet.txDetailReference')} value={tx.reference} />}
-              <DetailRow label={t('wallet.txDetailDate')} value={formatDate(tx.createdAt)} />
+              {/* Date + txn number share one row; when there's no reference
+                  (payouts/referrals) the date stands alone. */}
+              {tx.reference ? (
+                <View style={styles.detailRow}>
+                  <View style={styles.detailPairItem}>
+                    <Text style={[styles.detailLabel, { color: C.textSecondary }]}>{t('wallet.txDetailDate')}</Text>
+                    <Text style={[styles.detailPairValue, { color: C.text }]}>{formatDate(tx.createdAt)}</Text>
+                  </View>
+                  <View style={[styles.detailPairItem, styles.detailPairItemEnd]}>
+                    <Text style={[styles.detailLabel, { color: C.textSecondary }]}>{t('wallet.txDetailReference')}</Text>
+                    <Text style={[styles.detailPairValue, { color: C.text }]} numberOfLines={1}>{tx.reference}</Text>
+                  </View>
+                </View>
+              ) : (
+                <DetailRow label={t('wallet.txDetailDate')} value={formatDate(tx.createdAt)} />
+              )}
 
               <Text style={[styles.detailProofLabel, { color: C.textSecondary }]}>{t('wallet.txDetailProof')}</Text>
               {!!tx.proofUrl && (
@@ -374,6 +386,9 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   detailLabel: { fontSize: 12, fontFamily: F.regular },
   detailValue: { flex: 1, fontSize: 12, fontFamily: F.semibold, textAlign: 'right' },
+  detailPairItem: { flex: 1, gap: 2 },
+  detailPairItemEnd: { alignItems: 'flex-end' },
+  detailPairValue: { fontSize: 12, fontFamily: F.semibold },
   detailProofLabel: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: F.bold, marginTop: SPACING.sm },
   detailProofImage: { width: '100%', height: 260, borderRadius: RADIUS.md, borderWidth: 1 },
   detailProofHint: { fontSize: 11, fontFamily: F.regular, lineHeight: 16 },

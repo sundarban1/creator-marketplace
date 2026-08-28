@@ -31,7 +31,7 @@ import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import type { ApiCategory } from '@/services/category';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -346,6 +346,24 @@ export default function CreatorDetailScreen() {
           )}
         </View>
 
+        {/* ── Categories ── */}
+        {profile.categories.length > 0 && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionCategories')} color={C.textSecondary} />
+            <View style={s.chips}>
+              {sortOtherLast(profile.categories).map((cat) => {
+                const meta = getCategoryMeta(allCategories, cat);
+                return (
+                  <View key={cat} style={[s.catChip, { backgroundColor: C.primaryLight }]}>
+                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                    <Text style={[s.catChipText, { color: C.brinjal1 }]}>{cat}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* ── Bio ── */}
         {profile.bio ? (
           <View style={[s.section, { backgroundColor: C.surface }]}>
@@ -416,32 +434,6 @@ export default function CreatorDetailScreen() {
                         {requested ? t('creatorDetailExtra.serviceRequested') : t('creatorDetailExtra.serviceRequestBtn')}
                       </Text>
                     </Pressable>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* ── Reviews (§60) — from businesses this provider has worked with ── */}
-        {!!profile.reviews?.length && (
-          <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label={t('creatorDetailExtra.sectionReviews')} color={C.textSecondary} />
-            <ReviewsList reviews={profile.reviews} />
-          </View>
-        )}
-
-        {/* ── Categories ── */}
-        {profile.categories.length > 0 && (
-          <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label={t('creatorDetailExtra.sectionCategories')} color={C.textSecondary} />
-            <View style={s.chips}>
-              {profile.categories.map((cat) => {
-                const meta = getCategoryMeta(allCategories, cat);
-                return (
-                  <View key={cat} style={[s.catChip, { backgroundColor: C.primaryLight }]}>
-                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                    <Text style={[s.catChipText, { color: C.brinjal1 }]}>{cat}</Text>
                   </View>
                 );
               })}
@@ -668,6 +660,14 @@ export default function CreatorDetailScreen() {
                 </Pressable>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* ── Reviews (§60) — from businesses this provider has worked with; kept last ── */}
+        {!!profile.reviews?.length && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionReviews')} color={C.textSecondary} />
+            <ReviewsList reviews={profile.reviews} />
           </View>
         )}
 

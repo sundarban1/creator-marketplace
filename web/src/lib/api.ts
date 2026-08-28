@@ -970,9 +970,6 @@ export const api = {
     releaseBusinessReferral: (id: string) =>
       request<ApiBusinessReferral>('PATCH', `/api/admin/business-referrals/${id}/release`),
 
-    releasePayment: (applicationId: string) =>
-      request<ApiApplication>('PATCH', `/api/admin/applications/${applicationId}/release-payment`),
-
     payments: (params?: { page?: number; limit?: number; type?: string; search?: string }) =>
       request<ApiPaymentTransaction[]>('GET', '/api/admin/payments', undefined,
         params as Record<string, string | number | undefined>),

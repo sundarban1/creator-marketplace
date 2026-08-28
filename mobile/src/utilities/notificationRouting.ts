@@ -41,8 +41,18 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
       : { pathname: '/(business)/campaign-proposals', params: { campaignId: n.refId, campaignTitle: '', campaignType: '' } };
   }
 
-  // workspace status notifications → activity timeline
-  if (n.refType === 'campaign' && n.refId && ['work_approved', 'payment_released', 'campaign_closed'].includes(n.type)) {
+  // review_received (either role) → the rated party's own profile, scrolled to
+  // the Reviews section at the bottom where the new rating + comment now shows.
+  if (n.type === 'review_received') {
+    return isCreator
+      ? { pathname: '/(creator)/(tabs)/profile', params: { focus: 'reviews' } }
+      : { pathname: '/(business)/(tabs)/profile', params: { focus: 'reviews' } };
+  }
+
+  // workspace status notifications → activity timeline. project_completed is
+  // the business-only "Project Complete" row sent when escrow payment is
+  // released; it opens the same timeline the creator lands on for payment_released.
+  if (n.refType === 'campaign' && n.refId && ['work_approved', 'payment_released', 'campaign_closed', 'project_completed'].includes(n.type)) {
     return { pathname: '/(business)/activity-timeline', params: { campaignId: n.refId, ...(isCreator ? { role: 'CREATOR' } : {}) } };
   }
 

@@ -33,9 +33,17 @@ const DEFAULTS: Record<string, unknown> = {
   // Only apply when 'featuredEvent.paywallEnabled' is true.
   'featuredEvent.freeQuota':       3,
   'featuredEvent.price':           1000,
-  // Minimum a creator can request per manual withdrawal (Rs.). Enforced
-  // server-side in WalletService.createWithdrawalRequest.
+  // Creator manual-withdrawal limits (Rs.). All enforced server-side in
+  // WalletService.createWithdrawalRequest and surfaced to the mobile wallet.
+  //  - minWithdrawal   : smallest amount allowed per request
+  //  - maxWithdrawal   : largest amount allowed in a single request
+  //  - dailyLimit      : max total requested per calendar day (resets at local
+  //                      midnight in Nepal)
+  // A creator may also only ever have one PENDING/PROCESSING request at a time,
+  // and every request needs admin approval before it is paid.
   'wallet.minWithdrawal':          500,
+  'wallet.maxWithdrawal':          10000,
+  'wallet.dailyLimit':             25000,
   // Businesses whose account email appears here bypass the free quota above
   // entirely — always allowed to feature for free, even while the paywall is
   // on. See CampaignService.getFeaturedQuota. Lowercased on comparison.

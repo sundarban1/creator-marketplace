@@ -5,13 +5,10 @@ import { isCreatorProfileComplete, REFERRED_FIRST_EVENT_BONUS } from '../referra
 import { recordWalletTransactionIdempotent } from '../wallet/wallet.ledger';
 import { BusinessReferralRepository } from '../business-referral/business-referral.repository';
 import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-referral/business-referral.service';
-import { CampaignRepository } from '../campaign/campaign.repository';
 import { CampaignService } from '../campaign/campaign.service';
 import { toCampaignDto } from '../campaign/campaign.dto';
 import type { UpdateCampaignInput } from '../campaign/campaign.schema';
-import { MessagingService } from '../messaging/messaging.service';
 import { notificationService } from '../notifications/notification.service';
-import { analyticsService } from '../analytics/analytics.service';
 import { sendAccountVerifiedEmail, sendVerificationRejectedEmail } from '../../utils/email';
 import { AppError } from '../../middleware/error';
 import { invalidateSettingsCache } from '../../utils/settingsCache';
@@ -23,17 +20,13 @@ export class AdminService {
   private repo: AdminRepository;
   private referralRepo: ReferralRepository;
   private businessReferralRepo: BusinessReferralRepository;
-  private campaignRepo: CampaignRepository;
   private campaignService: CampaignService;
-  private messagingService: MessagingService;
 
   constructor() {
     this.repo = new AdminRepository();
     this.referralRepo = new ReferralRepository();
     this.businessReferralRepo = new BusinessReferralRepository();
-    this.campaignRepo = new CampaignRepository();
     this.campaignService = new CampaignService();
-    this.messagingService = new MessagingService();
   }
 
   getStats() {
@@ -318,83 +311,9 @@ export class AdminService {
     return updated;
   }
 
-  // Payment release is the project's final stage — no separate creator
-  // "confirm receipt" step. releaseApplicationPayment flips workStatus straight
-  // to COMPLETED in the same update, so the completion side effects (analytics,
-  // notification, closing the auto-accepted conversation) fire here too.
-  async releasePayment(appId: string, adminUserId: string) {
-    const app = await this.campaignRepo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
-    if (app.workStatus !== 'APPROVED') throw new AppError('Work has not been approved by the brand yet', 400);
-    if (app.paymentStatus === 'RELEASED') throw new AppError('Payment has already been released', 400);
-    if (app.paymentStatus !== 'PAID') throw new AppError('No escrow payment is held for this application', 400);
-
-    // Creators always receive the full proposedRate on release — the platform
-    // commission (snapshotted on the campaign at creation) is charged to the
-    // business on top of the rate, not deducted from the creator's payout.
-    const updated = await this.campaignRepo.releaseApplicationPayment(appId, adminUserId);
-    await this.campaignRepo.createPayoutTransaction({
-      applicationId: appId,
-      campaignId:    app.campaignId,
-      businessId:    app.campaign.business.id,
-      creatorId:     app.creatorId,
-      adminId:       adminUserId,
-      amount:        app.proposedRate,
-    });
-    // Credit the creator wallet ledger — this is the point the payout becomes
-    // spendable. Idempotent via WalletTransaction's (referenceId, type) unique
-    // index, so a retried release never double-credits.
-    await recordWalletTransactionIdempotent({
-      creatorId:        app.creatorId,
-      type:             'CAMPAIGN_PAYOUT',
-      direction:        'CREDIT',
-      amount:           app.proposedRate,
-      description:      `Payment for "${app.campaign.title}"`,
-      referenceType:    'application',
-      referenceId:      appId,
-      createdByAdminId: adminUserId,
-    });
-
-    logActivity({ userId: adminUserId, action: ActivityAction.PAYMENT_RELEASED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, amount: app.proposedRate } });
-
-    const creatorUserId = app.creator.userId;
-    const businessUserId = app.campaign.business.userId;
-    analyticsService.incrPaymentReleased(creatorUserId, businessUserId, app.proposedRate);
-    analyticsService.incrCampaignCompleted(creatorUserId, businessUserId);
-
-    notificationService.create({
-      userId:  creatorUserId,
-      type:    'payment_released',
-      title:   'Payment Released!',
-      body:    `Your payment for "${app.campaign.title}" has been released. Check your wallet!`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
-    notificationService.create({
-      userId:  businessUserId,
-      type:    'project_completed',
-      title:   'Project Complete',
-      body:    `Payment for "${app.campaign.title}" has been released — the project is now complete.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
-
-    // Posted before the possible reset-to-PENDING below, so it always lands
-    // in the still-open conversation rather than racing a fresh accept.
-    await this.messagingService
-      .sendSystemMessage(app.creator.id, app.campaign.business.id, app.campaignId, businessUserId, 'BUSINESS', 'Payment released.')
-      .catch(() => {});
-
-    // A conversation that was only ever auto-accepted (never a real chat request/accept)
-    // is closed now that the project is done and paid — it leaves both inboxes rather
-    // than lingering as a request/pending row. A genuinely-accepted conversation is
-    // left open as-is. Accepting a new proposal from this creator reopens it.
-    this.messagingService
-      .closeConversationAfterCompletion(creatorUserId, businessUserId, app.creator.id, app.campaign.business.id)
-      .catch(() => {});
-
-    return updated;
-  }
+  // Escrow release is no longer an admin action — the business approving the
+  // work now releases the payment straight to the creator's wallet. See
+  // CampaignService.releaseEscrowToCreator (called from approveWork).
 
   async setCreatorVerified(creatorId: string, verified: boolean, adminUserId: string) {
     const updated = await this.repo.updateCreatorVerification(creatorId, verified);

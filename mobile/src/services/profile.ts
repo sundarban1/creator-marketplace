@@ -1,4 +1,5 @@
 import { request } from '@/lib/api';
+import type { ApiReviewReceived } from '@/services/creator';
 
 export type SocialLinks = {
   facebook?:  string;
@@ -58,6 +59,10 @@ export type BusinessProfile = {
   purpose: BusinessPurpose | null;
   favoritedByCount: number;
   user: { email: string; phone: string | null; isEmailVerified: boolean; isPhoneVerified: boolean };
+  // Every review this business has received — rendered as the last section on
+  // their own profile screen, latest first. Absent on older cached responses.
+  reviews?: ApiReviewReceived[];
+  reviewSummary?: { averageRating: number; reviewCount: number };
 };
 
 export type OrganizationType = 'COMPANY' | 'BRAND' | 'RESTAURANT_CAFE' | 'HOTEL_RESORT' | 'AGENCY' | 'STARTUP' | 'NGO' | 'INGO' | 'EDUCATION' | 'EVENT_ORGANIZER' | 'MEDIA_PRODUCTION' | 'RETAIL_SHOP' | 'ECOMMERCE' | 'COMMUNITY_CLUB' | 'GOVERNMENT' | 'OTHER';

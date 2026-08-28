@@ -1,4 +1,4 @@
-import { useState, type MouseEvent }           from 'react';
+import { useState }           from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, MapPin, Calendar, Users, DollarSign,
@@ -150,41 +150,17 @@ function buildTimeline(campaign: ApiCampaignDetail) {
 
 // ── Application row ───────────────────────────────────────────────────────────
 
-function ApplicationRow({ app, commissionRate, roleName, onReleased, showToast }: {
+function ApplicationRow({ app, commissionRate, roleName }: {
   app: ApiApplication;
   commissionRate?: number | null;
   // Category name of the requirement app.requirementId points to — undefined
   // for simple single-category campaigns, where there's nothing to label.
   roleName?: string;
-  onReleased: () => void;
-  showToast: (msg: string, ok?: boolean) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [releasing, setReleasing] = useState(false);
-  const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<{ url: string; label: string } | null>(null);
   const name = app.creator.fullName ?? displayEmailOrPhone(app.creator.user.email);
   const initials = name.slice(0, 2).toUpperCase();
-  const canRelease = app.workStatus === 'APPROVED' && app.paymentStatus === 'PAID';
-
-  function handleReleaseClick(e: MouseEvent) {
-    e.stopPropagation();
-    setShowReleaseConfirm(true);
-  }
-
-  async function handleConfirmRelease() {
-    setReleasing(true);
-    try {
-      await api.admin.releasePayment(app.id);
-      showToast(`Payment released to ${name}`);
-      setShowReleaseConfirm(false);
-      onReleased();
-    } catch (err) {
-      showToast((err as Error).message ?? 'Failed to release payment.', false);
-    } finally {
-      setReleasing(false);
-    }
-  }
 
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden">
@@ -219,15 +195,6 @@ function ApplicationRow({ app, commissionRate, roleName, onReleased, showToast }
             {appStatusIcon(app.status)}
             <StatusBadge status={appStatusBadge(app.status)} />
           </div>
-          {canRelease && (
-            <button
-              onClick={handleReleaseClick}
-              disabled={releasing}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition-colors"
-            >
-              <Wallet size={12} /> {releasing ? 'Releasing…' : 'Release Payment'}
-            </button>
-          )}
           {app.paymentStatus === 'RELEASED' && (
             <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
               <CheckCircle2 size={12} /> Paid
@@ -326,16 +293,6 @@ function ApplicationRow({ app, commissionRate, roleName, onReleased, showToast }
           </div>
         </div>
       )}
-      <ConfirmModal
-        open={showReleaseConfirm}
-        variant="success"
-        title="Release payment?"
-        body={`This releases NPR ${app.proposedRate.toLocaleString()} to ${name}. This cannot be undone.`}
-        confirmLabel="Release Payment"
-        loading={releasing}
-        onConfirm={handleConfirmRelease}
-        onCancel={() => setShowReleaseConfirm(false)}
-      />
       <VideoPlayerModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
     </div>
   );
@@ -742,8 +699,6 @@ export function CampaignDetail() {
                     app={app}
                     commissionRate={campaign.commissionRate}
                     roleName={campaign.requirements?.find((r) => r.id === app.requirementId)?.category.name}
-                    onReleased={refetch}
-                    showToast={showToast}
                   />
                 ))}
               </div>

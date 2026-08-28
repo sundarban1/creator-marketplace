@@ -32,7 +32,14 @@ export class BusinessService {
     if (!profile) {
       throw new AppError('Business profile not found', 404);
     }
-    return toBusinessProfileDto(profile);
+    // Every review this business has received (latest first, no cap) — shown as
+    // the last section on their own profile screen, mirroring the creator side.
+    const reviews = await analyticsService.getReviewsReceived(profile.userId, null).catch(() => []);
+    const reviewCount = reviews.length;
+    const averageRating = reviewCount > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+      : 0;
+    return { ...toBusinessProfileDto(profile), reviews, reviewSummary: { averageRating, reviewCount } };
   }
 
   async updateProfile(userId: string, input: UpdateBusinessProfileInput) {

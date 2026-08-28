@@ -36,13 +36,22 @@ function dedupeByName(cats: ApiCategory[], scope?: CategoryScope): ApiCategory[]
   return [...byName.values()];
 }
 
-/** Pins the catch-all "Other" row to the end of a picker instead of wherever
- *  the API's name-ascending sort drops it — sort is stable, so every other row
- *  keeps its alphabetical position. `key` is optional so a caller can pass a
- *  list that mixes live rows with stale saved-name-only chips. */
-export function sortOtherLast<T extends { key?: string; name: string }>(cats: T[]): T[] {
-  const isOther = (c: T) => c.key === 'other-industry' || c.key === 'other-provider' || c.name === 'Other';
-  return [...cats].sort((a, b) => Number(isOther(a)) - Number(isOther(b)));
+/** True for the catch-all "Other" category — the two seeded rows
+ *  (`other-industry`, `other-provider`) by key, plus any row/label named
+ *  "Other" (admin-created ones, or a plain stored category string with no key). */
+export function isOtherCategory(c: { key?: string; name?: string } | string): boolean {
+  const name = typeof c === 'string' ? c : c.name;
+  const key  = typeof c === 'string' ? undefined : c.key;
+  return key === 'other-industry' || key === 'other-provider' || name === 'Other';
+}
+
+/** Pins the catch-all "Other" row to the end of a picker/list instead of
+ *  wherever the API's name-ascending sort drops it — sort is stable, so every
+ *  other row keeps its position. Accepts either category objects (`key` optional
+ *  so a caller can mix live rows with stale saved-name-only chips) or plain
+ *  category-name strings (read-only tag lists). */
+export function sortOtherLast<T extends { key?: string; name: string } | string>(cats: T[]): T[] {
+  return [...cats].sort((a, b) => Number(isOtherCategory(a)) - Number(isOtherCategory(b)));
 }
 
 /** Pulls the business's own onboarding-selected industry/industries to the

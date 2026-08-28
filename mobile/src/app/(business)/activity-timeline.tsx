@@ -23,6 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { campaignService, type DeliverableVideo, type DeliverableFile } from '@/services/campaign';
+import type { ApiReviewReceived } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { useDeliverableVideoUploads, type DeliverableUploadItem } from '@/hooks/useDeliverableVideoUploads';
 import { useDeliverableFileUploads, type DeliverableFileUploadItem } from '@/hooks/useDeliverableFileUploads';
@@ -761,6 +762,14 @@ export default function CampaignWorkspaceScreen() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [app, setApp]           = useState<AppInfo | null>(null);
+  // app.creatorName holds the *other party's* name in both directions (the
+  // brand for a creator viewer, the creator's full name for a business viewer).
+  const otherPartyName = app?.creatorName
+    ?? t(isCreator ? 'activityTimeline.fallbackBrand' : 'activityTimeline.fallbackCreator');
+  const rateTitle = t(
+    isCreator ? 'activityTimeline.rateBusinessTitle' : 'activityTimeline.rateCreatorTitle',
+    { name: otherPartyName },
+  );
   const [loading, setLoading]   = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast]       = useState('');
@@ -786,6 +795,9 @@ export default function CampaignWorkspaceScreen() {
   // above, which are about the submitted deliverables, not rating the other
   // party. undefined = not fetched yet, null = fetched, none exists.
   const [myReview, setMyReview] = useState<{ id: string; rating: number; comment: string | null; createdAt: string } | null | undefined>(undefined);
+  // The review the other party left for us — shown as a read-only card once it
+  // arrives (also where the review_received bell notification deep-links).
+  const [reviewReceived, setReviewReceived] = useState<ApiReviewReceived | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratingValue, setRatingValue]     = useState(0);
   const [ratingComment, setRatingComment] = useState('');
@@ -1030,7 +1042,7 @@ export default function CampaignWorkspaceScreen() {
             paymentStatus:    (myApp.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
             proposedRateRaw:  myApp.proposedRateRaw,
             submittedAt:      myApp.workSubmittedAt ?? null,
-            deliverableUrls:  null,
+            deliverableUrls:  myApp.deliverableUrls ?? null,
             deliverableVideos: myApp.deliverableVideos ?? [],
             deliverableFiles: myApp.deliverableFiles ?? [],
             creatorProfileId: myApp.businessId,
@@ -1089,6 +1101,7 @@ export default function CampaignWorkspaceScreen() {
   useEffect(() => {
     if (app?.workStatus !== 'COMPLETED' || !app.id) return;
     campaignService.getMyReview(app.id).then(setMyReview).catch(() => setMyReview(null));
+    campaignService.getReviewReceived(app.id).then(setReviewReceived).catch(() => setReviewReceived(null));
   }, [app?.workStatus, app?.id]);
 
   // Agreement tab (§52) — lazy, fetched only once the tab is actually opened
@@ -1284,10 +1297,15 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       await campaignService.approveWork(app.id);
-      // Approving a free event completes it outright server-side (there's no
-      // payment release left to wait on) — mirror that locally so a refetch
-      // doesn't change what this screen shows.
-      setApp(a => a ? { ...a, workStatus: campaign?.campaignType === 'OPEN_EVENT' ? 'COMPLETED' : 'APPROVED' } : a);
+      // Approval completes the job outright server-side now — a free event has
+      // nothing to pay, and a paid campaign releases the held escrow straight
+      // to the creator's wallet in the same step. Mirror that locally so a
+      // refetch doesn't change what this screen shows.
+      setApp(a => a ? {
+        ...a,
+        workStatus: 'COMPLETED',
+        paymentStatus: campaign?.campaignType === 'OPEN_EVENT' ? a.paymentStatus : 'RELEASED',
+      } : a);
       showToast(t('activityTimeline.toastWorkApproved'));
     } catch (e: any) {
       showToast(e?.message ?? t('activityTimeline.toastApproveFailed'));
@@ -1556,6 +1574,54 @@ export default function CampaignWorkspaceScreen() {
           }}
         />
 
+        {/* ── Rate your experience (§58) — shown once the project is fully
+              complete, for both sides. Sits directly below the completion card. ── */}
+        {ws === 'COMPLETED' && myReview !== undefined && (
+          <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+            {myReview ? (
+              <View style={{ gap: 6 }}>
+                <Text style={[s.cardTitle, { color: C.text }]}>{t('activityTimeline.yourRatingTitle')}</Text>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <FontAwesome5 key={n} name="star" solid size={16} color={n <= myReview.rating ? '#F59E0B' : '#E5E7EB'} />
+                  ))}
+                </View>
+                {myReview.comment && <Text style={{ color: C.textSecondary, fontSize: 13 }}>{myReview.comment}</Text>}
+              </View>
+            ) : (
+              <Pressable
+                style={[s.ratingCta, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
+                onPress={() => { setRatingValue(0); setRatingComment(''); setShowRatingModal(true); }}>
+                <FontAwesome5 name="star" solid size={18} color="#F59E0B" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.cardTitle, { color: C.text }]}>{rateTitle}</Text>
+                  <Text style={{ color: C.textSecondary, fontSize: 12 }}>{t('activityTimeline.rateSub')}</Text>
+                </View>
+                <FontAwesome5 name="chevron-right" size={14} color="#F59E0B" />
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {/* ── Review received — the rating the other party left for you (§58). ── */}
+        {ws === 'COMPLETED' && reviewReceived && (
+          <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={{ gap: 6 }}>
+              <Text style={[s.cardTitle, { color: C.text }]}>
+                {t('activityTimeline.reviewReceivedTitle', { name: reviewReceived.from.name ?? otherPartyName })}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 4 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <FontAwesome5 key={n} name="star" solid size={16} color={n <= reviewReceived.rating ? '#F59E0B' : '#E5E7EB'} />
+                ))}
+              </View>
+              {reviewReceived.comment && (
+                <Text style={{ color: C.textSecondary, fontSize: 13 }}>{reviewReceived.comment}</Text>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* ── Security Footer ── */}
         <View style={s.secFooter}>
           <FontAwesome5 name="shield-alt" solid size={13} color="#9CA3AF" />
@@ -1708,37 +1774,6 @@ export default function CampaignWorkspaceScreen() {
             ))}
           </View>
         </View>
-
-        {/* ── Rate your experience (§58) — shown once the project is fully
-              complete, for both sides. ── */}
-        {ws === 'COMPLETED' && myReview !== undefined && (
-          <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {myReview ? (
-              <View style={{ gap: 6 }}>
-                <Text style={[s.cardTitle, { color: C.text }]}>{t('activityTimeline.yourRatingTitle')}</Text>
-                <View style={{ flexDirection: 'row', gap: 4 }}>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <FontAwesome5 key={n} name="star" solid size={16} color={n <= myReview.rating ? '#F59E0B' : '#E5E7EB'} />
-                  ))}
-                </View>
-                {myReview.comment && <Text style={{ color: C.textSecondary, fontSize: 13 }}>{myReview.comment}</Text>}
-              </View>
-            ) : (
-              <Pressable
-                style={[s.ratingCta, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
-                onPress={() => { setRatingValue(0); setRatingComment(''); setShowRatingModal(true); }}>
-                <FontAwesome5 name="star" solid size={18} color="#F59E0B" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.cardTitle, { color: C.text }]}>
-                    {isCreator ? t('activityTimeline.rateBusinessTitle') : t('activityTimeline.rateCreatorTitle')}
-                  </Text>
-                  <Text style={{ color: C.textSecondary, fontSize: 12 }}>{t('activityTimeline.rateSub')}</Text>
-                </View>
-                <FontAwesome5 name="chevron-right" size={14} color="#F59E0B" />
-              </Pressable>
-            )}
-          </View>
-        )}
         </>)}
 
         <View style={{ height: 40 }} />
@@ -2114,8 +2149,8 @@ export default function CampaignWorkspaceScreen() {
           </View>
         )}
 
-        {/* True empty state — neither a video nor a link was submitted */}
-        {submittedUrls.length === 0 && (app?.deliverableVideos ?? []).length === 0 && (
+        {/* True empty state — no video, file, or link was submitted */}
+        {submittedUrls.length === 0 && (app?.deliverableVideos ?? []).length === 0 && (app?.deliverableFiles ?? []).length === 0 && (
           <View style={rv.section}>
             <View style={rv.noLinks}>
               <FontAwesome5 name="link" solid size={20} color="#D1D5DB" />
@@ -2202,7 +2237,7 @@ export default function CampaignWorkspaceScreen() {
         </View>
       </BottomSheet>
 
-      <BottomSheet visible={showRatingModal} onClose={() => setShowRatingModal(false)} title={isCreator ? t('activityTimeline.rateBusinessTitle') : t('activityTimeline.rateCreatorTitle')}>
+      <BottomSheet visible={showRatingModal} onClose={() => setShowRatingModal(false)} title={rateTitle}>
         <Text style={sh.sub}>{t('activityTimeline.rateSub')}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginVertical: 18 }}>
           {[1, 2, 3, 4, 5].map((n) => (

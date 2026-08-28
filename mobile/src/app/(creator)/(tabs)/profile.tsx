@@ -1,7 +1,7 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Image, Linking, Platform,
   Pressable, ScrollView, StyleSheet, Text, View,
@@ -9,6 +9,7 @@ import {
 import { useToast } from '@/components/Toast';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { SectionEmptyState } from '@/components/SectionEmptyState';
+import { ReviewsList } from '@/components/ReviewsList';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -17,7 +18,7 @@ import { creatorService, type ApiCreatorProfile } from '@/services/creator';
 import { portfolioService, type ApiPortfolioItem } from '@/services/portfolio';
 import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { IconButton } from '@/components/IconButton';
@@ -80,6 +81,22 @@ export default function CreatorProfileScreen() {
   const [coverUploading, setCoverUploading] = useState(false);
   const [eventCounts, setEventCounts]   = useState({ completed: 0 });
   const [portfolioItems, setPortfolioItems] = useState<ApiPortfolioItem[]>([]);
+
+  // A review_received notification deep-links here with ?focus=reviews — scroll
+  // the reviews section into view once it (and the profile behind it) lands.
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
+  const reviewsY = useRef(0);
+  const didScrollToReviews = useRef(false);
+  useEffect(() => {
+    if (focus !== 'reviews' || didScrollToReviews.current) return;
+    if (!profile?.reviews?.length) return;
+    didScrollToReviews.current = true;
+    const id = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(reviewsY.current - 12, 0), animated: true });
+    }, 350);
+    return () => clearTimeout(id);
+  }, [focus, profile?.reviews?.length]);
 
   useFocusEffect(useCallback(() => {
     // Show the last-known profile immediately (e.g. offline) without
@@ -160,7 +177,7 @@ export default function CreatorProfileScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
         {/* ── Hero Cover ── */}
         <View style={s.cover}>
@@ -283,7 +300,7 @@ export default function CreatorProfileScreen() {
           C={C}>
           {profile?.categories?.length ? (
             <View style={s.chipWrap}>
-              {profile.categories.map((cat) => {
+              {sortOtherLast(profile.categories).map((cat) => {
                 const meta = getCategoryMeta(allCategories, cat);
                 return (
                   <View key={cat} style={[s.chip, { backgroundColor: C.primaryLight }]}>
@@ -445,6 +462,27 @@ export default function CreatorProfileScreen() {
           )}
         </SectionCard> */}
 
+        {/* ── Reviews (kept last) — every review this creator has received,
+              latest first (backend orders by createdAt desc) ── */}
+        {!!profile?.reviews?.length && (
+          <View onLayout={(e) => { reviewsY.current = e.nativeEvent.layout.y; }}>
+            <SectionCard title={t('reviewsList.title')} C={C}>
+              {profile.reviewSummary && profile.reviewSummary.reviewCount > 0 ? (
+                <View style={[s.reviewSummaryRow, { borderBottomColor: C.border }]}>
+                  <FontAwesome5 name="star" solid size={13} color="#F59E0B" />
+                  <Text style={[s.reviewSummaryText, { color: C.textSecondary }]}>
+                    {t('reviewsList.summary', {
+                      rating: profile.reviewSummary.averageRating.toFixed(1),
+                      count: profile.reviewSummary.reviewCount,
+                    })}
+                  </Text>
+                </View>
+              ) : null}
+              <ReviewsList reviews={profile.reviews} />
+            </SectionCard>
+          </View>
+        )}
+
       </ScrollView>
       </MaxWidthContainer>
     </SafeAreaView>
@@ -457,7 +495,7 @@ function SectionCard({
   title, action, children, C,
 }: {
   title: string;
-  action: { label: string; onPress: () => void };
+  action?: { label: string; onPress: () => void };
   children: React.ReactNode;
   C: ReturnType<typeof useAppColors>;
 }) {
@@ -465,9 +503,11 @@ function SectionCard({
     <View style={[s.sectionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={s.sectionHeader}>
         <Text style={[s.sectionTitle, { color: C.text }]}>{title}</Text>
-        <Pressable onPress={action.onPress} hitSlop={8}>
-          <Text style={[s.sectionAction, { color: C.brinjal1 }]}>{action.label}</Text>
-        </Pressable>
+        {action ? (
+          <Pressable onPress={action.onPress} hitSlop={8}>
+            <Text style={[s.sectionAction, { color: C.brinjal1 }]}>{action.label}</Text>
+          </Pressable>
+        ) : null}
       </View>
       {children}
     </View>
@@ -527,6 +567,10 @@ const s = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   sectionTitle:  { fontSize: 15, fontFamily: F.bold },
   sectionAction: { fontSize: 13, fontFamily: F.bold },
+
+  // Reviews
+  reviewSummaryRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, paddingBottom: 12, marginBottom: 12, borderBottomWidth: 1 },
+  reviewSummaryText: { fontSize: 13, fontFamily: F.semibold },
 
   // Category chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

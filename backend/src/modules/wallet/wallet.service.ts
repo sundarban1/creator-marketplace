@@ -10,6 +10,21 @@ import type { PayoutMethod, Prisma } from '@prisma/client';
 import type { CreateWithdrawalInput } from './wallet.schema';
 
 const DEFAULT_MIN_WITHDRAWAL = 500;
+const DEFAULT_MAX_WITHDRAWAL = 10000;
+const DEFAULT_DAILY_LIMIT = 25000;
+
+function positiveSetting(value: unknown, fallback: number) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+// The daily withdrawal cap is a per-calendar-day limit that resets at local
+// midnight in Nepal. Nepal Time is a fixed +05:45 offset (no DST), so the start
+// of "today" in Kathmandu maps to an exact UTC instant.
+function startOfTodayNepal(now = new Date()): Date {
+  const localDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kathmandu' }).format(now);
+  return new Date(`${localDate}T00:00:00+05:45`);
+}
 
 function snapshotOf(m: PayoutMethod): Prisma.InputJsonValue {
   return {
@@ -60,10 +75,41 @@ export class WalletService {
     };
   }
 
-  private async getMinWithdrawal() {
+  private async getWithdrawalLimits() {
     const settings = await getCachedSettings();
-    const value = Number(settings['wallet.minWithdrawal']);
-    return Number.isFinite(value) && value > 0 ? value : DEFAULT_MIN_WITHDRAWAL;
+    return {
+      min:   positiveSetting(settings['wallet.minWithdrawal'], DEFAULT_MIN_WITHDRAWAL),
+      max:   positiveSetting(settings['wallet.maxWithdrawal'], DEFAULT_MAX_WITHDRAWAL),
+      daily: positiveSetting(settings['wallet.dailyLimit'], DEFAULT_DAILY_LIMIT),
+    };
+  }
+
+  /**
+   * The full wallet-summary payload the mobile client refreshes its state from
+   * — balances, the configured limits, and the creator's current usage against
+   * the "one pending at a time" and daily-cap rules.
+   */
+  private async buildSummary(creatorId: string) {
+    const [balances, limits, pendingCount, dailyUsed] = await Promise.all([
+      this.computeBalances(creatorId),
+      this.getWithdrawalLimits(),
+      this.repo.countReservedWithdrawals(creatorId),
+      this.repo.sumWithdrawalsRequestedSince(creatorId, startOfTodayNepal()),
+    ]);
+    // Today's requests (pending, processing and paid alike) all count toward the
+    // daily cap. Once the remaining headroom drops below the minimum, no further
+    // request can be made today.
+    const dailyWithdrawalLeft = Math.max(0, limits.daily - dailyUsed);
+    return {
+      ...balances,
+      minWithdrawal:        limits.min,
+      maxWithdrawal:        limits.max,
+      dailyLimit:           limits.daily,
+      dailyWithdrawalUsed:  dailyUsed,
+      dailyWithdrawalLeft,
+      dailyLimitReached:    dailyWithdrawalLeft < limits.min,
+      hasPendingWithdrawal: pendingCount > 0,
+    };
   }
 
   private async resolveCreatorId(userId: string) {
@@ -74,11 +120,7 @@ export class WalletService {
 
   async getWalletSummary(userId: string) {
     const profile = await this.resolveCreatorId(userId);
-    const [balances, minWithdrawal] = await Promise.all([
-      this.computeBalances(profile.id),
-      this.getMinWithdrawal(),
-    ]);
-    return { ...balances, minWithdrawal };
+    return this.buildSummary(profile.id);
   }
 
   async createWithdrawalRequest(userId: string, input: CreateWithdrawalInput) {
@@ -89,9 +131,12 @@ export class WalletService {
       throw new AppError('Payout method not found', 404);
     }
 
-    const minWithdrawal = await this.getMinWithdrawal();
-    if (input.amount < minWithdrawal) {
-      throw new AppError(`Minimum withdrawal is Rs. ${minWithdrawal.toLocaleString()}`, 400);
+    const limits = await this.getWithdrawalLimits();
+    if (input.amount < limits.min) {
+      throw new AppError(`The minimum you can withdraw is Rs. ${limits.min.toLocaleString()}.`, 400);
+    }
+    if (input.amount > limits.max) {
+      throw new AppError(`You can withdraw at most Rs. ${limits.max.toLocaleString()} in a single request.`, 400);
     }
 
     // Auto-generated at request time — the creator sees it immediately and the
@@ -105,9 +150,39 @@ export class WalletService {
     const withdrawal = await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`withdrawal:${profile.id}`}))`;
 
+      // One pending request at a time — the creator must wait for the current
+      // one to be paid or rejected before asking for more.
+      const pendingCount = await this.repo.countReservedWithdrawals(profile.id);
+      if (pendingCount > 0) {
+        throw new AppError(
+          'You already have a withdrawal request being processed. Please wait for it to be completed before requesting another.',
+          409,
+        );
+      }
+
       const { withdrawableBalance } = await this.computeBalances(profile.id);
       if (input.amount > withdrawableBalance) {
-        throw new AppError('Amount exceeds your withdrawable balance', 400);
+        throw new AppError(
+          `You can only withdraw up to your available balance of Rs. ${withdrawableBalance.toLocaleString()}.`,
+          400,
+        );
+      }
+
+      // Per-day cap (resets at local midnight in Nepal) across every request
+      // that still counts today — pending, processing and paid alike, only
+      // rejected/cancelled are excluded.
+      const dailyUsed = await this.repo.sumWithdrawalsRequestedSince(
+        profile.id,
+        startOfTodayNepal(),
+      );
+      const left = Math.max(0, limits.daily - dailyUsed);
+      if (dailyUsed + input.amount > limits.daily) {
+        throw new AppError(
+          left < limits.min
+            ? `You've reached your withdrawal limit for today (Rs. ${limits.daily.toLocaleString()}). Please come back and request again tomorrow.`
+            : `This would take you over today's withdrawal limit of Rs. ${limits.daily.toLocaleString()}. You can still withdraw up to Rs. ${left.toLocaleString()} today.`,
+          400,
+        );
       }
 
       return tx.withdrawal.create({
@@ -131,10 +206,9 @@ export class WalletService {
       refType: 'withdrawal',
     }).catch(() => {});
 
-    const balances = await this.computeBalances(profile.id);
-    // `minWithdrawal` (resolved above) is included so the payload matches the
-    // full wallet-summary shape the mobile client refreshes its state from.
-    return { withdrawal: toWithdrawalDto(withdrawal), ...balances, minWithdrawal };
+    // Return the full wallet-summary shape so the mobile client can refresh its
+    // state (balances, limits, pending flag) straight from the response.
+    return { withdrawal: toWithdrawalDto(withdrawal), ...(await this.buildSummary(profile.id)) };
   }
 
   async listWithdrawals(userId: string) {

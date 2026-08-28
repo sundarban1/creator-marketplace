@@ -26,7 +26,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import type { ApiCategory } from '@/services/category';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -319,7 +319,7 @@ export default function CreatorPeerDetailScreen() {
           <View style={[s.section, { backgroundColor: C.surface }]}>
             <SectionTitle label={t('creatorDetailExtra.sectionCategories')} color={C.textSecondary} />
             <View style={s.chips}>
-              {profile.categories.map((cat) => {
+              {sortOtherLast(profile.categories).map((cat) => {
                 const meta = getCategoryMeta(allCategories, cat);
                 return (
                   <View key={cat} style={[s.catChip, { backgroundColor: C.primaryLight }]}>

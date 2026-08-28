@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
-import { getCategoryMeta } from '@/hooks/useCategories';
+import { getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import type { ApiCategory } from '@/services/category';
 import { F, RADIUS, SCREEN_GUTTER } from '@/utilities/constants';
 
@@ -36,8 +36,12 @@ type Props = {
 // "Opportunities" tab (icon + label, rounded-full, filled when active) —
 // shared here so Opportunities/Businesses/People show categories the exact
 // same way instead of each tab inventing its own look.
-export function CategoryPillRow({ categories, activeLabels, onToggle, wrap, showAll, allLabel = 'All', onAllPress, autoScrollToActive }: Props) {
+export function CategoryPillRow({ categories: rawCategories, activeLabels, onToggle, wrap, showAll, allLabel = 'All', onAllPress, autoScrollToActive }: Props) {
   const C = useAppColors();
+  // The catch-all "Other" pill always sits at the end of the row, wherever the
+  // caller's own ordering would otherwise drop it (stable sort — nothing else
+  // moves).
+  const categories = sortOtherLast(rawCategories);
   const scrollRef = useRef<ScrollView>(null);
   const didAutoScroll = useRef(false);
 

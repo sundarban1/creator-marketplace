@@ -549,4 +549,16 @@ export class CampaignController {
       next(err);
     }
   }
+
+  // The review the other party left for the caller on this application — null
+  // when they haven't rated yet. Feeds the "review received" card on the
+  // activity timeline (and the review_received bell notification lands here).
+  async getReviewReceived(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const review = await analyticsService.getReviewReceivedForApp(req.params.appId, req.user!.id);
+      success(res, review, 'Review fetched');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

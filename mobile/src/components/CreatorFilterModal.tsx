@@ -6,7 +6,7 @@ import { LocationSearchPicker, type LocationEntry } from '@/components/LocationS
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { F, RADIUS } from '@/utilities/constants';
-import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 
 // Shared Category / Location / Budget / Platform filter sheet for browsing
@@ -147,7 +147,7 @@ export function CreatorFilterModal({
             hint={temp.categories.length > 0 ? t('filterModal.selectedCount', { count: temp.categories.length }) : undefined}
           />
           <View style={s.chips}>
-            {availableCategories.map((cat) => {
+            {sortOtherLast(availableCategories).map((cat) => {
               const meta = getCategoryMeta(allCategories, cat);
               const sel = temp.categories.includes(cat);
               return (

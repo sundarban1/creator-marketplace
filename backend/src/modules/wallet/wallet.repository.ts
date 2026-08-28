@@ -56,6 +56,30 @@ export class WalletRepository {
     return result._sum.amount ?? 0;
   }
 
+  /** How many in-flight (PENDING/PROCESSING) requests the creator has right now. */
+  async countReservedWithdrawals(creatorId: string) {
+    return prisma.withdrawal.count({
+      where: { creatorId, status: { in: [...RESERVED_WITHDRAWAL_STATUSES] } },
+    });
+  }
+
+  /**
+   * Total amount the creator has requested since `since` (start of the current
+   * day) that still counts against the daily cap — everything except
+   * REJECTED/CANCELLED (those never moved money, so they don't consume it).
+   */
+  async sumWithdrawalsRequestedSince(creatorId: string, since: Date) {
+    const result = await prisma.withdrawal.aggregate({
+      where: {
+        creatorId,
+        createdAt: { gte: since },
+        status:    { notIn: ['REJECTED', 'CANCELLED'] },
+      },
+      _sum: { amount: true },
+    });
+    return result._sum.amount ?? 0;
+  }
+
   /**
    * A unique, human-readable reference for a new withdrawal request. The
    * pre-check keeps the space clean; the `referenceCode` unique index is the

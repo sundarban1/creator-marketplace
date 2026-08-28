@@ -47,13 +47,23 @@ type Props = {
   onClose: () => void;
   withdrawableBalance: number;
   minWithdrawal: number;
+  maxWithdrawal: number;
+  dailyLimit: number;
+  /** Headroom left against the daily limit (Rs.). */
+  dailyWithdrawalLeft: number;
+  /** True when today's requests leave no room for another — blocks new requests until tomorrow. */
+  dailyLimitReached: boolean;
+  /** True when a request is already in progress — only one is allowed at a time. */
+  hasPendingWithdrawal: boolean;
   payoutMethods: ApiPayoutMethod[];
   onWithdraw: (amount: number, payoutMethodId: string) => Promise<void>;
   onManageMethods: () => void;
 };
 
 export function WithdrawModal({
-  visible, onClose, withdrawableBalance = 0, minWithdrawal = 0, payoutMethods, onWithdraw, onManageMethods,
+  visible, onClose, withdrawableBalance = 0, minWithdrawal = 0, maxWithdrawal = 0,
+  dailyLimit = 0, dailyWithdrawalLeft = 0, dailyLimitReached = false, hasPendingWithdrawal = false,
+  payoutMethods, onWithdraw, onManageMethods,
 }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -76,10 +86,17 @@ export function WithdrawModal({
   async function handleSubmit() {
     Keyboard.dismiss();
     const amount = parseFloat(amountText);
+    if (hasPendingWithdrawal) { setError(t('wallet.errorPendingExists')); return; }
+    if (dailyLimitReached) { setError(t('wallet.errorDailyLimitReached', { limit: dailyLimit.toLocaleString() })); return; }
     if (!method) { setError(t('wallet.errorNoMethod')); return; }
     if (!amountText || isNaN(amount) || amount <= 0) { setError(t('wallet.errorInvalidAmount')); return; }
     if (amount < minWithdrawal) { setError(t('wallet.errorBelowMinimum', { amount: minWithdrawal.toLocaleString() })); return; }
+    if (maxWithdrawal > 0 && amount > maxWithdrawal) { setError(t('wallet.errorAboveMaximum', { amount: maxWithdrawal.toLocaleString() })); return; }
     if (amount > withdrawableBalance) { setError(t('wallet.errorInsufficientBalance')); return; }
+    if (dailyLimit > 0 && amount > dailyWithdrawalLeft) {
+      setError(t('wallet.errorDailyLimitLeft', { amount: dailyWithdrawalLeft.toLocaleString(), limit: dailyLimit.toLocaleString() }));
+      return;
+    }
 
     setError('');
     setSubmitting(true);
@@ -101,6 +118,9 @@ export function WithdrawModal({
   }
 
   const hasMethods = payoutMethods.length > 0;
+  // A new request can't be made right now: one is already in progress, or
+  // today's requests have used up the daily limit.
+  const blocked = hasPendingWithdrawal || dailyLimitReached;
 
   return (
     <BottomSheet
@@ -113,10 +133,10 @@ export function WithdrawModal({
         <Pressable
           style={({ pressed }) => [
             styles.submitBtn,
-            { backgroundColor: C.brinjal1, shadowColor: C.brinjal1, opacity: submitting ? 0.7 : 1 },
+            { backgroundColor: C.brinjal1, shadowColor: C.brinjal1, opacity: (submitting || blocked) ? 0.5 : 1 },
             pressed && { opacity: 0.88 },
           ]}
-          disabled={submitting}
+          disabled={submitting || blocked}
           onPress={handleSubmit}>
           {submitting
             ? <ActivityIndicator size="small" color="#fff" />
@@ -125,6 +145,7 @@ export function WithdrawModal({
       ) : undefined}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.body}>
+          <Text style={[styles.requestNote, { color: C.active }]}>{t('wallet.requestNote')}</Text>
           {!hasMethods ? (
             <View style={styles.emptyMethods}>
               <Text style={[styles.emptyMethodsText, { color: C.textSecondary }]}>{t('wallet.noPayoutMethodsHint')}</Text>
@@ -134,6 +155,20 @@ export function WithdrawModal({
             </View>
           ) : (
             <>
+              {hasPendingWithdrawal ? (
+                <View style={[styles.pendingBanner, { backgroundColor: C.draft + '1F', borderColor: C.draft }]}>
+                  <FontAwesome5 name="clock" solid size={13} color={C.draft} />
+                  <Text style={[styles.pendingText, { color: C.text }]}>{t('wallet.pendingBanner')}</Text>
+                </View>
+              ) : dailyLimitReached && (
+                <View style={[styles.pendingBanner, { backgroundColor: C.draft + '1F', borderColor: C.draft }]}>
+                  <FontAwesome5 name="calendar-times" solid size={13} color={C.draft} />
+                  <Text style={[styles.pendingText, { color: C.text }]}>
+                    {t('wallet.dailyLimitReachedBanner', { limit: dailyLimit.toLocaleString() })}
+                  </Text>
+                </View>
+              )}
+
               <View style={[styles.availableCard, { backgroundColor: C.primaryLight }]}>
                 <Text style={[styles.availableLabel, { color: C.brinjal1 }]}>{t('wallet.availableToWithdraw')}</Text>
                 <Text style={[styles.availableValue, { color: C.brinjal1 }]}>Rs. {withdrawableBalance.toLocaleString()}</Text>
@@ -152,11 +187,30 @@ export function WithdrawModal({
                   inputAccessoryViewID={Platform.OS === 'ios' ? AMOUNT_ACCESSORY_ID : undefined}
                 />
               </View>
-              <Text style={[styles.minHint, { color: C.textSecondary }]}>
-                {t('wallet.minWithdrawalHint', { amount: minWithdrawal.toLocaleString() })}
-              </Text>
+              <View style={styles.limitsBox}>
+                <Text style={[styles.limitRow, { color: C.textSecondary }]}>
+                  • {t('wallet.limitMin', { amount: minWithdrawal.toLocaleString() })}
+                </Text>
+                {maxWithdrawal > 0 && (
+                  <Text style={[styles.limitRow, { color: C.textSecondary }]}>
+                    • {t('wallet.limitMax', { amount: maxWithdrawal.toLocaleString() })}
+                  </Text>
+                )}
+                {dailyLimit > 0 && (
+                  <Text style={[styles.limitRow, { color: C.textSecondary }]}>
+                    • {t('wallet.limitDaily', { amount: dailyLimit.toLocaleString(), left: dailyWithdrawalLeft.toLocaleString() })}
+                  </Text>
+                )}
+                <Text style={[styles.limitRow, { color: C.textSecondary }]}>• {t('wallet.limitOnePending')}</Text>
+                <Text style={[styles.limitRow, { color: C.textSecondary }]}>• {t('wallet.limitAdminApproval')}</Text>
+              </View>
 
-              <Text style={[styles.label, { color: C.textSecondary }]}>{t('wallet.selectPayoutMethod')}</Text>
+              <View style={styles.labelRow}>
+                <Text style={[styles.label, { color: C.textSecondary }]}>{t('wallet.selectPayoutMethod')}</Text>
+                <Pressable onPress={() => { handleClose(); onManageMethods(); }} hitSlop={8}>
+                  <Text style={[styles.manageLink, { color: C.brinjal1 }]}>{t('payoutMethods.manage')}</Text>
+                </Pressable>
+              </View>
               <View style={{ gap: 8 }}>
                 {payoutMethods.map((m) => {
                   const active = method?.id === m.id;
@@ -192,10 +246,6 @@ export function WithdrawModal({
                 })}
               </View>
 
-              <Pressable onPress={() => { handleClose(); onManageMethods(); }} style={{ marginTop: 10 }}>
-                <Text style={[styles.manageLink, { color: C.brinjal1 }]}>{t('payoutMethods.manage')}</Text>
-              </Pressable>
-
               {!!error && <Text style={styles.errorText}>{error}</Text>}
             </>
           )}
@@ -222,8 +272,15 @@ const styles = StyleSheet.create({
   availableLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   availableValue: { fontSize: 22, fontFamily: F.bold },
 
-  label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold, marginTop: 16, marginBottom: 8 },
-  minHint: { fontSize: 12, fontFamily: F.regular, marginTop: 6 },
+  requestNote: { fontSize: 13, fontFamily: F.bold, lineHeight: 20, marginBottom: 4 },
+  label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 8 },
+
+  limitsBox: { marginTop: 8, gap: 3 },
+  limitRow: { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
+
+  pendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 4 },
+  pendingText: { flex: 1, fontSize: 12.5, fontFamily: F.medium, lineHeight: 18 },
 
   methodRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1.5, paddingVertical: 12, paddingHorizontal: 14 },
   methodGlyph: { width: 40, height: 40, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },

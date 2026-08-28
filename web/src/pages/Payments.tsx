@@ -3,11 +3,13 @@ import { PageHeader } from '../components/PageHeader';
 import { PaymentTransactionsTab } from './payments/PaymentTransactionsTab';
 import { PaymentMethodsTab } from './payments/PaymentMethodsTab';
 import { WithdrawalsTab } from './payments/WithdrawalsTab';
+import { WithdrawalLimitsTab } from './payments/WithdrawalLimitsTab';
 
 const TABS = [
   { key: 'transactions', label: 'Transactions' },
   { key: 'withdrawals',  label: 'Withdrawal Requests' },
   { key: 'methods',      label: 'Payment Methods' },
+  { key: 'limits',       label: 'Creator Withdrawal Limit' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -36,6 +38,7 @@ export function Payments() {
       {tab === 'transactions' && <PaymentTransactionsTab />}
       {tab === 'withdrawals'  && <WithdrawalsTab />}
       {tab === 'methods'      && <PaymentMethodsTab />}
+      {tab === 'limits'       && <WithdrawalLimitsTab />}
     </div>
   );
 }

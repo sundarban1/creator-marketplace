@@ -41,6 +41,8 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
   new_campaign:             { icon: 'bullhorn',            iconColor: '#8B5CF6', iconBg: '#F5F3FF', accentColor: '#8B5CF6', labelKey: 'notifications.typeNewEvent'     },
   work_approved:            { icon: 'trophy',               iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeWorkApproved'  },
   payment_released:         { icon: 'money-bill-alt',                 iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typePayment'       },
+  project_completed:        { icon: 'flag-checkered',  iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeProjectComplete' },
+  review_received:          { icon: 'star',            iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeReviewReceived' },
   message_request_accepted: { icon: 'comment-dots', iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeConnected'     },
   business_favorited:       { icon: 'heart',               iconColor: '#EF4444', iconBg: '#FFF1F2', accentColor: '#EF4444', labelKey: 'notifications.typeFavorited'     },
   creator_saved:            { icon: 'bookmark',            iconColor: '#7C3AED', iconBg: '#F5F3FF', accentColor: '#7C3AED', labelKey: 'notifications.typeSaved'         },
@@ -51,6 +53,9 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
   event_expired:            { icon: 'hourglass-end',   iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeEventExpired'  },
   team_invitation:          { icon: 'user-plus',       iconColor: '#0D9488', iconBg: '#F0FDFA', accentColor: '#0D9488', labelKey: 'notifications.typeTeamInvitation' },
   team_invitation_response: { icon: 'users',           iconColor: '#0D9488', iconBg: '#F0FDFA', accentColor: '#0D9488', labelKey: 'notifications.typeTeamInvitationResponse' },
+  withdrawal_processing:    { icon: 'sync-alt',        iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeWithdrawalProcessing' },
+  withdrawal_paid:          { icon: 'money-check-alt',  iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeWithdrawalPaid' },
+  withdrawal_rejected:      { icon: 'times-circle',     iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeWithdrawalRejected' },
 };
 
 const FALLBACK: TypeConfig = { icon: 'bell', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeNotification' };

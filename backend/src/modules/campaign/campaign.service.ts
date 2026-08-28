@@ -15,6 +15,7 @@ import { notificationService } from '../notifications/notification.service';
 import { contractService } from '../contract/contract.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
+import { recordWalletTransactionIdempotent } from '../wallet/wallet.ledger';
 import { emitToRole } from '../../socket';
 import { logger } from '../../config/logger';
 import { logActivity, getActivityForEntity } from '../logging/activity.service';
@@ -1585,54 +1586,125 @@ export class CampaignService {
     if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
 
+    const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
+
+    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+
+    const creatorUserId = app.creator.userId;
+
     // A free event has no escrow to release, so the business's approval is
     // itself the end of the job — park it at COMPLETED rather than APPROVED,
     // which would otherwise wait forever on a payment release that never
     // comes (and keep the campaign permanently unclosable, see
     // countUnresolvedApplications).
-    const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
-    const updated = isFreeEvent
-      ? await this.repo.completeWork(appId)
-      : await this.repo.approveWork(appId);
-
-    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
-
-    // Payment is no longer auto-released on approval — an admin must
-    // manually release the held escrow amount (see admin.service.releasePayment).
-
-    const creatorUserId = app.creator.userId;
-    notificationService.create({
-      userId:  creatorUserId,
-      type:    'work_approved',
-      title:   'Your project has been approved!',
-      body:    isFreeEvent
-        ? `${business.businessName} confirmed your work for "${app.campaign.title}". This collaboration is complete — thanks for taking part!`
-        : `${business.businessName} approved your work for "${app.campaign.title}". Payment will be released by admin now on your wallet.`,
-      refId:   app.campaignId,
-      refType: isFreeEvent ? 'event' : 'campaign',
-    }).catch(() => {});
-
-    // Both of these are purely about the money — a free event has none, so
-    // admins get no release task and the creator gets no "payment released
-    // NPR 0" email.
-    if (!isFreeEvent) {
-      notificationService.createForAdmins({
-        type:    'payment_release_pending',
-        title:   'Payment release needed',
-        body:    `${business.businessName} approved ${app.creator.fullName ?? 'a creator'}'s work for "${app.campaign.title}" — release the payment when ready.`,
+    if (isFreeEvent) {
+      const updated = await this.repo.completeWork(appId);
+      notificationService.create({
+        userId:  creatorUserId,
+        type:    'work_approved',
+        title:   'Your project has been approved!',
+        body:    `${business.businessName} confirmed your work for "${app.campaign.title}". This collaboration is complete — thanks for taking part!`,
         refId:   app.campaignId,
-        refType: 'campaign',
+        refType: 'event',
       }).catch(() => {});
-
-      this.repo.getUserEmails([creatorUserId]).then((emailMap) => {
-        const email = emailMap.get(creatorUserId);
-        if (email) {
-          sendWorkApprovedEmail(email, app.creator.fullName ?? 'Creator', app.campaign.title, app.proposedRate).catch(() => {});
-        }
-      }).catch(() => {});
+      return toApplicationDto(updated);
     }
 
-    return toApplicationDto(updated);
+    // Paid campaign — the business approving the work now releases the held
+    // escrow straight to the creator's wallet, with no separate admin step.
+    // releaseEscrowToCreator flips workStatus to COMPLETED + paymentStatus to
+    // RELEASED and fires every completion side effect (wallet credit,
+    // notifications, closing an auto-accepted chat).
+    const released = await this.releaseEscrowToCreator(app, userId);
+
+    this.repo.getUserEmails([creatorUserId]).then((emailMap) => {
+      const email = emailMap.get(creatorUserId);
+      if (email) {
+        sendWorkApprovedEmail(email, app.creator.fullName ?? 'Creator', app.campaign.title, app.proposedRate).catch(() => {});
+      }
+    }).catch(() => {});
+
+    return toApplicationDto(released);
+  }
+
+  // Releases the escrow held for a paid application straight to the creator's
+  // wallet. Triggered automatically when the business approves the work (see
+  // approveWork) — there is no separate admin release step. Flips workStatus to
+  // COMPLETED and paymentStatus to RELEASED in one update, so the completion
+  // side effects (analytics, notifications, closing an auto-accepted chat) all
+  // fire here. `actorUserId` is the business user who approved; the payout row
+  // carries no admin id since no admin is involved.
+  private async releaseEscrowToCreator(
+    app: NonNullable<Awaited<ReturnType<CampaignRepository['findApplicationById']>>>,
+    actorUserId: string,
+  ) {
+    if (app.paymentStatus === 'RELEASED') return app;
+    if (app.paymentStatus !== 'PAID') {
+      throw new AppError('No escrow payment is held for this application', 400);
+    }
+
+    // Creators always receive the full proposedRate — the platform commission
+    // (snapshotted on the campaign) is charged to the business on top of the
+    // rate, not deducted from the creator's payout.
+    const updated = await this.repo.releaseApplicationPayment(app.id, null);
+    await this.repo.createPayoutTransaction({
+      applicationId: app.id,
+      campaignId:    app.campaignId,
+      businessId:    app.campaign.business.id,
+      creatorId:     app.creatorId,
+      adminId:       null,
+      amount:        app.proposedRate,
+    });
+    // Credit the creator wallet ledger — this is the point the payout becomes
+    // spendable. Idempotent via WalletTransaction's (referenceId, type) unique
+    // index, so a retried release never double-credits.
+    await recordWalletTransactionIdempotent({
+      creatorId:     app.creatorId,
+      type:          'CAMPAIGN_PAYOUT',
+      direction:     'CREDIT',
+      amount:        app.proposedRate,
+      description:   `Payment for "${app.campaign.title}"`,
+      referenceType: 'application',
+      referenceId:   app.id,
+    });
+
+    logActivity({ userId: actorUserId, action: ActivityAction.PAYMENT_RELEASED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId, amount: app.proposedRate } });
+
+    const creatorUserId  = app.creator.userId;
+    const businessUserId  = app.campaign.business.userId;
+    analyticsService.incrPaymentReleased(creatorUserId, businessUserId, app.proposedRate);
+    analyticsService.incrCampaignCompleted(creatorUserId, businessUserId);
+
+    notificationService.create({
+      userId:  creatorUserId,
+      type:    'payment_released',
+      title:   'Payment released to your wallet',
+      body:    `Admin released your payment for "${app.campaign.title}" to your wallet.`,
+      refId:   app.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+    notificationService.create({
+      userId:  businessUserId,
+      type:    'project_completed',
+      title:   'Project Complete',
+      body:    `Payment for "${app.campaign.title}" has been released — the project is now complete.`,
+      refId:   app.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
+    // Posted into the still-open conversation before it's closed below.
+    await messagingService
+      .sendSystemMessage(app.creator.id, app.campaign.business.id, app.campaignId, businessUserId, 'BUSINESS', 'Payment released.')
+      .catch(() => {});
+
+    // A conversation that was only ever auto-accepted (never a real chat
+    // request/accept) is closed now that the project is done and paid — it
+    // leaves both inboxes rather than lingering as a request/pending row.
+    messagingService
+      .closeConversationAfterCompletion(creatorUserId, businessUserId, app.creator.id, app.campaign.business.id)
+      .catch(() => {});
+
+    return updated;
   }
 
   async requestRevision(appId: string, userId: string, note: string) {

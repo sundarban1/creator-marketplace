@@ -150,6 +150,8 @@ export type AppNotification = {
     | 'new_campaign'
     | 'work_approved'
     | 'payment_released'
+    | 'project_completed'
+    | 'review_received'
     | 'message_request_accepted'
     | 'business_favorited'
     | 'creator_saved'
@@ -159,7 +161,10 @@ export type AppNotification = {
     | 'proposal_expired'
     | 'event_expired'
     | 'team_invitation'
-    | 'team_invitation_response';
+    | 'team_invitation_response'
+    | 'withdrawal_processing'
+    | 'withdrawal_paid'
+    | 'withdrawal_rejected';
   title: string;
   body: string;
   timestamp: string;

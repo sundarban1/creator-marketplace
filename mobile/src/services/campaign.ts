@@ -6,6 +6,7 @@ import * as VideoThumbnails from 'expo-video-thumbnails';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
 import type { VideoUploadPlan } from '@/services/cloudinaryVideoUpload';
 import type { PickedFile } from '@/utilities/chatAttachments';
+import type { ApiReviewReceived } from '@/services/creator';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/utilities/constants';
 
@@ -710,6 +711,13 @@ export const campaignService = {
     return res.data;
   },
 
+  // The review the OTHER party left for the caller on this application — null
+  // when they haven't rated yet. Powers the "review received" card + notification.
+  async getReviewReceived(appId: string): Promise<ApiReviewReceived | null> {
+    const res = await request<ApiReviewReceived | null>('GET', `/api/campaigns/applications/${appId}/review-received`);
+    return res.data;
+  },
+
   async requestRevision(appId: string, note: string): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/request-revision`, { note });
   },
@@ -818,6 +826,7 @@ export const campaignService = {
       paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
       paidAt:           string | null;
       featureImageUrl:  string | undefined;
+      deliverableUrls:  string | null;
       deliverableVideos: DeliverableVideo[];
       deliverableFiles: DeliverableFile[];
       workNote:         string | null;
@@ -837,6 +846,7 @@ export const campaignService = {
       createdAt:       string;
       workStatus?:     string;
       submittedAt?:    string | null;
+      deliverableUrls?: string | null;
       deliverableVideos?: DeliverableVideo[];
       deliverableFiles?: DeliverableFile[];
       paymentStatus?:  string;
@@ -874,6 +884,7 @@ export const campaignService = {
         paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
         featureImageUrl: a.campaign.featureImageUrl ?? undefined,
+        deliverableUrls: a.deliverableUrls ?? null,
         deliverableVideos: a.deliverableVideos ?? [],
         deliverableFiles: a.deliverableFiles ?? [],
         workNote:        a.workNote ?? null,

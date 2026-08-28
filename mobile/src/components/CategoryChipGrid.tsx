@@ -1,6 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
+import { sortOtherLast } from '@/hooks/useCategories';
 import { F, FONT_SIZE, RADIUS } from '@/utilities/constants';
 
 // Looser than ApiCategory — icon/color are optional so a caller can render a
@@ -35,7 +36,10 @@ type Props = {
 // per-category icon color, neither of which FilterChipGroup supports.
 export function CategoryChipGrid({ categories, selected, onToggle, max, sortByLength, variant = 'default', onMaxReached }: Props) {
   const C = useAppColors();
-  const list = sortByLength ? [...categories].sort((a, b) => a.name.length - b.name.length) : categories;
+  // "Other" is always pinned last, after any length sort the caller asked for.
+  const list = sortOtherLast(
+    sortByLength ? [...categories].sort((a, b) => a.name.length - b.name.length) : categories,
+  );
   const pill = variant === 'pill';
 
   return (

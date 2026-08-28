@@ -83,6 +83,10 @@ export interface ApiCreatorProfile {
   negotiable: boolean;
   user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean };
   savedByBusinessCount: number;
+  // Every review this creator has received — rendered as the last section on
+  // their own profile screen. Absent on older cached responses; treat as empty.
+  reviews?: ApiReviewReceived[];
+  reviewSummary?: { averageRating: number; reviewCount: number };
 }
 
 export interface ApiAvailabilityDay {

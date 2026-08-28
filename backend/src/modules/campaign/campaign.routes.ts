@@ -460,6 +460,13 @@ router.get(
   ctrl.getMyReview.bind(ctrl)
 );
 
+router.get(
+  '/applications/:appId/review-received',
+  authenticate,
+  authorize('CREATOR', 'BUSINESS'),
+  ctrl.getReviewReceived.bind(ctrl)
+);
+
 router.put(
   '/applications/:appId/start',
   authenticate,

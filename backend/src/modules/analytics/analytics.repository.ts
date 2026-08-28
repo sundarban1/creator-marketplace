@@ -66,11 +66,30 @@ export class AnalyticsRepository {
   // profile (§36/§60). fromUser's creatorProfile/businessProfile are
   // mutually exclusive (a User has at most one), so the DTO layer picks
   // whichever is non-null to get a display name/avatar for the reviewer.
-  async findReviewsReceived(userId: string, limit = 10) {
+  // limit === null → return every review (used by the owner's own profile,
+  // which lists all reviews it has received); a number caps the list.
+  async findReviewsReceived(userId: string, limit: number | null = 10) {
     return prisma.review.findMany({
       where: { toUserId: userId },
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      ...(limit != null ? { take: limit } : {}),
+      select: {
+        id: true, rating: true, comment: true, createdAt: true,
+        fromUser: {
+          select: {
+            creatorProfile: { select: { fullName: true, avatarUrl: true } },
+            businessProfile: { select: { businessName: true, logoUrl: true } },
+          },
+        },
+      },
+    });
+  }
+
+  // The single review left FOR `toUserId` on one application (the other party's
+  // rating of them) — powers the "review received" card on the activity timeline.
+  async findReviewForApp(applicationId: string, toUserId: string) {
+    return prisma.review.findFirst({
+      where: { applicationId, toUserId },
       select: {
         id: true, rating: true, comment: true, createdAt: true,
         fromUser: {

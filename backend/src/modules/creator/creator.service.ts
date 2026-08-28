@@ -459,7 +459,14 @@ export class CreatorService {
   async getProfile(userId: string) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
-    return toCreatorProfileDto(profile);
+    // Every review this creator has received — shown as a section at the bottom
+    // of their own profile screen (limit null = no cap).
+    const reviews = await analyticsService.getReviewsReceived(profile.userId, null).catch(() => []);
+    const reviewCount = reviews.length;
+    const averageRating = reviewCount > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+      : 0;
+    return { ...toCreatorProfileDto(profile), reviews, reviewSummary: { averageRating, reviewCount } };
   }
 
   // Thin resolver used to self-exclude the viewer from the peer-creators
