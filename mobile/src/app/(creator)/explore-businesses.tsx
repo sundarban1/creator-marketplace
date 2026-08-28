@@ -104,8 +104,11 @@ function BusinessCard({
 // as before.
 export type BusinessesExploreHandle = { setSearchText: (text: string) => void; openFilter: () => void };
 
-const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?: boolean; onFilterCountChange?: (count: number) => void }>(
-  function ExploreBusinessesScreen({ embedded = false, onFilterCountChange }, ref) {
+// `savedOnly` swaps the data source to the creator's favourited businesses
+// (same list the standalone /favorite-businesses screen shows) without leaving
+// the tab — the Discover shell's "Saved" header button toggles it.
+const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?: boolean; savedOnly?: boolean; onFilterCountChange?: (count: number) => void }>(
+  function ExploreBusinessesScreen({ embedded = false, savedOnly = false, onFilterCountChange }, ref) {
   const C      = useAppColors();
   const { t }  = useLanguage();
   const toast  = useToast();
@@ -154,10 +157,24 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
     setError('');
     try {
       const locs = opts?.locations !== undefined ? opts.locations : locations;
+      const cat  = opts?.category  !== undefined ? opts.category  : category;
+      const plat = opts?.platform  !== undefined ? opts.platform  : platform;
+      if (savedOnly) {
+        // Favourites come back as one un-paginated list; search is applied
+        // client-side (see visibleItems below), matching the standalone
+        // /favorite-businesses screen.
+        const favs = await businessService.getFavoriteBusinesses({
+          category: cat, platform: plat, locations: locs.map((l) => l.label),
+        });
+        setBusinesses(favs);
+        setTotal(favs.length);
+        setPage(1);
+        return;
+      }
       const data = await businessService.listBusinesses({
         search:    opts?.search    !== undefined ? opts.search    : search,
-        category:  opts?.category  !== undefined ? opts.category  : category,
-        platform:  opts?.platform  !== undefined ? opts.platform  : platform,
+        category:  cat,
+        platform:  plat,
         locations: locs.map((l) => l.label),
         page:      1,
         limit:     PAGE_SIZE,
@@ -174,6 +191,7 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
   }
 
   async function loadMoreBusinesses() {
+    if (savedOnly) return; // favourites are returned in one shot
     if (loadingMore || loading || refreshing || businesses.length >= total) return;
     setLoadingMore(true);
     try {
@@ -199,12 +217,21 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
 
   useEffect(() => { void fetchBusinesses(); }, []);
 
+  // Re-fetch from the other data source when the shell toggles "Saved".
+  const didMountSaved = useRef(false);
+  useEffect(() => {
+    if (!didMountSaved.current) { didMountSaved.current = true; return; }
+    void fetchBusinesses();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOnly]);
+
   // Re-sync favorite IDs whenever this screen comes back into focus
   // (handles the case where user removed favorites on the Favorites screen)
   useFocusEffect(useCallback(() => { reloadIds(); }, []));
 
   function onSearchChange(text: string) {
     setSearch(text);
+    if (savedOnly) return; // favourites list is filtered client-side (visibleItems)
     if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => void fetchBusinesses({ search: text, silent: true }), 450);
   }
@@ -255,6 +282,8 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
     try {
       const isFavorited = await toggle(businessId);
       if (isFavorited) toast.success(t('explore.businesses.addedToFavorites'));
+      // In the saved-only view, un-favouriting drops it from the list right away.
+      if (savedOnly && !isFavorited) setBusinesses((prev) => prev.filter((b) => b.id !== businessId));
     } catch {
       toast.error(wasFavorited ? t('explore.businesses.couldNotRemoveFav') : t('explore.businesses.couldNotAddFav'));
     }
@@ -269,10 +298,13 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
   // call setState in the parent) on every render, looping forever.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onFilterCountChange?.(filterActiveCount); }, [filterActiveCount]);
-  const displayItems: DisplayBusiness[] = businesses.map((b) => ({
-    ...b,
-    isFavorited: favoriteIds.has(b.id),
-  }));
+  const displayItems: DisplayBusiness[] = businesses
+    .filter((b) => {
+      // Favourites endpoint has no server search — filter by name here.
+      if (!savedOnly || !search.trim()) return true;
+      return (b.businessName ?? '').toLowerCase().includes(search.trim().toLowerCase());
+    })
+    .map((b) => ({ ...b, isFavorited: favoriteIds.has(b.id) }));
 
   const content = (
     <>
@@ -385,9 +417,13 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
           <EmptyState faIcon="exclamation-triangle" title={t('explore.businesses.loadError')} subtitle={error} action={{ label: t('explore.businesses.retry'), onPress: () => fetchBusinesses() }} />
         ) : displayItems.length === 0 ? (
           <EmptyState
-            faIcon="building"
-            title={t('explore.businesses.noResultsFiltered')}
-            subtitle={hasFilter ? 'Try adjusting your filters or search term.' : 'No businesses are currently hiring. Check back soon!'}
+            faIcon={savedOnly ? 'heart' : 'building'}
+            title={savedOnly && !hasFilter ? t('explore.businesses.noSavedTitle') : t('explore.businesses.noResultsFiltered')}
+            subtitle={
+              savedOnly && !hasFilter ? t('explore.businesses.noSavedSub')
+              : hasFilter ? 'Try adjusting your filters or search term.'
+              : 'No businesses are currently hiring. Check back soon!'
+            }
             action={hasFilter ? { label: t('explore.businesses.clearFiltersBtn'), onPress: clearAll } : undefined}
           />
         ) : (

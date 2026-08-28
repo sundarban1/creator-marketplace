@@ -150,6 +150,9 @@ export default function HomeScreen() {
   function handleExpandNearbyRadius() {
     const next = RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100;
     setNearbyRadiusKm(next);
+    // Persist it, otherwise the next screen focus re-runs initNearby() and
+    // snaps the radius back to the stored value.
+    creatorService.updateProfile({ nearbyRadiusKm: next }).catch(() => {});
     const coords = resolveNearbyCoords();
     if (coords) void fetchNearby(coords, next, { silent: true });
   }

@@ -309,7 +309,10 @@ const qs = StyleSheet.create({
   pending:      { fontSize: 12, fontFamily: F.regular, fontStyle: 'italic' },
 
   composer:      { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.sm, paddingBottom: SPACING.md, borderTopWidth: 1 },
-  composerInput: { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingTop: 11, paddingBottom: 11, fontSize: 14, fontFamily: F.regular },
+  // minHeight = lineHeight (22) + paddingVertical (11×2) so a single line sits
+  // vertically centred in the box instead of hugging the top; the box then
+  // grows line-by-line up to maxHeight. textAlignVertical centres it on Android.
+  composerInput: { flex: 1, minHeight: 44, maxHeight: 110, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, lineHeight: 22, fontFamily: F.regular, textAlignVertical: 'center' },
   sendBtn:       { width: 44, height: 44, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 
   sheetQuestion: { fontSize: 14, fontFamily: F.medium, lineHeight: 21 },

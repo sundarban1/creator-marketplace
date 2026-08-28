@@ -961,20 +961,34 @@ export default function CampaignProposalsScreen() {
             )}
           </View>
 
-          {canClose && (
-            <Pressable
-              style={[styles.closeCampaignBtn, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}
-              onPress={handleCloseCampaign}
-              disabled={closing}>
-              {closing ? (
-                <ActivityIndicator size="small" color="#EF4444" />
-              ) : (
-                <>
-                  <FontAwesome5 name="check-double" solid size={16} color="#EF4444" />
-                  <Text style={[styles.closeCampaignBtnTxt, { color: '#EF4444' }]}>{t('campaignProposals.closeCampaignBtn')}</Text>
-                </>
+          {(canClose || isFree) && (
+            <View style={styles.headerActionRow}>
+              {/* Free events never open a chat — the shared Q&A page is the
+                  organizer↔creator channel. Sits next to Close Event. */}
+              {isFree && (
+                <Pressable
+                  style={[styles.headerActionBtn, { backgroundColor: `${FREE_ACCENT}12`, borderColor: `${FREE_ACCENT}55` }]}
+                  onPress={() => router.push({ pathname: '/event-questions', params: { campaignId, campaignTitle: fetchedTitle || campaignTitle } })}>
+                  <FontAwesome5 name="comments" solid size={15} color={FREE_ACCENT} />
+                  <Text style={[styles.headerActionBtnTxt, { color: FREE_ACCENT }]}>{t('campaignProposals.creatorsQaBtn')}</Text>
+                </Pressable>
               )}
-            </Pressable>
+              {canClose && (
+                <Pressable
+                  style={[styles.headerActionBtn, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}
+                  onPress={handleCloseCampaign}
+                  disabled={closing}>
+                  {closing ? (
+                    <ActivityIndicator size="small" color="#EF4444" />
+                  ) : (
+                    <>
+                      <FontAwesome5 name="check-double" solid size={15} color="#EF4444" />
+                      <Text style={[styles.headerActionBtnTxt, { color: '#EF4444' }]}>{t('campaignProposals.closeCampaignBtn')}</Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
+            </View>
           )}
         </View>
         <View style={[styles.headerSeparator, { backgroundColor: C.border }]} />
@@ -1158,12 +1172,12 @@ const styles = StyleSheet.create({
   totalPillText: { fontSize: 12, fontFamily: F.semibold },
 
   headerBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingTop: 8, gap: 8 },
-  closeCampaignBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    marginHorizontal: 16, marginTop: 12, borderWidth: 1, borderRadius: RADIUS.md,
-    paddingVertical: 10,
+  headerActionRow: { flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 12 },
+  headerActionBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: 10,
   },
-  closeCampaignBtnTxt: { fontSize: 13, fontFamily: F.semibold },
+  headerActionBtnTxt: { fontSize: 13, fontFamily: F.semibold },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, lineHeight: 27, textAlign: 'center' },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },

@@ -8,7 +8,6 @@ import { useAppColors } from '@/context/ThemeContext';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
 import { CampaignCard } from '@/features/creator/components/CampaignCard';
 import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCardSkeleton';
-import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
 import { FilterModal, DEFAULT_EVENT_TYPES } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
 import { useCategories, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
@@ -27,15 +26,12 @@ import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
 import { getCached, setCached } from '@/utilities/offlineCache';
-import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
 import { F, FONT_SIZE, RADIUS, SHADOW, SCREEN_GUTTER, SPACING, lineHeightFor } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import { trendingScores } from '@/features/creator/data/trending';
 import type { Campaign } from '@/types';
 import ExploreBusinessesScreen, { type BusinessesExploreHandle } from '@/app/(creator)/explore-businesses';
 import ExploreCreatorPeersScreen, { type PeopleExploreHandle } from '@/app/(creator)/explore-creators';
-
-const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
 const SLIDER_MAX = 100000;
 
@@ -121,19 +117,6 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
   const [featuredVisibleCount, setFeaturedVisibleCount] = useState(PAGE_SIZE);
   const [listVisibleCount, setListVisibleCount] = useState(PAGE_SIZE);
 
-  // ── Nearby Events ──
-  const [nearbyCampaigns, setNearbyCampaigns] = useState<Campaign[]>([]);
-  const [nearbyLoading, setNearbyLoading] = useState(true);
-  const [nearbySource, setNearbySource] = useState<NearbySource>('current');
-  const [nearbyRadiusKm, setNearbyRadiusKm] = useState(25);
-  const [nearbyHomeLabel, setNearbyHomeLabel] = useState<string | null>(null);
-  const [nearbyHomeAddress, setNearbyHomeAddress] = useState<string | null>(null);
-  const [nearbyHomeCoords, setNearbyHomeCoords] = useState<LatLng | null>(null);
-  const [nearbyCurrentCoords, setNearbyCurrentCoords] = useState<LatLng | null>(null);
-  const [nearbyCustomCoords, setNearbyCustomCoords] = useState<LatLng | null>(null);
-  const [nearbyLocationDenied, setNearbyLocationDenied] = useState(false);
-  const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
-
   async function fetchCampaigns(
     overrides: {
       search?: string;
@@ -191,111 +174,6 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     }
   }
 
-  async function fetchNearby(
-    coords: LatLng,
-    radiusKm: number,
-    opts: { silent?: boolean; search?: string; category?: string[]; platform?: string[] } = {},
-  ) {
-    const { silent = false, search, category, platform } = opts;
-    if (!silent) setNearbyLoading(true);
-    try {
-      const { campaigns: data } = await campaignService.nearby({
-        lat: coords.lat,
-        lng: coords.lng,
-        radiusKm,
-        search:   search   !== undefined ? search   : activeSearch,
-        category: category !== undefined ? category : activeCategories,
-        platform: platform !== undefined ? platform : activePlatforms,
-        limit: 10,
-      });
-      setNearbyCampaigns(data);
-    } catch {
-      if (!silent) setNearbyCampaigns([]);
-    } finally {
-      if (!silent) setNearbyLoading(false);
-    }
-  }
-
-  // Re-fetches nearby with the same search/category/platform filters just
-  // applied to the main list — mirrors resolveNearbyCoords() + nearbyRadiusKm
-  // so "Nearby Events" never drifts out of sync with the active filters.
-  function refreshNearbyWithFilters(overrides: { search?: string; category?: string[]; platform?: string[] } = {}) {
-    const coords = resolveNearbyCoords();
-    if (coords) void fetchNearby(coords, nearbyRadiusKm, overrides);
-  }
-
-  async function initNearby(
-    profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null },
-    opts: { silent?: boolean } = {},
-  ) {
-    const radius = profile.nearbyRadiusKm ?? 25;
-    setNearbyRadiusKm(radius);
-    setNearbyHomeLabel(
-      profile.location
-        ?.split(',')[0]
-        ?.replace(/\s*\d{4,6}\s*$/, '')
-        ?.trim() ?? null,
-    );
-    setNearbyHomeAddress(profile.location ?? null);
-
-    const [current, home] = await Promise.all([
-      getCurrentLocation(),
-      profile.locationLat != null && profile.locationLng != null
-        ? Promise.resolve<LatLng>({ lat: profile.locationLat, lng: profile.locationLng })
-        // Profiles that only ever saved location as free text (no Places picker used)
-        // have no coordinates — geocode the text so "Home" is still selectable.
-        : profile.location ? geocodeAddress(profile.location) : Promise.resolve(null),
-    ]);
-    setNearbyCurrentCoords(current);
-    setNearbyHomeCoords(home);
-    setNearbyLocationDenied(current === null);
-
-    // Default to the creator's saved home address whenever one is available —
-    // only fall back to their live GPS position if no home location is set.
-    const preferredSource: NearbySource = home ? 'home' : 'current';
-    setNearbySource(preferredSource);
-
-    const coords = preferredSource === 'home' ? (home ?? current) : current;
-    if (coords) void fetchNearby(coords, radius, { silent: opts.silent });
-    else setNearbyLoading(false);
-  }
-
-  function handleNearbyApply(source: NearbySource, radiusKm: number, coords: LatLng) {
-    setNearbySource(source);
-    setNearbyRadiusKm(radiusKm);
-    creatorService.updateProfile({ nearbyRadiusKm: radiusKm, nearbyUseHomeLocation: source === 'home' }).catch(() => {});
-
-    // Dragging the map to a custom point is remembered for this session so
-    // reopening the sheet starts from where the creator left off — it never
-    // overwrites the real GPS "current" coords, which always stay fresh.
-    if (source === 'custom') setNearbyCustomCoords(coords);
-    // The sheet re-requests a fresh GPS fix when "Current Location" is tapped —
-    // propagate it here so later actions (radius expand, socket refresh) use it too.
-    if (source === 'current') setNearbyCurrentCoords(coords);
-
-    void fetchNearby(coords, radiusKm);
-  }
-
-  function resolveNearbyCoords(): LatLng | null {
-    if (nearbySource === 'home')   return nearbyHomeCoords   ?? nearbyCurrentCoords;
-    if (nearbySource === 'custom') return nearbyCustomCoords ?? nearbyCurrentCoords;
-    return nearbyCurrentCoords;
-  }
-
-  function handleExpandNearbyRadius() {
-    const next = RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100;
-    setNearbyRadiusKm(next);
-    const coords = resolveNearbyCoords();
-    // Silent: a non-silent fetch drops nearbyCampaigns back to the skeleton
-    // row first, then swaps in results — two separate height changes on the
-    // Nearby Events section, each one shoving the Recommended/Trending/
-    // Ending Soon list below it (same ListHeaderComponent/FlatList flow) up
-    // or down. The radius label above already updates immediately via
-    // setNearbyRadiusKm, so the tap still gets instant feedback without the
-    // extra skeleton flash and layout jump.
-    if (coords) void fetchNearby(coords, next, { silent: true });
-  }
-
   useEffect(() => {
     // Show the last-known feed immediately (e.g. cold launch while offline)
     // while the real fetch below runs and replaces it once it resolves.
@@ -307,23 +185,15 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     });
     void fetchCampaigns();
     creatorService.getProfile()
-      .then((profile) => { setMyCategories(profile.categories ?? []); void initNearby(profile); })
-      .catch(() => { setNearbyLoading(false); });
+      .then((profile) => { setMyCategories(profile.categories ?? []); })
+      .catch(() => {});
   }, [languageVersion]);
 
-  // Re-sync "Home location" whenever this tab regains focus (e.g. returning from
-  // Edit Profile after changing location, or just popping back from campaign
-  // detail). The mount effect above only runs once (or on language change), so
-  // without this the Nearby Events sheet keeps showing whatever location was
-  // fetched at first load. Silent because this fires on *every* re-focus
-  // (including a plain back-navigation where nothing changed) — a non-silent
-  // fetch would drop nearbyCampaigns back to the skeleton loader every time,
-  // flickering the whole row for no reason.
-  const skipNextNearbyFocusRef = useRef(true);
+  // Re-sync the creator's own niches whenever this tab regains focus (e.g.
+  // returning from Edit Profile after changing them).
   useFocusEffect(useCallback(() => {
-    if (skipNextNearbyFocusRef.current) { skipNextNearbyFocusRef.current = false; return; }
     creatorService.getProfile()
-      .then((profile) => { setMyCategories(profile.categories ?? []); void initNearby(profile, { silent: true }); })
+      .then((profile) => { setMyCategories(profile.categories ?? []); })
       .catch(() => {});
   }, []));
 
@@ -346,21 +216,12 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     placeholderHeight: tabFilterPlaceholderHeight,
   } = useStickyBelowHeader();
 
-  const refreshNearbyRef = useRef(() => {});
-  useEffect(() => {
-    refreshNearbyRef.current = () => {
-      const coords = resolveNearbyCoords();
-      if (coords) void fetchNearby(coords, nearbyRadiusKm, { silent: true });
-    };
-  });
-
   // Subscribe to real-time campaign updates while this screen is focused
   useFocusEffect(useCallback(() => {
     const socket = getSocket();
     if (!socket) return;
     const handler = () => {
       void fetchRef.current({ showLoader: false });
-      refreshNearbyRef.current();
     };
     socket.on('campaign:new', handler);
     return () => { socket.off('campaign:new', handler); };
@@ -451,7 +312,6 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     setActivePlatforms([]);
     setActiveFilterTab('new');
     void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: DEFAULT_EVENT_TYPES });
-    refreshNearbyWithFilters({ category: [], platform: [] });
   }
 
   // `useCategories('CREATOR')` widens to CREATOR + BOTH scope rows (see the
@@ -474,21 +334,14 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
       : [...activeCategories, label];
     setActiveCategories(next);
     void fetchCampaigns({ category: next });
-    refreshNearbyWithFilters({ category: next });
   }
 
   function clearCategories() {
     setActiveCategories([]);
     void fetchCampaigns({ category: [] });
-    refreshNearbyWithFilters({ category: [] });
   }
 
   const featured = campaigns.filter((c) => c.isFeatured && (c.locationType ?? 'ONSITE') === locationTypeFilter);
-
-  // Remote events have no lat/lng, so they'd never turn up in a geo "nearby"
-  // query anyway — filtering here just means Nearby correctly goes empty
-  // instead of silently ignoring the Onsite/Remote choice when Remote is picked.
-  const visibleNearbyCampaigns = nearbyCampaigns.filter((c) => (c.locationType ?? 'ONSITE') === locationTypeFilter);
 
   // Category, budget, deadline, and search are filtered server-side.
   // Trending is a ranking, not a flag — score the whole feed once here, then
@@ -601,12 +454,10 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
       searchDebounce.current = setTimeout(() => {
         setActiveSearch(text);
         void fetchCampaigns({ search: text });
-        refreshNearbyWithFilters({ search: text });
       }, 400);
     } else if (!text && activeSearch) {
       setActiveSearch('');
       void fetchCampaigns({ search: '' });
-      refreshNearbyWithFilters({ search: '' });
     }
   }
 
@@ -760,12 +611,6 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
             <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
               {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
             </ScrollView>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.nearbyEvents')}</Text>
-            </View>
-            <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-              {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
-            </ScrollView>
           </>
         ) : (
           <>
@@ -792,64 +637,6 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
                 <FontAwesome5 name="star" size={32} color={C.textSecondary} />
                 <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noFeaturedEvents')}</Text>
                 <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>{t('creator.home.noFeaturedEventsHint')}</Text>
-              </View>
-            )}
-
-            {/* ── Nearby Events ── */}
-            <View style={styles.sectionHeader}>
-              <View style={styles.nearbyTitleRow}>
-                <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.nearbyEvents')}</Text>
-                <Pressable
-                  style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
-                  onPress={() => setNearbySheetOpen(true)}>
-                  <FontAwesome5
-                    name={nearbySource === 'current' ? 'location-arrow' : nearbySource === 'home' ? 'home' : 'map-pin'}
-                    solid
-                    size={11} color={C.brinjal1}
-                  />
-                  <Text style={[styles.nearbyChipText, { color: C.brinjal1 }]} numberOfLines={1}>
-                    {nearbySource === 'current'
-                      ? 'Current Location'
-                      : nearbySource === 'home'
-                        ? `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''}`
-                        : 'Custom Location'}
-                  </Text>
-                  <FontAwesome5 name="chevron-down" solid size={11} color={C.brinjal1} />
-                </Pressable>
-              </View>
-            </View>
-
-            {nearbyLoading ? (
-              <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-                {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
-              </ScrollView>
-            ) : visibleNearbyCampaigns.length > 0 ? (
-              <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-                {visibleNearbyCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} variant="nearby" />)}
-              </ScrollView>
-            ) : nearbyLocationDenied && !nearbyHomeCoords ? (
-              <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <FontAwesome5 name="map-marker-alt" solid size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.enableLocationTitle')}</Text>
-                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>{t('creator.home.enableLocationSub')}</Text>
-              </View>
-            ) : (
-              <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <FontAwesome5 name="location-arrow" solid size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noEventsWithinKm', { km: nearbyRadiusKm })}</Text>
-                {nearbyRadiusKm < 100 && (
-                  <Pressable
-                    style={[
-                      styles.expandRadiusBtn,
-                      {
-                        backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-                        shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-                      },
-                    ]}
-                    onPress={handleExpandNearbyRadius}>
-                    <Text style={styles.expandRadiusBtnText}>{t('creator.home.expandToKm', { km: RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100 })}</Text>
-                  </Pressable>
-                )}
               </View>
             )}
           </>
@@ -894,19 +681,6 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
         onReset={resetFilter}
         onClose={() => setFilterOpen(false)}
       />
-
-      <NearbyLocationSheet
-        visible={nearbySheetOpen}
-        onClose={() => setNearbySheetOpen(false)}
-        source={nearbySource}
-        radiusKm={nearbyRadiusKm}
-        homeLabel={nearbyHomeLabel}
-        homeAddress={nearbyHomeAddress}
-        currentCoords={nearbyCurrentCoords}
-        homeCoords={nearbyHomeCoords}
-        customCoords={nearbyCustomCoords}
-        onApply={handleNearbyApply}
-      />
     </View>
   );
 });
@@ -942,13 +716,6 @@ const styles = StyleSheet.create({
   featuredEmptyTitle:{ fontSize: FONT_SIZE.md, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub:  { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
   featuredLoadingMore: { width: 60, justifyContent: 'center', alignItems: 'center' },
-
-  // ── Nearby ──
-  nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, flex: 1 },
-  nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: 5, flexShrink: 1 },
-  nearbyChipText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold, flexShrink: 1 },
-  expandRadiusBtn: { borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
-  expandRadiusBtnText: { color: '#fff', fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
   // ── Tab filter ──
   // No background/shadow here — matches the proposals page's tab bar, which
@@ -996,6 +763,9 @@ export default function DiscoverScreen() {
   const { t } = useLanguage();
   const [mainTab, setMainTab] = useState<MainTab>('campaigns');
   const [visited, setVisited] = useState<Record<MainTab, boolean>>({ campaigns: true, businesses: false, people: false });
+  // "Saved" toggle on the Businesses tab — swaps that panel to the creator's
+  // favourited businesses in place, instead of pushing a separate screen.
+  const [businessesSaved, setBusinessesSaved] = useState(false);
 
   // One shared search bar + filter button for every tab (instead of each tab
   // owning its own) — typing/filtering is forwarded to whichever tab is
@@ -1075,16 +845,22 @@ export default function DiscoverScreen() {
       <MaxWidthContainer>
         <View style={shellStyles.titleRow}>
           <Text style={[shellStyles.title, { color: C.text }]} numberOfLines={2}>
-            {mainTab === 'businesses' ? t('creator.discover.titleBusinesses') :
+            {mainTab === 'businesses' ? (businessesSaved ? t('explore.businesses.savedHeading') : t('creator.discover.titleBusinesses')) :
              mainTab === 'people'     ? t('creator.discover.titlePeople') :
              t('creator.discover.title')}
           </Text>
           {mainTab === 'businesses' && (
             <Pressable
-              style={[shellStyles.savedBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
-              onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
-              <FontAwesome5 name="heart" solid size={14} color={C.brinjal1} />
-              <Text style={[shellStyles.savedBtnText, { color: C.brinjal1 }]}>{t('explore.businesses.savedLink')}</Text>
+              style={[
+                shellStyles.savedBtn,
+                { borderWidth: 1 },
+                businessesSaved
+                  ? { backgroundColor: C.brinjal1, borderColor: C.brinjal1 }
+                  : { backgroundColor: C.surface, borderColor: C.border },
+              ]}
+              onPress={() => setBusinessesSaved((v) => !v)}>
+              <FontAwesome5 name="heart" solid size={14} color={businessesSaved ? '#fff' : C.brinjal1} />
+              <Text style={[shellStyles.savedBtnText, { color: businessesSaved ? '#fff' : C.brinjal1 }]}>{t('explore.businesses.savedLink')}</Text>
             </Pressable>
           )}
           {/* Same shortcut for events — where the bookmark icon on each card saves to. */}
@@ -1152,6 +928,7 @@ export default function DiscoverScreen() {
               <ExploreBusinessesScreen
                 ref={businessesRef}
                 embedded
+                savedOnly={businessesSaved}
                 onFilterCountChange={(n) => setFilterCounts((f) => (f.businesses === n ? f : { ...f, businesses: n }))}
               />
             </View>
