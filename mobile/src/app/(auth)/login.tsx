@@ -528,7 +528,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       <View style={[s.formCard, { backgroundColor: C.surface, borderColor: C.border }, SHADOW.raised]}>
         <View style={s.formHeading}>
           <Text style={s.formHeadingTitle}>{t('auth.login.title')}</Text>
-          <Text style={s.formHeadingSubtitle}>{t('auth.login.subtitle')}</Text>
+          <Text style={[s.formHeadingSubtitle, { color: COLORS.accent }]}>{t('auth.login.subtitle')}</Text>
         </View>
 
         {verified === '1' && <FormBanner tone="success" icon="check-circle" text={t('auth.login.verifiedBanner')} />}
@@ -709,7 +709,7 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
       <View style={[s.formCard, { backgroundColor: C.surface, borderColor: C.border }, SHADOW.raised]}>
         <View style={s.formHeading}>
           <Text style={s.formHeadingTitle}>{t('auth.signup.title')}</Text>
-          <Text style={s.formHeadingSubtitle}>{t('auth.signup.subtitle')}</Text>
+          <Text style={[s.formHeadingSubtitle, { color: COLORS.accent }]}>{t('auth.signup.subtitle')}</Text>
         </View>
 
         {/* Carries over the choice made on /account-type (Professional /
@@ -1228,7 +1228,7 @@ export default function LoginScreen() {
 
             {/* Reassurance line — quiet, non-actionable, closes the page. */}
             <View style={s.trustRow}>
-              <FontAwesome5 name="shield-alt" solid size={12} color={ACCENT} />
+              <FontAwesome5 name="shield-alt" solid size={12} color={COLORS.accent} />
               <Text style={s.trustText}>{t('auth.login.footer')}</Text>
             </View>
           </Animated.View>
@@ -1343,7 +1343,17 @@ function makeStyles(C: typeof COLORS) {
   // ── Brand block ──
   brandBlock:   { alignItems: 'center', gap: SPACING.md, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
   // Pulled up level with the back/language controls so the mark reads first.
-  brandLogoWrap: { marginTop: -SPACING.xxl, marginBottom: SPACING.xxl, alignItems: 'center' },
+  brandLogoWrap: {
+    marginTop: -SPACING.xxl,
+    marginBottom: SPACING.xxl,
+    alignSelf: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.xl,
+    ...SHADOW.floating,
+  },
   brandLogo:    { width: 208, height: 74 },
 
   headlineWrap:      { alignItems: 'center' },
@@ -1360,9 +1370,9 @@ function makeStyles(C: typeof COLORS) {
     borderWidth: 3,
     borderRadius: 48,
     borderColor: 'transparent',
-    borderBottomColor: withAlpha(ON_HERO, 0.9),
+    borderBottomColor: COLORS.accent,
   },
-  brandSub:          { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: withAlpha(ON_HERO, 0.85), textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm), maxWidth: 320, marginTop: 2 },
+  brandSub:          { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, color: ON_HERO, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm), maxWidth: 320, marginTop: 2 },
 
   // ── Form ── a white card pulled up over the lower edge of the hero.
   formShell: { paddingHorizontal: SCREEN_GUTTER, marginTop: -SPACING.xl, gap: SPACING.lg },
@@ -1445,15 +1455,15 @@ function makeStyles(C: typeof COLORS) {
 
   // Closing reassurance line — "Secure & trusted login" under a green shield.
   trustRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: SPACING.xs },
-  trustText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, color: C.textSecondary, textAlign: 'center' },
+  trustText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, color: COLORS.accent, textAlign: 'center' },
 
   // Switch-tab bar — pinned below the scroll, the temple frieze running faintly
   // behind the "Create an account" prompt.
   footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(COLORS.brinjal2, 0.14), paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
   // The prompt sits in a white pill so it stays legible over the temple frieze.
   switchTabPill: { backgroundColor: '#FFFFFF', borderRadius: RADIUS.full, borderWidth: 1, borderColor: withAlpha(COLORS.brinjal2, 0.14), paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg },
-  switchTabText: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
-  switchTabLink: { fontFamily: F.bold, color: ACCENT },
+  switchTabText: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: COLORS.accent, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
+  switchTabLink: { fontFamily: F.bold, color: COLORS.brinjal1 },
 
   // Temple frieze — a faint line-art pagoda skyline along the bottom edge.
   temple:     { position: 'absolute', left: 0, right: 0, bottom: 0, height: 88, opacity: 0.5 },
