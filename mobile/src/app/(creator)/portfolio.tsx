@@ -116,7 +116,7 @@ export default function PortfolioScreen() {
         visible={!!deleteTarget}
         type="danger"
         title={t('portfolioScreen.deleteTitle')}
-        body={deleteTarget ? t('portfolioScreen.deleteBody', { title: deleteTarget.title ?? t('portfolioScreen.untitled') }) : ''}
+        body={deleteTarget ? t('portfolioScreen.deleteBody', { title: deleteTarget.description || deleteTarget.title || t('portfolioScreen.untitled') }) : ''}
         confirmLabel={t('servicesScreen.delete')}
         loading={deleting}
         onConfirm={confirmDelete}
@@ -151,7 +151,7 @@ function PortfolioTile({ item, onEdit, onDelete }: {
         </View>
       )}
       <View style={styles.tileFooter}>
-        <Text style={[styles.tileTitle, { color: C.text }]} numberOfLines={1}>{item.title ?? t('portfolioScreen.untitled')}</Text>
+        <Text style={[styles.tileTitle, { color: C.text }]} numberOfLines={1}>{item.description || item.title || t('portfolioScreen.untitled')}</Text>
         <Pressable hitSlop={8} onPress={onDelete}>
           <FontAwesome5 name="trash-alt" solid size={13} color="#EF4444" />
         </Pressable>

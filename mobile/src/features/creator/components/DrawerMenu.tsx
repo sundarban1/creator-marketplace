@@ -27,8 +27,8 @@ type NavItem = {
 };
 
 const ACCOUNT_ITEMS: NavItem[] = [
-  // Hidden from the drawer for now (Social Accounts — connect Instagram/TikTok/etc., not to be displayed in the mobile UI).
-  // { iconName: 'share-alt',    labelKey: 'drawer.socialAccounts',    route: '/(creator)/settings?section=social',    color: '#E1306C' },
+  // Social Accounts — connect Instagram/TikTok/etc.; opens the settings screen's "social" section (renderSocialAccounts()).
+  { iconName: 'share-alt',    labelKey: 'drawer.socialAccounts',    route: '/(creator)/settings?section=social',    color: '#E1306C' },
   { iconName: 'wallet', faName: 'wallet',        labelKey: 'drawer.myWallet',          route: '/(creator)/wallet',                     color: '#16A34A' },
   // Hidden from the drawer for now (My Work / past-work portfolio section — not ready to display in the mobile UI).
   // { iconName: 'images',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },

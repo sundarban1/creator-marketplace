@@ -600,7 +600,7 @@ export default function CreatorDetailScreen() {
                     key={item.id}
                     style={[s.workTile, { backgroundColor: C.background, borderColor: C.border }]}
                     accessibilityRole="button"
-                    accessibilityLabel={item.title ?? t('portfolioScreen.untitled')}
+                    accessibilityLabel={item.description || item.title || t('portfolioScreen.untitled')}
                     onPress={() => {
                       if (hasMedia) setPreviewItem(item);
                       else if (item.externalUrl) Linking.openURL(item.externalUrl).catch(() => {});
@@ -619,7 +619,7 @@ export default function CreatorDetailScreen() {
                     )}
                     <View style={s.workMeta}>
                       <Text style={[s.workTitle, { color: C.text }]} numberOfLines={1}>
-                        {item.title ?? t('portfolioScreen.untitled')}
+                        {item.description || item.title || t('portfolioScreen.untitled')}
                       </Text>
                       {!!item.category && (
                         <Text style={[s.workCategory, { color: C.textSecondary }]} numberOfLines={1}>
@@ -791,13 +791,13 @@ export default function CreatorDetailScreen() {
       <ImagePreviewModal
         visible={!!previewItem && previewItem.mediaType !== 'VIDEO'}
         url={previewItem?.mediaUrl ?? null}
-        title={previewItem?.title ?? t('portfolioScreen.untitled')}
+        title={previewItem?.description || previewItem?.title || t('portfolioScreen.untitled')}
         onClose={() => setPreviewItem(null)}
       />
       <VideoPlayerModal
         visible={!!previewItem && previewItem.mediaType === 'VIDEO'}
         url={previewItem?.mediaUrl ?? null}
-        title={previewItem?.title ?? t('portfolioScreen.untitled')}
+        title={previewItem?.description || previewItem?.title || t('portfolioScreen.untitled')}
         onClose={() => setPreviewItem(null)}
       />
     </SafeAreaView>
