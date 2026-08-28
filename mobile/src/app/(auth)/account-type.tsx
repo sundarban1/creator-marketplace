@@ -57,7 +57,10 @@ export default function AccountTypeScreen() {
 
   function handleSelect(role: Role) {
     setSelected(role);
-    router.replace({ pathname: '/login', params: { tab: 'signup', role } });
+    // push (not replace) so this "how will you use Kolab" screen stays in the
+    // back stack — tapping Back from the signup form should return here, not
+    // jump past it to the login screen.
+    router.push({ pathname: '/login', params: { tab: 'signup', role } });
   }
 
   return (

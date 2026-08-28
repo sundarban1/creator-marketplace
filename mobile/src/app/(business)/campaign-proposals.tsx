@@ -41,6 +41,9 @@ type Proposal = {
   paymentStatus: PS;
   paidAt: string | null;
   creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
+  // Which role of a multi-role campaign this proposal is for — null for the
+  // simple single-category campaigns.
+  requirementId: string | null;
 };
 
 type TFn = (key: string) => string;
@@ -108,6 +111,7 @@ function ProposalCard({
   acting,
   onStartProject,
   campaignInactive,
+  roleLabel,
 }: {
   proposal: Proposal;
   isFree: boolean;
@@ -118,6 +122,7 @@ function ProposalCard({
   acting: boolean;
   onStartProject?: (p: Proposal) => void;
   campaignInactive: boolean;
+  roleLabel?: string | null;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -128,7 +133,7 @@ function ProposalCard({
 
   return (
     <Pressable
-      style={[styles.card, { backgroundColor: C.surface, borderLeftColor: accent }]}
+      style={[styles.card, { backgroundColor: C.surface }]}
       onPress={() =>
         router.push({ pathname: '/(business)/creator-detail', params: { id: p.creator.id } })
       }>
@@ -211,6 +216,16 @@ function ProposalCard({
           <Text style={[styles.rateLabel, { color: C.textSecondary }]}>{t('campaignProposals.proposedRate')}</Text>
         </View>
       )}
+
+      {/* Which role of a multi-role campaign this creator applied for. */}
+      {roleLabel ? (
+        <View style={styles.appliedForRow}>
+          <FontAwesome5 name="user-tag" size={11} color={C.textSecondary} solid />
+          <Text style={[styles.appliedForText, { color: C.textSecondary }]}>
+            {t('campaignProposals.appliedForRole', { role: roleLabel })}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Actions for pending/shortlisted — shortlist toggles between the two,
           accept/reject work from either (backend never checked prior status). */}
@@ -327,7 +342,7 @@ function InviteeCard({ invitee }: { invitee: CampaignInvitee }) {
 
   return (
     <Pressable
-      style={[styles.card, { backgroundColor: C.surface, borderLeftColor: FREE_ACCENT }]}
+      style={[styles.card, { backgroundColor: C.surface }]}
       onPress={() =>
         router.push({ pathname: '/(business)/creator-detail', params: { id: invitee.creator.id } })
       }>
@@ -571,6 +586,9 @@ export default function CampaignProposalsScreen() {
   const acceptLabel = isFree ? t('campaignProposals.approveBtn') : t('campaignProposals.acceptBtn');
 
   const [proposals, setProposals]       = useState<Proposal[]>([]);
+  // Multi-role campaigns carry a requirement per role; used to label each
+  // proposal with the role the creator applied for.
+  const [roleNameById, setRoleNameById] = useState<Record<string, string>>({});
   const [capacity, setCapacity]         = useState<number | null>(null);
   // Falls back to the fetched campaign's real title when the nav param arrives
   // empty (e.g. tapping a notification that doesn't carry a clean title).
@@ -607,6 +625,13 @@ export default function CampaignProposalsScreen() {
         isFree ? creatorService.listCampaignInvitations(campaignId).catch(() => []) : Promise.resolve([]),
       ]);
       setInvitees(invitations);
+      setRoleNameById(
+        Object.fromEntries(
+          ((campaign as any).requirements ?? [])
+            .filter((r: any) => r?.id && r?.category?.name)
+            .map((r: any) => [r.id, r.category.name as string]),
+        ),
+      );
       setCapacity((campaign as any).capacity ?? null);
       setFetchedTitle(campaign.title ?? '');
       setCampaignStatus(campaign.status ?? null);
@@ -1029,6 +1054,16 @@ export default function CampaignProposalsScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
           }
+          ListHeaderComponent={
+            invitees.some((i) => i.status === 'PENDING') ? (
+              <View style={styles.inviteNote}>
+                <FontAwesome5 name="paper-plane" size={12} color={C.textSecondary} solid />
+                <Text style={[styles.inviteNoteText, { color: C.textSecondary }]}>
+                  {t('campaignProposals.invitedPendingNote')}
+                </Text>
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => <InviteeCard invitee={item} />}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           initialNumToRender={8}
@@ -1063,6 +1098,7 @@ export default function CampaignProposalsScreen() {
               acting={actingId === item.id}
               onStartProject={handleStartProject}
               campaignInactive={campaignInactive}
+              roleLabel={item.requirementId ? roleNameById[item.requirementId] : null}
             />
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -1161,10 +1197,13 @@ const styles = StyleSheet.create({
   list:      { paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.xxxl },
   listEmpty: { flexGrow: 1 },
 
+  // Note above the Invited tab's cards, shown while any invitation is still pending.
+  inviteNote:     { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: SPACING.md },
+  inviteNoteText: { fontSize: 12, fontFamily: F.medium, flex: 1 },
+
   // ── Proposal card ─────────────────────────────────────────────────────────────
   card: {
     borderRadius: RADIUS.lg,
-    borderLeftWidth: 4,
     padding: SPACING.lg,
     gap: 10,
     ...SHADOW.card,
@@ -1193,6 +1232,9 @@ const styles = StyleSheet.create({
   ratePill:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 6 },
   rateAmount: { fontSize: 14, fontFamily: F.bold },
   rateLabel:  { fontSize: 11, fontFamily: F.regular },
+
+  appliedForRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  appliedForText: { fontSize: 12, fontFamily: F.medium },
 
   freeTag:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 7 },
   freeTagText: { fontSize: 13, fontFamily: F.bold },

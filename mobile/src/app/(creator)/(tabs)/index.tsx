@@ -163,9 +163,7 @@ export default function HomeScreen() {
       setProfile(p);
 
       // Photo and social links matter most for a creator's discoverability, so
-      // they're checked first and lead the list. Work portfolio is a
-      // secondary nudge — it only appears once the creator has added a photo
-      // or a social link, so a brand-new profile isn't overwhelmed.
+      // they're checked first and lead the list.
       const missing: string[] = [];
       const hasPhoto = !!p.avatarUrl;
       if (!hasPhoto) missing.push(t('creator.home.fieldProfilePhoto'));
@@ -174,7 +172,6 @@ export default function HomeScreen() {
       if (!p.bio)                missing.push(t('creator.home.fieldBio'));
       if (!p.location)           missing.push(t('creator.home.fieldLocation'));
       if (!p.categories?.length) missing.push(t('creator.home.fieldCategories'));
-      if ((hasPhoto || hasLink) && !p.portfolioLinks?.length) missing.push(t('creator.home.fieldPortfolio'));
       setMissingFields(missing);
 
       const isTeam = p.providerType === 'TEAM';

@@ -138,6 +138,10 @@ export default function CampaignsScreen() {
   // Creator ids already invited to the open campaign — shown as locked "Invited"
   // rows so a business can't re-select and re-invite them.
   const [invitedCreators, setInvitedCreators]       = useState<Set<string>>(new Set());
+  // Creator ids with a live proposal already on this campaign (pending,
+  // shortlisted or accepted) — hidden from the picker entirely, since
+  // inviting someone mid-application makes no sense.
+  const [proposedCreators, setProposedCreators]     = useState<Set<string>>(new Set());
   const [inviteSending, setInviteSending]           = useState(false);
   const [inviteSuccess, setInviteSuccess]           = useState(false);
 
@@ -246,6 +250,7 @@ export default function CampaignsScreen() {
     setInviteCampaign(c);
     setSelectedCreators(new Set());
     setInvitedCreators(new Set());
+    setProposedCreators(new Set());
     setInviteSuccess(false);
     setListMode('saved');
     setRecommendedCreators([]);
@@ -253,6 +258,14 @@ export default function CampaignsScreen() {
     // Who's already been invited — used to lock those rows in the picker.
     creatorService.listCampaignInvitations(c.id)
       .then((rows) => setInvitedCreators(new Set(rows.map((r) => r.creator.id))))
+      .catch(() => {});
+    // Who already applied — hidden from the picker entirely.
+    campaignService.getApplications(c.id)
+      .then((apps) => setProposedCreators(new Set(
+        apps
+          .filter((a) => a.status === 'pending' || a.status === 'shortlisted' || a.status === 'accepted')
+          .map((a) => a.creator.id),
+      )))
       .catch(() => {});
     try {
       const data = await creatorService.getSavedCreators();
@@ -752,7 +765,7 @@ export default function CampaignsScreen() {
                   {(listMode === 'recommended'
                     ? recommendedCreators.map((c) => ({ id: c.id, fullName: c.fullName, isVerified: c.isVerified, socialAccounts: c.socialAccounts, distanceKm: c.distanceKm }))
                     : savedCreators.map(({ creator }) => ({ id: creator.id, fullName: creator.fullName, isVerified: creator.isVerified, socialAccounts: creator.socialAccounts, distanceKm: undefined as number | undefined }))
-                  ).map((creator) => {
+                  ).filter((creator) => !proposedCreators.has(creator.id)).map((creator) => {
                     const invited = invitedCreators.has(creator.id);
                     const sel = selectedCreators.has(creator.id);
                     const topAcc = [...(creator.socialAccounts ?? [])].sort((a, b) => b.followers - a.followers)[0];

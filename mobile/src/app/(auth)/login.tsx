@@ -834,10 +834,10 @@ export default function LoginScreen() {
     };
   }, []);
 
-  // account-type.tsx sends the user back here via router.replace('/login', { tab: 'signup', role })
-  // after they pick a role — but replace commonly reuses this screen's already-mounted instance
-  // (it was pushed underneath when "Sign up" was tapped), so the useState initializer above never
-  // re-runs. Syncing here on every params.tab change is what actually flips the tab in that case.
+  // account-type.tsx sends the user here via router.push('/login', { tab: 'signup', role })
+  // after they pick a role. That usually mounts a fresh instance (so the useState initializer
+  // above picks up tab: 'signup'), but if expo-router reuses an already-mounted instance the
+  // initializer never re-runs — syncing here on every params.tab change is what flips the tab then.
   useEffect(() => {
     if (params.tab === 'signup' || params.tab === 'login') setTab(params.tab);
   }, [params.tab]);
