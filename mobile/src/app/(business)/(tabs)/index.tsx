@@ -341,9 +341,9 @@ export default function BusinessHomeScreen() {
             <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaCard}>
               <Text style={styles.ctaTitle}>{t('business.home.heroCtaTitle')}</Text>
               <View style={styles.ctaBtn}>
-                <FontAwesome5 name="clipboard-list" solid size={13} color={C.brinjal2} />
+                <FontAwesome5 name="clipboard-list" solid size={16} color={C.brinjal2} />
                 <Text style={[styles.ctaBtnText, { color: C.brinjal2 }]}>{t('business.home.heroCtaBtn')}</Text>
-                <FontAwesome5 name="plus" solid size={13} color={C.brinjal2} />
+                <FontAwesome5 name="plus" solid size={16} color={C.brinjal2} />
               </View>
             </LinearGradient>
           </Pressable>
@@ -707,10 +707,11 @@ const styles = StyleSheet.create({
   ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, alignItems: 'center', ...SHADOW.floating },
   ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff', lineHeight: 26, textAlign: 'center' },
   ctaBtn: {
-    flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: SPACING.sm,
+    flexDirection: 'row', alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', gap: SPACING.lg,
+    marginHorizontal: SPACING.xxl,
     backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: 11,
   },
-  ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
+  ctaBtnText: { fontSize: FONT_SIZE.lg, fontFamily: F.bold },
 
   // Section headers — margin-free (spacing supplied by the surrounding
   // block, e.g. an explicit marginTop override or the parent section's own

@@ -44,6 +44,12 @@ services:
         value: 3000
       - key: LOG_LEVEL
         value: info
+      # This service's own public origin. The TikTok / Instagram OAuth callback
+      # URLs are derived from it (config/env.ts), so the OAuth round trip returns
+      # to this backend. Must stay in sync with the redirect URIs registered in
+      # the TikTok / Meta developer portals.
+      - key: PUBLIC_BASE_URL
+        value: https://marketplace-backend-ofge.onrender.com
 
       # ── Database — wired to the Render Postgres instance above. After this
       # database's first deploy (migrations run automatically via
@@ -121,8 +127,8 @@ services:
         sync: false
       - key: TIKTOK_CLIENT_SECRET
         sync: false
-      - key: TIKTOK_REDIRECT_URI
-        value: https://marketplace-backend-ofge.onrender.com/api/creator/social-accounts/tiktok/callback
+      # TIKTOK_REDIRECT_URI is derived from PUBLIC_BASE_URL above — set an explicit
+      # override here only if the portal-registered callback host ever differs.
       - key: APP_SCHEME
         value: kolab
 
@@ -138,8 +144,7 @@ services:
         sync: false
       - key: INSTAGRAM_APP_SECRET
         sync: false
-      - key: INSTAGRAM_REDIRECT_URI
-        value: https://marketplace-backend-ofge.onrender.com/api/creator/social-accounts/instagram-login/callback
+      # INSTAGRAM_REDIRECT_URI is derived from PUBLIC_BASE_URL above.
 
       # ── Google OAuth (YouTube connect token refresh). Client IDs are public, already
       # embedded in the mobile client; only the Web client's secret needs the dashboard.

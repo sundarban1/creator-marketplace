@@ -148,6 +148,31 @@ function isTokenStaleOrExpired(expiresAt: Date | null): boolean {
   return expiresAt.getTime() - Date.now() < 10 * 60 * 1000;
 }
 
+// Verifies the `state` JWT that carried the user (+ PKCE verifier) across the
+// third-party OAuth round trip, splitting the two failure modes apart so the user
+// gets an accurate message and the logs get a real signal:
+//   - TokenExpiredError → the user genuinely sat on the provider's login screen
+//     past the 30m window (see signOAuthState); "just try again" is the right call.
+//   - any other JsonWebTokenError → the state was never signed by this process:
+//     a JWT_ACCESS_SECRET mismatch between the instance that built the authorize
+//     URL and the one handling the callback, or a state param that got rewritten/
+//     truncated in transit. Retrying won't help until that's fixed, so it's logged
+//     at error level.
+function verifyOAuthStateOrThrow(state: string, provider: 'TikTok' | 'Instagram') {
+  try {
+    return verifyOAuthState(state.trim());
+  } catch (err) {
+    const expired = err instanceof Error && err.name === 'TokenExpiredError';
+    const meta = { err, provider, stateLength: state.length };
+    if (expired) {
+      logger.warn(meta, `${provider} OAuth state expired`);
+      throw new AppError(`${provider} sign-in took too long — please try connecting again`, 400);
+    }
+    logger.error(meta, `${provider} OAuth state signature invalid — check JWT_ACCESS_SECRET / redirect config`);
+    throw new AppError(`Could not verify the ${provider} sign-in — please try connecting again`, 400);
+  }
+}
+
 // Encodes which Google OAuth client minted the token, since refreshing it later has
 // to reuse that exact client ID (see resolveGoogleRefreshCredentials below) — Google
 // rejects a refresh_token grant made under a different client ID than the one that
@@ -688,15 +713,12 @@ export class CreatorService {
   }
 
   async handleTiktokCallback(code: string, state: string) {
-    let statePayload: ReturnType<typeof verifyOAuthState>;
-    try {
-      statePayload = verifyOAuthState(state);
-    } catch (err) {
-      logger.warn({ err }, 'TikTok OAuth state verification failed');
-      throw new AppError('TikTok authorization expired — please try again', 400);
-    }
+    const statePayload = verifyOAuthStateOrThrow(state, 'TikTok');
     const { userId, codeVerifier, role } = statePayload;
-    if (!codeVerifier) throw new AppError('TikTok authorization expired — please try again', 400);
+    if (!codeVerifier) {
+      logger.error({ userId }, 'TikTok OAuth state verified but carried no PKCE code_verifier');
+      throw new AppError('Could not verify the TikTok sign-in — please try connecting again', 400);
+    }
 
     const isBusiness = role === 'BUSINESS';
     const profile = isBusiness ? await this.businessRepo.findByUserId(userId) : await this.repo.findByUserId(userId);
@@ -717,6 +739,13 @@ export class CreatorService {
     const tokenData = (await tokenRes.json()) as TiktokTokenResponse;
     if (!tokenRes.ok || !tokenData.access_token) {
       logger.error({ status: tokenRes.status, tokenData }, 'TikTok token exchange failed');
+      // invalid_grant = the one-time authorization code was already used or has
+      // expired (TikTok codes are short-lived). Almost always a slow callback —
+      // e.g. the API instance cold-starting between TikTok's redirect and this
+      // exchange — so tell the user to retry rather than surfacing TikTok's raw copy.
+      if (tokenData.error === 'invalid_grant') {
+        throw new AppError('TikTok sign-in expired before it finished — please try connecting again', 400);
+      }
       throw new AppError(tokenData.error_description ?? 'Could not connect TikTok account', 502);
     }
 
@@ -866,13 +895,7 @@ export class CreatorService {
   }
 
   async handleInstagramLoginCallback(code: string, state: string) {
-    let statePayload: ReturnType<typeof verifyOAuthState>;
-    try {
-      statePayload = verifyOAuthState(state);
-    } catch (err) {
-      logger.warn({ err }, 'Instagram OAuth state verification failed');
-      throw new AppError('Instagram authorization expired — please try again', 400);
-    }
+    const statePayload = verifyOAuthStateOrThrow(state, 'Instagram');
     const { userId, role } = statePayload;
 
     const isBusiness = role === 'BUSINESS';

@@ -340,9 +340,9 @@ export default function HomeScreen() {
               <LinearGradient colors={[C.brinjal1, '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaCard}>
                 <Text style={styles.ctaTitle}>{t('home.ctaTitle')}</Text>
                 <View style={styles.ctaBtn}>
-                  <FontAwesome5 name="briefcase" solid size={13} color={C.brinjal1} />
+                  <FontAwesome5 name="briefcase" solid size={16} color={C.brinjal1} />
                   <Text style={[styles.ctaBtnText, { color: C.brinjal1 }]}>{t('home.ctaBtn')}</Text>
-                  <FontAwesome5 name="arrow-right" solid size={13} color={C.brinjal1} />
+                  <FontAwesome5 name="arrow-right" solid size={16} color={C.brinjal1} />
                 </View>
               </LinearGradient>
             </Pressable>
@@ -665,10 +665,11 @@ const styles = StyleSheet.create({
   ctaCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, alignItems: 'center', ...SHADOW.floating },
   ctaTitle: { fontSize: FONT_SIZE.lg, fontFamily: F.bold, color: '#fff', textAlign: 'center' },
   ctaBtn: {
-    flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: SPACING.sm,
+    flexDirection: 'row', alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', gap: SPACING.lg,
+    marginHorizontal: SPACING.xxl,
     backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: 11,
   },
-  ctaBtnText: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
+  ctaBtnText: { fontSize: FONT_SIZE.lg, fontFamily: F.bold },
 
   quickActionsRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xxl },
   // flex: 1 (not a fixed width) — four equal-width columns that always sum
