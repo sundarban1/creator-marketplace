@@ -135,6 +135,18 @@ export type Message = {
   errorDetail?: string;
 };
 
+// Free-event Q&A ("Ask Organizer"). `askerName` is populated only for the
+// business viewer — creators get null and the screen shows "A creator asked".
+export type EventQuestion = {
+  id: string;
+  question: string;
+  answer: string | null;
+  answeredAt: string | null;
+  createdAt: string;
+  isMine: boolean;
+  askerName: string | null;
+};
+
 export type AppNotification = {
   id: string;
   type:
@@ -164,7 +176,9 @@ export type AppNotification = {
     | 'team_invitation_response'
     | 'withdrawal_processing'
     | 'withdrawal_paid'
-    | 'withdrawal_rejected';
+    | 'withdrawal_rejected'
+    | 'event_question_asked'
+    | 'event_question_answered';
   title: string;
   body: string;
   timestamp: string;

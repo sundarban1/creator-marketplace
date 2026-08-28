@@ -190,6 +190,16 @@ export const renameDeliverableVideoSchema = z.object({
   label:    z.string().min(1).max(60),
 });
 
+// Free-event Q&A ("Ask Organizer") — an accepted creator's question and the
+// business's answer.
+export const askEventQuestionSchema = z.object({
+  question: z.string().trim().min(1, 'Question cannot be empty').max(1000),
+});
+
+export const answerEventQuestionSchema = z.object({
+  answer: z.string().trim().min(1, 'Answer cannot be empty').max(2000),
+});
+
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
 export type UpdateCampaignInput = z.infer<typeof updateCampaignSchema>;
 export type CampaignListQuery = z.infer<typeof campaignListQuerySchema>;
@@ -199,3 +209,5 @@ export type SubmitReviewInput = z.infer<typeof submitReviewSchema>;
 export type DeliverableVideoSignatureRequestInput = z.infer<typeof deliverableVideoSignatureRequestSchema>;
 export type DeliverableVideoCompleteInput = z.infer<typeof deliverableVideoCompleteSchema>;
 export type RenameDeliverableVideoInput   = z.infer<typeof renameDeliverableVideoSchema>;
+export type AskEventQuestionInput         = z.infer<typeof askEventQuestionSchema>;
+export type AnswerEventQuestionInput      = z.infer<typeof answerEventQuestionSchema>;

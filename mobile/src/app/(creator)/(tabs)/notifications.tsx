@@ -56,6 +56,8 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
   withdrawal_processing:    { icon: 'sync-alt',        iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeWithdrawalProcessing' },
   withdrawal_paid:          { icon: 'money-check-alt',  iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeWithdrawalPaid' },
   withdrawal_rejected:      { icon: 'times-circle',     iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeWithdrawalRejected' },
+  event_question_asked:     { icon: 'question-circle',  iconColor: '#0891B2', iconBg: '#E0F2FE', accentColor: '#0891B2', labelKey: 'notifications.typeEventQuestionAsked' },
+  event_question_answered:  { icon: 'comment-dots',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeEventQuestionAnswered' },
 };
 
 const FALLBACK: TypeConfig = { icon: 'bell', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeNotification' };

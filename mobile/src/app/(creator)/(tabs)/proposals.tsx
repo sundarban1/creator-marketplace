@@ -198,14 +198,30 @@ function ProposalCard({ proposal }: {
             stands alone and no workspace CTA follows it. Paid campaigns keep
             the start → complete → confirm workspace flow below. ── */}
         {proposal.status === 'accepted' && isFree && (
-          <View style={[styles.invitedBanner, { borderColor: `${accentColor}40` }]}>
-            <View style={[styles.invitedIcon, { backgroundColor: `${accentColor}18` }]}>
-              <FontAwesome5 name="check-circle" solid size={20} color={accentColor} />
+          <View style={{ gap: 8 }}>
+            <View style={[styles.invitedBanner, { borderColor: `${accentColor}40` }]}>
+              <View style={[styles.invitedIcon, { backgroundColor: `${accentColor}18` }]}>
+                <FontAwesome5 name="trophy" solid size={18} color={accentColor} />
+              </View>
+              <Text style={[styles.invitedTitle, { color: accentColor, flex: 1 }]}>{t('proposal.creator.invitedTitle')}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.invitedTitle, { color: accentColor }]}>{t('proposal.creator.invitedTitle')}</Text>
-              <Text style={[styles.invitedSub, { color: C.textSecondary }]}>{t('proposal.creator.freeConfirmedSub')}</Text>
-            </View>
+
+            {/* Free events never open a chat — the shared Q&A page is how the
+                creator reaches the organizer. Its own tap target, so it
+                doesn't trigger the card's campaign-detail navigation. */}
+            <Pressable
+              style={[styles.askRow, { borderColor: C.border, backgroundColor: C.background }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push({ pathname: '/event-questions', params: { campaignId: proposal.campaignId, campaignTitle: proposal.campaignTitle } } as never);
+              }}>
+              <FontAwesome5 name="comments" solid size={14} color={C.brinjal1} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.askTitle, { color: C.text }]}>{t('eventQuestions.subtitlePrompt')}</Text>
+                <Text style={[styles.askSub, { color: C.brinjal1 }]}>{t('eventQuestions.askOrganizer')}</Text>
+              </View>
+              <FontAwesome5 name="chevron-right" size={12} color={C.textPlaceholder} />
+            </Pressable>
           </View>
         )}
 
@@ -505,7 +521,11 @@ const styles = StyleSheet.create({
   invitedBanner:{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11 },
   invitedIcon:  { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   invitedTitle: { fontSize: 13, fontFamily: F.bold },
-  invitedSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
+
+  // "Ask Organizer" Q&A entry — sits under the invited banner on a free event
+  askRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10 },
+  askTitle: { fontSize: 12.5, fontFamily: F.semibold },
+  askSub:   { fontSize: 11.5, fontFamily: F.bold, marginTop: 1 },
 
   // Awaiting-response banner (pending) — same icon-box + title + sub shape
   // as invitedBanner/rejectedBanner for a consistent footer across all

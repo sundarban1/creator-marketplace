@@ -13,6 +13,8 @@ import {
   deliverableVideoSignatureRequestSchema,
   deliverableVideoCompleteSchema,
   renameDeliverableVideoSchema,
+  askEventQuestionSchema,
+  answerEventQuestionSchema,
 } from './campaign.schema';
 
 const router = Router();
@@ -669,6 +671,25 @@ router.post(
   authenticate,
   authorize('BUSINESS'),
   ctrl.payForCampaign.bind(ctrl)
+);
+
+// Free-event Q&A ("Ask Organizer"). Shared page: the owning business and every
+// accepted creator can read it; only accepted creators post questions, only the
+// business answers/edits — all enforced in the service.
+router.get('/:id/questions', authenticate, ctrl.listEventQuestions.bind(ctrl));
+router.post(
+  '/:id/questions',
+  authenticate,
+  authorize('CREATOR'),
+  validate(askEventQuestionSchema),
+  ctrl.askEventQuestion.bind(ctrl)
+);
+router.put(
+  '/:id/questions/:questionId/answer',
+  authenticate,
+  authorize('BUSINESS'),
+  validate(answerEventQuestionSchema),
+  ctrl.answerEventQuestion.bind(ctrl)
 );
 
 /**

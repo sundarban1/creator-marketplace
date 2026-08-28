@@ -43,6 +43,7 @@ import { NameVideoModal } from '@/components/NameVideoModal';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -385,6 +386,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredSub')}</Text>
+      <View style={ac.lockNote}>
+        <Text style={ac.lockNoteTitle}>{t('activityTimeline.acPaymentRequiredChatLockTitle')}</Text>
+        <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredChatLockBody')}</Text>
+      </View>
       <Pressable style={[ac.btn, { backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onPay}>
         <FontAwesome5 name="credit-card" size={14} color="#fff" solid />
         <Text style={ac.btnTxt}>{t('activityTimeline.acPayNowBtn')}</Text>
@@ -1400,6 +1405,12 @@ export default function CampaignWorkspaceScreen() {
   const ws   = app?.workStatus ?? 'NONE';
   const isFreeEvent = campaign?.campaignType === 'OPEN_EVENT';
   const paid = isFreeEvent || app?.paymentStatus === 'PAID' || app?.paymentStatus === 'RELEASED';
+  // On a paid campaign the chat is created only once escrow is funded, so the
+  // header message button stays locked until then for both sides.
+  const chatLocked = !isFreeEvent && !paid;
+  // Free events (OPEN_EVENT) are terminal at acceptance — no work stage and no
+  // conversation is ever opened between the business and the creator.
+  const chatUnavailable = isFreeEvent;
   const pIdx = progressIdx(ws, paid, app?.paymentStatus, isFreeEvent);
   // A multi-role campaign's own requirement carries its own completionType
   // (a photographer role can be DELIVERABLE while a DJ role on the same
@@ -1438,10 +1449,21 @@ export default function CampaignWorkspaceScreen() {
           </Text>
           {/* Only message icon — no overflow menu. Payment release is the final
               stage, so chat closes here rather than staying open indefinitely. */}
-          {app?.paymentStatus === 'RELEASED' ? (
+          {chatUnavailable ? (
+            // Free event — no chat is ever opened for it.
+            <Pressable style={s.iconBtn} onPress={() => showToast(t('activityTimeline.chatFreeEventUnavailable'))} hitSlop={6}>
+              <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
+            </Pressable>
+          ) : app?.paymentStatus === 'RELEASED' ? (
             <View style={s.iconBtn}>
               <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
             </View>
+          ) : chatLocked ? (
+            // Paid campaign, escrow not funded yet — chat only unlocks once the
+            // business completes payment (see the payment-required action card).
+            <Pressable style={s.iconBtn} onPress={() => showToast(t('activityTimeline.acPaymentRequiredChatLockBody'))} hitSlop={6}>
+              <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
+            </Pressable>
           ) : (
             <Pressable style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
               <FontAwesome5 name="comment-alt" solid size={22} color="#7C3AED" />
@@ -1573,6 +1595,17 @@ export default function CampaignWorkspaceScreen() {
             }
           }}
         />
+
+        {/* ── Free-event Q&A ("Ask Organizer") — a free event never opens a
+              chat, so this shared page is how the organizer and accepted
+              creators communicate. ── */}
+        {isFreeEvent && campaign && (
+          <EventQuestionsEntry
+            campaignId={campaign.id}
+            campaignTitle={campaign.title}
+            variant={isCreator ? 'creator' : 'business'}
+          />
+        )}
 
         {/* ── Rate your experience (§58) — shown once the project is fully
               complete, for both sides. Sits directly below the completion card. ── */}
@@ -2401,6 +2434,8 @@ const ac = StyleSheet.create({
   iconBg: { width: 36, height: 36, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   heading:{ fontSize: 16, fontFamily: F.bold, flexShrink: 1 },
   sub:    { fontSize: 13, fontFamily: F.regular, lineHeight: 20 },
+  lockNote:      { backgroundColor: '#FEF2F2', borderRadius: RADIUS.sm, padding: SPACING.md, gap: 4 },
+  lockNoteTitle: { fontSize: 13, fontFamily: F.semibold, color: '#EF4444', lineHeight: 19 },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.full, paddingVertical: 13, marginTop: 4 },
   btnTxt: { fontSize: 14, fontFamily: F.bold, color: '#fff' },

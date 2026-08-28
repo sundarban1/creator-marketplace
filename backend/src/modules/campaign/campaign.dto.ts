@@ -442,3 +442,40 @@ export function toActivityLogDto(a: { id: string; action: string; metadata: Pris
     createdAt: a.createdAt.toISOString(),
   };
 }
+
+export interface EventQuestionDto {
+  id: string;
+  question: string;
+  answer: string | null;
+  answeredAt: string | null;
+  createdAt: string;
+  isMine: boolean;
+  // Populated only for the business viewer — the mobile client shows creators
+  // an anonymized "A creator asked" label instead.
+  askerName: string | null;
+}
+
+type RawEventQuestion = {
+  id: string;
+  creatorId: string;
+  question: string;
+  answer: string | null;
+  answeredAt: Date | null;
+  createdAt: Date;
+  creator: { id: string; fullName: string | null };
+};
+
+export function toEventQuestionDto(
+  q: RawEventQuestion,
+  opts: { includeAsker: boolean; viewerCreatorId?: string },
+): EventQuestionDto {
+  return {
+    id:         q.id,
+    question:   q.question,
+    answer:     q.answer,
+    answeredAt: q.answeredAt ? q.answeredAt.toISOString() : null,
+    createdAt:  q.createdAt.toISOString(),
+    isMine:     !!opts.viewerCreatorId && q.creatorId === opts.viewerCreatorId,
+    askerName:  opts.includeAsker ? (q.creator.fullName ?? null) : null,
+  };
+}

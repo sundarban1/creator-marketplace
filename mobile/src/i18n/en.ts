@@ -901,6 +901,8 @@ const en = {
     typeWithdrawalProcessing: 'Withdrawal Processing',
     typeWithdrawalPaid: 'Withdrawal Completed',
     typeWithdrawalRejected: 'Withdrawal Rejected',
+    typeEventQuestionAsked: 'New Question',
+    typeEventQuestionAnswered: 'Question Answered',
     typeNotification: 'Notification',
   },
 
@@ -1113,10 +1115,8 @@ const en = {
       trackDisputedSub: 'Kolab support is reviewing this job',
       seeMore: 'See more',
       seeLess: 'See less',
-      invitedTitle: "You're invited!",
+      invitedTitle: "Congratulations, You're Invited!",
       invitedSub: 'The business accepted your application',
-      // Free events end at acceptance — no work stage, no deliverables.
-      freeConfirmedSub: "You're confirmed for this event — nothing further to do.",
     },
     business: {
       headerTitle: 'Proposals',
@@ -1450,8 +1450,6 @@ const en = {
     detailVenue: 'Venue',
     detailCapacity: 'Capacity',
     capacityCreators: '{{n}} creators',
-    invitedTitle: "Congrats, You're Invited!",
-    invitedSub: "You've been selected for this event. Check your workspace to get started.",
     submitProposal: 'Submit Proposal',
     alreadyApplied: 'Already Applied',
     sectionRolesNeeded: 'Roles Needed',
@@ -3073,6 +3071,39 @@ const en = {
     publishBtn:       'Publish Invitation',
   },
 
+  // ── Event Q&A ("Ask Organizer") — free events ─────────────────
+  eventQuestions: {
+    title:              'Event Q&A',
+    invitedTitle:       "Congrats, You're Invited!",
+    invitedSub:         "The organizer accepted you for this event.",
+    subtitlePrompt:     'Have a question about this event?',
+    entryBodyCreator:   'Ask the organizer anything about timing, location or what to bring. Answers are shared with all accepted creators.',
+    entryBodyBusiness:  'See questions from accepted creators and post answers everyone can see.',
+    askOrganizer:       'Ask Organizer',
+    viewQuestions:      'Creator Questions',
+    headerCreator:      'Questions here are shared with the organizer and every accepted creator. Asker names are hidden.',
+    headerBusiness:     'Questions from accepted creators. Your answers are visible to all of them.',
+    youAsked:           'You asked',
+    aCreatorAsked:      'A creator asked',
+    organizerAnswer:    "Organizer's answer",
+    notAnsweredYet:     'Not answered yet',
+    answerThis:         'Answer this question',
+    editAnswer:         'Edit answer',
+    answerModalTitle:   'Answer this question',
+    answerPlaceholder:  'Type your answer…',
+    submitAnswer:       'Save answer',
+    composerPlaceholder:'Ask the organizer a question…',
+    send:               'Send',
+    empty:              'No questions yet.',
+    emptyCreatorHint:   'Be the first to ask the organizer a question.',
+    noAccess:           'Only the organizer and accepted creators can view this page.',
+    loadError:          'Could not load questions. Pull to refresh.',
+    askedToast:         'Question sent to the organizer.',
+    answeredToast:      'Answer saved.',
+    questionTooLong:    'Question is too long.',
+    answerTooLong:      'Answer is too long.',
+  },
+
   // ── Activity Timeline ─────────────────────────────────────────
   activityTimeline: {
     // §52 — tab labels. Chat was dropped as its own tab (redundant with the
@@ -3202,6 +3233,9 @@ const en = {
     // Action card states
     acPaymentRequiredTitle:  'Deposit With Kolab',
     acPaymentRequiredSub:    'Deposit with Kolab to secure the creator and start the event. Funds are held safely until you approve the work.',
+    acPaymentRequiredChatLockTitle: "You're one step away from starting the conversation.",
+    acPaymentRequiredChatLockBody:  'Complete the payment to unlock the chat and start working with the creator.',
+    chatFreeEventUnavailable:       'Free events don’t include chat — acceptance is final and there’s nothing more to arrange.',
     acPayNowBtn:             'Pay Now',
     acWaitingPaymentTitle:   'Waiting for Payment',
     acWaitingPaymentSub:     "Business has 24 hours to complete payment. You'll be notified immediately when done.",

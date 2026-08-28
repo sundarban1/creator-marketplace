@@ -2,7 +2,7 @@ import { CampaignStatus, ApplicationStatus, CampaignType, WorkStatus } from '@pr
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
-import { toCampaignDto, toApplicationDto, toActivityLogDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
+import { toCampaignDto, toApplicationDto, toActivityLogDto, toEventQuestionDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
 import { videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, uploadImage as uploadImageToCloudinary, uploadRawFile, deleteImage, deleteRawFile } from '../../utils/cloudinary';
 import { createVideoUploadPlan, finalizeR2Object, completeR2Multipart, deleteR2Object, abortR2Multipart } from '../../utils/r2Media';
 import { BusinessRepository } from '../business/business.repository';
@@ -1063,14 +1063,12 @@ export class CampaignService {
       if (status === 'ACCEPTED') {
         analyticsService.incrProposalAccepted(creatorUserId, application.creatorId, business.userId, business.id, appId);
 
-        // Auto-start (or resume) the chat with a greeting — the creator never has to send a request.
-        // Always sent, even if the two were already chatting, so the creator gets a clear
-        // heads-up for this specific proposal/event.
-        const greetingName = application.creator?.fullName ?? 'there';
-        const greeting = `Hello ${greetingName}, your proposal for "${campaign.title}" has been accepted. You can message me here for more information or if you have any questions. It will be great working with you. Thank you!`;
-        messagingService
-          .sendProposalAcceptedMessage(application.creatorId, business.id, campaignId, business.userId, greeting)
-          .catch(() => {});
+        // Accepting a proposal never opens a chat on its own. A free event
+        // (OPEN_EVENT) ends at the acceptance itself — there is no work stage
+        // and no conversation, only the bell notification below. A paid
+        // campaign opens the chat once escrow is actually funded (see
+        // finalizeApplicationPayment); until then the business is told in the
+        // activity timeline that completing payment unlocks the chat.
       } else {
         analyticsService.incrProposalRejected(creatorUserId);
       }
@@ -1257,6 +1255,21 @@ export class CampaignService {
         refType: 'campaign',
       }).catch(() => {});
     }
+
+    // Escrow is now funded — open (or resume) the chat with a greeting on the
+    // business's behalf. For a paid campaign this is deferred to here rather
+    // than to proposal-acceptance, so the creator isn't dropped into a chat
+    // before the business has actually paid (free events open the chat on
+    // acceptance instead — see acceptApplication).
+    messagingService
+      .sendProposalAcceptedMessage(
+        params.creatorId,
+        params.businessId,
+        params.campaignId,
+        params.businessUserId,
+        `Payment for "${params.campaignTitle}" is complete and now secured with Kolab. You can message here anytime — it will be great working together!`,
+      )
+      .catch(() => {});
   }
 
   async payForApplication(appId: string, userId: string, method = 'esewa') {
@@ -2152,5 +2165,103 @@ export class CampaignService {
     }
 
     return { campaignCount: campaigns.length, applicationCount: applications.length };
+  }
+
+  // ─── Event Q&A ("Ask Organizer") ──────────────────────────────────────────
+  // A shared per-event Q&A page for free events (OPEN_EVENT), which never open
+  // a chat. Visible to the owning business and every accepted creator; only
+  // accepted creators may post questions, only the business may answer/edit.
+
+  // Resolves the caller's relationship to the event, throwing 403/404 as
+  // needed. Returns the campaign plus flags/ids the three methods below share.
+  private async resolveEventQAViewer(campaignId: string, userId: string) {
+    const campaign = await this.repo.findById(campaignId);
+    if (!campaign) throw new AppError('Event not found', 404);
+    if (campaign.campaignType !== 'OPEN_EVENT') {
+      throw new AppError('Q&A is only available for free events', 400);
+    }
+
+    const business = await this.businessRepo.findByUserId(userId);
+    const isBusinessOwner = !!business && business.id === campaign.businessId;
+
+    let creatorId: string | undefined;
+    if (!isBusinessOwner) {
+      const creator = await this.creatorRepo.findByUserId(userId);
+      if (creator) {
+        const accepted = await this.repo.findAcceptedApplication(campaignId, creator.id);
+        if (accepted) creatorId = creator.id;
+      }
+    }
+
+    if (!isBusinessOwner && !creatorId) {
+      throw new AppError('Only the organizer and accepted creators can view this page', 403);
+    }
+
+    return { campaign, isBusinessOwner, creatorId };
+  }
+
+  async listEventQuestions(campaignId: string, userId: string) {
+    const { isBusinessOwner, creatorId } = await this.resolveEventQAViewer(campaignId, userId);
+    const questions = await this.repo.findEventQuestions(campaignId);
+    return questions.map((q) =>
+      toEventQuestionDto(q, { includeAsker: isBusinessOwner, viewerCreatorId: creatorId }),
+    );
+  }
+
+  async askEventQuestion(campaignId: string, userId: string, question: string) {
+    const { campaign, isBusinessOwner, creatorId } = await this.resolveEventQAViewer(campaignId, userId);
+    if (isBusinessOwner || !creatorId) {
+      throw new AppError('Only accepted creators can ask a question', 403);
+    }
+
+    const raw = await this.repo.createEventQuestion({ campaignId, creatorId, question });
+
+    const business = await this.businessRepo.findById(campaign.businessId);
+    if (business) {
+      notificationService.create({
+        userId:  business.userId,
+        type:    'event_question_asked',
+        title:   `New question about "${campaign.title}"`,
+        body:    `${raw.creator.fullName ?? 'A creator'} asked a question about your event. Tap to answer it.`,
+        refId:   campaign.id,
+        refType: 'event',
+      }).catch(() => {});
+    }
+
+    return toEventQuestionDto(raw, { includeAsker: false, viewerCreatorId: creatorId });
+  }
+
+  async answerEventQuestion(campaignId: string, questionId: string, userId: string, answer: string) {
+    const { campaign, isBusinessOwner } = await this.resolveEventQAViewer(campaignId, userId);
+    if (!isBusinessOwner) {
+      throw new AppError('Only the organizer can answer questions', 403);
+    }
+
+    const existing = await this.repo.findEventQuestionById(questionId);
+    if (!existing || existing.campaignId !== campaignId) {
+      throw new AppError('Question not found', 404);
+    }
+
+    const firstAnswer = existing.answeredAt === null;
+    const raw = await this.repo.updateEventQuestionAnswer(questionId, answer, firstAnswer);
+
+    // The answer is useful to every accepted creator, not just the asker — the
+    // page is shared, so fan the notification out to all of them.
+    const creatorUserIds = await this.repo.findAcceptedCreatorUserIds(campaignId);
+    const snippet = raw.question.length > 80 ? `${raw.question.slice(0, 80)}…` : raw.question;
+    if (creatorUserIds.length > 0) {
+      notificationService.createMany(
+        creatorUserIds.map((uid) => ({
+          userId:  uid,
+          type:    'event_question_answered',
+          title:   `The organizer answered a question about "${campaign.title}"`,
+          body:    `Q: "${snippet}" — tap to see the answer.`,
+          refId:   campaign.id,
+          refType: 'event',
+        })),
+      ).catch(() => {});
+    }
+
+    return toEventQuestionDto(raw, { includeAsker: true });
   }
 }

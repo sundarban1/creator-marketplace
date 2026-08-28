@@ -1,6 +1,6 @@
 import { request, API_BASE, ensureFreshAccessToken } from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
-import type { Campaign }    from '@/types';
+import type { Campaign, EventQuestion } from '@/types';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
@@ -344,6 +344,22 @@ export const campaignService = {
   async getById(id: string): Promise<Campaign> {
     const res = await request<ApiCampaign>('GET', `/api/campaigns/${id}`);
     return toCampaign(res.data);
+  },
+
+  // Free-event Q&A ("Ask Organizer"). Shared page — readable by the owning
+  // business and every accepted creator; only accepted creators post questions,
+  // only the business answers. 403 for anyone else.
+  async getEventQuestions(campaignId: string): Promise<EventQuestion[]> {
+    const res = await request<EventQuestion[]>('GET', `/api/campaigns/${campaignId}/questions`);
+    return res.data;
+  },
+
+  async askEventQuestion(campaignId: string, question: string): Promise<void> {
+    await request('POST', `/api/campaigns/${campaignId}/questions`, { question });
+  },
+
+  async answerEventQuestion(campaignId: string, questionId: string, answer: string): Promise<void> {
+    await request('PUT', `/api/campaigns/${campaignId}/questions/${questionId}/answer`, { answer });
   },
 
   async apply(campaignId: string, payload: {

@@ -273,6 +273,7 @@ model CreatorProfile {
   members                  ProviderMember[]        @relation("ProviderMembers")
   assignedWork             ApplicationAssignment[] @relation("AssignedWork")
   memberOf                 ProviderMember[]        @relation("ProviderMemberships")
+  eventQuestions           EventQuestion[]
 
   @@index([isVerified])
   @@map("creator_profiles")
@@ -839,6 +840,7 @@ model Campaign {
   contracts             Contract[]
   requirements          CampaignRequirement[]
   shortlistedBy         ShortlistedCampaign[]
+  eventQuestions        EventQuestion[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -854,6 +856,28 @@ model Campaign {
   @@index([locationLat, locationLng])
   @@index([deletedAt])
   @@map("campaigns")
+}
+
+// Shared per-event Q&A for free events (campaignType OPEN_EVENT), which never
+// open a chat — an accepted creator posts a question, the business answers it
+// (and can edit the answer). The page is common to the business and every
+// accepted creator; asker identity is shown to the business only (the mobile
+// client anonymizes it for creators). See CampaignService.listEventQuestions /
+// askEventQuestion / answerEventQuestion.
+model EventQuestion {
+  id         String    @id @default(cuid())
+  campaignId String
+  creatorId  String
+  question   String
+  answer     String?
+  answeredAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  campaign   Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator    CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+  @@map("event_questions")
 }
 
 model Application {

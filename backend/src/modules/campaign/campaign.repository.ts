@@ -1287,4 +1287,53 @@ export class CampaignRepository {
     });
     return new Map(users.map((u) => [u.id, u.email]));
   }
+
+  // ─── Event Q&A (free-event "Ask Organizer") ────────────────────────────────
+
+  // Any accepted application by this creator for the event — covers both the
+  // simple slot (requirementId: null) and requirement-scoped roles, unlike
+  // findApplication above. Gates who may read/post on the Q&A page.
+  async findAcceptedApplication(campaignId: string, creatorId: string) {
+    return prisma.application.findFirst({
+      where: { campaignId, creatorId, status: 'ACCEPTED' },
+      select: { id: true },
+    });
+  }
+
+  // userIds of every accepted creator on the event — the answer-notification
+  // fan-out audience.
+  async findAcceptedCreatorUserIds(campaignId: string): Promise<string[]> {
+    const rows = await prisma.application.findMany({
+      where: { campaignId, status: 'ACCEPTED' },
+      select: { creator: { select: { userId: true } } },
+    });
+    return [...new Set(rows.map((r) => r.creator.userId))];
+  }
+
+  async findEventQuestions(campaignId: string) {
+    return prisma.eventQuestion.findMany({
+      where: { campaignId },
+      orderBy: { createdAt: 'asc' },
+      include: { creator: { select: { id: true, fullName: true } } },
+    });
+  }
+
+  async createEventQuestion(data: { campaignId: string; creatorId: string; question: string }) {
+    return prisma.eventQuestion.create({
+      data,
+      include: { creator: { select: { id: true, fullName: true } } },
+    });
+  }
+
+  async findEventQuestionById(id: string) {
+    return prisma.eventQuestion.findUnique({ where: { id } });
+  }
+
+  async updateEventQuestionAnswer(id: string, answer: string, firstAnswer: boolean) {
+    return prisma.eventQuestion.update({
+      where: { id },
+      data: { answer, ...(firstAnswer ? { answeredAt: new Date() } : {}) },
+      include: { creator: { select: { id: true, fullName: true } } },
+    });
+  }
 }

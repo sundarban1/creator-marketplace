@@ -8,7 +8,7 @@ import { AppError } from '../../middleware/error';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { buildEsewaCheckoutHtml, decodeEsewaResponse } from '../../utils/esewa';
-import type { SubmitReviewInput, DeliverableVideoSignatureRequestInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput } from './campaign.schema';
+import type { SubmitReviewInput, DeliverableVideoSignatureRequestInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput, AskEventQuestionInput, AnswerEventQuestionInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
 const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
@@ -557,6 +557,40 @@ export class CampaignController {
     try {
       const review = await analyticsService.getReviewReceivedForApp(req.params.appId, req.user!.id);
       success(res, review, 'Review fetched');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async listEventQuestions(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const questions = await campaignService.listEventQuestions(req.params.id, req.user!.id);
+      success(res, questions, 'Questions fetched');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async askEventQuestion(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { question } = req.body as AskEventQuestionInput;
+      const created = await campaignService.askEventQuestion(req.params.id, req.user!.id, question);
+      success(res, created, 'Question posted', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async answerEventQuestion(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { answer } = req.body as AnswerEventQuestionInput;
+      const updated = await campaignService.answerEventQuestion(
+        req.params.id,
+        req.params.questionId,
+        req.user!.id,
+        answer,
+      );
+      success(res, updated, 'Answer saved');
     } catch (err) {
       next(err);
     }

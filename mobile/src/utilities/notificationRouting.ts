@@ -23,6 +23,14 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
     return isCreator ? { pathname: '/(creator)/(tabs)/proposals', params: { tab: 'rejected' } } : null;
   }
 
+  // Free-event Q&A ("Ask Organizer") — both the "new question" (business) and
+  // "organizer answered" (accepted creators) notifications open the same shared
+  // page. Checked before the generic event branch below, which would otherwise
+  // send creators to campaign-detail instead.
+  if ((n.type === 'event_question_asked' || n.type === 'event_question_answered') && n.refId) {
+    return { pathname: '/event-questions', params: { campaignId: n.refId } };
+  }
+
   // Free event notifications
   if (n.refType === 'event' && n.refId) {
     return isCreator

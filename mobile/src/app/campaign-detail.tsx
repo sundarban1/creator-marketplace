@@ -22,6 +22,7 @@ import { eventOptionLabel } from '@/features/business/utils/eventOptionLabels';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
+import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
@@ -433,6 +434,18 @@ export default function CampaignDetailScreen() {
           </View>
         )}
 
+        {/* Free-event Q&A — the organizer's view of the shared page. The
+            accepted creator gets the same entry point folded into their
+            "You're Invited" card in the sticky footer below. */}
+        {isOpenEvent && isBusiness && (
+          <EventQuestionsEntry
+            campaignId={campaign.id}
+            campaignTitle={campaign.title}
+            variant="business"
+            style={{ marginHorizontal: SCREEN_GUTTER, marginTop: 12 }}
+          />
+        )}
+
         <View style={{ height: 24 }} />
       </ScrollView>
 
@@ -446,15 +459,16 @@ export default function CampaignDetailScreen() {
             <Text style={s.applyBtnTxt}>{t('campaignDetail.editEvent')}</Text>
           </Pressable>
         ) : isOpenEvent && applicationStatus === 'accepted' ? (
-          <View style={s.invitedCard}>
-            <View style={s.invitedIconWrap}>
-              <FontAwesome5 name="trophy" size={18} color="#16A34A" solid />
-            </View>
-            <View style={s.invitedTextBlock}>
-              <Text style={s.invitedTitle}>{t('campaignDetail.invitedTitle')}</Text>
-              <Text style={s.invitedSub}>{t('campaignDetail.invitedSub')}</Text>
-            </View>
-          </View>
+          // Free event: acceptance is terminal (no workspace), so the "You're
+          // Invited" confirmation and the "Ask Organizer" Q&A entry live
+          // together in one card here.
+          <EventQuestionsEntry
+            campaignId={campaign.id}
+            campaignTitle={campaign.title}
+            variant="creator"
+            celebrate
+            style={{ flex: 1 }}
+          />
         ) : campaign.requirements && campaign.requirements.length > 0 ? (
           // Multi-role campaign — the "Roles Needed" card lives here, in the
           // sticky footer, instead of the scrollable body, so applying to a
@@ -715,10 +729,4 @@ const s = StyleSheet.create({
   roleChipTitle:     { fontSize: 13, fontFamily: F.bold },
   roleChipSub:       { fontSize: 11, fontFamily: F.regular },
   roleChipApplyBtn:  { borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 7, marginLeft: 'auto' },
-
-  invitedCard:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0FDF4', borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: '#6EE7B7' },
-  invitedIconWrap:  { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: '#DCFCE7', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  invitedTextBlock: { flex: 1, gap: 2 },
-  invitedTitle:     { fontSize: 15, color: '#065F46', fontFamily: F.bold },
-  invitedSub:       { fontSize: 12, color: '#047857', fontFamily: F.regular, lineHeight: 18 },
 });
