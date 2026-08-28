@@ -563,7 +563,7 @@ export default function OnboardingScreen() {
                   style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
                   onPress={() => setLocationModalOpen(true)}>
                   <FontAwesome5 name="map-marker-alt" size={16} color={C.textSecondary} />
-                  <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
+                  <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textPlaceholder }]} numberOfLines={2}>
                     {location || t('onboarding.locationPlaceholder')}
                   </Text>
                   <Text style={styles.locationArrow}>›</Text>

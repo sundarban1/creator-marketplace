@@ -328,6 +328,9 @@ export default function HomeScreen() {
               <AttentionBanner
                 icon="user"
                 title={t('creator.home.completeProfile')}
+                titleColor="#A0522D"
+                iconColor="#A0522D"
+                subtitleColor={C.text}
                 subtitle={t('creator.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
                 onPress={() => router.push('/(creator)/(tabs)/profile')}
                 onDismiss={() => setBannerDismissed(true)}

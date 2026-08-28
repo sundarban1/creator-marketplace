@@ -313,6 +313,9 @@ export default function BusinessHomeScreen() {
             <AttentionBanner
               icon="exclamation-circle"
               title={t('business.home.attentionTitle')}
+              titleColor="#A0522D"
+              iconColor="#A0522D"
+              subtitleColor={C.text}
               subtitle={
                 attentionCount === 1
                   ? t('business.home.attentionProposalsSingular', { n: attentionCount })
