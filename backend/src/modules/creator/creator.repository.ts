@@ -26,6 +26,89 @@ async function creatorLabelVocabulary() {
   return labelVocabulary;
 }
 
+// ── Search relevance ranking ─────────────────────────────────────────────────
+// "Newest first" is the wrong order the moment there's a query — a business
+// searching a creator by name or by role wants the closest match at the top,
+// not whoever signed up most recently among everyone the query happened to
+// touch. When a search term is present, findMany loads a capped candidate pool
+// (same scale tradeoff as the followers sort) and orders it by how well each
+// row matches; recency only breaks ties.
+const SEARCH_RANK_CAP = 300;
+
+type ScorableCreator = {
+  id: string;
+  fullName: string | null;
+  username: string | null;
+  bio: string | null;
+  location: string | null;
+  city: string | null;
+  district: string | null;
+  province: string | null;
+  area: string | null;
+  categories: string[];
+  industries: string[];
+  isVerified: boolean;
+  createdAt: Date;
+  services: { name: string; category: { name: string; group: string | null } | null }[];
+  portfolioItems: { title: string | null }[];
+};
+
+// `(?<![\p{L}\p{N}_])` is the JS spelling of Postgres's `\m` word-start anchor —
+// the same one filterByTerms/matchesAny use, so ranking agrees with what the SQL
+// WHERE already matched ("skin" hits "Skincare", not "sealskin").
+function wordStartMatcher(terms: string[]): RegExp | null {
+  const cleaned = terms
+    .map((t) => t.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .filter(Boolean);
+  if (!cleaned.length) return null;
+  return new RegExp(`(?<![\\p{L}\\p{N}_])(?:${cleaned.join('|')})`, 'iu');
+}
+
+// Higher = a better match. Weights are ordered by how strong a hiring signal the
+// field is: an exact name, or an exact role/category, is what a business is
+// usually after; a bio or portfolio mention is a weak "might be relevant".
+// Expanded (synonym) hits always score below the literal query, so a real
+// "photographer" still outranks a "camera" → "photography" expansion. `verified`
+// is a 1-point nudge — a tie-breaker, never enough to jump a genuine match.
+function scoreCreatorMatch(c: ScorableCreator, q: ReturnType<typeof expandSearchQuery>): number {
+  const query = q.original.trim().toLowerCase();
+  const literal = wordStartMatcher(q.tokens.length ? q.tokens : [query].filter(Boolean));
+  const related = wordStartMatcher(q.related);
+  const test = (re: RegExp | null, ...vals: (string | null | undefined)[]) =>
+    !!re && vals.some((v) => !!v && re.test(v));
+
+  let score = 0;
+
+  // Name — the strongest "I'm looking for this specific person" signal.
+  const name = (c.fullName ?? '').toLowerCase();
+  if (query && name === query) score += 120;
+  else if (query && name.startsWith(query)) score += 70;
+  else if (test(literal, c.fullName)) score += 45;
+  if (test(literal, c.username)) score += 40;
+
+  // Role / category / industry — the strongest "find me a <role>" signal.
+  const labels = [...c.categories, ...c.industries];
+  if (query && labels.some((l) => l.toLowerCase() === query)) score += 60;
+  else if (test(literal, ...labels)) score += 38;
+  else if (test(related, ...labels)) score += 20;
+
+  // Services offered, plus each service's category name and umbrella group.
+  const serviceText = c.services.flatMap((sv) => [sv.name, sv.category?.name, sv.category?.group ?? undefined]);
+  if (test(literal, ...serviceText)) score += 16;
+  else if (test(related, ...serviceText)) score += 8;
+
+  // Location — literal only; expanding a place name is meaningless.
+  if (test(literal, c.location, c.city, c.district, c.province, c.area)) score += 14;
+
+  // Bio and portfolio — a passing mention, ranked last.
+  if (test(literal, c.bio)) score += 8;
+  else if (test(related, c.bio)) score += 4;
+  if (test(literal, ...c.portfolioItems.map((p) => p.title))) score += 5;
+
+  if (c.isVerified) score += 1;
+  return score;
+}
+
 export class CreatorRepository {
   async findMany(filters: {
     search?: string;
@@ -51,8 +134,9 @@ export class CreatorRepository {
       // relevant. Same concept as the works/business searches: the query is
       // expanded into related terms (see expandSearchQuery) and matched across
       // everything that describes the person — their bio, the services they
-      // list, those services' categories, and their portfolio — while the name
-      // and location stay on the literal query, where expansion has no meaning.
+      // list, those services' categories, and their portfolio — while the
+      // name, handle and location stay on the literal query, where expansion
+      // has no meaning.
       const q = expandSearchQuery(filters.search);
       // Unlike the other repositories this path stays in the Prisma query
       // builder (the price/platform/follower-sort filters around it are awkward
@@ -85,8 +169,12 @@ export class CreatorRepository {
       const matchedIndustries = filterByTerms(vocabulary.industries, q.all);
       where.OR = [
         { fullName: { contains: filters.search, mode: 'insensitive' } },
+        { username: { contains: filters.search, mode: 'insensitive' } },
         { location: { contains: filters.search, mode: 'insensitive' } },
         { city: { contains: filters.search, mode: 'insensitive' } },
+        { district: { contains: filters.search, mode: 'insensitive' } },
+        { province: { contains: filters.search, mode: 'insensitive' } },
+        { area: { contains: filters.search, mode: 'insensitive' } },
         ...anywhere(filters.search),
         ...related.flatMap(anywhere),
         ...(matchedCategories.length ? [{ categories: { hasSome: matchedCategories } }] : []),
@@ -137,6 +225,44 @@ export class CreatorRepository {
       const ranked = candidates
         .map((c) => ({ ...c, totalFollowers: c.socialAccounts.reduce((sum, a) => sum + a.followers, 0) }))
         .sort((a, b) => b.totalFollowers - a.totalFollowers);
+      return { creators: ranked.slice(skip, skip + filters.limit), total };
+    }
+
+    // Relevance-ranked search. Only when a query is present and the caller
+    // hasn't asked for an explicit chronological / followers order — those are
+    // deliberate user choices and still win. The pool is loaded once (capped,
+    // like the followers sort above) and ordered by scoreCreatorMatch; past
+    // SEARCH_RANK_CAP results the tail is unreachable, which is the same
+    // tradeoff already accepted for followers and fine for a search result set.
+    if (filters.search && (!filters.sort || filters.sort === 'newest')) {
+      const q = expandSearchQuery(filters.search);
+      const searchSelect = {
+        ...select,
+        username: true, city: true, district: true, province: true, area: true, createdAt: true,
+        services: { select: { name: true, category: { select: { name: true, group: true } } } },
+        portfolioItems: { select: { title: true } },
+      } satisfies Prisma.CreatorProfileSelect;
+
+      const [candidates, total] = await Promise.all([
+        prisma.creatorProfile.findMany({
+          where,
+          take: SEARCH_RANK_CAP,
+          orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+          select: searchSelect,
+        }),
+        prisma.creatorProfile.count({ where }),
+      ]);
+
+      const ranked = candidates
+        .map((c) => ({ c, score: scoreCreatorMatch(c, q) }))
+        .sort(
+          (a, b) =>
+            b.score - a.score ||
+            b.c.createdAt.getTime() - a.c.createdAt.getTime() ||
+            a.c.id.localeCompare(b.c.id),
+        )
+        .map((r) => r.c);
+
       return { creators: ranked.slice(skip, skip + filters.limit), total };
     }
 
