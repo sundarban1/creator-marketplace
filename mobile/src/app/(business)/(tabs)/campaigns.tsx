@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -106,18 +106,22 @@ export default function CampaignsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
 
-  // Search + category — filtered client-side over whatever's currently
-  // loaded for the active status tab, same as every other list search in
-  // this app (explore-creators, saved-creators): no new backend support.
+  // Search runs server-side (GET /api/campaigns/my?search=…) so it matches
+  // across the business's whole event history — title, description, category
+  // and venue — not just the page currently loaded. The category chip filter
+  // below still narrows client-side over the loaded results.
   const [search, setSearch] = useState('');
-  const [searchDebounced, setSearchDebouncedImmediate] = useDebouncedValue(search, 400);
+  const [searchDebounced, setSearchDebouncedImmediate] = useDebouncedValue(search, 350);
   const searchInputRef = useRef<TextInput>(null);
+  const searchRef = useRef('');
+  searchRef.current = searchDebounced.trim();
 
   const [categoryFilter, setCategoryFilter]         = useState('');
   const [tempCategoryFilter, setTempCategoryFilter] = useState('');
   const [categorySheetVisible, setCategorySheetVisible] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
+  const loadSeqRef = useRef(0);
   const hasLoadedOnceRef = useRef(false);
   const activeFilterRef = useRef(activeFilter);
   activeFilterRef.current = activeFilter;
@@ -147,7 +151,12 @@ export default function CampaignsScreen() {
 
   async function loadTab(filter: FilterKey, page: number, replace: boolean) {
     if (!replace) setTabData((prev) => ({ ...prev, [filter]: { ...prev[filter], loadingMore: true } }));
-    const { campaigns: data, total } = await campaignService.listMy({ page, limit: PAGE_SIZE, status: STATUS_PARAM[filter] });
+    // Sequence guard: with search-as-you-type, several replace-loads can be
+    // in flight at once — drop any whose response comes back after a newer
+    // one has already been requested, so stale results can't overwrite fresh.
+    const seq = replace ? ++loadSeqRef.current : loadSeqRef.current;
+    const { campaigns: data, total } = await campaignService.listMy({ page, limit: PAGE_SIZE, status: STATUS_PARAM[filter], search: searchRef.current });
+    if (replace && seq !== loadSeqRef.current) return;
     setTabData((prev) => {
       const prevItems = replace ? [] : prev[filter].items;
       const seen = new Set(prevItems.map((c) => c.id));
@@ -201,6 +210,26 @@ export default function CampaignsScreen() {
   }, []));
 
   const onRefresh = useCallback(() => loadCampaigns(true), [activeFilter]);
+
+  // Re-query when the (debounced) search term settles. Every tab's cache is
+  // invalidated so switching status chips mid-search refetches with the term
+  // applied; the tab in view refetches immediately. Skips the initial mount —
+  // useFocusEffect owns the first load.
+  const searchSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!searchSyncedRef.current) { searchSyncedRef.current = true; return; }
+    setTabData((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(next) as FilterKey[]) {
+        if (key !== activeFilterRef.current) next[key] = { ...next[key], loaded: false };
+      }
+      return next;
+    });
+    // No full-screen skeleton — loadTab(replace) swaps in the new results
+    // atomically, so the current list just stays put until they land.
+    void loadTab(activeFilterRef.current, 1, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchDebounced]);
 
   function selectFilter(filter: FilterKey) {
     setActiveFilter(filter);
@@ -363,12 +392,10 @@ export default function CampaignsScreen() {
 
   const shown = tabData[activeFilter].items;
   const filterActive = searchDebounced.trim().length > 0 || categoryFilter.length > 0;
-  const filtered = shown.filter((c) => {
-    if (categoryFilter && c.category !== categoryFilter) return false;
-    const q = searchDebounced.trim().toLowerCase();
-    if (q && !c.title.toLowerCase().includes(q) && !(c.description ?? '').toLowerCase().includes(q)) return false;
-    return true;
-  });
+  // Search is already applied server-side; only the category chip narrows here.
+  const filtered = categoryFilter
+    ? shown.filter((c) => c.category === categoryFilter)
+    : shown;
 
   // Hidden for now — the category filter trigger button (right of the search
   // bar) is commented out, so this is unused. Kept for easy re-enable.

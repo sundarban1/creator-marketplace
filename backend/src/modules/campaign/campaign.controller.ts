@@ -125,7 +125,8 @@ export class CampaignController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as CampaignStatus | undefined;
-      const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit, req.language, status);
+      const search = (req.query.search as string)?.trim() || undefined;
+      const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit, req.language, status, search);
       paginated(res, campaigns, total, page, limit);
     } catch (err) {
       next(err);
@@ -291,7 +292,7 @@ export class CampaignController {
         req.user!.id,
         note ?? ''
       );
-      success(res, result, 'Revision requested');
+      success(res, result, 'Feedback sent');
     } catch (err) {
       next(err);
     }

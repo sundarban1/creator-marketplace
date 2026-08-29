@@ -248,11 +248,13 @@ export const campaignService = {
     page?:   number;
     limit?:  number;
     status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED';
+    search?: string;
   }): Promise<{ campaigns: Campaign[]; total: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns/my', undefined, {
       page:   params?.page  ?? 1,
       limit:  params?.limit ?? 50,
       status: params?.status,
+      search: params?.search?.trim() || undefined,
     });
     return {
       campaigns: res.data.map((c) => toCampaign({ ...c, business: c.business ?? { businessName: '', logoUrl: null } })),

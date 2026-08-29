@@ -72,7 +72,7 @@ export async function sendWorkSubmittedEmail(
     <div style="background:#FFF7ED;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
       <p style="margin:0;color:#92400E;font-size:13px;">⏰ If no action is taken within <strong>5 days</strong>, the work will be auto-approved.</p>
     </div>
-    <p style="color:#374151;font-size:14px;margin:0;">Open the Kolab app to <strong>Approve</strong> the work or <strong>Request Revisions</strong>.</p>
+    <p style="color:#374151;font-size:14px;margin:0;">Open the Kolab app to <strong>Approve</strong> the work or <strong>Send Feedback</strong>.</p>
   `);
   await sendEmail(businessEmail, `📤 ${creatorName} submitted work for "${campaignTitle}"`, html);
 }
@@ -106,17 +106,17 @@ export async function sendRevisionRequestEmail(
   note: string,
 ): Promise<void> {
   const html = wrapLayout(`
-    <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 8px;">✏️ Revision Requested</h2>
+    <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 8px;">✏️ Feedback Requested</h2>
     <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
       Hi <strong>${creatorName}</strong>, the brand has requested some changes to your submission for <strong>${campaignTitle}</strong>.
     </p>
     <div style="background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:10px;padding:20px 24px;margin-bottom:24px;">
-      <p style="margin:0 0 8px;color:#92400E;font-size:13px;font-weight:700;text-transform:uppercase;">Revision Notes</p>
+      <p style="margin:0 0 8px;color:#92400E;font-size:13px;font-weight:700;text-transform:uppercase;">Feedback Notes</p>
       <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">${note.replace(/\n/g, '<br>')}</p>
     </div>
     <p style="color:#374151;font-size:14px;margin:0;">Please address the feedback and resubmit via the Kolab app.</p>
   `);
-  await sendEmail(creatorEmail, `✏️ Revision needed for "${campaignTitle}"`, html);
+  await sendEmail(creatorEmail, `✏️ Feedback for "${campaignTitle}"`, html);
 }
 
 export async function sendEventAcceptedEmail(

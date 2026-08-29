@@ -44,6 +44,7 @@ import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
+import { useToast } from '@/components/Toast';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -380,7 +381,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Business: payment required
   if (!paid && ws === 'NONE' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#EF4444' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FEF2F2', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="credit-card" size={16} color="#EF4444" solid /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
@@ -399,7 +400,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Creator: waiting for payment
   if (!paid && ws === 'NONE' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="clock" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
@@ -410,7 +411,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Business: payment done, waiting on creator
   if (paid && ws === 'NONE' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingCreatorTitle')}</Text>
@@ -421,7 +422,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Creator: ready to start
   if (paid && ws === 'NONE' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="rocket" size={16} color="#7C3AED" solid /></View>
         <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
@@ -437,7 +438,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Business: creator working
   if (ws === 'IN_PROGRESS' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="play-circle" solid size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
@@ -449,7 +450,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // Creator: SERVICE jobs skip the upload step entirely — no file/link UI,
   // just a direct "mark as completed" action (§24 — no upload screen).
   if (ws === 'IN_PROGRESS' && isCreator && isService) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-circle" solid size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acServiceInProgressTitle')}</Text>
@@ -465,7 +466,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Creator: upload deliverables (DELIVERABLE jobs only)
   if (ws === 'IN_PROGRESS' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="cloud-upload-alt" solid size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
@@ -481,7 +482,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // Business: SERVICE job marked complete by the provider — confirm or
   // report an issue, no file review section (§27 — nothing was submitted).
   if (ws === 'SUBMITTED' && !isCreator && isService) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-circle" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acServiceCompletedTitle')}</Text>
@@ -507,7 +508,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
     const imageFiles = deliverableFiles.filter(f => f.fileType === 'IMAGE');
     const docFiles    = deliverableFiles.filter(f => f.fileType !== 'IMAGE');
     return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="eye" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
@@ -588,7 +589,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Creator: SERVICE job awaiting the client's confirmation — nothing to view.
   if (ws === 'SUBMITTED' && isCreator && isService) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingConfirmationTitle')}</Text>
@@ -602,7 +603,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
     const imageFiles = deliverableFiles.filter(f => f.fileType === 'IMAGE');
     const docFiles    = deliverableFiles.filter(f => f.fileType !== 'IMAGE');
     return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
@@ -672,7 +673,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // support reviews it. Shown before the payment-released check since a
   // disputed job never reaches that state on its own.
   if (ws === 'DISPUTED') return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#EF4444' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FEF2F2', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="exclamation-triangle" solid size={18} color="#EF4444" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acIssueReportedTitle')}</Text>
@@ -686,7 +687,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // will never come for a free event (paymentStatus stays UNPAID forever;
   // approving one flips it straight to COMPLETED server-side).
   if (isFree && (ws === 'APPROVED' || ws === 'COMPLETED')) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acFreeCompleteTitle')}</Text>
@@ -698,7 +699,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // Payment released — the final stage, both roles see the same completion
   // card immediately (no separate "confirm receipt" step required).
   if (paymentStatus === 'RELEASED') return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
@@ -709,7 +710,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // APPROVED, payment still held — business: admin will release it
   if (!isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
@@ -720,7 +721,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // APPROVED, payment still held — creator: admin will release it
   return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="trophy" size={16} color="#16A34A" solid /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedCreatorTitle')}</Text>
@@ -777,8 +778,9 @@ export default function CampaignWorkspaceScreen() {
   );
   const [loading, setLoading]   = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast]       = useState('');
-  const [toastTone, setToastTone] = useState<'default' | 'error'>('default');
+  // Every toast on this screen goes through the app-wide top toast (slides in
+  // from the top, colour-coded success/error/info) — no local bottom pill.
+  const topToast = useToast();
 
   // §52 — Overview/Chat/Deliverables/Payment/Agreement/Activity tabs. Purely
   // a render-layer split: every state/handler above and below is shared
@@ -882,7 +884,7 @@ export default function CampaignWorkspaceScreen() {
     const next = videoUploads.items.find((i) => i.status === 'done' && i.result && !promptedRef.current.has(i.localId));
     if (next) {
       promptedRef.current.add(next.localId);
-      showToast(t('activityTimeline.videoUploaded'));
+      topToast.success(t('activityTimeline.videoUploaded'));
       setNamingItem(next);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -895,7 +897,7 @@ export default function CampaignWorkspaceScreen() {
     const next = fileUploads.items.find((i) => i.status === 'done' && i.result && !promptedFileRef.current.has(i.localId));
     if (next) {
       promptedFileRef.current.add(next.localId);
-      showToast(t(next.file.fileType === 'image' ? 'activityTimeline.imageUploaded' : 'activityTimeline.fileUploaded'));
+      topToast.success(t(next.file.fileType === 'image' ? 'activityTimeline.imageUploaded' : 'activityTimeline.fileUploaded'));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileUploads.items]);
@@ -948,12 +950,6 @@ export default function CampaignWorkspaceScreen() {
     return () => clearTimeout(id);
   }, [app?.workStatus]);
 
-  function showToast(msg: string, tone: 'default' | 'error' = 'default') {
-    setToast(msg);
-    setToastTone(tone);
-    setTimeout(() => setToast(''), tone === 'error' ? 4500 : 3200);
-  }
-
   // Single entry point behind the one "+" tile in the combined deliverables
   // grid — the chooser covers video/photo/document, and each branch checks
   // its own type's slot limit only once the creator has picked a type (the
@@ -964,7 +960,7 @@ export default function CampaignWorkspaceScreen() {
     if (!choice) return;
     if (choice === 'video-camera' || choice === 'video-library') {
       if (videoUploads.remainingSlots <= 0) {
-        showToast(t('activityTimeline.videoLimitReached'));
+        topToast.error(t('activityTimeline.videoLimitReached'));
         return;
       }
       if (choice === 'video-camera') {
@@ -978,7 +974,7 @@ export default function CampaignWorkspaceScreen() {
     }
 
     if (fileUploads.remainingSlots <= 0) {
-      showToast(t('activityTimeline.fileLimitReached'));
+      topToast.error(t('activityTimeline.fileLimitReached'));
       return;
     }
     if (choice === 'photo-camera') {
@@ -999,7 +995,7 @@ export default function CampaignWorkspaceScreen() {
       await campaignService.removeDeliverableVideo(app.id, publicId);
       setApp(a => a ? { ...a, deliverableVideos: a.deliverableVideos.filter(v => v.publicId !== publicId) } : a);
     } catch (e: any) {
-      showToast(e?.message ?? 'Could not remove video');
+      topToast.error(e?.message ?? 'Could not remove video');
     }
   }
 
@@ -1009,7 +1005,7 @@ export default function CampaignWorkspaceScreen() {
       await campaignService.removeDeliverableFile(app.id, fileId);
       setApp(a => a ? { ...a, deliverableFiles: a.deliverableFiles.filter(f => f.id !== fileId) } : a);
     } catch (e: any) {
-      showToast(e?.message ?? 'Could not remove file');
+      topToast.error(e?.message ?? 'Could not remove file');
     }
   }
 
@@ -1133,15 +1129,15 @@ export default function CampaignWorkspaceScreen() {
       await campaignService.submitReview(app.id, ratingValue, ratingComment.trim());
       setMyReview({ id: app.id, rating: ratingValue, comment: ratingComment.trim() || null, createdAt: new Date().toISOString() });
       setShowRatingModal(false);
-      showToast(t('activityTimeline.ratingSubmitted'));
+      topToast.success(t('activityTimeline.ratingSubmitted'));
     } catch (e) {
-      showToast(e instanceof Error ? e.message : t('activityTimeline.ratingFailed'));
+      topToast.error(e instanceof Error ? e.message : t('activityTimeline.ratingFailed'));
     } finally {
       setSubmittingRating(false);
     }
   }
 
-  // Deep-linked from the "Revision Requested" notification — open the
+  // Deep-linked from the "Feedback Requested" notification — open the
   // feedback modal once the note has loaded. Guarded to fire only once per
   // mount so it doesn't reopen on every useFocusEffect refetch.
   useEffect(() => {
@@ -1180,16 +1176,16 @@ export default function CampaignWorkspaceScreen() {
         if (success) {
           setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
           setShowPay(false);
-          showToast(t('activityTimeline.toastPaySuccess'));
+          topToast.success(t('activityTimeline.toastPaySuccess'));
         } else {
           const error = parsed.searchParams.get('error') ?? t('activityTimeline.toastPayFailed');
-          showToast(error);
+          topToast.error(error);
         }
       }
       // result.type === 'cancel' | 'dismiss' — the business backed out of Khalti's
       // page without finishing; nothing changed, so just stop the spinner below.
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastPayFailed'));
+      topToast.error(e?.message ?? t('activityTimeline.toastPayFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1213,16 +1209,16 @@ export default function CampaignWorkspaceScreen() {
         if (success) {
           setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
           setShowPay(false);
-          showToast(t('activityTimeline.toastPaySuccess'));
+          topToast.success(t('activityTimeline.toastPaySuccess'));
         } else {
           // eSewa bounced us back without completing — the raw reason
           // (payment_failed / canceled / …) isn't useful to the business, so
           // show one calm, generic message.
-          showToast(t('activityTimeline.toastEsewaIssue'), 'error');
+          topToast.error(t('activityTimeline.toastEsewaIssue'));
         }
       }
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastEsewaIssue'), 'error');
+      topToast.error(e?.message ?? t('activityTimeline.toastEsewaIssue'));
     } finally {
       setSubmitting(false);
     }
@@ -1237,9 +1233,9 @@ export default function CampaignWorkspaceScreen() {
       await campaignService.payForApplication(app.id, payMethod);
       setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
       setShowPay(false);
-      showToast(t('activityTimeline.toastPaySuccess'));
+      topToast.success(t('activityTimeline.toastPaySuccess'));
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastPayFailed'));
+      topToast.error(e?.message ?? t('activityTimeline.toastPayFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1251,9 +1247,9 @@ export default function CampaignWorkspaceScreen() {
     try {
       await campaignService.startWork(app.id);
       setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS' } : a);
-      showToast(t('activityTimeline.acStartBtn'));
+      topToast.success(t('activityTimeline.toastWorkStarted'));
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastStartFailed'));
+      topToast.error(e?.message ?? t('activityTimeline.toastStartFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1272,9 +1268,9 @@ export default function CampaignWorkspaceScreen() {
       setApp(a => a ? { ...a, workStatus: 'SUBMITTED', submittedAt: new Date().toISOString(), deliverableUrls: uploadUrls || a.deliverableUrls } : a);
       setUploadUrls(''); setUploadNotes('');
       setShowUpload(false);
-      showToast(t('activityTimeline.toastWorkSubmitted'));
+      topToast.success(t('activityTimeline.toastWorkSubmitted'));
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastSubmitFailed'));
+      topToast.error(e?.message ?? t('activityTimeline.toastSubmitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1289,9 +1285,9 @@ export default function CampaignWorkspaceScreen() {
     try {
       await campaignService.submitWork(app.id, {});
       setApp(a => a ? { ...a, workStatus: 'SUBMITTED', submittedAt: new Date().toISOString() } : a);
-      showToast(t('activityTimeline.toastServiceCompleted'));
+      topToast.success(t('activityTimeline.toastServiceCompleted'));
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastSubmitFailed'));
+      topToast.error(e?.message ?? t('activityTimeline.toastSubmitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1311,9 +1307,9 @@ export default function CampaignWorkspaceScreen() {
         workStatus: 'COMPLETED',
         paymentStatus: campaign?.campaignType === 'OPEN_EVENT' ? a.paymentStatus : 'RELEASED',
       } : a);
-      showToast(t('activityTimeline.toastWorkApproved'));
+      topToast.success(t('activityTimeline.toastWorkApproved'));
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastApproveFailed'));
+      topToast.error(e?.message ?? t('activityTimeline.toastApproveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1326,9 +1322,9 @@ export default function CampaignWorkspaceScreen() {
       await campaignService.requestRevision(app.id, revisionNote);
       setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS' } : a);
       setRevisionNote(''); setShowRevision(false);
-      showToast(t('activityTimeline.toastRevisionRequested'));
+      topToast.success(t('activityTimeline.toastRevisionRequested'));
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastRevisionFailed'));
+      topToast.error(e?.message ?? t('activityTimeline.toastRevisionFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1344,9 +1340,9 @@ export default function CampaignWorkspaceScreen() {
       await campaignService.reportIssue(app.id, revisionNote);
       setApp(a => a ? { ...a, workStatus: 'DISPUTED' } : a);
       setRevisionNote(''); setShowRevision(false);
-      showToast(t('activityTimeline.toastIssueReported'));
+      topToast.success(t('activityTimeline.toastIssueReported'));
     } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastRevisionFailed'));
+      topToast.error(e?.message ?? t('activityTimeline.toastRevisionFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1451,7 +1447,7 @@ export default function CampaignWorkspaceScreen() {
               stage, so chat closes here rather than staying open indefinitely. */}
           {chatUnavailable ? (
             // Free event — no chat is ever opened for it.
-            <Pressable style={s.iconBtn} onPress={() => showToast(t('activityTimeline.chatFreeEventUnavailable'))} hitSlop={6}>
+            <Pressable style={s.iconBtn} onPress={() => topToast.info(t('activityTimeline.chatFreeEventUnavailable'))} hitSlop={6}>
               <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
             </Pressable>
           ) : app?.paymentStatus === 'RELEASED' ? (
@@ -1461,7 +1457,7 @@ export default function CampaignWorkspaceScreen() {
           ) : chatLocked ? (
             // Paid campaign, escrow not funded yet — chat only unlocks once the
             // business completes payment (see the payment-required action card).
-            <Pressable style={s.iconBtn} onPress={() => showToast(t('activityTimeline.acPaymentRequiredChatLockBody'))} hitSlop={6}>
+            <Pressable style={s.iconBtn} onPress={() => topToast.info(t('activityTimeline.acPaymentRequiredChatLockBody'))} hitSlop={6}>
               <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
             </Pressable>
           ) : (
@@ -1591,7 +1587,7 @@ export default function CampaignWorkspaceScreen() {
             if (isDirectVideoUrl(url)) {
               setPlayingVideo({ url: normalizeUrl(url), label: t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' }) });
             } else {
-              Linking.openURL(normalizeUrl(url)).catch(() => showToast(t('activityTimeline.linkOpenFailed')));
+              Linking.openURL(normalizeUrl(url)).catch(() => topToast.error(t('activityTimeline.linkOpenFailed')));
             }
           }}
         />
@@ -1812,15 +1808,6 @@ export default function CampaignWorkspaceScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* ── Toast ── */}
-      {toast ? (
-        <View style={[s.toast, toastTone === 'error' && s.toastError]} pointerEvents="none">
-          {toastTone === 'error' && (
-            <FontAwesome5 name="exclamation-circle" solid size={15} color="#FCA5A5" style={{ marginRight: 9 }} />
-          )}
-          <Text style={[s.toastTxt, toastTone === 'error' && s.toastTxtError]}>{toast}</Text>
-        </View>
-      ) : null}
 
       {/* ── Pay Modal ── */}
       <BottomSheet visible={showPay} onClose={() => setShowPay(false)} title={t('activityTimeline.modalPayTitle')}>
@@ -2170,7 +2157,7 @@ export default function CampaignWorkspaceScreen() {
                     if (isDirectVideoUrl(url)) {
                       openPreviewFrom('review', () => setPlayingVideo({ url: normalizeUrl(url), label: t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' }) }));
                     } else {
-                      Linking.openURL(normalizeUrl(url)).catch(() => showToast(t('activityTimeline.linkOpenFailed')));
+                      Linking.openURL(normalizeUrl(url)).catch(() => topToast.error(t('activityTimeline.linkOpenFailed')));
                     }
                   }}>
                   <FontAwesome5 name={isDirectVideoUrl(url) ? 'play-circle' : 'external-link-alt'} solid size={14} color="#7C3AED" />
@@ -2215,7 +2202,7 @@ export default function CampaignWorkspaceScreen() {
         )}
       </BottomSheet>
 
-      {/* ── Request Revision Modal ── */}
+      {/* ── Give Feedback Modal ── */}
       <BottomSheet visible={showRevision} onClose={() => setShowRevision(false)} title={isService ? t('activityTimeline.modalIssueTitle') : t('activityTimeline.modalRevisionTitle')}>
         <Text style={sh.sub}>{isService ? t('activityTimeline.modalIssueSub') : t('activityTimeline.modalRevisionSub')}</Text>
         {!isService && (app?.deliverableVideos ?? []).length > 0 && (
@@ -2373,10 +2360,6 @@ const s = StyleSheet.create({
   secFooterTxt: { fontSize: 11, fontFamily: F.regular, flex: 1 },
 
 
-  toast:    { position: 'absolute', bottom: 24, left: 24, right: 24, backgroundColor: '#1F2937', borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  toastTxt: { fontSize: 13, fontFamily: F.semibold, color: '#fff', textAlign: 'center', flexShrink: 1 },
-  toastError:    { backgroundColor: '#3F1D1D', borderWidth: 1, borderColor: '#7F1D1D' },
-  toastTxtError: { color: '#FEE2E2', textAlign: 'left' },
 });
 
 const pt = StyleSheet.create({
@@ -2429,7 +2412,7 @@ const py = StyleSheet.create({
 });
 
 const ac = StyleSheet.create({
-  card:   { borderRadius: RADIUS.lg, padding: SPACING.lg, borderLeftWidth: 4, ...TOKEN_SHADOW.raised, backgroundColor: '#fff', gap: 8 },
+  card:   { borderRadius: RADIUS.lg, padding: SPACING.lg, ...TOKEN_SHADOW.raised, backgroundColor: '#fff', gap: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBg: { width: 36, height: 36, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   heading:{ fontSize: 16, fontFamily: F.bold, flexShrink: 1 },

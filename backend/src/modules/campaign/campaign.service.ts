@@ -661,13 +661,13 @@ export class CampaignService {
     return { message: 'Campaign deleted successfully' };
   }
 
-  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en', status?: CampaignStatus) {
+  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en', status?: CampaignStatus, search?: string) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
       throw new AppError('Business profile not found', 404);
     }
 
-    const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50), status);
+    const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50), status, search);
     const dtos = raw.map(toCampaignDto);
     const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
     return { campaigns, total, page, limit };
@@ -1762,7 +1762,7 @@ export class CampaignService {
     notificationService.create({
       userId:  creatorUserId,
       type:    'revision_requested',
-      title:   'Revision Requested',
+      title:   'Feedback Requested',
       body:    `${business.businessName} requested changes for "${app.campaign.title}". Check the notes.`,
       refId:   app.campaignId,
       refType: 'campaign',

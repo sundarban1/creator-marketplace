@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { ReviewsList } from '@/components/ReviewsList';
+import { SeeMoreText } from '@/components/SeeMoreText';
 import { ReportModal } from '@/components/ReportModal';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -409,7 +410,9 @@ export default function BusinessDetailScreen() {
                 </View>
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionAbout')}</Text>
               </View>
-              <Text style={[styles.aboutText, { color: C.text }]}>{business.description}</Text>
+              <SeeMoreText style={[styles.aboutText, { color: C.text }]} threshold={150}>
+                {business.description}
+              </SeeMoreText>
             </View>
           ) : null}
 
@@ -445,38 +448,6 @@ export default function BusinessDetailScreen() {
                   <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('analytics.responseTime')}</Text>
                 </View>
               </View>
-            </View>
-          )}
-
-          {/* Reviews (§36) — from providers who worked with this business */}
-          {!!business.reviews?.length && (
-            <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
-              <View style={styles.infoCardHeader}>
-                <View
-                  style={[
-                    styles.infoIconBox,
-                    {
-                      backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
-                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                    },
-                  ]}
-                >
-                  <FontAwesome5 name="star" solid size={15} color={C.brinjal1} />
-                </View>
-                <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionReviews')}</Text>
-              </View>
-              <ReviewsList
-                reviews={business.reviews}
-                seeMore
-                limit={5}
-                onSeeAll={() => router.push({
-                  pathname: '/(creator)/reviews',
-                  params: {
-                    reviews: JSON.stringify(business.reviews ?? []),
-                    count: String((business.reviews ?? []).length),
-                  },
-                } as never)}
-              />
             </View>
           )}
 
@@ -554,6 +525,40 @@ export default function BusinessDetailScreen() {
                   </View>
                 ))}
               </View>
+            </View>
+          )}
+
+          {/* Reviews (§36) — from providers who worked with this business.
+              Sits directly above Active Events so a creator sees how the
+              business is rated right before browsing its open events. */}
+          {!!business.reviews?.length && (
+            <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
+              <View style={styles.infoCardHeader}>
+                <View
+                  style={[
+                    styles.infoIconBox,
+                    {
+                      backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
+                  <FontAwesome5 name="star" solid size={15} color={C.brinjal1} />
+                </View>
+                <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionReviews')}</Text>
+              </View>
+              <ReviewsList
+                reviews={business.reviews}
+                seeMore
+                limit={5}
+                onSeeAll={() => router.push({
+                  pathname: '/(creator)/reviews',
+                  params: {
+                    reviews: JSON.stringify(business.reviews ?? []),
+                    count: String((business.reviews ?? []).length),
+                  },
+                } as never)}
+              />
             </View>
           )}
 

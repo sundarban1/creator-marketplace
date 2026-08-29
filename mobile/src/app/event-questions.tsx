@@ -31,6 +31,11 @@ import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants
 const QUESTION_MAX = 1000;
 const ANSWER_MAX = 2000;
 
+// Auto-grow bounds for the composer, mirroring the chat screens' pill input:
+// MIN keeps it a one-line pill at rest, MAX caps growth before it scrolls.
+const MIN_INPUT_HEIGHT = 20;
+const MAX_INPUT_HEIGHT = 100;
+
 function relTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
@@ -62,6 +67,7 @@ export default function EventQuestionsScreen() {
   const [noAccess, setNoAccess] = useState(false);
 
   const [draft, setDraft] = useState('');
+  const [draftHeight, setDraftHeight] = useState(MIN_INPUT_HEIGHT);
   const [posting, setPosting] = useState(false);
 
   const [answerTarget, setAnswerTarget] = useState<EventQuestion | null>(null);
@@ -104,6 +110,7 @@ export default function EventQuestionsScreen() {
     try {
       await campaignService.askEventQuestion(campaignId, q);
       setDraft('');
+      setDraftHeight(MIN_INPUT_HEIGHT);
       showToast(t('eventQuestions.askedToast'));
       await load('refresh');
     } catch (err) {
@@ -224,15 +231,18 @@ export default function EventQuestionsScreen() {
           {/* Creator composer — the only way to post a question. */}
           {!loading && !noAccess && !error && !isBusiness && (
             <View style={[qs.composer, { backgroundColor: C.surface, borderTopColor: C.border }]}>
-              <TextInput
-                style={[qs.composerInput, { backgroundColor: C.background, color: C.text, borderColor: C.border }]}
-                placeholder={t('eventQuestions.composerPlaceholder')}
-                placeholderTextColor={C.textPlaceholder}
-                value={draft}
-                onChangeText={setDraft}
-                multiline
-                maxLength={QUESTION_MAX}
-              />
+              <View style={[qs.inputWrap, { backgroundColor: C.background, borderColor: C.border }]}>
+                <TextInput
+                  style={[qs.input, { color: C.text, height: Math.min(Math.max(MIN_INPUT_HEIGHT, draftHeight), MAX_INPUT_HEIGHT) }]}
+                  placeholder={t('eventQuestions.composerPlaceholder')}
+                  placeholderTextColor={C.textPlaceholder}
+                  value={draft}
+                  onChangeText={setDraft}
+                  onContentSizeChange={(e) => setDraftHeight(e.nativeEvent.contentSize.height)}
+                  multiline
+                  maxLength={QUESTION_MAX}
+                />
+              </View>
               <Pressable
                 style={[qs.sendBtn, { backgroundColor: draft.trim() ? C.brinjal1 : C.border }]}
                 onPress={handleAsk}
@@ -308,12 +318,12 @@ const qs = StyleSheet.create({
   answerBtnTxt: { fontSize: 13, fontFamily: F.bold },
   pending:      { fontSize: 12, fontFamily: F.regular, fontStyle: 'italic' },
 
-  composer:      { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.sm, paddingBottom: SPACING.md, borderTopWidth: 1 },
-  // minHeight = lineHeight (22) + paddingVertical (11×2) so a single line sits
-  // vertically centred in the box instead of hugging the top; the box then
-  // grows line-by-line up to maxHeight. textAlignVertical centres it on Android.
-  composerInput: { flex: 1, minHeight: 44, maxHeight: 110, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, lineHeight: 22, fontFamily: F.regular, textAlignVertical: 'center' },
-  sendBtn:       { width: 44, height: 44, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  composer:  { flexDirection: 'row', alignItems: 'flex-end', gap: 6, paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.sm, paddingBottom: SPACING.md, borderTopWidth: 1 },
+  // Pill wrapper matching the chat composer: fixed one-line height at rest, the
+  // inner TextInput auto-grows its own height up to MAX_INPUT_HEIGHT.
+  inputWrap: { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: 8, justifyContent: 'center' },
+  input:     { fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },
+  sendBtn:   { width: 44, height: 44, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 
   sheetQuestion: { fontSize: 14, fontFamily: F.medium, lineHeight: 21 },
   saveBtn:       { height: 48, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },

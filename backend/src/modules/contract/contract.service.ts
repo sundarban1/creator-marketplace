@@ -60,7 +60,7 @@ The Creator agrees to submit all deliverables by the deadline unless both partie
 
 {{approvalRequirements}}
 
-The Business agrees to review submitted content within the timeframe specified by Kolab. If revisions are requested, they must be reasonable and relate to the original campaign brief.
+The Business agrees to review submitted content within the timeframe specified by Kolab. If feedback is requested, it must be reasonable and relate to the original campaign brief.
 
 ## 5. Campaign Location
 

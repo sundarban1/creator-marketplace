@@ -101,11 +101,14 @@ export default function ReferralScreen() {
               {t('referral.conditionNote', { amount: overview.rewardAmount })}
             </Text>
             <Pressable
-              style={styles.verifiedLinkRow}
+              style={styles.verifiedLink}
               onPress={() => router.push('/(creator)/settings?section=security')}>
-              <FontAwesome5 name="award" solid size={14} color={C.brinjal1} />
-              <Text style={[styles.verifiedLinkText, { color: C.brinjal1 }]}>{t('referral.howToGetVerifiedLink')}</Text>
-              <FontAwesome5 name="chevron-right" solid size={14} color={C.brinjal1} />
+              <View style={styles.verifiedLinkRow}>
+                <FontAwesome5 name="check-circle" solid size={14} color="#3B82F6" />
+                <Text style={[styles.verifiedLinkText, { color: C.brinjal1 }]}>{t('referral.howToGetVerifiedLink')}</Text>
+                <FontAwesome5 name="chevron-right" solid size={14} color={C.brinjal1} />
+              </View>
+              <Text style={[styles.verifiedLinkSub, { color: C.textSecondary }]}>{t('referral.howToGetVerifiedSub')}</Text>
             </Pressable>
           </View>
 
@@ -132,11 +135,11 @@ export default function ReferralScreen() {
             </View>
           ) : (
             <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Text style={[styles.cardTitle, { color: C.text }]}>{t('referral.haveCodeTitle')}</Text>
               <View style={styles.applyCodeRow}>
                 <View style={{ flex: 1 }}>
                   <TextInputWithLabel
-                    label={t('referral.haveCodePlaceholder')}
+                    label={t('referral.haveCodeTitle')}
+                    placeholder={t('referral.haveCodePlaceholder')}
                     leftIcon="ticket-alt"
                     value={codeInput}
                     onChangeText={(v) => setCodeInput(v.toUpperCase())}
@@ -203,8 +206,10 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontFamily: F.bold, marginBottom: 4 },
   stepText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   conditionNote: { fontSize: 12, fontFamily: F.medium, marginTop: 6, lineHeight: 18 },
-  verifiedLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, minHeight: 40 },
+  verifiedLink: { marginTop: 10 },
+  verifiedLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 },
   verifiedLinkText: { fontSize: 12, fontFamily: F.semibold },
+  verifiedLinkSub: { fontSize: 11, fontFamily: F.regular, lineHeight: 16, marginLeft: 20 },
 
   field: { gap: 6 },
   label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },

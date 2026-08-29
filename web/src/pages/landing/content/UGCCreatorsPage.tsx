@@ -69,7 +69,7 @@ const COPY = {
         benefits: [
           { title: 'Find the right fit', desc: 'Browse creator profiles by category and location to find creators whose style suits an authentic, unscripted format.' },
           { title: 'Brief the exact format', desc: 'Describe the UGC format you need — unboxing, testimonial, demo — in your campaign so creators pitch accordingly.' },
-          { title: 'Coordinate in-app', desc: "Share scripts, talking points, and revisions directly with the creator through Kolab's messaging, no scattered DMs." },
+          { title: 'Coordinate in-app', desc: "Share scripts, talking points, and feedback directly with the creator through Kolab's messaging, no scattered DMs." },
           { title: 'Pay with escrow protection', desc: 'Your budget is held securely and released only once you approve the delivered content.' },
         ],
       },

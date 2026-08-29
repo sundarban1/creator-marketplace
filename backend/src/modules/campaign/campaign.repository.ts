@@ -487,9 +487,29 @@ export class CampaignRepository {
     });
   }
 
-  async findByBusinessId(businessId: string, page: number, limit: number, status?: CampaignStatus) {
+  async findByBusinessId(businessId: string, page: number, limit: number, status?: CampaignStatus, search?: string) {
     const skip = (page - 1) * limit;
-    const where: Prisma.CampaignWhereInput = { businessId, deletedAt: null, ...(status ? { status } : {}) };
+    const term = search?.trim();
+    const where: Prisma.CampaignWhereInput = {
+      businessId,
+      deletedAt: null,
+      ...(status ? { status } : {}),
+      // A business searching its own "My Work" list — a small set — so a
+      // straightforward case-insensitive match across the fields it would
+      // recognise a campaign by (title first, then description/category/venue)
+      // is enough; no need for the full-text/trigram ranking the public
+      // browse list uses.
+      ...(term
+        ? {
+            OR: [
+              { title: { contains: term, mode: 'insensitive' } },
+              { description: { contains: term, mode: 'insensitive' } },
+              { category: { contains: term, mode: 'insensitive' } },
+              { venue: { contains: term, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
     const [campaigns, total] = await Promise.all([
       prisma.campaign.findMany({
         where,

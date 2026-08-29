@@ -216,10 +216,10 @@ function ProposalCard({ proposal }: {
                 router.push({ pathname: '/event-questions', params: { campaignId: proposal.campaignId, campaignTitle: proposal.campaignTitle } } as never);
               }}>
               <FontAwesome5 name="comments" solid size={14} color={C.brinjal1} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.askTitle, { color: C.text }]}>{t('eventQuestions.subtitlePrompt')}</Text>
-                <Text style={[styles.askSub, { color: C.brinjal1 }]}>{t('eventQuestions.askOrganizer')}</Text>
-              </View>
+              <Text style={[styles.askTitle, { color: C.text, flex: 1 }]}>
+                {t('eventQuestions.askRowPrompt')}{' '}
+                <Text style={{ color: C.brinjal1, fontFamily: F.bold }}>{t('eventQuestions.askRowCta')}</Text>
+              </Text>
               <FontAwesome5 name="chevron-right" size={12} color={C.textPlaceholder} />
             </Pressable>
           </View>
@@ -525,7 +525,6 @@ const styles = StyleSheet.create({
   // "Ask Organizer" Q&A entry — sits under the invited banner on a free event
   askRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10 },
   askTitle: { fontSize: 12.5, fontFamily: F.semibold },
-  askSub:   { fontSize: 11.5, fontFamily: F.bold, marginTop: 1 },
 
   // Awaiting-response banner (pending) — same icon-box + title + sub shape
   // as invitedBanner/rejectedBanner for a consistent footer across all

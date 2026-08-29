@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
@@ -120,6 +121,16 @@ export default function BusinessReferralScreen() {
             <Text style={[styles.conditionNote, { color: C.brinjal1 }]}>
               {t('businessReferral.conditionNote', { amount: overview.rewardAmount })}
             </Text>
+            <Pressable
+              style={styles.verifiedLink}
+              onPress={() => router.push('/(business)/settings?section=verification' as Parameters<typeof router.push>[0])}>
+              <View style={styles.verifiedLinkRow}>
+                <FontAwesome5 name="check-circle" solid size={14} color="#3B82F6" />
+                <Text style={[styles.verifiedLinkText, { color: C.brinjal1 }]}>{t('businessReferral.howToGetVerifiedLink')}</Text>
+                <FontAwesome5 name="chevron-right" solid size={14} color={C.brinjal1} />
+              </View>
+              <Text style={[styles.verifiedLinkSub, { color: C.textSecondary }]}>{t('businessReferral.howToGetVerifiedSub')}</Text>
+            </Pressable>
           </View>
 
           {/* Referral code */}
@@ -146,9 +157,10 @@ export default function BusinessReferralScreen() {
                 <View style={{ flex: 1 }}>
                   <TextInputWithLabel
                     label={t('businessReferral.haveCodeTitle')}
+                    placeholder={t('businessReferral.haveCodePlaceholder')}
+                    leftIcon="ticket-alt"
                     value={codeInput}
                     onChangeText={(v) => setCodeInput(v.toUpperCase())}
-                    placeholder={t('businessReferral.haveCodePlaceholder')}
                     autoCapitalize="characters"
                     autoCorrect={false}
                   />
@@ -226,6 +238,10 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontFamily: F.bold, marginBottom: 4 },
   stepText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   conditionNote: { fontSize: 12, fontFamily: F.medium, marginTop: 6, lineHeight: 18 },
+  verifiedLink: { marginTop: 10 },
+  verifiedLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 },
+  verifiedLinkText: { fontSize: 12, fontFamily: F.semibold },
+  verifiedLinkSub: { fontSize: 11, fontFamily: F.regular, lineHeight: 16, marginLeft: 20 },
 
   field: { gap: 6 },
   label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
@@ -236,8 +252,8 @@ const styles = StyleSheet.create({
   referredByRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.sm, padding: 12 },
   referredByText: { fontSize: 13, fontFamily: F.regular },
 
-  applyCodeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  applyCodeBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
+  applyCodeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 4 },
+  applyCodeBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 16, height: 54, justifyContent: 'center', alignItems: 'center' },
   applyCodeBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   sectionHeader: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: F.bold },
