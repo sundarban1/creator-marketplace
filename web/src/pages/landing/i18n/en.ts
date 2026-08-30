@@ -167,7 +167,7 @@ export const en = {
       { badge: 'Free', title: 'Free Creator Event', location: 'Kathmandu', meta: 'Free food · Experience', sub: 'Networking' },
     ],
     moreOpportunities: [
-      { title: 'Fashion Shoot Assistant', date: 'Deadline Sep 18', location: 'Kathmandu' },
+      { title: 'Fashion Shoot Models', date: 'Deadline Sep 18', location: 'Kathmandu' },
       { title: 'Cafe Menu Launch', date: 'Deadline Sep 22', location: 'Lalitpur' },
       { title: 'Travel Vlog Partner', date: 'Deadline Sep 30', location: 'Pokhara' },
     ],

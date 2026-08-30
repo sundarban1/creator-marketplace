@@ -4,6 +4,7 @@ import { Animated, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '@/components/BackButton';
 import { EntityCard } from '@/components/EntityCard';
+import { realImageUrl } from '@/utilities/avatar';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
@@ -51,14 +52,17 @@ function BusinessResultCard({ item }: { item: BusinessListItem }) {
   const { categories: businessCategories } = useCategories('BUSINESS');
   const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
   const initials = (item.businessName ?? 'Business').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const logoUrl = realImageUrl(item.logoUrl);
+  const plainAvatar = !logoUrl;
 
   return (
     <EntityCard
-      avatarUrl={item.logoUrl}
-      avatarBg={C.primaryLight}
+      avatarUrl={logoUrl}
+      avatarBg="#FFFFFF"
       initials={initials}
+      initialsColor={plainAvatar ? '#000000' : undefined}
       circularAvatar
-      ringColor={primaryMeta?.color ?? C.brinjal1}
+      ringColor={plainAvatar ? '#000000' : (primaryMeta?.color ?? C.brinjal1)}
       name={item.businessName ?? 'Business'}
       verified={item.fullyVerified || item.isVerified}
       description={item.description || t('explore.businesses.noDescription')}
@@ -84,14 +88,16 @@ function ServiceResultCard({ item }: { item: ApiService }) {
   const { t } = useLanguage();
   const provider = item.creatorProfile;
   const initials = provider?.fullName ? provider.fullName.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase() : undefined;
+  const plainAvatar = !provider?.avatarUrl;
 
   return (
     <EntityCard
       avatarUrl={provider?.avatarUrl ?? null}
-      avatarBg={C.primaryLight}
+      avatarBg="#FFFFFF"
       initials={initials}
+      initialsColor={plainAvatar ? '#000000' : undefined}
       circularAvatar
-      ringColor={item.category.color}
+      ringColor={plainAvatar ? '#000000' : item.category.color}
       name={item.name}
       verified={provider?.isVerified ?? false}
       locationText={[provider?.fullName, provider?.location].filter(Boolean).join(' · ') || undefined}

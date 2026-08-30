@@ -24,6 +24,7 @@ import { chatService } from '@/services/chat';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { SeeMoreText } from '@/components/SeeMoreText';
+import { ReviewsList } from '@/components/ReviewsList';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
@@ -466,6 +467,25 @@ export default function CreatorPeerDetailScreen() {
                 </Pressable>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* ── Reviews — from businesses this provider has worked with; kept last ── */}
+        {!!profile.reviews?.length && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionReviews')} color={C.textSecondary} />
+            <ReviewsList
+              reviews={profile.reviews}
+              seeMore
+              limit={5}
+              onSeeAll={() => router.push({
+                pathname: '/(creator)/reviews',
+                params: {
+                  reviews: JSON.stringify(profile.reviews ?? []),
+                  count: String((profile.reviews ?? []).length),
+                },
+              } as never)}
+            />
           </View>
         )}
 

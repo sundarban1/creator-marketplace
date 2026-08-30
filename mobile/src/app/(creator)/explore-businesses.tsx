@@ -31,6 +31,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useCategories, getCategoryMeta, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
 import { ResultCountPill } from '@/components/ResultCountPill';
+import { realImageUrl } from '@/utilities/avatar';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
 
@@ -55,14 +56,19 @@ function BusinessCard({
   const extraCats = item.categories.length - 1;
   const hasEvents = item._count.campaigns > 0;
   const initials = (item.businessName ?? 'Business').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const logoUrl = realImageUrl(item.logoUrl);
+  // Always a white avatar chip; no logo → black initials + a black ring instead
+  // of the tinted-purple placeholder.
+  const plainAvatar = !logoUrl;
 
   return (
     <EntityCard
-      avatarUrl={item.logoUrl}
-      avatarBg={C.primaryLight}
+      avatarUrl={logoUrl}
+      avatarBg="#FFFFFF"
       initials={initials}
+      initialsColor={plainAvatar ? '#000000' : undefined}
       circularAvatar
-      ringColor={primaryMeta?.color ?? C.brinjal1}
+      ringColor={plainAvatar ? '#000000' : (primaryMeta?.color ?? C.brinjal1)}
       name={item.businessName ?? 'Business'}
       verified={item.fullyVerified || item.isVerified}
       locationText={item.city ?? item.district ?? undefined}

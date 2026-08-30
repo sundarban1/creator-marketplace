@@ -150,14 +150,18 @@ function CreatorCard({ creator, chevronOnly }: { creator: ApiCreatorListItem; /*
   const topPlatform = topAccount ? getPlatformMeta(allPlatforms, topAccount.platform) : null;
   const extraCats = creator.categories.length - 1;
   const initials = (creator.fullName ?? '').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  // Always a white avatar chip; no avatar → black initials + a black ring
+  // instead of the tinted category-colour placeholder.
+  const plainAvatar = !creator.avatarUrl;
 
   return (
     <EntityCard
       avatarUrl={creator.avatarUrl}
-      avatarBg={meta.bg}
+      avatarBg="#FFFFFF"
       initials={initials || undefined}
+      initialsColor={plainAvatar ? '#000000' : undefined}
       circularAvatar
-      ringColor={meta.color}
+      ringColor={plainAvatar ? '#000000' : meta.color}
       name={creator.fullName ?? 'Creator'}
       verified={creator.fullyVerified || creator.isVerified}
       providerType={creator.providerType}

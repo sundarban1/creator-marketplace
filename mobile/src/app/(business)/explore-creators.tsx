@@ -106,13 +106,16 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
   });
   const extraCategories = Math.max(0, creator.categories.length - 1);
 
+  const plainAvatar = !creator.avatarUrl;
+
   return (
     <EntityCard
       avatarUrl={creator.avatarUrl}
-      avatarBg={meta.bg}
+      avatarBg="#FFFFFF"
       initials={getInitials(creator.fullName ?? 'Creator')}
+      initialsColor={plainAvatar ? '#000000' : undefined}
       circularAvatar
-      ringColor={meta.color}
+      ringColor={plainAvatar ? '#000000' : meta.color}
       name={creator.fullName ?? 'Creator'}
       verified={creator.fullyVerified || creator.isVerified}
       providerType={creator.providerType}
@@ -145,6 +148,7 @@ function ServiceCard({ service }: { service: ApiService }) {
   const { t } = useLanguage();
   const provider = service.creatorProfile;
   const initials = provider?.fullName ? getInitials(provider.fullName) : undefined;
+  const plainAvatar = !provider?.avatarUrl;
   const priceText = service.startingPrice != null
     ? `Rs. ${service.startingPrice.toLocaleString()}`
     : t(`servicesScreen.pricing${service.pricingModel === 'PER_PROJECT' ? 'PerProject' : service.pricingModel === 'PER_HOUR' ? 'PerHour' : service.pricingModel === 'PER_DAY' ? 'PerDay' : service.pricingModel === 'PER_CAMPAIGN' ? 'PerCampaign' : 'CustomQuote'}`);
@@ -152,10 +156,11 @@ function ServiceCard({ service }: { service: ApiService }) {
   return (
     <EntityCard
       avatarUrl={provider?.avatarUrl ?? null}
-      avatarBg={C.primaryLight}
+      avatarBg="#FFFFFF"
       initials={initials}
+      initialsColor={plainAvatar ? '#000000' : undefined}
       circularAvatar
-      ringColor={service.category.color}
+      ringColor={plainAvatar ? '#000000' : service.category.color}
       name={service.name}
       verified={provider?.isVerified ?? false}
       locationText={[provider?.fullName, provider?.location].filter(Boolean).join(' · ') || undefined}

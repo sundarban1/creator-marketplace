@@ -24,20 +24,51 @@ export function useTabTransition<T extends string>(active: T, order: readonly T[
 
   useLayoutEffect(() => {
     const index = order.indexOf(active);
-    if (index === prevIndex.current) return;
+    if (index === prevIndex.current) {
+      // Same tab — make sure a prior interrupted transition didn't leave the
+      // panel mid-fade / hidden.
+      progress.setValue(1);
+      offsetX.setValue(0);
+      return;
+    }
     const dir = index > prevIndex.current ? 1 : -1;
     prevIndex.current = index;
 
     offsetX.setValue(dir * 14);
     progress.setValue(0);
-    const run = Animated.timing(progress, {
-      toValue: 1,
-      duration: 240,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+
+    // Start the fade one frame late. The incoming panel usually mounts (and
+    // kicks off its own data fetch) on this very tick; a native-driven timing
+    // started in the same frame as the `setValue(0)` above can lose the race
+    // between the two bridge messages on a busy JS thread, and the panel then
+    // stays pinned at opacity 0 — an intermittent "blank tab". Deferring the
+    // start lets the reset flush to the native driver first.
+    let anim: Animated.CompositeAnimation | undefined;
+    const raf = requestAnimationFrame(() => {
+      anim = Animated.timing(progress, {
+        toValue: 1,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      });
+      anim.start(({ finished }) => {
+        // Interrupted by the OS mid-run — snap to the resting (visible) state
+        // rather than leaving the panel dim.
+        if (!finished) {
+          progress.setValue(1);
+          offsetX.setValue(0);
+        }
+      });
     });
-    run.start();
-    return () => run.stop();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      anim?.stop();
+      // Whatever point the transition reached, a torn-down transition must
+      // leave its panel fully visible — never stuck faded out.
+      progress.setValue(1);
+      offsetX.setValue(0);
+    };
   }, [active, order, progress, offsetX]);
 
   return {

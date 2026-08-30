@@ -39,7 +39,9 @@ function avatarUrlFor(seedIndex: number): string {
   return `https://i.pravatar.cc/400?img=${(seedIndex % 70) + 1}`;
 }
 function logoUrlFor(businessId: string, name: string): string {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=256&bold=true&format=png`;
+  // White background + black initials, matching the app's own initials-avatar
+  // styling (see mobile realImageUrl / EntityCard).
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ffffff&color=000000&size=256&bold=true&format=png`;
 }
 function photoUrlFor(seed: string, w: number, h: number): string {
   return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;

@@ -44,6 +44,8 @@ type EntityCardProps = {
   avatarBg:   string;
   /** Shown as a fallback when there's no avatar. Omit to fall back to a generic person icon instead. */
   initials?:  string;
+  /** Text colour for the fallback `initials`. Defaults to the primary brand colour. */
+  initialsColor?: string;
   /** Renders the avatar as a full circle instead of the default rounded square. */
   circularAvatar?: boolean;
   ringColor:  string;
@@ -88,7 +90,7 @@ type EntityCardProps = {
 };
 
 export function EntityCard({
-  avatarUrl, avatarBg, initials, circularAvatar, ringColor, name, verified, providerType, teamSize,
+  avatarUrl, avatarBg, initials, initialsColor, circularAvatar, ringColor, name, verified, providerType, teamSize,
   locationText, description, descriptionItalic, bio,
   categoryLabel, categoryIcon, categoryColor, categoryBg, extraCount = 0, categoryPills, locationBeforeCategory,
   stat, statInHeader, rating, ctaLabel, ctaStyle = 'button', onPress, action,
@@ -126,9 +128,9 @@ export function EntityCard({
           {avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={[styles.avatar, ring, avatarShape]} contentFit="cover" />
           ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: avatarBg }, ring, avatarShape]}>
+            <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: initials ? '#FFFFFF' : avatarBg }, ring, avatarShape]}>
               {initials ? (
-                <Text style={{ fontSize: 18, color: C.brinjal1, fontFamily: F.bold }}>{initials}</Text>
+                <Text style={{ fontSize: 18, color: initialsColor ?? C.brinjal1, fontFamily: F.bold }}>{initials}</Text>
               ) : (
                 <FontAwesome5 name="user" solid size={24} color="rgba(91,33,182,0.55)" />
               )}

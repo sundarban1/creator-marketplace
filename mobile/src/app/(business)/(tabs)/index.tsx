@@ -596,10 +596,11 @@ export default function BusinessHomeScreen() {
                   <View key={p.id} style={styles.recommendedCardWrap}>
                     <EntityCard
                       avatarUrl={p.avatarUrl}
-                      avatarBg={C.primaryLight}
+                      avatarBg="#FFFFFF"
                       initials={(p.fullName ?? '?').trim().charAt(0).toUpperCase()}
+                      initialsColor={p.avatarUrl ? undefined : '#000000'}
                       circularAvatar
-                      ringColor={C.brinjal1}
+                      ringColor={p.avatarUrl ? C.brinjal1 : '#000000'}
                       name={p.fullName ?? 'Provider'}
                       verified={p.fullyVerified || p.isVerified}
                       locationText={[p.location, p.distanceKm != null ? `${p.distanceKm.toFixed(1)} km away` : null].filter(Boolean).join(' · ')}
