@@ -13,6 +13,11 @@ model User {
   password                  String
   role                      Role
   isEmailVerified           Boolean           @default(false)
+  // True when `email` is a reserved non-routable placeholder (see
+  // utils/placeholderEmail.ts) minted because Sign in with Apple withheld the
+  // real address on a repeat authorization. Onboarding forces the user to add +
+  // verify a real email; verifyEmailOtp clears this.
+  emailIsPlaceholder        Boolean           @default(false)
   isPhoneVerified           Boolean           @default(false)
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt

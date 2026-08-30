@@ -145,6 +145,7 @@ function RootNavigator() {
     if (isLoading) return;
     const inAuthGroup  = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding' || segments[0] === 'business-onboarding';
+    const onAddEmail   = segments[0] === 'add-email';
     const isPublic     = segments[0] === 'legal';
     // The root index route (the doodle splash) resolves to zero path segments —
     // Expo Router's generated typed-segments union confirms 'index' never appears
@@ -155,6 +156,11 @@ function RootNavigator() {
 
     if (!user && !inAuthGroup && !isPublic && !onSplash) {
       router.replace('/login');
+    } else if (user && user.emailIsPlaceholder && !onAddEmail) {
+      // Sign in with Apple returned no email (a repeat authorization) — the
+      // account holds a placeholder address and can't proceed until the user
+      // adds + verifies a real one. Takes precedence over onboarding/home.
+      router.replace('/add-email');
     } else if (user && inAuthGroup) {
       if (user.isFirstLogin === true && onboardingEnabledFor(user.role)) {
         router.replace(user.role === 'CREATOR' ? '/onboarding' : '/business-onboarding');
@@ -162,7 +168,7 @@ function RootNavigator() {
         if (user.isFirstLogin === true) skipOnboarding();
         router.replace(user.role === 'CREATOR' ? '/(creator)/' : '/(business)/');
       }
-    } else if (user && user.isFirstLogin === true && !inOnboarding) {
+    } else if (user && user.isFirstLogin === true && !inOnboarding && !user.emailIsPlaceholder) {
       if (onboardingEnabledFor(user.role)) {
         router.replace(user.role === 'CREATOR' ? '/onboarding' : '/business-onboarding');
       } else {
@@ -212,6 +218,7 @@ function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="oauthredirect" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="add-email" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="business-onboarding" />
         <Stack.Screen name="(creator)" />

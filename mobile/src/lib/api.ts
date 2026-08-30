@@ -54,6 +54,9 @@ export interface ApiAuthUser {
   name:            string;
   avatar:          string | null;
   isEmailVerified: boolean;
+  // True while `email` is a placeholder minted because Sign in with Apple
+  // withheld the real address — the user must complete /add-email first.
+  emailIsPlaceholder?: boolean;
   isPhoneVerified: boolean;
   isOnboarded:     boolean;
   createdAt:       string;

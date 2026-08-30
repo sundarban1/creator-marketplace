@@ -9,6 +9,9 @@ export type User = {
   avatar?: string;
   isFirstLogin?: boolean;
   isEmailVerified?: boolean;
+  // True while the account still holds an Apple placeholder email; the app
+  // routes the user through /add-email before anything else.
+  emailIsPlaceholder?: boolean;
   isPhoneVerified?: boolean;
 };
 

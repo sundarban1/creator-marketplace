@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
+import { isPlaceholderEmail } from '../placeholderEmail';
 import { AdminRepository } from '../../modules/admin/admin.repository';
 
 export const adminRepo = new AdminRepository();
@@ -56,6 +57,15 @@ function createTransporter() {
 }
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  // A user created via Sign in with Apple without a disclosed email holds a
+  // reserved non-routable placeholder address until onboarding collects a real
+  // one. Never attempt delivery to it — `.invalid` can't resolve and Resend
+  // would just log a hard bounce.
+  if (isPlaceholderEmail(to)) {
+    logger.info({ to, subject }, 'Email skipped — recipient has a placeholder address (no real email set yet)');
+    return;
+  }
+
   // Resend first, SMTP second — deliberately in that order. The SMTP path is the
   // dev/local one, and it's routinely pointed at a capture-only sandbox (Mailtrap),
   // which accepts every message and delivers none. Trying SMTP first meant a

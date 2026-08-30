@@ -25,6 +25,7 @@ function toUser(apiUser: ApiLoginResponse['user']): User {
     name:            apiUser.name,
     avatar:          apiUser.avatar ?? undefined,
     isEmailVerified: apiUser.isEmailVerified,
+    emailIsPlaceholder: apiUser.emailIsPlaceholder ?? false,
     isPhoneVerified: apiUser.isPhoneVerified,
     // isFirstLogin is true when the user has not completed onboarding (DB-driven)
     isFirstLogin: !apiUser.isOnboarded,

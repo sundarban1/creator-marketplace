@@ -154,6 +154,10 @@ export class AuthRepository {
     providerRefreshToken?: string | null;
     fullName?: string | null;
     businessName?: string | null;
+    // True when `email` is a synthesized placeholder (Apple withheld the real
+    // address). The account is created email-unverified and flagged so
+    // onboarding collects a real one.
+    emailIsPlaceholder?: boolean;
   }) {
     return prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
@@ -161,7 +165,8 @@ export class AuthRepository {
           email: data.email,
           password: data.password,
           role: data.role,
-          isEmailVerified: true,
+          isEmailVerified: !data.emailIsPlaceholder,
+          emailIsPlaceholder: data.emailIsPlaceholder ?? false,
           // Random unusable password — this is a social-only account until the
           // user runs a password reset.
           hasPassword: false,
@@ -297,6 +302,9 @@ export class AuthRepository {
   }
 
   async updateUserEmail(userId: string, email: string) {
-    return prisma.user.update({ where: { id: userId }, data: { email, isEmailVerified: true } });
+    return prisma.user.update({
+      where: { id: userId },
+      data: { email, isEmailVerified: true, emailIsPlaceholder: false },
+    });
   }
 }

@@ -14,6 +14,7 @@ import {
   verifyAppleLinkToken,
 } from '../../utils/jwt';
 import { verifyAppleIdentityToken, exchangeAppleAuthCode, revokeAppleToken, verifyAppleNotification } from '../../utils/apple';
+import { synthesizePlaceholderEmail } from '../../utils/placeholderEmail';
 import { sendPasswordResetOtpEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
 import { AuthRepository } from './auth.repository';
 import { AdminRepository } from '../admin/admin.repository';
@@ -661,11 +662,17 @@ export class AuthService {
       };
     }
 
-    // 2c. Create the account. Apple gives no usable email only in rare re-auth
-    //     edge cases; without one we can't seed the required unique User.email.
-    if (!resolvedEmail) {
-      logger.warn({ sub: sub.slice(0, 6) }, 'Apple first sign-in returned no email');
-      throw new AppError('Unable to authenticate with Apple. Please try again.', 400);
+    // 2c. Create the account. Apple only discloses the email on the *first*
+    //     authorization of an Apple ID for this app — a user who authorized once
+    //     before (then deleted the account, or bailed before it was created)
+    //     signs in with no email every time after. Rather than dead-ending them,
+    //     mint the account against a reserved non-routable placeholder address
+    //     and flag it; onboarding then forces a real email through the existing
+    //     request-email-otp / verify-email-otp flow (which clears the flag).
+    const emailIsPlaceholder = !resolvedEmail;
+    const accountEmail = resolvedEmail ?? synthesizePlaceholderEmail(sub);
+    if (emailIsPlaceholder) {
+      logger.info({ sub: sub.slice(0, 6) }, 'Apple sign-in returned no email — creating account with placeholder, onboarding will collect a real one');
     }
 
     await this.assertRegistrationEnabled(input.role);
@@ -679,12 +686,13 @@ export class AuthService {
 
     try {
       const user = await this.repo.createUserWithProfileAndAppleAccount({
-        email: resolvedEmail,
+        email: accountEmail,
         password: hashedPassword,
         role: input.role === 'CREATOR' ? Role.CREATOR : Role.BUSINESS,
         sub,
-        providerEmail: resolvedEmail,
+        providerEmail: resolvedEmail ?? null,
         providerRefreshToken: appleRefreshToken ?? null,
+        emailIsPlaceholder,
         fullName: input.role === 'CREATOR' ? nameFromClient : undefined,
         businessName: input.role === 'BUSINESS' ? nameFromClient : undefined,
       });
