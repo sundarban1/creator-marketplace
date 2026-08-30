@@ -163,7 +163,7 @@ export const en = {
     applyNow: 'Apply Now',
     opportunities: [
       { badge: 'Paid', title: 'Food Creator Needed', location: 'Kathmandu', meta: 'NPR 20,000', sub: '3 Creators' },
-      { badge: 'Event', title: 'Grand Opening Collaboration', location: 'Pokhara', meta: 'Free food + experience', sub: 'Networking' },
+      { badge: 'Event', title: 'Grand Opening Collab', location: 'Pokhara', meta: 'Free food + experience', sub: 'Networking' },
       { badge: 'Free', title: 'Free Creator Event', location: 'Kathmandu', meta: 'Free food · Experience', sub: 'Networking' },
     ],
     moreOpportunities: [
