@@ -7,15 +7,15 @@ const REQUEST_TIMEOUT_MS = 45_000;
 
 // Domain vocabulary fed to Whisper as leading context (see transcribeAudio).
 // Names the terms a Kolab event brief actually uses — platform names, content
-// formats, provider roles, Kathmandu-area venues, and the Nepali equivalents —
-// so they come back spelled correctly instead of as near-homophones.
+// formats, the kinds of content creators, Kathmandu-area venues, and the Nepali
+// equivalents — so they come back spelled correctly instead of as near-homophones.
 const TRANSCRIPTION_VOCAB_HINT = [
   'Kolab creator marketplace event brief.',
   'Instagram, TikTok, YouTube, Facebook, reel, reels, story, stories, post, caption, hashtag, collab, UGC.',
-  'Content creator, influencer, photographer, videographer, model, MC, DJ, makeup artist, event planner.',
+  'Content creator, UGC creator, influencer, social media creator.',
   'Kathmandu, Lalitpur, Bhaktapur, Pokhara, Thamel, Durbarmarg, Jhamsikhel, Baneshwor, Patan, Boudha, Lazimpat.',
   'Rupees, Rs, NPR, budget, capacity, venue, RSVP, launch, opening, tasting, giveaway.',
-  'क्रिएटर, रिल, स्टोरी, पोस्ट, क्याप्सन, कार्यक्रम, उद्घाटन, ठाउँ, बजेट, रुपैयाँ, फोटोग्राफर, भिडियोग्राफर।',
+  'क्रिएटर, रिल, स्टोरी, पोस्ट, क्याप्सन, कार्यक्रम, उद्घाटन, ठाउँ, बजेट, रुपैयाँ, इन्फ्लुएन्सर।',
 ].join(' ');
 
 export class AiAssistantService {

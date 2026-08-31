@@ -137,17 +137,16 @@ const REPAIR_TIMEOUT_MS = 8_000;
 // never mentioning three that do. Those three were left unconstrained, so a
 // brand who spoke Nepali got a Nepali title and description alongside an
 // English venue, expectedContent and completionReason.
-const EVENT_LOCALIZED_FIELDS = ['title', 'description', 'expectedContent', 'venue', 'location', 'completionReason'];
+const EVENT_LOCALIZED_FIELDS = ['title', 'description', 'expectedContent', 'venue', 'location'];
 
 // The same event fields as real object keys, for the post-generation
 // consistency sweep (see localizeStragglers). Kept next to the prose list
 // above so the two can't drift apart.
-const EVENT_LOCALIZED_KEYS = ['title', 'description', 'expectedContent', 'venue', 'location', 'completionReason'] as const;
+const EVENT_LOCALIZED_KEYS = ['title', 'description', 'expectedContent', 'venue', 'location'] as const;
 
-// Campaign equivalent. requirements[] descriptions are nested rather than
-// top-level and are left to the prompt alone.
+// Campaign equivalent.
 const CAMPAIGN_LOCALIZED_KEYS = [
-  'title', 'description', 'sampleCaption', 'location', 'completionReason',
+  'title', 'description', 'sampleCaption', 'location',
 ] as const;
 
 const DEVANAGARI = /[\u0900-\u097F]/;
@@ -164,17 +163,15 @@ function isPopulatedText(value: unknown): boolean {
   return false;
 }
 
-// Same idea for a paid-campaign draft. completionReason and each
-// requirements[] entry's description are prose the brand reads too, and were
-// missing from the old shared list for the same reason.
+// Same idea for a paid-campaign draft.
 const CAMPAIGN_LOCALIZED_FIELDS = [
-  'title', 'description', 'sampleCaption', 'location', 'completionReason', 'every requirements[] entry\'s description',
+  'title', 'description', 'sampleCaption', 'location',
 ];
 
 // Enum-valued fields are matched against fixed taxonomy/option lists after the
 // model responds and are rendered as chips keyed on the exact English string —
 // translating one silently drops it on the floor.
-const NEVER_TRANSLATE = 'category, secondaryCategories, platform, goal, benefits, exchangeType, completionType, needsInput, paymentType, imageQuery, and every requirements[] entry\'s category';
+const NEVER_TRANSLATE = 'category, secondaryCategories, platform, goal, benefits, exchangeType, needsInput, paymentType, imageQuery';
 
 function buildLanguageInstruction(language: string, localizedFields: string[], inputSource?: 'voice' | 'text'): string {
   const fieldList = localizedFields.join(', ');
@@ -226,16 +223,6 @@ Add these two extra top-level keys to your JSON response, in addition to all the
 If campaignIntentDetected is false, the other fields below are discarded — fill them with any placeholder, it doesn't matter.`;
 }
 
-// Shared by both the paid-campaign and event prompts, and by the per-role
-// requirements bullet — same detection rule everywhere so a DJ role and a
-// DJ-only campaign get classified the same way.
-function buildCompletionTypeInstruction(): string {
-  return `Decide whether the provider completes the job by:
-  - "SERVICE": performing or attending in person, with no digital file submitted afterward (e.g. a DJ performing, a makeup artist doing makeup, an MC hosting, a caterer serving food).
-  - "DELIVERABLE": producing a digital output that must be submitted for review afterward (e.g. edited photos, an edited video, a graphic design, a highlight reel, published social media content).
-  Base this on what the brief actually asks for, never on the category/role name alone. A Photographer or Videographer role is genuinely ambiguous both ways: if the brief mentions receiving edited photos/videos/a gallery/highlights afterward, it's DELIVERABLE; if it only mentions attending or covering the event with no mention of receiving anything afterward, it's a real guess — pick "SERVICE" but flag "completionType" in needsInput so the brand can confirm. A Content Creator role that must post to social media is always DELIVERABLE (the published post is the digital output). Always write completionReason as one short, plain-language sentence a non-technical business owner would understand, e.g. "The DJ will perform at your event; no file upload is required." or "Edited wedding photos will be submitted for your review after the event."`;
-}
-
 function buildBusinessContextBlock(business: { businessName: string | null; categories: string[]; location: string | null } | null): string {
   const lines = [
     business?.businessName ? `Business name: ${business.businessName}` : null,
@@ -246,16 +233,13 @@ function buildBusinessContextBlock(business: { businessName: string | null; cate
   return `\nBUSINESS PROFILE (use this to fill gaps the brand's prompt doesn't cover — never ask the brand to repeat something already listed here):\n${lines.join('\n')}\n`;
 }
 
-function buildSystemPrompt(categoryNames: string[], providerCategoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
-  return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting businesses with providers (content creators, photographers, videographers, models, and other service providers) for paid opportunities.
+function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
+  return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting businesses with content creators for paid opportunities.
 
 Given a brand's short description of what they want to promote, generate a complete campaign brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
 
 Existing categories in the app (prefer one of these for "category" if it fits; otherwise suggest the closest real-world category name):
 ${categoryNames.map((c) => `- ${c}`).join('\n')}
-
-Provider types available on the platform (use ONLY these for each requirements[] entry's "category" — this is a different, more specific list than the categories above):
-${providerCategoryNames.map((c) => `- ${c}`).join('\n')}
 
 Known platforms: ${platformNames.join(', ')} (prefer one of these for "platform").
 ${businessContext}
@@ -275,14 +259,8 @@ Respond with a JSON object with EXACTLY these keys:
 - hashtags: string[] (3-8 relevant hashtags, no # needed but allowed)
 - sampleCaption: string, a ready-to-use example caption a creator could post
 - location: string or null, a city/area if inferable, otherwise null
-- completionType: "SERVICE" or "DELIVERABLE" for the campaign's main role. ${buildCompletionTypeInstruction()}
-- completionReason: string, the one-sentence explanation described above.
 - imageQuery: string, 2-5 words in ENGLISH naming the single best stock photo for this campaign, describing the photo's SUBJECT only — e.g. "momo dumplings on table", "holi festival colour powder", "himalaya trekking trail", "barista pouring latte", "jewellery display case". Concrete and photographable: no brand names, no person's name, no business or street names (a well-known natural landmark like "himalaya" is fine when it genuinely IS the subject), no words like "photo"/"image"/"banner"/"poster", no adjectives about mood. Base it on what the campaign is actually ABOUT, not on the category name — a Holi party at a cafe is "holi festival colour powder", not "cafe interior". ALWAYS English even when every other field is Nepali, because it is used verbatim as a stock-photo search query.
-- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category","completionType"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
-- requirements: array (0-10 items) — ONLY populate this when the brief clearly names multiple DISTINCT provider types and/or explicit counts for each (e.g. "two TikTok creators and a photographer", "1 photographer and 2 content creators", "5 content creators, 2 photographers and 1 DJ"). Each item: { "category": one of the exact Provider types listed above, "quantity": integer count needed for that role, "budgetType": "FIXED"|"RANGE"|"NEGOTIABLE", "budgetFixed": number (required if budgetType is FIXED), "budgetMin"/"budgetMax": numbers (required if budgetType is RANGE), "deliverables": object, "description": string, "completionType": "SERVICE"|"DELIVERABLE", "completionReason": string }. Each role gets its OWN completionType/completionReason, decided independently per the same rule as the campaign-level completionType above — a brief asking for "1 photographer and 1 DJ" typically yields DELIVERABLE for the photographer and SERVICE for the DJ. budgetFixed/budgetMin/budgetMax for a role are the amount paid to EACH INDIVIDUAL creator filling that role (same per-person convention as deliverables above), NOT a pool split across that role's quantity. If the brief gives ONE total budget for the whole brief (e.g. "budget is 10000" for "5 content creators, 2 photographers and 1 DJ"), do NOT copy that total into every role or divide it evenly per head — first allocate the total across roles by typical relative cost per role type (e.g. a DJ or photographer usually costs more per person than a content creator), THEN divide each role's allocated share by that role's quantity to land on a realistic per-person figure, such that summing (budgetFixed × quantity) across all roles lands close to the brief's stated total. If unclear or no total was given, use "NEGOTIABLE". If the brief describes only ONE general need (even if creatorsNeeded > 1, e.g. "3 food creators"), leave requirements as an empty array [] — do not invent a multi-role breakdown the brief doesn't support. Never leave requirements populated with a single item; use the top-level category/creatorsNeeded/budget/deliverables fields for that case instead.
-  For "deliverables" and "description", exactly ONE of the two is meaningful per role, based on category:
-  - category is "Content Creator" (or an equally general content-creation role): fill "deliverables" with the SAME exact keys/rules as the top-level deliverables field above, scoped to what THIS role should produce (lean on REEL/STORY/PHOTO_POST as fits the brief). Leave "description" as "".
-  - any other category (Model, Photographer, Videographer, DJ, Dancer, Event Planner, etc.): leave "deliverables" all-zero, and instead fill "description" with a concise, specific, actionable 1-2 sentence brief of what that role should actually do — e.g. a Model: "Model outfits and pose for photo and short social clips per the brand's direction; available for the full shoot duration and wardrobe changes." A Photographer: "Capture high-resolution event photography and short video clips, deliver an edited gallery within 3 days." Never leave description empty for a non-Content-Creator role.
+- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
 
 ${buildLanguageInstruction(language, CAMPAIGN_LOCALIZED_FIELDS, inputSource)}
 
@@ -336,10 +314,8 @@ ${EXCHANGE_OPTIONS.map((e) => `  - "${e}": ${EXCHANGE_DESCRIPTIONS[e]}`).join('\
 - location: string or null, the broader city/area if inferable, otherwise null
 - venue: string or null, the SPECIFIC place the brand named ("our Durbarmarg outlet", "Hotel Yak & Yeti", "the Jhamsikhel branch"), otherwise null. This is narrower than location — if they only named a city, put it in location and leave venue null.
 ${buildEventDateInstruction(today)}
-- completionType: "SERVICE" or "DELIVERABLE". ${buildCompletionTypeInstruction()}
-- completionReason: string, the one-sentence explanation described above.
 - imageQuery: string, 2-5 words in ENGLISH naming the single best stock photo for this event, describing the photo's SUBJECT only — e.g. "momo dumplings on table", "holi festival colour powder", "himalaya trekking trail", "barista pouring latte", "jewellery display case". Concrete and photographable: no brand names, no person's name, no business or street names (a well-known natural landmark like "himalaya" is fine when it genuinely IS the subject), no words like "photo"/"image"/"banner"/"poster", no adjectives about mood. Base it on what the event is actually ABOUT, not on the category name — a Holi party at a cafe is "holi festival colour powder", not "cafe interior". ALWAYS English even when every other field is Nepali, because it is used verbatim as a stock-photo search query.
-- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","capacity","platform","category","completionType","eventDate"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless. Include "eventDate" whenever you returned eventDate as null, so the brand is prompted to pick a date.
+- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","capacity","platform","category","eventDate"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless. Include "eventDate" whenever you returned eventDate as null, so the brand is prompted to pick a date.
 
 ${buildLanguageInstruction(language, EVENT_LOCALIZED_FIELDS, inputSource)}
 
@@ -394,17 +370,12 @@ export class CampaignAiService {
   }
 
   async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
-    const [realCategories, realProviderCategories, realPlatforms, businessContext] = await Promise.all([
+    const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
-      // strict:true — requirements need real provider TYPES (Photographer,
-      // Content Creator...), never BOTH-scope content-niche rows, same rule
-      // the Service category picker follows (see CategoryRepository comment).
-      this.categoryRepo.findManyPublic(CategoryScope.CREATOR, true),
       this.platformRepo.findManyPublic(),
       this.loadBusinessContext(userId),
     ]);
     const categoryNames = realCategories.map((c) => c.name);
-    const providerCategoryNames = realProviderCategories.map((c) => c.name);
     const platformNames = realPlatforms.map((p) => p.name);
 
     let draft: AiCampaignDraft;
@@ -415,7 +386,7 @@ export class CampaignAiService {
     let aiFallback = false;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(buildSystemPrompt(categoryNames, providerCategoryNames, platformNames, language, businessContext, inputSource), prompt);
+      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language, businessContext, inputSource), prompt);
       this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response', NEEDS_INPUT_FIELDS);
       draft = await this.localizeStragglers(draft, CAMPAIGN_LOCALIZED_KEYS);
@@ -430,7 +401,10 @@ export class CampaignAiService {
       ...matched,
       ...(await this.resolveFeatureImage(draft)),
       aiFallback,
-      requirements: this.resolveRequirements(draft.requirements, realProviderCategories),
+      // The app connects content creators only — campaigns are never multi-role
+      // now, so requirements is always empty. Kept in the response shape so
+      // clients that still read the field get a stable [].
+      requirements: [],
     };
   }
 
@@ -449,27 +423,6 @@ export class CampaignAiService {
   ): Promise<{ featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null }> {
     const photo = await searchStockPhoto(draft.imageQuery?.trim() || draft.title);
     return { featureImageUrl: photo?.url ?? null, featureImageCredit: photo?.credit ?? null };
-  }
-
-  // Matches each AI-guessed requirement category name to a real CREATOR
-  // category and attaches its id — mirrors matchToRealTaxonomy's fuzzy-match
-  // for the top-level category/platform, but drops (rather than falls back
-  // on) any entry that can't be matched at all, since a wrong provider type
-  // silently attached to a real category id is worse than just omitting that
-  // role and letting the business add it manually in the review step.
-  private resolveRequirements(
-    requirements: AiRequirementDraft[],
-    realProviderCategories: { id: string; name: string }[],
-  ): (AiRequirementDraft & { categoryId: string })[] {
-    return requirements.flatMap((r) => {
-      const matched = fuzzyMatch(r.category, realProviderCategories.map((c) => c.name));
-      const category = matched != null ? realProviderCategories.find((c) => c.name === matched) : undefined;
-      if (!category) {
-        logger.warn({ guess: r.category }, 'AI requirement category did not match any real provider category, dropping requirement');
-        return [];
-      }
-      return [{ ...r, category: category.name, categoryId: category.id }];
-    });
   }
 
   async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null }> {

@@ -31,13 +31,12 @@ const ICON_COLORS = [
   { hex: '#6B7280', label: 'Gray' },
 ];
 
-// Provider-type sub-grouping for the CREATOR taxonomy — mirrors the groups
-// already used by prisma/seeds/categories.ts, kept in sync manually since
-// there's no dedicated Group model (see category.schema.ts's comment).
+// Sub-grouping for the CREATOR taxonomy — mirrors the groups used by
+// prisma/seeds/categories.ts, kept in sync manually since there's no dedicated
+// Group model (see category.schema.ts's comment). The app is content-creator ↔
+// business only, so the CREATOR taxonomy is a single group.
 const KNOWN_GROUPS = [
-  'Content & Creator', 'Photography', 'Video & Production', 'Performance & Entertainment',
-  'Music & Audio', 'Fashion & Beauty', 'Hosting & Presentation', 'Creative & Design',
-  'Events', 'Marketing & Promotion', 'Other',
+  'Content & Creator',
 ];
 
 function slugify(str: string) {
@@ -293,7 +292,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
           {scope !== 'business' && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-1">Group</h3>
-              <p className="text-xs text-gray-400 mb-4">Groups related provider types together in pickers, e.g. "Photography".</p>
+              <p className="text-xs text-gray-400 mb-4">Groups related creator types together in pickers.</p>
               <select
                 value={group ?? ''}
                 onChange={(e) => setGroup(e.target.value || null)}

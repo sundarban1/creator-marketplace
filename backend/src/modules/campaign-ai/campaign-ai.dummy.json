@@ -47,49 +47,6 @@
         "location"
       ],
       "goal": "More Customers",
-      "requirements": [
-        {
-          "category": "Content Creator",
-          "quantity": 2,
-          "budgetType": "RANGE",
-          "budgetMin": 3000,
-          "budgetMax": 6000,
-          "deliverables": {
-            "REEL": 1,
-            "STORY": 2,
-            "PHOTO_POST": 0,
-            "VISIT_STORE": 0,
-            "PRODUCT_REVIEW_VIDEO": 0,
-            "EVENT_COVERAGE_VIDEO": 0,
-            "MENTION_IN_CAPTION": 0,
-            "TAG_BUSINESS": 0,
-            "GOOGLE_REVIEW": 0
-          },
-          "completionType": "DELIVERABLE",
-          "completionReason": "The creator is expected to create and publish the agreed social media content."
-        },
-        {
-          "category": "Photographer",
-          "quantity": 1,
-          "budgetType": "FIXED",
-          "budgetFixed": 8000,
-          "deliverables": {
-            "REEL": 0,
-            "STORY": 0,
-            "PHOTO_POST": 5,
-            "VISIT_STORE": 0,
-            "PRODUCT_REVIEW_VIDEO": 0,
-            "EVENT_COVERAGE_VIDEO": 0,
-            "MENTION_IN_CAPTION": 0,
-            "TAG_BUSINESS": 0,
-            "GOOGLE_REVIEW": 0
-          },
-          "completionType": "DELIVERABLE",
-          "completionReason": "Edited photos will be submitted for your review after the shoot."
-        }
-      ],
-      "completionType": "DELIVERABLE",
-      "completionReason": "The creators are expected to create and publish the agreed social media content.",
       "ne": {
         "title": "सिप एन्ड सेयर: नयाँ कफी लन्च",
         "description": "क्रिएटरहरूले आएर हाम्रो नयाँ कफी ब्लेन्ड चाखी साँचो र हेर्नलायक कन्टेन्टमार्फत देखाउनेछन्। हामी वास्तविक प्रतिक्रिया र लाइफस्टाइल शैलीका सट खोज्दैछौं, जसले हेर्नेलाई आफैं चाख्न मन लगाओस्।",

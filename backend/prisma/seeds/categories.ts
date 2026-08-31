@@ -20,16 +20,13 @@ const ICON_COLORS = [
 // and mobile/src/features/creator/data/templateImages.ts — renaming/removing a
 // row here silently drops that row's curated prompt examples/template image,
 // so treat these names as stable; add new ones instead of renaming existing.
-// CREATOR-scope rows are provider *roles* (photographer, dancer, event planner, ...) —
-// a distinct taxonomy answering "what do they do", shared by both provider
-// onboarding ("What do you offer?") and business onboarding ("What are you
-// looking for?"), since the matching works both ways. Grouped into `group`
-// sections (10 broad categories, e.g. "Photography", "Events") for the picker
-// UI — admins can add more roles under any existing group, or new groups
-// entirely, from the web admin's Categories page. Only CREATOR-scope, strict
-// (not CREATOR-or-BOTH) categories are usable for Service.categoryId — see
-// service.service.ts's assertCategoryUsable and category.repository.ts's
-// `strict` param.
+// CREATOR-scope rows are the content-creator family (Content Creator, UGC
+// Creator, Influencer, Social Media Creator, Other) — the kinds of creators a
+// business hires or invites. Shared by creator onboarding and by the business
+// "what kind of creators do you need?" step. Admins can add more from the web
+// admin's Categories page. Only CREATOR-scope, strict (not CREATOR-or-BOTH)
+// categories are usable for Service.categoryId — see service.service.ts's
+// assertCategoryUsable and category.repository.ts's `strict` param.
 const INDUSTRY_CATEGORIES: { icon: string; color: string; name: string; key: string; scope: CategoryScope }[] = [
   { icon: 'utensils',          color: '#F97316', name: 'Restaurants',              key: 'restaurants',            scope: 'BOTH' },
   { icon: 'coffee',            color: '#A16207', name: 'Cafés',                    key: 'cafes',                  scope: 'BOTH' },
@@ -77,73 +74,19 @@ const INDUSTRY_CATEGORIES: { icon: string; color: string; name: string; key: str
   { icon: 'ellipsis-h',         color: '#6B7280', name: 'Other',                    key: 'other-industry',         scope: 'BOTH' },
 ];
 
-// Provider roles (CREATOR scope) — "What do you offer?" / "What are you
-// looking for?" on onboarding, grouped into 10 broad categories. Colors are
-// cycled from ICON_COLORS below rather than hand-picked per row.
+// Creator roles (CREATOR scope) — the kinds of content creators a business can
+// hire or invite. The app connects content creators with businesses, so this
+// list is deliberately just the content-creator family; the older broad
+// "provider" taxonomy (photographers, DJs, event planners, models, …) was
+// removed, and any of those rows still in a database are deactivated by the
+// `deactivate_non_creator_categories` migration. All one group, so the picker
+// renders them flat. Colors are cycled from ICON_COLORS below.
 const PROVIDER_CATEGORIES: { icon: string; name: string; key: string; scope: CategoryScope; group: string }[] = [
   { icon: 'hashtag',        name: 'Content Creator',       key: 'content-creator',       scope: 'CREATOR', group: 'Content & Creator' },
   { icon: 'mobile-alt',     name: 'UGC Creator',           key: 'ugc-creator',           scope: 'CREATOR', group: 'Content & Creator' },
   { icon: 'thumbs-up',      name: 'Influencer',            key: 'influencer',            scope: 'CREATOR', group: 'Content & Creator' },
   { icon: 'share-alt',      name: 'Social Media Creator',  key: 'social-media-creator',  scope: 'CREATOR', group: 'Content & Creator' },
-
-  { icon: 'camera',         name: 'Photographer',          key: 'photographer',          scope: 'CREATOR', group: 'Photography' },
-  { icon: 'camera-retro',   name: 'Product Photographer',  key: 'product-photographer',  scope: 'CREATOR', group: 'Photography' },
-  { icon: 'images',         name: 'Event Photographer',    key: 'event-photographer',    scope: 'CREATOR', group: 'Photography' },
-  { icon: 'ring',           name: 'Wedding Photographer',  key: 'wedding-photographer',  scope: 'CREATOR', group: 'Photography' },
-
-  { icon: 'video',          name: 'Videographer',          key: 'videographer',          scope: 'CREATOR', group: 'Video & Production' },
-  { icon: 'photo-video',    name: 'Video Producer',        key: 'video-producer',        scope: 'CREATOR', group: 'Video & Production' },
-  { icon: 'film',           name: 'Video Editor',          key: 'video-editor',          scope: 'CREATOR', group: 'Video & Production' },
-  { icon: 'video',          name: 'Cinematographer',       key: 'cinematographer',       scope: 'CREATOR', group: 'Video & Production' },
-  { icon: 'satellite',      name: 'Drone Operator',        key: 'drone-operator',        scope: 'CREATOR', group: 'Video & Production' },
-
-  { icon: 'theater-masks',  name: 'Actor / Actress',       key: 'actor-actress',         scope: 'CREATOR', group: 'Performance & Entertainment' },
-  { icon: 'walking',        name: 'Dancer',                key: 'dancer',                scope: 'CREATOR', group: 'Performance & Entertainment' },
-  { icon: 'shoe-prints',    name: 'Choreographer',         key: 'choreographer',         scope: 'CREATOR', group: 'Performance & Entertainment' },
-  { icon: 'laugh',          name: 'Comedian',              key: 'comedian',              scope: 'CREATOR', group: 'Performance & Entertainment' },
-  { icon: 'star',           name: 'Performer',             key: 'performer',             scope: 'CREATOR', group: 'Performance & Entertainment' },
-  { icon: 'magic',          name: 'Magician',              key: 'magician',              scope: 'CREATOR', group: 'Performance & Entertainment' },
-
-  { icon: 'microphone-alt', name: 'Singer',                key: 'singer',                scope: 'CREATOR', group: 'Music & Audio' },
-  { icon: 'music',          name: 'Musician',              key: 'musician',              scope: 'CREATOR', group: 'Music & Audio' },
-  { icon: 'headphones',     name: 'DJ',                    key: 'dj',                    scope: 'CREATOR', group: 'Music & Audio' },
-  { icon: 'users',          name: 'Band',                  key: 'band',                  scope: 'CREATOR', group: 'Music & Audio' },
-  { icon: 'microphone',     name: 'Voice Artist',          key: 'voice-artist',          scope: 'CREATOR', group: 'Music & Audio' },
-  { icon: 'volume-up',      name: 'Sound / Audio',         key: 'sound-audio',           scope: 'CREATOR', group: 'Music & Audio' },
-
-  { icon: 'star',           name: 'Model',                 key: 'model',                 scope: 'CREATOR', group: 'Fashion & Beauty' },
-  { icon: 'magic',          name: 'Makeup Artist',         key: 'makeup-artist',         scope: 'CREATOR', group: 'Fashion & Beauty' },
-  { icon: 'cut',            name: 'Hair Stylist',          key: 'hair-stylist',          scope: 'CREATOR', group: 'Fashion & Beauty' },
-  { icon: 'tshirt',         name: 'Fashion Stylist',       key: 'fashion-stylist',       scope: 'CREATOR', group: 'Fashion & Beauty' },
-
-  { icon: 'microphone',     name: 'Host / MC',             key: 'host-mc',               scope: 'CREATOR', group: 'Hosting & Presentation' },
-  { icon: 'broadcast-tower', name: 'Presenter',            key: 'presenter',             scope: 'CREATOR', group: 'Hosting & Presentation' },
-  { icon: 'bullhorn',       name: 'Speaker',               key: 'speaker',               scope: 'CREATOR', group: 'Hosting & Presentation' },
-  { icon: 'comments',       name: 'Interviewer',           key: 'interviewer',           scope: 'CREATOR', group: 'Hosting & Presentation' },
-  { icon: 'podcast',        name: 'Podcaster',             key: 'podcaster',             scope: 'CREATOR', group: 'Hosting & Presentation' },
-
-  { icon: 'palette',        name: 'Graphic Designer',      key: 'graphic-designer',      scope: 'CREATOR', group: 'Creative & Design' },
-  { icon: 'pen-nib',        name: 'Illustrator',           key: 'illustrator',           scope: 'CREATOR', group: 'Creative & Design' },
-  { icon: 'shapes',         name: 'Animator',              key: 'animator',              scope: 'CREATOR', group: 'Creative & Design' },
-  { icon: 'sync-alt',       name: 'Motion Designer',       key: 'motion-designer',       scope: 'CREATOR', group: 'Creative & Design' },
-  { icon: 'paint-roller',   name: 'Decorator',             key: 'decorator',             scope: 'CREATOR', group: 'Creative & Design' },
-  { icon: 'lightbulb',      name: 'Creative Director',     key: 'creative-director',     scope: 'CREATOR', group: 'Creative & Design' },
-
-  { icon: 'clipboard-list', name: 'Event Planner',         key: 'event-planner',         scope: 'CREATOR', group: 'Events' },
-  { icon: 'tasks',          name: 'Event Organizer',       key: 'event-organizer',       scope: 'CREATOR', group: 'Events' },
-  { icon: 'calendar-check', name: 'Event Coordinator',     key: 'event-coordinator',     scope: 'CREATOR', group: 'Events' },
-  { icon: 'ring',           name: 'Wedding Planner',       key: 'wedding-planner',       scope: 'CREATOR', group: 'Events' },
-  { icon: 'paint-roller',   name: 'Event Decorator',       key: 'event-decorator',       scope: 'CREATOR', group: 'Events' },
-  { icon: 'user-friends',   name: 'Event Staff',           key: 'event-staff',           scope: 'CREATOR', group: 'Events' },
-  { icon: 'tools',          name: 'Event Technician',      key: 'event-technician',      scope: 'CREATOR', group: 'Events' },
-
-  { icon: 'share-alt',      name: 'Social Media Manager',  key: 'social-media-manager',  scope: 'CREATOR', group: 'Marketing & Promotion' },
-  { icon: 'bullhorn',       name: 'Digital Marketer',      key: 'digital-marketer',      scope: 'CREATOR', group: 'Marketing & Promotion' },
-  { icon: 'award',          name: 'Brand Ambassador',      key: 'brand-ambassador',      scope: 'CREATOR', group: 'Marketing & Promotion' },
-  { icon: 'ad',             name: 'Promoter',              key: 'promoter',              scope: 'CREATOR', group: 'Marketing & Promotion' },
-  { icon: 'newspaper',      name: 'PR Specialist',         key: 'pr-specialist',         scope: 'CREATOR', group: 'Marketing & Promotion' },
-
-  { icon: 'ellipsis-h',     name: 'Other',                 key: 'other-provider',        scope: 'CREATOR', group: 'Other' },
+  { icon: 'ellipsis-h',     name: 'Other',                 key: 'other-provider',        scope: 'CREATOR', group: 'Content & Creator' },
 ];
 
 export async function seedCategories(prisma: PrismaClient) {

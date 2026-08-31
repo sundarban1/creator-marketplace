@@ -30,25 +30,19 @@ export type SuggestDescriptionInput = z.infer<typeof suggestDescriptionSchema>;
 // Field keys the AI is allowed to flag as "not confident" — kept in sync with
 // FormData in mobile create-campaign.tsx so the chip renderer can key off them.
 export const NEEDS_INPUT_FIELDS = [
-  'location', 'budgetMin', 'budgetMax', 'creatorsNeeded', 'deadline', 'platform', 'category', 'completionType',
+  'location', 'budgetMin', 'budgetMax', 'creatorsNeeded', 'deadline', 'platform', 'category',
 ] as const;
 
-// Whether a role is completed by performing/attending in person (no file
-// upload) or by submitting a digital output for review — see CompletionType
-// in schema.prisma. AI-detected; low-confidence guesses get flagged via
-// `needsInput` above rather than a separate confidence field.
+// Legacy: the app used to distinguish a role completed by performing in person
+// (SERVICE) from one that submits a digital output (DELIVERABLE). Now that the
+// app only connects content creators — who always submit published content —
+// this is no longer asked or shown. Kept only so old drafts/campaigns that
+// still carry the value continue to validate. See CompletionType in schema.prisma.
 export const COMPLETION_TYPES = ['SERVICE', 'DELIVERABLE'] as const;
 
 // Kept in sync with GOAL_OPTIONS in mobile create-campaign.tsx — the Goal chip picker
 // only ever renders these exact labels, so the AI must pick one of them verbatim.
 export const GOAL_OPTIONS = ['Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement'] as const;
-
-// Kept in sync with CREATOR_TYPES in mobile create-campaign.tsx — this field means
-// "which creators should promote this" (chip picker), not end-consumer demographics.
-export const CREATOR_TYPES = [
-  'Food Creator', 'Travel Creator', 'Lifestyle Creator', 'Fashion Creator',
-  'Tech Creator', 'Fitness Creator', 'Student Creator', 'Any Creator',
-] as const;
 
 // Kept in sync with DELIVERABLE_TYPES keys in mobile create-campaign.tsx — the
 // deliverables counter list only recognizes these exact keys.
@@ -61,10 +55,8 @@ const deliverablesSchema = z.object(
   Object.fromEntries(DELIVERABLE_KEYS.map((k) => [k, z.number().int().min(0).max(10).default(0)])) as Record<(typeof DELIVERABLE_KEYS)[number], z.ZodDefault<z.ZodNumber>>,
 ).refine((d) => Object.values(d).some((n) => n > 0), { message: 'At least one deliverable count must be > 0' });
 
-// Same shape as deliverablesSchema but WITHOUT the "at least one > 0" refine — used for
-// per-role requirements, where a non-Content-Creator role (Model, Photographer, DJ, ...)
-// legitimately has an all-zero deliverables object and carries its content ask in
-// `description` instead (see aiRequirementSchema below).
+// Same shape as deliverablesSchema but WITHOUT the "at least one > 0" refine —
+// used for legacy per-role requirements. New drafts never populate requirements.
 const requirementDeliverablesSchema = z.object(
   Object.fromEntries(DELIVERABLE_KEYS.map((k) => [k, z.number().int().min(0).max(10).default(0)])) as Record<(typeof DELIVERABLE_KEYS)[number], z.ZodDefault<z.ZodNumber>>,
 );
@@ -112,7 +104,7 @@ export const EXCHANGE_DESCRIPTIONS: Record<(typeof EXCHANGE_OPTIONS)[number], st
 };
 
 // Field keys the AI is allowed to flag as "not confident" for OPEN_EVENT drafts.
-export const EVENT_NEEDS_INPUT_FIELDS = ['location', 'capacity', 'platform', 'category', 'completionType', 'eventDate'] as const;
+export const EVENT_NEEDS_INPUT_FIELDS = ['location', 'capacity', 'platform', 'category', 'eventDate'] as const;
 
 export const aiEventDraftSchema = z.object({
   title: z.string().min(3).max(120),
@@ -138,8 +130,9 @@ export const aiEventDraftSchema = z.object({
   // Yeti") as opposed to `location`, which is the broader city/area. Null when
   // no specific place was named.
   venue: z.string().max(160).nullable().default(null),
-  completionType: z.enum(COMPLETION_TYPES),
-  completionReason: z.string().min(3).max(300),
+  // Legacy — no longer prompted for; optional so old drafts still validate.
+  completionType: z.enum(COMPLETION_TYPES).optional(),
+  completionReason: z.string().max(300).optional(),
   // A short English subject phrase for the draft's feature photo ("momo
   // dumplings restaurant table"), used verbatim as a stock-photo search query
   // — see utils/imageSearch.ts. Deliberately not a URL: a model asked for one
@@ -150,12 +143,9 @@ export const aiEventDraftSchema = z.object({
 });
 export type AiEventDraft = z.infer<typeof aiEventDraftSchema>;
 
-// One role the AI inferred from the brief when it clearly asks for multiple
-// distinct provider types/counts (e.g. "two TikTok creators and a photographer")
-// — mirrors campaignRequirementSchema in campaign.schema.ts, except `category`
-// is a free-text name here (matched against real CREATOR categories after the
-// model responds, same fuzzy-match step the top-level category/platform go
-// through) rather than an already-resolved categoryId.
+// Legacy multi-role requirement shape. New drafts never populate this (the app
+// only connects content creators now), but the schema is kept so an old draft
+// still parses.
 const aiRequirementSchema = z.object({
   category: z.string().min(1),
   quantity: z.number().int().positive().max(20),
@@ -169,19 +159,10 @@ const aiRequirementSchema = z.object({
   budgetFixed: z.number().min(0).optional(),
   budgetMin: z.number().min(0).optional(),
   budgetMax: z.number().min(0).optional(),
-  // This role's own content ask — same shape/keys as the top-level
-  // `deliverables` below, but scoped to what THIS provider type should
-  // produce (e.g. a DJ role gets EVENT_COVERAGE_VIDEO, a photographer gets
-  // PHOTO_POST), not the campaign-wide default. Only meaningful for a
-  // Content Creator role — other roles leave this all-zero and use
-  // `description` instead.
   deliverables: requirementDeliverablesSchema,
-  // Free-text brief of what THIS role should actually do — filled for every
-  // role EXCEPT Content Creator (which uses `deliverables` instead). Empty
-  // string for Content Creator roles.
   description: z.string().max(300).default(''),
-  completionType: z.enum(COMPLETION_TYPES),
-  completionReason: z.string().min(3).max(300),
+  completionType: z.enum(COMPLETION_TYPES).optional(),
+  completionReason: z.string().max(300).optional(),
 }).refine((r) => r.budgetType !== 'FIXED' || (r.budgetFixed != null && r.budgetFixed > 0), {
   message: 'budgetFixed is required when budgetType is FIXED',
   path: ['budgetFixed'],
@@ -207,8 +188,9 @@ export const aiCampaignDraftSchema = z.object({
   hashtags: z.array(z.string().regex(/^#?[A-Za-z0-9_]+$/).max(40)).min(1).max(10),
   sampleCaption: z.string().min(5).max(600),
   location: z.string().max(120).nullable().default(null),
-  completionType: z.enum(COMPLETION_TYPES),
-  completionReason: z.string().min(3).max(300),
+  // Legacy — no longer prompted for; optional so old drafts still validate.
+  completionType: z.enum(COMPLETION_TYPES).optional(),
+  completionReason: z.string().max(300).optional(),
   needsInput: z.array(z.enum(NEEDS_INPUT_FIELDS)).max(2).default([]),
   // A short English subject phrase for the draft's feature photo ("momo
   // dumplings restaurant table"), used verbatim as a stock-photo search query
@@ -216,8 +198,8 @@ export const aiCampaignDraftSchema = z.object({
   // invents plausible-looking links that 404. Defaulted rather than required so
   // a model that omits it, or a dummy-JSON fallback draft, still validates.
   imageQuery: z.string().max(80).default(''),
-  // Empty for the common single-role case — only populated when the brief
-  // clearly names multiple distinct provider types/counts. See CampaignRequirement.
+  // Legacy — always empty now. New drafts describe a single content-creator ask
+  // via the top-level category/creatorsNeeded/budget/deliverables fields.
   requirements: z.array(aiRequirementSchema).max(10).default([]),
 }).refine((d) => d.budgetMax >= d.budgetMin, {
   message: 'budgetMax must be >= budgetMin',
