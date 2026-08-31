@@ -17,7 +17,7 @@ import { useLenisScroll } from '../hooks/useLenis';
 
 const PROFILE_PHOTO =
   'https://images.pexels.com/photos/15594934/pexels-photo-15594934.jpeg?auto=compress&cs=tinysrgb&w=400&h=460&fit=crop';
-// Positionally paired with `taker.talent` (Photographer, Creator, Videographer).
+// Positionally paired with `taker.talent` (Content Creator, Influencer, UGC Creator).
 const TALENT_AVATARS = [
   'https://images.unsplash.com/photo-1637589308599-3478cc55510d?auto=format&fit=crop&w=100&h=100&q=80',
   'https://images.unsplash.com/photo-1704088030734-96769c4593a2?auto=format&fit=crop&w=100&h=100&q=80',
@@ -146,7 +146,7 @@ export function Audience() {
             </div>
             <div className="flex w-full items-start justify-center gap-4 lg:justify-end">
               {/* Connector — dashed line from the hub logo toward the
-                  "Photographer Needed" card. */}
+                  "Content Creators Needed" card. */}
               <span
                 aria-hidden
                 className="mt-[135px] hidden h-px flex-1 self-start bg-[repeating-linear-gradient(90deg,rgba(123,92,245,0.5)_0_6px,transparent_6px_12px)] lg:block"
