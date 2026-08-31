@@ -42,13 +42,13 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabSlider } from '@/components/TabSlider';
 import { TabColors } from '@/utilities/tabColors';
 import {
-  GOAL_OPTIONS, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables, completionLabel,
+  GOAL_OPTIONS, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
 import {
   SectionCard, ChipGroup, ChipMultiGroup, BudgetTierPicker, Stepper,
-  DeliverablesCounterList, HashtagEditor, FeaturedToggle, CompletionTypePicker, sc,
+  DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
-import type { FormData, RequirementFormItem } from '@/features/business/types/campaignForm.types';
+import type { FormData } from '@/features/business/types/campaignForm.types';
 import {
   dayStart, sameDay, fmtDate, getDaysInMonth, getFirstWeekday,
   mapAiCampaignDraftToForm, mapAiEventDraftToForm,
@@ -526,273 +526,6 @@ const mc = StyleSheet.create({
   rowLabel:   { flex: 1, fontSize: 14 },
 });
 
-// ─── RequirementsRepeater (§ CampaignRequirement — multi-role campaigns) ───────
-
-const BUDGET_TYPE_OPTIONS = ['FIXED', 'RANGE', 'NEGOTIABLE'] as const;
-
-function RequirementCard({
-  item, index, providerCategoryOptions, onChange, onRemove, colors, t,
-}: {
-  item: RequirementFormItem;
-  index: number;
-  providerCategoryOptions: { id: string; label: string; icon: string; color: string }[];
-  onChange: (next: RequirementFormItem) => void;
-  onRemove: () => void;
-  colors: ReturnType<typeof useAppColors>;
-  t: (key: string, vars?: Record<string, string | number>) => string;
-}) {
-  const C = colors;
-  const budgetTypeLabels: Record<(typeof BUDGET_TYPE_OPTIONS)[number], string> = {
-    FIXED: t('createEvent.reqBudgetFixed'),
-    RANGE: t('createEvent.reqBudgetRange'),
-    NEGOTIABLE: t('createEvent.reqBudgetNegotiable'),
-  };
-
-  // Once a category's picked, show the actual role ("Photographer ×2")
-  // instead of the generic placeholder, so a stack of blocks reads at a
-  // glance instead of everyone showing "Role 1", "Role 2"...
-  const cardTitle = item.categoryName
-    ? `${item.categoryName} ×${item.quantity}`
-    : t('createEvent.reqRoleLabel', { n: index + 1 });
-
-  return (
-    <View style={[rq.card, { backgroundColor: C.background, borderColor: C.border }]}>
-      <View style={rq.cardHeader}>
-        <Text style={[rq.cardTitle, { color: C.text, flex: 1, marginRight: 8 }]} numberOfLines={1}>{cardTitle}</Text>
-        <Pressable hitSlop={8} onPress={onRemove}>
-          <FontAwesome5 name="trash-alt" size={14} color={C.textSecondary} />
-        </Pressable>
-      </View>
-
-      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqCategoryLabel')}</Text>
-      <ChipGroup
-        options={providerCategoryOptions.map((c) => c.label)}
-        value={item.categoryName}
-        onChange={(label) => {
-          const cat = providerCategoryOptions.find((c) => c.label === label);
-          if (!cat) return;
-          onChange({ ...item, categoryId: cat.id, categoryName: cat.label, categoryIcon: cat.icon, categoryColor: cat.color });
-        }}
-        colors={C}
-      />
-
-      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqQuantityLabel')}</Text>
-      <Stepper value={item.quantity} onChange={(v) => onChange({ ...item, quantity: v })} min={1} max={20} colors={C} />
-
-      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqBudgetTypeLabel')}</Text>
-      <ChipGroup
-        options={BUDGET_TYPE_OPTIONS.map((k) => budgetTypeLabels[k])}
-        value={budgetTypeLabels[item.budgetType]}
-        onChange={(label) => {
-          const key = BUDGET_TYPE_OPTIONS.find((k) => budgetTypeLabels[k] === label) ?? 'FIXED';
-          onChange({ ...item, budgetType: key });
-        }}
-        colors={C}
-      />
-
-      {item.budgetType === 'FIXED' && (
-        <TextInputWithLabel
-          label={t('createEvent.reqBudgetFixedPlaceholder')}
-          leftIcon="dollar-sign"
-          value={item.budgetFixed != null ? String(item.budgetFixed) : ''}
-          onChangeText={(v) => onChange({ ...item, budgetFixed: parseInt(v.replace(/[^0-9]/g, ''), 10) || null })}
-          keyboardType="number-pad"
-        />
-      )}
-      {item.budgetType === 'RANGE' && (
-        <View style={rq.budgetRangeRow}>
-          <View style={{ flex: 1 }}>
-            <TextInputWithLabel
-              label={t('createEvent.aiBudgetMinLabel')}
-              leftIcon="dollar-sign"
-              value={item.budgetMin != null ? String(item.budgetMin) : ''}
-              onChangeText={(v) => onChange({ ...item, budgetMin: parseInt(v.replace(/[^0-9]/g, ''), 10) || null })}
-              keyboardType="number-pad"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <TextInputWithLabel
-              label={t('createEvent.aiBudgetMaxLabel')}
-              leftIcon="dollar-sign"
-              value={item.budgetMax != null ? String(item.budgetMax) : ''}
-              onChangeText={(v) => onChange({ ...item, budgetMax: parseInt(v.replace(/[^0-9]/g, ''), 10) || null })}
-              keyboardType="number-pad"
-            />
-          </View>
-        </View>
-      )}
-
-      {/* Per-role completion type — a "1 DJ + 1 photographer" campaign mixes
-          SERVICE and DELIVERABLE roles, and the AI's per-role guess is exactly
-          what a brand needs to be able to correct: a DJ wrongly marked
-          DELIVERABLE would be asked to upload files that don't exist. */}
-      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createOpportunity.completionLabel')}</Text>
-      <CompletionTypePicker
-        value={item.completionType}
-        reason={item.completionReason}
-        onChange={(v) => onChange({ ...item, completionType: v, completionReason: v === item.completionType ? item.completionReason : '' })}
-        colors={C}
-        t={t}
-      />
-
-      {/* Only a "Content Creator" role gets the content-piece counter — every
-          other role (Model, Photographer, DJ, ...) gets a free-text brief of
-          what they should actually do instead. See RequirementRoleEditor for
-          the same conditional applied to the Publish step's per-role sheet. */}
-      {item.categoryName === 'Content Creator' ? (
-        <>
-          <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqDeliverablesLabel')}</Text>
-          <DeliverablesCounterList
-            value={item.deliverables}
-            onChange={(v) => onChange({ ...item, deliverables: v })}
-            colors={C}
-            t={t}
-          />
-        </>
-      ) : (
-        <>
-          <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqDescriptionLabel')}</Text>
-          <TextInputWithLabel
-            label={t('createEvent.reqDescriptionPlaceholder')}
-            value={item.description}
-            onChangeText={(v) => onChange({ ...item, description: v })}
-            multiline
-            numberOfLines={3}
-          />
-        </>
-      )}
-
-      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqFormatLabel')}</Text>
-      <ChipMultiGroup
-        options={FORMAT_OPTIONS}
-        values={item.format}
-        onChange={(v) => onChange({ ...item, format: v })}
-        colors={C}
-      />
-    </View>
-  );
-}
-
-// The Publish step's per-role edit sheet, opened from a "People Needed"
-// row's pencil icon — covers everything about one role (category, quantity,
-// budget, content ask) in one place, since there's no separate Draft step to
-// own category/quantity anymore.
-function RequirementRoleEditor({
-  item, providerCategoryOptions, onChange, colors, t,
-}: {
-  item: RequirementFormItem;
-  providerCategoryOptions: { id: string; label: string; icon: string; color: string }[];
-  onChange: (next: RequirementFormItem) => void;
-  colors: ReturnType<typeof useAppColors>;
-  t: (key: string, vars?: Record<string, string | number>) => string;
-}) {
-  const C = colors;
-  const budgetTypeLabels: Record<(typeof BUDGET_TYPE_OPTIONS)[number], string> = {
-    FIXED: t('createEvent.reqBudgetFixed'),
-    RANGE: t('createEvent.reqBudgetRange'),
-    NEGOTIABLE: t('createEvent.reqBudgetNegotiable'),
-  };
-  return (
-    <View style={{ gap: 8 }}>
-      <Text style={[rq.fieldLabel, { color: C.textSecondary, marginTop: 0 }]}>{t('createEvent.reqCategoryLabel')}</Text>
-      <ChipGroup
-        options={providerCategoryOptions.map((c) => c.label)}
-        value={item.categoryName}
-        onChange={(label) => {
-          const cat = providerCategoryOptions.find((c) => c.label === label);
-          if (!cat) return;
-          onChange({ ...item, categoryId: cat.id, categoryName: cat.label, categoryIcon: cat.icon, categoryColor: cat.color });
-        }}
-        colors={C}
-      />
-
-      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqQuantityLabel')}</Text>
-      <Stepper value={item.quantity} onChange={(v) => onChange({ ...item, quantity: v })} min={1} max={20} colors={C} />
-
-      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqBudgetTypeLabel')}</Text>
-      <ChipGroup
-        options={BUDGET_TYPE_OPTIONS.map((k) => budgetTypeLabels[k])}
-        value={budgetTypeLabels[item.budgetType]}
-        onChange={(label) => {
-          const key = BUDGET_TYPE_OPTIONS.find((k) => budgetTypeLabels[k] === label) ?? 'FIXED';
-          onChange({ ...item, budgetType: key });
-        }}
-        colors={C}
-      />
-
-      {item.budgetType === 'FIXED' && (
-        <TextInputWithLabel
-          label={t('createEvent.reqBudgetFixedPlaceholder')}
-          leftIcon="dollar-sign"
-          value={item.budgetFixed != null ? String(item.budgetFixed) : ''}
-          onChangeText={(v) => onChange({ ...item, budgetFixed: parseInt(v.replace(/[^0-9]/g, ''), 10) || null })}
-          keyboardType="number-pad"
-        />
-      )}
-      {item.budgetType === 'RANGE' && (
-        <View style={rq.budgetRangeRow}>
-          <View style={{ flex: 1 }}>
-            <TextInputWithLabel
-              label={t('createEvent.aiBudgetMinLabel')}
-              leftIcon="dollar-sign"
-              value={item.budgetMin != null ? String(item.budgetMin) : ''}
-              onChangeText={(v) => onChange({ ...item, budgetMin: parseInt(v.replace(/[^0-9]/g, ''), 10) || null })}
-              keyboardType="number-pad"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <TextInputWithLabel
-              label={t('createEvent.aiBudgetMaxLabel')}
-              leftIcon="dollar-sign"
-              value={item.budgetMax != null ? String(item.budgetMax) : ''}
-              onChangeText={(v) => onChange({ ...item, budgetMax: parseInt(v.replace(/[^0-9]/g, ''), 10) || null })}
-              keyboardType="number-pad"
-            />
-          </View>
-        </View>
-      )}
-
-      {/* Per-role completion type — a "1 DJ + 1 photographer" campaign mixes
-          SERVICE and DELIVERABLE roles, and the AI's per-role guess is exactly
-          what a brand needs to be able to correct: a DJ wrongly marked
-          DELIVERABLE would be asked to upload files that don't exist. */}
-      <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createOpportunity.completionLabel')}</Text>
-      <CompletionTypePicker
-        value={item.completionType}
-        reason={item.completionReason}
-        onChange={(v) => onChange({ ...item, completionType: v, completionReason: v === item.completionType ? item.completionReason : '' })}
-        colors={C}
-        t={t}
-      />
-
-      {item.categoryName === 'Content Creator' ? (
-        <>
-          <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqDeliverablesLabel')}</Text>
-          <DeliverablesCounterList
-            value={item.deliverables}
-            onChange={(v) => onChange({ ...item, deliverables: v })}
-            colors={C}
-            t={t}
-          />
-        </>
-      ) : (
-        <>
-          <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqDescriptionLabel')}</Text>
-          <TextInputWithLabel
-            label={t('createEvent.reqDescriptionPlaceholder')}
-            value={item.description}
-            onChangeText={(v) => onChange({ ...item, description: v })}
-            multiline
-            numberOfLines={3}
-          />
-        </>
-      )}
-    </View>
-  );
-}
-
-const FORMAT_OPTIONS = ['JPG', 'PNG', 'MP4', 'PDF', 'Other'];
-
 const rq = StyleSheet.create({
   card:       { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACING.md, gap: 8 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -1212,12 +945,8 @@ export default function CreateCampaignScreen() {
   // just its budget + content in a sheet, without leaving the summary.
   // '__single__' edits the single-role form.aiBudgetMin/Max + form.deliverables
   // instead of a specific requirements[] entry.
-  const [editingRequirementKey, setEditingRequirementKey] = useState<string | '__single__' | null>(null);
-  // A role being composed by "Add another role" — it lives here, NOT in
-  // form.requirements, until the sheet's "Add role" button commits it. Adding
-  // it up-front meant dismissing the sheet (swipe-down/backdrop) left a blank
-  // default role like "Actor/Actress ×1" stuck in the campaign.
-  const [draftRequirement, setDraftRequirement] = useState<RequirementFormItem | null>(null);
+  // Only ever '__single__' now — opens the publish-step budget/content editor.
+  const [editingRequirementKey, setEditingRequirementKey] = useState<'__single__' | null>(null);
 
   function handleLocationSelect(address: string, lat: number, lng: number) {
     setLocationModalOpen(false);
@@ -1828,43 +1557,16 @@ export default function CreateCampaignScreen() {
       }, { min: Infinity, max: 0 })
     : { min: form.aiBudgetMin, max: form.aiBudgetMax };
 
-  // One row per role for the Publish step's "People Needed" card — single-role
-  // campaigns get one synthetic row from the top-level form fields instead of
-  // a requirements[] entry, so the same card/row UI covers both modes.
-  function formatRequirementBudget(r: RequirementFormItem): string {
-    if (r.budgetType === 'FIXED') return `Rs. ${(r.budgetFixed ?? 0).toLocaleString()}`;
-    if (r.budgetType === 'RANGE') return `Rs. ${(r.budgetMin ?? 0).toLocaleString()} – ${(r.budgetMax ?? 0).toLocaleString()}`;
-    return t('createEvent.reqBudgetNegotiable');
-  }
-  const peopleRows = requirementMode === 'multiple' && form.requirements.length > 0
-    ? form.requirements.map((r) => ({
-        key: r.key,
-        label: r.categoryName ? `${r.categoryName} ×${r.quantity}` : t('createEvent.reqRoleLabel', { n: 1 }),
-        budget: formatRequirementBudget(r),
-        // Content Creator roles show what content they'll produce; every
-        // other role shows the free-text brief of what they should do.
-        work: r.categoryName === 'Content Creator'
-          ? summarizeDeliverables(r.deliverables, [], t)
-          : (r.description || undefined),
-        // Which roles hand over files vs. just show up and perform — the
-        // single most consequential per-role setting, since it decides
-        // whether that provider is ever asked to upload anything.
-        completion: completionLabel(r.completionType, t),
-        onEdit: () => setEditingRequirementKey(r.key),
-        onRemove: () => update('requirements', form.requirements.filter((req) => req.key !== r.key)),
-      }))
-    : [{
-        key: '__single__',
-        label: form.template ? `${form.template} ×${form.creatorsNeeded}` : String(form.creatorsNeeded),
-        budget: `Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}`,
-        work: summarizeDeliverables(form.deliverables, form.goals, t) || undefined,
-        completion: completionLabel(form.completionType, t),
-        onEdit: () => setEditingRequirementKey('__single__'),
-        onRemove: undefined as (() => void) | undefined,
-      }];
-  const editingRequirement = editingRequirementKey && editingRequirementKey !== '__single__'
-    ? form.requirements.find((r) => r.key === editingRequirementKey) ?? null
-    : null;
+  // The Publish step's "People Needed" card — one synthetic row from the
+  // top-level form fields (every campaign is a single content-creator ask).
+  const peopleRows = [{
+    key: '__single__',
+    label: form.template ? `${form.template} ×${form.creatorsNeeded}` : String(form.creatorsNeeded),
+    budget: `Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}`,
+    work: summarizeDeliverables(form.deliverables, form.goals, t) || undefined,
+    onEdit: () => setEditingRequirementKey('__single__'),
+    onRemove: undefined as (() => void) | undefined,
+  }];
 
   // Drives the Draft screen's "double-check this" callout. Backend flags up
   // to 2 low-confidence fields via `needsInput`; only the "what/when/where"
@@ -2260,7 +1962,6 @@ export default function CreateCampaignScreen() {
                         label={row.label}
                         budget={row.budget}
                         work={row.work}
-                        completion={row.completion}
                         onEdit={row.onEdit}
                         onRemove={row.onRemove}
                         colors={C}
@@ -3808,16 +3509,12 @@ export default function CreateCampaignScreen() {
         )}
       </BottomSheet>
 
-      {/* Publish step's "People Needed" pencil icons — edit one role's budget
-          + content at a time, without leaving the summary. */}
+      {/* Publish step's "People Needed" pencil — edit the campaign's budget +
+          content ask without leaving the summary. */}
       <BottomSheet
-        visible={editingRequirementKey !== null || draftRequirement !== null}
-        onClose={() => { setEditingRequirementKey(null); setDraftRequirement(null); }}
-        title={draftRequirement
-          ? t('createEvent.reqAddRoleTitle')
-          : editingRequirement
-            ? (editingRequirement.categoryName ? `${editingRequirement.categoryName} ×${editingRequirement.quantity}` : t('createEvent.reqRoleLabel', { n: 1 }))
-            : t('createEvent.secCreatorsNeededTitle')}>
+        visible={editingRequirementKey !== null}
+        onClose={() => setEditingRequirementKey(null)}
+        title={t('createEvent.secCreatorsNeededTitle')}>
         {editingRequirementKey === '__single__' && (
           <View style={{ gap: 8 }}>
             <Text style={[rq.fieldLabel, { color: C.textSecondary, marginTop: 0 }]}>{t('createEvent.secBudgetTitle')}</Text>
@@ -3834,40 +3531,6 @@ export default function CreateCampaignScreen() {
               colors={C}
               t={t}
             />
-          </View>
-        )}
-        {editingRequirement && !draftRequirement && (
-          <RequirementRoleEditor
-            item={editingRequirement}
-            providerCategoryOptions={providerCategoryOptions}
-            onChange={(next) => update('requirements', form.requirements.map((r) => (r.key === next.key ? next : r)))}
-            colors={C}
-            t={t}
-          />
-        )}
-        {/* Add flow — the draft only joins form.requirements when this button
-            is tapped, so a swipe-down dismiss leaves the campaign untouched. */}
-        {draftRequirement && (
-          <View style={{ gap: 8 }}>
-            <RequirementRoleEditor
-              item={draftRequirement}
-              providerCategoryOptions={providerCategoryOptions}
-              onChange={setDraftRequirement}
-              colors={C}
-              t={t}
-            />
-            <Pressable
-              style={[rq.commitBtn, { backgroundColor: C.brinjal1 }]}
-              accessibilityRole="button"
-              accessibilityLabel={t('createEvent.reqAddRoleConfirm')}
-              onPress={() => {
-                update('requirements', [...form.requirements, draftRequirement]);
-                if (reviewErrors.requirements) setReviewErrors((e) => ({ ...e, requirements: undefined }));
-                setDraftRequirement(null);
-              }}>
-              <FontAwesome5 name="plus" size={13} color="#fff" />
-              <Text style={rq.commitBtnText}>{t('createEvent.reqAddRoleConfirm')}</Text>
-            </Pressable>
           </View>
         )}
       </BottomSheet>
