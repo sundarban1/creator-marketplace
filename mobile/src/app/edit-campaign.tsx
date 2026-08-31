@@ -26,11 +26,11 @@ import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import {
-  DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables, completionLabel,
+  DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
 import {
   SectionCard, ChipGroup, ChipMultiGroup, BudgetTierPicker, Stepper,
-  DeliverablesCounterList, HashtagEditor, FeaturedToggle, CompletionTypePicker, sc,
+  DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
 import { ListingHeroCard, PreviewRow } from '@/features/business/components/CampaignSummary';
 import { eventOptionLabel } from '@/features/business/utils/eventOptionLabels';
@@ -144,9 +144,9 @@ type EditForm = {
   location: string;
   locationType: 'ONSITE' | 'REMOTE';
   isFeatured: boolean;
-  // Whether the provider completes the job in person (SERVICE — a DJ, an MC)
-  // or by submitting a digital output for review (DELIVERABLE). Null on
-  // campaigns created before this field existed. Locked once proposals exist.
+  // Legacy: the app no longer distinguishes SERVICE vs DELIVERABLE completion
+  // (it connects content creators only). Kept so an old campaign that carries a
+  // value still round-trips through the edit form unchanged.
   completionType: 'SERVICE' | 'DELIVERABLE' | null;
   // OPEN_EVENT fields
   eventDate: Date | null;
@@ -187,7 +187,7 @@ export default function EditCampaignScreen() {
   // Location/Venue use LocationSearchModal above instead; Deadline/Event Date
   // use the existing calOpen/eventCalOpen sheets below — same split as
   // create-campaign.tsx's Publish screen.
-  const [editingField, setEditingField] = useState<'title' | 'description' | 'image' | 'category' | 'hashtags' | 'people' | 'budget' | 'capacity' | 'benefits' | 'completionType' | null>(null);
+  const [editingField, setEditingField] = useState<'title' | 'description' | 'image' | 'category' | 'hashtags' | 'people' | 'budget' | 'capacity' | 'benefits' | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
     title: '', description: '', featureImageUrl: null, template: '',
     deliverables: DEFAULT_DELIVERABLES, hashtags: [], creatorsNeeded: '1', completionType: null,
@@ -487,15 +487,6 @@ export default function EditCampaignScreen() {
               colors={C}
               onPress={() => setCalOpen(true)}
             />
-            {/* Fixed for every free event — attend and post about it — so
-                there is nothing to choose or edit here, unlike the paid
-                campaign's Service/Deliverable classification below. */}
-            <PreviewRow
-              icon="share-alt"
-              label={t('createOpportunity.completionLabel')}
-              value={t('campaignDetail.freeCompletionTitle')}
-              colors={C}
-            />
             <PreviewRow
               icon="users"
               label={t('campaignDetail.fieldCapacity')}
@@ -531,16 +522,6 @@ export default function EditCampaignScreen() {
               // per-role budgets (locked, same as the roles list below) —
               // only single-role campaigns without proposals can edit it here.
               onPress={hasProposals || (campaign.requirements && campaign.requirements.length > 0) ? undefined : () => setEditingField('budget')}
-            />
-            <PreviewRow
-              icon={editForm.completionType === 'SERVICE' ? 'handshake' : 'cloud-upload-alt'}
-              label={t('createOpportunity.completionLabel')}
-              value={completionLabel(editForm.completionType, t)?.label ?? '—'}
-              colors={C}
-              // Same lock as budget/location: changing this after providers
-              // have applied would move the goalposts on what they signed up
-              // to hand over, so the backend rejects it once proposals exist.
-              onPress={hasProposals ? undefined : () => setEditingField('completionType')}
             />
             <PreviewRow
               icon="calendar-alt"
@@ -710,7 +691,6 @@ export default function EditCampaignScreen() {
           : editingField === 'hashtags' ? t('campaignDetail.sectionHashtags')
           : editingField === 'people' ? t('createOpportunity.peopleNeededTitle')
           : editingField === 'budget' ? t('createEvent.confirmSectionBudget')
-          : editingField === 'completionType' ? t('createOpportunity.completionLabel')
           : editingField === 'capacity' ? t('campaignDetail.fieldCapacity')
           : editingField === 'benefits' ? t('campaignDetail.sectionWhatYouGet')
           : ''
@@ -782,18 +762,6 @@ export default function EditCampaignScreen() {
             colors={C}
             error={editErrors.budgetMin || editErrors.budgetMax}
           />
-        )}
-        {editingField === 'completionType' && (
-          <View style={{ gap: 10 }}>
-            <CompletionTypePicker
-              value={editForm.completionType}
-              reason=""
-              onChange={(v) => updateEdit('completionType', v)}
-              colors={C}
-              t={t}
-            />
-            {hasProposals && <Text style={s.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
-          </View>
         )}
         {editingField === 'capacity' && (
           <Stepper value={Number(editForm.capacity) || 1} onChange={(v) => updateEdit('capacity', String(v))} colors={C} />

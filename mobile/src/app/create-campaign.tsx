@@ -68,112 +68,112 @@ import { ListingHeroCard, PreviewRow, AiGeneratingOverlay } from '@/features/bus
 // version of "what you need in Kolab", not a vague brand blurb.
 const PROMPT_EXAMPLES_BY_CATEGORY: Record<string, { en: [string, string]; ne: [string, string] }> = {
   'Restaurants': {
-    en: ['Need 3 food creators for a menu review — 2 reels + 5 photos each. Budget Rs. 15,000 total, shoot next week.', 'Need 3 content creators and 1 photographer for our restaurant opening. Rs. 20,000 total budget.'],
-    ne: ['मेनु रिभ्युका लागि ३ जना फूड क्रिएटर चाहियो — प्रत्येकबाट २ रिल + ५ फोटो। कुल बजेट रु. १५,०००, अर्को हप्ता सुटिङ।', 'हाम्रो रेस्टुरेन्ट उद्घाटनका लागि ३ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. २०,०००।'],
+    en: ['Need 3 food creators for a menu review — 2 reels + 5 photos each. Budget Rs. 15,000 total, shoot next week.', 'Need 4 content creators for our restaurant opening. Rs. 20,000 total budget.'],
+    ne: ['मेनु रिभ्युका लागि ३ जना फूड क्रिएटर चाहियो — प्रत्येकबाट २ रिल + ५ फोटो। कुल बजेट रु. १५,०००, अर्को हप्ता सुटिङ।', 'हाम्रो रेस्टुरेन्ट उद्घाटनका लागि ४ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. २०,०००।'],
   },
   'Cafés': {
-    en: ['Need 2 creators to try our new coffee blend and post 1 reel each. Budget Rs. 3,000 per creator.', 'Need 2 content creators and 1 photographer for our seasonal drinks menu shoot. Rs. 12,000 total.'],
-    ne: ['हाम्रो नयाँ कफी ब्लेन्ड चाखी प्रत्येकले १ रिल पोस्ट गर्न २ जना क्रिएटर चाहियो। प्रति क्रिएटर बजेट रु. ३,०००।', 'सिजनल ड्रिंक्स मेनु सुटका लागि २ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. १२,०००।'],
+    en: ['Need 2 creators to try our new coffee blend and post 1 reel each. Budget Rs. 3,000 per creator.', 'Need 3 content creators for our seasonal drinks menu launch. Rs. 12,000 total.'],
+    ne: ['हाम्रो नयाँ कफी ब्लेन्ड चाखी प्रत्येकले १ रिल पोस्ट गर्न २ जना क्रिएटर चाहियो। प्रति क्रिएटर बजेट रु. ३,०००।', 'सिजनल ड्रिंक्स मेनु लन्चका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १२,०००।'],
   },
   'Hotels': {
-    en: ['Need 1 travel creator for a hotel tour video — 1 reel + 10 photos. Budget Rs. 20,000, 2-night stay included.', 'Need 2 content creators and 1 photographer to showcase our weekend getaway package. Rs. 30,000 total + free stay.'],
-    ne: ['होटल टुर भिडियोका लागि १ जना ट्राभल क्रिएटर चाहियो — १ रिल + १० फोटो। बजेट रु. २०,०००, २ रात बसाइ सहित।', 'हाम्रो वीकेन्ड गेटअवे प्याकेज देखाउन २ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. ३०,००० + निःशुल्क बसाइ।'],
+    en: ['Need 1 travel creator for a hotel tour video — 1 reel + 10 photos. Budget Rs. 20,000, 2-night stay included.', 'Need 3 content creators to showcase our weekend getaway package. Rs. 30,000 total + free stay.'],
+    ne: ['होटल टुर भिडियोका लागि १ जना ट्राभल क्रिएटर चाहियो — १ रिल + १० फोटो। बजेट रु. २०,०००, २ रात बसाइ सहित।', 'हाम्रो वीकेन्ड गेटअवे प्याकेज देखाउन ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. ३०,००० + निःशुल्क बसाइ।'],
   },
   'Resorts': {
-    en: ['Need 2 travel vloggers for a resort review — 1 video + 8 photos each. Rs. 15,000 per creator, stay included.', 'Need 1 videographer and 2 content creators for a honeymoon package shoot. Rs. 35,000 total, 3-day shoot.'],
-    ne: ['रिसोर्ट समीक्षाका लागि २ जना ट्राभल भ्लगर चाहियो — प्रत्येकबाट १ भिडियो + ८ फोटो। प्रति क्रिएटर रु. १५,०००, बसाइ सहित।', 'हनिमुन प्याकेज सुटका लागि १ जना भिडियोग्राफर र २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. ३५,०००, ३ दिनको सुटिङ।'],
+    en: ['Need 2 travel vloggers for a resort review — 1 video + 8 photos each. Rs. 15,000 per creator, stay included.', 'Need 3 content creators for a honeymoon package promo. Rs. 35,000 total, 3-day shoot.'],
+    ne: ['रिसोर्ट समीक्षाका लागि २ जना ट्राभल भ्लगर चाहियो — प्रत्येकबाट १ भिडियो + ८ फोटो। प्रति क्रिएटर रु. १५,०००, बसाइ सहित।', 'हनिमुन प्याकेज प्रवर्द्धनका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. ३५,०००, ३ दिनको सुटिङ।'],
   },
   'Travel & Tourism': {
-    en: ['Need 2 travel creators to try our new holiday package — 1 reel + 1 blog each. Rs. 18,000 per creator.', 'Need 3 content creators and 1 photographer to document a group tour. Budget Rs. 40,000 total, 4-day trip.'],
-    ne: ['हाम्रो नयाँ हलिडे प्याकेज प्रयास गर्न २ जना ट्राभल क्रिएटर चाहियो — प्रत्येकबाट १ रिल + १ ब्लग। प्रति क्रिएटर रु. १८,०००।', 'ग्रुप टुर रेकर्ड गर्न ३ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. ४०,०००, ४ दिनको यात्रा।'],
+    en: ['Need 2 travel creators to try our new holiday package — 1 reel + 1 blog each. Rs. 18,000 per creator.', 'Need 4 content creators to document a group tour. Budget Rs. 40,000 total, 4-day trip.'],
+    ne: ['हाम्रो नयाँ हलिडे प्याकेज प्रयास गर्न २ जना ट्राभल क्रिएटर चाहियो — प्रत्येकबाट १ रिल + १ ब्लग। प्रति क्रिएटर रु. १८,०००।', 'ग्रुप टुर रेकर्ड गर्न ४ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. ४०,०००, ४ दिनको यात्रा।'],
   },
   'Trekking & Adventure': {
-    en: ['Need 2 adventure creators for a guided trek video — 1 vlog + 15 photos each. Rs. 20,000 per creator, 5-day trek.', 'Need 1 videographer and 1 photographer for our new trekking package. Budget Rs. 25,000 total, gear provided.'],
-    ne: ['गाइडेड ट्रेक भिडियोका लागि २ जना एडभेन्चर क्रिएटर चाहियो — प्रत्येकबाट १ भ्लग + १५ फोटो। प्रति क्रिएटर रु. २०,०००, ५ दिनको ट्रेक।', 'हाम्रो नयाँ ट्रेकिङ प्याकेज प्रवर्द्धनका लागि १ जना भिडियोग्राफर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. २५,०००, गियर उपलब्ध गराइनेछ।'],
+    en: ['Need 2 adventure creators for a guided trek video — 1 vlog + 15 photos each. Rs. 20,000 per creator, 5-day trek.', 'Need 2 content creators to promote our new trekking package. Budget Rs. 25,000 total, gear provided.'],
+    ne: ['गाइडेड ट्रेक भिडियोका लागि २ जना एडभेन्चर क्रिएटर चाहियो — प्रत्येकबाट १ भ्लग + १५ फोटो। प्रति क्रिएटर रु. २०,०००, ५ दिनको ट्रेक।', 'हाम्रो नयाँ ट्रेकिङ प्याकेज प्रवर्द्धनका लागि २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. २५,०००, गियर उपलब्ध गराइनेछ।'],
   },
   'Fashion & Clothing': {
-    en: ['Need 3 fashion creators for our collection launch — 1 reel + 5 photos each. Rs. 5,000 per creator.', 'Need 2 models and 1 photographer for an outfit styling shoot with our latest arrivals. Rs. 15,000 total.'],
-    ne: ['हाम्रो कलेक्सन लन्चका लागि ३ जना फेसन क्रिएटर चाहियो — प्रत्येकबाट १ रिल + ५ फोटो। प्रति क्रिएटर रु. ५,०००।', 'पछिल्ला वस्तुहरू समावेश गरी आउटफिट स्टाइलिङ सुटका लागि २ जना मोडेल र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. १५,०००।'],
+    en: ['Need 3 fashion creators for our collection launch — 1 reel + 5 photos each. Rs. 5,000 per creator.', 'Need 3 content creators for an outfit styling series with our latest arrivals. Rs. 15,000 total.'],
+    ne: ['हाम्रो कलेक्सन लन्चका लागि ३ जना फेसन क्रिएटर चाहियो — प्रत्येकबाट १ रिल + ५ फोटो। प्रति क्रिएटर रु. ५,०००।', 'पछिल्ला वस्तुहरू समावेश गरी आउटफिट स्टाइलिङ सिरिजका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १५,०००।'],
   },
   'Footwear': {
-    en: ['Need 2 creators to style and showcase our new footwear collection — 1 reel each. Rs. 6,000 per creator.', 'Need 1 model and 1 photographer for our new footwear collection shoot. Rs. 10,000 total.'],
-    ne: ['हाम्रो नयाँ जुत्ता कलेक्सन स्टाइल गरी देखाउन २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ६,०००।', 'हाम्रो नयाँ जुत्ता कलेक्सन सुटका लागि १ जना मोडेल र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. १०,०००।'],
+    en: ['Need 2 creators to style and showcase our new footwear collection — 1 reel each. Rs. 6,000 per creator.', 'Need 2 content creators for our new footwear collection promo. Rs. 10,000 total.'],
+    ne: ['हाम्रो नयाँ जुत्ता कलेक्सन स्टाइल गरी देखाउन २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ६,०००।', 'हाम्रो नयाँ जुत्ता कलेक्सन प्रवर्द्धनका लागि २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १०,०००।'],
   },
   'Beauty & Cosmetics': {
-    en: ['Need 2 makeup artists for a get-ready-with-me collab — 1 reel each. Rs. 7,000 per creator.', 'Need 1 makeup artist and 2 content creators to review our new cosmetics line. Budget Rs. 18,000 total, products provided.'],
-    ne: ['गेट-रेडी-विथ-मी सहकार्यका लागि २ जना मेकअप आर्टिस्ट चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ७,०००।', 'हाम्रो नयाँ कस्मेटिक्स लाइन समीक्षाका लागि १ जना मेकअप आर्टिस्ट र २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १८,०००, प्रोडक्ट उपलब्ध गराइनेछ।'],
+    en: ['Need 2 beauty creators for a get-ready-with-me collab — 1 reel each. Rs. 7,000 per creator.', 'Need 3 content creators to review our new cosmetics line. Budget Rs. 18,000 total, products provided.'],
+    ne: ['गेट-रेडी-विथ-मी सहकार्यका लागि २ जना ब्युटी क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ७,०००।', 'हाम्रो नयाँ कस्मेटिक्स लाइन समीक्षाका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १८,०००, प्रोडक्ट उपलब्ध गराइनेछ।'],
   },
   'Skincare & Personal Care': {
-    en: ['Need 2 skincare creators to try and review our new product line — 1 reel + 3 photos each. Rs. 6,000 per creator.', 'Need 2 content creators and 1 photographer for an honest 7-day skincare routine series. Budget Rs. 20,000 total.'],
-    ne: ['हाम्रो नयाँ प्रोडक्ट लाइन प्रयास गरी समीक्षा गर्न २ जना स्किनकेयर क्रिएटर चाहियो — प्रत्येकबाट १ रिल + ३ फोटो। प्रति क्रिएटर रु. ६,०००।', 'साँचो ७-दिने स्किनकेयर रुटिन सिरिजका लागि २ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. २०,०००।'],
+    en: ['Need 2 skincare creators to try and review our new product line — 1 reel + 3 photos each. Rs. 6,000 per creator.', 'Need 2 content creators for an honest 7-day skincare routine series. Budget Rs. 20,000 total.'],
+    ne: ['हाम्रो नयाँ प्रोडक्ट लाइन प्रयास गरी समीक्षा गर्न २ जना स्किनकेयर क्रिएटर चाहियो — प्रत्येकबाट १ रिल + ३ फोटो। प्रति क्रिएटर रु. ६,०००।', 'साँचो ७-दिने स्किनकेयर रुटिन सिरिजका लागि २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. २०,०००।'],
   },
   'Jewellery & Accessories': {
-    en: ['Need 2 creators to showcase our new jewellery collection — 5 photos + 1 reel each. Rs. 6,000 per creator.', 'Need 1 model and 1 photographer for a festive jewellery styling shoot. Rs. 12,000 total.'],
-    ne: ['हाम्रो नयाँ गहना कलेक्सन देखाउन २ जना क्रिएटर चाहियो — प्रत्येकबाट ५ फोटो + १ रिल। प्रति क्रिएटर रु. ६,०००।', 'चाडपर्व गहना स्टाइलिङ सुटका लागि १ जना मोडेल र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. १२,०००।'],
+    en: ['Need 2 creators to showcase our new jewellery collection — 5 photos + 1 reel each. Rs. 6,000 per creator.', 'Need 2 content creators for a festive jewellery styling series. Rs. 12,000 total.'],
+    ne: ['हाम्रो नयाँ गहना कलेक्सन देखाउन २ जना क्रिएटर चाहियो — प्रत्येकबाट ५ फोटो + १ रिल। प्रति क्रिएटर रु. ६,०००।', 'चाडपर्व गहना स्टाइलिङ सिरिजका लागि २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १२,०००।'],
   },
   'Retail & Shopping': {
-    en: ['Need 2 creators for a store haul video featuring new arrivals — 1 reel each. Rs. 6,000 per creator.', 'Need 2 content creators and 1 photographer to feature our seasonal sale. Budget Rs. 15,000 total.'],
-    ne: ['नयाँ सामानहरू समावेश गरी स्टोर हल भिडियोका लागि २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ६,०००।', 'हाम्रो सिजनल सेल फिचरका लागि २ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. १५,०००।'],
+    en: ['Need 2 creators for a store haul video featuring new arrivals — 1 reel each. Rs. 6,000 per creator.', 'Need 3 content creators to feature our seasonal sale. Budget Rs. 15,000 total.'],
+    ne: ['नयाँ सामानहरू समावेश गरी स्टोर हल भिडियोका लागि २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ६,०००।', 'हाम्रो सिजनल सेल फिचरका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १५,०००।'],
   },
   'E-commerce': {
-    en: ['Need 3 creators to promote our app and drive downloads — 1 reel each. Rs. 5,000 per creator.', 'Need 2 content creators and 1 videographer for an unboxing video of our bestselling products. Budget Rs. 14,000 total, products provided.'],
-    ne: ['हाम्रो एप प्रवर्द्धन गरी डाउनलोड बढाउन ३ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रा बेस्टसेलिङ प्रोडक्टहरू समावेश गरी अनबक्सिङ भिडियोका लागि २ जना कन्टेन्ट क्रिएटर र १ जना भिडियोग्राफर चाहियो। कुल बजेट रु. १४,०००, प्रोडक्ट उपलब्ध गराइनेछ।'],
+    en: ['Need 3 creators to promote our app and drive downloads — 1 reel each. Rs. 5,000 per creator.', 'Need 3 content creators for an unboxing series of our bestselling products. Budget Rs. 14,000 total, products provided.'],
+    ne: ['हाम्रो एप प्रवर्द्धन गरी डाउनलोड बढाउन ३ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रा बेस्टसेलिङ प्रोडक्टहरू समावेश गरी अनबक्सिङ सिरिजका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १४,०००, प्रोडक्ट उपलब्ध गराइनेछ।'],
   },
   'Food & Beverage Brands': {
-    en: ['Need 2 creators for a recipe collaboration using our product — 1 reel each. Rs. 5,000 per creator.', 'Need 2 content creators and 1 photographer to sample and review our new product launch. Budget Rs. 14,000 total.'],
-    ne: ['हाम्रो प्रोडक्ट प्रयोग गरी रेसिपी सहकार्यका लागि २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रो नयाँ प्रोडक्ट लन्च चाखी समीक्षाका लागि २ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. १४,०००।'],
+    en: ['Need 2 creators for a recipe collaboration using our product — 1 reel each. Rs. 5,000 per creator.', 'Need 3 content creators to sample and review our new product launch. Budget Rs. 14,000 total.'],
+    ne: ['हाम्रो प्रोडक्ट प्रयोग गरी रेसिपी सहकार्यका लागि २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रो नयाँ प्रोडक्ट लन्च चाखी समीक्षाका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १४,०००।'],
   },
   'Events & Entertainment': {
-    en: ['Need 2 creators to cover our upcoming event live — stories + 1 recap reel each. Rs. 8,000 per creator.', 'Need 5 content creators, 2 photographers and 1 DJ for our event. Rs. 50,000 total budget.'],
-    ne: ['हाम्रो आगामी कार्यक्रम लाइभ कभर गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट स्टोरी + १ रिकयाप रिल। प्रति क्रिएटर रु. ८,०००।', 'हाम्रो कार्यक्रमका लागि ५ जना कन्टेन्ट क्रिएटर, २ जना फोटोग्राफर र १ जना डीजे चाहियो। कुल बजेट रु. ५०,०००।'],
+    en: ['Need 2 creators to cover our upcoming event live — stories + 1 recap reel each. Rs. 8,000 per creator.', 'Need 5 content creators for our event. Rs. 50,000 total budget.'],
+    ne: ['हाम्रो आगामी कार्यक्रम लाइभ कभर गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट स्टोरी + १ रिकयाप रिल। प्रति क्रिएटर रु. ८,०००।', 'हाम्रो कार्यक्रमका लागि ५ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. ५०,०००।'],
   },
   'Fitness & Wellness': {
-    en: ['Need 2 fitness creators to promote our center — 1 reel + 1 story series each. Rs. 6,000 per creator.', 'Need 3 content creators and 1 photographer for a 7-day workout challenge collab. Budget Rs. 20,000 total, membership included.'],
-    ne: ['हाम्रो सेन्टर प्रवर्द्धन गर्न २ जना फिटनेस क्रिएटर चाहियो — प्रत्येकबाट १ रिल + १ स्टोरी सिरिज। प्रति क्रिएटर रु. ६,०००।', '७-दिने वर्कआउट च्यालेन्ज सहकार्यका लागि ३ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. २०,०००, मेम्बरसिप सहित।'],
+    en: ['Need 2 fitness creators to promote our center — 1 reel + 1 story series each. Rs. 6,000 per creator.', 'Need 3 content creators for a 7-day workout challenge collab. Budget Rs. 20,000 total, membership included.'],
+    ne: ['हाम्रो सेन्टर प्रवर्द्धन गर्न २ जना फिटनेस क्रिएटर चाहियो — प्रत्येकबाट १ रिल + १ स्टोरी सिरिज। प्रति क्रिएटर रु. ६,०००।', '७-दिने वर्कआउट च्यालेन्ज सहकार्यका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. २०,०००, मेम्बरसिप सहित।'],
   },
   'Education & Training': {
-    en: ['Need 3 creators to review our new course or app — 1 reel each. Rs. 5,000 per creator.', 'Need 2 content creators and 1 videographer to promote our new course launch. Budget Rs. 12,000 total.'],
-    ne: ['हाम्रो नयाँ कोर्स वा एप रिभ्यु गर्न ३ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रो नयाँ कोर्स लन्च प्रवर्द्धनका लागि २ जना कन्टेन्ट क्रिएटर र १ जना भिडियोग्राफर चाहियो। कुल बजेट रु. १२,०००।'],
+    en: ['Need 3 creators to review our new course or app — 1 reel each. Rs. 5,000 per creator.', 'Need 3 content creators to promote our new course launch. Budget Rs. 12,000 total.'],
+    ne: ['हाम्रो नयाँ कोर्स वा एप रिभ्यु गर्न ३ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रो नयाँ कोर्स लन्च प्रवर्द्धनका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १२,०००।'],
   },
   'Electronics & Mobile': {
-    en: ['Need 2 tech creators for an unboxing and review video. Rs. 8,000 per creator, device provided.', 'Need 2 content creators and 1 photographer to showcase our latest gadget launch. Budget Rs. 22,000 total.'],
-    ne: ['अनबक्सिङ र समीक्षा भिडियोका लागि २ जना टेक क्रिएटर चाहियो। प्रति क्रिएटर रु. ८,०००, डिभाइस उपलब्ध गराइनेछ।', 'हाम्रो पछिल्लो ग्याजेट लन्च देखाउनका लागि २ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. २२,०००।'],
+    en: ['Need 2 tech creators for an unboxing and review video. Rs. 8,000 per creator, device provided.', 'Need 3 content creators to showcase our latest gadget launch. Budget Rs. 22,000 total.'],
+    ne: ['अनबक्सिङ र समीक्षा भिडियोका लागि २ जना टेक क्रिएटर चाहियो। प्रति क्रिएटर रु. ८,०००, डिभाइस उपलब्ध गराइनेछ।', 'हाम्रो पछिल्लो ग्याजेट लन्च देखाउनका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. २२,०००।'],
   },
   'Technology & Software': {
-    en: ['Need 2 creators to demo our app and share an honest review — 1 reel each. Rs. 6,000 per creator.', 'Need 2 content creators and 1 videographer to try our new feature and give feedback. Budget Rs. 15,000 total.'],
-    ne: ['हाम्रो एप डेमो गरी साँचो समीक्षा साझा गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ६,०००।', 'हाम्रो नयाँ फिचर प्रयास गरी प्रतिक्रियाका लागि २ जना कन्टेन्ट क्रिएटर र १ जना भिडियोग्राफर चाहियो। कुल बजेट रु. १५,०००।'],
+    en: ['Need 2 creators to demo our app and share an honest review — 1 reel each. Rs. 6,000 per creator.', 'Need 3 content creators to try our new feature and give feedback. Budget Rs. 15,000 total.'],
+    ne: ['हाम्रो एप डेमो गरी साँचो समीक्षा साझा गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ६,०००।', 'हाम्रो नयाँ फिचर प्रयास गरी प्रतिक्रियाका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १५,०००।'],
   },
   'Automotive': {
-    en: ['Need 2 bike/car riders for a workshop and servicing video. Rs. 10,000 per creator.', 'Need 1 videographer and 1 content creator for a test drive review of our new model. Rs. 20,000 total.'],
-    ne: ['अटोमोबाइल वर्कशप र गाडी सर्भिसिङको भिडियोका लागि २ जना बाइक/कार राइडर क्रिएटर चाहियो। प्रति क्रिएटर रु. १०,०००।', 'हाम्रो नयाँ मोडलको टेस्ट ड्राइभ समीक्षाका लागि १ जना भिडियोग्राफर र १ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. २०,०००।'],
+    en: ['Need 2 bike/car riders for a workshop and servicing video. Rs. 10,000 per creator.', 'Need 2 content creators for a test drive review of our new model. Rs. 20,000 total.'],
+    ne: ['अटोमोबाइल वर्कशप र गाडी सर्भिसिङको भिडियोका लागि २ जना बाइक/कार राइडर क्रिएटर चाहियो। प्रति क्रिएटर रु. १०,०००।', 'हाम्रो नयाँ मोडलको टेस्ट ड्राइभ समीक्षाका लागि २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. २०,०००।'],
   },
   'Real Estate & Property': {
-    en: ['Need 1 creator for a site visit and property walkthrough video. Budget Rs. 12,000.', 'Need 1 photographer and 1 videographer for our new project launch. Rs. 25,000 total.'],
-    ne: ['साइट भिजिट र प्रोपर्टी वाकथ्रु भिडियोका लागि १ जना क्रिएटर चाहियो। बजेट रु. १२,०००।', 'हाम्रो नयाँ प्रोजेक्ट लन्चका लागि १ जना फोटोग्राफर र १ जना भिडियोग्राफर चाहियो। कुल बजेट रु. २५,०००।'],
+    en: ['Need 1 creator for a site visit and property walkthrough video. Budget Rs. 12,000.', 'Need 2 content creators for our new project launch. Rs. 25,000 total.'],
+    ne: ['साइट भिजिट र प्रोपर्टी वाकथ्रु भिडियोका लागि १ जना क्रिएटर चाहियो। बजेट रु. १२,०००।', 'हाम्रो नयाँ प्रोजेक्ट लन्चका लागि २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. २५,०००।'],
   },
   'Banking & FinTech': {
-    en: ['Need 3 creators to explain our new savings offer to their audience — 1 reel each. Rs. 6,000 per creator.', 'Need 2 content creators and 1 videographer to promote our app and its cashback rewards. Budget Rs. 16,000 total.'],
-    ne: ['हाम्रो नयाँ बचत अफर आफ्नो दर्शकलाई बुझाउन ३ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ६,०००।', 'हाम्रो एप र यसको क्यासब्याक रिवार्ड प्रवर्द्धनका लागि २ जना कन्टेन्ट क्रिएटर र १ जना भिडियोग्राफर चाहियो। कुल बजेट रु. १६,०००।'],
+    en: ['Need 3 creators to explain our new savings offer to their audience — 1 reel each. Rs. 6,000 per creator.', 'Need 3 content creators to promote our app and its cashback rewards. Budget Rs. 16,000 total.'],
+    ne: ['हाम्रो नयाँ बचत अफर आफ्नो दर्शकलाई बुझाउन ३ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ६,०००।', 'हाम्रो एप र यसको क्यासब्याक रिवार्ड प्रवर्द्धनका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १६,०००।'],
   },
   'Internet & Telecom': {
-    en: ['Need 2 creators to promote our new data plan launch — 1 reel each. Rs. 5,000 per creator.', 'Need 2 content creators and 1 photographer to test our network speed and share their experience. Budget Rs. 13,000 total.'],
-    ne: ['हाम्रो नयाँ डाटा प्लान लन्च प्रवर्द्धन गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रो नेटवर्क स्पीड परीक्षण र अनुभव साझा गर्नका लागि २ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. १३,०००।'],
+    en: ['Need 2 creators to promote our new data plan launch — 1 reel each. Rs. 5,000 per creator.', 'Need 3 content creators to test our network speed and share their experience. Budget Rs. 13,000 total.'],
+    ne: ['हाम्रो नयाँ डाटा प्लान लन्च प्रवर्द्धन गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रो नेटवर्क स्पीड परीक्षण र अनुभव साझा गर्नका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १३,०००।'],
   },
   'Healthcare & Medical': {
-    en: ['Need 2 creators to promote our free health checkup camp — 1 reel each. Rs. 5,000 per creator.', 'Need 1 content creator and 1 photographer to raise awareness about our new service. Budget Rs. 11,000 total.'],
-    ne: ['हाम्रो निःशुल्क स्वास्थ्य जाँच शिविर प्रवर्द्धन गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रो नयाँ सेवाको बारेमा सचेतना फैलाउनका लागि १ जना कन्टेन्ट क्रिएटर र १ जना फोटोग्राफर चाहियो। कुल बजेट रु. ११,०००।'],
+    en: ['Need 2 creators to promote our free health checkup camp — 1 reel each. Rs. 5,000 per creator.', 'Need 2 content creators to raise awareness about our new service. Budget Rs. 11,000 total.'],
+    ne: ['हाम्रो निःशुल्क स्वास्थ्य जाँच शिविर प्रवर्द्धन गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल। प्रति क्रिएटर रु. ५,०००।', 'हाम्रो नयाँ सेवाको बारेमा सचेतना फैलाउनका लागि २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. ११,०००।'],
   },
   'Home & Furniture': {
-    en: ['Need 2 creators for a home styling and interior showcase video. Rs. 8,000 per creator.', 'Need 1 photographer and 2 content creators to feature our new furniture collection. Budget Rs. 18,000 total.'],
-    ne: ['होम स्टाइलिङ र इन्टिरियर देखाउने भिडियोका लागि २ जना क्रिएटर चाहियो। प्रति क्रिएटर रु. ८,०००।', 'हाम्रो नयाँ फर्निचर कलेक्सन फिचरका लागि १ जना फोटोग्राफर र २ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १८,०००।'],
+    en: ['Need 2 creators for a home styling and interior showcase video. Rs. 8,000 per creator.', 'Need 3 content creators to feature our new furniture collection. Budget Rs. 18,000 total.'],
+    ne: ['होम स्टाइलिङ र इन्टिरियर देखाउने भिडियोका लागि २ जना क्रिएटर चाहियो। प्रति क्रिएटर रु. ८,०००।', 'हाम्रो नयाँ फर्निचर कलेक्सन फिचरका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. १८,०००।'],
   },
 };
 
 // Falls back to this when the business hasn't selected a category yet, or
 // selected one not covered above (e.g. an admin just added it).
 const GENERIC_PROMPT_EXAMPLES: { en: [string, string]; ne: [string, string] } = {
-  en: ['Need 2 creators to promote our brand — 1 reel + 3 photos each. Budget Rs. 6,000 per creator.', 'Need 3 content creators, 1 photographer and 1 DJ for our event. Rs. 40,000 total budget.'],
-  ne: ['हाम्रो ब्रान्ड प्रवर्द्धन गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल + ३ फोटो। प्रति क्रिएटर बजेट रु. ६,०००।', 'हाम्रो कार्यक्रमका लागि ३ जना कन्टेन्ट क्रिएटर, १ जना फोटोग्राफर र १ जना डीजे चाहियो। कुल बजेट रु. ४०,०००।'],
+  en: ['Need 2 creators to promote our brand — 1 reel + 3 photos each. Budget Rs. 6,000 per creator.', 'Need 4 content creators for our event. Rs. 40,000 total budget.'],
+  ne: ['हाम्रो ब्रान्ड प्रवर्द्धन गर्न २ जना क्रिएटर चाहियो — प्रत्येकबाट १ रिल + ३ फोटो। प्रति क्रिएटर बजेट रु. ६,०००।', 'हाम्रो कार्यक्रमका लागि ४ जना कन्टेन्ट क्रिएटर चाहियो। कुल बजेट रु. ४०,०००।'],
 };
 
 // Free Invitation flow's own examples — deliberately never mention money
@@ -425,11 +425,9 @@ const EXCHANGE_OPTIONS = [
 
 const ROLE_TYPE_OPTIONS = [
   'Content Creators',
+  'UGC Creators',
   'Influencers',
-  'Photographers',
-  'Bloggers',
-  'Actors',
-  'Musicians',
+  'Social Media Creators',
   'Other',
 ];
 
@@ -1209,7 +1207,7 @@ export default function CreateCampaignScreen() {
   // screens — null means none. Location uses the LocationSearchModal above
   // instead (already built, no need for a second picker); Paid's per-role
   // editing uses its own sheet instead (see editingRequirementKey below).
-  const [editingField, setEditingField] = useState<'title' | 'description' | 'category' | 'budget' | 'roles' | 'deliverables' | 'image' | 'hashtags' | 'offerings' | 'exchangeType' | 'expectedContent' | 'roleTypes' | 'completionType' | null>(null);
+  const [editingField, setEditingField] = useState<'title' | 'description' | 'category' | 'budget' | 'roles' | 'deliverables' | 'image' | 'hashtags' | 'offerings' | 'exchangeType' | 'expectedContent' | 'roleTypes' | null>(null);
   // Publish step's "People Needed" card — tap a role's pencil icon to edit
   // just its budget + content in a sheet, without leaving the summary.
   // '__single__' edits the single-role form.aiBudgetMin/Max + form.deliverables
@@ -1321,10 +1319,9 @@ export default function CreateCampaignScreen() {
     try {
       const draft = await campaignService.generateWithAi(prompt, inputSource);
       setForm((prev) => ({ ...prev, ...mapAiCampaignDraftToForm(draft, prompt, prev, providerCategoryOptions) }));
-      // Never silently invent a breakdown — only switch modes when the AI
-      // itself populated requirements; the business can still toggle either
-      // way manually once in the roles step.
-      setRequirementMode(draft.requirements.length > 0 ? 'multiple' : 'single');
+      // The app connects content creators with businesses only — every campaign
+      // is a single content-creator ask, no multi-role breakdown.
+      setRequirementMode('single');
       setAiPromptText('');
       setPhase(targetPhase);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -1875,21 +1872,17 @@ export default function CreateCampaignScreen() {
   // secondary — silently accepted). Location also gets a defensive local
   // check, since the Describe screen has no location field for the AI to
   // anchor a confident guess against.
-  const draftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'deadline' || f === 'location' || f === 'completionType')
+  const draftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'deadline' || f === 'location')
     || (form.locationType === 'ONSITE' && !form.location.trim());
 
   // Open Event's needsInput vocabulary is narrower (no 'deadline' — see
   // EVENT_NEEDS_INPUT_FIELDS on the backend) — category/location are the
   // "what/where" required tier here; venue is the defensive local check
   // (inviteDescribe has no venue field, mirroring the Paid flow's location check).
-  // 'completionType' is included like the Paid flow — an event can now be
-  // switched to Service/Deliverable completion on the Publish screen instead
-  // of the default "attend and share" expectation, so an uncertain AI guess
-  // is worth flagging same as there. 'eventDate' IS in the tier: when the
-  // brand never said when the event is, the date on the draft is a bare
-  // seven-days-out placeholder, and publishing that unchallenged is exactly
-  // how an invitation goes out on a day nobody chose.
-  const inviteDraftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'location' || f === 'eventDate' || f === 'completionType')
+  // 'eventDate' IS in the tier: when the brand never said when the event is,
+  // the date on the draft is a bare seven-days-out placeholder, and publishing
+  // that unchallenged is exactly how an invitation goes out on a day nobody chose.
+  const inviteDraftNeedsAttention = form.needsInput.some((f) => f === 'category' || f === 'location' || f === 'eventDate')
     || (form.locationType === 'ONSITE' && !form.venue.trim());
 
   // Three independent "tracks" now share this one screen: the new 3-step
@@ -2239,13 +2232,7 @@ export default function CreateCampaignScreen() {
                   label={t('createEvent.confirmSectionBudget')}
                   value={`Rs. ${confirmBudgetRange.min.toLocaleString()} – ${confirmBudgetRange.max.toLocaleString()}`}
                   colors={C}
-                  // Multi-role campaigns show an aggregate spanning every
-                  // role's budget (see confirmBudgetRange) — there's no single
-                  // number to edit here, so those edit each role's own budget
-                  // from the People Needed card below instead.
-                  onPress={requirementMode === 'multiple' && form.requirements.length > 0
-                    ? undefined
-                    : () => setEditingField('budget')}
+                  onPress={() => setEditingField('budget')}
                 />
                 <PreviewRow
                   icon="calendar-alt"
@@ -2253,15 +2240,6 @@ export default function CreateCampaignScreen() {
                   value={form.deadline ? fmtDate(form.deadline) : '—'}
                   colors={C}
                   onPress={() => setDeadlinePickerOpen(true)}
-                />
-                <PreviewRow
-                  icon={form.completionType === 'SERVICE' ? 'handshake' : 'cloud-upload-alt'}
-                  label={t('createOpportunity.completionLabel')}
-                  value={form.completionType === 'SERVICE' ? t('createOpportunity.completionServiceTitle')
-                    : form.completionType === 'DELIVERABLE' ? t('createOpportunity.completionDeliverableTitle')
-                    : '—'}
-                  colors={C}
-                  onPress={() => setEditingField('completionType')}
                   last
                 />
                 {/* Publish silently refuses on a below-minimum budget
@@ -2290,42 +2268,6 @@ export default function CreateCampaignScreen() {
                       />
                     ))}
                   </View>
-                  {requirementMode === 'multiple' && (
-                    <>
-                      {reviewErrors.requirements && <Text style={rq.errorText}>{reviewErrors.requirements}</Text>}
-                      {form.requirements.length < 10 && (
-                        <Pressable
-                          style={[rq.addBtn, { borderColor: C.brinjal1 }]}
-                          onPress={() => {
-                            const first = providerCategoryOptions[0];
-                            const next: RequirementFormItem = {
-                              key: `local-${Date.now()}-${form.requirements.length}`,
-                              categoryId:    first?.id ?? '',
-                              categoryName:  first?.label ?? '',
-                              categoryIcon:  first?.icon ?? 'user',
-                              categoryColor: first?.color ?? '#7c3aed',
-                              quantity: 1,
-                              budgetType: 'FIXED',
-                              budgetFixed: null,
-                              budgetMin: null,
-                              budgetMax: null,
-                              format: [],
-                              deliverables: { ...DEFAULT_DELIVERABLES },
-                              description: '',
-                              completionType: null,
-                              completionReason: '',
-                            };
-                            // Held as a draft until the sheet's "Add role"
-                            // button commits it — dismissing the sheet
-                            // discards it instead of leaving a blank role.
-                            setDraftRequirement(next);
-                          }}>
-                          <FontAwesome5 name="plus" size={13} color={C.brinjal1} />
-                          <Text style={[rq.addBtnText, { color: C.brinjal1 }]}>{t('createEvent.reqAddRole')}</Text>
-                        </Pressable>
-                      )}
-                    </>
-                  )}
                 </View>
               </SectionCard>
 
@@ -2703,17 +2645,6 @@ export default function CreateCampaignScreen() {
                   value={eventOptionLabels(form.exchangeType, 'exchange', t).join(', ') || '—'}
                   colors={C}
                   onPress={() => setEditingField('exchangeType')}
-                />
-                <PreviewRow
-                  icon={form.completionType === 'SERVICE' ? 'handshake'
-                    : form.completionType === 'DELIVERABLE' ? 'cloud-upload-alt'
-                    : 'share-alt'}
-                  label={t('createOpportunity.completionLabel')}
-                  value={form.completionType === 'SERVICE' ? t('createOpportunity.completionServiceTitle')
-                    : form.completionType === 'DELIVERABLE' ? t('createOpportunity.completionDeliverableTitle')
-                    : t('campaignDetail.freeCompletionTitle')}
-                  colors={C}
-                  onPress={() => setEditingField('completionType')}
                 />
                 <PreviewRow
                   icon="map-marker-alt"
@@ -3169,80 +3100,10 @@ export default function CreateCampaignScreen() {
                 </View>
               </View>
 
-              {/* Single role vs multiple distinct provider roles — opt-in,
-                  auto-set by the AI when it detects a multi-role brief, but
-                  always user-editable here regardless of how it was set. */}
-              <SectionCard title={t('createEvent.reqModeTitle')} sub={t('createEvent.reqModeSub')} icon="users" colors={C}>
-                <TabSlider
-                  tabs={[
-                    { key: 'single',   label: t('createEvent.reqModeSingle'),   icon: 'user' },
-                    { key: 'multiple', label: t('createEvent.reqModeMultiple'), icon: 'users' },
-                  ]}
-                  active={requirementMode}
-                  onChange={(k) => {
-                    setRequirementMode(k as 'single' | 'multiple');
-                    if (reviewErrors.requirements) setReviewErrors((e) => ({ ...e, requirements: undefined }));
-                  }}
-                  justify
-                />
+              {/* Creators Needed — every campaign is a single content-creator ask. */}
+              <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} icon="user-plus" colors={C}>
+                <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
               </SectionCard>
-
-              {requirementMode === 'single' ? (
-                <>
-                  {/* Creators Needed */}
-                  <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} icon="user-plus" colors={C}>
-                    <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
-                  </SectionCard>
-                </>
-              ) : (
-                /* Requirements repeater — one card per distinct provider role */
-                <SectionCard title={t('createEvent.reqListTitle')} sub={t('createEvent.reqListSub')} icon="user-plus" colors={C}>
-                  <View style={{ gap: 10 }}>
-                    {form.requirements.map((item, i) => (
-                      <RequirementCard
-                        key={item.key}
-                        item={item}
-                        index={i}
-                        providerCategoryOptions={providerCategoryOptions}
-                        onChange={(next) => update('requirements', form.requirements.map((r) => (r.key === item.key ? next : r)))}
-                        onRemove={() => update('requirements', form.requirements.filter((r) => r.key !== item.key))}
-                        colors={C}
-                        t={t}
-                      />
-                    ))}
-                    {reviewErrors.requirements && <Text style={rq.errorText}>{reviewErrors.requirements}</Text>}
-                    {form.requirements.length < 10 && (
-                      <Pressable
-                        style={[rq.addBtn, { borderColor: C.brinjal1 }]}
-                        onPress={() => {
-                          const first = providerCategoryOptions[0];
-                          const next: RequirementFormItem = {
-                            key: `local-${Date.now()}-${form.requirements.length}`,
-                            categoryId:    first?.id ?? '',
-                            categoryName:  first?.label ?? '',
-                            categoryIcon:  first?.icon ?? 'user',
-                            categoryColor: first?.color ?? '#7c3aed',
-                            quantity: 1,
-                            budgetType: 'FIXED',
-                            budgetFixed: null,
-                            budgetMin: null,
-                            budgetMax: null,
-                            format: [],
-                            deliverables: { ...DEFAULT_DELIVERABLES },
-                            description: '',
-                            completionType: null,
-                            completionReason: '',
-                          };
-                          update('requirements', [...form.requirements, next]);
-                          if (reviewErrors.requirements) setReviewErrors((e) => ({ ...e, requirements: undefined }));
-                        }}>
-                        <FontAwesome5 name="plus" size={13} color={C.brinjal1} />
-                        <Text style={[rq.addBtnText, { color: C.brinjal1 }]}>{t('createEvent.reqAddRole')}</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                </SectionCard>
-              )}
 
               {/* Actions */}
               <View style={s.reviewActions}>
@@ -3634,33 +3495,15 @@ export default function CreateCampaignScreen() {
                     the Roles step (there's no separate audience picker anymore) —
                     folds in what used to be a separate, redundant Roles/Creators
                     Needed row. */}
-                {requirementMode === 'multiple' ? (
-                  <PreviewRow
-                    icon="users"
-                    label={t('createEvent.confirmSectionWho')}
-                    value={form.requirements.map((r) => `${r.categoryName} ×${r.quantity}`).join(', ') || '—'}
-                    colors={C}
-                  />
-                ) : (
-                  <PreviewRow
-                    icon="users"
-                    label={t('createEvent.confirmSectionWho')}
-                    value={form.template ? `${form.template} (${form.creatorsNeeded})` : String(form.creatorsNeeded)}
-                    colors={C}
-                  />
-                )}
+                <PreviewRow
+                  icon="users"
+                  label={t('createEvent.confirmSectionWho')}
+                  value={form.template ? `${form.template} (${form.creatorsNeeded})` : String(form.creatorsNeeded)}
+                  colors={C}
+                />
                 <PreviewRow icon="film" label={t('createEvent.confirmSectionDeliverables')} value={summarizeDeliverables(form.deliverables, form.goals, t)} colors={C} />
                 <PreviewRow icon="money-bill-alt" label={t('createEvent.confirmSectionBudget')} value={`Rs. ${confirmBudgetRange.min.toLocaleString()} – ${confirmBudgetRange.max.toLocaleString()}`} colors={C} />
-                <PreviewRow icon="calendar-alt" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} />
-                <PreviewRow
-                  icon={form.completionType === 'SERVICE' ? 'handshake' : 'cloud-upload-alt'}
-                  label={t('createOpportunity.completionLabel')}
-                  value={form.completionType === 'SERVICE' ? t('createOpportunity.completionServiceTitle')
-                    : form.completionType === 'DELIVERABLE' ? t('createOpportunity.completionDeliverableTitle')
-                    : '—'}
-                  colors={C}
-                  last
-                />
+                <PreviewRow icon="calendar-alt" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} last />
               </View>
 
               {/* Featured toggle */}
@@ -3862,7 +3705,6 @@ export default function CreateCampaignScreen() {
           : editingField === 'exchangeType' ? t('createInvitation.exchangeLabel')
           : editingField === 'expectedContent' ? t('createInvitation.contentDetailsLabel')
           : editingField === 'roleTypes' ? t('createInvitation.invitingLabel')
-          : editingField === 'completionType' ? t('createOpportunity.completionLabel')
           : ''
         }>
         {editingField === 'title' && (
@@ -3963,15 +3805,6 @@ export default function CreateCampaignScreen() {
         )}
         {editingField === 'roleTypes' && (
           <ChipMultiGroup options={ROLE_TYPE_OPTIONS} values={form.roleTypes} onChange={(v) => update('roleTypes', v)} colors={C} />
-        )}
-        {editingField === 'completionType' && (
-          <CompletionTypePicker
-            value={form.completionType}
-            reason={form.completionReason}
-            onChange={(v) => setForm((f) => ({ ...f, completionType: v, completionReason: v === f.completionType ? f.completionReason : '' }))}
-            colors={C}
-            t={t}
-          />
         )}
       </BottomSheet>
 

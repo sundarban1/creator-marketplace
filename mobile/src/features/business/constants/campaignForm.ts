@@ -5,17 +5,6 @@ import type { TFn } from '@/context/LanguageContext';
 
 export const GOAL_OPTIONS = ['Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement'];
 
-export const CREATOR_TYPES = [
-  'Food Creator',
-  'Travel Creator',
-  'Lifestyle Creator',
-  'Fashion Creator',
-  'Tech Creator',
-  'Fitness Creator',
-  'Student Creator',
-  'Any Creator',
-];
-
 export const DELIVERABLE_TYPES: { key: string; labelKey: string }[] = [
   { key: 'REEL',                  labelKey: 'createEvent.deliverableReel' },
   { key: 'STORY',                 labelKey: 'createEvent.deliverableStory' },
