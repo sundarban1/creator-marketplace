@@ -76,7 +76,7 @@ const COPY = {
       },
       categories: {
         heading: 'Instagram content categories on Kolab',
-        paragraph: `Instagram creators on Kolab list categories including ${INSTAGRAM_CATEGORIES_EN.join(', ')}, and more — from a Lalitpur fashion creator building outfit content around local boutiques, to a Bhaktapur photographer shooting product flat-lays, to a travel creator covering Chitwan and beyond for Reels. Filtering by category means a brand looking for, say, a beauty-focused Instagram creator in Kathmandu doesn't have to sift through unrelated profiles to find one.`,
+        paragraph: `Instagram creators on Kolab list categories including ${INSTAGRAM_CATEGORIES_EN.join(', ')}, and more — from a Lalitpur fashion creator building outfit content around local boutiques, to a Bhaktapur product creator shooting flat-lay Reels, to a travel creator covering Chitwan and beyond for Reels. Filtering by category means a brand looking for, say, a beauty-focused Instagram creator in Kathmandu doesn't have to sift through unrelated profiles to find one.`,
         note: "Because Instagram spans feed posts, Reels, and Stories, it's worth specifying which format matters most for your campaign when you post it — a creator strong in Reels isn't automatically the right fit for a polished feed post, and vice versa.",
       },
       howToHire: {
@@ -157,7 +157,7 @@ const COPY = {
       },
       categories: {
         heading: 'Kolab मा Instagram सामग्री श्रेणीहरू',
-        paragraph: `Kolab का Instagram क्रिएटरहरूले ${INSTAGRAM_CATEGORIES_NE.join(', ')}, र अरू धेरै श्रेणी सूचीबद्ध गर्छन् — स्थानीय बुटिकहरूको वरिपरि आउटफिट सामग्री बनाउने ललितपुरको फेसन क्रिएटरदेखि, प्रोडक्ट फ्ल्याट-ले खिच्ने भक्तपुरको फोटोग्राफर, र Reels का लागि चितवन र त्यसभन्दा बाहिर कभर गर्ने ट्राभल क्रिएटरसम्म। श्रेणी अनुसार फिल्टर गर्नु भनेको, उदाहरणका लागि, काठमाडौंमा ब्युटी-केन्द्रित Instagram क्रिएटर खोज्ने ब्रान्डले सम्बन्धित नभएका प्रोफाइलहरू छान्नु पर्दैन।`,
+        paragraph: `Kolab का Instagram क्रिएटरहरूले ${INSTAGRAM_CATEGORIES_NE.join(', ')}, र अरू धेरै श्रेणी सूचीबद्ध गर्छन् — स्थानीय बुटिकहरूको वरिपरि आउटफिट सामग्री बनाउने ललितपुरको फेसन क्रिएटरदेखि, फ्ल्याट-ले Reels बनाउने भक्तपुरको प्रोडक्ट क्रिएटर, र Reels का लागि चितवन र त्यसभन्दा बाहिर कभर गर्ने ट्राभल क्रिएटरसम्म। श्रेणी अनुसार फिल्टर गर्नु भनेको, उदाहरणका लागि, काठमाडौंमा ब्युटी-केन्द्रित Instagram क्रिएटर खोज्ने ब्रान्डले सम्बन्धित नभएका प्रोफाइलहरू छान्नु पर्दैन।`,
         note: 'Instagram फिड पोस्ट, Reels, र Stories सबैमा फैलिने भएकाले, क्याम्पेन पोस्ट गर्दा कुन ढाँचा सबैभन्दा महत्त्वपूर्ण छ भनी स्पष्ट पार्नु राम्रो हुन्छ — Reels मा बलियो क्रिएटर स्वतः पालिस गरिएको फिड पोस्टका लागि उपयुक्त हुँदैन, र उल्टो पनि त्यस्तै हो।',
       },
       howToHire: {
