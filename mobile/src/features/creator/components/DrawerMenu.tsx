@@ -48,6 +48,7 @@ const ACCOUNT_ITEMS: NavItem[] = [
   { iconName: 'life-ring', faName: 'life-ring',  labelKey: 'drawer.support',            route: '/(creator)/settings?section=support',   color: '#0891B2' },
   { iconName: 'balance-scale', faName: 'balance-scale',  labelKey: 'drawer.legal',              route: '/(creator)/settings?section=legal',     color: '#6366F1' },
   { iconName: 'cog',        labelKey: 'drawer.settings',          route: '/(creator)/settings',                  color: '#6B7280' },
+  { iconName: 'info-circle', faName: 'info-circle', labelKey: 'drawer.aboutUs',           route: '/about-us',                             color: '#8B5CF6' },
 ];
 
 type Props = {

@@ -16,6 +16,17 @@ export function fmtDate(d: Date) {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+// "H:M" / "HH:MM" (any zero-padding) -> canonical "HH:mm", or null if invalid.
+export function normalizeHHmm(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(raw.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return `${String(h).padStart(2, '0')}:${m[2]}`;
+}
+
 // Maps a generated draft into FormData fields — shared by both the text and
 // audio prompt modes (handleGenerateWithAi/handleGenerateEventWithAi), so the
 // two input paths can never drift out of sync on how a draft gets applied.
@@ -119,6 +130,10 @@ export function mapAiEventDraftToForm(draft: AiEventDraft, aiPrompt: string, pre
     expectedContent: draft.expectedContent ?? '',
     capacity:    draft.capacity,
     eventDate,
+    // The brand-stated start time, normalised to "HH:mm" — kept as its own
+    // field (not folded into eventDate) so the edit-lock and invitation can
+    // reason about it directly.
+    eventTime:   normalizeHHmm(draft.eventTime) ?? prev.eventTime,
     deadline:    regDeadline,
     // Only overwrite a venue the brand hasn't already typed on the setup
     // screen — their own entry is more reliable than an inferred one.

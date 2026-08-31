@@ -21,6 +21,8 @@ export type FormData = {
   // Open Event / Free Invitation fields
   eventType:    'PAID_CAMPAIGN' | 'OPEN_EVENT';
   eventDate:    Date | null;
+  // Open-event start time as "HH:mm" (24h); null = none.
+  eventTime:    string | null;
   venue:        string;
   capacity:     number;
   // What the business is offering attendees (OFFERING_OPTIONS chips).

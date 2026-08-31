@@ -9,6 +9,7 @@ import type { UpdateBusinessProfileInput, AddSocialAccountInput, UpdateSocialAcc
 import { translateFields, translateMany } from '../../utils/translation';
 import { deriveCityFromLocation } from '../../utils/geo';
 import { analyticsService } from '../analytics/analytics.service';
+import { invitationService } from '../campaign/invitation/invitation.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
 
@@ -83,6 +84,17 @@ export class BusinessService {
     const updated = await this.repo.update(userId, rest);
 
     logActivity({ userId, action: ActivityAction.BUSINESS_PROFILE_UPDATED, metadata: { changedFields: Object.keys(rest) } });
+
+    // The organizer name/logo is baked into every confirmed creator's
+    // open-event invitation PNG — refresh them when either actually changed.
+    // Fire-and-forget (see invitationService.regenerateForBusiness).
+    const nameChanged = rest.businessName !== undefined && rest.businessName !== profile.businessName;
+    const logoChanged = rest.logoUrl !== undefined && rest.logoUrl !== profile.logoUrl;
+    if (nameChanged || logoChanged) {
+      invitationService.regenerateForBusiness(profile.id).catch((err) =>
+        logger.warn({ err: err instanceof Error ? err.message : err, businessId: profile.id }, 'invitation: regenerate-on-business-edit failed'),
+      );
+    }
 
     return toBusinessProfileDto(updated);
   }

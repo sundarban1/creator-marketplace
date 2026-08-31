@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet } from '@/components/BottomSheet';
+import { EventTimeSheet, formatEventTime } from '@/components/EventTimeField';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
@@ -149,6 +150,8 @@ type EditForm = {
   completionType: 'SERVICE' | 'DELIVERABLE' | null;
   // OPEN_EVENT fields
   eventDate: Date | null;
+  // "HH:mm" (24h) or null. Locked once a creator is confirmed.
+  eventTime: string | null;
   venue: string;
   capacity: string;
   benefits: string[];
@@ -190,9 +193,14 @@ export default function EditCampaignScreen() {
     deliverables: DEFAULT_DELIVERABLES, hashtags: [], creatorsNeeded: '1', completionType: null,
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', locationType: 'ONSITE', isFeatured: false,
-    eventDate: null, venue: '', capacity: '20', benefits: [],
+    eventDate: null, eventTime: null, venue: '', capacity: '20', benefits: [],
   });
   const [editErrors, setEditErrors] = useState<EditErrors>({});
+  const [timeSheetOpen, setTimeSheetOpen] = useState(false);
+  // An open event's time is baked into every confirmed creator's invitation —
+  // the backend rejects a change once anyone is ACCEPTED, so the field is
+  // shown read-only here in that case.
+  const [timeLocked, setTimeLocked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [featureImageUploading, setFeatureImageUploading] = useState(false);
   // Only relevant while the campaign isn't already featured — see the `quota`
@@ -273,12 +281,18 @@ export default function EditCampaignScreen() {
           isFeatured:   c.isFeatured,
           completionType: c.completionType ?? null,
           eventDate:    c.eventDate ? new Date(c.eventDate) : null,
+          eventTime:    c.eventTime ?? null,
           venue:        c.venue ?? '',
           capacity:     String(c.capacity ?? 20),
           benefits:     c.benefits ?? [],
         });
         if (!c.isFeatured) {
           campaignService.getFeaturedQuota().then(setFeaturedQuota).catch(() => {});
+        }
+        if (c.campaignType === 'OPEN_EVENT') {
+          campaignService.getApplications(campaignId)
+            .then((apps) => setTimeLocked(apps.some((a) => a.status === 'accepted')))
+            .catch(() => {});
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
@@ -336,6 +350,9 @@ export default function EditCampaignScreen() {
           venue:       editForm.venue.trim() || null,
           capacity:    Number(editForm.capacity) || 20,
           eventDate:   editForm.eventDate?.toISOString(),
+          // Locked once a creator is confirmed — omit it entirely then so an
+          // unrelated edit (title, venue) isn't rejected for touching it.
+          ...(timeLocked ? {} : { eventTime: editForm.eventTime }),
           benefits:    editForm.benefits,
           // Locked by the backend once proposals exist — see the PAID_CAMPAIGN
           // branch below for the full explanation of why this has to be
@@ -457,6 +474,13 @@ export default function EditCampaignScreen() {
               onPress={() => setEventCalOpen(true)}
             />
             <PreviewRow
+              icon="clock"
+              label={t('campaignDetail.fieldEventTime')}
+              value={formatEventTime(editForm.eventTime) || t('createEvent.eventTimeNone')}
+              colors={C}
+              onPress={timeLocked ? undefined : () => setTimeSheetOpen(true)}
+            />
+            <PreviewRow
               icon="calendar-alt"
               label={t('campaignDetail.fieldRegDeadline')}
               value={editForm.deadline ? fmtDate(editForm.deadline) : '—'}
@@ -532,6 +556,7 @@ export default function EditCampaignScreen() {
           <Text style={s.errTxt}>{editErrors.eventDate || editErrors.deadline || editErrors.venue || editErrors.location || editErrors.budgetMin || editErrors.budgetMax}</Text>
         ) : null}
         {!isOpenEvent && hasProposals && <Text style={s.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
+        {isOpenEvent && timeLocked && <Text style={s.lockedNote}>{t('createEvent.eventTimeLocked')}</Text>}
 
         {isOpenEvent ? (
           <Pressable
@@ -818,6 +843,14 @@ export default function EditCampaignScreen() {
           colors={C}
         />
       </BottomSheet>
+
+      {/* ── Event time picker ── */}
+      <EventTimeSheet
+        visible={timeSheetOpen}
+        onClose={() => setTimeSheetOpen(false)}
+        value={editForm.eventTime}
+        onChange={(v) => updateEdit('eventTime', v)}
+      />
 
       {/* Toast */}
       {toast && (

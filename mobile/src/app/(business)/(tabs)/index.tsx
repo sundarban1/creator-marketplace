@@ -471,6 +471,14 @@ export default function BusinessHomeScreen() {
                   style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
 
+                  {/* Drill-in affordance — pinned to the card's right edge,
+                      vertically centered against the full card height. Stands in
+                      for the removed "View Details" button; sits in the card's
+                      padding gutter so it never overlaps the content. */}
+                  <View style={styles.cardChevron} pointerEvents="none">
+                    <FontAwesome5 name="chevron-right" solid size={12} color={C.textSecondary} />
+                  </View>
+
                   {/* Header — thumbnail on the left, title + tags on the right */}
                   <View style={styles.cardHeader}>
                     <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
@@ -526,19 +534,14 @@ export default function BusinessHomeScreen() {
                     );
                   })()}
 
-                  {/* Details — budget */}
-                  <View style={styles.detailsSection}>
-                    <View style={styles.cardFooter}>
-                      <View style={styles.detailRow}>
-                        <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
-                        <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
-                      </View>
+                  {/* Footer — price (or "Free Product Exchange") pinned left,
+                      the proposals pill pinned right. "View Details" removed;
+                      the whole card opens the campaign on tap (see cardChevron). */}
+                  <View style={[styles.cardFooter, styles.detailsSection]}>
+                    <View style={styles.detailRow}>
+                      <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
+                      <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
                     </View>
-                  </View>
-
-                  {/* Proposals + View Details — both styled as pill buttons,
-                      pinned to either end via the row's space-between. */}
-                  <View style={styles.cardFooter}>
                     <Pressable
                       disabled={!c.proposals}
                       style={({ pressed }) => [
@@ -560,12 +563,6 @@ export default function BusinessHomeScreen() {
                           ? t(c.proposals === 1 ? 'business.home.viewProposalsBtn' : 'business.home.viewProposalsBtnPlural', { n: c.proposals })
                           : t('business.home.noProposalsBtn')}
                       </Text>
-                    </Pressable>
-                    <Pressable
-                      style={({ pressed }) => [styles.viewDetailsBtn, { borderColor: C.brinjal1 }, pressed && { opacity: 0.7 }]}
-                      onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
-                      <Text style={[styles.viewDetailsText, { color: C.brinjal1 }]}>{t('business.home.viewDetails')}</Text>
-                      <FontAwesome5 name="arrow-right" solid size={12} color={C.brinjal1} />
                     </Pressable>
                   </View>
                 </Pressable>
@@ -791,7 +788,8 @@ const styles = StyleSheet.create({
   // cardWrap/card split, and its stronger SHADOW.raised.
   campaignCardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
   campaignCardWrapHalf: { width: '48%' },
-  campaignCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, overflow: 'hidden' },
+  // extra right padding reserves a lane for the absolutely-positioned cardChevron
+  campaignCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, paddingRight: SPACING.lg + 20, overflow: 'hidden' },
 
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
   thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
@@ -821,6 +819,7 @@ const styles = StyleSheet.create({
   budgetText: { fontFamily: F.bold },
 
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  cardChevron: { position: 'absolute', right: 12, top: 0, bottom: 0, justifyContent: 'center', zIndex: 1 },
   viewDetailsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6 },
   viewDetailsText: { fontSize: 12, fontFamily: F.semibold },
 

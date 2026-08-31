@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
+import { setAudioModeAsync } from 'expo-audio';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,6 +26,7 @@ import { usePlatforms } from '@/hooks/usePlatforms';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { BottomSheet } from '@/components/BottomSheet';
+import { EventTimeField, EventTimeSheet, formatEventTime } from '@/components/EventTimeField';
 import { BackButton } from '@/components/BackButton';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { pickAndUpload } from '@/utilities/uploadImage';
@@ -332,6 +334,55 @@ const NEED_HELP_SCRIPT_NE = `कोल्याबमा स्वागत छ!
 
 कोल्याब प्रयोग गर्नुभएकोमा धन्यवाद।
 आउनुहोस्, सँगै उत्कृष्ट सहकार्यहरू सिर्जना गरौं!`;
+
+// Shared entry point for every tap-to-play TTS button on this screen (Quick
+// Audio Samples + the Need Help walkthrough). expo-speech shares the app's
+// audio session and cold-starts its synth engine lazily, which makes the
+// FIRST tap after the app has been idle for a while — a fresh production
+// install, or a long time in the background — come out silent:
+//   1. iOS silently drops an utterance queued in the same tick as Speech.stop(),
+//      so we only stop when something is actually speaking and then yield.
+//   2. the voice recorder on this screen can leave the shared audio session in
+//      record mode (routed to the earpiece / muted), so we reset the audio mode
+//      and force silent-switch playback before speaking.
+//   3. the synth engine can need a beat to spin up, so if nothing is speaking
+//      shortly after the first call we fire it once more.
+async function speakAloud(text: string, language: string, onEnd: () => void) {
+  let ended = false;
+  const finish = () => {
+    if (ended) return;
+    ended = true;
+    onEnd();
+  };
+  const opts: Speech.SpeechOptions = {
+    language,
+    onDone: finish,
+    onStopped: finish,
+    onError: finish,
+  };
+
+  await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+
+  try {
+    if (await Speech.isSpeakingAsync().catch(() => false)) {
+      await Speech.stop().catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  } catch {
+    // ignore — worst case the speak() below interrupts a lingering utterance
+  }
+
+  Speech.speak(text, opts);
+
+  setTimeout(() => {
+    if (ended) return;
+    Speech.isSpeakingAsync()
+      .then((speaking) => {
+        if (!speaking && !ended) Speech.speak(text, opts);
+      })
+      .catch(() => {});
+  }, 700);
+}
 
 // Used when generateWithAi() throws outright (network down, request timeout, backend
 // error unrelated to the AI call itself) — the backend's own dummy-template fallback
@@ -1022,6 +1073,7 @@ export default function CreateCampaignScreen() {
     // Open Event / Free Invitation fields
     eventType:    'PAID_CAMPAIGN',
     eventDate:    dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+    eventTime:    null,
     venue:        '',
     capacity:     20,
     benefits:     [],
@@ -1150,6 +1202,7 @@ export default function CreateCampaignScreen() {
   // Free Invitation publish screen's "Event date"/"Capacity" rows open these
   // directly, same pattern as deadlinePickerOpen above.
   const [eventDatePickerOpen, setEventDatePickerOpen] = useState(false);
+  const [eventTimePickerOpen, setEventTimePickerOpen] = useState(false);
   const [capacityPickerOpen, setCapacityPickerOpen] = useState(false);
 
   // Which field's small BottomSheet editor is open on the Publish/Invite Draft
@@ -1218,6 +1271,7 @@ export default function CreateCampaignScreen() {
       isFeatured:     false,
       eventType:      newType,
       eventDate,
+      eventTime:      prev.eventTime,
       venue:          prev.venue,
       capacity:       20,
       benefits:       [],
@@ -1517,18 +1571,15 @@ export default function CreateCampaignScreen() {
   // available and read the same script far more reliably, so Nepali samples
   // are read with a Hindi voice instead.
   function handlePlaySample(idx: number, text: string, lang: 'en' | 'ne') {
-    Speech.stop();
     if (playingSampleIdx === idx) {
+      Speech.stop();
       setPlayingSampleIdx(null);
       return;
     }
     setPlayingSampleIdx(idx);
-    Speech.speak(text, {
-      language: lang === 'ne' ? 'hi-IN' : 'en-US',
-      onDone:    () => setPlayingSampleIdx(null),
-      onStopped: () => setPlayingSampleIdx(null),
-      onError:   () => setPlayingSampleIdx(null),
-    });
+    void speakAloud(text, lang === 'ne' ? 'hi-IN' : 'en-US', () =>
+      setPlayingSampleIdx((cur) => (cur === idx ? null : cur)),
+    );
   }
 
   // "Need Help?" walkthrough — same tap-to-play/tap-to-stop TTS pattern as
@@ -1536,18 +1587,17 @@ export default function CreateCampaignScreen() {
   // script is playing the other card is disabled rather than allowed to
   // interrupt it, since the two scripts would otherwise talk over each other.
   function handlePlayHelp(lang: 'en' | 'ne') {
-    Speech.stop();
     if (helpPlayingLang === lang) {
+      Speech.stop();
       setHelpPlayingLang(null);
       return;
     }
     setHelpPlayingLang(lang);
-    Speech.speak(lang === 'ne' ? NEED_HELP_SCRIPT_NE : NEED_HELP_SCRIPT_EN, {
-      language: lang === 'ne' ? 'hi-IN' : 'en-US',
-      onDone:    () => setHelpPlayingLang(null),
-      onStopped: () => setHelpPlayingLang(null),
-      onError:   () => setHelpPlayingLang(null),
-    });
+    void speakAloud(
+      lang === 'ne' ? NEED_HELP_SCRIPT_NE : NEED_HELP_SCRIPT_EN,
+      lang === 'ne' ? 'hi-IN' : 'en-US',
+      () => setHelpPlayingLang((cur) => (cur === lang ? null : cur)),
+    );
   }
 
   function closeNeedHelp() {
@@ -1655,6 +1705,7 @@ export default function CreateCampaignScreen() {
       campaignType:   'OPEN_EVENT' as const,
       capacity:       form.capacity,
       eventDate:      form.eventDate?.toISOString(),
+      eventTime:      form.eventTime ?? undefined,
       venue:          form.locationType === 'REMOTE' ? undefined : (form.venue.trim() || undefined),
       benefits:       form.benefits,
       targetAudience: form.roleTypes,
@@ -2679,6 +2730,13 @@ export default function CreateCampaignScreen() {
                   onPress={() => setEventDatePickerOpen(true)}
                 />
                 <PreviewRow
+                  icon="clock"
+                  label={t('createEvent.summaryTime')}
+                  value={formatEventTime(form.eventTime) || t('createEvent.eventTimeNone')}
+                  colors={C}
+                  onPress={() => setEventTimePickerOpen(true)}
+                />
+                <PreviewRow
                   icon="users"
                   label={t('createEvent.secCapacityTitle')}
                   value={String(form.capacity)}
@@ -3480,6 +3538,11 @@ export default function CreateCampaignScreen() {
                     />
                   </SectionCard>
 
+                  {/* Event Time */}
+                  <SectionCard title={t('createEvent.eventTimeLabel')} sub={t('createEvent.eventTimeSub')} icon="clock" colors={C}>
+                    <EventTimeField value={form.eventTime} onChange={(v) => update('eventTime', v)} />
+                  </SectionCard>
+
                   {/* Registration Deadline — auto-set to eventDate - 2 days */}
                   <SectionCard title={t('createEvent.secRegDeadlineTitle')} sub={t('createEvent.secRegDeadlineSub')} icon="clock" colors={C}>
                     <DeadlinePicker
@@ -3500,6 +3563,7 @@ export default function CreateCampaignScreen() {
                       { label: t('createEvent.summaryCategory'), value: form.template || '—' },
                       { label: t('createEvent.summaryVenue'),    value: form.locationType === 'REMOTE' ? t('createEvent.summaryRemote') : (form.venue || t('createEvent.summaryTBD')) },
                       { label: t('createEvent.summaryDate'),     value: form.eventDate ? fmtDate(form.eventDate) : '—' },
+                      { label: t('createEvent.summaryTime'),     value: formatEventTime(form.eventTime) || t('createEvent.eventTimeNone') },
                       { label: t('createEvent.summaryCapacity'), value: t('createEvent.summaryNCreators', { n: form.capacity }) },
                     ].map(({ label, value }, i, arr) => (
                       <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
@@ -3759,6 +3823,14 @@ export default function CreateCampaignScreen() {
           />
         </View>
       </BottomSheet>
+
+      {/* Free Invitation publish screen's "Time" row opens this directly. */}
+      <EventTimeSheet
+        visible={eventTimePickerOpen}
+        onClose={() => setEventTimePickerOpen(false)}
+        value={form.eventTime}
+        onChange={(v) => update('eventTime', v)}
+      />
 
       {/* Free Invitation publish screen's "Creator Capacity" row opens this directly. */}
       <BottomSheet

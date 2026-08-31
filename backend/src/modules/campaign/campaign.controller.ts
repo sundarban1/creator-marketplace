@@ -572,6 +572,15 @@ export class CampaignController {
     }
   }
 
+  async getInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const invitation = await campaignService.getInvitation(req.params.id, req.user!.id);
+      success(res, { invitation }, 'Invitation ready');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async askEventQuestion(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { question } = req.body as AskEventQuestionInput;

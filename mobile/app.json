@@ -111,6 +111,14 @@
       ],
       "expo-video",
       "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Kolab to save your event invitation to your photo library.",
+          "savePhotosPermission": "Allow Kolab to save your event invitation to your photo library.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
       "expo-web-browser",
       [
         "expo-audio",

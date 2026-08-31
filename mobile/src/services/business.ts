@@ -100,24 +100,23 @@ export const businessService = {
 
   async getMyProfile(): Promise<{
     showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean;
-    hideSocialLinks: boolean; locationVisibility: 'EXACT' | 'CITY' | 'DISTRICT';
+    hideSocialLinks: boolean;
   }> {
     const res = await request<{
       showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean;
-      hideSocialLinks?: boolean; locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
+      hideSocialLinks?: boolean;
     }>('GET', '/api/business/profile');
     return {
       showPublicProfile:   res.data.showPublicProfile   ?? true,
       hideContactDetails:  res.data.hideContactDetails  ?? false,
       allowDirectMessages: res.data.allowDirectMessages ?? true,
       hideSocialLinks:     res.data.hideSocialLinks     ?? false,
-      locationVisibility:  res.data.locationVisibility  ?? 'CITY',
     };
   },
 
   async updatePrivacy(data: {
     showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean;
-    hideSocialLinks?: boolean; locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
+    hideSocialLinks?: boolean;
   }): Promise<void> {
     await request('PUT', '/api/business/profile', data);
   },

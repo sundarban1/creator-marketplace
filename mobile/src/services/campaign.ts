@@ -218,6 +218,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     eventStatus:   (api as any).eventStatus,
     capacity:      (api as any).capacity,
     eventDate:     (api as any).eventDate,
+    eventTime:     (api as any).eventTime ?? null,
     venue:         (api as any).venue ?? undefined,
     benefits:      Array.isArray((api as any).benefits) ? (api as any).benefits : [],
     paymentStatus: api.paymentStatus ?? 'UNPAID',
@@ -364,6 +365,16 @@ export const campaignService = {
     await request('PUT', `/api/campaigns/${campaignId}/questions/${questionId}/answer`, { answer });
   },
 
+  // The confirmed creator's dynamic open-event invitation PNG. 404 unless the
+  // caller is an ACCEPTED creator on this OPEN_EVENT. The backend renders on
+  // demand if it was never generated, so this can be a little slow the first time.
+  async getEventInvitation(campaignId: string): Promise<{ imageUrl: string; format: string; width: number; height: number; version: number }> {
+    const res = await request<{ invitation: { imageUrl: string; format: string; width: number; height: number; version: number } }>(
+      'GET', `/api/campaigns/${campaignId}/invitation`,
+    );
+    return res.data.invitation;
+  },
+
   async apply(campaignId: string, payload: {
     coverLetter:  string;
     proposedRate: number;
@@ -406,6 +417,7 @@ export const campaignService = {
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     capacity?:     number;
     eventDate?:    string;
+    eventTime?:    string;
     venue?:        string;
     benefits?:     string[];
     status?:               'DRAFT' | 'ACTIVE';
@@ -480,6 +492,9 @@ export const campaignService = {
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     capacity?: number;
     eventDate?: string;
+    // "HH:mm". Locked by the backend once a creator is confirmed — only send
+    // it while the edit screen still allows changing it. null clears it.
+    eventTime?: string | null;
     venue?: string | null;
     benefits?: string[];
     eventStatus?: 'OPEN' | 'FULL' | 'CLOSED';

@@ -56,6 +56,18 @@ export async function presignPutUrl(key: string, contentType: string, expiresIn 
   return getSignedUrl(requireClient(), cmd, { expiresIn });
 }
 
+// Server-side upload of a buffer we generated ourselves (not a client
+// direct-to-R2 presigned PUT) — used by the open-event invitation renderer,
+// which produces the PNG on this server and needs to persist it immediately.
+export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+  await requireClient().send(new PutObjectCommand({
+    Bucket: bucket(),
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  }));
+}
+
 export async function initiateMultipart(key: string, contentType: string): Promise<string> {
   const res = await requireClient().send(new CreateMultipartUploadCommand({ Bucket: bucket(), Key: key, ContentType: contentType }));
   if (!res.UploadId) throw new Error('R2 did not return an UploadId');

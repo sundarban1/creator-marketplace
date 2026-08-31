@@ -23,6 +23,7 @@ import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
+import { formatEventTime } from '@/components/EventTimeField';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
@@ -310,6 +311,9 @@ export default function CampaignDetailScreen() {
           <View style={s.detailsGrid}>
             {isOpenEvent && campaign.eventDate ? (
               <DetailRow icon="calendar-day" label={t('campaignDetail.detailEventDate')} value={formatDeadline(campaign.eventDate)} C={C} />
+            ) : null}
+            {isOpenEvent && formatEventTime(campaign.eventTime) ? (
+              <DetailRow icon="clock" label={t('campaignDetail.detailEventTime')} value={formatEventTime(campaign.eventTime)} C={C} />
             ) : null}
             <DetailRow icon="calendar-alt" label={isOpenEvent ? 'Registration Deadline' : t('campaignDetail.detailDeadline')} value={formatDeadline(campaign.deadline)} C={C} />
             {!isOpenEvent && (

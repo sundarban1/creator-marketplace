@@ -18,6 +18,7 @@ import { MessagingService } from '../messaging/messaging.service';
 import { recordWalletTransactionIdempotent } from '../wallet/wallet.ledger';
 import { emitToRole } from '../../socket';
 import { logger } from '../../config/logger';
+import { invitationService } from './invitation/invitation.service';
 import { logActivity, getActivityForEntity } from '../logging/activity.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
@@ -535,6 +536,16 @@ export class CampaignService {
       }
     }
 
+    // The event time is printed on every confirmed creator's invitation — once
+    // anyone is accepted it can no longer move (date/venue stay editable and
+    // just regenerate the invitation; the time is the harder commitment).
+    if (input.eventTime !== undefined && input.eventTime !== (campaign as any).eventTime) {
+      const acceptedCount = await this.repo.countAcceptedApplications(id);
+      if (acceptedCount > 0) {
+        throw new AppError('Cannot change the event time — a creator has already been confirmed for this event', 400);
+      }
+    }
+
     // A campaign can only be manually closed once every proposal on it has
     // been resolved — declined, or accepted and marked COMPLETED. This is
     // what actually takes it out of the creator-facing (ACTIVE-only) listing.
@@ -592,7 +603,31 @@ export class CampaignService {
       this.fanOutNewCampaign(dto, business, userId);
     }
 
+    this.maybeRegenerateInvitations(campaign, input);
+
     return dto;
+  }
+
+  // Open-event invitations bake in the event title/date/venue/location and the
+  // organizer name — so any edit to one of those must refresh every confirmed
+  // creator's PNG. Fire-and-forget (see invitationService.regenerateForEvent).
+  private maybeRegenerateInvitations(
+    before: { id: string; campaignType?: CampaignType | string; title?: string | null; description?: string | null; eventDate?: Date | null; eventTime?: string | null; venue?: string | null; location?: string | null; locationType?: string | null },
+    input: UpdateCampaignInput,
+  ) {
+    if ((before as any).campaignType !== 'OPEN_EVENT') return;
+    const changed =
+      (input.title !== undefined && input.title !== before.title) ||
+      (input.description !== undefined && input.description !== before.description) ||
+      (input.eventDate !== undefined && new Date(input.eventDate).getTime() !== (before.eventDate?.getTime() ?? NaN)) ||
+      (input.eventTime !== undefined && input.eventTime !== ((before as any).eventTime ?? null)) ||
+      (input.venue !== undefined && input.venue !== before.venue) ||
+      (input.location !== undefined && input.location !== before.location) ||
+      (input.locationType !== undefined && input.locationType !== before.locationType);
+    if (!changed) return;
+    invitationService.regenerateForEvent(before.id).catch((err) =>
+      logger.warn({ err: err instanceof Error ? err.message : err, campaignId: before.id }, 'invitation: regenerate-on-edit failed'),
+    );
   }
 
   // Admin correction of any event — unlike update(), this skips the business-owner
@@ -639,7 +674,15 @@ export class CampaignService {
       if (business) this.fanOutNewCampaign(dto, business, business.userId);
     }
 
+    this.maybeRegenerateInvitations(campaign, input);
+
     return dto;
+  }
+
+  // Open-event invitation for the confirmed creator on this event (creator only;
+  // must be ACCEPTED; OPEN_EVENT only — all enforced in invitationService).
+  async getInvitation(campaignId: string, userId: string) {
+    return invitationService.getForCreator(campaignId, userId);
   }
 
   async delete(id: string, userId: string) {
@@ -1100,6 +1143,14 @@ export class CampaignService {
             );
           }
         }).catch(() => {});
+
+        // Generate the creator's open-event invitation PNG. Fire-and-forget —
+        // the acceptance above is already committed and must not be undone if
+        // rendering or R2 upload hiccups; the GET /invitation endpoint also
+        // self-heals by rendering on demand when this never ran.
+        invitationService.generateAndStore(appId).catch((err) =>
+          logger.warn({ err: err instanceof Error ? err.message : err, appId }, 'invitation: generate-on-accept failed'),
+        );
       }
     } else {
       // Paid campaign: notify creator on both accept and reject

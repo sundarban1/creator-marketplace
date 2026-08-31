@@ -51,6 +51,7 @@ export class CampaignRepository {
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     capacity?: number;
     eventDate?: Date;
+    eventTime?: string | null;
     venue?: string;
     benefits?: string[];
     status?: 'DRAFT' | 'ACTIVE' | 'PENDING_APPROVAL';
@@ -575,6 +576,7 @@ export class CampaignRepository {
     campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     capacity: number | null;
     eventDate: Date | null;
+    eventTime: string | null;
     venue: string | null;
     benefits: string[];
     eventStatus: 'OPEN' | 'FULL' | 'CLOSED';

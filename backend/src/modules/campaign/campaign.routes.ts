@@ -677,6 +677,11 @@ router.post(
 // accepted creator can read it; only accepted creators post questions, only the
 // business answers/edits — all enforced in the service.
 router.get('/:id/questions', authenticate, ctrl.listEventQuestions.bind(ctrl));
+
+// The confirmed creator's dynamic open-event invitation PNG (§16). Creator
+// only; the service enforces ACCEPTED status + OPEN_EVENT type + ownership,
+// and renders on demand if the PNG was never generated.
+router.get('/:id/invitation', authenticate, authorize('CREATOR'), ctrl.getInvitation.bind(ctrl));
 router.post(
   '/:id/questions',
   authenticate,

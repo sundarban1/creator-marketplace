@@ -199,12 +199,23 @@ function ProposalCard({ proposal }: {
             the start → complete → confirm workspace flow below. ── */}
         {proposal.status === 'accepted' && isFree && (
           <View style={{ gap: 8 }}>
-            <View style={[styles.invitedBanner, { borderColor: `${accentColor}40` }]}>
-              <View style={[styles.invitedIcon, { backgroundColor: `${accentColor}18` }]}>
-                <FontAwesome5 name="trophy" solid size={18} color={accentColor} />
-              </View>
-              <Text style={[styles.invitedTitle, { color: accentColor, flex: 1 }]}>{t('proposal.creator.invitedTitle')}</Text>
-            </View>
+            {/* Same row design as the "Have a question? Ask the organizer" entry
+                below — trophy + title with an inline "View" CTA + chevron. Own
+                tap target (opens the invitation PNG screen), so it doesn't
+                trigger the card's campaign-detail navigation. */}
+            <Pressable
+              style={[styles.invitedRow, { borderColor: `${accentColor}40`, backgroundColor: `${accentColor}0D` }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push({ pathname: '/event-invitation', params: { campaignId: proposal.campaignId } } as never);
+              }}>
+              <FontAwesome5 name="trophy" solid size={14} color={accentColor} />
+              <Text style={[styles.invitedRowText, { color: C.text, flex: 1 }]}>
+                {t('proposal.creator.invitedTitle')}{' '}
+                <Text style={{ color: C.brinjal1, fontFamily: F.bold }}>{t('eventInvitation.view')}</Text>
+              </Text>
+              <FontAwesome5 name="chevron-right" size={12} color={C.textPlaceholder} />
+            </Pressable>
 
             {/* Free events never open a chat — the shared Q&A page is how the
                 creator reaches the organizer. Its own tap target, so it
@@ -517,10 +528,9 @@ const styles = StyleSheet.create({
   trackBtnLabel:{ fontSize: 13, fontFamily: F.bold },
   trackBtnSub:  { fontSize: 11, fontFamily: F.regular },
 
-  // Invited banner
-  invitedBanner:{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11 },
-  invitedIcon:  { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  invitedTitle: { fontSize: 13, fontFamily: F.bold },
+  // Invited banner — mirrors `askRow` (same paddings/gap/text/icon sizes)
+  invitedRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10 },
+  invitedRowText: { fontSize: 12.5, fontFamily: F.semibold },
 
   // "Ask Organizer" Q&A entry — sits under the invited banner on a free event
   askRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10 },

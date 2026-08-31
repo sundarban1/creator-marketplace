@@ -53,6 +53,8 @@ export type Campaign = {
   eventStatus?:  'OPEN' | 'FULL' | 'CLOSED';
   capacity?:     number;
   eventDate?:     string;
+  // Open-event start time as "HH:mm" (24h). Null/absent when none was set.
+  eventTime?:     string | null;
   venue?:         string;
   benefits?:      string[];
   paymentStatus?: 'UNPAID' | 'PAID' | 'RELEASED';

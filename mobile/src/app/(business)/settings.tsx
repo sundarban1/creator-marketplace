@@ -43,7 +43,6 @@ import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 import { useGoogleAccessToken } from '@/hooks/useGoogleAccessToken';
 import { useFacebookAccessToken } from '@/hooks/useFacebookAccessToken';
-import { BottomSheet } from '@/components/BottomSheet';
 import {
   authenticate as authenticateBiometric,
   getBiometricLabel,
@@ -638,8 +637,6 @@ export default function BusinessSettingsScreen() {
   const [hideContactDetails, setHideContactDetails] = useState(false);
   const [allowDirectMessages, setAllowDirectMessages] = useState(true);
   const [hideSocialLinksPriv, setHideSocialLinksPriv] = useState(false);
-  const [locationVisibility, setLocationVisibility] = useState<'EXACT' | 'CITY' | 'DISTRICT'>('CITY');
-  const [showLocationVisibilityPicker, setShowLocationVisibilityPicker] = useState(false);
 
   // ── Confirmation modal ──
   const [appModal, setAppModal] = useState({ visible: false, title: '', body: '', confirmLabel: '', type: 'danger' as 'danger' | 'warning', warning: undefined as string | undefined, onConfirm: () => {} });
@@ -651,7 +648,6 @@ export default function BusinessSettingsScreen() {
       setHideContactDetails(p.hideContactDetails);
       setAllowDirectMessages(p.allowDirectMessages);
       setHideSocialLinksPriv(p.hideSocialLinks);
-      setLocationVisibility(p.locationVisibility);
     }).catch(() => {});
     notificationService.getSettings().then((s) => {
       setPushNotifEnabled(s.pushNotificationsEnabled);
@@ -2056,7 +2052,7 @@ export default function BusinessSettingsScreen() {
 
   async function savePrivacy(patch: {
     showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean;
-    hideSocialLinks?: boolean; locationVisibility?: 'EXACT' | 'CITY' | 'DISTRICT';
+    hideSocialLinks?: boolean;
   }) {
     try {
       await businessService.updatePrivacy(patch);
@@ -2064,12 +2060,6 @@ export default function BusinessSettingsScreen() {
       toast.error(t('businessSettings.privacySaveFailed'));
     }
   }
-
-  const LOCATION_VISIBILITY_LABEL: Record<'EXACT' | 'CITY' | 'DISTRICT', string> = {
-    EXACT:    t('businessSettings.locationVisExact'),
-    CITY:     t('businessSettings.locationVisCity'),
-    DISTRICT: t('businessSettings.locationVisDistrict'),
-  };
 
   function renderPrivacy() {
     return (
@@ -2122,42 +2112,6 @@ export default function BusinessSettingsScreen() {
             isLast
           />
         </Card>
-
-        <SectionHeader title={t('businessSettings.locationVisSection')} />
-        <Card>
-          <NavRow
-            faIcon="map-marker-alt"
-            label={t('businessSettings.locationVisLabel')}
-            sub={t('businessSettings.locationVisSub')}
-            value={LOCATION_VISIBILITY_LABEL[locationVisibility]}
-            onPress={() => setShowLocationVisibilityPicker(true)}
-            isLast
-          />
-        </Card>
-
-        <BottomSheet
-          visible={showLocationVisibilityPicker}
-          onClose={() => setShowLocationVisibilityPicker(false)}
-          title={t('businessSettings.locationVisLabel')}
-          scrollable={false}
-        >
-          {(['EXACT', 'CITY', 'DISTRICT'] as const).map((opt) => (
-            <Pressable
-              key={opt}
-              style={[styles.row, { borderBottomWidth: opt !== 'DISTRICT' ? 1 : 0, borderBottomColor: C.border }]}
-              onPress={() => {
-                setLocationVisibility(opt);
-                savePrivacy({ locationVisibility: opt });
-                setShowLocationVisibilityPicker(false);
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.rowLabel, { color: C.text }]}>{LOCATION_VISIBILITY_LABEL[opt]}</Text>
-              </View>
-              {locationVisibility === opt && <FontAwesome5 name="check" solid size={16} color={C.brinjal1} />}
-            </Pressable>
-          ))}
-        </BottomSheet>
       </>
     );
   }

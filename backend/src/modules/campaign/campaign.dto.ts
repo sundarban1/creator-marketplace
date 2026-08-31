@@ -68,6 +68,7 @@ export interface CampaignDto {
   paymentType: string;
   deadline: string;
   eventDate: string | null;
+  eventTime: string | null;
   location: string | null;
   locationLat: number | null;
   locationLng: number | null;
@@ -206,6 +207,7 @@ type RawCampaign = {
   paymentType: string;
   deadline: Date;
   eventDate: Date | null;
+  eventTime: string | null;
   location: string | null;
   locationLat: number | null;
   locationLng: number | null;
@@ -276,6 +278,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     paymentType:    c.paymentType,
     deadline:       c.deadline.toISOString(),
     eventDate:      c.eventDate ? c.eventDate.toISOString() : null,
+    eventTime:      c.eventTime ?? null,
     location:       c.location,
     locationLat:    c.locationLat,
     locationLng:    c.locationLng,

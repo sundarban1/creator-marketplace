@@ -944,6 +944,32 @@ const ne = {
     privacy: 'प्राइभेसी',
     referBusiness: 'बिजनेसलाई बोलाउनुहोस्',
     app: 'एप',
+    aboutUs: 'हाम्रो बारेमा',
+  },
+
+  aboutUsScreen: {
+    title: 'Kolab को बारेमा',
+    tagline: 'क्रिएटर र बिजनेसलाई सँगै ल्याउँदै।',
+    intro:
+      'Kolab एउटा प्लेटफर्म हो जसले क्रिएटर र बिजनेसहरूलाई अवसरहरू पत्ता लगाउन, सहकार्य गर्न र सँगै बढ्न सजिलो बनाउँछ।',
+    creatorsHeading: 'क्रिएटरहरूका लागि',
+    creatorsBody:
+      'नयाँ अवसरहरू पत्ता लगाउनुहोस्, आफ्नो सीप देखाउनुहोस्, बिजनेसहरूसँग सहकार्य गर्नुहोस्, र आफ्नो व्यावसायिक यात्रा निर्माण गर्नुहोस्।',
+    businessesHeading: 'बिजनेसहरूका लागि',
+    businessesBody:
+      'सही क्रिएटरहरू खोज्नुहोस्, अवसरहरू सिर्जना गर्नुहोस्, सहकार्य व्यवस्थापन गर्नुहोस्, र नयाँ दर्शकहरूसँग जोडिनुहोस्।',
+    missionHeading: 'हाम्रो लक्ष्य',
+    missionBody:
+      'नेपालभर क्रिएटर-बिजनेस सहकार्यलाई सरल, सुलभ र अर्थपूर्ण बनाउनु।',
+    nepalHeading: 'नेपालका लागि बनाइएको 🇳🇵',
+    nepalBody:
+      'हामी यस्तो समुदाय निर्माण गर्दैछौं जहाँ क्रिएटर र बिजनेसहरू जोडिन, सहकार्य गर्न र सँगै अवसरहरू सिर्जना गर्न सक्छन्।',
+    tagline2: 'क्रिएटरहरूका लागि बनाइएको।\nबिजनेसहरूका लागि बनाइएको।\nनेपालमा बनाइएको।',
+    company: 'Kolab Technologies',
+    versionLabel: 'संस्करण {{version}}',
+    terms: 'सेवाका सर्तहरू',
+    privacy: 'गोपनीयता नीति',
+    copyright: '© {{year}} Kolab',
   },
 
   business: {
@@ -1460,6 +1486,7 @@ const ne = {
     sectionSampleCaption: 'स्याम्पल क्याप्सन',
     sectionApprovalRequirements: 'व्यवसाय अप्रुभलका सर्तहरू',
     detailEventDate: 'इभेन्ट मिति',
+    detailEventTime: 'समय',
     detailCreatorsNeeded: 'चाहिने क्रिएटरहरू',
     detailVenue: 'भेन्यु',
     detailCapacity: 'क्षमता',
@@ -1482,6 +1509,7 @@ const ne = {
     fieldDescription: 'विवरण',
     fieldOptional: '(वैकल्पिक)',
     fieldEventDate: 'इभेन्टको मिति',
+    fieldEventTime: 'इभेन्टको समय',
     fieldRegDeadline: 'दर्ताको अन्तिम मिति',
     fieldVenue: 'भेन्यु',
     fieldCapacity: 'क्रिएटर क्षमता',
@@ -2527,12 +2555,6 @@ const ne = {
     hideSocialSub:      'तपाईंको सोसल मिडिया लिङ्कहरू सार्वजनिक प्रोफाइलमा नदेखाउनुहोस्',
     allowMessagesLabel: 'क्रिएटरलाई सिधै मेसेज गर्न दिनुहोस्',
     allowMessagesSub:   'क्रिएटरले तपाईंको प्रोफाइलबाट कुराकानी सुरु गर्न सक्छन्',
-    locationVisSection: 'स्थान',
-    locationVisLabel:   'स्थान दृश्यता',
-    locationVisSub:     'क्रिएटरले तपाईंको कति स्थान देख्न सक्छन्',
-    locationVisExact:   'ठ्याक्कै स्थान',
-    locationVisCity:    'सहर मात्र',
-    locationVisDistrict: 'जिल्ला मात्र',
     privacySaveFailed:  'सेभ हुन सकेन। फेरि प्रयास गर्नुहोस्।',
     helpCenterNavLabel:  'सहयोग केन्द्र',
     contactSupportLabel: 'सहयोगका लागि सम्पर्क गर्नुहोस्',
@@ -2871,6 +2893,12 @@ const ne = {
     secPlatformOptSub: 'क्रिएटरहरूले इभेन्ट कन्टेन्ट कहाँ पोस्ट गर्नुपर्छ?',
  secEventDateTitle: 'इभेन्टको मिति',
     secEventDateSub: 'आजबाट एक हप्ता पूर्वनिर्धारित। दर्ता अन्तिम मिति स्वतः अपडेट हुन्छ।',
+    eventTimeLabel:       'इभेन्टको समय',
+    eventTimeSub:         'ऐच्छिक। निमन्त्रणामा देखिन्छ। क्रिएटर पुष्टि भएपछि लक हुन्छ।',
+    eventTimeTapToSelect: 'सुरु हुने समय थप्नुहोस् (ऐच्छिक)',
+    eventTimeNone:        'निश्चित समय छैन',
+    eventTimeLocked:      'समय लक भइसक्यो — यो इभेन्टका लागि क्रिएटर पहिले नै पुष्टि भइसकेको छ।',
+    summaryTime:          'समय',
  secRegDeadlineTitle: 'दर्ता अन्तिम मिति',
     secRegDeadlineSub: 'इभेन्टभन्दा २ दिन अघि स्वतः सेट। आवश्यक भए समायोजन गर्नुहोस्।',
  secEventSummaryTitle: 'इभेन्ट सारांश',
@@ -3043,7 +3071,7 @@ const ne = {
     roleMusicians: 'संगीतकारहरू',
     roleOther: 'अन्य',
 
-    publishHeading: 'तपाईंको निःशुल्क अनुभव तयार छ',
+    publishHeading: 'तपाईंको खुला इभेन्ट अनुभव तयार छ',
     publishReceiveLabel: 'तपाईंले पाउनुहुनेछ',
     publishLookingForLabel: 'हामी के खोज्दैछौं',
     publishExchangeLabel: 'बदलामा',
@@ -3085,6 +3113,23 @@ const ne = {
     answeredToast:      'जवाफ सुरक्षित भयो।',
     questionTooLong:    'प्रश्न धेरै लामो भयो।',
     answerTooLong:      'जवाफ धेरै लामो भयो।',
+  },
+
+  // ── Event Invitation (open/free events) ───────────────────────
+  eventInvitation: {
+    view:              'हेर्नुहोस्',
+    title:             'मेरो निमन्त्रणा',
+    loading:           'तपाईंको निमन्त्रणा लोड हुँदैछ…',
+    preparing:         'तपाईंको निमन्त्रणा तयार हुँदैछ…',
+    errorTitle:        'तपाईंको निमन्त्रणा लोड गर्न सकिएन।',
+    errorBody:         'कृपया फेरि प्रयास गर्नुहोस्।',
+    retry:             'फेरि प्रयास गर्नुहोस्',
+    share:             'निमन्त्रणा सेयर गर्नुहोस्',
+    save:              'निमन्त्रणा सेभ गर्नुहोस्',
+    saved:             'निमन्त्रणा सफलतापूर्वक सेभ भयो',
+    saveFailed:        'तपाईंको निमन्त्रणा सेभ गर्न सकिएन। कृपया फेरि प्रयास गर्नुहोस्।',
+    saveDenied:        'निमन्त्रणा सेभ गर्न सेटिङमा फोटो पहुँच अनुमति दिनुहोस्।',
+    shareFailed:       'तपाईंको निमन्त्रणा सेयर गर्न सकिएन। कृपया फेरि प्रयास गर्नुहोस्।',
   },
 
   // ── Activity Timeline ─────────────────────────────────────────

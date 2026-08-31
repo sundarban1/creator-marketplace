@@ -815,6 +815,12 @@ model Campaign {
   campaignType          CampaignType          @default(PAID_CAMPAIGN)
   capacity              Int?
   eventDate             DateTime?
+  // Open-event start time as "HH:mm" (24h, Asia/Kathmandu). Kept separate from
+  // eventDate (which stays pinned to start-of-day) so date logic — deadline
+  // derivation, sorting, expiry — is untouched. Editable freely until a creator
+  // is confirmed, then locked (see CampaignService.update). Shown on the
+  // invitation PNG.
+  eventTime             String?
   venue                 String?
   benefits              Json                  @default("[]")
   eventStatus           EventStatus           @default(OPEN)
@@ -932,6 +938,18 @@ model Application {
   // brand approval no longer releases funds automatically, see approveWork().
   releasedAt           DateTime?
   releasedByAdminId    String?
+  // Dynamic open-event invitation PNG (OPEN_EVENT + status ACCEPTED only).
+  // Generated on acceptance, re-generated when any invitation-visible field
+  // changes (event title/date/venue/location/description, business name/logo).
+  // The PNG lives in Cloudflare R2 — never the binary in Postgres — keyed by
+  // events/{campaignId}/participants/{applicationId}/invitation-v{n}.png.
+  // See modules/campaign/invitation/. invitationImageKey is kept so the
+  // previous object can be deleted when a new version is written.
+  invitationImageUrl    String?
+  invitationImageKey    String?
+  invitationTemplateId  String?                @default("elegant")
+  invitationVersion     Int                    @default(0)
+  invitationGeneratedAt DateTime?
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   campaign             Campaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)

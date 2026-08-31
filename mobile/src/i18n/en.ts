@@ -953,6 +953,32 @@ const en = {
     privacy: 'Privacy',
     referBusiness: 'Refer a Business',
     app: 'App',
+    aboutUs: 'About Us',
+  },
+
+  aboutUsScreen: {
+    title: 'About Kolab',
+    tagline: 'Bringing creators and businesses together.',
+    intro:
+      'Kolab is a platform built to make it easier for creators and businesses to discover opportunities, collaborate, and grow together.',
+    creatorsHeading: 'For Creators',
+    creatorsBody:
+      'Discover new opportunities, showcase your skills, collaborate with businesses, and build your professional journey.',
+    businessesHeading: 'For Businesses',
+    businessesBody:
+      'Find the right creators, create opportunities, manage collaborations, and connect with new audiences.',
+    missionHeading: 'Our Mission',
+    missionBody:
+      'To make creator-business collaboration simpler, more accessible, and more meaningful across Nepal.',
+    nepalHeading: 'Built for Nepal 🇳🇵',
+    nepalBody:
+      "We're building a community where creators and businesses can connect, collaborate, and create opportunities together.",
+    tagline2: 'Built for creators.\nBuilt for businesses.\nBuilt in Nepal.',
+    company: 'Kolab Technologies',
+    versionLabel: 'Version {{version}}',
+    terms: 'Terms of Service',
+    privacy: 'Privacy Policy',
+    copyright: '© {{year}} Kolab',
   },
 
   business: {
@@ -1471,6 +1497,7 @@ const en = {
     sectionSampleCaption: 'Sample Caption',
     sectionApprovalRequirements: 'Business Approval Requirements',
     detailEventDate: 'Event Date',
+    detailEventTime: 'Time',
     detailCreatorsNeeded: 'Creators Needed',
     detailVenue: 'Venue',
     detailCapacity: 'Capacity',
@@ -1493,6 +1520,7 @@ const en = {
     fieldDescription: 'Description',
     fieldOptional: '(optional)',
     fieldEventDate: 'Event Date',
+    fieldEventTime: 'Event Time',
     fieldRegDeadline: 'Registration Deadline',
     fieldVenue: 'Venue',
     fieldCapacity: 'Creator Capacity',
@@ -2540,12 +2568,6 @@ const en = {
     hideSocialSub:      'Keep your social media links off your public profile',
     allowMessagesLabel: 'Allow Creators to Message Directly',
     allowMessagesSub:   'Creators can initiate conversations from your profile',
-    locationVisSection: 'Location',
-    locationVisLabel:   'Location Visibility',
-    locationVisSub:     'How much of your location creators can see',
-    locationVisExact:   'Exact location',
-    locationVisCity:    'City only',
-    locationVisDistrict: 'District only',
     privacySaveFailed:  'Failed to save. Please try again.',
     helpCenterNavLabel:  'Help Center',
     contactSupportLabel: 'Contact Support',
@@ -2900,6 +2922,12 @@ const en = {
     secPlatformOptSub:    'Where should creators post event content?',
  secEventDateTitle: 'Event Date',
     secEventDateSub:      'Defaulted to one week from today. Registration deadline auto-updates.',
+    eventTimeLabel:       'Event Time',
+    eventTimeSub:         'Optional. Shown on the invitation. Locked once a creator is confirmed.',
+    eventTimeTapToSelect: 'Add a start time (optional)',
+    eventTimeNone:        'No specific time',
+    eventTimeLocked:      'Time is locked — a creator is already confirmed for this event.',
+    summaryTime:          'Time',
  secRegDeadlineTitle: 'Registration Deadline',
     secRegDeadlineSub:    'Auto-set to 2 days before event. You can adjust if needed.',
  secEventSummaryTitle: 'Event Summary',
@@ -3090,7 +3118,7 @@ const en = {
     roleMusicians:       'Musicians',
     roleOther:           'Other',
 
-    publishHeading:   'Your free experience is ready',
+    publishHeading:   'Your open event experience is ready',
     publishReceiveLabel:   "What you'll receive",
     publishLookingForLabel: "What we're looking for",
     publishExchangeLabel:  'In exchange for',
@@ -3132,6 +3160,23 @@ const en = {
     answeredToast:      'Answer saved.',
     questionTooLong:    'Question is too long.',
     answerTooLong:      'Answer is too long.',
+  },
+
+  // ── Event Invitation (open/free events) ───────────────────────
+  eventInvitation: {
+    view:              'View',
+    title:             'My Invitation',
+    loading:           'Loading your invitation…',
+    preparing:         'Creating your invitation…',
+    errorTitle:        "We couldn't load your invitation.",
+    errorBody:         'Please try again.',
+    retry:             'Try Again',
+    share:             'Share Invitation',
+    save:              'Save Invitation',
+    saved:             'Invitation saved successfully',
+    saveFailed:        "We couldn't save your invitation. Please try again.",
+    saveDenied:        'Allow photo access in Settings to save your invitation.',
+    shareFailed:       "We couldn't share your invitation. Please try again.",
   },
 
   // ── Activity Timeline ─────────────────────────────────────────

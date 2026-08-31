@@ -224,6 +224,7 @@ function RootNavigator() {
         <Stack.Screen name="(creator)" />
         <Stack.Screen name="(business)" />
         <Stack.Screen name="legal" options={{ presentation: 'card' }} />
+        <Stack.Screen name="about-us" options={{ presentation: 'card' }} />
         <Stack.Screen name="campaign-detail" options={{ presentation: 'card' }} />
         <Stack.Screen name="submit-proposal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="create-campaign" options={{ presentation: 'modal' }} />

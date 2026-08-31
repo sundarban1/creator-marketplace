@@ -287,7 +287,10 @@ type RawPublicBusiness = {
 };
 
 export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
-  const loc = maskLocationByVisibility(b, b.locationVisibility);
+  // Business location is always shown in full — Kolab operates across all of
+  // Nepal, so a business's location is never masked/restricted (the stored
+  // `locationVisibility` value is ignored).
+  const loc = maskLocationByVisibility(b, 'EXACT');
   return {
     id:                  b.id,
     userId:              b.userId,
@@ -344,7 +347,8 @@ type RawBusinessListItem = {
 };
 
 export function toBusinessListItemDto(b: RawBusinessListItem): BusinessListItemDto {
-  const loc = maskLocationByVisibility(b, b.locationVisibility ?? 'CITY');
+  // Location is never masked for businesses — see toPublicBusinessDto.
+  const loc = maskLocationByVisibility(b, 'EXACT');
   return {
     id:           b.id,
     businessName: b.businessName,

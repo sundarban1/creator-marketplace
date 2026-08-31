@@ -2518,20 +2518,6 @@ export default function CreatorSettingsScreen() {
         <SectionHeader title={t('creatorSettings.appSettingsSection')} />
         <Card>
           <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('creatorSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
-          <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <View
-              style={[
-                styles.navIonIconWrap,
-                {
-                  backgroundColor: '#3B82F618',
-                },
-              ]}
-            >
-              <FontAwesome5 name="info-circle" size={16} color="#3B82F6" />
-            </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.appVersionLabel')}</Text>
-            <Text style={[styles.versionText, { color: C.textSecondary }]}>1.0.0</Text>
-          </View>
           <NavRow faIcon="globe" faIconColor="#10B981" label={t('creatorSettings.languageSection')} value={selectedLang} onPress={() => {}} isLast />
         </Card>
 
@@ -2823,7 +2809,6 @@ const styles = StyleSheet.create({
   soonBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
   badgeText: { fontSize: 11, fontFamily: F.bold },
 
-  versionText: { fontSize: 14, fontFamily: F.medium },
 
   socialRow: { alignItems: 'center' },
   socialIconWrap: { width: 42, height: 42, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },

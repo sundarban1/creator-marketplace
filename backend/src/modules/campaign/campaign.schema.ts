@@ -48,6 +48,8 @@ export const createCampaignSchema = z.object({
   campaignType: z.enum(['PAID_CAMPAIGN', 'OPEN_EVENT']).default('PAID_CAMPAIGN'),
   capacity:     z.number().int().positive().optional(),
   eventDate:    z.string().datetime().optional(),
+  // "HH:mm" 24h — the open-event start time (see Campaign.eventTime).
+  eventTime:    z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Time must be HH:mm').optional(),
   venue:        z.string().optional(),
   benefits:     z.array(z.string()).default([]),
   status:       z.enum(['DRAFT', 'ACTIVE']).optional().default('ACTIVE'),
@@ -98,6 +100,7 @@ export const updateCampaignSchema = z.object({
   campaignType: z.enum(['PAID_CAMPAIGN', 'OPEN_EVENT']).optional(),
   capacity:     z.number().int().positive().optional(),
   eventDate:    z.string().datetime().optional(),
+  eventTime:    z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Time must be HH:mm').nullable().optional(),
   venue:        z.string().optional(),
   benefits:     z.array(z.string()).optional(),
   eventStatus:  z.enum(['OPEN', 'FULL', 'CLOSED']).optional(),
