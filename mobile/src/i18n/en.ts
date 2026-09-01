@@ -3539,7 +3539,7 @@ const en = {
     offerTitle: 'Earn money by offering your services and skills',
     // Short one-word forms of the two titles above, for places that name the
     // chosen role inline (e.g. the signup card's "Signing up as …" chip).
-    offerShort: 'Professional',
+    offerShort: 'Creator',
     seekShort: 'Business',
     offerExample: 'e.g. content creators, influencers, UGC creators',
     offerBenefit1: 'Discover projects matching your skills',
@@ -3548,7 +3548,7 @@ const en = {
     seekTitle: 'Find skilled people to promote your business',
     seekExample: 'e.g. brands, businesses, agencies, organizations',
     seekBenefit1: 'Post work, reach skilled people and promote your business',
-    seekBenefit2: "Browse professionals' profiles, portfolios and reviews",
+    seekBenefit2: "Browse creators' profiles, portfolios and reviews",
     seekBenefit3: 'Manage contracts and payments in one place',
   },
 

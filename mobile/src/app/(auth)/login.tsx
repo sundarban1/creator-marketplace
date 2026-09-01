@@ -712,7 +712,7 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
           <Text style={[s.formHeadingSubtitle, { color: COLORS.accent }]}>{t('auth.signup.subtitle')}</Text>
         </View>
 
-        {/* Carries over the choice made on /account-type (Professional /
+        {/* Carries over the choice made on /account-type (Creator /
             Business) so it isn't lost once the user lands here — with
             a way back to that screen (current choice pre-selected) if they want
             to change it. Shaped as a pill rather than a full-width row, matching
