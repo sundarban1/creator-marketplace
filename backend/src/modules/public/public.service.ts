@@ -45,6 +45,8 @@ export class PublicService {
       address: (s['platform.address'] as string) || '',
       phone:   (s['platform.phone'] as string) || '',
       email:   (s['platform.supportEmail'] as string) || '',
+      companyRegistrationNumber: (s['platform.companyRegistrationNumber'] as string) || '',
+      companyPan:                (s['platform.companyPan'] as string) || '',
       social: {
         facebook:  (s['platform.social.facebook'] as string) || '',
         instagram: (s['platform.social.instagram'] as string) || '',

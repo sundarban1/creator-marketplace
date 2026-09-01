@@ -61,6 +61,10 @@ const DEFAULTS: Record<string, unknown> = {
   // Empty string = not set, so the landing footer hides that item entirely
   // rather than showing a dead link. Contact email reuses
   // 'platform.supportEmail' above rather than duplicating it.
+  // Company legal registration details — internal admin record only, not
+  // surfaced on the landing page.
+  'platform.companyRegistrationNumber': '',
+  'platform.companyPan':                '',
   'platform.address':          '',
   'platform.phone':            '',
   'platform.social.facebook':  '',
