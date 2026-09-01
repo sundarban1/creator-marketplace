@@ -14,20 +14,20 @@ export const en = {
 
   hero: {
     eyebrow: 'Find skills for your campaign or job',
-    headlineLine1: 'Find the right people.',
+    headlineLine1: 'Find the right creators.',
     headlineLine2: 'Create opportunities.',
     headlineLine3: 'Collaborate.',
-    sub: 'Kolab helps you find the skills your campaign, event or job needs — and connects you with the people who can deliver them.',
+    sub: 'Kolab helps you find the skills your campaign, event or job needs — and connects you with the creators who can deliver them.',
     searchPlaceholder: "Try 'I need 3 content creators for my restaurant launch'",
     searchAriaLabel: 'Search Kolab',
     micAriaLabel: 'Search by voice',
     searchCta: 'Search',
     popularSearchesLabel: 'Popular searches:',
     popularSearches: ['Content Creators', 'Influencers', 'UGC Creators', 'Reels', 'Product Reviews'],
-    socialProofSuffix: 'people are already on Kolab',
+    socialProofSuffix: 'creators are already on Kolab',
     socialProofFallback: 10000,
     connectors: {
-      people: { label: 'People', sub: 'Find the right people' },
+      people: { label: 'Creators', sub: 'Find the right creators' },
       services: { label: 'Services', sub: 'Find the skills you need' },
       opportunities: { label: 'Opportunities', sub: 'Find your next opportunity' },
       events: { label: 'Events', sub: "Discover what's happening" },
@@ -45,9 +45,9 @@ export const en = {
     // type for that card, so the grid shows the intent behind each tile
     // rather than only naming it.
     cards: {
-      people: { title: 'People', sub: 'Find the people you need.', cta: 'Explore People', caption: 'Looking for people to promote my cafe' },
+      people: { title: 'Creators', sub: 'Find the creators you need.', cta: 'Explore Creators', caption: 'Looking for creators to promote my cafe' },
       services: { title: 'Services', sub: 'Find the skills you need.', cta: 'Explore Services', caption: 'Looking for a UGC creator for my brand' },
-      opportunities: { title: 'Opportunities', sub: 'Find your next opportunity.', cta: 'Explore Opportunities', caption: 'Looking for skillful people' },
+      opportunities: { title: 'Opportunities', sub: 'Find your next opportunity.', cta: 'Explore Opportunities', caption: 'Looking for skillful creators' },
       events: { title: 'Events', sub: "Discover what's happening.", cta: 'Explore Events', caption: 'Looking for a content creator to promote my event' },
     },
   },
@@ -55,7 +55,7 @@ export const en = {
   showcase: {
     eyebrow: 'Why Kolab',
     panels: [
-      { heading: 'Find the Right Skills', sub: 'Discover the people and skills that actually fit your campaign, job, budget, and timeline.' },
+      { heading: 'Find the Right Skills', sub: 'Discover the creators and skills that actually fit your campaign, job, budget, and timeline.' },
       { heading: 'Everything in One Place', sub: 'Discover opportunities, send proposals, communicate, manage campaigns, submit deliverables, and track payments without jumping between platforms.' },
       { heading: 'Real Work, Less Hassle', sub: 'Skip endless DMs and cold outreach. Find real campaigns and jobs — or the skills to deliver them — and connect directly.' },
       { heading: 'Collaborate with Confidence', sub: 'Keep campaign requirements, communication, deliverables, deadlines, and agreements organized so everyone knows what to expect.' },
@@ -65,10 +65,10 @@ export const en = {
 
   trust: {
     eyebrow: 'Trusted by',
-    heading: 'Nepal Skill People economy',
+    heading: 'Nepal Creator economy',
     // fallback is shown only until the real /api/public/landing-stats count loads
     stats: [
-      { fallback: 5000, label: 'Skilled People' },
+      { fallback: 5000, label: 'Skilled Creators' },
       { fallback: 300, label: 'Businesses' },
       { fallback: 12, label: 'Categories' },
     ],
@@ -83,7 +83,7 @@ export const en = {
     giver: {
       label: 'For service givers',
       title: 'Turn what you do into opportunity.',
-      sub: 'Showcase your skills, discover projects and connect with people and businesses looking for what you do.',
+      sub: 'Showcase your skills, discover projects and connect with creators and businesses looking for what you do.',
       notifications: ['Food Creator Needed', 'UGC Content Collab', 'Brand Collaboration'],
       badge: 'Top Creator',
       name: 'Sundar Nepal',
@@ -99,8 +99,8 @@ export const en = {
     },
     taker: {
       label: 'For service takers',
-      title: 'Find the people who can make it happen.',
-      sub: 'Find the skills you need for your campaign, event or job — and the people behind them.',
+      title: 'Find the creators who can make it happen.',
+      sub: 'Find the skills you need for your campaign, event or job — and the creators behind them.',
       opportunityBadge: 'New opportunity',
       opportunityTitle: 'Content Creators Needed',
       location: 'Kathmandu',
@@ -123,10 +123,10 @@ export const en = {
     matchesLabel: 'matches found',
     viewMatches: 'View Matches',
     queries: [
-      { text: 'I need 2 food creators in Kathmandu for my restaurant launch.', checklist: ['Food & Beverage', 'Content Creator', 'Kathmandu', '2 people', 'Restaurant Launch'], matches: 24 },
-      { text: 'I need 3 content creators for my brand event.', checklist: ['Content Creator', 'Reels', 'Brand Event', '3 people'], matches: 31 },
-      { text: 'I need influencers to promote my corporate event.', checklist: ['Influencer', 'Event Promotion', 'Corporate Event', '2 people'], matches: 18 },
-      { text: 'I need UGC creators for a product review campaign.', checklist: ['UGC Creator', 'Product Review', 'Campaign', '2 people'], matches: 27 },
+      { text: 'I need 2 food creators in Kathmandu for my restaurant launch.', checklist: ['Food & Beverage', 'Content Creator', 'Kathmandu', '2 creators', 'Restaurant Launch'], matches: 24 },
+      { text: 'I need 3 content creators for my brand event.', checklist: ['Content Creator', 'Reels', 'Brand Event', '3 creators'], matches: 31 },
+      { text: 'I need influencers to promote my corporate event.', checklist: ['Influencer', 'Event Promotion', 'Corporate Event', '2 creators'], matches: 18 },
+      { text: 'I need UGC creators for a product review campaign.', checklist: ['UGC Creator', 'Product Review', 'Campaign', '2 creators'], matches: 27 },
       { text: 'I need food and lifestyle creators for my café launch.', checklist: ['Food & Beverage', 'Lifestyle Creator', 'Reels', 'Café Launch'], matches: 22 },
     ],
   },
@@ -144,9 +144,9 @@ export const en = {
     attentionTitle: 'Action Required',
     attentionSub: 'Upload deliverables for “Momo Bar Launch”',
     ctaTitle: 'Find your next work',
-    ctaSub: 'Discover businesses looking for people like you.',
+    ctaSub: 'Discover businesses looking for creators like you.',
     ctaBtn: 'Browse Work',
-    quickActions: ['Applied Works', 'Work Requests', 'Discover', 'Businesses', 'Find People'],
+    quickActions: ['Applied Works', 'Work Requests', 'Discover', 'Businesses', 'Find Creators'],
     recommended: 'Recommended',
     seeAll: 'See all',
     cards: [
@@ -171,7 +171,7 @@ export const en = {
       { title: 'Cafe Menu Launch', date: 'Deadline Sep 22', location: 'Lalitpur' },
       { title: 'Travel Vlog Partner', date: 'Deadline Sep 30', location: 'Pokhara' },
     ],
-    eventsLabel: 'Find People for Your Event',
+    eventsLabel: 'Find Creators for Your Event',
     viewAllEvents: 'View all events',
     featuredEvent: { dateDay: '12', dateMonth: 'Sep', title: 'Grand Opening Event Promotion', location: 'Kathmandu', sub: 'Content Creators & Influencers' },
     // Positionally paired with MORE_EVENT_PHOTOS in OpportunityFeed.tsx —
@@ -198,7 +198,7 @@ export const en = {
     eyebrow: 'How Kolab works',
     heading: 'From idea to collaboration.',
     steps: [
-      { title: 'Discover', desc: 'Find people, services, events or opportunities that match your needs.' },
+      { title: 'Discover', desc: 'Find creators, services, events or opportunities that match your needs.' },
       { title: 'Connect', desc: 'Explore profiles, requirements or portfolios, then reach out or apply.' },
       { title: 'Collaborate', desc: 'Work together smoothly and bring your ideas to life.' },
       { title: 'Grow', desc: 'Build relationships, reputation and future opportunities.' },
@@ -239,7 +239,7 @@ export const en = {
     heading: 'Built for meaningful collaborations.',
     sub: 'Every profile, request, and conversation is designed to keep collaboration safe and clear.',
     points: [
-      { title: 'Verified Profiles', desc: 'Identity checks keep the people and businesses you meet real.' },
+      { title: 'Verified Profiles', desc: 'Identity checks keep the creators and businesses you meet real.' },
       { title: 'Reviews & Ratings', desc: 'Honest feedback from real collaborations, every time.' },
       { title: 'Clear Requirements', desc: 'Scope, budget, and deliverables spelled out upfront.' },
       { title: 'Secure Communication', desc: 'Keep every conversation and file in one protected place.' },

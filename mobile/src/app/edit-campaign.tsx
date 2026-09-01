@@ -33,7 +33,7 @@ import {
   DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
 import { ListingHeroCard, PreviewRow } from '@/features/business/components/CampaignSummary';
-import { eventOptionLabel } from '@/features/business/utils/eventOptionLabels';
+import { eventOptionLabel, eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -493,6 +493,13 @@ export default function EditCampaignScreen() {
               value={editForm.capacity || '—'}
               colors={C}
               onPress={() => setEditingField('capacity')}
+            />
+            <PreviewRow
+              icon="gift"
+              label={t('createInvitation.publishReceiveLabel')}
+              value={eventOptionLabels(editForm.benefits, 'offering', t).join(', ') || '—'}
+              colors={C}
+              onPress={() => setEditingField('benefits')}
               last
             />
           </View>
@@ -539,27 +546,7 @@ export default function EditCampaignScreen() {
         {!isOpenEvent && hasProposals && <Text style={s.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
         {isOpenEvent && timeLocked && <Text style={s.lockedNote}>{t('createEvent.eventTimeLocked')}</Text>}
 
-        {isOpenEvent ? (
-          <Pressable
-            style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 8 }]}
-            onPress={() => setEditingField('benefits')}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[sc.title, { color: C.text }]}>{t('campaignDetail.sectionWhatYouGet')}</Text>
-              <FontAwesome5 name="pen" solid size={12} color={C.textSecondary} />
-            </View>
-            {editForm.benefits.length > 0 ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {editForm.benefits.map((b) => (
-                  <View key={b} style={[s.pill, { backgroundColor: C.primaryLight }]}>
-                    <Text style={[s.pillText, { color: C.brinjal1 }]}>{eventOptionLabel(b, 'offering', t)}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={[s.pillCardBody, { color: C.textSecondary }]}>—</Text>
-            )}
-          </Pressable>
-        ) : (
+        {isOpenEvent ? null : (
           <>
             <Pressable
               style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 8 }]}

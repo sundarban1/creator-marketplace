@@ -26,7 +26,7 @@ export const CITY_PAGES: NicheConfig[] = [
       secondHeading: 'Creators across every niche in Kathmandu',
       secondParagraphs: [
         'Kathmandu creators on Kolab cover Food & Beverage, Fashion, Beauty, Technology, Fitness, and nearly every other category, across Instagram, TikTok, YouTube, and Facebook.',
-        'Businesses based in Kathmandu — or brands elsewhere looking to reach the capital\'s audience — can filter creator search by location to find people actually based in or covering the city.',
+        'Businesses based in Kathmandu — or brands elsewhere looking to reach the capital\'s audience — can filter creator search by location to find creators actually based in or covering the city.',
       ],
       trustParagraph: 'Every creator on Kolab, in Kathmandu or anywhere else in Nepal, goes through the same identity verification and escrow-protected payment process, so scale doesn\'t come at the cost of trust.',
       faqsExtra: [

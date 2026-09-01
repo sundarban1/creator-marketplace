@@ -22,6 +22,7 @@ import { eventOptionLabel } from '@/features/business/utils/eventOptionLabels';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
+import { creatorService, type ApiCampaignInvitation } from '@/services/creator';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 import { formatEventTime } from '@/components/EventTimeField';
 import type { Campaign } from '@/types';
@@ -54,6 +55,10 @@ export default function CampaignDetailScreen() {
   // apply to several different roles on the same campaign; hasApplied above
   // stays scoped to the simple/no-requirement application slot only.
   const [appliedRequirementIds, setAppliedRequirementIds] = useState<Set<string>>(new Set());
+  // A still-pending invitation the business sent this creator for THIS campaign.
+  // When set, the sticky CTA points at the Invitations screen instead of
+  // offering "Submit Proposal" — the creator was already asked directly.
+  const [pendingInvitation, setPendingInvitation] = useState<ApiCampaignInvitation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -69,8 +74,11 @@ export default function CampaignDetailScreen() {
     const appFetch = isBusiness
       ? Promise.resolve([])
       : campaignService.getMyApplications().then((r) => r.proposals).catch(() => []);
-    Promise.all([campaignService.getById(campaignId), appFetch])
-      .then(([c, apps]) => {
+    const inviteFetch = isBusiness
+      ? Promise.resolve([] as ApiCampaignInvitation[])
+      : creatorService.listInvitations().catch(() => [] as ApiCampaignInvitation[]);
+    Promise.all([campaignService.getById(campaignId), appFetch, inviteFetch])
+      .then(([c, apps, invites]) => {
         setCampaign(c);
         setError('');
         if (!isBusiness) {
@@ -79,6 +87,7 @@ export default function CampaignDetailScreen() {
           setHasApplied(!!myApp);
           setApplicationStatus(myApp ? myApp.status as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' : null);
           setAppliedRequirementIds(new Set(myApps.filter((a) => a.requirementId).map((a) => a.requirementId!)));
+          setPendingInvitation(invites.find((i) => i.campaignId === campaignId && i.status === 'PENDING') ?? null);
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
@@ -97,6 +106,9 @@ export default function CampaignDetailScreen() {
           setApplicationStatus(myApp ? myApp.status as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' : null);
           setAppliedRequirementIds(new Set(myApps.filter((a) => a.requirementId).map((a) => a.requirementId!)));
         })
+        .catch(() => {});
+      creatorService.listInvitations()
+        .then((invites) => setPendingInvitation(invites.find((i) => i.campaignId === campaignId && i.status === 'PENDING') ?? null))
         .catch(() => {});
     }, [campaignId, isBusiness])
   );
@@ -213,9 +225,17 @@ export default function CampaignDetailScreen() {
         {/* Title block */}
         <View style={[s.titleBlock, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
           <View style={s.brandRow}>
-            <View style={[s.brandAvatar, { backgroundColor: C.brinjal1 }]}>
-              <Text style={s.brandAvatarTxt}>{campaign.brand[0]}</Text>
-            </View>
+            {campaign.brandLogoUrl ? (
+              <Image
+                source={{ uri: campaign.brandLogoUrl }}
+                style={s.brandAvatar}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[s.brandAvatar, { backgroundColor: C.brinjal1 }]}>
+                <Text style={s.brandAvatarTxt}>{campaign.brand[0]?.toUpperCase()}</Text>
+              </View>
+            )}
             <Text style={[s.brandName, { color: C.text }]}>{campaign.brand}</Text>
             <View style={[s.verifiedBadge, { backgroundColor: C.active }]}>
               <FontAwesome5 name="check" solid size={10} color="#fff" />
@@ -462,6 +482,21 @@ export default function CampaignDetailScreen() {
             <FontAwesome5 name="edit" size={16} color="#fff" />
             <Text style={s.applyBtnTxt}>{t('campaignDetail.editEvent')}</Text>
           </Pressable>
+        ) : pendingInvitation ? (
+          // The business invited this creator directly — don't offer "Submit
+          // Proposal", send them to the Invitations screen to accept/decline.
+          <Pressable
+            style={({ pressed }) => [s.invitedCta, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }, pressed && { opacity: 0.85 }]}
+            onPress={() => router.push('/(creator)/invitations')}>
+            <View style={[s.invitedIcon, { backgroundColor: C.brinjal1 }]}>
+              <FontAwesome5 name="envelope-open-text" solid size={15} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.invitedTitle, { color: C.brinjal1 }]}>{t('campaignDetail.invitedTitle')}</Text>
+              <Text style={[s.invitedSub, { color: C.textSecondary }]}>{t('campaignDetail.invitedSub')}</Text>
+            </View>
+            <FontAwesome5 name="chevron-right" solid size={13} color={C.brinjal1} />
+          </Pressable>
         ) : isOpenEvent && applicationStatus === 'accepted' ? (
           // Free event: acceptance is terminal (no workspace), so the "You're
           // Invited" confirmation and the "Ask Organizer" Q&A entry live
@@ -666,7 +701,7 @@ const s = StyleSheet.create({
 
   titleBlock:    { paddingHorizontal: SCREEN_GUTTER, paddingVertical: 16, gap: 10, borderBottomWidth: 1 },
   brandRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandAvatar:   { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  brandAvatar:   { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   brandAvatarTxt:{ fontSize: 12, color: '#fff', fontFamily: F.bold },
   brandName:     { fontSize: 14, fontFamily: F.semibold },
   verifiedBadge: { width: 16, height: 16, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
@@ -721,6 +756,10 @@ const s = StyleSheet.create({
   applyBtnTxt:   { color: '#fff', fontSize: 15, fontFamily: F.bold },
   appliedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ECFDF5', borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 14, borderWidth: 1.5, borderColor: '#A7F3D0' },
   appliedBadgeTxt:{ fontSize: 15, color: '#059669', fontFamily: F.bold },
+  invitedCta:    { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 12 },
+  invitedIcon:   { width: 34, height: 34, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  invitedTitle:  { fontSize: 14, fontFamily: F.bold },
+  invitedSub:    { fontSize: 12, fontFamily: F.regular, marginTop: 1 },
   roleIconWrap:  { width: 36, height: 36, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   roleTitle:     { fontSize: 14, fontFamily: F.bold },
   roleAppliedBadge: { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ECFDF5' },

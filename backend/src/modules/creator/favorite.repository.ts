@@ -80,4 +80,51 @@ export class FavoriteRepository {
       },
     });
   }
+
+  // The other direction — every business that has saved *this* creator to its
+  // shortlist. Powers the creator profile's "Saved by Businesses" stat, which
+  // opens the same business-list UI as the favourites screen.
+  async getBusinessesWhoSaved(creatorId: string, filters?: {
+    category?:  string;
+    platform?:  string;
+    locations?: string[]; // OR-matched against campaign.location
+  }) {
+    const where: Prisma.SavedCreatorWhereInput = { creatorId };
+
+    if (filters?.category || filters?.platform || (filters?.locations && filters.locations.length > 0)) {
+      const businessWhere: Prisma.BusinessProfileWhereInput = {};
+      if (filters.category) businessWhere.categories = { has: filters.category };
+
+      if (filters.platform || (filters.locations && filters.locations.length > 0)) {
+        const campaignWhere: Prisma.CampaignWhereInput = { status: 'ACTIVE' };
+        if (filters.platform) campaignWhere.platforms = { has: filters.platform };
+        if (filters.locations && filters.locations.length > 0) {
+          campaignWhere.OR = filters.locations.map((loc) => ({
+            location: { contains: loc, mode: 'insensitive' as const },
+          }));
+        }
+        businessWhere.campaigns = { some: campaignWhere };
+      }
+      where.business = businessWhere;
+    }
+
+    return prisma.savedCreator.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        business: {
+          select: {
+            id:           true,
+            businessName: true,
+            description:  true,
+            logoUrl:      true,
+            website:      true,
+            categories:   true,
+            isVerified:   true,
+            _count:       { select: { campaigns: true } },
+          },
+        },
+      },
+    });
+  }
 }

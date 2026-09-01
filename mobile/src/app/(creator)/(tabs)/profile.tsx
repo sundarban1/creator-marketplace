@@ -75,7 +75,7 @@ export default function CreatorProfileScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
-  const { favoriteIds } = useFavoriteBusinesses();
+  const { favoriteIds, reloadIds: reloadFavoriteIds } = useFavoriteBusinesses();
   const { categories: allCategories } = useAllCategories();
   const [profile, setProfile]           = useState<ApiCreatorProfile | null>(null);
   const [avatarUploading, setUploading] = useState(false);
@@ -100,6 +100,9 @@ export default function CreatorProfileScreen() {
   }, [focus, profile?.reviews?.length]);
 
   useFocusEffect(useCallback(() => {
+    // Re-sync the "Saved Businesses" count — the creator may have favourited or
+    // un-favourited businesses on another screen (or device) since last focus.
+    void reloadFavoriteIds();
     // Show the last-known profile immediately (e.g. offline) without
     // clobbering anything already loaded from a previous, fresher focus.
     void getCached<ApiCreatorProfile>('creator_profile').then((cached) => {
@@ -287,10 +290,10 @@ export default function CreatorProfileScreen() {
               <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.savedBrands')}</Text>
             </Pressable>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
-            <View style={s.statItem}>
+            <Pressable style={s.statItem} onPress={() => router.push('/(creator)/saved-by-businesses' as never)}>
               <Text style={[s.statValue, { color: C.text }]}>{profile?.savedByBusinessCount ?? 0}</Text>
               <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.savedByBusinesses')}</Text>
-            </View>
+            </Pressable>
           </View>
         </View>
 

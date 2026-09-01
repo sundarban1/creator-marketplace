@@ -14,11 +14,10 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 // fields that actually exist on CreatorProfile.
 const COMPLETION_WEIGHTS = {
   photo: 10,
-  socialLinks: 10,
+  socialLinks: 15,
   bio: 10,
   categories: 15,
   portfolio: 15,
-  preferredPlatforms: 5,
   location: 10,
   pricing: 10,
   paymentMethod: 10,
@@ -371,7 +370,7 @@ export class AnalyticsService {
 
   private computeProfileCompletion(profile: {
     avatarUrl: string | null; bio: string | null; categories: string[]; portfolioLinks: unknown;
-    prefPlatforms: string[]; location: string | null; prefBudgetMin: number; prefBudgetMax: number;
+    location: string | null; prefBudgetMin: number; prefBudgetMax: number;
     paymentMethods: string[]; isVerified: boolean; socialAccounts?: unknown[];
   }) {
     const portfolioCount = Array.isArray(profile.portfolioLinks) ? profile.portfolioLinks.length : 0;
@@ -381,7 +380,6 @@ export class AnalyticsService {
       { key: 'bio', done: !!profile.bio, label: 'Bio' },
       { key: 'categories', done: profile.categories.length > 0, label: 'Categories' },
       { key: 'portfolio', done: portfolioCount > 0, label: 'Portfolio' },
-      { key: 'preferredPlatforms', done: profile.prefPlatforms.length > 0, label: 'Preferred Platforms' },
       { key: 'location', done: !!profile.location, label: 'Location' },
       { key: 'pricing', done: profile.prefBudgetMin > 0 || profile.prefBudgetMax > 0, label: 'Pricing Preference' },
       { key: 'paymentMethod', done: profile.paymentMethods.length > 0, label: 'Payment Method' },

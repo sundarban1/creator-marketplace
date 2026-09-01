@@ -19,6 +19,7 @@ export type Campaign = {
   id: string;
   title: string;
   brand: string;
+  brandLogoUrl?: string;
   platforms: string[];
   platformIcons: string[];
   budget: string;
@@ -173,6 +174,7 @@ export type AppNotification = {
     | 'business_favorited'
     | 'creator_saved'
     | 'campaign_invitation'
+    | 'invitation_response'
     | 'account_verified'
     | 'verification_rejected'
     | 'proposal_expired'

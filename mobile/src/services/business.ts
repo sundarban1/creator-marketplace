@@ -141,6 +141,29 @@ export const businessService = {
     return res.data;
   },
 
+  // Businesses that have saved the current creator to their shortlist — the
+  // mirror of getFavoriteBusinesses, shown behind the profile's "Saved by
+  // Businesses" stat.
+  async getSavedByBusinesses(params?: {
+    category?:  string;
+    platform?:  string;
+    locations?: string[]; // city labels, OR-matched
+  }): Promise<BusinessListItem[]> {
+    const res = await request<BusinessListItem[]>(
+      'GET',
+      '/api/creator/businesses/saved-by',
+      undefined,
+      {
+        category:  params?.category,
+        platform:  params?.platform,
+        locations: params?.locations && params.locations.length > 0
+                     ? params.locations.join(',')
+                     : undefined,
+      },
+    );
+    return res.data;
+  },
+
   async getPaymentHistory(): Promise<PaymentHistoryEntry[]> {
     const res = await request<PaymentHistoryEntry[]>('GET', '/api/business/payment-history');
     return res.data;

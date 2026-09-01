@@ -188,8 +188,8 @@ function Divider() {
   return <View style={[styles.subDivider, { backgroundColor: C.border }]} />;
 }
 
-type SwitchRowProps = { label: string; faIcon?: string; faIconColor?: string; sub?: string; value: boolean; onChange: () => void; isLast?: boolean };
-function SwitchRow({ label, faIcon, faIconColor, sub, value, onChange, isLast = false }: SwitchRowProps) {
+type SwitchRowProps = { label: string; faIcon?: string; faIconColor?: string; sub?: string; value: boolean; onChange: () => void; isLast?: boolean; solidOn?: boolean };
+function SwitchRow({ label, faIcon, faIconColor, sub, value, onChange, isLast = false, solidOn = false }: SwitchRowProps) {
   const C = useContext(ColorCtx);
   const iColor = faIconColor ?? C.brinjal1;
   return (
@@ -213,8 +213,9 @@ function SwitchRow({ label, faIcon, faIconColor, sub, value, onChange, isLast = 
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: C.border, true: C.brinjal1 + '70' }}
-        thumbColor={value ? C.brinjal1 : '#ccc'}
+        // solidOn = ON shows a solid dark-brinjal track + white thumb.
+        trackColor={{ false: C.border, true: solidOn ? C.brinjal2 : C.brinjal1 + '70' }}
+        thumbColor={value ? (solidOn ? '#FFFFFF' : C.brinjal1) : '#ccc'}
         ios_backgroundColor={C.border}
       />
     </View>
@@ -1791,6 +1792,7 @@ export default function CreatorSettingsScreen() {
             label={t('creatorSettings.pushNotificationsLabel')}
             sub={t('creatorSettings.pushNotificationsSub')}
             value={pushNotifEnabled}
+            solidOn
             onChange={() => {
               const next = !pushNotifEnabled;
               setPushNotifEnabled(next);
@@ -1802,6 +1804,7 @@ export default function CreatorSettingsScreen() {
             label={t('creatorSettings.emailNotificationsLabel')}
             sub={t('creatorSettings.emailNotificationsSub')}
             value={emailNotifEnabled}
+            solidOn
             onChange={() => {
               const next = !emailNotifEnabled;
               setEmailNotifEnabled(next);
@@ -2517,8 +2520,7 @@ export default function CreatorSettingsScreen() {
         {/* App Settings */}
         <SectionHeader title={t('creatorSettings.appSettingsSection')} />
         <Card>
-          <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('creatorSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
-          <NavRow faIcon="globe" faIconColor="#10B981" label={t('creatorSettings.languageSection')} value={selectedLang} onPress={() => {}} isLast />
+          <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('creatorSettings.darkModeLabel')} value={isDark} onChange={toggleDark} isLast />
         </Card>
 
         {/* Provider type — same picker shape as the location-visibility one, but

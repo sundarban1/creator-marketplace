@@ -488,16 +488,13 @@ export default function BusinessHomeScreen() {
                       )}
                     </View>
                     <View style={styles.titleSection}>
-                      <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
-                      <View style={styles.tagContainer}>
-                        <View style={[styles.typeBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
-                          <Text style={[styles.typeBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
-                            {c.campaignType === 'OPEN_EVENT' ? t('business.home.badgeFree') : t('business.home.badgePaid')}
-                          </Text>
-                        </View>
-                        <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-                          <Text style={[styles.statusText, { color: st.color }]}>{t(st.statusKey)}</Text>
-                        </View>
+                      <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
+                      {/* Price (or "Free Product Exchange") — swapped up here from
+                          the footer; the Free/Paid + status badges took its place
+                          in the footer. */}
+                      <View style={styles.detailRow}>
+                        <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
+                        <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
                       </View>
                     </View>
                   </View>
@@ -534,13 +531,20 @@ export default function BusinessHomeScreen() {
                     );
                   })()}
 
-                  {/* Footer — price (or "Free Product Exchange") pinned left,
-                      the proposals pill pinned right. "View Details" removed;
-                      the whole card opens the campaign on tap (see cardChevron). */}
+                  {/* Footer — Free/Paid + status badges pinned left (swapped down
+                      from the header, where the price now sits), the proposals
+                      pill pinned right. "View Details" removed; the whole card
+                      opens the campaign on tap (see cardChevron). */}
                   <View style={[styles.cardFooter, styles.detailsSection]}>
-                    <View style={styles.detailRow}>
-                      <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
-                      <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
+                    <View style={styles.tagContainer}>
+                      <View style={[styles.typeBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
+                        <Text style={[styles.typeBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
+                          {c.campaignType === 'OPEN_EVENT' ? t('business.home.badgeFree') : t('business.home.badgePaid')}
+                        </Text>
+                      </View>
+                      <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
+                        <Text style={[styles.statusText, { color: st.color }]}>{t(st.statusKey)}</Text>
+                      </View>
                     </View>
                     <Pressable
                       disabled={!c.proposals}

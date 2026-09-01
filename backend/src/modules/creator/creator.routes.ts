@@ -284,6 +284,7 @@ router.post('/campaigns/:campaignId/shortlist',           shortlistCtrl.toggle.b
 router.get('/businesses',                                 businessCtrl.listBusinesses.bind(businessCtrl));
 router.get('/businesses/favorites',                       favoriteCtrl.listFavorites.bind(favoriteCtrl));
 router.get('/businesses/favorites/list',                  favoriteCtrl.listFavoriteBusinesses.bind(favoriteCtrl));
+router.get('/businesses/saved-by',                        favoriteCtrl.listSavedByBusinesses.bind(favoriteCtrl));
 router.post('/businesses/:businessId/favorite',           favoriteCtrl.toggle.bind(favoriteCtrl));
 router.get('/businesses/:id',                             businessCtrl.getBusinessPublic.bind(businessCtrl));
 

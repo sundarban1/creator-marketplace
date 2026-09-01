@@ -18,12 +18,23 @@ const el = (type: string, style: Style, children?: Node | Node[] | string): Node
 const text = (style: Style, value: string): Node => ({ type: 'div', props: { style, children: value } });
 
 // ── palette ──────────────────────────────────────────────────────────────────
-const IVORY = '#FBF8F2';
-const IVORY_EDGE = '#F3ECDD';
-const INK = '#241F1B';
-const INK_SOFT = '#6B6157';
-const GOLD = '#A9884E';
-const GOLD_SOFT = 'rgba(169,136,78,0.35)';
+// Warm cream ground (reads as soft yellow), so the type and the florals lean
+// on cooler / punchier colours to sit against it.
+const CREAM = '#FFFDF6';
+const CREAM_EDGE = '#FBEEDC';
+const INK_SOFT = '#6E6472';
+
+const PLUM = '#6A2E5C'; // headline + host name
+const CORAL = '#E1604A'; // kicker + divider diamond
+const MARIGOLD = '#CE8A1E'; // "hosted by"
+const ROSE = '#D3477E'; // florals + monogram wash
+const BRINJAL = '#4A1E3C'; // greeting name + location + description text
+const TEAL = '#2E8B8B'; // florals only (leaves stay green/teal)
+const LEAF = '#4E9E6A'; // stems + leaves
+const AQUA_LEAF = '#3E9E9E'; // second leaf tone
+const CORNFLOWER = '#5B7FC4'; // buds
+
+const RULE = 'rgba(106,46,92,0.28)'; // hairline rules / frame, tinted plum
 
 const SERIF = 'Playfair Display';
 const SANS = 'Poppins';
@@ -33,14 +44,11 @@ const SANS = 'Poppins';
 // an SVG data URI (resvg handles it). This layer is: a floral spray mirrored
 // into all four corners, a garland swag linking the two top corners, and a
 // ribbon banner tucked under it. Kept in the top band + corners so the centre
-// stays clear for the text.
-function backgroundArtDataUri(w: number, h: number): string {
-  const g = GOLD;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-  <defs>
-    <g id="petal"><path d="M0 0 C12 -7 18 -25 13 -44 C10 -55 -10 -55 -13 -44 C-18 -25 -12 -7 0 0 Z"/></g>
-    <g id="bloom" stroke="${g}" stroke-width="2" stroke-linejoin="round">
-      <g fill="${g}" fill-opacity="0.18">
+// stays clear for the text. Every bloom / leaf / bud is a coloured variant so
+// the corners read as a real bouquet, not a monochrome stamp.
+function bloomDef(id: string, petal: string, core: string): string {
+  return `<g id="${id}" stroke="${petal}" stroke-width="2" stroke-linejoin="round">
+      <g fill="${petal}" fill-opacity="0.55">
         <use href="#petal"/>
         <use href="#petal" transform="rotate(60)"/>
         <use href="#petal" transform="rotate(120)"/>
@@ -48,41 +56,60 @@ function backgroundArtDataUri(w: number, h: number): string {
         <use href="#petal" transform="rotate(240)"/>
         <use href="#petal" transform="rotate(300)"/>
       </g>
-      <circle r="9" fill="${g}" fill-opacity="0.5" stroke="none"/>
-    </g>
-    <g id="leaf">
-      <path d="M0 0 C-14 -18 -12 -48 0 -66 C12 -48 14 -18 0 0 Z" fill="${g}" fill-opacity="0.15" stroke="${g}" stroke-width="1.8"/>
-      <path d="M0 -6 L0 -58" stroke="${g}" stroke-width="1.4" opacity="0.7"/>
-    </g>
-    <g id="bud">
-      <path d="M0 0 C-8 -8 -8 -26 0 -34 C8 -26 8 -8 0 0 Z" fill="${g}" fill-opacity="0.2" stroke="${g}" stroke-width="1.6"/>
-    </g>
+      <circle r="9" fill="${core}" stroke="none"/>
+    </g>`;
+}
+function leafDef(id: string, color: string): string {
+  return `<g id="${id}">
+      <path d="M0 0 C-14 -18 -12 -48 0 -66 C12 -48 14 -18 0 0 Z" fill="${color}" fill-opacity="0.42" stroke="${color}" stroke-width="1.8"/>
+      <path d="M0 -6 L0 -58" stroke="${color}" stroke-width="1.4" opacity="0.8"/>
+    </g>`;
+}
+function budDef(id: string, color: string): string {
+  return `<g id="${id}">
+      <path d="M0 0 C-8 -8 -8 -26 0 -34 C8 -26 8 -8 0 0 Z" fill="${color}" fill-opacity="0.5" stroke="${color}" stroke-width="1.6"/>
+    </g>`;
+}
+
+function backgroundArtDataUri(w: number, h: number): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <defs>
+    <g id="petal"><path d="M0 0 C12 -7 18 -25 13 -44 C10 -55 -10 -55 -13 -44 C-18 -25 -12 -7 0 0 Z"/></g>
+    ${bloomDef('bloomCoral', CORAL, MARIGOLD)}
+    ${bloomDef('bloomRose', ROSE, MARIGOLD)}
+    ${bloomDef('bloomMarigold', MARIGOLD, CORAL)}
+    ${bloomDef('bloomPlum', PLUM, ROSE)}
+    ${bloomDef('bloomTeal', TEAL, MARIGOLD)}
+    ${leafDef('leafGreen', LEAF)}
+    ${leafDef('leafAqua', AQUA_LEAF)}
+    ${budDef('budRose', ROSE)}
+    ${budDef('budBlue', CORNFLOWER)}
     <!-- one spray, rooted at the corner, fanning inwards -->
     <g id="spray">
-      <g stroke="${g}" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.75">
+      <g stroke="${LEAF}" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.8">
         <path d="M10 4 C70 -18 140 -34 214 -34"/>
         <path d="M10 4 C34 -66 88 -112 140 -142"/>
         <path d="M10 4 C-6 -46 -2 -104 20 -160"/>
       </g>
-      <use href="#leaf" transform="translate(78 -26) rotate(62) scale(0.85)"/>
-      <use href="#leaf" transform="translate(150 -34) rotate(80) scale(0.75)"/>
-      <use href="#leaf" transform="translate(58 -84) rotate(26) scale(0.9)"/>
-      <use href="#leaf" transform="translate(24 -140) rotate(-8) scale(0.8)"/>
-      <use href="#bud" transform="translate(214 -34) rotate(88)"/>
-      <use href="#bud" transform="translate(22 -160) rotate(2)"/>
-      <use href="#bloom" transform="translate(140 -142) scale(1.05)"/>
-      <use href="#bloom" transform="translate(200 -58) scale(0.72)"/>
-      <use href="#bloom" transform="translate(30 -184) scale(0.66)"/>
-      <use href="#bloom" transform="translate(26 4) scale(0.92)"/>
+      <use href="#leafGreen" transform="translate(78 -26) rotate(62) scale(0.85)"/>
+      <use href="#leafAqua" transform="translate(150 -34) rotate(80) scale(0.75)"/>
+      <use href="#leafGreen" transform="translate(58 -84) rotate(26) scale(0.9)"/>
+      <use href="#leafAqua" transform="translate(24 -140) rotate(-8) scale(0.8)"/>
+      <use href="#budRose" transform="translate(214 -34) rotate(88)"/>
+      <use href="#budBlue" transform="translate(22 -160) rotate(2)"/>
+      <use href="#bloomCoral" transform="translate(140 -142) scale(1.05)"/>
+      <use href="#bloomMarigold" transform="translate(200 -58) scale(0.72)"/>
+      <use href="#bloomRose" transform="translate(30 -184) scale(0.66)"/>
+      <use href="#bloomPlum" transform="translate(26 4) scale(0.92)"/>
     </g>
-    <g id="ribbon" stroke="${g}" stroke-width="2.2" stroke-linejoin="round">
-      <path d="M-186 18 L-244 2 L-224 27 L-244 52 L-186 36 Z" fill="${g}" fill-opacity="0.13"/>
-      <path d="M186 18 L244 2 L224 27 L244 52 L186 36 Z" fill="${g}" fill-opacity="0.13"/>
-      <path d="M-186 0 L186 0 L186 54 L-186 54 Z" fill="${g}" fill-opacity="0.09"/>
+    <g id="ribbon" stroke="${CORAL}" stroke-width="2.2" stroke-linejoin="round">
+      <path d="M-186 18 L-244 2 L-224 27 L-244 52 L-186 36 Z" fill="${CORAL}" fill-opacity="0.16"/>
+      <path d="M186 18 L244 2 L224 27 L244 52 L186 36 Z" fill="${CORAL}" fill-opacity="0.16"/>
+      <path d="M-186 0 L186 0 L186 54 L-186 54 Z" fill="${MARIGOLD}" fill-opacity="0.12"/>
     </g>
   </defs>
 
-  <g opacity="0.92">
+  <g opacity="0.95">
     <!-- corner sprays -->
     <g transform="translate(0 ${h}) scale(0.82 0.82)"><use href="#spray"/></g>
     <g transform="translate(${w} ${h}) scale(-0.82 0.82)"><use href="#spray"/></g>
@@ -91,12 +118,14 @@ function backgroundArtDataUri(w: number, h: number): string {
 
     <!-- garland swag linking the top corners -->
     <path d="M${w * 0.16} 40 C ${w * 0.34} 150 ${w * 0.66} 150 ${w * 0.84} 40"
-          fill="none" stroke="${g}" stroke-width="2.4" stroke-linecap="round" opacity="0.7"/>
-    <use href="#leaf" transform="translate(${w * 0.30} 104) rotate(120) scale(0.8)"/>
-    <use href="#leaf" transform="translate(${w * 0.70} 104) rotate(-120) scale(0.8)"/>
-    <use href="#bud" transform="translate(${w * 0.38} 98) rotate(-26) scale(0.8)"/>
-    <use href="#bud" transform="translate(${w * 0.62} 98) rotate(26) scale(0.8)"/>
-    <use href="#bloom" transform="translate(${w * 0.5} 122) scale(0.92)"/>
+          fill="none" stroke="${LEAF}" stroke-width="2.4" stroke-linecap="round" opacity="0.75"/>
+    <use href="#leafGreen" transform="translate(${w * 0.30} 104) rotate(120) scale(0.8)"/>
+    <use href="#leafAqua" transform="translate(${w * 0.70} 104) rotate(-120) scale(0.8)"/>
+    <use href="#budRose" transform="translate(${w * 0.38} 98) rotate(-26) scale(0.8)"/>
+    <use href="#budBlue" transform="translate(${w * 0.62} 98) rotate(26) scale(0.8)"/>
+    <use href="#bloomRose" transform="translate(${w * 0.5} 122) scale(0.92)"/>
+    <use href="#bloomMarigold" transform="translate(${w * 0.42} 128) scale(0.6)"/>
+    <use href="#bloomTeal" transform="translate(${w * 0.58} 128) scale(0.6)"/>
 
     <!-- ribbon banner tucked under the garland -->
     <g transform="translate(${w * 0.5} 22)"><use href="#ribbon"/></g>
@@ -136,11 +165,11 @@ function ornament(): Node {
     'div',
     { display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, marginBottom: 30 },
     [
-      el('div', { width: 90, height: 1, backgroundColor: GOLD_SOFT }),
+      el('div', { width: 90, height: 1, backgroundColor: RULE }),
       el('div', {
-        width: 8, height: 8, margin: '0 14px', backgroundColor: GOLD, transform: 'rotate(45deg)',
+        width: 8, height: 8, margin: '0 14px', backgroundColor: CORAL, transform: 'rotate(45deg)',
       }),
-      el('div', { width: 90, height: 1, backgroundColor: GOLD_SOFT }),
+      el('div', { width: 90, height: 1, backgroundColor: RULE }),
     ],
   );
 }
@@ -151,26 +180,26 @@ function kicker(label: string): Node {
     'div',
     { display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     [
-      el('div', { width: 64, height: 1, backgroundColor: GOLD_SOFT }),
+      el('div', { width: 64, height: 1, backgroundColor: RULE }),
       text(
         {
           fontFamily: SANS, fontSize: 22, fontWeight: 500, letterSpacing: 8,
-          color: GOLD, margin: '0 18px', textTransform: 'uppercase',
+          color: CORAL, margin: '0 18px', textTransform: 'uppercase',
         },
         label,
       ),
-      el('div', { width: 64, height: 1, backgroundColor: GOLD_SOFT }),
+      el('div', { width: 64, height: 1, backgroundColor: RULE }),
     ],
   );
 }
 
-function detailRow(value: string, opts: { strong?: boolean } = {}): Node {
+function detailRow(value: string, opts: { strong?: boolean; accent?: boolean } = {}): Node {
   return text(
     {
       fontFamily: SANS,
       fontSize: opts.strong ? 30 : 25,
       fontWeight: opts.strong ? 500 : 400,
-      color: opts.strong ? INK : INK_SOFT,
+      color: opts.strong ? PLUM : opts.accent ? BRINJAL : INK_SOFT,
       textAlign: 'center',
       marginTop: 6,
       lineHeight: 1.5,
@@ -189,7 +218,7 @@ export function elegantTemplate(data: InvitationData): Node {
   if (data.creatorName) {
     children.push(
       text(
-        { fontFamily: SERIF, fontStyle: 'italic', fontSize: 30, color: INK_SOFT, marginTop: 34, textAlign: 'center' },
+        { fontFamily: SERIF, fontStyle: 'italic', fontSize: 30, color: BRINJAL, marginTop: 34, textAlign: 'center' },
         `Dear ${data.creatorName},`,
       ),
     );
@@ -202,7 +231,7 @@ export function elegantTemplate(data: InvitationData): Node {
         fontFamily: SERIF,
         fontWeight: 700,
         fontSize: titleSize(data.eventTitle),
-        color: INK,
+        color: PLUM,
         textAlign: 'center',
         lineHeight: 1.12,
         marginTop: data.creatorName ? 20 : 40,
@@ -217,8 +246,8 @@ export function elegantTemplate(data: InvitationData): Node {
   // Date / time / location
   children.push(detailRow(data.dateLabel, { strong: true }));
   if (data.timeLabel) children.push(detailRow(data.timeLabel));
-  if (data.isOnline) children.push(detailRow('Online Event'));
-  else if (data.locationLabel) children.push(detailRow(data.locationLabel));
+  if (data.isOnline) children.push(detailRow('Online Event', { accent: true }));
+  else if (data.locationLabel) children.push(detailRow(data.locationLabel, { accent: true }));
 
   // Description
   if (data.description) {
@@ -228,7 +257,7 @@ export function elegantTemplate(data: InvitationData): Node {
           fontFamily: SERIF,
           fontStyle: 'italic',
           fontSize: 26,
-          color: INK_SOFT,
+          color: BRINJAL,
           textAlign: 'center',
           lineHeight: 1.6,
           marginTop: 40,
@@ -254,7 +283,7 @@ export function elegantTemplate(data: InvitationData): Node {
   }
   hostRowChildren.push(
     text(
-      { fontFamily: SERIF, fontWeight: 600, fontSize: 34, color: INK, textAlign: 'center' },
+      { fontFamily: SERIF, fontWeight: 600, fontSize: 34, color: PLUM, textAlign: 'center' },
       data.businessName,
     ),
   );
@@ -264,7 +293,7 @@ export function elegantTemplate(data: InvitationData): Node {
     { display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 30 },
     [
       text(
-        { fontFamily: SANS, fontSize: 15, fontWeight: 500, letterSpacing: 6, color: GOLD, textTransform: 'uppercase', marginBottom: 16 },
+        { fontFamily: SANS, fontSize: 15, fontWeight: 500, letterSpacing: 6, color: MARIGOLD, textTransform: 'uppercase', marginBottom: 16 },
         'Hosted by',
       ),
       el('div', { display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }, hostRowChildren),
@@ -284,7 +313,7 @@ export function elegantTemplate(data: InvitationData): Node {
       justifyContent: 'space-between',
       flexGrow: 1,
       width: '100%',
-      border: `1px solid ${GOLD_SOFT}`,
+      border: `1px solid ${RULE}`,
       borderRadius: 6,
       padding: '72px 76px 64px 76px',
     },
@@ -298,10 +327,10 @@ export function elegantTemplate(data: InvitationData): Node {
         'div',
         { display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' },
         [
-          el('div', { width: 140, height: 1, backgroundColor: GOLD_SOFT, marginBottom: 34 }),
+          el('div', { width: 140, height: 1, backgroundColor: RULE, marginBottom: 34 }),
           host,
           text(
-            { fontFamily: SANS, fontSize: 15, fontWeight: 400, letterSpacing: 4, color: 'rgba(107,97,87,0.7)', marginTop: 34, textTransform: 'uppercase' },
+            { fontFamily: SANS, fontSize: 15, fontWeight: 400, letterSpacing: 4, color: 'rgba(110,100,114,0.7)', marginTop: 34, textTransform: 'uppercase' },
             'Powered by Kolab',
           ),
         ],
@@ -322,8 +351,8 @@ export function elegantTemplate(data: InvitationData): Node {
       width: INVITATION_WIDTH,
       height: INVITATION_HEIGHT,
       padding: FRAME,
-      backgroundColor: IVORY,
-      backgroundImage: `radial-gradient(circle at 50% 38%, ${IVORY} 0%, ${IVORY_EDGE} 100%)`,
+      backgroundColor: CREAM,
+      backgroundImage: `radial-gradient(circle at 50% 38%, ${CREAM} 0%, ${CREAM_EDGE} 100%)`,
     },
     [
       // Corner sprays + top garland + ribbon banner (behind the content).
@@ -346,7 +375,7 @@ export function elegantTemplate(data: InvitationData): Node {
             },
             [
               text(
-                { fontFamily: SERIF, fontWeight: 700, fontSize: 660, lineHeight: 1, color: GOLD, opacity: 0.045 },
+                { fontFamily: SERIF, fontWeight: 700, fontSize: 660, lineHeight: 1, color: ROSE, opacity: 0.05 },
                 mono,
               ),
             ],

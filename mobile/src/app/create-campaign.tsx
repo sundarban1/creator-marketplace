@@ -2327,13 +2327,6 @@ export default function CreateCampaignScreen() {
               <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 2 }]}>
                 <Text style={[sc.title, { color: C.text, marginBottom: 2 }]}>{t('createInvitation.publishHeading')}</Text>
                 <PreviewRow
-                  icon="gift"
-                  label={t('createInvitation.publishReceiveLabel')}
-                  value={eventOptionLabels(form.benefits, 'offering', t).join(', ') || '—'}
-                  colors={C}
-                  onPress={() => setEditingField('offerings')}
-                />
-                <PreviewRow
                   icon="users"
                   label={t('createInvitation.publishLookingForLabel')}
                   value={form.roleTypes.join(', ') || '—'}
@@ -2374,6 +2367,13 @@ export default function CreateCampaignScreen() {
                   value={String(form.capacity)}
                   colors={C}
                   onPress={() => setCapacityPickerOpen(true)}
+                />
+                <PreviewRow
+                  icon="gift"
+                  label={t('createInvitation.publishReceiveLabel')}
+                  value={eventOptionLabels(form.benefits, 'offering', t).join(', ') || '—'}
+                  colors={C}
+                  onPress={() => setEditingField('offerings')}
                   last
                 />
               </View>

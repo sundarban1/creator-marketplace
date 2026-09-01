@@ -217,12 +217,21 @@ export function LandingFooter() {
           </motion.div>
         </motion.div>
 
-        <div className="mt-10 flex flex-col-reverse items-center justify-between gap-4 border-t border-ink/10 pt-6 dark:border-white/10 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-ink/10 pt-6 dark:border-white/10 sm:flex-row">
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-ink-soft dark:text-white/75">
             <FooterLink to="/privacy">{d.footer.privacy}</FooterLink>
             <FooterLink to="/terms">{d.footer.terms}</FooterLink>
             <FooterLink to="/support">{d.footer.support}</FooterLink>
           </div>
+          {/* Admin-managed via the dashboard's Company page — only renders once set */}
+          {(siteInfo?.companyRegistrationNumber || siteInfo?.companyPan) && (
+            <p className="text-xs text-ink-soft dark:text-white/75">
+              {[
+                siteInfo.companyRegistrationNumber && `Company Reg. No. ${siteInfo.companyRegistrationNumber}`,
+                siteInfo.companyPan && `PAN ${siteInfo.companyPan}`,
+              ].filter(Boolean).join(' · ')}
+            </p>
+          )}
           <p className="text-xs text-ink-soft dark:text-white/75">© {new Date().getFullYear()} Kolab Technologies Pvt. Ltd. {d.footer.rights}</p>
         </div>
       </div>

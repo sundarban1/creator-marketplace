@@ -190,6 +190,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     deliverables: api.deliverables,
     paymentType:  api.paymentType,
     brand:        api.business.businessName,
+    brandLogoUrl: api.business.logoUrl ?? undefined,
     platforms:     api.platforms,
     platformIcons: api.platforms.map((p) => PLATFORM_ICONS[p] ?? '📱'),
     budget:       formatBudget(api.budgetMin, api.budgetMax, api.paymentType),

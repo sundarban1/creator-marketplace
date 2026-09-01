@@ -67,6 +67,19 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.type === 'campaign_invitation') {
     return n.refId ? { pathname: '/campaign-detail', params: { campaignId: n.refId } } : null;
   }
+  // "<Creator> accepted/declined your invitation" — only ever sent to the
+  // business, refId/refType pointing at the campaign the creator was invited
+  // to. Open that event's proposals screen on the Invited tab, where the
+  // response now shows. Invitations are an event-only feature, so campaignType
+  // is safely 'OPEN_EVENT'.
+  if (n.type === 'invitation_response') {
+    return isCreator || !n.refId
+      ? null
+      : {
+          pathname: '/(business)/campaign-proposals',
+          params: { campaignId: n.refId, campaignTitle: '', campaignType: 'OPEN_EVENT', initialTab: 'invited' },
+        };
+  }
   // Business-only: their own event's deadline passed. campaign-detail.tsx is
   // shared by both roles, so this works whether the campaign was PAID_CAMPAIGN
   // (refType 'campaign', reaches here) or OPEN_EVENT (refType 'event', already
@@ -81,7 +94,14 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.type === 'team_invitation' || n.type === 'team_invitation_response') {
     return isCreator ? '/(creator)/team' : null;
   }
-  if (n.type === 'creator_saved') return null; // just acknowledge — no deep link needed
+  // "<Business> saved your profile" — only ever sent to a creator, with
+  // refId/refType pointing at the business that saved them. Open that business's
+  // profile page so the creator can look them up.
+  if (n.type === 'creator_saved') {
+    return isCreator && n.refId
+      ? { pathname: '/(creator)/business-detail', params: { id: n.refId } }
+      : null;
+  }
   // Service requests (§33/34) — received (provider) routes to the requests
   // inbox; accepted/declined (business) has nowhere richer to land yet, so
   // it's acknowledge-only like creator_saved above.

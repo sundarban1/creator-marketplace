@@ -577,6 +577,7 @@ export default function CampaignProposalsScreen() {
     campaignId: string;
     campaignTitle: string;
     campaignType: string;
+    initialTab: string;
   }>();
 
   const { campaignId, campaignTitle } = params;
@@ -598,7 +599,11 @@ export default function CampaignProposalsScreen() {
   const [refreshing, setRefreshing]     = useState(false);
   // A free event opens on its Request tab (there is no "All" tab for it);
   // paid campaigns keep the existing all-proposals default.
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(isFree ? 'pending' : 'all');
+  // A notification tap can request a specific tab (e.g. an invitation response
+  // lands on Invited); otherwise a free event opens on Request, paid on All.
+  const requestedTab = (['all', 'pending', 'shortlisted', 'accepted', 'rejected', 'expired', 'invited'] as StatusFilter[])
+    .find((f) => f === params.initialTab);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(requestedTab ?? (isFree ? 'pending' : 'all'));
   const [invitees, setInvitees]         = useState<CampaignInvitee[]>([]);
   const [actingId, setActingId]         = useState<string | null>(null);
   const [closing, setClosing]           = useState(false);

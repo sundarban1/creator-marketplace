@@ -30,7 +30,7 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:          { icon: 'home',          iconActive: 'home',          label: 'Home' },
   campaigns:      { icon: 'briefcase',     iconActive: 'briefcase',     label: 'My Work', color: '#059669' },
-  'find-people':  { icon: 'users',         iconActive: 'users',         label: 'Find People', color: '#7C3AED' },
+  'find-people':  { icon: 'users',         iconActive: 'users',         label: 'Find Creators', color: '#7C3AED' },
   messages:       { icon: 'comment',       iconActive: 'comment',       label: 'Messages', color: '#2563EB' },
 };
 

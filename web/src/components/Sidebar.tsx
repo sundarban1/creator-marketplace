@@ -22,7 +22,7 @@ import {
   Gauge,
   Quote,
   FileSignature,
-  Phone,
+  Building2,
   ScrollText,
   History,
   ShieldCheck,
@@ -75,7 +75,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'System',
     items: [
-      { to: '/contact-info', label: 'Contact',     icon: Phone    },
+      { to: '/contact-info', label: 'Company',     icon: Building2 },
       { to: '/settings',     label: 'Settings',    icon: Settings },
       { to: '/rate-limits',  label: 'Rate Limits', icon: Gauge    },
       { to: '/audit-logs',   label: 'Audit Logs',  icon: ScrollText },

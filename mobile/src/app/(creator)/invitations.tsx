@@ -13,6 +13,7 @@ import { useToast } from '@/components/Toast';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCampaignInvitation } from '@/services/creator';
+import { eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
 import { OfflineError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
@@ -147,6 +148,14 @@ function InvitationCard({ item, onAccept, onDecline }: {
   const { t } = useLanguage();
   const initials = (item.business.businessName ?? 'B').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   const deadline = new Date(item.campaign.deadline).toLocaleDateString();
+  // Free events (open events) carry no budget — the business instead picks what
+  // they're offering ("what are you offering"), stored on campaign.benefits.
+  const isFreeEvent =
+    item.campaign.campaignType === 'OPEN_EVENT' ||
+    (!item.campaign.budgetMin && !item.campaign.budgetMax);
+  const offering = isFreeEvent
+    ? eventOptionLabels(item.campaign.benefits ?? [], 'offering', t).join(', ')
+    : '';
 
   return (
     <Pressable
@@ -174,9 +183,11 @@ function InvitationCard({ item, onAccept, onDecline }: {
       </View>
 
       <View style={styles.metaRow}>
-        <FontAwesome5 name="money-bill-wave" solid size={12} color={C.textSecondary} />
+        <FontAwesome5 name={isFreeEvent ? 'gift' : 'money-bill-wave'} solid size={12} color={C.textSecondary} />
         <Text style={[styles.metaText, { color: C.textSecondary }]}>
-          {t('invitations.budgetRange', { min: item.campaign.budgetMin.toLocaleString(), max: item.campaign.budgetMax.toLocaleString() })}
+          {isFreeEvent
+            ? (offering || t('invitations.freeEvent'))
+            : t('invitations.budgetRange', { min: item.campaign.budgetMin.toLocaleString(), max: item.campaign.budgetMax.toLocaleString() })}
         </Text>
       </View>
       <View style={styles.metaRow}>

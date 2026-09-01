@@ -9,6 +9,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
+import { eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
@@ -59,6 +60,12 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
   const catMeta   = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
   const expiry    = expiryLabel(campaign.deadline, t);
+  // Open events have no budget — show what the business is offering ("what are
+  // you offering" selections) rather than the generic "Free Product Exchange".
+  const offering  =
+    campaign.campaignType === 'OPEN_EVENT' && campaign.benefits?.length
+      ? eventOptionLabels(campaign.benefits, 'offering', t).join(', ')
+      : '';
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
@@ -109,7 +116,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
         <View style={styles.body}>
           <Text style={[styles.title, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">{campaign.title}</Text>
 
-          <Text style={[styles.budgetTitleText, { color: C.text }]} numberOfLines={1}>{campaign.budget}</Text>
+          <Text style={[styles.budgetTitleText, { color: C.text }]} numberOfLines={1}>{offering || campaign.budget}</Text>
 
           <View style={styles.metaRow}>
             <Text style={[styles.brandLine, { color: C.textSecondary }]} numberOfLines={1}>

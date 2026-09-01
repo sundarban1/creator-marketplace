@@ -10,6 +10,8 @@ import { api, type PlatformSettings } from '../lib/api';
 // section buried in the big general settings page. 'platform.supportEmail'
 // is reused as-is rather than duplicated with a second email field.
 const DEFAULTS: PlatformSettings = {
+  'platform.companyRegistrationNumber': '',
+  'platform.companyPan':                '',
   'platform.address':          '',
   'platform.phone':            '',
   'platform.supportEmail':     '',
@@ -111,7 +113,7 @@ export function ContactInfo() {
   if (loading) {
     return (
       <div>
-        <PageHeader title="Contact" />
+        <PageHeader title="Company" />
         <div className="max-w-2xl space-y-5">
           {[1, 2].map((i) => (
             <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
@@ -127,8 +129,8 @@ export function ContactInfo() {
   return (
     <div>
       <PageHeader
-        title="Contact"
-        subtitle="Contact details and social links shown on the public landing page"
+        title="Company"
+        subtitle="Company registration details, plus contact details and social links shown on the public landing page"
         action={
           <div className="flex items-center gap-3">
             {saved && (
@@ -163,6 +165,11 @@ export function ContactInfo() {
       )}
 
       <div className="max-w-2xl">
+        <SectionCard title="Company Details" subtitle="Legal registration details — shown in the landing page footer once set">
+          <InputField label="Company Registration Number" settingKey="platform.companyRegistrationNumber" settings={settings} onChange={setString} placeholder="e.g. 123456/078/079" />
+          <InputField label="Company PAN Number"          settingKey="platform.companyPan"                settings={settings} onChange={setString} placeholder="e.g. 601234567" />
+        </SectionCard>
+
         <SectionCard title="Contact Details" subtitle="Shown in the landing page footer — leave blank to hide">
           <InputField label="Address"       settingKey="platform.address"      settings={settings} onChange={setString} placeholder="Kathmandu, Nepal" />
           <InputField label="Phone Number"  settingKey="platform.phone"        settings={settings} onChange={setString} type="tel" placeholder="+977 98XXXXXXXX" />

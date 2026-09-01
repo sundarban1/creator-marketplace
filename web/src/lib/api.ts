@@ -644,6 +644,8 @@ export interface SiteInfo {
   address: string;
   phone:   string;
   email:   string;
+  companyRegistrationNumber: string;
+  companyPan:                string;
   social: {
     facebook:  string;
     instagram: string;

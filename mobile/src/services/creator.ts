@@ -107,7 +107,16 @@ export interface ApiCampaignInvitation {
   createdAt: string;
   // Backend returns the full Campaign row — only the fields this UI needs are
   // declared here; extra fields are present at runtime but untyped.
-  campaign: { id: string; title: string; budgetMin: number; budgetMax: number; deadline: string };
+  campaign: {
+    id: string;
+    title: string;
+    budgetMin: number;
+    budgetMax: number;
+    deadline: string;
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    // Free-event "what are you offering" selections (stored as the raw option strings).
+    benefits?: string[];
+  };
   business: { id: string; businessName: string | null; logoUrl: string | null };
 }
 

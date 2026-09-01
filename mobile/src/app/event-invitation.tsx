@@ -40,6 +40,10 @@ export default function EventInvitationScreen() {
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState<'share' | 'save' | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // The API call only gives us the image URL — the PNG itself still has to
+  // download before the card is actually visible, so keep the loading message
+  // up until expo-image reports the bitmap is ready (or failed).
+  const [imgReady, setImgReady] = useState(false);
 
   // Cache the downloaded file per version so repeated Share/Save don't re-fetch.
   const localUriRef = useRef<{ version: number; uri: string } | null>(null);
@@ -50,6 +54,7 @@ export default function EventInvitationScreen() {
       Promise.resolve().then(() => { if (!cancelled) { setError(true); setLoading(false); } });
       return () => { cancelled = true; };
     }
+    setImgReady(false);
     campaignService.getEventInvitation(campaignId)
       .then((inv) => { if (!cancelled) { setInvitation(inv); setError(false); } })
       .catch(() => { if (!cancelled) setError(true); })
@@ -114,12 +119,7 @@ export default function EventInvitationScreen() {
     <SafeAreaView style={[s.screen, { backgroundColor: C.background }]} edges={['top']}>
       <PageHeader title={t('eventInvitation.title')} backFallback="/(creator)/(tabs)" />
       <MaxWidthContainer>
-        {loading ? (
-          <View style={s.centered}>
-            <ActivityIndicator size="large" color={C.brinjal1} />
-            <Text style={[s.loadingTxt, { color: C.textSecondary }]}>{t('eventInvitation.loading')}</Text>
-          </View>
-        ) : error || !invitation ? (
+        {error || (!loading && !invitation) ? (
           <View style={s.centered}>
             <ErrorState
               icon="envelope-open-text"
@@ -128,6 +128,11 @@ export default function EventInvitationScreen() {
               actionLabel={t('eventInvitation.retry')}
               onAction={retry}
             />
+          </View>
+        ) : loading || !invitation ? (
+          <View style={s.centered}>
+            <ActivityIndicator size="large" color={C.brinjal1} />
+            <Text style={[s.loadingTxt, { color: C.textSecondary }]}>{t('eventInvitation.loading')}</Text>
           </View>
         ) : (
           <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
@@ -138,7 +143,14 @@ export default function EventInvitationScreen() {
                 contentFit="contain"
                 transition={200}
                 accessibilityLabel={t('eventInvitation.title')}
+                onLoadEnd={() => setImgReady(true)}
               />
+              {!imgReady && (
+                <View style={[s.imageOverlay, { backgroundColor: C.surface }]}>
+                  <ActivityIndicator size="large" color={C.brinjal1} />
+                  <Text style={[s.loadingTxt, { color: C.textSecondary }]}>{t('eventInvitation.loading')}</Text>
+                </View>
+              )}
             </View>
 
             <View style={s.actions}>
@@ -177,6 +189,7 @@ const s = StyleSheet.create({
   content:    { padding: SCREEN_GUTTER, paddingBottom: SPACING.xxl, gap: SPACING.xl },
   imageCard:  { borderRadius: RADIUS.lg, padding: SPACING.sm, overflow: 'hidden' },
   image:      { width: '100%', aspectRatio: ASPECT, borderRadius: RADIUS.md },
+  imageOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: SPACING.md, borderRadius: RADIUS.md },
 
   actions:    { gap: SPACING.md },
   primaryBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 52, borderRadius: RADIUS.md },
