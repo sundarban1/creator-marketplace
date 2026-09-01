@@ -270,7 +270,7 @@ export default function CreatorPeerDetailScreen() {
           {profile.location ? (
             <View style={s.locationRow}>
               <FontAwesome5 name="map-marker-alt" solid size={13} color={C.brinjal1} />
-              <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
+              <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">{profile.location}</Text>
             </View>
           ) : null}
         </View>
@@ -593,10 +593,10 @@ const s = StyleSheet.create({
   nameRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
   name:         { fontSize: 22, fontFamily: F.bold, textAlign: 'center' },
   username:     { fontSize: 14, fontFamily: F.regular, marginTop: 2 },
-  locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2, maxWidth: '100%' },
   socialRow2:   { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
   websiteText:  { fontSize: 14, fontFamily: F.medium, flex: 1 },
-  location:     { fontSize: 13, fontFamily: F.regular },
+  location:     { fontSize: 13, fontFamily: F.regular, flexShrink: 1 },
 
   // Sections
   section:      { marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 12, ...SHADOW.card },

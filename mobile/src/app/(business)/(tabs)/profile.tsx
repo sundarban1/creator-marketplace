@@ -180,7 +180,7 @@ export default function BusinessProfileScreen() {
           {profile?.location ? (
             <View style={s.locationRow}>
               <FontAwesome5 name="map-marker-alt" solid size={13} color={C.brinjal1} />
-              <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
+              <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">{profile.location}</Text>
             </View>
           ) : null}
 
@@ -428,8 +428,8 @@ const s = StyleSheet.create({
   // Identity
   nameRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   name:        { fontSize: 22, fontFamily: F.bold, textAlign: 'center' },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  location:    { fontSize: 13, fontFamily: F.regular },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2, maxWidth: '100%' },
+  location:    { fontSize: 13, fontFamily: F.regular, flexShrink: 1 },
 
   actionRow:   { flexDirection: 'row', gap: 10, marginTop: 12 },
   editBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40,

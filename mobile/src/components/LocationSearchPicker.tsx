@@ -31,7 +31,6 @@ export function LocationSearchPicker({
   // elsewhere in the app — keep it untranslated in the stored label, only
   // the displayed text below is localized.
   const remoteSelected = selected.some((l) => l.label === 'Remote');
-  const nonRemote = selected.filter((l) => l.label !== 'Remote');
   const atMax = selected.length >= MAX_LOCS;
 
   function toggleRemote() {
@@ -42,10 +41,6 @@ export function LocationSearchPicker({
     }
   }
 
-  function remove(label: string) {
-    onSelect(selected.filter((l) => l.label !== label));
-  }
-
   function handleLocationSelect(address: string, lat: number, lng: number) {
     setModalOpen(false);
     if (atMax || selected.some((l) => l.label === address)) return;
@@ -54,11 +49,11 @@ export function LocationSearchPicker({
 
   return (
     <View style={ls.container}>
-      {/* Remote + selected places share one wrapping row — they're the same
-          kind of thing (a chosen location filter), so they shouldn't cost two
-          separate rows of vertical space. */}
-      <View style={ls.selectedChips}>
-        {showRemoteOption && (
+      {/* Selected places are surfaced by the sheet's own ActiveFilterChips row
+          at the top, so we don't echo them here above the search box. Only the
+          Remote chip stays — it's an interactive toggle, not a status echo. */}
+      {showRemoteOption && (
+        <View style={ls.selectedChips}>
           <Pressable
             style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
             onPress={toggleRemote}
@@ -69,18 +64,8 @@ export function LocationSearchPicker({
             </Text>
             {remoteSelected && <FontAwesome5 name="times" solid size={13} color={C.brinjal1} />}
           </Pressable>
-        )}
-
-        {nonRemote.map((loc) => (
-          <View key={loc.label} style={[ls.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-            <FontAwesome5 name="map-marker-alt" solid size={12} color={C.brinjal1} />
-            <Text style={[ls.selectedChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-            <Pressable onPress={() => remove(loc.label)} hitSlop={8}>
-              <FontAwesome5 name="times" solid size={13} color={C.brinjal1} />
-            </Pressable>
-          </View>
-        ))}
-      </View>
+        </View>
+      )}
 
       {/* Trigger — matches the edit-profile location field: a tappable box
           that opens the full search modal, instead of an inline dropdown. */}
@@ -109,8 +94,6 @@ const ls = StyleSheet.create({
   remoteChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
   remoteText:      { fontSize: 13, fontFamily: F.regular },
   selectedChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  selectedChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  selectedChipText:{ fontSize: 13, fontFamily: F.semibold },
   addBtn:          { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
   addBtnTxt:       { flex: 1, fontSize: 14, fontFamily: F.regular },
   addBtnArrow:     { fontSize: 20 },

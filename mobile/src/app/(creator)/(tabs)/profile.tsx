@@ -250,7 +250,7 @@ export default function CreatorProfileScreen() {
           {profile?.location ? (
             <View style={s.locationRow}>
               <FontAwesome5 name="map-marker-alt" solid size={13} color={C.brinjal1} />
-              <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
+              <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">{profile.location}</Text>
             </View>
           ) : null}
           {displayBio ? (
@@ -558,8 +558,8 @@ const s = StyleSheet.create({
   nameRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   name:        { fontSize: 22, fontFamily: F.bold, textAlign: 'center' },
   username:    { fontSize: 14, fontFamily: F.regular, textAlign: 'center', marginTop: 2 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  location:    { fontSize: 13, fontFamily: F.regular },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: '100%' },
+  location:    { fontSize: 13, fontFamily: F.regular, flexShrink: 1 },
   bio:         { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8, fontFamily: F.regular },
 
   actionRow:   { flexDirection: 'row', gap: 10, marginTop: 6 },

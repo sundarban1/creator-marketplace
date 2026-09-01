@@ -378,38 +378,9 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
         onAllPress={() => { setCategory(''); void fetchBusinesses({ category: '', silent: true }); }}
       />
 
-      {/* Active filter pills — category is deliberately excluded here since
-          the CategoryPillRow above already highlights the selected category;
-          repeating it as a chip+Clear-all below was redundant. */}
-      {(platform || locations.length > 0) && (
-        <View style={styles.activePills}>
-          {locations.map((loc) => (
-            <Pressable
-              key={loc.label}
-              style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
-              onPress={() => {
-                const next = locations.filter((l) => l.label !== loc.label);
-                setLocations(next);
-                void fetchBusinesses({ locations: next, silent: true });
-              }}>
-              <FontAwesome5 name="map-marker-alt" solid size={11} color={C.brinjal1} />
-              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
-            </Pressable>
-          ))}
-          {platform ? (
-            <Pressable
-              style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
-              onPress={() => { setPlatform(''); void fetchBusinesses({ platform: '', silent: true }); }}>
-              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{platform}</Text>
-              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
-            </Pressable>
-          ) : null}
-          <Pressable onPress={clearAll}>
-            <Text style={[styles.clearAllText, { color: C.error }]}>{t('explore.businesses.clearAll')}</Text>
-          </Pressable>
-        </View>
-      )}
+      {/* Active filters aren't echoed as a pill row on the listing — the
+          filter button keeps its badge count and the filter sheet owns the
+          chips + "Reset all". The empty state still offers a one-tap clear. */}
 
       {/* Always a stable flex:1 region below the header/pills, so the empty
           state reliably centers regardless of how tall the pill row above
@@ -517,14 +488,6 @@ const styles = StyleSheet.create({
   filterBtn:      { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
-
-  // Active filter pills — paddingHorizontal 20 (not 16, like topRow above)
-  // to match the People/Opportunities tabs' card-list left edge in the
-  // Discover shell, which is what actually needs to line up across tabs.
-  activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: SCREEN_GUTTER, paddingBottom: 8, gap: 8 },
-  activePill:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 5 },
-  activePillText: { fontSize: 12, fontFamily: F.semibold },
-  clearAllText:   { fontSize: 12, fontFamily: F.bold },
 
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText:    { fontSize: 14, fontFamily: F.regular },
