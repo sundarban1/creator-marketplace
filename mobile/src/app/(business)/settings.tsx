@@ -140,8 +140,9 @@ function SwitchRow({ label, faIcon, faIconColor, iconNode, sub, value, onChange,
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: C.border, true: C.brinjal1 + '70' }}
-        thumbColor={value ? C.brinjal1 : '#ccc'}
+        // ON = solid dark green, white thumb (matches the business theme).
+        trackColor={{ false: C.border, true: '#15803D' }}
+        thumbColor={value ? '#FFFFFF' : '#ccc'}
         ios_backgroundColor={C.border}
       />
     </View>
@@ -635,7 +636,6 @@ export default function BusinessSettingsScreen() {
   // ── Section 9: Privacy ──
   const [showProfilePublic, setShowProfilePublic] = useState(true);
   const [hideContactDetails, setHideContactDetails] = useState(false);
-  const [allowDirectMessages, setAllowDirectMessages] = useState(true);
   const [hideSocialLinksPriv, setHideSocialLinksPriv] = useState(false);
 
   // ── Confirmation modal ──
@@ -646,7 +646,6 @@ export default function BusinessSettingsScreen() {
     businessService.getMyProfile().then((p) => {
       setShowProfilePublic(p.showPublicProfile);
       setHideContactDetails(p.hideContactDetails);
-      setAllowDirectMessages(p.allowDirectMessages);
       setHideSocialLinksPriv(p.hideSocialLinks);
     }).catch(() => {});
     notificationService.getSettings().then((s) => {
@@ -2097,17 +2096,6 @@ export default function BusinessSettingsScreen() {
               const next = !hideSocialLinksPriv;
               setHideSocialLinksPriv(next);
               savePrivacy({ hideSocialLinks: next });
-            }}
-          />
-          <SwitchRow
-            iconNode={<FontAwesome5 name="comment" solid size={20} color={C.brinjal1} />}
-            label={t('businessSettings.allowMessagesLabel')}
-            sub={t('businessSettings.allowMessagesSub')}
-            value={allowDirectMessages}
-            onChange={() => {
-              const next = !allowDirectMessages;
-              setAllowDirectMessages(next);
-              savePrivacy({ allowDirectMessages: next });
             }}
             isLast
           />
