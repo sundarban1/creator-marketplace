@@ -90,19 +90,12 @@ const PROVIDER_CATEGORIES: { icon: string; name: string; key: string; scope: Cat
 ];
 
 export async function seedCategories(prisma: PrismaClient) {
-  // Upsert-by-key, not wipe+reinsert. The previous version deleted every row
-  // first, which the note here already flagged as living on borrowed time
-  // because Category picked up incoming FKs (onDelete: RESTRICT). It came due:
-  // CampaignRequirement.categoryId now references Category.id, so the wipe
-  // fails outright against any database that has campaign requirements —
-  // Service.categoryId is the same hazard waiting behind it.
-  //
-  // Upserting keys off `key` (the unique column) so re-running is safe and
-  // preserves ids, which is what the FKs point at. Rows that exist in the
-  // database but not here are left alone rather than deleted — removing a
-  // category is an admin action, and doing it silently from a seed script
-  // would break whatever still references it. Admin-toggled `status` is set
-  // on create only, so re-running never resurrects a category an admin
+  // Upsert-by-key, not wipe+reinsert. Category has incoming FKs with
+  // onDelete: RESTRICT (CampaignRequirement.categoryId, Service.categoryId), so
+  // deleting a row that anything references fails outright. Upserting keys off
+  // `key` (the unique column) so re-running is safe and preserves ids.
+  // Admin-toggled `status` is set on CREATE only (not in `update`), so
+  // re-running never resurrects a category an admin (or the sweep below)
   // deliberately disabled.
   const rows = [
     ...INDUSTRY_CATEGORIES.map((c, i) => ({ ...c, iconBg: BG_COLORS[i % BG_COLORS.length]! })),
@@ -125,9 +118,28 @@ export async function seedCategories(prisma: PrismaClient) {
     });
   }
 
-  const stale = await prisma.category.count({ where: { key: { notIn: rows.map((r) => r.key) } } });
+  // The app connects content creators with businesses only. The older broad
+  // "provider role" taxonomy (Photographer, Videographer, DJ, Dancer, Model,
+  // Makeup Artist, Event Planner, Host/MC, …) is retired: deactivate — never
+  // delete — every CREATOR-scope row that isn't part of the surviving
+  // content-creator family. Deactivating is FK-safe and hides the row from
+  // every public picker (findManyPublic filters status = 'ACTIVE') and from the
+  // campaign-AI provider-type list, while legacy campaign_requirements that
+  // reference it keep rendering. Reversible from the admin Categories page.
+  const creatorSurvivors = PROVIDER_CATEGORIES.map((c) => c.key);
+  const deactivated = await prisma.category.updateMany({
+    where:  { scope: 'CREATOR', status: 'ACTIVE', key: { notIn: creatorSurvivors } },
+    data:   { status: 'INACTIVE' },
+  });
+
+  const stale = await prisma.category.count({
+    where: { scope: { not: 'CREATOR' }, key: { notIn: rows.map((r) => r.key) } },
+  });
   console.log(`  ✅ Categories: ${rows.length} seeded (${created} new, ${rows.length - created} updated)`);
+  if (deactivated.count > 0) {
+    console.log(`  🚫 ${deactivated.count} legacy provider-role categor${deactivated.count === 1 ? 'y' : 'ies'} deactivated (content-creator-only pivot).`);
+  }
   if (stale > 0) {
-    console.log(`  ⚠️  ${stale} category row(s) in the database are not in this seed — left untouched; remove them from the admin Categories page if they're obsolete.`);
+    console.log(`  ⚠️  ${stale} non-creator category row(s) in the database are not in this seed — left untouched; remove them from the admin Categories page if they're obsolete.`);
   }
 }
