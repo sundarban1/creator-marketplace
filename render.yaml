@@ -97,6 +97,15 @@ services:
       - key: SENTRY_TRACES_SAMPLE_RATE
         value: 0.1
 
+      # Sentry error tracking (see src/instrument.ts). Optional — errors just
+      # aren't reported when unset. The backend has its OWN DSN, separate from
+      # the web/mobile ones.
+      - key: SENTRY_DSN
+        sync: false
+
+      - key: SENTRY_ENVIRONMENT
+        value: production
+
       # ── Database — wired to the Render Postgres instance above. After this
       # database's first deploy (migrations run automatically via
       # docker-entrypoint.sh), open the service's Shell tab on the Render
@@ -176,6 +185,20 @@ services:
       - key: ADMIN_EMAIL
         sync: false
 
+      # Legacy generic-SMTP fallback (src/utils/email/core.ts) — only used if
+      # RESEND_API_KEY and the EMAIL_* Gmail vars are both unset. Optional.
+      - key: SMTP_HOST
+        sync: false
+
+      - key: SMTP_PORT
+        sync: false
+
+      - key: SMTP_USER
+        sync: false
+
+      - key: SMTP_PASS
+        sync: false
+
       # ── Cloudinary (avatar/logo/document uploads) — fill in via dashboard ───
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
@@ -186,8 +209,37 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
 
+      # ── Cloudflare R2 — primary store for chat/deliverable video + chat voice
+      # recordings (src/services/r2.service.ts, utils/r2Media.ts). All optional:
+      # when unset those two flows fall back to the Cloudinary signed-upload path.
+      # R2_PUBLIC_URL is the bucket's public base URL and is required for stored
+      # media to actually resolve.
+      - key: R2_ACCOUNT_ID
+        sync: false
+
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+
+      - key: R2_BUCKET_NAME
+        sync: false
+
+      - key: R2_PUBLIC_URL
+        sync: false
+
+      - key: R2_PRESIGNED_URL_EXPIRY
+        value: "900"
+
       # ── AI campaign generator — fill in via dashboard ───────────────────────
       - key: OPENAI_API_KEY
+        sync: false
+
+      # Unsplash stock-photo search for AI draft feature images (utils/imageSearch.ts).
+      # Optional: without it drafts carry no featureImageUrl and the client uses
+      # its local category photo map.
+      - key: UNSPLASH_ACCESS_KEY
         sync: false
 
       # ── TikTok Login Kit (creator social-account OAuth connect) ─────────────
@@ -247,6 +299,69 @@ services:
       # revocation or the server-to-server webhook is turned on.
       - key: APPLE_CLIENT_ID
         value: com.sundarban.kolab
+
+      # Only needed once Apple token revocation / server-to-server notifications
+      # are turned on (not wired up yet). APPLE_PRIVATE_KEY is the .p8 contents
+      # with literal \n. All optional.
+      - key: APPLE_TEAM_ID
+        sync: false
+
+      - key: APPLE_KEY_ID
+        sync: false
+
+      - key: APPLE_PRIVATE_KEY
+        sync: false
+
+      # ── Khalti ePayment (business pays to start a paid application) ─────────
+      # Optional: without KHALTI_SECRET_KEY, selecting Khalti at pay time fails
+      # with a clear error. KHALTI_BASE_URL defaults to the dev/sandbox endpoint
+      # in code — set it to https://khalti.com/api/v2 for live payments.
+      - key: KHALTI_SECRET_KEY
+        sync: false
+
+      - key: KHALTI_BASE_URL
+        sync: false
+
+      - key: KHALTI_RETURN_URL
+        value: https://kolab-api.onrender.com/api/payments/khalti/callback
+
+      # ── eSewa ePay v2 (same role as Khalti above) ──────────────────────────
+      # Optional: without ESEWA_SECRET_KEY / ESEWA_RETURN_BASE_URL, selecting
+      # eSewa at pay time fails with a clear error. ESEWA_MERCHANT_CODE /
+      # ESEWA_BASE_URL / ESEWA_STATUS_URL default to the UAT (rc) endpoints in
+      # code — set all three for live payments.
+      - key: ESEWA_SECRET_KEY
+        sync: false
+
+      - key: ESEWA_MERCHANT_CODE
+        sync: false
+
+      - key: ESEWA_BASE_URL
+        sync: false
+
+      - key: ESEWA_STATUS_URL
+        sync: false
+
+      - key: ESEWA_RETURN_BASE_URL
+        value: https://kolab-api.onrender.com
+
+      # ── Sparrow SMS (Nepal) — signup + forgot-password OTP only ────────────
+      # Optional: when SPARROW_SMS_TOKEN is unset, sendSms() logs and no-ops and
+      # those OTP flows still work (email path). SPARROW_SMS_FROM defaults to
+      # "Kolab".
+      - key: SPARROW_SMS_TOKEN
+        sync: false
+
+      - key: SPARROW_SMS_FROM
+        sync: false
+
+      # ── First-run seeding — read by `npm run db:seed:admin` (run once from the
+      # service Shell tab after the first deploy, see the DATABASE_URL note above).
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
 
   # marketplace-web — added as a NEW service, deliberately separate from
   # whatever dashboard-managed static site currently serves ourkolab.com.
