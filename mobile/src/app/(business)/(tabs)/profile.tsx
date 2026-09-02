@@ -334,38 +334,47 @@ export default function BusinessProfileScreen() {
           )}
         </SectionCard>
 
-        {/* ── Reviews (kept last) — every review this business has received,
-              latest first (backend orders by createdAt desc) ── */}
-        {!!profile?.reviews?.length && (
-          <View onLayout={(e) => { reviewsY.current = e.nativeEvent.layout.y; }}>
-            <SectionCard title={t('reviewsList.title')} C={C}>
-              {profile.reviewSummary && profile.reviewSummary.reviewCount > 0 ? (
-                <View style={[s.reviewSummaryRow, { borderBottomColor: C.border }]}>
-                  <FontAwesome5 name="star" solid size={13} color="#F59E0B" />
-                  <Text style={[s.reviewSummaryText, { color: C.textSecondary }]}>
-                    {t('reviewsList.summary', {
-                      rating: profile.reviewSummary.averageRating.toFixed(1),
-                      count: profile.reviewSummary.reviewCount,
-                    })}
-                  </Text>
-                </View>
-              ) : null}
-              <ReviewsList
-                reviews={profile.reviews}
-                seeMore
-                limit={5}
-                onSeeAll={() => router.push({
-                  pathname: '/(business)/reviews',
-                  params: {
-                    reviews: JSON.stringify(profile.reviews ?? []),
-                    rating: String(profile.reviewSummary?.averageRating ?? ''),
-                    count: String(profile.reviewSummary?.reviewCount ?? (profile.reviews ?? []).length),
-                  },
-                } as never)}
-              />
-            </SectionCard>
-          </View>
-        )}
+        {/* ── Reviews & Ratings — sits right below Industries. Creators this
+              business has worked with can rate and review it; those show up
+              here (latest first). Always rendered — an empty state explains
+              where reviews come from when there are none yet. ── */}
+        <View onLayout={(e) => { reviewsY.current = e.nativeEvent.layout.y; }}>
+          <SectionCard title={t('reviewsList.title')} C={C}>
+            {profile?.reviews?.length ? (
+              <>
+                {profile.reviewSummary && profile.reviewSummary.reviewCount > 0 ? (
+                  <View style={[s.reviewSummaryRow, { borderBottomColor: C.border }]}>
+                    <FontAwesome5 name="star" solid size={13} color="#F59E0B" />
+                    <Text style={[s.reviewSummaryText, { color: C.textSecondary }]}>
+                      {t('reviewsList.summary', {
+                        rating: profile.reviewSummary.averageRating.toFixed(1),
+                        count: profile.reviewSummary.reviewCount,
+                      })}
+                    </Text>
+                  </View>
+                ) : null}
+                <ReviewsList
+                  reviews={profile.reviews}
+                  seeMore
+                  limit={5}
+                  onSeeAll={() => router.push({
+                    pathname: '/(business)/reviews',
+                    params: {
+                      reviews: JSON.stringify(profile.reviews ?? []),
+                      rating: String(profile.reviewSummary?.averageRating ?? ''),
+                      count: String(profile.reviewSummary?.reviewCount ?? (profile.reviews ?? []).length),
+                    },
+                  } as never)}
+                />
+              </>
+            ) : (
+              <SectionEmptyState
+                icon="star"
+                title={t('profile.noReviewsYet')}
+                hint={t('profile.businessReviewsHint')} />
+            )}
+          </SectionCard>
+        </View>
 
       </ScrollView>
       </MaxWidthContainer>

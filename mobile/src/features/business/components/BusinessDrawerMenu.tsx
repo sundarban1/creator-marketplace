@@ -32,9 +32,10 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
   {
     labelKey: 'drawer.accountGroup',
     items: [
-      // Social Accounts — connect Instagram/TikTok/etc.; opens the settings
-      // screen's "social" section, renderSocialAccounts().
-      { iconName: 'share-alt',     labelKey: 'drawer.socialAccounts',    route: '/(business)/settings?section=social',        color: '#E1306C' },
+      // Social Accounts — hidden from the business drawer for now; do not
+      // display in the UI. (renderSocialAccounts() still exists, reachable
+      // only by direct URL.)
+      // { iconName: 'share-alt',     labelKey: 'drawer.socialAccounts',    route: '/(business)/settings?section=social',        color: '#E1306C' },
       // Service Requests hidden for now — do not display in the business drawer.
       // { iconName: 'paper-plane', faName: 'paper-plane', labelKey: 'drawer.serviceRequests',  route: '/(business)/service-requests',              color: '#7C3AED' },
       { iconName: 'check-circle', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },

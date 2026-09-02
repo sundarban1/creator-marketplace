@@ -7,13 +7,16 @@ type Props = {
   icon: string;
   title: string;
   hint: string;
-  cta: string;
-  onPress: () => void;
+  // Omit both for a purely informational empty state (e.g. Reviews & Ratings,
+  // where the content is written by someone else and there's nothing for the
+  // profile owner to do here).
+  cta?: string;
+  onPress?: () => void;
 };
 
 // Compact "this section is empty" card for a single section within a longer
 // scrollable page (e.g. a profile's Social Accounts / Categories / Past Work
-// cards) — always paired with an action, unlike the full-screen `EmptyState`.
+// cards) — usually paired with an action, unlike the full-screen `EmptyState`.
 export function SectionEmptyState({ icon, title, hint, cta, onPress }: Props) {
   const C = useAppColors();
   return (
@@ -21,17 +24,19 @@ export function SectionEmptyState({ icon, title, hint, cta, onPress }: Props) {
       <FontAwesome5 name={icon} solid size={28} color={C.border} />
       <Text style={[styles.title, { color: C.text }]}>{title}</Text>
       <Text style={[styles.hint, { color: C.textSecondary }]}>{hint}</Text>
-      <Pressable
-        style={[
-          styles.cta,
-          {
-            backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-            shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-          },
-        ]}
-        onPress={onPress}>
-        <Text style={styles.ctaText}>{cta}</Text>
-      </Pressable>
+      {cta && onPress ? (
+        <Pressable
+          style={[
+            styles.cta,
+            {
+              backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+              shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+            },
+          ]}
+          onPress={onPress}>
+          <Text style={styles.ctaText}>{cta}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

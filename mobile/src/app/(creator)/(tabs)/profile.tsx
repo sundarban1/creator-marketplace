@@ -3,7 +3,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Image, Linking, Platform,
+  ActivityIndicator, Image,
   Pressable, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { useToast } from '@/components/Toast';
@@ -27,30 +27,32 @@ import { pickAndUpload } from '@/utilities/uploadImage';
 import { logger } from '@/utilities/logger';
 import { getCached, setCached } from '@/utilities/offlineCache';
 
-const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
-  instagram: { platform: 'Instagram', color: '#E1306C', iconName: 'instagram' },
-  tiktok:    { platform: 'TikTok',    color: '#010101', iconName: 'tiktok'    },
-  youtube:   { platform: 'YouTube',   color: '#FF0000', iconName: 'youtube'   },
-  facebook:  { platform: 'Facebook',  color: '#1877F2', iconName: 'facebook'  },
-  twitter:   { platform: 'X / Twitter', color: '#1DA1F2', iconName: 'twitter' },
-  linkedin:  { platform: 'LinkedIn',  color: '#0A66C2', iconName: 'linkedin'  },
-  pinterest: { platform: 'Pinterest', color: '#E60023', iconName: 'pinterest' },
-  snapchat:  { platform: 'Snapchat',  color: '#FFFC00', iconName: 'snapchat'  },
-  twitch:    { platform: 'Twitch',    color: '#9146FF', iconName: 'twitch'    },
-};
+// Social Accounts section is hidden from the creator profile for now — these
+// helpers are only used by that (commented-out) SectionCard.
+// const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
+//   instagram: { platform: 'Instagram', color: '#E1306C', iconName: 'instagram' },
+//   tiktok:    { platform: 'TikTok',    color: '#010101', iconName: 'tiktok'    },
+//   youtube:   { platform: 'YouTube',   color: '#FF0000', iconName: 'youtube'   },
+//   facebook:  { platform: 'Facebook',  color: '#1877F2', iconName: 'facebook'  },
+//   twitter:   { platform: 'X / Twitter', color: '#1DA1F2', iconName: 'twitter' },
+//   linkedin:  { platform: 'LinkedIn',  color: '#0A66C2', iconName: 'linkedin'  },
+//   pinterest: { platform: 'Pinterest', color: '#E60023', iconName: 'pinterest' },
+//   snapchat:  { platform: 'Snapchat',  color: '#FFFC00', iconName: 'snapchat'  },
+//   twitch:    { platform: 'Twitch',    color: '#9146FF', iconName: 'twitch'    },
+// };
 
-function extractHandle(url: string): string {
-  try {
-    const path = new URL(url).pathname.replace(/^\/|\/$/g, '').replace(/^@/, '');
-    return path ? `@${path}` : url;
-  } catch { return url; }
-}
+// function extractHandle(url: string): string {
+//   try {
+//     const path = new URL(url).pathname.replace(/^\/|\/$/g, '').replace(/^@/, '');
+//     return path ? `@${path}` : url;
+//   } catch { return url; }
+// }
 
-function fmtFollowers(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toString();
-}
+// function fmtFollowers(n: number): string {
+//   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+//   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+//   return n.toString();
+// }
 
 // Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display).
 // function detectPlatform(url: string) {
@@ -161,19 +163,21 @@ export default function CreatorProfileScreen() {
   const displayAvatar = profile?.avatarUrl ?? user?.avatar;
   const displayBio    = profile?.bio ?? null;
 
-  const richAccounts = profile?.socialAccounts?.length
-    ? profile.socialAccounts.map((acc) => ({
-        ...(PLATFORM_MAP[acc.platform] ?? { platform: acc.platform, color: '#666666', iconName: 'link' }),
-        handle: extractHandle(acc.profileUrl),
-        url:    acc.profileUrl,
-        followers: acc.followers,
-      }))
-    : Object.entries(profile?.socialLinks ?? {})
-        .filter(([, url]) => !!url)
-        .map(([key, url]) => ({
-          ...(PLATFORM_MAP[key] ?? { platform: key, color: '#666666', iconName: 'link' }),
-          handle: extractHandle(url!), url: url!, followers: 0,
-        }));
+  // Social Accounts section is hidden from the creator profile for now — see
+  // the commented-out SectionCard below. `richAccounts` stays commented with it.
+  // const richAccounts = profile?.socialAccounts?.length
+  //   ? profile.socialAccounts.map((acc) => ({
+  //       ...(PLATFORM_MAP[acc.platform] ?? { platform: acc.platform, color: '#666666', iconName: 'link' }),
+  //       handle: extractHandle(acc.profileUrl),
+  //       url:    acc.profileUrl,
+  //       followers: acc.followers,
+  //     }))
+  //   : Object.entries(profile?.socialLinks ?? {})
+  //       .filter(([, url]) => !!url)
+  //       .map(([key, url]) => ({
+  //         ...(PLATFORM_MAP[key] ?? { platform: key, color: '#666666', iconName: 'link' }),
+  //         handle: extractHandle(url!), url: url!, followers: 0,
+  //       }));
 
   // Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display).
   // const portfolioLinks = profile?.portfolioLinks ?? [];
@@ -324,8 +328,9 @@ export default function CreatorProfileScreen() {
           )}
         </SectionCard>
 
-        {/* ── Social Accounts ── */}
-        <SectionCard
+        {/* Social Accounts — hidden from the creator profile for now; do not
+            display in the UI. `richAccounts` above is commented out with it. */}
+        {/* <SectionCard
           title={t('profile.socialAccounts')}
           action={{ label: richAccounts.length > 0 ? t('profile.manage') : t('profile.addBtn'), onPress: () => router.push('/(creator)/settings?section=social' as never) }}
           C={C}>
@@ -369,7 +374,7 @@ export default function CreatorProfileScreen() {
               cta={t('profile.addAccount')}
               onPress={() => router.push('/(creator)/settings?section=social' as never)} />
           )}
-        </SectionCard>
+        </SectionCard> */}
 
         {/* ── My Portfolio ── */}
         <SectionCard
@@ -466,38 +471,47 @@ export default function CreatorProfileScreen() {
           )}
         </SectionCard> */}
 
-        {/* ── Reviews (kept last) — every review this creator has received,
-              latest first (backend orders by createdAt desc) ── */}
-        {!!profile?.reviews?.length && (
-          <View onLayout={(e) => { reviewsY.current = e.nativeEvent.layout.y; }}>
-            <SectionCard title={t('reviewsList.title')} C={C}>
-              {profile.reviewSummary && profile.reviewSummary.reviewCount > 0 ? (
-                <View style={[s.reviewSummaryRow, { borderBottomColor: C.border }]}>
-                  <FontAwesome5 name="star" solid size={13} color="#F59E0B" />
-                  <Text style={[s.reviewSummaryText, { color: C.textSecondary }]}>
-                    {t('reviewsList.summary', {
-                      rating: profile.reviewSummary.averageRating.toFixed(1),
-                      count: profile.reviewSummary.reviewCount,
-                    })}
-                  </Text>
-                </View>
-              ) : null}
-              <ReviewsList
-                reviews={profile.reviews}
-                seeMore
-                limit={5}
-                onSeeAll={() => router.push({
-                  pathname: '/(creator)/reviews',
-                  params: {
-                    reviews: JSON.stringify(profile.reviews ?? []),
-                    rating: String(profile.reviewSummary?.averageRating ?? ''),
-                    count: String(profile.reviewSummary?.reviewCount ?? (profile.reviews ?? []).length),
-                  },
-                } as never)}
-              />
-            </SectionCard>
-          </View>
-        )}
+        {/* ── Reviews & Ratings — sits right below My Portfolio. Businesses
+              this creator has worked with can rate and review them; those
+              show up here (latest first). Always rendered — an empty state
+              explains where reviews come from when there are none yet. ── */}
+        <View onLayout={(e) => { reviewsY.current = e.nativeEvent.layout.y; }}>
+          <SectionCard title={t('reviewsList.title')} C={C}>
+            {profile?.reviews?.length ? (
+              <>
+                {profile.reviewSummary && profile.reviewSummary.reviewCount > 0 ? (
+                  <View style={[s.reviewSummaryRow, { borderBottomColor: C.border }]}>
+                    <FontAwesome5 name="star" solid size={13} color="#F59E0B" />
+                    <Text style={[s.reviewSummaryText, { color: C.textSecondary }]}>
+                      {t('reviewsList.summary', {
+                        rating: profile.reviewSummary.averageRating.toFixed(1),
+                        count: profile.reviewSummary.reviewCount,
+                      })}
+                    </Text>
+                  </View>
+                ) : null}
+                <ReviewsList
+                  reviews={profile.reviews}
+                  seeMore
+                  limit={5}
+                  onSeeAll={() => router.push({
+                    pathname: '/(creator)/reviews',
+                    params: {
+                      reviews: JSON.stringify(profile.reviews ?? []),
+                      rating: String(profile.reviewSummary?.averageRating ?? ''),
+                      count: String(profile.reviewSummary?.reviewCount ?? (profile.reviews ?? []).length),
+                    },
+                  } as never)}
+                />
+              </>
+            ) : (
+              <SectionEmptyState
+                icon="star"
+                title={t('profile.noReviewsYet')}
+                hint={t('profile.reviewsHint')} />
+            )}
+          </SectionCard>
+        </View>
 
       </ScrollView>
       </MaxWidthContainer>
