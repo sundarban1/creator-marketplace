@@ -558,15 +558,17 @@ export default function OnboardingScreen() {
 
               {/* Location */}
               <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>{isTeam ? t('onboarding.locationLabelBased') : t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
+                <Text style={[styles.formLabel, { color: C.text }]}>{isTeam ? t('onboarding.locationLabelBased') : t('onboarding.locationLabel')} <Text style={{ color: C.text }}>*</Text></Text>
                 <Pressable
-                  style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
+                  style={[styles.locationBtn, { backgroundColor: C.primaryLight, borderColor: locationError ? C.error : C.border }]}
                   onPress={() => setLocationModalOpen(true)}>
-                  <FontAwesome5 name="map-marker-alt" size={16} color={C.textSecondary} />
+                  <View style={[styles.locationIconWrap, { backgroundColor: C.border }]}>
+                    <FontAwesome5 name="map-marker-alt" size={16} color={C.textSecondary} />
+                  </View>
                   <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textPlaceholder }]} numberOfLines={2}>
                     {location || t('onboarding.locationPlaceholder')}
                   </Text>
-                  <Text style={styles.locationArrow}>›</Text>
+                  <Text style={[styles.locationArrow, { color: C.textSecondary }]}>›</Text>
                 </Pressable>
                 {locationError && <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>}
               </View>
@@ -625,7 +627,7 @@ export default function OnboardingScreen() {
             </View>
 
             <Pressable
-              style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active },
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 },
                 (selectedCategories.length === 0 || step2Loading) && styles.primaryBtnDisabled]}
               onPress={handleStep2Continue}
               disabled={step2Loading}>
@@ -675,14 +677,15 @@ const styles = StyleSheet.create({
   form: { gap: 16, marginBottom: 28 },
   formGroup: { gap: 6 },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  formLabel: { fontSize: 13, fontFamily: F.bold },
+  formLabel: { fontSize: 13, fontFamily: F.semibold, letterSpacing: 0.2 },
   fieldHintText: { fontSize: 12, fontFamily: F.regular, lineHeight: lineHeightFor(12) },
   optionalTag: { fontSize: 12, fontFamily: F.medium },
   fieldError: { fontSize: 12, fontFamily: F.medium },
 
-  locationBtn: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, gap: 8 },
-  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 23, fontFamily: F.regular },
-  locationArrow: { fontSize: 20, color: '#9CA3AF' },
+  locationBtn: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 5, minHeight: 54, gap: 4 },
+  locationIconWrap: { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginLeft: 4, flexShrink: 0 },
+  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 23, fontFamily: F.regular, paddingHorizontal: 10 },
+  locationArrow: { fontSize: 20, paddingHorizontal: 12 },
 
   usernameLimit: { fontSize: 11, fontFamily: F.regular },
 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { env } from '../config/env';
+import { logger } from '../config/logger';
 
 // Trust proxy, compression, security headers, and CORS — the baseline
 // hardening every request goes through before it reaches route handlers.
@@ -39,7 +40,13 @@ export function applySecurityMiddleware(app: Express): void {
         // Allow requests with no origin (mobile apps, curl, Postman)
         if (!origin) return callback(null, true);
         if (allowedOrigins.some((o) => origin.startsWith(o))) return callback(null, true);
-        callback(new Error(`CORS: origin ${origin} not allowed`));
+        // Disallowed origin: respond WITHOUT CORS headers (the browser then
+        // blocks it client-side) rather than throwing — passing an Error here
+        // makes cors() call next(err), which the error handler turns into a
+        // 500 that looks like the server is crashing. `false` = a normal
+        // response, no `Access-Control-Allow-Origin`.
+        logger.warn({ origin }, 'CORS: origin not in FRONTEND_URL — request blocked');
+        callback(null, false);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

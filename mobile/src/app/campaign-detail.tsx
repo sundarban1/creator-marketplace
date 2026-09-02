@@ -155,20 +155,6 @@ export default function CampaignDetailScreen() {
   const posted  = daysAgo(campaign.createdAt);
   const heroImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
 
-  // "Who You Need" reflects the roles actually captured at creation.
-  // Events collect a real "who are you inviting" chip set (roleTypes,
-  // stored as targetAudience) — show that ahead of the synthetic
-  // "category (capacity)" line, which just repeats the Capacity row
-  // already shown in Event Details below. Multi-role campaigns list each
-  // role/quantity; other paid campaigns fall back to category + creator
-  // count since their targetAudience is AI-derived, not business-picked.
-  const whoYouNeed = campaign.requirements && campaign.requirements.length > 0
-    ? campaign.requirements.map((r) => `${r.category.name} ×${r.quantity}`)
-    : isOpenEvent && campaign.targetAudience && campaign.targetAudience.length > 0
-      ? campaign.targetAudience
-      : campaign.creatorsNeeded != null && campaign.category
-        ? [`${campaign.category} (${campaign.creatorsNeeded})`]
-        : (campaign.targetAudience && campaign.targetAudience.length > 0 ? campaign.targetAudience : []);
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
@@ -293,37 +279,44 @@ export default function CampaignDetailScreen() {
           <Text style={[s.description, { color: C.text }]}>{campaign.description}</Text>
         </View>
 
-        {/* 2. Category — just the category + AI-relevant categories + who
-            the business is targeting. `goals` and `objective` dropped: both
-            are AI-filled write-only fields the business never reviews at
-            creation, so they added noise without adding real information. */}
-        {(campaign.template || whoYouNeed.length > 0) && (
-          <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCategory')}</Text>
-            {campaign.template && (
-              <View style={s.templateRow}>
-                <View style={[s.templateBadge, { backgroundColor: C.primaryLight }]}>
-                  <Text style={[s.templateTxt, { color: C.brinjal1 }]}>{campaign.template}</Text>
+        {/* 2. Category — just the category + AI-relevant categories. `goals`
+            and `objective` dropped: both are AI-filled write-only fields the
+            business never reviews at creation, so they added noise without
+            adding real information. "Looking For" is kept only for open
+            events, where it shows the roleTypes the business actually picked;
+            paid campaigns dropped it — there it just repeated the "Creators
+            Needed" row in Event Details below. */}
+        {(() => {
+          const audience = isOpenEvent && campaign.targetAudience ? campaign.targetAudience : [];
+          if (!campaign.template && audience.length === 0) return null;
+          return (
+            <View style={[s.card, { backgroundColor: C.surface }]}>
+              <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCategory')}</Text>
+              {campaign.template && (
+                <View style={s.templateRow}>
+                  <View style={[s.templateBadge, { backgroundColor: C.primaryLight }]}>
+                    <Text style={[s.templateTxt, { color: C.brinjal1 }]}>{campaign.template}</Text>
+                  </View>
                 </View>
-              </View>
-            )}
-            {!!campaign.aiSuggestedCategories?.length && (
-              <Text style={[s.aiAlsoRelevant, { color: C.textSecondary, marginTop: campaign.template ? 8 : 0 }]}>Also relevant: {campaign.aiSuggestedCategories.join(', ')}</Text>
-            )}
-            {whoYouNeed.length > 0 && (
-              <>
-                <Text style={[s.sectionLabel, { color: C.textSecondary, marginTop: 12 }]}>{t('campaignDetail.sectionTargetAudience')}</Text>
-                <View style={s.goalChips}>
-                  {whoYouNeed.map((who) => (
-                    <View key={who} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
-                      <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{who}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-          </View>
-        )}
+              )}
+              {!!campaign.aiSuggestedCategories?.length && (
+                <Text style={[s.aiAlsoRelevant, { color: C.textSecondary, marginTop: campaign.template ? 8 : 0 }]}>Also relevant: {campaign.aiSuggestedCategories.join(', ')}</Text>
+              )}
+              {audience.length > 0 && (
+                <>
+                  <Text style={[s.sectionLabel, { color: C.textSecondary, marginTop: 12 }]}>{t('campaignDetail.sectionTargetAudience')}</Text>
+                  <View style={s.goalChips}>
+                    {audience.map((who) => (
+                      <View key={who} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
+                        <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{who}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+          );
+        })()}
 
         {/* 4. Event Details */}
         <View style={[s.card, { backgroundColor: C.surface }]}>

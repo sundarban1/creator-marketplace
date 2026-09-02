@@ -45,6 +45,8 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
       { iconName: 'life-ring', faName: 'life-ring', labelKey: 'drawer.support',        route: '/(business)/settings?section=support',       color: '#0891B2' },
       { iconName: 'shield-alt', faName: 'shield-alt',  labelKey: 'drawer.privacy',        route: '/(business)/settings?section=privacy',       color: '#0D9488' },
       { iconName: 'cog',         labelKey: 'drawer.settings',          route: '/(business)/settings?section=app',           color: '#6B7280' },
+      // Shared route with the creator drawer — same colour as DrawerMenu.tsx's About Us.
+      { iconName: 'info-circle', faName: 'info-circle', labelKey: 'drawer.aboutUs',        route: '/about-us',                                  color: '#8B5CF6' },
     ],
   },
 ];

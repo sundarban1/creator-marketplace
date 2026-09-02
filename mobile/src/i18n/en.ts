@@ -684,7 +684,7 @@ const en = {
     noTransactionsYet: 'No transactions yet',
     noTransactionsHint: 'Your earnings and withdrawals will appear here',
     modalTitle: 'Withdraw Money',
-    requestNote: 'Your request will be reviewed by Kolab and paid to your nominated account within 1–2 days.',
+    requestNote: 'Your request will be reviewed by Kolab and paid to your nominated account within 3–5 days.',
     availableToWithdraw: 'Available to withdraw',
     minWithdrawalHint: 'Minimum withdrawal: Rs. {{amount}}',
     selectPayoutMethod: 'Withdraw to',
@@ -974,7 +974,6 @@ const en = {
     nepalHeading: 'Built for Nepal 🇳🇵',
     nepalBody:
       "We're building a community where creators and businesses can connect, collaborate, and create opportunities together.",
-    tagline2: 'Built for creators.\nBuilt for businesses.\nBuilt in Nepal.',
     company: 'Kolab Technologies',
     versionLabel: 'Version {{version}}',
     terms: 'Terms of Service',
@@ -3542,11 +3541,11 @@ const en = {
 
   // ── Account Type (dedicated service-provider/seeker chooser) ─
   accountType: {
-    pageTitle: 'How will you use Kolab?',
+    pageTitle: 'I am a...',
     offerLeadIn: 'Earn money by offering your services and skills.',
     dividerOr: 'or',
     seekLeadIn: 'As a business, find skilled creators to promote your business.',
-    offerTitle: 'Earn money by offering your services and skills',
+    offerTitle: 'Creator',
     // Short one-word forms of the two titles above, for places that name the
     // chosen role inline (e.g. the signup card's "Signing up as …" chip).
     offerShort: 'Creator',
@@ -3555,7 +3554,7 @@ const en = {
     offerBenefit1: 'Discover projects matching your skills',
     offerBenefit2: 'Build a portfolio and grow your reputation',
     offerBenefit3: 'Get paid securely for your work',
-    seekTitle: 'Find skilled creators to promote your business',
+    seekTitle: 'Business',
     seekExample: 'e.g. brands, businesses, agencies, organizations',
     seekBenefit1: 'Post work, reach skilled creators and promote your business',
     seekBenefit2: "Browse creators' profiles, portfolios and reviews",

@@ -58,11 +58,6 @@ export default function AboutUsScreen() {
             <Text style={[styles.body, { color: C.textSecondary }]}>{t('aboutUsScreen.nepalBody')}</Text>
           </Section>
 
-          {/* Closing tagline */}
-          <View style={[styles.taglineCard, { backgroundColor: `${C.brinjal1}12`, borderColor: `${C.brinjal1}30` }]}>
-            <Text style={[styles.tagline2, { color: C.brinjal1 }]}>{t('aboutUsScreen.tagline2')}</Text>
-          </View>
-
           {/* Meta */}
           <View style={styles.meta}>
             <Text style={[styles.company, { color: C.text }]}>{t('aboutUsScreen.company')}</Text>
@@ -136,9 +131,6 @@ const styles = StyleSheet.create({
   cardTitle: { flex: 1, fontSize: 15, fontFamily: F.bold },
 
   body: { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
-
-  taglineCard: { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACING.lg, alignItems: 'center', marginTop: 4 },
-  tagline2: { fontSize: 15, lineHeight: 24, fontFamily: F.bold, textAlign: 'center' },
 
   meta: { alignItems: 'center', gap: 4, paddingTop: 20 },
   company: { fontSize: 13, fontFamily: F.bold },

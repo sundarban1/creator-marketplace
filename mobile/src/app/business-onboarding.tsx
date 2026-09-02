@@ -505,18 +505,22 @@ export default function BusinessOnboardingScreen() {
               </View>
             )}
 
-            {/* Where they're based — opens the shared full-screen place search */}
+            {/* Where they're based — opens the shared full-screen place search.
+                Styled to match the labeled TextInput fields above (circular icon
+                badge, tonal fill, RADIUS.lg border) so the row reads as one input. */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
-                {t('businessOnboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text>
+              <Text style={[styles.locationLabel, { color: C.text }]}>
+                {t('businessOnboarding.locationLabel')} <Text style={{ color: C.text }}>*</Text>
               </Text>
               <Pressable
-                style={[styles.locationBtn, { backgroundColor: C.background, borderColor: locationError ? C.error : C.border }]}
+                style={[styles.locationBtn, { backgroundColor: C.primaryLight, borderColor: locationError ? C.error : C.border }]}
                 onPress={() => setLocationModalOpen(true)}
                 accessibilityRole="button"
                 accessibilityLabel={t('businessOnboarding.locationLabel')}>
-                <FontAwesome5 name="map-marker-alt" solid size={15} color={C.textSecondary} />
-                <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
+                <View style={[styles.locationIconWrap, { backgroundColor: C.border }]}>
+                  <FontAwesome5 name="map-marker-alt" solid size={16} color={C.textSecondary} />
+                </View>
+                <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textPlaceholder }]} numberOfLines={2}>
                   {location || t('businessOnboarding.locationPlaceholder')}
                 </Text>
                 <Text style={[styles.locationArrow, { color: C.textSecondary }]}>›</Text>
@@ -572,7 +576,7 @@ export default function BusinessOnboardingScreen() {
             </View>
 
             <Pressable
-              style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active }, (industries.length === 0 || industryLoading) && styles.primaryBtnDisabled]}
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, (industries.length === 0 || industryLoading) && styles.primaryBtnDisabled]}
               onPress={handleIndustryContinue}
               disabled={industryLoading}>
               {industryLoading ? (
@@ -619,7 +623,7 @@ export default function BusinessOnboardingScreen() {
             </View>
 
             <Pressable
-              style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active }, (interestCategories.length === 0 || step3Loading) && styles.primaryBtnDisabled]}
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, (interestCategories.length === 0 || step3Loading) && styles.primaryBtnDisabled]}
               onPress={handleStep3Continue}
               disabled={step3Loading}>
               {step3Loading ? (
@@ -673,9 +677,11 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   fieldLabel: { fontSize: 14, fontFamily: F.bold },
   fieldError: { fontSize: 12, fontFamily: F.medium },
-  locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8, minHeight: 50 },
-  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.regular },
-  locationArrow:  { fontSize: 20 },
+  locationLabel:  { fontSize: 13, letterSpacing: 0.2, fontFamily: F.semibold, marginBottom: 6 },
+  locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 5, minHeight: 54, gap: 4 },
+  locationIconWrap: { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginLeft: 4, flexShrink: 0 },
+  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 21, fontFamily: F.regular, paddingHorizontal: 10 },
+  locationArrow:  { fontSize: 20, paddingRight: 8 },
   inputHint: { fontSize: 11, marginTop: 5, fontFamily: F.regular },
   domainSuggestBox: { marginTop: 6, borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden' },
   domainSuggestItem: { paddingHorizontal: 14, paddingVertical: 10 },

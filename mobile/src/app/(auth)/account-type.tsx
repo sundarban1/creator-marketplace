@@ -37,14 +37,11 @@ const CARD_IMAGE: Record<Role, number> = {
 // pinned header row, a heading that states the question, then content cards
 // (surface fill, hairline border, raised lift) each fronted by a photo band.
 //
-// Copy deliberately avoids "Creator"/"Business" terminology in favor of plain
-// outcome sentences ("Earn money by offering your services and skills" / "As a
-// business, find skilled people…") — this keeps the choice legible as Kolab
-// expands beyond creator-brand collaborations into a wider service marketplace,
-// without requiring a data-model rename. The underlying role stays CREATOR/BUSINESS
-// (matching the rest of the backend/mobile code, where "Provider" is already
-// established as a UI label only, never a stored value) — nothing downstream needs
-// to know how this screen phrases itself.
+// Card titles are just "Creator" / "Business" — the plainest labels for the
+// choice; the benefit rows and example chip under each carry the detail. The
+// underlying role stays CREATOR/BUSINESS (matching the rest of the
+// backend/mobile code, where "Provider" is already established as a UI label
+// only, never a stored value).
 export default function AccountTypeScreen() {
   const C = useAppColors();
   const { isDark } = useIsDark();
@@ -193,8 +190,8 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
     langChipText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
 
     // ── Page heading ──
-    intro:        { gap: SPACING.xs },
-    pageTitle:    { fontSize: FONT_SIZE.xxl, fontFamily: F.bold, letterSpacing: -0.2, lineHeight: lineHeightFor(FONT_SIZE.xxl) },
+    intro:        { gap: SPACING.xs, alignItems: 'center' },
+    pageTitle:    { fontSize: FONT_SIZE.xxl, fontFamily: F.bold, letterSpacing: -0.2, lineHeight: lineHeightFor(FONT_SIZE.xxl), textAlign: 'center' },
 
     // ── Card separator ── the "or" rule between the two choices.
     orRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
