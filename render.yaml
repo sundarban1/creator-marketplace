@@ -34,6 +34,9 @@ services:
     runtime: docker
     plan: free
     region: singapore
+    # Deploy the region-migration branch, not the repo default. Point this back
+    # to `master` once cdn-and-region-migrate is merged.
+    branch: cdn-and-region-migrate
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /health
@@ -239,6 +242,9 @@ services:
     runtime: docker
     plan: free
     region: singapore
+    # Not part of the region migration — stays on the default branch so a
+    # Blueprint sync from cdn-and-region-migrate doesn't repoint it.
+    branch: master
     dockerfilePath: ./web/Dockerfile
     dockerContext: ./web
     healthCheckPath: /healthz
