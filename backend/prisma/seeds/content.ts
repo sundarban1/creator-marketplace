@@ -1,30 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
-// Demo-only help-center copy — not part of the production essentials seed
-// (prisma/seed-essentials.ts), which only ships FAQs + Legal via seedLegalContent
-// below plus categories/contracts. Called from the full local seed (seed.ts).
-export async function seedHelpArticles(prisma: PrismaClient) {
-  // ── Help Center (creator-facing) ───────────────────────────────────────────
-  const helpArticles = [
-    { id: 'seed-help-1', question: 'How do campaigns work?', answer: 'Businesses in Nepal post campaigns describing their goals, budget, and requirements. Creators browse and apply by submitting a proposal with a cover letter and proposed rate. If the business accepts, you deliver the content by the agreed deadline and get paid.', category: 'Campaigns', order: 1 },
-    { id: 'seed-help-2', question: 'How do I apply for a campaign?', answer: 'Go to the Home tab, browse available campaigns, and tap Apply. Fill in your cover letter, proposed rate, and timeline. The business will review your proposal and usually responds within 24–48 hours.', category: 'Campaigns', order: 2 },
-    { id: 'seed-help-3', question: 'Can I withdraw a proposal?', answer: 'Yes — you can withdraw a pending proposal any time before it is accepted. Once a proposal is accepted, message the business directly or contact Kolab Support before declining, so it does not affect your creator score.', category: 'Campaigns', order: 3 },
-    { id: 'seed-help-4', question: 'How do I get paid?', answer: 'Payments are released once the business confirms your content delivery, typically within 5 business days. Funds go directly to whichever payment method you linked — eSewa, Khalti, or FonePay.', category: 'Payments', order: 1 },
-    { id: 'seed-help-5', question: 'What payment methods are supported?', answer: 'Kolab supports eSewa, Khalti, and FonePay for creators based in Nepal. Add or update your preferred method in Settings → Wallet.', category: 'Payments', order: 2 },
-    { id: 'seed-help-6', question: 'What is the platform fee?', answer: 'Kolab charges a 10% service fee on each completed paid campaign, deducted before payout. Open, unpaid collaborations have no fee. This covers payment processing, dispute support, and platform upkeep.', category: 'Payments', order: 3 },
-    { id: 'seed-help-7', question: 'How is my creator score calculated?', answer: 'Your score factors in profile completeness, campaign completion rate, on-time delivery, and how businesses rate your work. A higher score improves how often you show up in a business’s search and how likely they are to shortlist you.', category: 'Account', order: 1 },
-    { id: 'seed-help-8', question: 'How do I get verified?', answer: 'Complete your profile, link your Instagram/TikTok/YouTube/Facebook accounts, and submit your citizenship or PAN document for review. Our team verifies most submissions within 2–3 business days.', category: 'Account', order: 2 },
-    { id: 'seed-help-9', question: 'Do I need a minimum follower count?', answer: 'There is no platform-wide minimum. Each campaign sets its own criteria — some businesses specifically look for smaller, highly-engaged local audiences (e.g. within Kathmandu Valley), not just follower count.', category: 'Account', order: 3 },
-    { id: 'seed-help-10', question: 'Which cities does Kolab support?', answer: 'Kolab works nationwide across Nepal — set your location during onboarding and turn on Nearby Events to see campaigns from businesses close to you, whether you’re in Kathmandu, Pokhara, Chitwan, or anywhere else.', category: 'Account', order: 4 },
-  ];
-
-  await Promise.all(
-    helpArticles.map(({ id, ...a }) =>
-      prisma.helpArticle.upsert({ where: { id }, update: { ...a, published: true }, create: { id, ...a, published: true } }),
-    ),
-  );
-  console.log(`  ✅ Help articles: ${helpArticles.length} seeded`);
-}
+// Help Center articles moved to ./help-center.ts (seedHelpCenter) — real
+// content, wired into both the full local seed (seed.ts) and the production
+// essentials seed (seed-essentials.ts), with its own `npm run db:seed:help-center`.
 
 // Real content, safe to run against production — used by both the full local
 // seed (seed.ts) and the production essentials seed (prisma/seed-essentials.ts).

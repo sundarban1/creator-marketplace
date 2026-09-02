@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { seedUsers } from './seeds/users';
-import { seedHelpArticles, seedLegalContent } from './seeds/content';
+import { seedLegalContent } from './seeds/content';
+import { seedHelpCenter } from './seeds/help-center';
 import { seedCategories } from './seeds/categories';
 import { seedPlatforms } from './seeds/platforms';
 import { seedPaymentMethods } from './seeds/payment-methods';
@@ -27,7 +28,7 @@ async function main() {
   await seedUsers(prisma);
 
   console.log('\n── Content ──────────────────────────────────────────────');
-  await seedHelpArticles(prisma);
+  await seedHelpCenter(prisma);
   await seedLegalContent(prisma);
 
   console.log('\n── Success Stories ──────────────────────────────────────');

@@ -16,6 +16,7 @@
     "db:seed:platforms": "tsx prisma/seed-platforms.ts",
     "db:seed:payment-methods": "tsx prisma/seed-payment-methods.ts",
     "db:seed:success-stories": "tsx prisma/seed-success-stories.ts",
+    "db:seed:help-center": "tsx prisma/seed-help-center.ts",
     "db:seed:bulk": "tsx prisma/bulk-seed.ts",
     "db:backfill:wallet": "tsx prisma/backfill-wallet-ledger.ts",
     "invitations:regenerate": "tsx prisma/regenerate-invitations.ts",
