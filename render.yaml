@@ -42,14 +42,13 @@ services:
     healthCheckPath: /health
     autoDeploy: true
 
-    # Run migrations ONCE per deploy, before any new instance starts — instead
-    # of every instance racing `prisma migrate deploy` in its own entrypoint on
-    # boot (Prisma advisory-locks so that's safe, but it serialises startup and
-    # a failed migration can wedge every instance's boot loop). The entrypoint
-    # still runs `migrate deploy` too as an idempotent safety net (fast no-op
-    # once this has applied everything) and for non-Render environments
-    # (docker-compose) that don't have a pre-deploy phase.
-    preDeployCommand: npx prisma migrate deploy
+    # NOTE: `preDeployCommand` is not supported on Render's free tier, so
+    # migrations run from docker-entrypoint.sh (`npx prisma migrate deploy`) as
+    # each instance boots. Prisma advisory-locks that, so it's safe even with
+    # multiple instances, though it serialises startup. If this service is moved
+    # to a paid plan, add back:
+    #   preDeployCommand: npx prisma migrate deploy
+    # to run migrations once per deploy before any new instance starts.
 
     # Skip auto-deploy when a push only touches web/ or mobile/ — without this,
     # every commit anywhere in the monorepo redeploys the backend too.
