@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.sundarban.kolab",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "requireFullScreen": true,
       "usesAppleSignIn": true,
       "config": {
