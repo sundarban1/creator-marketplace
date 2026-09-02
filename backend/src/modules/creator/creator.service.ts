@@ -7,8 +7,24 @@ import { toCreatorProfileDto, toPublicCreatorDto, toPrivateCreatorDto, toCreator
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
 import { getCachedSettings } from '../../utils/settingsCache';
+import { cached, invalidatePrefix } from '../../utils/cache';
 
 const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
+
+// Public creator-profile responses are read far more often than the profile
+// changes, and each one runs 5 parallel aggregate queries plus a live external
+// translate call (utils/translation.ts) for any non-English text. Cache the
+// fully-built public response briefly, keyed by id + language. Best-effort: a
+// Redis miss / outage just rebuilds it exactly as before. TTL is short and the
+// write paths call invalidatePublicCreatorProfile(), so staleness is bounded to
+// a few seconds even for the write paths that don't invalidate.
+const PUBLIC_PROFILE_CACHE_TTL_SEC = 60;
+const publicProfileCacheKey = (creatorId: string, lang: string) => `creator-profile:${creatorId}:${lang}`;
+
+/** Drop every cached language variant of one creator's public profile. */
+export function invalidatePublicCreatorProfile(creatorId: string): Promise<void> {
+  return invalidatePrefix(`creator-profile:${creatorId}:`);
+}
 import { CreatorRepository } from './creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { PlatformRepository } from '../platform/platform.repository';
@@ -418,6 +434,23 @@ export class CreatorService {
       }).catch(() => {});
     }
 
+    // The owner viewing their own profile always gets a fresh build (never the
+    // shared cache) so an edit they just made is reflected immediately.
+    if (isOwnProfile) return this.buildPublicCreatorProfile(profile, lang);
+
+    return cached(
+      publicProfileCacheKey(creatorId, lang),
+      PUBLIC_PROFILE_CACHE_TTL_SEC,
+      () => this.buildPublicCreatorProfile(profile, lang),
+    );
+  }
+
+  // Builds the full public-profile response. Split out of getCreatorPublicProfile
+  // so the cached and uncached (own-profile) paths share one implementation.
+  private async buildPublicCreatorProfile(
+    profile: NonNullable<Awaited<ReturnType<CreatorRepository['findByIdPublic']>>>,
+    lang: string,
+  ) {
     const dto = toPublicCreatorDto(profile);
     const translated = await translateFields(dto, [...CREATOR_FIELDS], lang);
     // portfolioItems are the richer, media-backed entries (PortfolioItem table)
@@ -518,6 +551,10 @@ export class CreatorService {
     }
 
     const updated = await this.repo.update(userId, rest);
+
+    // Avatar uploads and every other profile edit funnel through here, so this
+    // one call keeps the public-profile cache fresh for the common write paths.
+    void invalidatePublicCreatorProfile(profile.id);
 
     logActivity({ userId, action: ActivityAction.CREATOR_PROFILE_UPDATED, metadata: { changedFields: Object.keys(rest) } });
 
@@ -659,7 +696,7 @@ export class CreatorService {
   // happen here on the backend rather than on-device. The mobile app opens this URL in
   // a browser; TikTok redirects back to our /callback route (below), which then 302s
   // into the app via the custom scheme once the exchange + save is done.
-  getTiktokAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): string {
+  async getTiktokAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): Promise<string> {
     if (!env.TIKTOK_CLIENT_KEY || !env.TIKTOK_REDIRECT_URI) {
       throw new AppError('TikTok login is not configured', 500);
     }
@@ -668,7 +705,7 @@ export class CreatorService {
     // redirect_uri below always points at this same backend route regardless of
     // role — TikTok's Developer Portal only has one registered redirect URI, so the
     // business flow reuses it and the callback below tells the two apart via `role`.
-    const state = signOAuthState({ userId, codeVerifier, role });
+    const state = await signOAuthState({ userId, codeVerifier, role });
 
     const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
     url.searchParams.set('client_key', env.TIKTOK_CLIENT_KEY);
@@ -688,9 +725,9 @@ export class CreatorService {
   }
 
   async handleTiktokCallback(code: string, state: string) {
-    let statePayload: ReturnType<typeof verifyOAuthState>;
+    let statePayload: Awaited<ReturnType<typeof verifyOAuthState>>;
     try {
-      statePayload = verifyOAuthState(state);
+      statePayload = await verifyOAuthState(state);
     } catch (err) {
       logger.warn({ err }, 'TikTok OAuth state verification failed');
       throw new AppError('TikTok authorization expired — please try again', 400);
@@ -846,12 +883,12 @@ export class CreatorService {
   // redirect lands on our API, which then 302s back into the app via the kolab://
   // scheme once the exchange + save is done. See fetchFacebookPages/connectInstagramAccount
   // above for the OTHER Instagram path (via a linked Facebook Page).
-  getInstagramLoginAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): string {
+  async getInstagramLoginAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): Promise<string> {
     if (!env.INSTAGRAM_APP_ID || !env.INSTAGRAM_REDIRECT_URI) {
       throw new AppError('Instagram direct login is not configured', 500);
     }
     // Same single-registered-redirect-URI reasoning as getTiktokAuthorizeUrl above.
-    const state = signOAuthState({ userId, role });
+    const state = await signOAuthState({ userId, role });
 
     const url = new URL('https://www.instagram.com/oauth/authorize');
     url.searchParams.set('client_id', env.INSTAGRAM_APP_ID);
@@ -866,9 +903,9 @@ export class CreatorService {
   }
 
   async handleInstagramLoginCallback(code: string, state: string) {
-    let statePayload: ReturnType<typeof verifyOAuthState>;
+    let statePayload: Awaited<ReturnType<typeof verifyOAuthState>>;
     try {
-      statePayload = verifyOAuthState(state);
+      statePayload = await verifyOAuthState(state);
     } catch (err) {
       logger.warn({ err }, 'Instagram OAuth state verification failed');
       throw new AppError('Instagram authorization expired — please try again', 400);

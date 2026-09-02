@@ -5,6 +5,7 @@ import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { parseRange, rangeStart, bucketGranularity, bucketKey, type AnalyticsRange } from './dateRange';
 import { notificationService } from '../notifications/notification.service';
+import { bufferIncrement, peekBufferedCount } from '../../utils/counters';
 
 const PROFILE_VIEW_DEDUP_MS = 24 * 60 * 60 * 1000;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -47,7 +48,12 @@ export class AnalyticsService {
       const alreadyViewed = await this.repo.hasRecentView(creatorProfileId, businessProfileId, PROFILE_VIEW_DEDUP_MS);
       if (alreadyViewed) return;
       await this.repo.createProfileView(creatorProfileId, businessProfileId);
-      await this.repo.incrCreator(creatorUserId, { totalProfileViews: 1 });
+      // The ProfileView row above stays the source of truth for the range
+      // queries; totalProfileViews is just a denormalised running total, so
+      // buffer its +1 in Redis and let the flush job batch it. Falls back to an
+      // inline upsert when the queue Redis is unavailable.
+      const buffered = await bufferIncrement('profileViews', creatorUserId, 1);
+      if (!buffered) await this.repo.incrCreator(creatorUserId, { totalProfileViews: 1 });
     } catch {
       // best-effort
     }
@@ -213,7 +219,7 @@ export class AnalyticsService {
     const range = parseRange(rawRange);
     const since = rangeStart(range);
 
-    const [row, breakdown, invitationsInRange, viewsInRange, viewsLast30, viewsPrev30, earningsRows, referrals] = await Promise.all([
+    const [row, breakdown, invitationsInRange, viewsInRange, viewsLast30, viewsPrev30, earningsRows, referrals, bufferedViews] = await Promise.all([
       this.repo.findCreatorRow(userId),
       this.repo.creatorCampaignBreakdown(profile.id, since),
       this.repo.countInvitationsSince(profile.id, since),
@@ -222,6 +228,9 @@ export class AnalyticsService {
       this.repo.countProfileViewsSince(profile.id, new Date(Date.now() - 2 * THIRTY_DAYS_MS)),
       this.repo.creatorEarningsSeries(profile.id, since),
       this.repo.creatorReferralStats(profile.id),
+      // totalProfileViews is buffered write-behind (see recordProfileView) —
+      // add whatever hasn't been flushed yet so the dashboard total is exact.
+      peekBufferedCount('profileViews', userId),
     ]);
 
     const totals = row ?? {
@@ -245,7 +254,7 @@ export class AnalyticsService {
     return {
       range,
       totals: {
-        totalProfileViews: totals.totalProfileViews,
+        totalProfileViews: totals.totalProfileViews + bufferedViews,
         profileViewsInRange: viewsInRange,
         profileViewsLast30Days: viewsLast30,
         profileViewsTrendPct: Math.round(trendPct),

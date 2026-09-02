@@ -12,8 +12,20 @@ import { analyticsService } from '../analytics/analytics.service';
 import { invitationService } from '../campaign/invitation/invitation.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
+import { cached, invalidatePrefix } from '../../utils/cache';
 
 const BUSINESS_FIELDS = ['description', 'location', 'categories'] as const;
+
+// Same rationale as CreatorService's public-profile cache: read-heavy, and each
+// build runs a live external translate call plus stats/reviews aggregation.
+// Best-effort — a Redis miss/outage rebuilds it exactly as before.
+const PUBLIC_PROFILE_CACHE_TTL_SEC = 60;
+const publicBusinessCacheKey = (id: string, lang: string) => `business-profile:${id}:${lang}`;
+
+/** Drop every cached language variant of one business's public profile. */
+export function invalidatePublicBusinessProfile(id: string): Promise<void> {
+  return invalidatePrefix(`business-profile:${id}:`);
+}
 
 export class BusinessService {
   private repo: BusinessRepository;
@@ -83,6 +95,9 @@ export class BusinessService {
 
     const updated = await this.repo.update(userId, rest);
 
+    // Logo/cover uploads and every other profile edit route through here.
+    void invalidatePublicBusinessProfile(profile.id);
+
     logActivity({ userId, action: ActivityAction.BUSINESS_PROFILE_UPDATED, metadata: { changedFields: Object.keys(rest) } });
 
     // The organizer name/logo is baked into every confirmed creator's
@@ -119,13 +134,16 @@ export class BusinessService {
     const business = await this.repo.findPublicById(id);
     if (!business) throw new AppError('Business not found', 404);
     if (!business.showPublicProfile) return toPrivateBusinessDto(business);
-    const dto = toPublicBusinessDto(business);
-    const translated = await translateFields(dto, [...BUSINESS_FIELDS], lang);
-    const [stats, reviews] = await Promise.all([
-      analyticsService.getBrandPublicStats(business.userId).catch(() => null),
-      analyticsService.getReviewsReceived(business.userId).catch(() => []),
-    ]);
-    return { ...translated, stats, reviews };
+
+    return cached(publicBusinessCacheKey(id, lang), PUBLIC_PROFILE_CACHE_TTL_SEC, async () => {
+      const dto = toPublicBusinessDto(business);
+      const translated = await translateFields(dto, [...BUSINESS_FIELDS], lang);
+      const [stats, reviews] = await Promise.all([
+        analyticsService.getBrandPublicStats(business.userId).catch(() => null),
+        analyticsService.getReviewsReceived(business.userId).catch(() => []),
+      ]);
+      return { ...translated, stats, reviews };
+    });
   }
 
   async uploadPanDoc(userId: string, docUrl: string) {
@@ -263,11 +281,11 @@ export class BusinessService {
   // state, and the existing creator.service.ts callback handlers (already
   // role-aware) resolve it back to this business profile when it lands. There is
   // no separate business-side callback route.
-  getTiktokAuthorizeUrl(userId: string): string {
+  getTiktokAuthorizeUrl(userId: string): Promise<string> {
     return this.creatorService.getTiktokAuthorizeUrl(userId, 'BUSINESS');
   }
 
-  getInstagramLoginAuthorizeUrl(userId: string): string {
+  getInstagramLoginAuthorizeUrl(userId: string): Promise<string> {
     return this.creatorService.getInstagramLoginAuthorizeUrl(userId, 'BUSINESS');
   }
 

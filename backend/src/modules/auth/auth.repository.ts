@@ -1,5 +1,7 @@
 import { AuthProvider, Role } from '@prisma/client';
 import prisma from '../../prisma';
+import { cacheOtp, otpKnownWrong, clearCachedOtp } from '../../utils/otpCache';
+import { denyRefreshToken, denyRefreshTokens } from '../../utils/tokenDenylist';
 
 const profileSelect = {
   creatorProfile:  { select: { id: true, username: true, fullName: true, avatarUrl: true } },
@@ -193,10 +195,16 @@ export class AuthRepository {
   }
 
   async deleteSessionByRefreshToken(userId: string, refreshToken: string) {
+    void denyRefreshToken(refreshToken);
     await prisma.session.deleteMany({ where: { userId, refreshToken } });
   }
 
   async deleteAllSessions(userId: string) {
+    // Deny every one of this user's refresh tokens before dropping the rows, so
+    // logout-everywhere / password-reset / deactivate immediately invalidate
+    // tokens already in flight (best-effort; the row deletion is authoritative).
+    const sessions = await prisma.session.findMany({ where: { userId }, select: { refreshToken: true } });
+    void denyRefreshTokens(sessions.map((s) => s.refreshToken));
     await prisma.session.deleteMany({ where: { userId } });
   }
 
@@ -265,10 +273,17 @@ export class AuthRepository {
 
   async saveOtp(userId: string, code: string, expiresAt: Date) {
     await prisma.otpVerification.deleteMany({ where: { userId } });
-    return prisma.otpVerification.create({ data: { userId, code, expiresAt } });
+    const row = await prisma.otpVerification.create({ data: { userId, code, expiresAt } });
+    // Best-effort mirror for the fast-fail check in findValidOtp — never blocks
+    // issuing the OTP.
+    void cacheOtp(userId, code, expiresAt);
+    return row;
   }
 
   async findValidOtp(userId: string, code: string) {
+    // Reject a code Redis positively knows is stale/wrong without a DB hit;
+    // Postgres still authoritatively confirms every acceptance below.
+    if (await otpKnownWrong(userId, code)) return null;
     return prisma.otpVerification.findFirst({
       where: { userId, code, expiresAt: { gt: new Date() } },
     });
@@ -286,6 +301,7 @@ export class AuthRepository {
   }
 
   async deleteOtpsByUserId(userId: string) {
+    void clearCachedOtp(userId);
     return prisma.otpVerification.deleteMany({ where: { userId } });
   }
 

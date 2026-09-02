@@ -204,7 +204,7 @@ export class BusinessController {
 
   async getTiktokAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const url = businessService.getTiktokAuthorizeUrl(req.user!.id);
+      const url = await businessService.getTiktokAuthorizeUrl(req.user!.id);
       success(res, { url }, 'TikTok authorize URL generated');
     } catch (err) {
       next(err);
@@ -213,7 +213,7 @@ export class BusinessController {
 
   async getInstagramLoginAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const url = businessService.getInstagramLoginAuthorizeUrl(req.user!.id);
+      const url = await businessService.getInstagramLoginAuthorizeUrl(req.user!.id);
       success(res, { url }, 'Instagram authorize URL generated');
     } catch (err) {
       next(err);

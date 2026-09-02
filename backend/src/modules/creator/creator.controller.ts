@@ -211,7 +211,7 @@ export class CreatorController {
 
   async getTiktokAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const url = creatorService.getTiktokAuthorizeUrl(req.user!.id);
+      const url = await creatorService.getTiktokAuthorizeUrl(req.user!.id);
       success(res, { url }, 'TikTok authorize URL generated');
     } catch (err) {
       next(err);
@@ -240,7 +240,7 @@ export class CreatorController {
 
   async getInstagramLoginAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const url = creatorService.getInstagramLoginAuthorizeUrl(req.user!.id);
+      const url = await creatorService.getInstagramLoginAuthorizeUrl(req.user!.id);
       success(res, { url }, 'Instagram authorize URL generated');
     } catch (err) {
       next(err);

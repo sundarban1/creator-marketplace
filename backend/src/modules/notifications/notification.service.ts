@@ -6,6 +6,7 @@ import { translateMany } from '../../utils/translation';
 import { logger } from '../../config/logger';
 import { AppError } from '../../middleware/error';
 import prisma from '../../prisma';
+import { enqueuePushDeliver, enqueuePushReceiptCheck } from '../../queues/pushQueue';
 
 const expo = new Expo();
 const NOTIFICATION_FIELDS = ['title', 'body'] as const;
@@ -23,7 +24,24 @@ function pushDeepLinkData(n: { type: string; refId?: string; refType?: string })
   return data;
 }
 
+// Public entry point — unchanged signature and fire-and-forget semantics. When
+// the BullMQ push queue is available the actual work is handed off to the
+// worker (survives deploys, retries on failure); otherwise it runs inline here
+// exactly as before.
 export async function sendExpoPush(
+  userId: string,
+  title: string,
+  body: string,
+  chatBadgeCount = 0,
+  data?: Record<string, string>,
+) {
+  if (await enqueuePushDeliver({ userId, title, body, chatBadgeCount, data })) return;
+  await deliverExpoPush(userId, title, body, chatBadgeCount, data);
+}
+
+// The real send: token lookup + Expo dispatch + receipt scheduling. Exported so
+// the push worker can call it directly.
+export async function deliverExpoPush(
   userId: string,
   title: string,
   body: string,
@@ -93,22 +111,32 @@ export async function sendExpoPush(
 // immediately — FCM/APNs delivery is async on their end too. This is fire-and-forget
 // by design, matching the fire-and-forget sendExpoPush() call sites; a failed receipt
 // check here must never affect the request that triggered the original notification.
+//
+// Prefers a delayed BullMQ job (survives a deploy in the 20s window); falls back
+// to an in-process setTimeout when the queue is unavailable.
 function scheduleReceiptCheck(userId: string, pushTokenId: string, ticketId: string) {
-  setTimeout(() => {
-    void expo.getPushNotificationReceiptsAsync([ticketId])
-      .then(async (receipts) => {
-        const receipt = receipts[ticketId];
-        if (!receipt || receipt.status === 'ok') return;
-        logger.warn({ userId, pushTokenId, ticketId, receipt }, 'Expo push receipt returned an error');
-        // DeviceNotRegistered means this one device's token is permanently dead
-        // (uninstalled app, revoked permission, etc.) — clear just that row so
-        // future sends stop retrying it, without touching the user's other devices.
-        if (receipt.details?.error === 'DeviceNotRegistered') {
-          await prisma.pushToken.delete({ where: { id: pushTokenId } }).catch(() => {});
-        }
-      })
-      .catch((err) => logger.error({ err, userId, pushTokenId, ticketId }, 'Failed to fetch push notification receipt'));
-  }, 20_000);
+  void enqueuePushReceiptCheck({ userId, pushTokenId, ticketId }).then((queued) => {
+    if (queued) return;
+    setTimeout(() => void checkPushReceipt(userId, pushTokenId, ticketId), 20_000);
+  });
+}
+
+// Exported so the push worker can run the delayed receipt check.
+export async function checkPushReceipt(userId: string, pushTokenId: string, ticketId: string) {
+  try {
+    const receipts = await expo.getPushNotificationReceiptsAsync([ticketId]);
+    const receipt = receipts[ticketId];
+    if (!receipt || receipt.status === 'ok') return;
+    logger.warn({ userId, pushTokenId, ticketId, receipt }, 'Expo push receipt returned an error');
+    // DeviceNotRegistered means this one device's token is permanently dead
+    // (uninstalled app, revoked permission, etc.) — clear just that row so
+    // future sends stop retrying it, without touching the user's other devices.
+    if (receipt.details?.error === 'DeviceNotRegistered') {
+      await prisma.pushToken.delete({ where: { id: pushTokenId } }).catch(() => {});
+    }
+  } catch (err) {
+    logger.error({ err, userId, pushTokenId, ticketId }, 'Failed to fetch push notification receipt');
+  }
 }
 
 export const notificationService = {

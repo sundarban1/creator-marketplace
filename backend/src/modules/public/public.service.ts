@@ -1,5 +1,6 @@
 import { PublicRepository } from './public.repository';
 import { AdminRepository } from '../admin/admin.repository';
+import { cached } from '../../utils/cache';
 
 export class PublicService {
   private repo: PublicRepository;
@@ -11,7 +12,10 @@ export class PublicService {
   }
 
   async getLandingStats() {
-    return this.repo.getLandingStats();
+    // Unauthenticated, hit by every marketing-site visitor, and just aggregate
+    // counts that change slowly — a few minutes stale is fine. Best-effort:
+    // falls straight through to the query on a Redis miss/outage.
+    return cached('landing-stats', 300, () => this.repo.getLandingStats());
   }
 
   async getComingSoon() {

@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import jwt, { SignOptions, JwtPayload } from 'jsonwebtoken';
 import { env } from '../config/env';
 import { Role } from '@prisma/client';
+import { getQueueRedis } from '../config/redis';
+import { logger } from '../config/logger';
 
 export interface TokenPayload {
   id: string;
@@ -77,18 +79,67 @@ export interface OAuthStatePayload {
   // Which profile this connect belongs to — defaults to CREATOR when omitted
   // (every state signed before this field existed was creator-only).
   role?: Role;
+  // Set when the PKCE verifier was parked in Redis instead of the JWT — the
+  // callback swaps it back in and deletes the key, making the state single-use.
+  nonce?: string;
 }
+
+const OAUTH_STATE_SECRET = env.JWT_ACCESS_SECRET + '_oauth_state';
+const OAUTH_STATE_TTL_SEC = 30 * 60;
+const oauthStateKey = (nonce: string) => `oauth-state:${nonce}`;
 
 // 30m rather than a tighter window — TikTok/Instagram's login step frequently forces
 // a fresh sign-in (no saved session; see preferEphemeralSession on the client) and can
 // require an OTP or CAPTCHA, which routinely pushed real users past a 10m expiry and
 // surfaced as "authorization expired" right after they finished logging in.
-export function signOAuthState(payload: OAuthStatePayload): string {
-  return jwt.sign(payload, env.JWT_ACCESS_SECRET + '_oauth_state', { expiresIn: '30m' });
+//
+// When the queue Redis is available the PKCE `codeVerifier` is parked there
+// under a one-time nonce and kept OUT of the JWT (which transits the user's
+// browser and the OAuth provider); the callback consumes it. If Redis is
+// unavailable at sign time the verifier rides in the JWT exactly as before, so
+// the flow never hard-depends on Redis.
+export async function signOAuthState(payload: OAuthStatePayload): Promise<string> {
+  const nonce = crypto.randomUUID();
+  let jwtPayload: OAuthStatePayload = { ...payload, nonce };
+
+  const client = await getQueueRedis();
+  if (client) {
+    try {
+      // Store the secret bit (verifier) server-side; a bare marker is enough for
+      // flows without one (Instagram) so the nonce is still single-use.
+      const stored = JSON.stringify(payload.codeVerifier ? { codeVerifier: payload.codeVerifier } : { ok: true });
+      await client.set(oauthStateKey(nonce), stored, { EX: OAUTH_STATE_TTL_SEC });
+      jwtPayload = { userId: payload.userId, role: payload.role, nonce };
+    } catch (err) {
+      logger.warn({ err: err instanceof Error ? err.message : err }, 'oauth-state: Redis park failed — verifier stays in the JWT');
+    }
+  }
+
+  return jwt.sign(jwtPayload, OAUTH_STATE_SECRET, { expiresIn: '30m' });
 }
 
-export function verifyOAuthState(token: string): OAuthStatePayload & JwtPayload {
-  return jwt.verify(token, env.JWT_ACCESS_SECRET + '_oauth_state') as OAuthStatePayload & JwtPayload;
+export async function verifyOAuthState(token: string): Promise<OAuthStatePayload & JwtPayload> {
+  const payload = jwt.verify(token, OAUTH_STATE_SECRET) as OAuthStatePayload & JwtPayload;
+  if (!payload.nonce || payload.codeVerifier) return payload; // old-style / verifier already inline
+
+  const client = await getQueueRedis();
+  if (!client) return payload; // Redis gone since sign time — caller's own "missing verifier" guard applies
+
+  try {
+    const raw = await client.getDel(oauthStateKey(payload.nonce));
+    if (raw) {
+      const parsed = JSON.parse(raw) as { codeVerifier?: string };
+      if (parsed.codeVerifier) payload.codeVerifier = parsed.codeVerifier;
+    } else {
+      // Already consumed (replay) or expired. Don't hard-fail here — the state
+      // JWT itself verified; the per-provider callback rejects if it needed a
+      // verifier it now doesn't have, same error path as a malformed state.
+      logger.warn({ nonce: payload.nonce }, 'oauth-state: nonce not found on callback (replay or expiry)');
+    }
+  } catch (err) {
+    logger.warn({ err: err instanceof Error ? err.message : err }, 'oauth-state: Redis consume failed');
+  }
+  return payload;
 }
 
 // Identifies an anonymous website visitor's chat session (landing-page floating

@@ -9,6 +9,7 @@ import { VisitorChatService, visitorChatRoom, ADMIN_VISITOR_CHATS_ROOM } from '.
 import prisma from './prisma';
 import { env } from './config/env';
 import { logger } from './config/logger';
+import { isUserOnlineCached, invalidatePresence } from './utils/presence';
 import * as Sentry from '@sentry/node';
 import type { Role } from '@prisma/client';
 
@@ -18,8 +19,10 @@ const visitorChatService = new VisitorChatService();
 let io: Server | null = null;
 
 async function isUserOnline(userId: string): Promise<boolean> {
-  const sockets = await io?.in(`user:${userId}`).fetchSockets() ?? [];
-  return sockets.length > 0;
+  return isUserOnlineCached(userId, async () => {
+    const sockets = await io?.in(`user:${userId}`).fetchSockets() ?? [];
+    return sockets.length > 0;
+  });
 }
 
 export async function initSocket(httpServer: HttpServer): Promise<Server> {
@@ -101,6 +104,9 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
     logger.debug({ socketId: socket.id, userId, role }, 'Socket connected');
     socket.join(`user:${userId}`);
     socket.join(`role:${role}`);   // 'role:CREATOR' | 'role:BUSINESS'
+    // This user's online state just changed — drop the cached presence bool so
+    // the next lookup recomputes from the adapter.
+    void invalidatePresence(userId);
 
     // Admins also join the shared visitor-chats room so every admin dashboard
     // sees new website-visitor chats/messages live, and can reply to any of them.
@@ -181,6 +187,9 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
     socket.on('disconnect', () => {
       logger.debug({ socketId: socket.id, userId, role }, 'Socket disconnected');
       void (async () => {
+        // Presence changed — clear the cache before the recompute below (and so
+        // any concurrent lookup doesn't keep serving a stale "online").
+        await invalidatePresence(userId);
         // Another tab/device for the same user may still be connected — only
         // mark them offline once every socket for this user has disconnected.
         if (await isUserOnline(userId)) return;

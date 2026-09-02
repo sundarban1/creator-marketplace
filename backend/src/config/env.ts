@@ -134,6 +134,11 @@ const envSchema = z.object({
   // local dev and any single-instance deployment work fine with Socket.IO's default
   // in-memory adapter.
   REDIS_URL: z.string().optional(),
+  // Second, non-evicting Redis for BullMQ job queues, the notification queue,
+  // the OTP fast path and counters (see config/redis.ts getQueueRedis()).
+  // Optional and fully independent of REDIS_URL: when unset, queued work runs
+  // inline and OTP verification reads straight from Postgres exactly as before.
+  REDIS_QUEUE_URL: z.string().optional(),
   // Per-instance Prisma connection-pool size (see prisma.ts). Optional —
   // defaults to 5. Raise only after confirming instances × limit stays under
   // the Postgres connection ceiling, or when pointing DATABASE_URL at a

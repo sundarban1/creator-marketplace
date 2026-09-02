@@ -26,6 +26,7 @@ import { logActivity } from '../logging/activity.service';
 import { logAudit } from '../logging/audit.service';
 import { ActivityAction, AuditAction } from '../logging/logging.constants';
 import { toUserDto } from './auth.dto';
+import { isRefreshTokenDenied } from '../../utils/tokenDenylist';
 import type {
   RegisterInput,
   LoginInput,
@@ -307,6 +308,13 @@ export class AuthService {
       decoded = verifyRefreshToken(input.refreshToken);
     } catch {
       throw new AppError('Invalid or expired refresh token', 401);
+    }
+
+    // Fast reject for tokens invalidated by a logout/reset. The sessions-table
+    // check below is still the authority — this only short-circuits and adds
+    // defence in depth. No-ops when the queue Redis is unavailable.
+    if (await isRefreshTokenDenied(input.refreshToken)) {
+      throw new AppError('Refresh token mismatch. Please login again.', 401);
     }
 
     const session = await this.repo.findSessionByRefreshToken(input.refreshToken);

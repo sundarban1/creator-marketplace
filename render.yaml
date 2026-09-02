@@ -10,20 +10,35 @@ databases:
     postgresMajorVersion: "16"
 
 services:
-  # Socket.IO cross-instance broadcast (backend/src/socket.ts's Redis adapter) —
-  # required whenever kolab-api runs on more than one instance. Without this, a
-  # chat message/typing event from a user whose socket landed on one instance
-  # never reaches a user connected to a different instance, since Socket.IO's
-  # default adapter only knows about sockets in its own process.
-  # ipAllowList: [] = no external access, reachable only from other services in
-  # this same Render account/region (matches how DATABASE_URL is wired below).
-  # Renamed from the Oregon `kolab-redis` so the sync creates a fresh instance;
-  # Redis holds only ephemeral adapter/cache/rate-limit state, nothing to migrate.
+  # ── kolab-cache ────────────────────────────────────────────────────────────
+  # Best-effort / evictable Redis: Socket.IO cross-instance adapter, the API
+  # response cache (utils/cache.ts), rate-limit counters, and the profile-read
+  # cache. Every key here has a TTL and every consumer degrades cleanly if the
+  # value is gone, so `volatile-lru` is safe — when the 25 MB fills it drops the
+  # oldest TTL'd key instead of erroring on writes.
+  #
+  # Socket.IO adapter needs cross-instance broadcast: without it a chat/typing
+  # event from a user on one kolab-api instance never reaches a user on another.
+  # ipAllowList: [] = reachable only from other services in this account/region.
   - type: redis
     name: kolab-cache
     plan: free
     region: singapore
     ipAllowList: []
+    maxmemoryPolicy: volatile-lru
+
+  # ── kolab-queue ────────────────────────────────────────────────────────────
+  # Durable Redis: BullMQ job queues + the notification queue, plus OTP / short-
+  # lived session data / counters that must not silently vanish. BullMQ refuses
+  # to run against an evicting instance (evicted job keys corrupt a queue), so
+  # this one is `noeviction`. Everything written here still sets a TTL; nothing
+  # is a source of truth (Postgres remains that for OTP), Redis is the fast path.
+  - type: redis
+    name: kolab-queue
+    plan: free
+    region: singapore
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
 
   - type: web
     # Singapore replacement for the old Oregon `marketplace-backend`. New name =>
@@ -97,11 +112,22 @@ services:
           name: kolab-db
           property: connectionString
 
-      # ── Redis — backs the Socket.IO cross-instance adapter above ────────────
+      # ── Redis ──────────────────────────────────────────────────────────────
+      # REDIS_URL      → kolab-cache: Socket.IO adapter, response/profile cache,
+      #                  rate-limit store. Evictable, best-effort.
+      # REDIS_QUEUE_URL → kolab-queue: BullMQ + notification queue + OTP fast
+      #                  path + counters. noeviction. Optional — every consumer
+      #                  falls back (queue → inline send, OTP → Postgres) if unset.
       - key: REDIS_URL
         fromService:
           type: redis
           name: kolab-cache
+          property: connectionString
+
+      - key: REDIS_QUEUE_URL
+        fromService:
+          type: redis
+          name: kolab-queue
           property: connectionString
 
       # ── Auth secrets — Render generates strong random values on first deploy ─

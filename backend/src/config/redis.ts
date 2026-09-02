@@ -2,68 +2,97 @@ import { createClient, type RedisClientType } from 'redis';
 import { env } from './env';
 import { logger } from './logger';
 
-// A single shared Redis connection for app-level use — rate-limit store today,
-// response/query caching next (see utils/cache.ts). Deliberately separate from
-// the two clients src/socket.ts creates: the Socket.IO adapter needs its own
-// dedicated pub/sub pair and must not share a connection with regular commands.
+// App-level Redis connections. There are two, deliberately separate:
 //
-// Everything here is best-effort. When REDIS_URL is unset, or the server is
-// unreachable, `getRedis()` returns null and every caller is written to carry
-// on without it (in-memory rate-limit store, cache miss → DB). Redis is an
-// optimisation layer, never a hard dependency.
+//   getRedis()      → REDIS_URL (kolab-cache): rate-limit store, response cache
+//                     (utils/cache.ts), profile-read cache. Evictable.
+//   getQueueRedis() → REDIS_QUEUE_URL (kolab-queue): BullMQ, the notification
+//                     queue, the OTP fast path, counters. noeviction.
+//
+// Both are also separate from the two clients src/socket.ts creates: the
+// Socket.IO adapter needs its own dedicated pub/sub pair and must not share a
+// connection with regular commands.
+//
+// Everything here is best-effort. When a URL is unset, or the server is
+// unreachable, the accessor returns null and every caller is written to carry
+// on without it (in-memory rate-limit store, cache miss → DB, queue → inline
+// work, OTP → Postgres). Redis is an optimisation layer, never a hard
+// dependency.
 
-let client: RedisClientType | null = null;
-let connecting: Promise<RedisClientType | null> | null = null;
-let disabled = !env.REDIS_URL;
+interface ManagedClient {
+  /** Returns a connected client, or null if this Redis is unconfigured/unavailable. */
+  get(): Promise<RedisClientType | null>;
+  /** The already-connected client, or null. Never triggers a connect. */
+  getSync(): RedisClientType | null;
+  /** False once the URL is unset or the connection has been given up on. */
+  enabled(): boolean;
+}
 
-async function connect(): Promise<RedisClientType | null> {
-  if (disabled || !env.REDIS_URL) return null;
+function managedClient(url: string | undefined, label: string): ManagedClient {
+  let client: RedisClientType | null = null;
+  let connecting: Promise<RedisClientType | null> | null = null;
+  let disabled = !url;
 
-  const c: RedisClientType = createClient({
-    url: env.REDIS_URL,
-    socket: {
-      // Give up reconnecting after a handful of tries rather than looping
-      // forever — once disabled, callers fall back cleanly.
-      reconnectStrategy: (retries) => (retries > 5 ? false : Math.min(retries * 200, 2000)),
-    },
-  });
+  async function connect(): Promise<RedisClientType | null> {
+    if (disabled || !url) return null;
 
-  c.on('error', (err) => {
-    // redis@4 emits 'error' on every failed reconnect attempt; log once at
-    // warn, don't crash.
-    logger.warn({ err: err instanceof Error ? err.message : err }, 'Redis client error');
-  });
-  c.on('end', () => {
-    logger.warn('Redis connection closed — app-level Redis features are now disabled until restart');
-    client = null;
-    disabled = true;
-  });
+    const c: RedisClientType = createClient({
+      url,
+      socket: {
+        // Give up reconnecting after a handful of tries rather than looping
+        // forever — once disabled, callers fall back cleanly.
+        reconnectStrategy: (retries) => (retries > 5 ? false : Math.min(retries * 200, 2000)),
+      },
+    });
 
-  try {
-    await c.connect();
-    logger.info('Redis connected — app-level caching / rate-limit store enabled');
-    client = c;
-    return c;
-  } catch (err) {
-    logger.warn({ err: err instanceof Error ? err.message : err }, 'Redis connect failed — continuing without it');
-    disabled = true;
-    return null;
+    c.on('error', (err) => {
+      // redis@4 emits 'error' on every failed reconnect attempt; log once at
+      // warn, don't crash.
+      logger.warn({ err: err instanceof Error ? err.message : err, redis: label }, 'Redis client error');
+    });
+    c.on('end', () => {
+      logger.warn({ redis: label }, 'Redis connection closed — this Redis is disabled until restart');
+      client = null;
+      disabled = true;
+    });
+
+    try {
+      await c.connect();
+      logger.info({ redis: label }, 'Redis connected');
+      client = c;
+      return c;
+    } catch (err) {
+      logger.warn({ err: err instanceof Error ? err.message : err, redis: label }, 'Redis connect failed — continuing without it');
+      disabled = true;
+      return null;
+    }
   }
+
+  return {
+    get() {
+      if (client) return Promise.resolve(client);
+      if (disabled) return Promise.resolve(null);
+      if (!connecting) connecting = connect().finally(() => { connecting = null; });
+      return connecting;
+    },
+    getSync() {
+      return client;
+    },
+    enabled() {
+      return !disabled;
+    },
+  };
 }
 
-/** Returns a connected client, or null if Redis is unconfigured/unavailable. */
-export async function getRedis(): Promise<RedisClientType | null> {
-  if (client) return client;
-  if (disabled) return null;
-  if (!connecting) connecting = connect().finally(() => { connecting = null; });
-  return connecting;
-}
+const cache = managedClient(env.REDIS_URL, 'cache');
+const queue = managedClient(env.REDIS_QUEUE_URL, 'queue');
 
-/** Synchronous accessor — the already-connected client, or null. Never triggers a connect. */
-export function getRedisSync(): RedisClientType | null {
-  return client;
-}
+/** Cache/rate-limit Redis (REDIS_URL / kolab-cache). Null when unconfigured or down. */
+export const getRedis = cache.get;
+export const getRedisSync = cache.getSync;
+export const redisEnabled = cache.enabled;
 
-export function redisEnabled(): boolean {
-  return !disabled;
-}
+/** Queue/durable Redis (REDIS_QUEUE_URL / kolab-queue). Null when unconfigured or down. */
+export const getQueueRedis = queue.get;
+export const getQueueRedisSync = queue.getSync;
+export const queueRedisEnabled = queue.enabled;
