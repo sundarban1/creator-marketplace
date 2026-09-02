@@ -111,11 +111,20 @@ export function LandingFooter() {
               {d.footer.tagline}
             </motion.p>
 
-            {/* Admin-managed via the dashboard's Contact page — each row only
+            {/* Admin-managed via the dashboard's Company page — each row only
                 renders once its value is set, so an unconfigured field just
-                doesn't take up space rather than showing blank/placeholder text. */}
+                doesn't take up space rather than showing blank/placeholder text.
+                siteInfo lands async (and slow on a cold backend), often after
+                the parent's one-shot whileInView has already fired — so this
+                block runs its own mount animation instead of inheriting the
+                stagger variant, which would otherwise leave it stuck at
+                opacity:0 (in the DOM but invisible). */}
             {siteInfo && (siteInfo.address || siteInfo.phone || siteInfo.email) && (
-              <motion.div variants={fadeUp} className="mt-5 flex flex-col gap-2 text-sm text-ink-soft dark:text-white/75">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-5 flex flex-col gap-2 text-sm text-ink-soft dark:text-white/75">
                 {siteInfo.address && (
                   <span className="flex items-start gap-2">
                     <MapPin size={14} className="mt-0.5 flex-shrink-0 text-violet" />
@@ -138,7 +147,11 @@ export function LandingFooter() {
             )}
 
             {activeSocials.length > 0 && (
-              <motion.div variants={fadeUp} className="mt-6 flex items-center gap-2.5">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-6 flex items-center gap-2.5">
                 {activeSocials.map(({ key, Icon, label, color }) => (
                   <motion.a
                     key={key}
