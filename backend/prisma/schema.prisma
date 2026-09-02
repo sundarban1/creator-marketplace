@@ -281,6 +281,15 @@ model CreatorProfile {
   eventQuestions           EventQuestion[]
 
   @@index([isVerified])
+  // Explore Creators' default ordering is `createdAt DESC, id ASC` (see
+  // creator.repository.ts findMany) — unindexed before this, so every listing
+  // was a full scan + in-memory sort.
+  @@index([createdAt(sort: Desc)])
+  // `categories`/`industries` are filtered with array `hasSome` (… && …) in
+  // discovery + search. A GIN index is what Postgres needs to answer those
+  // without scanning every row.
+  @@index([categories], type: Gin)
+  @@index([industries], type: Gin)
   @@map("creator_profiles")
 }
 
@@ -747,6 +756,11 @@ model BusinessProfile {
   serviceRequests          ServiceRequest[]
 
   @@index([isVerified])
+  // Business discovery filters `categories` with array `has` and orders by
+  // `isVerified DESC, businessName ASC` (see business.repository.ts findMany).
+  @@index([categories], type: Gin)
+  @@index([businessName])
+  @@index([createdAt(sort: Desc)])
   @@map("business_profiles")
 }
 

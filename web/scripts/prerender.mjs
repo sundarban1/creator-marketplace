@@ -160,7 +160,12 @@ async function main() {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await page.waitForFunction(() => {
         const root = document.getElementById('root');
-        return !!root && root.childElementCount > 0;
+        if (!root || root.childElementCount === 0) return false;
+        // Public routes are lazy-loaded (see App.tsx) — until the route's
+        // chunk resolves, #root holds only the <Suspense> fallback spinner.
+        // Don't snapshot that: wait for the real page to replace it.
+        if (root.querySelector('[role="status"][aria-label="Loading"]')) return false;
+        return true;
       }, undefined, { timeout: 30_000 });
       // Sections animate in via framer-motion whileInView — give them a beat
       // to settle so the snapshot isn't caught mid-fade for text content

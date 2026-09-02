@@ -134,6 +134,18 @@ const envSchema = z.object({
   // local dev and any single-instance deployment work fine with Socket.IO's default
   // in-memory adapter.
   REDIS_URL: z.string().optional(),
+  // Per-instance Prisma connection-pool size (see prisma.ts). Optional —
+  // defaults to 5. Raise only after confirming instances × limit stays under
+  // the Postgres connection ceiling, or when pointing DATABASE_URL at a
+  // transaction-mode pooler (then the pool can be larger).
+  DB_CONNECTION_LIMIT: z.string().optional(),
+  // Queries at or above this many milliseconds are logged at warn in
+  // non-development environments (see prisma.ts). Optional — defaults to 300.
+  SLOW_QUERY_LOG_MS: z.string().optional(),
+  // Sentry performance tracing sample rate (0–1). Optional — defaults to 0
+  // (tracing off). A small value like 0.1 gives useful latency/APM data at
+  // negligible cost for this traffic volume.
+  SENTRY_TRACES_SAMPLE_RATE: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

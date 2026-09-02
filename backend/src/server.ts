@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { env } from './config/env';
 import { logger } from './config/logger';
 import prisma from './prisma';
+import { getRedis } from './config/redis';
 import { initSocket } from './socket';
 import { startCampaignExpiryJob } from './jobs/expireCampaigns';
 import { startSocialFollowerRefreshJob } from './jobs/refreshSocialFollowers';
@@ -13,6 +14,12 @@ export async function startServer(app: Express): Promise<void> {
   try {
     await prisma.$connect();
     logger.info('Database connected');
+
+    // Warm the shared app-level Redis connection (rate-limit store + response
+    // cache). Non-blocking and best-effort — getRedis() resolves to null and
+    // every caller degrades gracefully if Redis is unconfigured or down, so a
+    // failure here must never stop the server booting.
+    void getRedis();
 
     const httpServer = createServer(app);
     await initSocket(httpServer);

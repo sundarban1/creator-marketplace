@@ -2,6 +2,13 @@ import { CategoryScope, CategoryStatus } from '@prisma/client';
 import { AppError } from '../../middleware/error';
 import { CategoryRepository } from './category.repository';
 import type { CreateCategoryInput, UpdateCategoryInput } from './category.schema';
+import { cached, invalidatePrefix } from '../../utils/cache';
+
+// Public category lists are read constantly by both clients and change only
+// when an admin edits them — cache for an hour and blow the whole namespace
+// away on any write.
+const PUBLIC_CACHE_PREFIX = 'categories:public:';
+const PUBLIC_CACHE_TTL_SEC = 3600;
 
 export class CategoryService {
   private repo: CategoryRepository;
@@ -11,7 +18,12 @@ export class CategoryService {
   }
 
   async listPublic(scope?: CategoryScope, strict?: boolean) {
-    return this.repo.findManyPublic(scope, strict);
+    const key = `${PUBLIC_CACHE_PREFIX}${scope ?? 'all'}:${strict ? 'strict' : 'loose'}`;
+    return cached(key, PUBLIC_CACHE_TTL_SEC, () => this.repo.findManyPublic(scope, strict));
+  }
+
+  private async invalidatePublicCache() {
+    await invalidatePrefix(PUBLIC_CACHE_PREFIX);
   }
 
   async listForAdmin() {
@@ -25,7 +37,9 @@ export class CategoryService {
   async create(input: CreateCategoryInput) {
     const existing = await this.repo.findByKey(input.key);
     if (existing) throw new AppError('A category with this key already exists', 409);
-    return this.repo.create(input);
+    const created = await this.repo.create(input);
+    await this.invalidatePublicCache();
+    return created;
   }
 
   async update(id: string, input: UpdateCategoryInput) {
@@ -36,18 +50,23 @@ export class CategoryService {
       const existing = await this.repo.findByKey(input.key);
       if (existing) throw new AppError('A category with this key already exists', 409);
     }
-    return this.repo.update(id, input);
+    const updated = await this.repo.update(id, input);
+    await this.invalidatePublicCache();
+    return updated;
   }
 
   async updateStatus(id: string, status: CategoryStatus) {
     const category = await this.repo.findById(id);
     if (!category) throw new AppError('Category not found', 404);
-    return this.repo.updateStatus(id, status);
+    const updated = await this.repo.updateStatus(id, status);
+    await this.invalidatePublicCache();
+    return updated;
   }
 
   async remove(id: string) {
     const category = await this.repo.findById(id);
     if (!category) throw new AppError('Category not found', 404);
     await this.repo.delete(id);
+    await this.invalidatePublicCache();
   }
 }

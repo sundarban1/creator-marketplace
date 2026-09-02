@@ -1,35 +1,52 @@
 databases:
-  - name: kolab
+  # Singapore replacement for the old Oregon `kolab` Postgres. Renamed so a
+  # Blueprint sync provisions a fresh instance instead of adopting the Oregon
+  # one (Render matches by name and ignores `region` changes on existing
+  # resources). Migrate data with pg_dump/pg_restore before cutover, then
+  # delete the old `kolab` database from the dashboard.
+  - name: kolab-db
     plan: free
     region: singapore
     postgresMajorVersion: "16"
 
 services:
   # Socket.IO cross-instance broadcast (backend/src/socket.ts's Redis adapter) —
-  # required because marketplace-backend runs on more than one instance. Without
-  # this, a chat message/typing event from a user whose socket landed on one
-  # instance never reaches a user connected to a different instance, since
-  # Socket.IO's default adapter only knows about sockets in its own process.
+  # required whenever kolab-api runs on more than one instance. Without this, a
+  # chat message/typing event from a user whose socket landed on one instance
+  # never reaches a user connected to a different instance, since Socket.IO's
+  # default adapter only knows about sockets in its own process.
   # ipAllowList: [] = no external access, reachable only from other services in
   # this same Render account/region (matches how DATABASE_URL is wired below).
+  # Renamed from the Oregon `kolab-redis` so the sync creates a fresh instance;
+  # Redis holds only ephemeral adapter/cache/rate-limit state, nothing to migrate.
   - type: redis
-    name: kolab-redis
+    name: kolab-cache
     plan: free
     region: singapore
     ipAllowList: []
 
   - type: web
-    name: marketplace-backend
+    # Singapore replacement for the old Oregon `marketplace-backend`. New name =>
+    # new URL https://kolab-api.onrender.com (used in the *_REDIRECT_URI vars
+    # below and by the web/mobile clients). Bump `plan` here if this service is
+    # later moved to a paid, multi-instance plan on the dashboard.
+    name: kolab-api
     runtime: docker
-    # NOTE: this still reads "free" but the live service on the Render dashboard
-    # has since been moved to a paid, multi-instance plan — update this to match
-    # if you want `render.yaml` to stop drifting from the dashboard.
     plan: free
     region: singapore
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /health
     autoDeploy: true
+
+    # Run migrations ONCE per deploy, before any new instance starts — instead
+    # of every instance racing `prisma migrate deploy` in its own entrypoint on
+    # boot (Prisma advisory-locks so that's safe, but it serialises startup and
+    # a failed migration can wedge every instance's boot loop). The entrypoint
+    # still runs `migrate deploy` too as an idempotent safety net (fast no-op
+    # once this has applied everything) and for non-Render environments
+    # (docker-compose) that don't have a pre-deploy phase.
+    preDeployCommand: npx prisma migrate deploy
 
     # Skip auto-deploy when a push only touches web/ or mobile/ — without this,
     # every commit anywhere in the monorepo redeploys the backend too.
@@ -49,6 +66,21 @@ services:
       - key: LOG_LEVEL
         value: info
 
+      # Per-instance Prisma connection-pool cap — instances × this must stay
+      # under the Postgres connection ceiling (raise the DB plan or move to a
+      # pooler before raising this). See backend/src/prisma.ts.
+      - key: DB_CONNECTION_LIMIT
+        value: 5
+
+      # Log any query slower than this (ms) at warn level.
+      - key: SLOW_QUERY_LOG_MS
+        value: 300
+
+      # Sentry performance tracing — 10% of requests sampled. Cheap at this
+      # volume; gives endpoint latency / slow-span data.
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: 0.1
+
       # ── Database — wired to the Render Postgres instance above. After this
       # database's first deploy (migrations run automatically via
       # docker-entrypoint.sh), open the service's Shell tab on the Render
@@ -60,14 +92,14 @@ services:
       # users/campaigns/success-stories — local/staging use only, not prod.
       - key: DATABASE_URL
         fromDatabase:
-          name: kolab
+          name: kolab-db
           property: connectionString
 
       # ── Redis — backs the Socket.IO cross-instance adapter above ────────────
       - key: REDIS_URL
         fromService:
           type: redis
-          name: kolab-redis
+          name: kolab-cache
           property: connectionString
 
       # ── Auth secrets — Render generates strong random values on first deploy ─
@@ -139,7 +171,7 @@ services:
         sync: false
 
       - key: TIKTOK_REDIRECT_URI
-        value: https://marketplace-backend-ofge.onrender.com/api/creator/social-accounts/tiktok/callback
+        value: https://kolab-api.onrender.com/api/creator/social-accounts/tiktok/callback
 
       - key: APP_SCHEME
         value: kolab
@@ -161,7 +193,7 @@ services:
         sync: false
 
       - key: INSTAGRAM_REDIRECT_URI
-        value: https://marketplace-backend-ofge.onrender.com/api/creator/social-accounts/instagram-login/callback
+        value: https://kolab-api.onrender.com/api/creator/social-accounts/instagram-login/callback
 
       # ── Google OAuth (YouTube connect token refresh) ────────────────────────
       # Client IDs are public and already embedded in the mobile client.

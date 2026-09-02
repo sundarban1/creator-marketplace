@@ -28,9 +28,16 @@ function scrubObject<T>(value: T, seen = new WeakSet<object>()): T {
   return result as T;
 }
 
+// Performance tracing is off by default (rate 0) — set SENTRY_TRACES_SAMPLE_RATE
+// to e.g. 0.1 in production to get endpoint latency / slow-span data. Kept low
+// and env-driven so it costs almost nothing at this traffic volume and can be
+// dialled without a deploy.
+const tracesSampleRate = Math.min(Math.max(Number(env.SENTRY_TRACES_SAMPLE_RATE ?? '0') || 0, 0), 1);
+
 Sentry.init({
   dsn: env.SENTRY_DSN,
   environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV,
+  tracesSampleRate,
   beforeSend(event) {
     if (event.request?.headers) {
       delete event.request.headers['authorization'];

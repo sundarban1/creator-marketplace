@@ -56,6 +56,15 @@ export async function presignPutUrl(key: string, contentType: string, expiresIn 
   return getSignedUrl(requireClient(), cmd, { expiresIn });
 }
 
+// Immutable: object keys are UUID-based and their bytes never change once
+// written, so anything that fetches them (a browser, or Cloudflare in front of
+// the public bucket) can hold them for a year. Only set on the server-side
+// putObject path — adding CacheControl to a *presigned* PUT makes it a signed
+// header the client must then send byte-for-byte or the upload 403s, which
+// would need a coordinated mobile/web change; do that as a follow-up, or set
+// the header at the edge via a Cloudflare Cache Rule on cdn.ourkolab.com.
+export const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
 // Server-side upload of a buffer we generated ourselves (not a client
 // direct-to-R2 presigned PUT) — used by the open-event invitation renderer,
 // which produces the PNG on this server and needs to persist it immediately.
@@ -65,6 +74,7 @@ export async function putObject(key: string, body: Buffer, contentType: string):
     Key: key,
     Body: body,
     ContentType: contentType,
+    CacheControl: IMMUTABLE_CACHE_CONTROL,
   }));
 }
 

@@ -1,7 +1,10 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { type Options } from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
 import type { Express, Request } from 'express';
 import { env } from '../config/env';
 import { getCachedSettings } from '../utils/settingsCache';
+import { getRedis } from '../config/redis';
+import { logger } from '../config/logger';
 
 // Same dev-vs-prod relaxation rationale as the other static limiters in
 // app.ts: a single dev's dashboard (React StrictMode double-invoking effects,
@@ -20,6 +23,40 @@ async function settingEnabled(key: string): Promise<boolean> {
   return settings[key] !== false;
 }
 
+// express-rate-limit's default store keeps counters in the process's own
+// memory, so with the backend running on multiple instances (see render.yaml)
+// each instance enforces its own separate budget — a client effectively gets
+// N× the intended limit, and every deploy wipes all counters. Routing the
+// store through Redis makes the limits global.
+//
+// Safety: this is only wired up when REDIS_URL is set. If Redis then errors or
+// is momentarily unreachable, `passOnStoreError: true` lets the request
+// through rather than 500-ing it — a brief window of unlimited is far better
+// than an outage on `/api/`. With no REDIS_URL (local dev), the limiters use
+// the in-memory store exactly as before.
+function withStore(opts: Partial<Options>): Partial<Options> {
+  if (!env.REDIS_URL) return opts;
+  return {
+    ...opts,
+    passOnStoreError: true,
+    store: new RedisStore({
+      prefix: 'rl:',
+      sendCommand: async (...args: string[]) => {
+        const client = await getRedis();
+        if (!client) throw new Error('Redis unavailable for rate-limit store');
+        return client.sendCommand(args);
+      },
+    }),
+  };
+}
+
+// Thin wrapper so every limiter below picks up the shared store.
+const limiter = (opts: Partial<Options>) => rateLimit(withStore(opts));
+
+void getRedis().then((c) => {
+  if (env.REDIS_URL && c) logger.info('Rate limiting is using the shared Redis store (global across instances)');
+});
+
 // These three mirror the previous static authLimiter/otpLimiter/apiLimiter in
 // app.ts, except `limit` is now a function reading the admin-configurable
 // rateLimit.* settings (see AdminRepository DEFAULTS) instead of a fixed
@@ -28,7 +65,7 @@ async function settingEnabled(key: string): Promise<boolean> {
 // itself can't be changed without recreating the limiter instance.
 
 // Strict limiter for authentication endpoints (brute-force protection)
-export const authLimiter = rateLimit({
+export const authLimiter = limiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: () => settingNumber('rateLimit.login.max', isProd ? 20 : 200),
   skip: () => settingEnabled('rateLimit.login.enabled').then((enabled) => !enabled),
@@ -39,7 +76,7 @@ export const authLimiter = rateLimit({
 });
 
 // Tighter OTP limiter
-export const otpLimiter = rateLimit({
+export const otpLimiter = limiter({
   windowMs: 10 * 60 * 1000, // 10 minutes
   limit: () => settingNumber('rateLimit.otp.max', isProd ? 5 : 50),
   skip: () => settingEnabled('rateLimit.otp.enabled').then((enabled) => !enabled),
@@ -49,7 +86,7 @@ export const otpLimiter = rateLimit({
 });
 
 // General API limiter (prevents abuse but allows normal traffic)
-export const apiLimiter = rateLimit({
+export const apiLimiter = limiter({
   windowMs: 60 * 1000, // 1 minute
   limit: () => settingNumber('rateLimit.apiRequests.max', isProd ? 120 : 1000),
   message: { success: false, message: 'Too many requests. Please slow down.' },
@@ -66,7 +103,7 @@ export const apiLimiter = rateLimit({
 // Per-user (not per-IP) limiter for sending chat messages — applies equally
 // to creators and businesses. Placed after `authenticate` on its route so
 // `req.user` is populated for the key.
-export const perUserMessageLimiter = rateLimit({
+export const perUserMessageLimiter = limiter({
   windowMs: 60 * 1000, // 1 minute
   limit: () => settingNumber('rateLimit.messages.maxPerMinute', 20),
   skip: () => settingEnabled('rateLimit.messages.enabled').then((enabled) => !enabled),
@@ -77,7 +114,7 @@ export const perUserMessageLimiter = rateLimit({
 });
 
 // Messaging routes need a much higher ceiling for real-time chat
-const messagingLimiter = rateLimit({
+const messagingLimiter = limiter({
   windowMs: 60 * 1000,
   max: 600,
   message: { success: false, message: 'Too many requests. Please slow down in chat.' },
@@ -86,7 +123,7 @@ const messagingLimiter = rateLimit({
 });
 
 // Upload endpoints need a higher limit (multipart payloads)
-const uploadLimiter = rateLimit({
+const uploadLimiter = limiter({
   windowMs: 60 * 1000,
   max: 20,
   message: { success: false, message: 'Too many upload requests.' },
@@ -95,7 +132,7 @@ const uploadLimiter = rateLimit({
 });
 
 // AI generation is slow/costly — keep this tight
-const aiGenerateLimiter = rateLimit({
+const aiGenerateLimiter = limiter({
   windowMs: 60 * 1000,
   max: 5,
   message: { success: false, message: 'Too many AI generation requests. Please wait a moment.' },
@@ -104,7 +141,7 @@ const aiGenerateLimiter = rateLimit({
 });
 
 // Public, unauthenticated contact form — tight limit to deter spam
-const publicContactLimiter = rateLimit({
+const publicContactLimiter = limiter({
   windowMs: 15 * 60 * 1000,
   max: isProd ? 5 : 50,
   message: { success: false, message: 'Too many messages sent. Please try again later.' },

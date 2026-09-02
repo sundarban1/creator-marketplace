@@ -2,6 +2,12 @@ import { PlatformStatus } from '@prisma/client';
 import { AppError } from '../../middleware/error';
 import { PlatformRepository } from './platform.repository';
 import type { CreatePlatformInput, UpdatePlatformInput } from './platform.schema';
+import { cached, invalidate } from '../../utils/cache';
+
+// The public platform list changes only on an admin edit — cache for an hour,
+// drop it on any write.
+const PUBLIC_CACHE_KEY = 'platforms:public';
+const PUBLIC_CACHE_TTL_SEC = 3600;
 
 export class PlatformService {
   private repo: PlatformRepository;
@@ -11,7 +17,7 @@ export class PlatformService {
   }
 
   async listPublic() {
-    return this.repo.findManyPublic();
+    return cached(PUBLIC_CACHE_KEY, PUBLIC_CACHE_TTL_SEC, () => this.repo.findManyPublic());
   }
 
   async listForAdmin() {
@@ -25,7 +31,9 @@ export class PlatformService {
   async create(input: CreatePlatformInput) {
     const existing = await this.repo.findByKey(input.key);
     if (existing) throw new AppError('A platform with this key already exists', 409);
-    return this.repo.create(input);
+    const created = await this.repo.create(input);
+    await invalidate(PUBLIC_CACHE_KEY);
+    return created;
   }
 
   async update(id: string, input: UpdatePlatformInput) {
@@ -36,18 +44,23 @@ export class PlatformService {
       const existing = await this.repo.findByKey(input.key);
       if (existing) throw new AppError('A platform with this key already exists', 409);
     }
-    return this.repo.update(id, input);
+    const updated = await this.repo.update(id, input);
+    await invalidate(PUBLIC_CACHE_KEY);
+    return updated;
   }
 
   async updateStatus(id: string, status: PlatformStatus) {
     const platform = await this.repo.findById(id);
     if (!platform) throw new AppError('Platform not found', 404);
-    return this.repo.updateStatus(id, status);
+    const updated = await this.repo.updateStatus(id, status);
+    await invalidate(PUBLIC_CACHE_KEY);
+    return updated;
   }
 
   async remove(id: string) {
     const platform = await this.repo.findById(id);
     if (!platform) throw new AppError('Platform not found', 404);
     await this.repo.delete(id);
+    await invalidate(PUBLIC_CACHE_KEY);
   }
 }

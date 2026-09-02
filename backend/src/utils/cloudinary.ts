@@ -12,6 +12,18 @@ export type UploadFolder = 'creators/avatars' | 'creators/covers' | 'businesses/
 
 const DEFAULT_TRANSFORMATION = [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }];
 
+// Inject Cloudinary's automatic format + quality negotiation into a delivery
+// URL so clients that accept WebP/AVIF get it, and quality is picked per-image
+// instead of always max. Idempotent (won't double-insert) and a no-op for any
+// non-Cloudinary URL, so it's safe to run over already-stored or fallback URLs.
+// `f_auto,q_auto` sits in the transformation segment right after `/upload/`,
+// which composes fine with the sizing transformation baked in at upload time.
+export function optimizedImageUrl(url: string): string {
+  if (!url || !url.includes('/upload/')) return url;
+  if (/\/upload\/[^/]*\bf_auto\b/.test(url)) return url;
+  return url.replace('/upload/', '/upload/f_auto,q_auto/');
+}
+
 export async function uploadImage(
   buffer: Buffer,
   folder: UploadFolder,
@@ -32,7 +44,7 @@ export async function uploadImage(
           logger.error({ err, folder, publicId }, 'Cloudinary image upload failed');
           return reject(err ?? new Error('Cloudinary upload failed'));
         }
-        resolve(result.secure_url);
+        resolve(optimizedImageUrl(result.secure_url));
       },
     );
     stream.end(buffer);
