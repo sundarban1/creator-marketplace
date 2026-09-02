@@ -6,6 +6,7 @@ import { api, type ApiNotification } from '../lib/api';
 import { useApi } from '../lib/useApi';
 import { useNotifications } from '../context/NotificationContext';
 import { timeAgo, notificationRoute, notificationIcon } from '../lib/notificationMeta';
+import { stripPhonePlaceholderEmail } from '../lib/identity';
 
 const PAGE_SIZE = 15;
 
@@ -76,8 +77,8 @@ export function Notifications() {
                     <Icon size={16} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-sm ${!n.isRead ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>{n.title}</p>
-                    <p className="text-sm text-gray-500 mt-0.5">{n.body}</p>
+                    <p className={`text-sm ${!n.isRead ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>{stripPhonePlaceholderEmail(n.title)}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">{stripPhonePlaceholderEmail(n.body)}</p>
                     <p className="text-xs text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
                   </div>
                   {!n.isRead && <span className="w-2 h-2 rounded-full bg-indigo-500 mt-2 flex-shrink-0" />}

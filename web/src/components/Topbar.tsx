@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import type { ApiNotification } from '../lib/api';
 import { timeAgo, notificationRoute, notificationIcon } from '../lib/notificationMeta';
+import { stripPhonePlaceholderEmail } from '../lib/identity';
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -118,8 +119,8 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
                             <Icon size={12} />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-800 truncate">{n.title}</p>
-                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.body}</p>
+                            <p className="text-sm font-medium text-gray-800 truncate">{stripPhonePlaceholderEmail(n.title)}</p>
+                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{stripPhonePlaceholderEmail(n.body)}</p>
                             <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
                           </div>
                           {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 flex-shrink-0" />}

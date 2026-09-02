@@ -17,6 +17,13 @@ export function displayEmailOrPhone(email: string): string {
   return email.slice(0, -PLACEHOLDER_EMAIL_DOMAIN.length).replace(/^\+?977/, '');
 }
 
+/** Replaces every `<phone>@phone.kolab.internal` placeholder embedded in a
+ *  free-text string (notification bodies, activity logs, etc.) with just the
+ *  phone number, so admins never see the internal placeholder domain. */
+export function stripPhonePlaceholderEmail(text: string): string {
+  return text.replace(/[^\s@]+@phone\.kolab\.internal/gi, (match) => displayEmailOrPhone(match));
+}
+
 /** Formats a business profile's `businessName` for display. The column is
  *  nullable (a business that signed up but never finished onboarding has no
  *  name yet), so every admin surface must tolerate null rather than assume a

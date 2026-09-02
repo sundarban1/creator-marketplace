@@ -164,7 +164,9 @@ export class AuthService {
     notificationService.createForAdmins({
       type:    input.role === 'CREATOR' ? 'creator_joined' : 'business_joined',
       title:   input.role === 'CREATOR' ? 'New Creator Joined' : 'New Brand Joined',
-      body:    `${joinedName ?? emailForRecord} just signed up as a ${input.role === 'CREATOR' ? 'creator' : 'brand'}.`,
+      // Fall back to the phone number, never the `<phone>@phone.kolab.internal`
+      // placeholder that fills the required email column on a phone-only signup.
+      body:    `${joinedName ?? phoneForRecord ?? emailForRecord} just signed up as a ${input.role === 'CREATOR' ? 'creator' : 'brand'}.`,
       refId:   user.id,
       refType: 'user',
     }).catch(() => {});

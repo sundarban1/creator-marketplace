@@ -1,7 +1,7 @@
 databases:
   - name: kolab
     plan: free
-    region: oregon
+    region: singapore
     postgresMajorVersion: "16"
 
 services:
@@ -15,7 +15,7 @@ services:
   - type: redis
     name: kolab-redis
     plan: free
-    region: oregon
+    region: singapore
     ipAllowList: []
 
   - type: web
@@ -25,23 +25,27 @@ services:
     # has since been moved to a paid, multi-instance plan — update this to match
     # if you want `render.yaml` to stop drifting from the dashboard.
     plan: free
-    region: oregon
+    region: singapore
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /health
     autoDeploy: true
+
     # Skip auto-deploy when a push only touches web/ or mobile/ — without this,
     # every commit anywhere in the monorepo redeploys the backend too.
     buildFilter:
       paths:
         - backend/**
         - render.yaml
+
     envVars:
       # ── Core ────────────────────────────────────────────────────────────────
       - key: NODE_ENV
         value: production
+
       - key: PORT
         value: 3000
+
       - key: LOG_LEVEL
         value: info
 
@@ -53,7 +57,7 @@ services:
       #   npm run db:seed:admin        (SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD env vars)
       #   npm run db:seed:platforms    (platform catalog)
       # `npm run db:seed` also exists but additionally creates fake demo
-      # users/campaigns/success-stories — local/staging use only, not prod. ──
+      # users/campaigns/success-stories — local/staging use only, not prod.
       - key: DATABASE_URL
         fromDatabase:
           name: kolab
@@ -69,14 +73,17 @@ services:
       # ── Auth secrets — Render generates strong random values on first deploy ─
       - key: JWT_ACCESS_SECRET
         generateValue: true
+
       - key: JWT_REFRESH_SECRET
         generateValue: true
+
       - key: JWT_ACCESS_EXPIRES_IN
         value: 15m
+
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
 
-      # ── CORS — set to your deployed web app origin(s), comma-separated ──────
+      # ── CORS — set to your deployed web app origin(s), comma-separated ─────
       - key: FRONTEND_URL
         sync: false
 
@@ -91,72 +98,92 @@ services:
       # prod ended up silently swallowing every signup/reset OTP.
       - key: RESEND_API_KEY
         sync: false
+
       - key: EMAIL_HOST
         sync: false
+
       - key: EMAIL_PORT
         sync: false
+
       - key: EMAIL_SECURE
         sync: false
+
       - key: EMAIL_USERNAME
         sync: false
+
       - key: EMAIL_PASSWORD
         sync: false
+
       - key: ADMIN_EMAIL
         sync: false
 
       # ── Cloudinary (avatar/logo/document uploads) — fill in via dashboard ───
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
+
       - key: CLOUDINARY_API_KEY
         sync: false
+
       - key: CLOUDINARY_API_SECRET
         sync: false
 
-      # ── AI campaign generator — fill in via dashboard ────────────────────────
+      # ── AI campaign generator — fill in via dashboard ───────────────────────
       - key: OPENAI_API_KEY
         sync: false
 
       # ── TikTok Login Kit (creator social-account OAuth connect) ─────────────
       - key: TIKTOK_CLIENT_KEY
         sync: false
+
       - key: TIKTOK_CLIENT_SECRET
         sync: false
+
       - key: TIKTOK_REDIRECT_URI
         value: https://marketplace-backend-ofge.onrender.com/api/creator/social-accounts/tiktok/callback
+
       - key: APP_SCHEME
         value: kolab
 
-      # ── Facebook Login (creator social-account OAuth connect) — App ID is public,
-      # already embedded in the mobile client; only the secret needs the dashboard ──
+      # ── Facebook Login (creator social-account connect) ─────────────────────
+      # App ID is public and already embedded in the mobile client.
+      # Only the secret needs to be supplied through the dashboard.
       - key: FACEBOOK_APP_ID
         value: "1740519673635792"
+
       - key: FACEBOOK_APP_SECRET
         sync: false
 
-      # ── Instagram API with Instagram Login (direct connect) — fill in via dashboard ─
+      # ── Instagram API with Instagram Login (direct connect) ────────────────
       - key: INSTAGRAM_APP_ID
         sync: false
+
       - key: INSTAGRAM_APP_SECRET
         sync: false
+
       - key: INSTAGRAM_REDIRECT_URI
         value: https://marketplace-backend-ofge.onrender.com/api/creator/social-accounts/instagram-login/callback
 
-      # ── Google OAuth (YouTube connect token refresh). Client IDs are public, already
-      # embedded in the mobile client; only the Web client's secret needs the dashboard.
-      # Android/iOS client IDs have no secret (public/native clients) but ARE required —
-      # native refresh tokens are minted under them, not the Web client.
+      # ── Google OAuth (YouTube connect token refresh) ────────────────────────
+      # Client IDs are public and already embedded in the mobile client.
+      # Only the Web client's secret needs to be supplied through the dashboard.
+      # Android/iOS client IDs have no secret (public/native clients) but ARE
+      # required — native refresh tokens are minted under them, not the Web client.
       - key: GOOGLE_WEB_CLIENT_ID
         value: "543768819635-6mhj10fgm73eboahjnhttogaihn068if.apps.googleusercontent.com"
+
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+
       - key: GOOGLE_ANDROID_CLIENT_ID
         value: "543768819635-at5jjekqobcots66gl7lv0gufh8b6rp3.apps.googleusercontent.com"
+
       - key: GOOGLE_IOS_CLIENT_ID
         value: "543768819635-fuslrtr8mt6bmi2jslc3h3hcqg4drhdk.apps.googleusercontent.com"
 
-      # ── Sign in with Apple. APPLE_CLIENT_ID is the iOS bundle id and is the
-      # `aud` every Apple identity token is verified against — sign-in returns
-      # 503 without it. Not a secret. Add APPLE_TEAM_ID / APPLE_KEY_ID /
+      # ── Sign in with Apple ──────────────────────────────────────────────────
+      # APPLE_CLIENT_ID is the iOS bundle id and is the `aud` every Apple
+      # identity token is verified against — sign-in returns 503 without it.
+      # Not a secret. Add APPLE_TEAM_ID / APPLE_KEY_ID /
       # APPLE_PRIVATE_KEY (.p8 contents) via the dashboard only once token
       # revocation or the server-to-server webhook is turned on.
       - key: APPLE_CLIENT_ID
@@ -164,6 +191,7 @@ services:
 
   # marketplace-web — added as a NEW service, deliberately separate from
   # whatever dashboard-managed static site currently serves ourkolab.com.
+  #
   # Its static-file fallback was serving dist/index.html (the homepage) for
   # every path without an exact file match, including paths that have their
   # own prerendered page (dist/terms/index.html, etc.) — Google saw that as
@@ -178,11 +206,12 @@ services:
     name: marketplace-web
     runtime: docker
     plan: free
-    region: oregon
+    region: singapore
     dockerfilePath: ./web/Dockerfile
     dockerContext: ./web
     healthCheckPath: /healthz
     autoDeploy: true
+
     buildFilter:
       paths:
         - web/**
