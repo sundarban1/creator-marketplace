@@ -17,4 +17,4 @@ jobs:
     steps:
       - name: Hit /health
         run: |
-          curl -fsS --max-time 20 https://marketplace-backend-ofge.onrender.com/health
+          curl -fsS --max-time 60 https://kolab-api.onrender.com/health
