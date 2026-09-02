@@ -1,13 +1,8 @@
-databases:
-  # Singapore replacement for the old Oregon `kolab` Postgres. Renamed so a
-  # Blueprint sync provisions a fresh instance instead of adopting the Oregon
-  # one (Render matches by name and ignores `region` changes on existing
-  # resources). Migrate data with pg_dump/pg_restore before cutover, then
-  # delete the old `kolab` database from the dashboard.
-  - name: kolab-db
-    plan: free
-    region: singapore
-    postgresMajorVersion: "16"
+# The Singapore Postgres (`kolab-db`) was created directly on the Render
+# dashboard, not by this Blueprint — so it is NOT declared here (a `databases:`
+# entry would make a sync provision a second, separate instance). Its connection
+# string is wired into DATABASE_URL below. Migrate data with pg_dump/pg_restore
+# before cutover, then delete the old Oregon `kolab` database.
 
 services:
   # ── kolab-cache ────────────────────────────────────────────────────────────
@@ -115,10 +110,14 @@ services:
       #   npm run db:seed:platforms    (platform catalog)
       # `npm run db:seed` also exists but additionally creates fake demo
       # users/campaigns/success-stories — local/staging use only, not prod.
+      # Internal connection string for the dashboard-created `kolab-db` Postgres
+      # (Singapore). Internal URL — only resolves from services in the same
+      # Render region. ⚠️ This embeds the DB password in git history; prefer
+      # `sync: false` here and paste the string in the dashboard instead if you
+      # can. Rotate this password from the Render dashboard if the repo is ever
+      # exposed.
       - key: DATABASE_URL
-        fromDatabase:
-          name: kolab-db
-          property: connectionString
+        value: postgresql://kolab_db_user:2PhydHfBIMRykQ28LcdWWxC7FoAZyZn2@dpg-dac2r48n74is738vc8v0-a/kolab_db
 
       # ── Redis ──────────────────────────────────────────────────────────────
       # REDIS_URL      → kolab-cache: Socket.IO adapter, response/profile cache,
