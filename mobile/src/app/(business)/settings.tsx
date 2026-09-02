@@ -2166,26 +2166,6 @@ export default function BusinessSettingsScreen() {
         <Card>
           <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('businessSettings.darkModeLabel')} sub={t('businessSettings.darkModeSub')} value={isDark} onChange={toggleDark} isLast />
         </Card>
-
-        <SectionHeader title={t('businessSettings.aboutSection')} />
-        <Card>
-          <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <View
-              style={[
-                styles.navIonIconWrap,
-                {
-                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                },
-              ]}
-            >
-              <FontAwesome5 name="info-circle" size={16} color="#6366F1" />
-            </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.appVersionLabel')}</Text>
-            <Text style={[styles.navValue, { color: C.textSecondary }]}>1.0.0</Text>
-          </View>
-          <NavRow faIcon="users" ionIconColor="#6366F1" label={t('businessSettings.teamMembersLabel')} badge="V1.1" onPress={() => showToast(t('businessSettings.teamMembersToast'))} isLast />
-        </Card>
       </>
     );
   }
@@ -2226,23 +2206,7 @@ export default function BusinessSettingsScreen() {
 
         <SectionHeader title={t('businessSettings.appSection')} />
         <Card>
-          <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('businessSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
-          <View style={[styles.row, { borderTopWidth: 0, borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <View
-              style={[
-                styles.navIonIconWrap,
-                {
-                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                },
-              ]}
-            >
-              <FontAwesome5 name="info-circle" size={16} color="#6366F1" />
-            </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.appVersionLabel')}</Text>
-            <Text style={[styles.navValue, { color: C.textSecondary }]}>1.0.0</Text>
-          </View>
-          <NavRow faIcon="users" ionIconColor="#6366F1" label={t('businessSettings.teamMembersLabel')} badge="V1.1" onPress={() => showToast(t('businessSettings.teamMembersToast'))} isLast />
+          <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('businessSettings.darkModeLabel')} value={isDark} onChange={toggleDark} isLast />
         </Card>
 
         <SectionHeader title={t('businessSettings.helpSection')} />

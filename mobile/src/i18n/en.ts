@@ -150,7 +150,7 @@ const en = {
       biometricNoSession: 'No saved session found — please log in with your password.',
       passwordRequired: 'Password is required.',
       verifiedBanner: 'Account verified! You can sign in now.',
-      heroHeadline1: 'Where Skills Meet',
+      heroHeadline1: 'Where Creators Meet',
       heroHeadline2: 'Opportunities',
       brandHeadline1: 'हामी मिलेर, सम्भावनालाई',
       brandHeadline2: 'अवसरमा बदलौं।',
@@ -499,7 +499,7 @@ const en = {
     continueBtn: 'Continue',
     completeBtn: 'Complete Setup',
     saving: 'Saving…',
-    exploreBtn: 'Explore Skilled Creators',
+    exploreBtn: 'Explore Creators',
     categoryRequired: 'At least 1 category is required',
  successTitle: "You're all set!",
     successBody: "Your business profile is ready.\nLet's start finding the right creators.",
@@ -964,7 +964,7 @@ const en = {
       'Kolab is a platform built to make it easier for creators and businesses to discover opportunities, collaborate, and grow together.',
     creatorsHeading: 'For Creators',
     creatorsBody:
-      'Discover new opportunities, showcase your skills, collaborate with businesses, and build your professional journey.',
+      'Discover new opportunities, showcase your content, collaborate with businesses, and build your professional journey.',
     businessesHeading: 'For Businesses',
     businessesBody:
       'Find the right creators, create opportunities, manage collaborations, and connect with new audiences.',
@@ -1114,7 +1114,7 @@ const en = {
       loadError: "Couldn't load applications",
       retry: 'Retry',
       emptyTitle: 'No applications yet',
-      emptySub: 'Browse work and apply to the jobs that match your skills and audience.',
+      emptySub: 'Browse work and apply to the jobs that match your content and audience.',
       browseWork: 'Browse Work',
       tabAll: 'All',
       tabPending: 'Pending',
@@ -2591,10 +2591,6 @@ const en = {
     appearanceSection: 'Appearance',
     darkModeLabel:     'Dark Mode',
     darkModeSub:       'Switch between light and dark theme',
-    aboutSection:      'About',
-    appVersionLabel:   'App Version',
-    teamMembersLabel:  'Team Members',
-    teamMembersToast:  'Team management coming in V1.1',
     accountSection:      'Account',
     businessProfileNav:  'Business Profile',
     verificationNav:     'Verification',
@@ -3524,7 +3520,7 @@ const en = {
 
   // ── Splash Screen ─────────────────────────────────────────────
   splash: {
-    tagline: 'Where Skills Meet Opportunities',
+    tagline: 'Where Creators Meet Opportunities',
     roleCreator: 'Creator',
     roleBusiness: 'Business',
   },
@@ -3542,21 +3538,21 @@ const en = {
   // ── Account Type (dedicated service-provider/seeker chooser) ─
   accountType: {
     pageTitle: 'I am a...',
-    offerLeadIn: 'Earn money by offering your services and skills.',
+    offerLeadIn: 'Earn money by creating content for businesses.',
     dividerOr: 'or',
-    seekLeadIn: 'As a business, find skilled creators to promote your business.',
+    seekLeadIn: 'As a business, find creators to promote your business.',
     offerTitle: 'Creator',
     // Short one-word forms of the two titles above, for places that name the
     // chosen role inline (e.g. the signup card's "Signing up as …" chip).
     offerShort: 'Creator',
     seekShort: 'Business',
     offerExample: 'e.g. content creators, influencers, UGC creators',
-    offerBenefit1: 'Discover projects matching your skills',
+    offerBenefit1: 'Discover projects matching your niche',
     offerBenefit2: 'Build a portfolio and grow your reputation',
     offerBenefit3: 'Get paid securely for your work',
     seekTitle: 'Business',
     seekExample: 'e.g. brands, businesses, agencies, organizations',
-    seekBenefit1: 'Post work, reach skilled creators and promote your business',
+    seekBenefit1: 'Post work, reach creators and promote your business',
     seekBenefit2: "Browse creators' profiles, portfolios and reviews",
     seekBenefit3: 'Manage contracts and payments in one place',
   },
