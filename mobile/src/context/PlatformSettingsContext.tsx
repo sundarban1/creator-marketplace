@@ -9,6 +9,8 @@ const DEFAULT_FLAGS: PlatformFlags = {
   creatorOnboardingEnabled:    true,
   messagingEnabled:            true,
   platformCommission:          0,
+  paymentFeePercent:           5,
+  paymentTaxPercent:           13,
   comingSoon:                  false,
   minVersionIos:               '',
   minVersionAndroid:           '',
@@ -17,6 +19,11 @@ const DEFAULT_FLAGS: PlatformFlags = {
 type PlatformSettingsContextValue = {
   flags: PlatformFlags;
   isLoading: boolean;
+  // Most flags only need the once-at-launch fetch below, but admin-edited
+  // money fields (paymentFeePercent/paymentTaxPercent) are worth re-pulling
+  // whenever a screen that displays them regains focus, so a running app
+  // reflects a settings change without needing a full reload.
+  refetch: () => Promise<void>;
 };
 
 const PlatformSettingsContext = createContext<PlatformSettingsContextValue | null>(null);
@@ -25,15 +32,18 @@ export function PlatformSettingsProvider({ children }: { children: ReactNode }) 
   const [flags, setFlags] = useState<PlatformFlags>(DEFAULT_FLAGS);
   const [isLoading, setIsLoading] = useState(true);
 
+  const refetch = async () => {
+    try {
+      setFlags(await platformSettingsService.getFlags());
+    } catch { /* keep whatever flags are already loaded */ }
+  };
+
   useEffect(() => {
-    platformSettingsService.getFlags()
-      .then(setFlags)
-      .catch(() => { /* fail open with DEFAULT_FLAGS */ })
-      .finally(() => setIsLoading(false));
+    refetch().finally(() => setIsLoading(false));
   }, []);
 
   return (
-    <PlatformSettingsContext.Provider value={{ flags, isLoading }}>
+    <PlatformSettingsContext.Provider value={{ flags, isLoading, refetch }}>
       {children}
     </PlatformSettingsContext.Provider>
   );

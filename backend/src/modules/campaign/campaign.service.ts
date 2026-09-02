@@ -50,12 +50,19 @@ import {
 const CAMPAIGN_FIELDS = ['description', 'category', 'goals', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
 
 // Mirrors the fee breakdown shown to the business in the pay modal (mobile
-// activity-timeline.tsx's crFee/pfFee/vat/total) — must stay in lockstep with
-// that formula since this is the amount actually charged through Khalti.
-function applicationTotalNpr(proposedRate: number): number {
-  const platformFee = Math.round(proposedRate * 0.05);
-  const vat = Math.round(platformFee * 0.13);
-  return proposedRate + platformFee + vat;
+// activity-timeline.tsx's crFee/pfFee/tax/total) — must stay in lockstep with
+// that formula since this is the amount actually charged through Khalti/eSewa.
+// Rates come from PlatformSetting ('platform.paymentFeePercent' /
+// 'platform.paymentTaxPercent'), not 'platform.commission' (a separate,
+// campaign-creation-time value used only for the contract text).
+async function applicationTotalNpr(adminRepo: AdminRepository, proposedRate: number): Promise<number> {
+  const [feePercent, taxPercent] = await Promise.all([
+    adminRepo.getSetting('platform.paymentFeePercent').then((v) => Number(v) || 5),
+    adminRepo.getSetting('platform.paymentTaxPercent').then((v) => Number(v) || 13),
+  ]);
+  const platformFee = Math.round(proposedRate * (feePercent / 100));
+  const tax = Math.round(platformFee * (taxPercent / 100));
+  return proposedRate + platformFee + tax;
 }
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered as MP4 via
@@ -1376,7 +1383,7 @@ export class CampaignService {
     }
 
     const businessUser = (business as any).user as { email?: string | null; phone?: string | null } | undefined;
-    const totalNpr = applicationTotalNpr(application.proposedRate);
+    const totalNpr = await applicationTotalNpr(this.adminRepo, application.proposedRate);
 
     const { pidx, paymentUrl } = await khaltiInitiate({
       amountPaisa:       Math.round(totalNpr * 100),
@@ -1416,7 +1423,7 @@ export class CampaignService {
       throw new AppError(`Khalti payment ${result.status}`, 400);
     }
 
-    const expectedPaisa = Math.round(applicationTotalNpr(application.proposedRate) * 100);
+    const expectedPaisa = Math.round((await applicationTotalNpr(this.adminRepo, application.proposedRate)) * 100);
     if (result.totalAmountPaisa !== expectedPaisa) {
       logger.error({ appId, pidx, expectedPaisa, got: result.totalAmountPaisa }, 'Khalti payment amount mismatch');
       throw new AppError('The paid amount does not match what was due.', 400);
@@ -1490,7 +1497,7 @@ export class CampaignService {
     return buildEsewaSignedFields({
       appId,
       transactionUuid: application.esewaTransactionUuid,
-      totalAmountNpr: applicationTotalNpr(application.proposedRate),
+      totalAmountNpr: await applicationTotalNpr(this.adminRepo, application.proposedRate),
     });
   }
 
@@ -1511,7 +1518,7 @@ export class CampaignService {
       throw new AppError('This eSewa payment does not match any pending payment.', 400);
     }
 
-    const expectedNpr = applicationTotalNpr(application.proposedRate);
+    const expectedNpr = await applicationTotalNpr(this.adminRepo, application.proposedRate);
     const result = await checkEsewaStatus({ transactionUuid: application.esewaTransactionUuid, totalAmountNpr: expectedNpr });
     if (result.status !== 'COMPLETE') {
       throw new AppError(friendlyEsewaStatusMessage(result.status), 400);

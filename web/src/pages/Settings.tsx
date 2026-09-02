@@ -188,6 +188,8 @@ const DEFAULTS: PlatformSettings = {
   'platform.name':               'Kolab',
   'platform.supportEmail':       'support@collab.com',
   'platform.commission':         '12',
+  'platform.paymentFeePercent':  '5',
+  'platform.paymentTaxPercent':  '13',
   'platform.description':        'Kolab connects brands with top creators for authentic events.',
   'marketplace.launchPriorityCity': 'Itahari',
   'featuredEvent.paywallEnabled': false,
@@ -370,6 +372,12 @@ export function Settings() {
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
             />
           </div>
+        </SectionCard>
+
+        {/* Payment Fees */}
+        <SectionCard title="Payment Fees" subtitle="Platform fee and tax added to the total when a business pays a creator — shown live in the mobile app's Complete Payment screen">
+          <InputField label="Platform Fee (%)" settingKey="platform.paymentFeePercent" settings={settings} onChange={setString} type="number" />
+          <InputField label="Tax (%)"          settingKey="platform.paymentTaxPercent" settings={settings} onChange={setString} type="number" />
         </SectionCard>
 
         {/* Marketplace */}

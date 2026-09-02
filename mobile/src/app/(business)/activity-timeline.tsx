@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { campaignService, type DeliverableVideo, type DeliverableFile } from '@/services/campaign';
 import type { ApiReviewReceived } from '@/services/creator';
@@ -759,6 +760,7 @@ export default function CampaignWorkspaceScreen() {
   const C = useAppColors();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { flags, refetch: refetchPlatformFlags } = usePlatformFlags();
   const { campaignId, campaignTitle, role, brand, applicationId, openFeedback } = useLocalSearchParams<{
     campaignId: string; campaignTitle: string; role?: string; brand?: string; applicationId?: string; openFeedback?: string;
   }>();
@@ -1097,7 +1099,7 @@ export default function CampaignWorkspaceScreen() {
     finally { setLoading(false); }
   }
 
-  useFocusEffect(useCallback(() => { void load(); }, [campaignId, isCreator, applicationId]));
+  useFocusEffect(useCallback(() => { void load(); void refetchPlatformFlags(); }, [campaignId, isCreator, applicationId]));
 
   useEffect(() => {
     if (app?.workStatus !== 'COMPLETED' || !app.id) return;
@@ -1421,9 +1423,9 @@ export default function CampaignWorkspaceScreen() {
   const progressLabels = getProgressLabels(t, isService, isFreeEvent);
 
   const crFee = app?.proposedRateRaw ?? 0;
-  const pfFee = Math.round(crFee * 0.05);
-  const vat   = Math.round(pfFee * 0.13);
-  const total = crFee + pfFee + vat;
+  const pfFee = Math.round(crFee * (flags.paymentFeePercent / 100));
+  const tax   = Math.round(pfFee * (flags.paymentTaxPercent / 100));
+  const total = crFee + pfFee + tax;
 
   const submittedUrls  = parseUrls(app?.deliverableUrls);
   const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator, t, isService, isFreeEvent);
@@ -1712,8 +1714,8 @@ export default function CampaignWorkspaceScreen() {
           <View style={{ marginTop: 12, gap: 10 }}>
             {[
               { label: t('activityTimeline.paymentCreatorFee'),   value: `NPR ${crFee.toLocaleString()}` },
-              { label: t('activityTimeline.paymentPlatformFee'),  value: `NPR ${pfFee.toLocaleString()}` },
-              { label: t('activityTimeline.paymentVat'),          value: `NPR ${vat.toLocaleString()}` },
+              { label: t('activityTimeline.paymentPlatformFee', { pct: flags.paymentFeePercent }), value: `NPR ${pfFee.toLocaleString()}` },
+              { label: t('activityTimeline.paymentTax', { pct: flags.paymentTaxPercent }),         value: `NPR ${tax.toLocaleString()}` },
             ].map((row, idx) => (
               <View key={idx} style={py.row}>
                 <Text style={[py.label, { color: C.textSecondary }]}>{row.label}</Text>
@@ -1813,7 +1815,7 @@ export default function CampaignWorkspaceScreen() {
       <BottomSheet visible={showPay} onClose={() => setShowPay(false)} title={t('activityTimeline.modalPayTitle')}>
         <Text style={sh.sub}>{t('activityTimeline.modalPaySub')}</Text>
         <View style={{ gap: 8, marginVertical: 14 }}>
-          {([[t('activityTimeline.feeCreator'), crFee], [t('activityTimeline.feePlatform'), pfFee], [t('activityTimeline.feeVat'), vat]] as [string, number][]).map(([l, v]) => (
+          {([[t('activityTimeline.feeCreator'), crFee], [t('activityTimeline.feePlatform', { pct: flags.paymentFeePercent }), pfFee], [t('activityTimeline.feeTax', { pct: flags.paymentTaxPercent }), tax]] as [string, number][]).map(([l, v]) => (
             <View key={l} style={sh.sumRow}><Text style={sh.sumLabel}>{l}</Text><Text style={sh.sumValue}>NPR {v.toLocaleString()}</Text></View>
           ))}
           <View style={[sh.divider, { backgroundColor: '#E5E7EB' }]} />

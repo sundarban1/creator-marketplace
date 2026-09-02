@@ -12,6 +12,12 @@ const DEFAULTS: Record<string, unknown> = {
   'campaign.autoApproval':         true,
   'payment.escrow':                true,
   'platform.commission':           12,
+  // Drive the fee/tax breakdown shown in the mobile Complete Payment modal and
+  // charged through Khalti/eSewa (CampaignService.applicationTotalNpr) — a
+  // separate concept from 'platform.commission' above, which only feeds the
+  // contract text and DTO fields at campaign-creation time.
+  'platform.paymentFeePercent':    5,
+  'platform.paymentTaxPercent':    13,
   'messaging.enabled':             true,
   'messaging.directMessages':      true,
   'messaging.pushNotifications':   true,
