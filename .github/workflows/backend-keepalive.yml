@@ -1,11 +1,9 @@
 name: Backend keep-alive
 
-# Pings the deployed backend's /health endpoint every 10 minutes so the
-# service is never woken from a cold state during an active chat session —
-# a cold backend silently drops in-flight Socket.IO connections, breaking
-# typing indicators and real-time message delivery until the client
-# reconnects. This is a stopgap only: it does not help once real hosting
-# resource/traffic limits are hit.
+# Hits the deployed backend's /health endpoint every 10 minutes as a
+# lightweight uptime check — the run fails (and notifies) if the API or its
+# database connectivity is down. The instance is always-on (paid), so this
+# is monitoring only, not a cold-start keep-warm.
 on:
   schedule:
     - cron: '*/10 * * * *'
@@ -17,4 +15,4 @@ jobs:
     steps:
       - name: Hit /health
         run: |
-          curl -fsS --max-time 60 https://kolab-api.onrender.com/health
+          curl -fsS --max-time 20 https://kolab-api.onrender.com/health
