@@ -119,8 +119,13 @@ const envSchema = z.object({
   // URLs eSewa's browser flow needs (unlike Khalti, eSewa gives no single
   // "initiate" API call that returns a hosted URL for us).
   ESEWA_RETURN_BASE_URL: z.string().optional(),
-  // Sparrow SMS (Nepal) — not wired up yet; sendSms() logs instead of sending until both are set.
+  // Sparrow SMS (Nepal). sendSms() only sends when SPARROW_SMS_TOKEN is set —
+  // otherwise it logs and no-ops, so the signup / forgot-password OTP flows keep
+  // working without a gateway. SMS is used for those two OTPs only, never for
+  // other notifications.
   SPARROW_SMS_TOKEN: z.string().optional(),
+  // Sender name shown on the SMS. Falls back to "Kolab" when unset; override
+  // only if a different sender identity has been approved with Sparrow.
   SPARROW_SMS_FROM: z.string().optional(),
   // Socket.IO cross-instance broadcast — required whenever the backend runs as more
   // than one process/instance (e.g. Render autoscaling). Without it, each instance

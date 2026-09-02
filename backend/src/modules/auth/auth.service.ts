@@ -16,6 +16,7 @@ import {
 import { verifyAppleIdentityToken, exchangeAppleAuthCode, revokeAppleToken, verifyAppleNotification } from '../../utils/apple';
 import { synthesizePlaceholderEmail } from '../../utils/placeholderEmail';
 import { sendPasswordResetOtpEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
+import { isSmsConfigured, sendOtpSms, sendPasswordResetOtpSms } from '../../utils/sms';
 import { AuthRepository } from './auth.repository';
 import { AdminRepository } from '../admin/admin.repository';
 import { ReferralService } from '../referral/referral.service';
@@ -48,9 +49,10 @@ import type {
 
 type Channel = 'email' | 'phone';
 
-// There is no SMS gateway wired up yet. Every phone-delivered OTP uses this fixed
-// code so the flow is fully testable end-to-end; swap this for a real generated
-// code + SMS send (e.g. Sparrow SMS for Nepal) once that integration ships.
+// Fixed dev code for phone-delivered OTPs when no SMS gateway is configured
+// (isSmsConfigured() === false) — keeps the signup / forgot-password flows fully
+// testable end-to-end. When Sparrow SMS is configured a real random code is
+// generated and texted instead.
 const PHONE_OTP_CODE = '123456';
 const PLACEHOLDER_EMAIL_DOMAIN = 'phone.kolab.internal';
 
@@ -95,15 +97,19 @@ export class AuthService {
     }
   }
 
-  // Issues + persists an OTP for the given channel, sending it for real on the
-  // email channel and using the fixed stub code on the phone channel.
+  // Issues + persists an account-verification OTP for the given channel. Email
+  // always sends. Phone sends via SMS only when a gateway is configured;
+  // otherwise it falls back to the fixed dev code and just logs.
   private async issueOtp(userId: string, channel: Channel, destination: string): Promise<void> {
-    const code = channel === 'phone' ? PHONE_OTP_CODE : generateOtp();
+    const smsLive = channel === 'phone' && isSmsConfigured();
+    const code = channel === 'email' || smsLive ? generateOtp() : PHONE_OTP_CODE;
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.repo.saveOtp(userId, code, expiresAt);
 
     if (channel === 'email') {
       await sendOtpEmail(destination, code);
+    } else if (smsLive) {
+      await sendOtpSms(destination, code);
     } else if (env.NODE_ENV !== 'production') {
       logger.debug({ phone: destination, code }, 'Phone OTP issued (SMS stub — not actually sent)');
     }
@@ -376,12 +382,15 @@ export class AuthService {
       : await this.repo.findUserByPhone(normalizePhone(input.phone!));
     if (!user) return { message: genericMessage }; // don't leak whether the identifier exists
 
-    const code = channel === 'phone' ? PHONE_OTP_CODE : generateOtp();
+    const smsLive = channel === 'phone' && isSmsConfigured();
+    const code = channel === 'email' || smsLive ? generateOtp() : PHONE_OTP_CODE;
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.repo.saveOtp(user.id, code, expiresAt);
 
     if (channel === 'email') {
       await sendPasswordResetOtpEmail(user.email, code);
+    } else if (smsLive) {
+      await sendPasswordResetOtpSms(normalizePhone(input.phone!), code);
     } else if (env.NODE_ENV !== 'production') {
       logger.debug({ phone: input.phone, code }, 'Password reset OTP issued (SMS stub — not actually sent)');
     }
