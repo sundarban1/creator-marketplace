@@ -1044,7 +1044,7 @@ const ne = {
       attentionProposalsSingular: '{{n}} प्रपोजल रिभ्यू पर्खिरहेको छ',
       attentionProposalsPlural: '{{n}} प्रपोजल रिभ्यू पर्खिरहेका छन्',
       searchPlaceholder: 'क्रिएटर, सेवा खोज्नुहोस्…',
-      heroCtaTitle: 'सही सीप खोज्दै हुनुहुन्छ?',
+      heroCtaTitle: 'सही क्रिएटर खोज्दै हुनुहुन्छ?',
       heroCtaBtn: 'काम पोस्ट गर्नुहोस्',
       findPeople: 'क्याटेगोरी अनुसार क्रिएटर खोज्नुहोस्',
       allServicesTile: 'सबै सेवाहरू',

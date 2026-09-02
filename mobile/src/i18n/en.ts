@@ -1053,7 +1053,7 @@ const en = {
       attentionProposalsSingular: '{{n}} proposal waiting for review',
       attentionProposalsPlural: '{{n}} proposals waiting for review',
       searchPlaceholder: 'Search creators, services…',
-      heroCtaTitle: 'Looking for the right skills?',
+      heroCtaTitle: 'Looking for the right creators?',
       heroCtaBtn: 'Post Work',
       findPeople: 'Find Creators by Category',
       allServicesTile: 'All Services',
