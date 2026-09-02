@@ -27,30 +27,31 @@ import { pickAndUpload } from '@/utilities/uploadImage';
 import { logger } from '@/utilities/logger';
 import { getCached, setCached } from '@/utilities/offlineCache';
 
-const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
-  instagram: { platform: 'Instagram', color: '#E1306C', iconName: 'instagram' },
-  tiktok:    { platform: 'TikTok',    color: '#010101', iconName: 'tiktok'    },
-  youtube:   { platform: 'YouTube',   color: '#FF0000', iconName: 'youtube'   },
-  facebook:  { platform: 'Facebook',  color: '#1877F2', iconName: 'facebook'  },
-  twitter:   { platform: 'X / Twitter', color: '#1DA1F2', iconName: 'twitter' },
-  linkedin:  { platform: 'LinkedIn',  color: '#0A66C2', iconName: 'linkedin'  },
-  pinterest: { platform: 'Pinterest', color: '#E60023', iconName: 'pinterest' },
-  snapchat:  { platform: 'Snapchat',  color: '#FFFC00', iconName: 'snapchat'  },
-  twitch:    { platform: 'Twitch',    color: '#9146FF', iconName: 'twitch'    },
-};
+// Social Accounts section is hidden from the mobile UI for now — helpers kept for when it returns.
+// const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
+//   instagram: { platform: 'Instagram', color: '#E1306C', iconName: 'instagram' },
+//   tiktok:    { platform: 'TikTok',    color: '#010101', iconName: 'tiktok'    },
+//   youtube:   { platform: 'YouTube',   color: '#FF0000', iconName: 'youtube'   },
+//   facebook:  { platform: 'Facebook',  color: '#1877F2', iconName: 'facebook'  },
+//   twitter:   { platform: 'X / Twitter', color: '#1DA1F2', iconName: 'twitter' },
+//   linkedin:  { platform: 'LinkedIn',  color: '#0A66C2', iconName: 'linkedin'  },
+//   pinterest: { platform: 'Pinterest', color: '#E60023', iconName: 'pinterest' },
+//   snapchat:  { platform: 'Snapchat',  color: '#FFFC00', iconName: 'snapchat'  },
+//   twitch:    { platform: 'Twitch',    color: '#9146FF', iconName: 'twitch'    },
+// };
 
-function extractHandle(url: string): string {
-  try {
-    const path = new URL(url).pathname.replace(/^\/|\/$/g, '').replace(/^@/, '');
-    return path ? `@${path}` : url;
-  } catch { return url; }
-}
+// function extractHandle(url: string): string {
+//   try {
+//     const path = new URL(url).pathname.replace(/^\/|\/$/g, '').replace(/^@/, '');
+//     return path ? `@${path}` : url;
+//   } catch { return url; }
+// }
 
-function fmtFollowers(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toString();
-}
+// function fmtFollowers(n: number): string {
+//   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+//   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+//   return n.toString();
+// }
 
 // Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display).
 // function detectPlatform(url: string) {
@@ -161,19 +162,20 @@ export default function CreatorProfileScreen() {
   const displayAvatar = profile?.avatarUrl ?? user?.avatar;
   const displayBio    = profile?.bio ?? null;
 
-  const richAccounts = profile?.socialAccounts?.length
-    ? profile.socialAccounts.map((acc) => ({
-        ...(PLATFORM_MAP[acc.platform] ?? { platform: acc.platform, color: '#666666', iconName: 'link' }),
-        handle: extractHandle(acc.profileUrl),
-        url:    acc.profileUrl,
-        followers: acc.followers,
-      }))
-    : Object.entries(profile?.socialLinks ?? {})
-        .filter(([, url]) => !!url)
-        .map(([key, url]) => ({
-          ...(PLATFORM_MAP[key] ?? { platform: key, color: '#666666', iconName: 'link' }),
-          handle: extractHandle(url!), url: url!, followers: 0,
-        }));
+  // Social Accounts section is hidden from the mobile UI for now.
+  // const richAccounts = profile?.socialAccounts?.length
+  //   ? profile.socialAccounts.map((acc) => ({
+  //       ...(PLATFORM_MAP[acc.platform] ?? { platform: acc.platform, color: '#666666', iconName: 'link' }),
+  //       handle: extractHandle(acc.profileUrl),
+  //       url:    acc.profileUrl,
+  //       followers: acc.followers,
+  //     }))
+  //   : Object.entries(profile?.socialLinks ?? {})
+  //       .filter(([, url]) => !!url)
+  //       .map(([key, url]) => ({
+  //         ...(PLATFORM_MAP[key] ?? { platform: key, color: '#666666', iconName: 'link' }),
+  //         handle: extractHandle(url!), url: url!, followers: 0,
+  //       }));
 
   // Hidden from the mobile UI for now (My Work / past-work portfolio section is not ready to display).
   // const portfolioLinks = profile?.portfolioLinks ?? [];
@@ -324,7 +326,7 @@ export default function CreatorProfileScreen() {
           )}
         </SectionCard>
 
-        {/* ── Social Accounts ── */}
+        {/* ── Social Accounts ── HIDDEN: commented out per request, not displayed ──
         <SectionCard
           title={t('profile.socialAccounts')}
           action={{ label: richAccounts.length > 0 ? t('profile.manage') : t('profile.addBtn'), onPress: () => router.push('/(creator)/settings?section=social' as never) }}
@@ -370,6 +372,7 @@ export default function CreatorProfileScreen() {
               onPress={() => router.push('/(creator)/settings?section=social' as never)} />
           )}
         </SectionCard>
+        ── end Social Accounts ── */}
 
         {/* ── My Portfolio ── */}
         <SectionCard
