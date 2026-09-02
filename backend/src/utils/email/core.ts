@@ -34,7 +34,12 @@ function createTransporter() {
   // Prefer Gmail config when available
   if (env.EMAIL_HOST && env.EMAIL_USERNAME && env.EMAIL_PASSWORD) {
     const port   = parseInt(env.EMAIL_PORT ?? '465', 10);
-    const secure = env.EMAIL_SECURE?.toLowerCase() === 'ssl' || port === 465;
+    // 465 = implicit TLS (secure). 587/25 = STARTTLS, which needs secure:false —
+    // nodemailer upgrades the connection itself. Forcing secure:true on 587 (the
+    // trap EMAIL_SECURE=ssl used to spring) makes sendMail hang then throw.
+    // EMAIL_SECURE=ssl only forces implicit TLS on a non-standard port.
+    const secure = port === 465
+      || (port !== 587 && port !== 25 && env.EMAIL_SECURE?.toLowerCase() === 'ssl');
     return nodemailer.createTransport({
       host:   env.EMAIL_HOST,
       port,
@@ -86,8 +91,15 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
 
   const transporter = createTransporter();
   if (transporter) {
-    await transporter.sendMail({ from: FROM, to, subject, html });
-    logger.info({ to, subject, host: smtpHostInUse() }, 'Email sent (SMTP)');
+    try {
+      await transporter.sendMail({ from: FROM, to, subject, html });
+      logger.info({ to, subject, host: smtpHostInUse() }, 'Email sent (SMTP)');
+    } catch (err) {
+      // Don't let a mail-provider outage bubble out as an unhandled 500 on the
+      // caller (e.g. /api/auth/resend-otp). The OTP row is already persisted;
+      // the user can retry. Log loudly instead — prod runs at info.
+      logger.error({ to, subject, host: smtpHostInUse(), err }, 'Email NOT sent — SMTP send failed');
+    }
     return;
   }
 
