@@ -10,11 +10,24 @@
 // Usage: npx tsx prisma/regenerate-invitations.ts   (or: npm run invitations:regenerate)
 
 import { PrismaClient } from '@prisma/client';
-import { invitationService } from '../src/modules/campaign/invitation/invitation.service';
 
 const prisma = new PrismaClient();
 
+// The production Docker image (and the Render server shell) only ships dist/ +
+// prisma/, not src/, so this tsx script can't statically import from ../src. Load
+// the compiled service from dist/ when it's there, and fall back to src/ for local
+// runs straight from a checkout (run `npm run build` first in that case).
+async function loadInvitationService() {
+  try {
+    return (await import('../dist/modules/campaign/invitation/invitation.service.js')).invitationService;
+  } catch {
+    return (await import('../src/modules/campaign/invitation/invitation.service')).invitationService;
+  }
+}
+
 async function main() {
+  const invitationService = await loadInvitationService();
+
   const apps = await prisma.application.findMany({
     where: { status: 'ACCEPTED', invitationVersion: { gt: 0 }, campaign: { campaignType: 'OPEN_EVENT' } },
     select: { id: true, campaignId: true },
