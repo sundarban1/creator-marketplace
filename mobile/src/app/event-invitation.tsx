@@ -44,6 +44,11 @@ export default function EventInvitationScreen() {
   // download before the card is actually visible, so keep the loading message
   // up until expo-image reports the bitmap is ready (or failed).
   const [imgReady, setImgReady] = useState(false);
+  // Set when expo-image can't fetch/decode the PNG at invitation.imageUrl (a
+  // dead R2 public URL, a network failure, a corrupt render). Without this the
+  // overlay spinner would sit on the card forever — expo-image's onLoadEnd is
+  // not guaranteed to fire on a hard network error.
+  const [imgError, setImgError] = useState(false);
 
   // Cache the downloaded file per version so repeated Share/Save don't re-fetch.
   const localUriRef = useRef<{ version: number; uri: string } | null>(null);
@@ -55,12 +60,22 @@ export default function EventInvitationScreen() {
       return () => { cancelled = true; };
     }
     setImgReady(false);
+    setImgError(false);
     campaignService.getEventInvitation(campaignId)
       .then((inv) => { if (!cancelled) { setInvitation(inv); setError(false); } })
       .catch(() => { if (!cancelled) setError(true); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [campaignId, attempt]);
+
+  // Watchdog: on a hard network failure expo-image can fire neither onLoadEnd
+  // nor onError, which would leave the overlay spinner up indefinitely. If the
+  // bitmap still hasn't reported after 20s, surface the retryable error state.
+  useEffect(() => {
+    if (!invitation || imgReady) return;
+    const timer = setTimeout(() => { setImgError(true); setImgReady(true); }, 20000);
+    return () => clearTimeout(timer);
+  }, [invitation, imgReady]);
 
   const retry = useCallback(() => {
     setLoading(true);
@@ -119,7 +134,7 @@ export default function EventInvitationScreen() {
     <SafeAreaView style={[s.screen, { backgroundColor: C.background }]} edges={['top']}>
       <PageHeader title={t('eventInvitation.title')} backFallback="/(creator)/(tabs)" />
       <MaxWidthContainer>
-        {error || (!loading && !invitation) ? (
+        {error || imgError || (!loading && !invitation) ? (
           <View style={s.centered}>
             <ErrorState
               icon="envelope-open-text"
@@ -144,6 +159,7 @@ export default function EventInvitationScreen() {
                 transition={200}
                 accessibilityLabel={t('eventInvitation.title')}
                 onLoadEnd={() => setImgReady(true)}
+                onError={() => { setImgError(true); setImgReady(true); }}
               />
               {!imgReady && (
                 <View style={[s.imageOverlay, { backgroundColor: C.surface }]}>

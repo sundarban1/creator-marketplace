@@ -52,6 +52,39 @@ async function resolveImageDataUri(url: string | null): Promise<string | null> {
   }
 }
 
+// A stored invitationImageUrl can go stale: R2's public URL was misconfigured
+// when it was written, public access to the bucket was toggled off/on, or the
+// object was pruned out-of-band. The read path checks the URL is actually
+// fetchable by an unauthenticated client (which is all the mobile app is) and
+// regenerates if not. Fail OPEN on a network error/timeout — a transient blip
+// on this server shouldn't trigger a needless re-render; only a definitive
+// "not there / not allowed" response counts as unreachable.
+async function isPubliclyReachable(url: string): Promise<boolean> {
+  const check = async (method: 'HEAD' | 'GET') => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    try {
+      return await fetch(url, {
+        method,
+        signal: ctrl.signal,
+        headers: method === 'GET' ? { Range: 'bytes=0-0' } : undefined,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  try {
+    let res = await check('HEAD');
+    // Some edges don't answer HEAD on public objects — confirm with a 1-byte GET.
+    if (res.status === 405 || res.status === 501) res = await check('GET');
+    if (res.ok || res.status === 206 || res.status === 304) return true;
+    if ([401, 403, 404, 410].includes(res.status)) return false;
+    return true; // any other status (5xx, 429, …) — don't treat as a hard miss
+  } catch {
+    return true; // network error / timeout — fail open
+  }
+}
+
 // ── data assembly ────────────────────────────────────────────────────────────
 
 type ApplicationWithContext = NonNullable<Awaited<ReturnType<typeof loadApplication>>>;
@@ -165,7 +198,29 @@ export async function getForCreator(campaignId: string, userId: string): Promise
   }
 
   if (app.invitationImageUrl) {
-    return {
+    // Serve the stored PNG, but only if a plain client can actually fetch it —
+    // otherwise regenerate (rebuilds the URL from the current R2_PUBLIC_URL and
+    // re-uploads the object).
+    if (await isPubliclyReachable(app.invitationImageUrl)) {
+      return {
+        imageUrl: app.invitationImageUrl,
+        format: 'png',
+        width: INVITATION_WIDTH,
+        height: INVITATION_HEIGHT,
+        version: app.invitationVersion ?? 1,
+      };
+    }
+    logger.warn(
+      { applicationId: app.id, url: app.invitationImageUrl },
+      'invitation: stored image URL is not publicly reachable — regenerating',
+    );
+    const healed = await generateAndStore(app.id).catch((err) => {
+      logger.error({ err, applicationId: app.id }, 'invitation: regeneration of unreachable image failed');
+      return null;
+    });
+    // If the regenerate also failed (e.g. R2 still misconfigured), fall back to
+    // the stale URL — the client's own network may have been the problem.
+    return healed ?? {
       imageUrl: app.invitationImageUrl,
       format: 'png',
       width: INVITATION_WIDTH,

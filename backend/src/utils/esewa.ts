@@ -116,6 +116,26 @@ export function buildEsewaSignedFields(params: {
   };
 }
 
+// The checkout page (buildEsewaCheckoutHtml) needs two things Helmet's default
+// production CSP forbids: an inline <script> to auto-submit, and a cross-origin
+// form POST to eSewa's domain. Without this override the page renders blank —
+// the browser silently blocks both. Scoped to that one response only.
+export function esewaCheckoutCsp(): string {
+  let esewaOrigin = 'https://rc-epay.esewa.com.np https://epay.esewa.com.np';
+  try {
+    esewaOrigin = new URL(env.ESEWA_BASE_URL).origin;
+  } catch {
+    /* fall back to both known eSewa origins */
+  }
+  return [
+    "default-src 'self'",
+    "script-src 'unsafe-inline'",
+    "style-src 'unsafe-inline'",
+    "base-uri 'self'",
+    `form-action ${esewaOrigin}`,
+  ].join('; ');
+}
+
 export function buildEsewaCheckoutHtml(fields: EsewaFormFields): string {
   const inputs = Object.entries(fields)
     .map(([key, value]) => `<input type="hidden" name="${key}" value="${String(value).replace(/"/g, '&quot;')}" />`)

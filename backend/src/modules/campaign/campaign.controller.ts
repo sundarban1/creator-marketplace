@@ -7,7 +7,7 @@ import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
-import { buildEsewaCheckoutHtml, decodeEsewaResponse } from '../../utils/esewa';
+import { buildEsewaCheckoutHtml, decodeEsewaResponse, esewaCheckoutCsp } from '../../utils/esewa';
 import type { SubmitReviewInput, DeliverableVideoSignatureRequestInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput, AskEventQuestionInput, AnswerEventQuestionInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
@@ -431,6 +431,10 @@ export class CampaignController {
   // Errors here render as a plain HTML message rather than going through the
   // JSON error handler — the user is looking at a browser tab, not an API call.
   async esewaCheckoutPage(req: Request, res: Response): Promise<void> {
+    // Override Helmet's default production CSP for this response — the
+    // auto-submitting form needs an inline script and a cross-origin POST to
+    // eSewa, both of which the default policy blocks (leaving a blank page).
+    res.setHeader('Content-Security-Policy', esewaCheckoutCsp());
     try {
       const fields = await campaignService.getEsewaCheckoutForm(req.params.appId);
       logger.info(
