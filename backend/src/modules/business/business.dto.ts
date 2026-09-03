@@ -117,6 +117,8 @@ export interface PublicBusinessDto {
     location: string | null;
     featureImageUrl: string | null;
     template: string | null;
+    campaignType: string;
+    benefits: string[];
     _count: { applications: number };
   }>;
   _count: { campaigns: number };
@@ -280,6 +282,8 @@ type RawPublicBusiness = {
     location: string | null;
     featureImageUrl: string | null;
     template: string | null;
+    campaignType: string;
+    benefits: Prisma.JsonValue;
     _count: { applications: number };
   }>;
   _count: { campaigns: number; favoritedBy?: number; savedCreators?: number };
@@ -314,7 +318,11 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
     hideSocialLinks:     b.hideSocialLinks,
     allowDirectMessages: b.allowDirectMessages,
     createdAt:           b.createdAt.toISOString(),
-    campaigns:           b.campaigns.map((c) => ({ ...c, deadline: c.deadline.toISOString() })),
+    campaigns:           b.campaigns.map((c) => ({
+      ...c,
+      benefits: (c.benefits ?? []) as string[],
+      deadline: c.deadline.toISOString(),
+    })),
     _count:              { campaigns: b._count.campaigns },
     favoritedByCount:    b._count.favoritedBy ?? 0,
     savedCreatorsCount:  b._count.savedCreators ?? 0,

@@ -33,9 +33,9 @@ function formatTimeLabel(hhmm: string | null): string {
 }
 
 // satori fetches <img src> itself and throws the whole render if that fetch
-// fails — so the logo is pre-resolved to a data URI here with a short timeout,
-// and simply dropped (host line renders name-only, §22) if it can't be had.
-async function resolveLogoDataUri(url: string | null): Promise<string | null> {
+// fails — so remote images (host logo, creator avatar) are pre-resolved to a
+// data URI here with a short timeout, and simply dropped if they can't be had.
+async function resolveImageDataUri(url: string | null): Promise<string | null> {
   if (!url) return null;
   try {
     const ctrl = new AbortController();
@@ -62,7 +62,7 @@ function loadApplication(applicationId: string) {
     select: {
       id: true, status: true, campaignId: true,
       invitationImageKey: true, invitationVersion: true, invitationTemplateId: true,
-      creator: { select: { fullName: true } },
+      creator: { select: { fullName: true, avatarUrl: true } },
       campaign: {
         select: {
           id: true, title: true, description: true, eventDate: true, eventTime: true,
@@ -84,8 +84,9 @@ async function buildInvitationData(app: ApplicationWithContext, nextVersion: num
     locationLabel: (c.venue || c.location || '').trim(),
     isOnline: c.locationType === 'REMOTE',
     businessName: c.business?.businessName?.trim() || 'The Organizer',
-    businessLogoUrl: await resolveLogoDataUri(c.business?.logoUrl ?? null),
+    businessLogoUrl: await resolveImageDataUri(c.business?.logoUrl ?? null),
     creatorName: (app.creator?.fullName ?? '').trim(),
+    creatorAvatarUrl: await resolveImageDataUri(app.creator?.avatarUrl ?? null),
     templateId: app.invitationTemplateId || c.template || DEFAULT_TEMPLATE,
     version: nextVersion,
   };

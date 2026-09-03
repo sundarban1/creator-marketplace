@@ -261,6 +261,8 @@ export class BusinessRepository {
             location:        true,
             featureImageUrl: true,
             template:        true,
+            campaignType:    true,
+            benefits:        true,
             _count: { select: { applications: true } },
           },
         },

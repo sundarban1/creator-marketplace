@@ -28,7 +28,8 @@ const PLUM = '#6A2E5C'; // headline + host name
 const CORAL = '#E1604A'; // kicker + divider diamond
 const MARIGOLD = '#CE8A1E'; // "hosted by"
 const ROSE = '#D3477E'; // florals + monogram wash
-const BRINJAL = '#4A1E3C'; // greeting name + location + description text
+const BRINJAL = '#4A1E3C'; // location + description text
+const BRINJAL_DARK = '#2E1226'; // greeting name — deep brinjal
 const TEAL = '#2E8B8B'; // florals only (leaves stay green/teal)
 const LEAF = '#4E9E6A'; // stems + leaves
 const AQUA_LEAF = '#3E9E9E'; // second leaf tone
@@ -36,6 +37,7 @@ const CORNFLOWER = '#5B7FC4'; // buds
 
 const RULE = 'rgba(106,46,92,0.28)'; // hairline rules / frame, tinted plum
 
+const SCRIPT = 'Great Vibes';
 const SERIF = 'Playfair Display';
 const SANS = 'Poppins';
 
@@ -142,15 +144,16 @@ function monogramChar(data: InvitationData): string {
   return (m?.[0] ?? '').toUpperCase();
 }
 
-// Headline size steps down as the title gets longer so it never needs more
-// than ~3 lines and never overflows.
+// Event-title size steps down as the title gets longer so it never needs more
+// than ~3 lines and never overflows. Kept deliberately smaller than the
+// "You're Invited" script hero so that line stays the focal point.
 function titleSize(title: string): number {
   const n = title.length;
-  if (n <= 20) return 82;
-  if (n <= 34) return 66;
-  if (n <= 52) return 52;
-  if (n <= 76) return 42;
-  return 36;
+  if (n <= 20) return 58;
+  if (n <= 34) return 48;
+  if (n <= 52) return 40;
+  if (n <= 76) return 34;
+  return 30;
 }
 
 function clampDescription(d: string): string {
@@ -174,32 +177,44 @@ function ornament(): Node {
   );
 }
 
-// "── KICKER ──" — small tracked caps flanked by thin rules.
-function kicker(label: string): Node {
+// The "You're Invited" hero — an oversized flowing script line, the largest
+// type on the card, with a short diamond-tipped rule beneath it.
+function invitedHero(label: string): Node {
   return el(
     'div',
-    { display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 38 },
     [
-      el('div', { width: 64, height: 1, backgroundColor: RULE }),
       text(
         {
-          fontFamily: SANS, fontSize: 22, fontWeight: 500, letterSpacing: 8,
-          color: CORAL, margin: '0 18px', textTransform: 'uppercase',
+          fontFamily: SCRIPT,
+          fontWeight: 400,
+          fontSize: 112,
+          lineHeight: 1.1,
+          color: PLUM,
+          textAlign: 'center',
         },
         label,
       ),
-      el('div', { width: 64, height: 1, backgroundColor: RULE }),
+      el(
+        'div',
+        { display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 6 },
+        [
+          el('div', { width: 70, height: 1, backgroundColor: RULE }),
+          el('div', { width: 7, height: 7, margin: '0 12px', backgroundColor: CORAL, transform: 'rotate(45deg)' }),
+          el('div', { width: 70, height: 1, backgroundColor: RULE }),
+        ],
+      ),
     ],
   );
 }
 
-function detailRow(value: string, opts: { strong?: boolean; accent?: boolean } = {}): Node {
+function detailRow(value: string, opts: { strong?: boolean; accent?: boolean; plum?: boolean } = {}): Node {
   return text(
     {
       fontFamily: SANS,
       fontSize: opts.strong ? 30 : 25,
       fontWeight: opts.strong ? 500 : 400,
-      color: opts.strong ? PLUM : opts.accent ? BRINJAL : INK_SOFT,
+      color: opts.strong || opts.plum ? PLUM : opts.accent ? BRINJAL : INK_SOFT,
       textAlign: 'center',
       marginTop: 6,
       lineHeight: 1.5,
@@ -211,15 +226,40 @@ function detailRow(value: string, opts: { strong?: boolean; accent?: boolean } =
 export function elegantTemplate(data: InvitationData): Node {
   const children: Node[] = [];
 
-  // Kicker
-  children.push(kicker("You're Invited"));
+  // Hero
+  children.push(invitedHero("You're Invited"));
 
-  // Personalised greeting
+  // Personalised greeting — the invited creator's avatar (a circle) sits
+  // directly above their name when they have one uploaded.
   if (data.creatorName) {
-    children.push(
+    const greetingChildren: Node[] = [];
+    if (data.creatorAvatarUrl) {
+      greetingChildren.push({
+        type: 'img',
+        props: {
+          src: data.creatorAvatarUrl,
+          width: 132,
+          height: 132,
+          style: {
+            borderRadius: 66,
+            objectFit: 'cover',
+            marginBottom: 20,
+            border: `3px solid ${RULE}`,
+          },
+        },
+      });
+    }
+    greetingChildren.push(
       text(
-        { fontFamily: SERIF, fontStyle: 'italic', fontSize: 30, color: BRINJAL, marginTop: 34, textAlign: 'center' },
+        { fontFamily: SERIF, fontStyle: 'italic', fontSize: 30, color: BRINJAL_DARK, textAlign: 'center' },
         `Dear ${data.creatorName},`,
+      ),
+    );
+    children.push(
+      el(
+        'div',
+        { display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 34 },
+        greetingChildren,
       ),
     );
   }
@@ -245,7 +285,7 @@ export function elegantTemplate(data: InvitationData): Node {
 
   // Date / time / location
   children.push(detailRow(data.dateLabel, { strong: true }));
-  if (data.timeLabel) children.push(detailRow(data.timeLabel));
+  if (data.timeLabel) children.push(detailRow(data.timeLabel, { plum: true }));
   if (data.isOnline) children.push(detailRow('Online Event', { accent: true }));
   else if (data.locationLabel) children.push(detailRow(data.locationLabel, { accent: true }));
 
@@ -302,8 +342,9 @@ export function elegantTemplate(data: InvitationData): Node {
 
   // ── assemble ───────────────────────────────────────────────────────────────
   // The main block grows to fill the space between the top edge and the host
-  // footer and centres itself in it, so short and long invitations both stay
-  // visually balanced rather than pinned to the top.
+  // footer. Its content is pinned to the top with a fixed `paddingTop` so the
+  // "You're Invited" script hero always clears the decorative garland at the
+  // top edge (centring it made a tall invitation ride up into the florals).
   const inner = el(
     'div',
     {
@@ -320,17 +361,17 @@ export function elegantTemplate(data: InvitationData): Node {
     [
       el(
         'div',
-        { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', flexGrow: 1 },
+        { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '100%', flexGrow: 1, paddingTop: 116 },
         children,
       ),
       el(
         'div',
         { display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' },
         [
-          el('div', { width: 140, height: 1, backgroundColor: RULE, marginBottom: 34 }),
+          el('div', { width: 140, height: 1, backgroundColor: RULE, marginBottom: 28 }),
           host,
           text(
-            { fontFamily: SANS, fontSize: 15, fontWeight: 400, letterSpacing: 4, color: 'rgba(110,100,114,0.7)', marginTop: 34, textTransform: 'uppercase' },
+            { fontFamily: SANS, fontSize: 15, fontWeight: 400, letterSpacing: 4, color: 'rgba(110,100,114,0.7)', marginTop: 24, textTransform: 'uppercase' },
             'Powered by Kolab',
           ),
         ],

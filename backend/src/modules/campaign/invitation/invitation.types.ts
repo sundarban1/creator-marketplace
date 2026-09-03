@@ -17,6 +17,9 @@ export interface InvitationData {
   businessLogoUrl: string | null;
   // Personalised greeting name; empty => the template omits the name line.
   creatorName: string;
+  // Absolute URL / data URI for the invited creator's avatar; null => the
+  // template renders the greeting without a portrait circle.
+  creatorAvatarUrl: string | null;
   templateId: string;
   version: number;
 }

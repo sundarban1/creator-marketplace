@@ -6,7 +6,8 @@ import { logger } from '../../../config/logger';
 // @expo-google-fonts/* packages (already in node_modules, copied verbatim by
 // the Dockerfile), so there is nothing extra to bundle or COPY.
 //
-// Playfair Display  -> display serif for "YOU'RE INVITED" + the event title
+// Great Vibes       -> flowing script for the "You're Invited" hero line
+// Playfair Display  -> display serif for the event title + italic accents
 // Poppins           -> body / detail rows / host line (matches the app's UI font)
 // Noto Sans Devanagari -> glyph fallback so Nepali business names / titles render
 //
@@ -25,6 +26,8 @@ export function invitationFonts(): Font[] {
 
   try {
     cached = [
+      { name: 'Great Vibes', data: load('@expo-google-fonts/great-vibes/400Regular/GreatVibes_400Regular.ttf'), weight: 400, style: 'normal' },
+
       { name: 'Playfair Display', data: load('@expo-google-fonts/playfair-display/400Regular/PlayfairDisplay_400Regular.ttf'), weight: 400, style: 'normal' },
       { name: 'Playfair Display', data: load('@expo-google-fonts/playfair-display/600SemiBold/PlayfairDisplay_600SemiBold.ttf'), weight: 600, style: 'normal' },
       { name: 'Playfair Display', data: load('@expo-google-fonts/playfair-display/700Bold/PlayfairDisplay_700Bold.ttf'), weight: 700, style: 'normal' },
