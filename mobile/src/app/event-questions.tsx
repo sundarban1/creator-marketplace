@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
+import { useToast } from '@/components/Toast';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
@@ -57,6 +58,7 @@ export default function EventQuestionsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const toast = useToast();
   const isBusiness = user?.role === 'BUSINESS';
   const { campaignId } = useLocalSearchParams<{ campaignId: string; campaignTitle?: string }>();
 
@@ -73,12 +75,6 @@ export default function EventQuestionsScreen() {
   const [answerTarget, setAnswerTarget] = useState<EventQuestion | null>(null);
   const [answerDraft, setAnswerDraft] = useState('');
   const [savingAnswer, setSavingAnswer] = useState(false);
-
-  const [toast, setToast] = useState('');
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  }, []);
 
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (!campaignId) { setLoading(false); return; }
@@ -105,20 +101,20 @@ export default function EventQuestionsScreen() {
   const handleAsk = useCallback(async () => {
     const q = draft.trim();
     if (!q || posting || !campaignId) return;
-    if (q.length > QUESTION_MAX) { showToast(t('eventQuestions.questionTooLong')); return; }
+    if (q.length > QUESTION_MAX) { toast.warning(t('eventQuestions.questionTooLong')); return; }
     setPosting(true);
     try {
       await campaignService.askEventQuestion(campaignId, q);
       setDraft('');
       setDraftHeight(MIN_INPUT_HEIGHT);
-      showToast(t('eventQuestions.askedToast'));
+      toast.success(t('eventQuestions.askedToast'));
       await load('refresh');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : t('eventQuestions.loadError'));
+      toast.error(err instanceof Error ? err.message : t('eventQuestions.loadError'));
     } finally {
       setPosting(false);
     }
-  }, [draft, posting, campaignId, showToast, t, load]);
+  }, [draft, posting, campaignId, toast, t, load]);
 
   const openAnswer = useCallback((q: EventQuestion) => {
     setAnswerTarget(q);
@@ -128,20 +124,20 @@ export default function EventQuestionsScreen() {
   const handleSaveAnswer = useCallback(async () => {
     const a = answerDraft.trim();
     if (!a || savingAnswer || !answerTarget || !campaignId) return;
-    if (a.length > ANSWER_MAX) { showToast(t('eventQuestions.answerTooLong')); return; }
+    if (a.length > ANSWER_MAX) { toast.warning(t('eventQuestions.answerTooLong')); return; }
     setSavingAnswer(true);
     try {
       await campaignService.answerEventQuestion(campaignId, answerTarget.id, a);
       setAnswerTarget(null);
       setAnswerDraft('');
-      showToast(t('eventQuestions.answeredToast'));
+      toast.success(t('eventQuestions.answeredToast'));
       await load('refresh');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : t('eventQuestions.loadError'));
+      toast.error(err instanceof Error ? err.message : t('eventQuestions.loadError'));
     } finally {
       setSavingAnswer(false);
     }
-  }, [answerDraft, savingAnswer, answerTarget, campaignId, showToast, t, load]);
+  }, [answerDraft, savingAnswer, answerTarget, campaignId, toast, t, load]);
 
   const headerNote = isBusiness ? t('eventQuestions.headerBusiness') : t('eventQuestions.headerCreator');
 
@@ -283,12 +279,6 @@ export default function EventQuestionsScreen() {
             : <Text style={qs.saveBtnTxt}>{t('eventQuestions.submitAnswer')}</Text>}
         </Pressable>
       </BottomSheet>
-
-      {toast ? (
-        <View style={qs.toast} pointerEvents="none">
-          <Text style={qs.toastTxt}>{toast}</Text>
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 }
@@ -328,7 +318,4 @@ const qs = StyleSheet.create({
   sheetQuestion: { fontSize: 14, fontFamily: F.medium, lineHeight: 21 },
   saveBtn:       { height: 48, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   saveBtnTxt:    { fontSize: 14, fontFamily: F.bold, color: '#fff' },
-
-  toast:    { position: 'absolute', bottom: 90, left: 24, right: 24, backgroundColor: '#1F2937', borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center' },
-  toastTxt: { color: '#fff', fontSize: 13, fontFamily: F.medium, textAlign: 'center' },
 });
