@@ -23,6 +23,7 @@ import { creatorService } from '@/services/creator';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
+import { isValidWebsiteUrl, normalizeWebsiteUrl } from '@/utilities/url';
 
 // ─── EditProfileScreen ────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [nameError, setNameError] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState('');
   const [originalUsername, setOriginalUsername] = useState('');
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
@@ -42,6 +44,7 @@ export default function EditProfileScreen() {
   const usernameCheckRequestId = useRef(0);
   const [bio, setBio] = useState('');
   const [website, setWebsite] = useState('');
+  const [websiteError, setWebsiteError] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState('');
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
@@ -93,25 +96,22 @@ export default function EditProfileScreen() {
   }
 
   async function handleSave() {
+    let hasError = false;
     if (!fullName.trim() || fullName.trim().length < 2) {
-      toast.warning(t('profile.editCreator.nameMinLengthWarning'));
-      return;
+      setNameError(t('profile.editCreator.nameMinLengthWarning'));
+      hasError = true;
+    }
+    if (website.trim() && !isValidWebsiteUrl(website)) {
+      setWebsiteError(t('profile.editCreator.websiteInvalidWarning'));
+      hasError = true;
     }
     const usernameChanged = username !== originalUsername;
-    if (usernameChanged) {
-      if (usernameStatus === 'invalid') {
-        toast.warning(t('profile.editCreator.usernameMinLengthWarning'));
-        return;
-      }
-      if (usernameStatus === 'checking') {
-        toast.warning(t('profile.editCreator.usernameCheckingWarning'));
-        return;
-      }
-      if (usernameStatus === 'taken') {
-        toast.warning(t('profile.editCreator.usernameTakenWarning'));
-        return;
-      }
+    // Username errors (taken / invalid / still-checking) already render inline
+    // beneath the field via its `error` / `hint` props — just block the save.
+    if (usernameChanged && usernameStatus !== 'idle' && usernameStatus !== 'available') {
+      hasError = true;
     }
+    if (hasError) return;
     setSaving(true);
     try {
       const payload: Parameters<typeof creatorService.updateProfile>[0] = {
@@ -119,7 +119,7 @@ export default function EditProfileScreen() {
         bio: bio.trim() || undefined,
         categories,
         // Empty means "cleared", not "unchanged" — null is how the API clears it.
-        website: website.trim() || null,
+        website: normalizeWebsiteUrl(website) || null,
       };
       if (usernameChanged) payload.username = username;
       // Always send location as a trio (or null-out the whole trio when
@@ -179,8 +179,9 @@ export default function EditProfileScreen() {
               label={t('profile.editCreator.fullNameLabel')}
               leftIcon="user"
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(txt) => { setFullName(txt); setNameError(undefined); }}
               placeholder={t('profile.editCreator.fullNamePlaceholder')}
+              error={nameError}
             />
           </View>
 
@@ -200,7 +201,11 @@ export default function EditProfileScreen() {
                 : usernameStatus === 'invalid' ? t('profile.editCreator.usernameInvalidHint')
                 : undefined
               }
-              hint={usernameStatus === 'available' ? t('profile.editCreator.usernameAvailableHint') : undefined}
+              hint={
+                usernameStatus === 'available' ? t('profile.editCreator.usernameAvailableHint')
+                : usernameStatus === 'checking' ? t('profile.editCreator.usernameCheckingWarning')
+                : undefined
+              }
               rightSlot={
                 usernameStatus === 'checking' ? <ActivityIndicator size="small" color={C.textSecondary} />
                 : usernameStatus === 'available' ? <FontAwesome5 name="check-circle" solid size={18} color="#16A34A" />
@@ -231,11 +236,17 @@ export default function EditProfileScreen() {
               label={t('profile.editCreator.websiteLabel')}
               leftIcon="globe"
               value={website}
-              onChangeText={setWebsite}
+              onChangeText={(txt) => { setWebsite(txt); setWebsiteError(undefined); }}
+              onBlur={() => setWebsiteError(
+                website.trim() && !isValidWebsiteUrl(website)
+                  ? t('profile.editCreator.websiteInvalidWarning')
+                  : undefined,
+              )}
               placeholder={t('profile.editCreator.websitePlaceholder')}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
+              error={websiteError}
               hint={t('profile.editCreator.websiteHint')}
             />
           </View>

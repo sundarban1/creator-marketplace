@@ -1,7 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
@@ -75,7 +75,6 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
       title={t('createEvent.recommendedTitle')}
       subtitle={t('createEvent.recommendedSub')}
       maxHeightPct={0.8}
-      scrollable={false}
       footer={!sent && !loading && creators.length > 0 ? (
         <View style={s.footerRow}>
           <Pressable style={s.skipLink} onPress={onDone} disabled={sending}>
@@ -90,7 +89,8 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
             </Text>
           </Pressable>
         </View>
-      ) : undefined}>
+      ) : undefined}
+      contentContainerStyle={s.sheetBody}>
         {sent ? (
           <View style={s.center}>
             <FontAwesome5 name="paper-plane" size={36} color="#3B82F6" solid />
@@ -109,7 +109,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
             </Pressable>
           </View>
         ) : (
-          <>
+          <View>
             <Pressable style={s.selectAllRow} onPress={toggleAll}>
               <View style={[s.checkbox, { borderColor: allSelected ? C.brinjal1 : C.border, backgroundColor: allSelected ? C.brinjal1 : 'transparent' }]}>
                 {allSelected && <FontAwesome5 name="check" solid size={14} color="#fff" />}
@@ -122,7 +122,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
               )}
             </Pressable>
 
-            <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
+            <View style={s.list}>
               {creators.map((creator) => {
                 const sel = selected.has(creator.id);
                 const abbr = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -177,8 +177,8 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                   </Pressable>
                 );
               })}
-            </ScrollView>
-          </>
+            </View>
+          </View>
         )}
     </BottomSheet>
   );
@@ -191,6 +191,7 @@ const s = StyleSheet.create({
   skipBtn: { marginTop: 4, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
   skipBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
+  sheetBody: { paddingHorizontal: 0, paddingTop: 0 },
   selectAllRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 12 },
   selectAllText: { fontSize: 13, fontFamily: F.bold, flex: 1 },
   selectedCount: { fontSize: 12, fontFamily: F.bold },

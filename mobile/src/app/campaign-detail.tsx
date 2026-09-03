@@ -228,12 +228,12 @@ export default function CampaignDetailScreen() {
             </View>
           </View>
           <Text style={[s.campaignTitle, { color: C.text }]}>{campaign.title}</Text>
-          {campaign.campaignType !== 'OPEN_EVENT' && (
-            <View style={s.budgetRow}>
+          <View style={s.priceProposalsRow}>
+            {campaign.campaignType !== 'OPEN_EVENT' ? (
               <Text style={[s.budget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
-            </View>
-          )}
-          <View style={{ alignItems: 'flex-end' }}>
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
             {isBusiness ? (
               <Pressable
                 disabled={!campaign.proposals}
@@ -699,7 +699,7 @@ const s = StyleSheet.create({
   brandName:     { fontSize: 14, fontFamily: F.semibold },
   verifiedBadge: { width: 16, height: 16, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   campaignTitle: { fontSize: 18, lineHeight: 27, fontFamily: F.bold },
-  budgetRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  priceProposalsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   budget:        { fontSize: 16, fontFamily: F.bold },
   typeBadge:     { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1 },
   typeBadgeText: { fontSize: 12, fontFamily: F.bold },

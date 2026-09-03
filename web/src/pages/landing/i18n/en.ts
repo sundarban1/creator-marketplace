@@ -13,7 +13,7 @@ export const en = {
   },
 
   hero: {
-    eyebrow: 'Find skills for your campaign or job',
+    eyebrow: 'AI-powered — find the right skilled creators for your campaign or job',
     headlineLine1: 'Find the right creators.',
     headlineLine2: 'Create opportunities.',
     headlineLine3: 'Collaborate.',

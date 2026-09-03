@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Application from 'expo-application';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   useFonts,
@@ -35,7 +35,7 @@ import { useAppleCredentialWatch } from '@/hooks/useAppleCredentialWatch';
 import { initBackgroundVideoUploadManager } from '@/services/backgroundVideoUploadManager';
 import { initSentry } from '@/utilities/sentry';
 import { isVersionBelowMinimum } from '@/utilities/versionCheck';
-import { COLORS, F, SPACING, FONT_SIZE, RADIUS } from '@/utilities/constants';
+import { F } from '@/utilities/constants';
 import type { UserRole } from '@/types';
 
 // Must run before the provider tree renders — this is what wires up global JS
@@ -50,58 +50,188 @@ initBackgroundVideoUploadManager();
 // Rendered by Sentry.ErrorBoundary when a render error escapes the whole app
 // tree. Deliberately styled with static color/spacing literals rather than
 // useAppColors()/theme context — this boundary sits above every provider
-// (AppThemeProvider included), so theme context may not be mounted when an
-// error this high up fires. Values below are hand-picked to match this app's
-// COLORS/F/SPACING tokens so it still looks native to the app.
-function ErrorFallback({ resetError }: { resetError: () => void }) {
+// (AppThemeProvider + LanguageProvider included), so neither theme nor i18n
+// context is guaranteed to be mounted when an error this high up fires. That
+// is also why the copy is hardcoded bilingual (EN + NE) instead of going
+// through t(). Values below are hand-picked to match this app's design tokens
+// so the screen still looks native to Kolab in both light and dark mode.
+const EF_LIGHT = {
+  bg: '#FFFFFF',
+  card: '#F1F5F9',
+  cardBorder: '#E5E7F0',
+  title: '#0F172A',
+  body: '#475569',
+  faint: '#94A3B8',
+  iconBg: '#FEF3C7',
+  icon: '#D97706',
+  button: '#4F46E5',
+  buttonPressed: '#3730A3',
+};
+const EF_DARK = {
+  bg: '#0B1120',
+  card: '#1E293B',
+  cardBorder: '#334155',
+  title: '#F1F5F9',
+  body: '#CBD5E1',
+  faint: '#64748B',
+  iconBg: '#422006',
+  icon: '#FBBF24',
+  button: '#6366F1',
+  buttonPressed: '#4F46E5',
+};
+
+function ErrorFallback({
+  error,
+  eventId,
+  resetError,
+}: {
+  error?: unknown;
+  eventId?: string | null;
+  resetError: () => void;
+}) {
+  // useColorScheme() is a bare RN hook — it needs no provider, so it is safe to
+  // read this high up in the tree.
+  const scheme = useColorScheme();
+  const c = scheme === 'dark' ? EF_DARK : EF_LIGHT;
+  const [pressed, setPressed] = useState(false);
+
+  const devMessage =
+    __DEV__ && error instanceof Error ? error.message : null;
+
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: SPACING.xl,
-        backgroundColor: COLORS.background,
-      }}
-    >
-      <Text
-        style={{
-          fontFamily: F.semibold,
-          fontSize: FONT_SIZE.xl,
-          color: COLORS.text,
-          textAlign: 'center',
-          marginBottom: SPACING.sm,
-        }}
+    <SafeAreaView style={[ef.safe, { backgroundColor: c.bg }]}>
+      <ScrollView
+        contentContainerStyle={ef.scroll}
+        showsVerticalScrollIndicator={false}
       >
-        Something went wrong
-      </Text>
-      <Text
-        style={{
-          fontFamily: F.regular,
-          fontSize: FONT_SIZE.md,
-          color: COLORS.textSecondary,
-          textAlign: 'center',
-          marginBottom: SPACING.xl,
-        }}
-      >
-        The app hit an unexpected error. Please try again.
-      </Text>
-      <TouchableOpacity
-        onPress={resetError}
-        style={{
-          backgroundColor: COLORS.brinjal1,
-          paddingVertical: SPACING.md,
-          paddingHorizontal: SPACING.xxl,
-          borderRadius: RADIUS.md,
-        }}
-      >
-        <Text style={{ fontFamily: F.semibold, fontSize: FONT_SIZE.md, color: '#FFFFFF' }}>
-          Try Again
+        <View style={[ef.iconWrap, { backgroundColor: c.iconBg }]}>
+          <FontAwesome5 name="exclamation" size={38} color={c.icon} solid />
+        </View>
+
+        <Text style={[ef.title, { color: c.title }]}>Something went wrong</Text>
+        <Text style={[ef.titleNe, { color: c.body }]}>केही गडबड भयो</Text>
+
+        <Text style={[ef.body, { color: c.body }]}>
+          The app ran into an unexpected problem. Your information is safe.
+          Tap “Try again” to reload — if it keeps happening, close the app fully
+          and open it again.
         </Text>
-      </TouchableOpacity>
-    </View>
+        <Text style={[ef.bodyNe, { color: c.faint }]}>
+          एपमा अनपेक्षित समस्या आयो। तपाईंको जानकारी सुरक्षित छ। पुनः लोड गर्न
+          “पुनः प्रयास गर्नुहोस्” थिच्नुहोस्।
+        </Text>
+
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPressIn={() => setPressed(true)}
+          onPressOut={() => setPressed(false)}
+          onPress={resetError}
+          accessibilityRole="button"
+          accessibilityLabel="Try again"
+          style={[
+            ef.button,
+            { backgroundColor: pressed ? c.buttonPressed : c.button },
+          ]}
+        >
+          <FontAwesome5 name="redo" size={14} color="#FFFFFF" solid />
+          <Text style={ef.buttonText}>Try again</Text>
+        </TouchableOpacity>
+
+        {eventId ? (
+          <Text style={[ef.reference, { color: c.faint }]}>
+            Reference code: {eventId}
+          </Text>
+        ) : null}
+
+        {devMessage ? (
+          <View style={[ef.devBox, { backgroundColor: c.card, borderColor: c.cardBorder }]}>
+            <Text style={[ef.devLabel, { color: c.faint }]}>DEV — error detail</Text>
+            <Text style={[ef.devText, { color: c.body }]}>{devMessage}</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+const ef = StyleSheet.create({
+  safe: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 48,
+  },
+  iconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  title: {
+    fontFamily: F.bold,
+    fontSize: 22,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  titleNe: {
+    fontFamily: F.medium,
+    fontSize: 15,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  body: {
+    fontFamily: F.regular,
+    fontSize: 15,
+    lineHeight: 23,
+    textAlign: 'center',
+    maxWidth: 340,
+  },
+  bodyNe: {
+    fontFamily: F.regular,
+    fontSize: 13,
+    lineHeight: 21,
+    textAlign: 'center',
+    marginTop: 10,
+    maxWidth: 340,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 32,
+    paddingVertical: 15,
+    paddingHorizontal: 36,
+    borderRadius: 14,
+    minWidth: 200,
+  },
+  buttonText: { color: '#FFFFFF', fontFamily: F.semibold, fontSize: 15 },
+  reference: {
+    fontFamily: F.regular,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  devBox: {
+    marginTop: 24,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignSelf: 'stretch',
+  },
+  devLabel: {
+    fontFamily: F.semibold,
+    fontSize: 10,
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  devText: { fontFamily: F.regular, fontSize: 12, lineHeight: 18 },
+});
 
 // Handles auth-based redirects for both login AND logout
 function RootNavigator() {
@@ -155,6 +285,14 @@ function RootNavigator() {
     const onSplash     = (segments as readonly string[]).length === 0;
 
     if (!user && !inAuthGroup && !isPublic && !onSplash) {
+      // Logout (or a token-refresh failure) fired from somewhere deep in the
+      // authenticated stack. A bare replace() swaps the current screen for
+      // /login but leaves every authenticated screen below it in the history —
+      // so /login shows a back button that pops the user straight back into a
+      // now-unauthorised screen, which this same effect then bounces back to
+      // /login (a second time, now with no back button). Tear the stack down to
+      // its root first so /login becomes the only entry and shows no back arrow.
+      try { if (router.canGoBack()) router.dismissAll(); } catch {}
       router.replace('/login');
     } else if (user && user.emailIsPlaceholder && !onAddEmail) {
       // Sign in with Apple returned no email (a repeat authorization) — the
@@ -281,7 +419,11 @@ function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <Sentry.ErrorBoundary fallback={({ resetError }) => <ErrorFallback resetError={resetError} />}>
+    <Sentry.ErrorBoundary
+      fallback={({ error, eventId, resetError }) => (
+        <ErrorFallback error={error} eventId={eventId} resetError={resetError} />
+      )}
+    >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AppThemeProvider>
           <ToastProvider>

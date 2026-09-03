@@ -766,6 +766,8 @@ export default function CreateCampaignScreen() {
   const [phase, setPhase] = useState<Phase>('chooseType');
   const [loading, setLoading] = useState(false);
   const [publishWarnVisible, setPublishWarnVisible] = useState(false);
+  // Open Event publish — warn once when the event has no start time set.
+  const [timeWarnVisible, setTimeWarnVisible] = useState(false);
   const [publishedCampaign, setPublishedCampaign] = useState<{ id: string; category: string; lat: number | null; lng: number | null; budgetMin?: number; budgetMax?: number } | null>(null);
 
   function handleRecommendedDone() {
@@ -2408,7 +2410,7 @@ export default function CreateCampaignScreen() {
                 </Pressable>
                 <Pressable
                   style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
-                  onPress={handlePublish}
+                  onPress={() => { if (!form.eventTime) setTimeWarnVisible(true); else void handlePublish(); }}
                   disabled={loading}>
                   <Text style={s.publishBtnText}>{loading ? t('createEvent.publishingBtn') : t('createInvitation.publishBtn')}</Text>
                 </Pressable>
@@ -3265,6 +3267,29 @@ export default function CreateCampaignScreen() {
                 style={[s.warnConfirmBtn, { backgroundColor: C.brinjal1 }]}
                 onPress={() => { setPublishWarnVisible(false); handlePublish(); }}>
                 <Text style={s.warnConfirmText}>{t('createEvent.warnPublishNow')}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Open Event — missing start-time warning */}
+      <Modal visible={timeWarnVisible} transparent animationType="fade" onRequestClose={() => setTimeWarnVisible(false)}>
+        <Pressable style={s.warnScrim} onPress={() => setTimeWarnVisible(false)}>
+          <Pressable style={[s.warnSheet, { backgroundColor: C.surface }]} onPress={(e) => e.stopPropagation()}>
+            <View style={s.warnIconWrap}>
+              <FontAwesome5 name="clock" solid size={32} color="#F59E0B" />
+            </View>
+            <Text style={[s.warnTitle, { color: C.text }]}>{t('createInvitation.timeWarnTitle')}</Text>
+            <Text style={[s.warnBody, { color: C.textSecondary }]}>{t('createInvitation.timeWarnBody')}</Text>
+            <View style={s.warnActions}>
+              <Pressable style={[s.warnCancelBtn, { borderColor: C.border }]} onPress={() => setTimeWarnVisible(false)}>
+                <Text style={[s.warnCancelText, { color: C.textSecondary }]}>{t('createInvitation.timeWarnCancel')}</Text>
+              </Pressable>
+              <Pressable
+                style={[s.warnConfirmBtn, { backgroundColor: C.brinjal1 }]}
+                onPress={() => { setTimeWarnVisible(false); void handlePublish(); }}>
+                <Text style={s.warnConfirmText}>{t('createInvitation.timeWarnSkip')}</Text>
               </Pressable>
             </View>
           </Pressable>

@@ -1139,7 +1139,14 @@ export default function LoginScreen() {
     }
   }
 
-  const canGoBack    = router.canGoBack();
+  // The only path that pushes /login onto the stack is account-type → "pick a
+  // role" (router.push('/login', { tab: 'signup', role })); every other way in
+  // (the unauthenticated redirect, "Sign In", a post-logout bounce) is a
+  // replace. So a back arrow is only ever meaningful on the signup tab reached
+  // that way — showing it otherwise (e.g. on leftover authenticated history
+  // after a logout) just pops the user into a screen they're no longer allowed
+  // on, which RootNavigator immediately bounces back here.
+  const canGoBack    = router.canGoBack() && params.tab === 'signup';
 
   return (
     <View style={s.root}>

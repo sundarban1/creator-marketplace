@@ -2181,10 +2181,12 @@ export default function CampaignWorkspaceScreen() {
           </View>
         )}
 
-        {/* Action buttons — business only; the creator opens this same sheet
-            read-only via "View My Submission" and shouldn't see review actions
-            on their own work. */}
-        {!isCreator && (
+        {/* Action buttons — business only, and only while the work is still
+            awaiting review (ws === 'SUBMITTED'). Once it's APPROVED/COMPLETED
+            (or DISPUTED) the sheet is a read-only view of the submission —
+            "Give Feedback" / "Approve" no longer apply. The creator opens this
+            same sheet read-only via "View My Submission". */}
+        {!isCreator && ws === 'SUBMITTED' && (
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
             <Pressable
               style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}

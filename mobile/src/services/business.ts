@@ -32,6 +32,12 @@ export type BusinessActiveCampaign = {
   location:    string | null;
   featureImageUrl: string | null;
   template:    string | null;
+  // OPEN_EVENT (free event) vs PAID_CAMPAIGN. Absent on older cached
+  // responses — treat a missing value as PAID_CAMPAIGN.
+  campaignType?: 'OPEN_EVENT' | 'PAID_CAMPAIGN';
+  // "What are you offering" selections for a free event (Food & Drinks,
+  // Free Products / Gifts, …). Empty for paid campaigns.
+  benefits?:   string[];
   _count:      { applications: number };
 };
 

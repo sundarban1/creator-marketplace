@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
-    "scheme": ["kolab", "com.sundarban.kolab"],
+    "scheme": "kolab",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.sundarban.kolab",
@@ -17,16 +17,6 @@
       },
       "infoPlist": {
         "CFBundleURLTypes": [
-          {
-            "CFBundleURLSchemes": [
-              "fb1740519673635792"
-            ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.543768819635-fuslrtr8mt6bmi2jslc3h3hcqg4drhdk"
-            ]
-          },
           {
             "CFBundleURLSchemes": [
               "fb1740519673635792"
@@ -63,7 +53,8 @@
         }
       },
       "package": "com.sundarban.kolab",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "scheme": "com.sundarban.kolab"
     },
     "web": {
       "output": "static",

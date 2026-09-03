@@ -19,8 +19,10 @@ import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
+import { LocationField } from '@/components/LocationField';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { isValidWebsiteUrl, normalizeWebsiteUrl } from '@/utilities/url';
 
 function generateBusinessDescription(name: string, cats: string[]): string {
   if (cats.length === 0) return '';
@@ -41,9 +43,12 @@ export default function EditBusinessProfileScreen() {
   const [loading, setLoading]                   = useState(true);
   const [saving, setSaving]                     = useState(false);
   const [businessName, setBusinessName]         = useState('');
+  const [nameError, setNameError]               = useState<string | undefined>(undefined);
   const [description, setDescription]           = useState('');
   const [descriptionManuallyEdited, setDescriptionManuallyEdited] = useState(false);
   const [website, setWebsite]                   = useState('');
+  const [websiteError, setWebsiteError]         = useState<string | undefined>(undefined);
+  const [locationError, setLocationError]       = useState<string | undefined>(undefined);
   const [location, setLocation]                 = useState('');
   const [locationLat, setLocationLat]           = useState<number | null>(null);
   const [locationLng, setLocationLng]           = useState<number | null>(null);
@@ -69,6 +74,7 @@ export default function EditBusinessProfileScreen() {
     setLocation(address);
     setLocationLat(lat || null);
     setLocationLng(lng || null);
+    setLocationError(undefined);
     setLocationModalOpen(false);
   }
 
@@ -78,10 +84,20 @@ export default function EditBusinessProfileScreen() {
   }
 
   async function handleSave() {
+    let hasError = false;
     if (!businessName.trim() || businessName.trim().length < 2) {
-      toast.warning(t('profile.editBusiness.nameMinLengthWarning'));
-      return;
+      setNameError(t('profile.editBusiness.nameMinLengthWarning'));
+      hasError = true;
     }
+    if (website.trim() && !isValidWebsiteUrl(website)) {
+      setWebsiteError(t('profile.editBusiness.websiteInvalidWarning'));
+      hasError = true;
+    }
+    if (!location.trim()) {
+      setLocationError(t('profile.editBusiness.locationRequiredWarning'));
+      hasError = true;
+    }
+    if (hasError) return;
     setSaving(true);
     try {
       // Always send location as a trio (or null-out the whole trio when
@@ -93,7 +109,7 @@ export default function EditBusinessProfileScreen() {
       await profileService.updateBusinessProfile({
         businessName: businessName.trim(),
         description:  description.trim() || undefined,
-        website:      website.trim() || undefined,
+        website:      normalizeWebsiteUrl(website) || undefined,
         location:     trimmedLocation || null,
         locationLat:  trimmedLocation ? locationLat : null,
         locationLng:  trimmedLocation ? locationLng : null,
@@ -151,9 +167,10 @@ export default function EditBusinessProfileScreen() {
             <TextInputWithLabel
               label={t('profile.editBusiness.nameLabel')}
               value={businessName}
-              onChangeText={setBusinessName}
+              onChangeText={(txt) => { setBusinessName(txt); setNameError(undefined); }}
               placeholder={t('profile.editBusiness.namePlaceholder')}
               leftIcon="building"
+              error={nameError}
             />
           </View>
 
@@ -182,32 +199,36 @@ export default function EditBusinessProfileScreen() {
             <TextInputWithLabel
               label={t('profile.editBusiness.websiteLabel')}
               value={website}
-              onChangeText={setWebsite}
+              onChangeText={(txt) => { setWebsite(txt); setWebsiteError(undefined); }}
+              onBlur={() => setWebsiteError(
+                website.trim() && !isValidWebsiteUrl(website)
+                  ? t('profile.editBusiness.websiteInvalidWarning')
+                  : undefined,
+              )}
               placeholder={t('profile.editBusiness.websitePlaceholder')}
               keyboardType="url"
               autoCapitalize="none"
               autoCorrect={false}
               leftIcon="globe"
+              error={websiteError}
+              hint={t('profile.editBusiness.websiteHint')}
             />
           </View>
 
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.locationLabel')}</Text>
-            <Pressable
-              style={[styles.locationBtn, { backgroundColor: C.background, borderColor: C.border }]}
-              onPress={() => setLocationModalOpen(true)}>
-              <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
-                {location || t('profile.editBusiness.locationPlaceholder')}
-              </Text>
-              <Text style={styles.locationArrow}>›</Text>
-            </Pressable>
-            {location ? (
-              <Pressable onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
-                <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>{t('profile.editCreator.clearLocation')}</Text>
-              </Pressable>
-            ) : null}
+            <LocationField
+              label={t('profile.editBusiness.locationLabel')}
+              required
+              hint={t('profile.editBusiness.locationHint')}
+              error={locationError}
+              value={location}
+              placeholder={t('profile.editBusiness.locationPlaceholder')}
+              onPress={() => setLocationModalOpen(true)}
+              onClear={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}
+              clearLabel={t('profile.editCreator.clearLocation')}
+            />
           </View>
 
         </View>
@@ -254,17 +275,9 @@ const styles = StyleSheet.create({
   card:          { marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },
   field:         { padding: 16, gap: 8 },
   divider:       { height: 1 },
-  label:         { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   regenerateBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   regenerateBtnText: { fontSize: 11, fontFamily: F.semibold },
   charCount:     { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
-  suggestBox:    { borderRadius: RADIUS.sm, borderWidth: 1.5, marginTop: 4, overflow: 'hidden' },
-  suggestItem:   { paddingHorizontal: 12, paddingVertical: 11 },
-  suggestText:   { fontSize: 13, fontFamily: F.regular },
-  locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
-  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: F.regular },
-  locationArrow:  { fontSize: 20, color: '#9CA3AF' },
-  clearLocation:  { fontSize: 12, marginTop: 2, fontFamily: F.semibold },
   saveBtn:       { marginHorizontal: 16, marginTop: 20, borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },
   saveBtnText:   { fontSize: 15, color: '#fff', fontFamily: F.bold },
 });

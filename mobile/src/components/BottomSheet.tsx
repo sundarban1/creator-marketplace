@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCloseOnScrollDown } from '@/hooks/useCloseOnScrollDown';
@@ -68,6 +69,7 @@ export function BottomSheet({
 }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const keyboardOffset = useKeyboardOffset();
   const { dragY, panHandlers, onScroll } = useCloseOnScrollDown(onClose);
   const resolvedChildren = typeof children === 'function' ? children({ panHandlers }) : children;
@@ -124,7 +126,7 @@ export function BottomSheet({
         )}
 
         {footer && (
-          <View style={[s.footer, { borderTopColor: C.border, backgroundColor: C.surface }]}>{footer}</View>
+          <View style={[s.footer, { borderTopColor: C.border, backgroundColor: C.surface, paddingBottom: SCREEN_GUTTER + insets.bottom }]}>{footer}</View>
         )}
       </Animated.View>
     </Modal>
