@@ -57,6 +57,12 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
       : { pathname: '/(business)/(tabs)/profile', params: { focus: 'reviews' } };
   }
 
+  // "You're verified!" (either role) → the user's own profile, where the new
+  // verified badge now sits next to their name.
+  if (n.type === 'account_verified') {
+    return isCreator ? '/(creator)/(tabs)/profile' : '/(business)/(tabs)/profile';
+  }
+
   // workspace status notifications → activity timeline. project_completed is
   // the business-only "Project Complete" row sent when escrow payment is
   // released; it opens the same timeline the creator lands on for payment_released.
