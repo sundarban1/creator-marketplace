@@ -1172,12 +1172,18 @@ export default function CampaignWorkspaceScreen() {
       // stops Khalti from silently reusing whatever account is already logged
       // into the shared browser session.
       const result = await WebBrowser.openAuthSessionAsync(paymentUrl, 'kolab://khalti-callback', { preferEphemeralSession: true });
+      // Close the modal once the Khalti tab is done — whichever way it ended.
+      // useFocusEffect re-runs load() when we return here, so the card below
+      // reflects the real PAID status either way.
+      setShowPay(false);
+      // On iOS the session usually captures the kolab:// redirect and we get it
+      // here. On Android (and sometimes iOS) Expo Router consumes the deep link
+      // first — then app/khalti-callback.tsx has already shown the toast, so only
+      // handle the result when the session actually returned it.
       if (result.type === 'success' && result.url) {
         const parsed = new URL(result.url);
-        const success = parsed.searchParams.get('success') === 'true';
-        if (success) {
+        if (parsed.searchParams.get('success') === 'true') {
           setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
-          setShowPay(false);
           topToast.success(t('activityTimeline.toastPaySuccess'));
         } else {
           const error = parsed.searchParams.get('error') ?? t('activityTimeline.toastPayFailed');
@@ -1205,12 +1211,18 @@ export default function CampaignWorkspaceScreen() {
       // failure_url. eSewa also has no "silently reuse the logged-in account"
       // risk here the way Khalti does — it always prompts for the token.
       const result = await WebBrowser.openAuthSessionAsync(paymentUrl, 'kolab://esewa-callback', { preferEphemeralSession: false });
+      // Close the modal once the eSewa tab is done — whichever way it ended.
+      // useFocusEffect re-runs load() when we return here, so the card below
+      // reflects the real PAID status either way.
+      setShowPay(false);
+      // On iOS the session usually captures the kolab:// redirect and we get it
+      // here. On Android (and sometimes iOS) Expo Router consumes the deep link
+      // first — then app/esewa-callback.tsx has already shown the toast, so only
+      // handle the result when the session actually returned it.
       if (result.type === 'success' && result.url) {
         const parsed = new URL(result.url);
-        const success = parsed.searchParams.get('success') === 'true';
-        if (success) {
+        if (parsed.searchParams.get('success') === 'true') {
           setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
-          setShowPay(false);
           topToast.success(t('activityTimeline.toastPaySuccess'));
         } else {
           // eSewa bounced us back without completing — the raw reason

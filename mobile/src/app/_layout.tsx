@@ -355,6 +355,8 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.background } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="oauthredirect" />
+        <Stack.Screen name="esewa-callback" />
+        <Stack.Screen name="khalti-callback" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="add-email" />
         <Stack.Screen name="onboarding" />
