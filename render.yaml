@@ -312,14 +312,17 @@ services:
         sync: false
 
       # ── Khalti ePayment (business pays to start a paid application) ─────────
-      # Optional: without KHALTI_SECRET_KEY, selecting Khalti at pay time fails
-      # with a clear error. KHALTI_BASE_URL defaults to the dev/sandbox endpoint
-      # in code — set it to https://khalti.com/api/v2 for live payments.
+      # Currently pointed at Khalti's dev/sandbox. The key below is our sandbox
+      # merchant's live_secret_key from test-admin.khalti.com (only valid against
+      # dev.khalti.com — 401s on production) — for LIVE payments switch this to
+      # `sync: false` + the production live secret key, and set KHALTI_BASE_URL
+      # to https://khalti.com/api/v2. Sandbox checkout logins: Khalti ID
+      # 9800000000-9800000005, MPIN 1111, OTP 987654.
       - key: KHALTI_SECRET_KEY
-        sync: false
+        value: "e29ab894b88a403eaab73ca3a8f74fec"
 
       - key: KHALTI_BASE_URL
-        sync: false
+        value: https://dev.khalti.com/api/v2
 
       - key: KHALTI_RETURN_URL
         value: https://kolab-api.onrender.com/api/payments/khalti/callback
