@@ -83,23 +83,39 @@ export default function EventInvitationScreen() {
     setAttempt((n) => n + 1);
   }, []);
 
-  const ensureLocalFile = useCallback(async (inv: Invitation): Promise<string> => {
+  const ensureLocalFile = useCallback(async (inv: Invitation, downloadUrl: string): Promise<string> => {
     const cached = localUriRef.current;
     if (cached && cached.version === inv.version) {
       const info = await FileSystem.getInfoAsync(cached.uri).catch(() => null);
       if (info?.exists) return cached.uri;
     }
     const dest = `${FileSystem.cacheDirectory}kolab-invitation-v${inv.version}.png`;
-    const { uri } = await FileSystem.downloadAsync(inv.imageUrl, dest);
+    // downloadAsync resolves (and writes the body to disk) even on a 4xx/5xx —
+    // guard so a 404 error page never gets saved/shared as a ".png".
+    const { uri, status } = await FileSystem.downloadAsync(downloadUrl, dest);
+    if (status !== 200) {
+      await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+      throw new Error(`invitation download failed (${status})`);
+    }
     localUriRef.current = { version: inv.version, uri };
     return uri;
   }, []);
 
+  // While the Cloudflare cache rule in front of the invitation bucket was
+  // misconfigured, a 404 for this exact URL could have been cached ON-DEVICE
+  // (the bad response carried a year-long max-age). A per-version + per-retry
+  // query param sidesteps any poisoned local/HTTP-cache entry without forcing a
+  // re-download on every mount. R2 ignores the extra param; Cloudflare keys its
+  // edge cache on it, so this also dodges a poisoned edge entry.
+  const imageUri = invitation
+    ? `${invitation.imageUrl}${invitation.imageUrl.includes('?') ? '&' : '?'}cb=${invitation.version}.${attempt}`
+    : null;
+
   const handleShare = useCallback(async () => {
-    if (!invitation || busy) return;
+    if (!invitation || !imageUri || busy) return;
     setBusy('share');
     try {
-      const uri = await ensureLocalFile(invitation);
+      const uri = await ensureLocalFile(invitation, imageUri);
       if (!(await Sharing.isAvailableAsync())) { toast.error(t('eventInvitation.shareFailed')); return; }
       await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('eventInvitation.title') });
     } catch (err) {
@@ -108,10 +124,10 @@ export default function EventInvitationScreen() {
     } finally {
       setBusy(null);
     }
-  }, [invitation, busy, ensureLocalFile, toast, t]);
+  }, [invitation, imageUri, busy, ensureLocalFile, toast, t]);
 
   const handleSave = useCallback(async () => {
-    if (!invitation || busy) return;
+    if (!invitation || !imageUri || busy) return;
     setBusy('save');
     try {
       // Write-only: we only need to add one image, never read the library —
@@ -119,7 +135,7 @@ export default function EventInvitationScreen() {
       // to be granted than full photo access.
       const perm = await MediaLibrary.requestPermissionsAsync(true);
       if (!perm.granted) { toast.error(t('eventInvitation.saveDenied')); return; }
-      const uri = await ensureLocalFile(invitation);
+      const uri = await ensureLocalFile(invitation, imageUri);
       await MediaLibrary.saveToLibraryAsync(uri);
       toast.success(t('eventInvitation.saved'));
     } catch (err) {
@@ -128,7 +144,7 @@ export default function EventInvitationScreen() {
     } finally {
       setBusy(null);
     }
-  }, [invitation, busy, ensureLocalFile, toast, t]);
+  }, [invitation, imageUri, busy, ensureLocalFile, toast, t]);
 
   return (
     <SafeAreaView style={[s.screen, { backgroundColor: C.background }]} edges={['top']}>
@@ -153,7 +169,8 @@ export default function EventInvitationScreen() {
           <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
             <View style={[s.imageCard, { backgroundColor: C.surface }, SHADOW.card]}>
               <Image
-                source={{ uri: invitation.imageUrl }}
+                source={imageUri ? { uri: imageUri } : undefined}
+                recyclingKey={imageUri}
                 style={s.image}
                 contentFit="contain"
                 transition={200}
