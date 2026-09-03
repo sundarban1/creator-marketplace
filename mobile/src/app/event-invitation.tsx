@@ -90,9 +90,26 @@ export default function EventInvitationScreen() {
       if (info?.exists) return cached.uri;
     }
     const dest = `${FileSystem.cacheDirectory}kolab-invitation-v${inv.version}.png`;
+    // downloadAsync has no timeout: a stalled connection (a throttled CDN, dead
+    // network) would leave it pending forever and the Share/Save spinner stuck.
+    // Drive it through a resumable download so a watchdog can cancel it, and cap
+    // the wait — a failure here surfaces the normal retryable error toast.
+    const download = FileSystem.createDownloadResumable(downloadUrl, dest);
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; download.cancelAsync().catch(() => {}); }, 30000);
+    let result: FileSystem.FileSystemDownloadResult | undefined;
+    try {
+      result = await download.downloadAsync();
+    } finally {
+      clearTimeout(timer);
+    }
+    if (timedOut || !result) {
+      await FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => {});
+      throw new Error('invitation download timed out');
+    }
+    const { uri, status } = result;
     // downloadAsync resolves (and writes the body to disk) even on a 4xx/5xx —
     // guard so a 404 error page never gets saved/shared as a ".png".
-    const { uri, status } = await FileSystem.downloadAsync(downloadUrl, dest);
     if (status !== 200) {
       await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
       throw new Error(`invitation download failed (${status})`);
