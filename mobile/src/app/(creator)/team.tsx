@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -20,14 +21,17 @@ import {
   creatorService,
   type ApiProviderMember,
   type ProviderMemberRole,
-  type ProviderType,
 } from '@/services/creator';
+import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { OfflineError } from '@/lib/api';
 import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 // OWNER is missing on purpose — the provider account itself is the owner, so
 // the API rejects it (see provider-member.schema.ts).
 const ACCESS_ROLES: Exclude<ProviderMemberRole, 'OWNER'>[] = ['MEMBER', 'MANAGER', 'ADMIN'];
+const EMPTY_MEMBERS: ApiProviderMember[] = [];
 
 type RemoveState = { visible: boolean; member: ApiProviderMember | null; submitting: boolean };
 const NO_REMOVE: RemoveState = { visible: false, member: null, submitting: false };
@@ -41,50 +45,51 @@ export default function TeamScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
-  const [providerType, setProviderType] = useState<ProviderType | null>(null);
   // §7 — an ADMIN of someone else's team manages their roster from this same
   // screen. null means "my own provider account"; the API takes the same shape
   // (omitted providerId = my own team).
   const [activeProviderId, setActiveProviderId] = useState<string | null>(null);
-  const [members, setMembers]         = useState<ApiProviderMember[]>([]);
-  const [memberships, setMemberships] = useState<ApiProviderMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [remove, setRemove] = useState<RemoveState>(NO_REMOVE);
   const [respondingId, setRespondingId] = useState<string | null>(null);
 
-  const load = useCallback(async (providerId?: string | null) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // The roster call is only valid for a TEAM (or for an ADMIN of
-      // another team), so the profile has to be read first — an INDIVIDUAL with
-      // no adminships still sees the invitations half.
-      const profile = await creatorService.getProfile();
-      setProviderType(profile.providerType);
-      const target = providerId ?? null;
-      const ownCanHaveMembers = profile.providerType === 'TEAM';
-      const [invites, roster] = await Promise.all([
-        creatorService.listMyMemberships(),
-        target || ownCanHaveMembers
-          ? creatorService.listTeamMembers(target ?? undefined)
-          : Promise.resolve([] as ApiProviderMember[]),
-      ]);
-      setMemberships(invites);
-      setMembers(roster);
-    } catch (err) {
-      setError(err instanceof OfflineError
-        ? t('team.errorMessage')
-        : (err instanceof Error ? err.message : t('team.errorMessage')));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  // The roster call is only valid for a TEAM (or for an ADMIN of another
+  // team), so the profile — shared with every other screen — drives whether
+  // it's enabled at all; an INDIVIDUAL with no adminships still sees the
+  // invitations half via the memberships query alone.
+  const profileQuery = useCreatorProfile();
+  const providerType = profileQuery.data?.providerType ?? null;
+  const ownCanHaveMembers = providerType === 'TEAM';
+  // A roster is manageable when it's your own team, or one you're an admin of
+  // and currently have selected.
+  const canHaveMembers = ownCanHaveMembers || activeProviderId !== null;
 
-  useFocusEffect(useCallback(() => { void load(activeProviderId); }, [load, activeProviderId]));
+  const membershipsQuery = useQuery({
+    queryKey: ['team', 'memberships'],
+    queryFn: () => creatorService.listMyMemberships(),
+    staleTime: STALE.profile,
+  });
+  const rosterKey = ['team', 'roster', activeProviderId] as const;
+  const rosterQuery = useQuery({
+    queryKey: rosterKey,
+    queryFn: () => creatorService.listTeamMembers(activeProviderId ?? undefined),
+    enabled: canHaveMembers,
+    staleTime: STALE.profile,
+  });
+  useRefetchOnFocusIfStale(profileQuery, membershipsQuery, rosterQuery);
+
+  const memberships = membershipsQuery.data ?? EMPTY_MEMBERS;
+  const members = rosterQuery.data ?? EMPTY_MEMBERS;
+  const loading = profileQuery.isPending || membershipsQuery.isPending || (canHaveMembers && rosterQuery.isPending);
+  const loadError = profileQuery.error ?? membershipsQuery.error ?? rosterQuery.error;
+  const error = (profileQuery.isError || membershipsQuery.isError || rosterQuery.isError)
+    ? (loadError instanceof OfflineError
+        ? t('team.errorMessage')
+        : (loadError instanceof Error ? loadError.message : t('team.errorMessage')))
+    : null;
 
   const pendingInvites = useMemo(() => memberships.filter((m) => m.status === 'PENDING'), [memberships]);
   const acceptedCount  = useMemo(() => members.filter((m) => m.status === 'ACCEPTED').length, [members]);
@@ -103,25 +108,21 @@ export default function TeamScreen() {
 
   // The switcher only earns its space once there's more than one roster to
   // choose between.
-  const ownCanHaveMembers = providerType === 'TEAM';
   const rosterOptions = useMemo(() => [
     ...(ownCanHaveMembers ? [{ id: null as string | null, label: t('team.myTeamOption') }] : []),
     ...adminOf.map((m) => ({ id: m.providerId, label: m.provider?.fullName ?? t('team.unknownProvider') })),
   ], [ownCanHaveMembers, adminOf, t]);
 
-  // A roster is manageable when it's your own team, or one you're an admin of
-  // and currently have selected.
-  const canHaveMembers = ownCanHaveMembers || activeProviderId !== null;
   const activeLabel = rosterOptions.find((o) => o.id === activeProviderId)?.label ?? '';
 
   async function respond(id: string, status: 'ACCEPTED' | 'DECLINED') {
     setRespondingId(id);
     try {
       const updated = await creatorService.respondToMembership(id, status);
-      setMemberships((prev) =>
-        status === 'DECLINED'
+      queryClient.setQueryData<ApiProviderMember[]>(['team', 'memberships'], (prev) =>
+        prev && (status === 'DECLINED'
           ? prev.filter((m) => m.id !== id)
-          : prev.map((m) => (m.id === id ? { ...m, ...updated } : m)));
+          : prev.map((m) => (m.id === id ? { ...m, ...updated } : m))));
       // Either answer removes the row from the pending list, so say what happened.
       toast.success(status === 'ACCEPTED' ? t('team.acceptedToast') : t('team.declinedToast'));
     } catch (err) {
@@ -132,12 +133,13 @@ export default function TeamScreen() {
   }
 
   async function changeRole(member: ApiProviderMember, accessRole: Exclude<ProviderMemberRole, 'OWNER'>) {
-    const previous = members;
-    setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, accessRole } : m)));
+    const previous = queryClient.getQueryData<ApiProviderMember[]>(rosterKey);
+    queryClient.setQueryData<ApiProviderMember[]>(rosterKey, (prev) =>
+      prev?.map((m) => (m.id === member.id ? { ...m, accessRole } : m)));
     try {
       await creatorService.updateTeamMember(member.id, { accessRole });
     } catch (err) {
-      setMembers(previous);
+      queryClient.setQueryData(rosterKey, previous);
       Alert.alert(t('common.error'), err instanceof Error ? err.message : t('team.updateFailed'));
     }
   }
@@ -147,7 +149,8 @@ export default function TeamScreen() {
     setRemove((r) => ({ ...r, submitting: true }));
     try {
       await creatorService.removeTeamMember(remove.member.id);
-      setMembers((prev) => prev.filter((m) => m.id !== remove.member!.id));
+      queryClient.setQueryData<ApiProviderMember[]>(rosterKey, (prev) =>
+        prev?.filter((m) => m.id !== remove.member!.id));
       setRemove(NO_REMOVE);
     } catch (err) {
       setRemove((r) => ({ ...r, submitting: false }));
@@ -162,7 +165,7 @@ export default function TeamScreen() {
         {loading ? (
           <View style={styles.list}>{[0, 1, 2].map((i) => <ListRowSkeleton key={i} withBadge />)}</View>
         ) : error ? (
-          <ErrorState title={t('team.errorTitle')} message={error} actionLabel={t('team.retry')} onAction={load} />
+          <ErrorState title={t('team.errorTitle')} message={error} actionLabel={t('team.retry')} onAction={() => { void profileQuery.refetch(); void membershipsQuery.refetch(); void rosterQuery.refetch(); }} />
         ) : (
           <FlatList
             data={members}
@@ -286,7 +289,10 @@ export default function TeamScreen() {
         visible={inviteOpen}
         providerId={activeProviderId}
         onClose={() => setInviteOpen(false)}
-        onInvited={(member) => { setMembers((prev) => [member, ...prev]); setInviteOpen(false); }}
+        onInvited={(member) => {
+          queryClient.setQueryData<ApiProviderMember[]>(rosterKey, (prev) => [member, ...(prev ?? [])]);
+          setInviteOpen(false);
+        }}
       />
 
       <AppModal
