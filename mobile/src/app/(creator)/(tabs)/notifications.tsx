@@ -148,7 +148,7 @@ export default function NotificationsScreen() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const C = useAppColors();
-  const { clearBadge, decrementBadge } = useNotificationBadge();
+  const { badgeCount, setBadgeCount, clearBadge, decrementBadge } = useNotificationBadge();
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<{ group: string; items: AppNotification[] }>>(null);
   useScrollToTopOnTabPress('bell', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
@@ -179,23 +179,43 @@ export default function NotificationsScreen() {
     ? (notificationsQuery.error instanceof Error ? notificationsQuery.error.message : t('notifications.loadFailedSub'))
     : '';
 
-  async function handleMarkAll() {
-    await notificationService.markAllRead();
+  // Mark-read is a low-risk, easily-reversible action (§20) — flip the cache
+  // and the badge immediately, fire the request in the background, roll both
+  // back on failure. A tap on a notification navigates instantly on the same
+  // principle (§7) instead of waiting on this request to settle first.
+  function handleMarkAll() {
+    const previousData = queryClient.getQueryData<AppNotification[]>(['notifications']);
+    const previousBadge = badgeCount;
     queryClient.setQueryData<AppNotification[]>(['notifications'], (prev) => prev?.map((n) => ({ ...n, isRead: true })));
     clearBadge(); // zero out the bell badge
+    notificationService.markAllRead().catch(() => {
+      queryClient.setQueryData(['notifications'], previousData);
+      setBadgeCount(previousBadge);
+    });
   }
 
-  async function handlePress(id: string) {
+  function handlePress(id: string) {
     const n = notifications.find((n) => n.id === id);
     const wasUnread = !!n && !n.isRead;
-    await notificationService.markAsRead(id);
-    queryClient.setQueryData<AppNotification[]>(['notifications'], (prev) => prev?.map((row) => (row.id === id ? { ...row, isRead: true } : row)));
-    if (wasUnread) decrementBadge();
-    if (!n) return;
-    const isCreator = user?.role === 'CREATOR';
 
-    const route = resolveNotificationRoute(n, isCreator);
-    if (route) router.push(route);
+    if (wasUnread) {
+      queryClient.setQueryData<AppNotification[]>(['notifications'], (prev) =>
+        prev?.map((row) => (row.id === id ? { ...row, isRead: true } : row)));
+      decrementBadge();
+    }
+    if (n) {
+      const isCreator = user?.role === 'CREATOR';
+      const route = resolveNotificationRoute(n, isCreator);
+      if (route) router.push(route);
+    }
+
+    if (wasUnread) {
+      notificationService.markAsRead(id).catch(() => {
+        queryClient.setQueryData<AppNotification[]>(['notifications'], (prev) =>
+          prev?.map((row) => (row.id === id ? { ...row, isRead: false } : row)));
+        setBadgeCount(badgeCount + 1);
+      });
+    }
   }
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
