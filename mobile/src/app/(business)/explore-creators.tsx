@@ -1,6 +1,7 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useInfiniteQuery, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
 import { EntityCard } from '@/components/EntityCard';
@@ -37,7 +38,8 @@ import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
-import { profileService } from '@/services/profile';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { STALE } from '@/lib/queryClient';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
@@ -47,6 +49,22 @@ const PAGE_SIZE = 10;
 
 type CreatorSort = 'newest' | 'oldest' | 'followers';
 type EntityTab = 'people' | 'services';
+
+// Stable empty references so derived values aren't recomputed off a fresh
+// value every render while a query is pending.
+const EMPTY_CREATORS: ApiCreatorListItem[] = [];
+const EMPTY_SERVICES: ApiService[] = [];
+const EMPTY_STRINGS: string[] = [];
+const EMPTY_IDS: Set<string> = new Set();
+
+/** Comma-free location filter for listCreators/getSavedCreators — "Remote"
+ *  is a people-search-only concept (there's no matching creator field), so
+ *  it's dropped before the label list reaches the API. */
+function locationParam(filter: CreatorFilterState): string | undefined {
+  if (filter.locations.length === 0) return undefined;
+  const labels = filter.locations.filter((l) => l.label !== 'Remote').map((l) => l.label);
+  return labels.length > 0 ? labels.join(',') : undefined;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -188,17 +206,13 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
+  const queryClient = useQueryClient();
 
-  const [creators, setCreators] = useState<ApiCreatorListItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [error, setError] = useState('');
 
   const [search, setSearch] = useState('');
   const [searchDebounced] = useDebouncedValue(search, 400);
+  const trimmedSearch = searchDebounced.trim() || undefined;
 
   // People/Services switching is disabled for now (see the commented-out pills
   // in the render) — the tab is pinned to 'people'. Re-add `setEntityTab` here
@@ -209,16 +223,6 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   // the People list is replaced by the business's saved creators (same card,
   // same search/category/filter controls, no sort or pagination).
   const [savedOnly, setSavedOnly] = useState(false);
-  const [savedCreators, setSavedCreators] = useState<ApiCreatorListItem[]>([]);
-  const [savedLoading, setSavedLoading] = useState(false);
-  const [savedError, setSavedError] = useState('');
-  const [services, setServices] = useState<ApiService[]>([]);
-  const [servicesLoading, setServicesLoading] = useState(true);
-  const [servicesLoadingMore, setServicesLoadingMore] = useState(false);
-  const [servicesPage, setServicesPage] = useState(1);
-  const [servicesTotal, setServicesTotal] = useState(0);
-  const [servicesError, setServicesError] = useState('');
-  const loadingMoreServicesRef = useRef(false);
 
   const [sort, setSort] = useState<CreatorSort>('newest');
   const sortOptions: { value: CreatorSort; label: string }[] = [
@@ -246,13 +250,10 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const [serviceCategory, setServiceCategory] = useState<string | null>(null);
   // The industry/industries the business selected during onboarding —
   // surfaced first in both tabs' category pill rows below, mirroring the
-  // business home's "Find People by Category" slider.
-  const [businessIndustries, setBusinessIndustries] = useState<string[]>([]);
-  useFocusEffect(useCallback(() => {
-    profileService.getBusinessProfile()
-      .then((profile) => setBusinessIndustries(profile.categories ?? []))
-      .catch(() => {});
-  }, []));
+  // business home's "Find People by Category" slider. Shared cache — the
+  // business home + profile tabs already keep this warm.
+  const { data: businessProfile } = useBusinessProfile();
+  const businessIndustries = businessProfile?.categories ?? EMPTY_STRINGS;
   // Computed once and shared by both tabs' CategoryPillRow so People and
   // Services always show the identical pill order.
   const pillCategories = sortOtherLast(sortSelectedFirst(adminCategories, businessIndustries));
@@ -268,162 +269,113 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
     activeFilter.priceMax < CREATOR_SLIDER_MAX;
   const filterCount  = creatorFilterActiveCount(activeFilter);
 
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  // Ref (not state) so the guard is synchronous — FlatList's onEndReached can
-  // fire multiple times before a state update commits, otherwise triggering
-  // the same page fetch twice and appending duplicate creators (duplicate keys).
-  const loadingMoreRef = useRef(false);
+  // Saved-ids is its own small cache — every card everywhere on this screen
+  // (browse or saved-only) reads it for its bookmark state.
+  const savedIdsQuery = useQuery({
+    queryKey: ['creators', 'savedIds'],
+    queryFn: () => creatorService.getSavedCreatorIds().then((ids) => new Set(ids)),
+    staleTime: STALE.list,
+  });
+  const savedIds = savedIdsQuery.data ?? EMPTY_IDS;
 
-  useFocusEffect(useCallback(() => {
-    creatorService.getSavedCreatorIds()
-      .then((ids) => setSavedIds(new Set(ids)))
-      .catch(() => {});
-  }, []));
-
+  // Save is a low-risk, easily-reversible action (§20) — optimistic write to
+  // the shared savedIds cache, rolled back on failure. The saved-only list
+  // below never needs its own removal logic: it filters live off this same
+  // cache, so un-saving drops the card the instant this write lands.
   async function handleToggleSave(creatorId: string) {
     const wasSaved = savedIds.has(creatorId);
-    const removed = wasSaved ? savedCreators.find((c) => c.id === creatorId) : undefined;
-    setSavedIds((prev) => {
-      const next = new Set(prev);
+    const flip = (from: Set<string>) => {
+      const next = new Set(from);
       wasSaved ? next.delete(creatorId) : next.add(creatorId);
       return next;
-    });
-    // In the saved-only view, un-saving drops the card from the list immediately.
-    if (wasSaved) setSavedCreators((prev) => prev.filter((c) => c.id !== creatorId));
+    };
+    queryClient.setQueryData<Set<string>>(['creators', 'savedIds'], (prev) => flip(prev ?? EMPTY_IDS));
     try {
       await creatorService.toggleSaveCreator(creatorId);
     } catch {
-      setSavedIds((prev) => {
-        const next = new Set(prev);
-        wasSaved ? next.add(creatorId) : next.delete(creatorId);
-        return next;
-      });
-      if (removed) setSavedCreators((prev) => (prev.some((c) => c.id === creatorId) ? prev : [removed, ...prev]));
+      queryClient.setQueryData<Set<string>>(['creators', 'savedIds'], (prev) => flip(prev ?? EMPTY_IDS));
     }
   }
 
+  // ── Browse list — cache-first infinite query (see queryClient.ts). Every
+  // committed filter is part of the key, so changing one re-renders into a
+  // cache-first fetch; keepPreviousData avoids a skeleton flash mid-filter.
+  const creatorsQuery = useInfiniteQuery({
+    queryKey: ['creators', 'business-browse', { search: trimmedSearch, categories: activeFilter.categories, platforms: activeFilter.platforms, priceMin: activeFilter.priceMin, priceMax: activeFilter.priceMax, location: locationParam(activeFilter), sort }],
+    queryFn: ({ pageParam }) => creatorService.listCreators({
+      page: pageParam, limit: PAGE_SIZE,
+      search: trimmedSearch,
+      location: locationParam(activeFilter),
+      categories: activeFilter.categories.length ? activeFilter.categories : undefined,
+      platforms: activeFilter.platforms.length ? activeFilter.platforms : undefined,
+      priceMin: activeFilter.priceMin > CREATOR_SLIDER_MIN ? activeFilter.priceMin : undefined,
+      priceMax: activeFilter.priceMax < CREATOR_SLIDER_MAX ? activeFilter.priceMax : undefined,
+      sort,
+    }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.creators.length, 0);
+      return loaded < last.total ? all.length + 1 : undefined;
+    },
+    enabled: entityTab === 'people' && !savedOnly,
+    staleTime: STALE.list,
+    placeholderData: keepPreviousData,
+  });
 
-  async function fetchCreators(p: number, replace: boolean, filter: CreatorFilterState, nameSearch: string, sortBy: CreatorSort) {
-    if (p === 1 && replace) setLoading(true);
-    else if (!replace) setLoadingMore(true);
-    setError('');
-    try {
-      const locationText = filter.locations.length > 0
-        ? filter.locations.filter((l) => l.label !== 'Remote').map((l) => l.label).join(',')
-        : undefined;
+  // Saved-only view. Honours the same search + category + filter controls as
+  // the browse list (the saved endpoint accepts them); no sort, no pagination
+  // — every result is filtered live against savedIds so an un-save (above)
+  // removes the card immediately without a second write.
+  const savedCreatorsQuery = useQuery({
+    queryKey: ['creators', 'saved', { search: trimmedSearch, categories: activeFilter.categories, platforms: activeFilter.platforms, priceMin: activeFilter.priceMin, priceMax: activeFilter.priceMax, location: locationParam(activeFilter) }],
+    queryFn: () => creatorService.getSavedCreators({
+      search: trimmedSearch,
+      location: locationParam(activeFilter),
+      categories: activeFilter.categories.length ? activeFilter.categories : undefined,
+      platforms: activeFilter.platforms.length ? activeFilter.platforms : undefined,
+      priceMin: activeFilter.priceMin > CREATOR_SLIDER_MIN ? activeFilter.priceMin : undefined,
+      priceMax: activeFilter.priceMax < CREATOR_SLIDER_MAX ? activeFilter.priceMax : undefined,
+    }).then((data) => data.map(savedItemToListItem)),
+    enabled: savedOnly,
+    staleTime: STALE.list,
+  });
 
-      const res = await creatorService.listCreators({
-        page: p,
-        limit: PAGE_SIZE,
-        search: nameSearch.trim() || undefined,
-        location: locationText || undefined,
-        categories: filter.categories.length ? filter.categories : undefined,
-        platforms: filter.platforms.length ? filter.platforms : undefined,
-        priceMin: filter.priceMin > CREATOR_SLIDER_MIN ? filter.priceMin : undefined,
-        priceMax: filter.priceMax < CREATOR_SLIDER_MAX ? filter.priceMax : undefined,
-        sort: sortBy,
-      });
-      setTotal(res.total);
-      setCreators((prev) => {
-        if (replace) return res.creators;
-        const seen = new Set(prev.map((c) => c.id));
-        return [...prev, ...res.creators.filter((c) => !seen.has(c.id))];
-      });
-      setPage(p);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load creators');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      loadingMoreRef.current = false;
-      setRefreshing(false);
-    }
-  }
+  // Services tab — dormant (the switcher pills are commented out below, see
+  // EntityTab), but wired the same way so re-enabling it is just restoring
+  // the pills, not rebuilding the data layer.
+  const servicesQuery = useInfiniteQuery({
+    queryKey: ['services', 'public', { search: trimmedSearch, category: serviceCategory }],
+    queryFn: ({ pageParam }) => {
+      const categoryId = serviceCategory ? adminCategories.find((c) => c.name === serviceCategory)?.id : undefined;
+      return serviceService.listPublic({ page: pageParam, limit: PAGE_SIZE, search: trimmedSearch, categoryId });
+    },
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.items.length, 0);
+      return loaded < last.total ? all.length + 1 : undefined;
+    },
+    enabled: entityTab === 'services',
+    staleTime: STALE.list,
+    placeholderData: keepPreviousData,
+  });
 
-  useEffect(() => {
-    if (entityTab !== 'people') return;
-    void fetchCreators(1, true, activeFilter, searchDebounced, sort);
-  }, [entityTab, searchDebounced, activeFilter, sort]);
-
-  // Saved-only view. Honours the same search + category + filter controls as the
-  // browse list (the saved endpoint accepts them); no sort, no pagination.
-  async function fetchSaved(filter: CreatorFilterState, nameSearch: string) {
-    setSavedLoading(true);
-    setSavedError('');
-    try {
-      const locationText = filter.locations.length > 0
-        ? filter.locations.filter((l) => l.label !== 'Remote').map((l) => l.label).join(',')
-        : undefined;
-      const data = await creatorService.getSavedCreators({
-        search: nameSearch.trim() || undefined,
-        location: locationText || undefined,
-        categories: filter.categories.length ? filter.categories : undefined,
-        platforms: filter.platforms.length ? filter.platforms : undefined,
-        priceMin: filter.priceMin > CREATOR_SLIDER_MIN ? filter.priceMin : undefined,
-        priceMax: filter.priceMax < CREATOR_SLIDER_MAX ? filter.priceMax : undefined,
-      });
-      setSavedCreators(data.map(savedItemToListItem));
-    } catch (e) {
-      setSavedError(e instanceof Error ? e.message : 'Failed to load saved creators');
-    } finally {
-      setSavedLoading(false);
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!savedOnly) return;
-    void fetchSaved(activeFilter, searchDebounced);
-  }, [savedOnly, searchDebounced, activeFilter]);
-
-  const onRefresh = useCallback(() => {
+  async function onRefresh() {
     setRefreshing(true);
-    if (savedOnly) void fetchSaved(activeFilter, searchDebounced);
-    else if (entityTab === 'people') void fetchCreators(1, true, activeFilter, searchDebounced, sort);
-    else void fetchServices(1, true, searchDebounced, serviceCategory);
-  }, [savedOnly, entityTab, searchDebounced, activeFilter, sort, serviceCategory]);
+    try {
+      if (savedOnly) await savedCreatorsQuery.refetch();
+      else if (entityTab === 'people') await creatorsQuery.refetch();
+      else await servicesQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   function loadMore() {
-    if (loadingMoreRef.current || page >= Math.ceil(total / PAGE_SIZE)) return;
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    void fetchCreators(page + 1, false, activeFilter, searchDebounced, sort);
+    if (creatorsQuery.hasNextPage && !creatorsQuery.isFetchingNextPage) void creatorsQuery.fetchNextPage();
   }
-
-  async function fetchServices(p: number, replace: boolean, nameSearch: string, categoryName: string | null) {
-    if (p === 1 && replace) setServicesLoading(true);
-    else if (!replace) setServicesLoadingMore(true);
-    setServicesError('');
-    try {
-      const categoryId = categoryName ? adminCategories.find((c) => c.name === categoryName)?.id : undefined;
-      const res = await serviceService.listPublic({ page: p, limit: PAGE_SIZE, search: nameSearch.trim() || undefined, categoryId });
-      setServicesTotal(res.total);
-      setServices((prev) => {
-        if (replace) return res.items;
-        const seen = new Set(prev.map((sv) => sv.id));
-        return [...prev, ...res.items.filter((sv) => !seen.has(sv.id))];
-      });
-      setServicesPage(p);
-    } catch (e) {
-      setServicesError(e instanceof Error ? e.message : 'Failed to load services');
-    } finally {
-      setServicesLoading(false);
-      setServicesLoadingMore(false);
-      loadingMoreServicesRef.current = false;
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => {
-    if (entityTab !== 'services') return;
-    void fetchServices(1, true, searchDebounced, serviceCategory);
-  }, [entityTab, searchDebounced, serviceCategory, adminCategories]);
 
   function loadMoreServices() {
-    if (loadingMoreServicesRef.current || servicesPage >= Math.ceil(servicesTotal / PAGE_SIZE)) return;
-    loadingMoreServicesRef.current = true;
-    setServicesLoadingMore(true);
-    void fetchServices(servicesPage + 1, false, searchDebounced, serviceCategory);
+    if (servicesQuery.hasNextPage && !servicesQuery.isFetchingNextPage) void servicesQuery.fetchNextPage();
   }
 
   function toggleServiceCategory(label: string) {
@@ -462,6 +414,48 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
       setActiveFilter({ ...activeFilter, priceMin: CREATOR_SLIDER_MIN, priceMax: CREATOR_SLIDER_MAX });
     }
   }
+
+  const creators: ApiCreatorListItem[] = (() => {
+    const pages = creatorsQuery.data?.pages;
+    if (!pages) return EMPTY_CREATORS;
+    const seen = new Set<string>();
+    const out: ApiCreatorListItem[] = [];
+    for (const p of pages) for (const c of p.creators) {
+      if (!seen.has(c.id)) { seen.add(c.id); out.push(c); }
+    }
+    return out;
+  })();
+  const total = creatorsQuery.data?.pages[0]?.total ?? 0;
+  const loading = creatorsQuery.isPending;
+  const loadingMore = creatorsQuery.isFetchingNextPage;
+  const error = creatorsQuery.isError && creators.length === 0
+    ? (creatorsQuery.error instanceof Error ? creatorsQuery.error.message : 'Failed to load creators')
+    : '';
+
+  // Filtered live against savedIds so an un-save above removes the card
+  // immediately, without a second write to this list.
+  const savedCreators = (savedCreatorsQuery.data ?? EMPTY_CREATORS).filter((c) => savedIds.has(c.id));
+  const savedLoading = savedCreatorsQuery.isPending;
+  const savedError = savedCreatorsQuery.isError && savedCreators.length === 0
+    ? (savedCreatorsQuery.error instanceof Error ? savedCreatorsQuery.error.message : 'Failed to load saved creators')
+    : '';
+
+  const services: ApiService[] = (() => {
+    const pages = servicesQuery.data?.pages;
+    if (!pages) return EMPTY_SERVICES;
+    const seen = new Set<string>();
+    const out: ApiService[] = [];
+    for (const p of pages) for (const sv of p.items) {
+      if (!seen.has(sv.id)) { seen.add(sv.id); out.push(sv); }
+    }
+    return out;
+  })();
+  const servicesTotal = servicesQuery.data?.pages[0]?.total ?? 0;
+  const servicesLoading = servicesQuery.isPending;
+  const servicesLoadingMore = servicesQuery.isFetchingNextPage;
+  const servicesError = servicesQuery.isError && services.length === 0
+    ? (servicesQuery.error instanceof Error ? servicesQuery.error.message : 'Failed to load services')
+    : '';
 
   // The People list swaps its data source when the Saved Creators pill is on.
   // Saved results aren't paginated, so loadMore / the loading-more spinner are
@@ -528,12 +522,10 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
         */}
         <Pressable
           style={[s.entityPill, { backgroundColor: savedOnly ? C.brinjal1 : C.surface, borderColor: savedOnly ? C.brinjal1 : C.border }]}
-          onPress={() => {
-            // Show the skeleton immediately on turn-on so there's no flash of
-            // the "no saved creators" empty state before the fetch effect runs.
-            if (!savedOnly) setSavedLoading(true);
-            setSavedOnly((v) => !v);
-          }}
+          // savedCreatorsQuery is disabled until savedOnly flips true, so it's
+          // already `isPending` (and savedLoading is already true) the instant
+          // it turns on — no manual pre-set needed to avoid an empty-state flash.
+          onPress={() => setSavedOnly((v) => !v)}
           accessibilityRole="button"
           accessibilityState={{ selected: savedOnly }}
           accessibilityLabel={t('explore.tabSavedCreators')}>
@@ -627,7 +619,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
               icon="exclamation-circle"
               title={t('common.error')}
               subtitle={peopleError}
-              action={{ label: t('common.retry'), onPress: () => (savedOnly ? fetchSaved(activeFilter, searchDebounced) : fetchCreators(1, true, activeFilter, searchDebounced, sort)) }}
+              action={{ label: t('common.retry'), onPress: () => (savedOnly ? savedCreatorsQuery.refetch() : creatorsQuery.refetch()) }}
             />
           ) : peopleData.length === 0 ? (
             <EmptyState
@@ -681,7 +673,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
               icon="exclamation-circle"
               title={t('common.error')}
               subtitle={servicesError}
-              action={{ label: t('common.retry'), onPress: () => fetchServices(1, true, searchDebounced, serviceCategory) }}
+              action={{ label: t('common.retry'), onPress: () => servicesQuery.refetch() }}
             />
           ) : services.length === 0 ? (
             <EmptyState
