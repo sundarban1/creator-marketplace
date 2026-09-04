@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -30,6 +31,7 @@ export default function InvitationsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const [invitations, setInvitations] = useState<ApiCampaignInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -68,6 +70,11 @@ export default function InvitationsScreen() {
       // the campaign/business relations, which would blank the card on re-render.
       setInvitations((prev) => prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i)));
       setModal(INITIAL_MODAL);
+      // campaign-detail reads the shared ['invitations','creator'] cache for its
+      // "pending invitation" CTA (and an ACCEPT can also create an application) —
+      // invalidate both instead of waiting out their staleTime.
+      void queryClient.invalidateQueries({ queryKey: ['invitations'] });
+      void queryClient.invalidateQueries({ queryKey: ['applications'] });
       toast.success(
         status === 'ACCEPTED'
           ? t('invitations.acceptedToast')

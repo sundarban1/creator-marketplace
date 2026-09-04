@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { useRef, useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Animated,
@@ -175,6 +176,7 @@ export default function EditCampaignScreen() {
   // BUSINESS-scope rows — with the catch-all "Other" pinned to the end.
   const { categories: liveCategories } = useCategories('BOTH');
   const categoryOptions = sortOtherLast(liveCategories).map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
+  const queryClient = useQueryClient();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
@@ -388,8 +390,12 @@ export default function EditCampaignScreen() {
         });
       }
       // The update itself is done at this point. Confirm success right away
-      // and dismiss shortly after — campaign-detail silently refetches on
-      // refocus, so there's nothing further this screen needs to do.
+      // and dismiss shortly after — campaign-detail reads the shared
+      // ['campaign', id] cache, so invalidating it here is enough for that
+      // screen (and the discover/campaigns lists) to pick up the change
+      // immediately instead of waiting out their staleTime.
+      void queryClient.invalidateQueries({ queryKey: ['campaign', campaign!.id] });
+      void queryClient.invalidateQueries({ queryKey: ['campaigns'] });
       showToast(t('campaignDetail.toastUpdated'));
       setTimeout(goBack, 700);
     } catch (e) {

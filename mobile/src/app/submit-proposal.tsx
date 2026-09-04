@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import {
   Keyboard,
@@ -126,6 +127,7 @@ export default function SubmitProposalScreen() {
   const { t } = useLanguage();
   const C = useAppColors();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
   const isFreeEvent = campaignType === 'OPEN_EVENT';
 
@@ -217,6 +219,10 @@ export default function SubmitProposalScreen() {
       portfolioUrl: portfolio.trim() || undefined,
       requirementId: requirementId || undefined,
     });
+    // Every screen caching "my applications" (campaign-detail, business-detail,
+    // creator home, creator profile tab, …) needs to see this immediately
+    // rather than waiting out its staleTime.
+    void queryClient.invalidateQueries({ queryKey: ['applications'] });
     toast.success(t('proposal.submitSuccessBody', { brand }), t('proposal.submitSuccessTitle'));
     setContractModalVisible(false);
     setTimeout(() => router.replace('/(creator)/(tabs)/proposals'), 1200);

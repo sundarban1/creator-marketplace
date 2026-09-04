@@ -1,9 +1,9 @@
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
 import { ShortlistButton } from '@/components/ShortlistButton';
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Pressable,
@@ -20,15 +20,21 @@ import { getIconColor } from '@/features/creator/data/filterOptions';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { eventOptionLabel } from '@/features/business/utils/eventOptionLabels';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type ApiCampaignInvitation } from '@/services/creator';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 import { formatEventTime } from '@/components/EventTimeField';
-import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+// Stable empty references so derived values aren't recomputed off a fresh []
+// every render while a query is pending.
+const NO_APPLICATIONS: Awaited<ReturnType<typeof campaignService.getMyApplications>>['proposals'] = [];
+const NO_INVITATIONS: ApiCampaignInvitation[] = [];
 
 function daysAgo(iso: string) { return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); }
 function formatDeadline(iso: string) {
@@ -41,87 +47,64 @@ function formatDeadline(iso: string) {
 export default function CampaignDetailScreen() {
   const { campaignId } = useLocalSearchParams<{ campaignId: string }>();
   const { user } = useAuth();
-  const { t, languageVersion } = useLanguage();
+  const { t } = useLanguage();
   const C = useAppColors();
   const isBusiness = user?.role === 'BUSINESS';
   const { categories: allCategories } = useAllCategories();
 
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [hasApplied, setHasApplied]           = useState(false);
-  const [applicationStatus, setApplicationStatus] = useState<'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' | null>(null);
+  // ── Server state — cache-first, background refresh (see queryClient.ts) ────
+  // Revisiting a campaign (back from a message thread, from edit-campaign,
+  // from submit-proposal) now renders instantly from cache; the two focus
+  // effects that used to silently re-poll are replaced by
+  // useRefetchOnFocusIfStale below.
+  const campaignQuery = useQuery({
+    queryKey: ['campaign', campaignId],
+    queryFn: () => campaignService.getById(campaignId!),
+    enabled: !!campaignId,
+    staleTime: STALE.profile,
+  });
+
+  // Same unfiltered "all my applications" cache business-detail.tsx uses —
+  // shared across both screens automatically.
+  const applicationsQuery = useQuery({
+    queryKey: ['applications', 'creator', 'all'],
+    queryFn: () => campaignService.getMyApplications().then((r) => r.proposals),
+    enabled: !isBusiness && !!campaignId,
+    staleTime: STALE.list,
+  });
+
+  const invitationsQuery = useQuery({
+    queryKey: ['invitations', 'creator'],
+    queryFn: () => creatorService.listInvitations(),
+    enabled: !isBusiness && !!campaignId,
+    staleTime: STALE.list,
+  });
+
+  useRefetchOnFocusIfStale(campaignQuery, applicationsQuery, invitationsQuery);
+
+  const campaign = campaignQuery.data ?? null;
+  const loading  = campaignQuery.isPending;
+  const error = campaignQuery.isError && !campaign
+    ? (campaignQuery.error instanceof Error ? campaignQuery.error.message : 'Failed to load event')
+    : '';
+
   // Multi-role campaigns (§ CampaignRequirement) — which specific roles this
   // provider has already applied to. The backend allows one application per
   // role (unique on campaignId+creatorId+requirementId), so a provider can
-  // apply to several different roles on the same campaign; hasApplied above
+  // apply to several different roles on the same campaign; hasApplied below
   // stays scoped to the simple/no-requirement application slot only.
-  const [appliedRequirementIds, setAppliedRequirementIds] = useState<Set<string>>(new Set());
+  const myApps = (applicationsQuery.data ?? NO_APPLICATIONS).filter((a) => a.campaignId === campaignId);
+  const myApp = myApps.find((a) => !a.requirementId);
+  const hasApplied = !!myApp;
+  const applicationStatus = myApp ? myApp.status as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' : null;
+  const appliedRequirementIds = new Set(myApps.filter((a) => a.requirementId).map((a) => a.requirementId!));
   // A still-pending invitation the business sent this creator for THIS campaign.
   // When set, the sticky CTA points at the Invitations screen instead of
   // offering "Submit Proposal" — the creator was already asked directly.
-  const [pendingInvitation, setPendingInvitation] = useState<ApiCampaignInvitation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const pendingInvitation = (invitationsQuery.data ?? NO_INVITATIONS)
+    .find((i) => i.campaignId === campaignId && i.status === 'PENDING') ?? null;
 
   const isOpenEvent = campaign?.campaignType === 'OPEN_EVENT';
-
-  useEffect(() => {
-    // A falsy campaignId here (route-param hydration racing the first render)
-    // must still resolve `loading` — deferred to a microtask rather than
-    // called synchronously in the effect body — otherwise the screen hangs
-    // on the spinner forever instead of falling back to the not-found state
-    // below (`campaign` stays null, which that branch already handles).
-    if (!campaignId) { Promise.resolve().then(() => setLoading(false)); return; }
-    const appFetch = isBusiness
-      ? Promise.resolve([])
-      : campaignService.getMyApplications().then((r) => r.proposals).catch(() => []);
-    const inviteFetch = isBusiness
-      ? Promise.resolve([] as ApiCampaignInvitation[])
-      : creatorService.listInvitations().catch(() => [] as ApiCampaignInvitation[]);
-    Promise.all([campaignService.getById(campaignId), appFetch, inviteFetch])
-      .then(([c, apps, invites]) => {
-        setCampaign(c);
-        setError('');
-        if (!isBusiness) {
-          const myApps = (apps as { campaignId: string; status: string; requirementId: string | null }[]).filter((a) => a.campaignId === campaignId);
-          const myApp = myApps.find((a) => !a.requirementId);
-          setHasApplied(!!myApp);
-          setApplicationStatus(myApp ? myApp.status as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' : null);
-          setAppliedRequirementIds(new Set(myApps.filter((a) => a.requirementId).map((a) => a.requirementId!)));
-          setPendingInvitation(invites.find((i) => i.campaignId === campaignId && i.status === 'PENDING') ?? null);
-        }
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
-      .finally(() => setLoading(false));
-  }, [campaignId, languageVersion]);
-
-  // Re-check applied status silently when returning from submit-proposal
-  useFocusEffect(
-    useCallback(() => {
-      if (isBusiness || !campaignId) return;
-      campaignService.getMyApplications()
-        .then(({ proposals: apps }) => {
-          const myApps = apps.filter((a) => a.campaignId === campaignId);
-          const myApp = myApps.find((a) => !a.requirementId);
-          setHasApplied(!!myApp);
-          setApplicationStatus(myApp ? myApp.status as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' : null);
-          setAppliedRequirementIds(new Set(myApps.filter((a) => a.requirementId).map((a) => a.requirementId!)));
-        })
-        .catch(() => {});
-      creatorService.listInvitations()
-        .then((invites) => setPendingInvitation(invites.find((i) => i.campaignId === campaignId && i.status === 'PENDING') ?? null))
-        .catch(() => {});
-    }, [campaignId, isBusiness])
-  );
-
-  // Silently refresh the campaign when returning from edit-campaign (a
-  // separate modal-presented route, not local state on this screen) so a
-  // saved change is reflected without the user having to pull-to-refresh.
-  useFocusEffect(
-    useCallback(() => {
-      if (!isBusiness || !campaignId) return;
-      campaignService.getById(campaignId).then(setCampaign).catch(() => {});
-    }, [campaignId, isBusiness])
-  );
 
   if (loading) {
     return (
