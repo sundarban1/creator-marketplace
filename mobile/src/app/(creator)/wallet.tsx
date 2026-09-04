@@ -1,8 +1,11 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { PageHeader } from '@/features/creator/components/PageHeader';
-import { useCallback, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
@@ -10,7 +13,6 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import {
   walletService,
-  type ApiWalletSummary,
   type ApiWalletTransaction,
   type ApiPayoutMethod,
   type TransactionKind,
@@ -42,45 +44,63 @@ const STATUS_COLOR: Record<string, string> = {
   PAID:       '#059669',
 };
 
+const EMPTY_TRANSACTIONS: ApiWalletTransaction[] = [];
+const EMPTY_PAYOUT_METHODS: ApiPayoutMethod[] = [];
+
 export default function WalletScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState<ApiWalletSummary | null>(null);
-  const [transactions, setTransactions] = useState<ApiWalletTransaction[]>([]);
-  const [payoutMethods, setPayoutMethods] = useState<ApiPayoutMethod[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [detailTx, setDetailTx] = useState<ApiWalletTransaction | null>(null);
   const [proofPreviewUrl, setProofPreviewUrl] = useState<string | null>(null);
 
-  function loadAll() {
-    return Promise.all([
-      walletService.getSummary(),
-      walletService.getTransactions(),
-      walletService.listPayoutMethods(),
-    ])
-      .then(([s, tx, pm]) => { setSummary(s); setTransactions(tx); setPayoutMethods(pm); })
-      .catch(() => toast.error(t('wallet.loadError')));
-  }
+  // ── Wallet is financial data: cached only to render instantly and dedupe
+  // requests, never trusted stale. staleTime 0 + refetchOnMount 'always' means
+  // a cached balance still paints immediately (no blank screen), but a fresh
+  // check always runs right behind it before the number is treated as
+  // authoritative — see requirement §28.
+  const summaryQuery = useQuery({
+    queryKey: ['wallet', 'summary'],
+    queryFn: () => walletService.getSummary(),
+    staleTime: STALE.realtime,
+    refetchOnMount: 'always',
+  });
+  const transactionsQuery = useQuery({
+    queryKey: ['wallet', 'transactions'],
+    queryFn: () => walletService.getTransactions(),
+    staleTime: STALE.realtime,
+    refetchOnMount: 'always',
+  });
+  // Payout methods aren't financial state — they're the creator's own saved
+  // bank/wallet destinations, which change rarely.
+  const payoutMethodsQuery = useQuery({
+    queryKey: ['payoutMethods'],
+    queryFn: () => walletService.listPayoutMethods(),
+    staleTime: STALE.profile,
+  });
+  useRefetchOnFocusIfStale(summaryQuery, transactionsQuery, payoutMethodsQuery);
 
-  const hasFocusedOnceRef = useRef(false);
-  useFocusEffect(useCallback(() => {
-    if (!hasFocusedOnceRef.current) {
-      hasFocusedOnceRef.current = true;
-      setLoading(true);
-      void loadAll().finally(() => setLoading(false));
-      return;
+  const summary = summaryQuery.data ?? null;
+  const transactions = transactionsQuery.data ?? EMPTY_TRANSACTIONS;
+  const payoutMethods = payoutMethodsQuery.data ?? EMPTY_PAYOUT_METHODS;
+  const loading = summaryQuery.isPending || transactionsQuery.isPending || payoutMethodsQuery.isPending;
+
+  useEffect(() => {
+    if (summaryQuery.isError || transactionsQuery.isError || payoutMethodsQuery.isError) {
+      toast.error(t('wallet.loadError'));
     }
-    void loadAll();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summaryQuery.isError, transactionsQuery.isError, payoutMethodsQuery.isError]);
 
   async function handleWithdraw(amount: number, payoutMethodId: string) {
     const { withdrawal, ...nextSummary } = await walletService.createWithdrawal(amount, payoutMethodId);
-    setSummary(nextSummary);
-    setTransactions(await walletService.getTransactions());
+    // The server's own post-mutation summary, not a client guess — this is
+    // writing authoritative state into the cache, not an optimistic update.
+    queryClient.setQueryData(['wallet', 'summary'], nextSummary);
+    await queryClient.invalidateQueries({ queryKey: ['wallet', 'transactions'] });
     toast.success(t('wallet.withdrawSubmitted', {
       amount: amount.toLocaleString(),
       ref: withdrawal.referenceCode,
