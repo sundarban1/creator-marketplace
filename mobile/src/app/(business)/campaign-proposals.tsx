@@ -28,7 +28,7 @@ import { ContractModal } from '@/components/ContractModal';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED' | 'REVISION' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type Proposal = {

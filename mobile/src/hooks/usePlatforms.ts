@@ -1,50 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { STALE } from '@/lib/queryClient';
 import { platformService, type ApiPlatform } from '@/services/platform';
 
-// How long a fetched list is trusted before the next mount silently refetches
-// in the background — without this, a long-running app session would never
-// notice an admin disabling/re-enabling a platform until force-quit/reopened.
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-let cache: ApiPlatform[] | null = null;
-let cachedAt = 0;
-let inflight: Promise<ApiPlatform[]> | null = null;
-
-function isFresh() {
-  return cache !== null && Date.now() - cachedAt < CACHE_TTL_MS;
-}
-
-function fetchPlatforms(): Promise<ApiPlatform[]> {
-  if (isFresh()) return Promise.resolve(cache!);
-  if (!inflight) {
-    inflight = platformService.getPlatforms()
-      .then((platforms) => { cache = platforms; cachedAt = Date.now(); return platforms; })
-      .finally(() => { inflight = null; });
-  }
-  return inflight;
-}
+// Stable empty reference so consumers that list `platforms` in a useEffect
+// dependency array don't see a new [] every render while the query is pending.
+const EMPTY: ApiPlatform[] = [];
 
 /** Admin-managed, active platform catalog (Instagram, TikTok, YouTube, etc.) — the
  *  single source of truth for every platform picker/selection screen across the app
  *  (campaign creation, creator preferred platforms, filters), replacing hardcoded lists. */
 export function usePlatforms() {
-  const [platforms, setPlatforms] = useState<ApiPlatform[]>(cache ?? []);
-  const [loading, setLoading] = useState(!cache);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (isFresh()) { setPlatforms(cache!); setLoading(false); return; }
-    // Stale (or missing) cache — show whatever we have (if anything) without a
-    // loading flash, and quietly refetch underneath it.
-    if (cache) setPlatforms(cache);
-    setLoading(!cache);
-    fetchPlatforms()
-      .then((p) => { if (!cancelled) setPlatforms(p); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
-
-  return { platforms, loading };
+  const q = useQuery({
+    queryKey: ['platforms'],
+    queryFn: () => platformService.getPlatforms(),
+    staleTime: STALE.static,
+  });
+  // `loading` stays false whenever cached data (fresh or stale) is already on
+  // screen — a background refetch must never flash the picker back to a spinner.
+  return { platforms: q.data ?? EMPTY, loading: q.isPending };
 }
 
 export type PlatformMeta = { icon: string; bg: string; color: string };

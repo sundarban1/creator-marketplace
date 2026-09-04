@@ -35,6 +35,29 @@ export async function requestVoiceUploadSignature(conversationId: string): Promi
 
 export type VoiceUploadResult = { publicId: string } | { key: string };
 
+// A voice clip is capped at 15MB/2min, so even on a poor connection the upload
+// should make *some* forward progress within this window. If it doesn't — no
+// progress, no completion, no error for this long — the upload is wedged (e.g.
+// a release build where R8 stripped react-native-background-upload's service
+// classes, so the native layer never emits any event) and would otherwise hang
+// forever, leaving the chat message spinning at 0% with no way to retry.
+// Tripping the watchdog cancels the native upload and rejects, so the message
+// falls through to the normal "failed / tap to retry" path.
+const VOICE_UPLOAD_STALL_TIMEOUT_MS = 45_000;
+
+// Fires `onStall` only if `bump()` goes quiet for VOICE_UPLOAD_STALL_TIMEOUT_MS.
+// A genuinely slow-but-alive upload keeps calling bump() on every progress tick
+// and is never cut off; a dead one (no events at all) trips it once.
+function makeStallWatchdog(onStall: () => void) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const bump = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(onStall, VOICE_UPLOAD_STALL_TIMEOUT_MS);
+  };
+  const clear = () => { if (timer) clearTimeout(timer); timer = undefined; };
+  return { bump, clear };
+}
+
 // Single-shot direct upload — voice clips are capped at 15MB/2min, nowhere
 // near the size that justifies video's chunked/background-survival upload
 // manager, so a single request straight to the storage provider is enough.
@@ -59,8 +82,13 @@ function uploadVoiceToR2(
   const nativeUploadId = `voice_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
   return new Promise<{ key: string }>((resolve, reject) => {
+    const watchdog = makeStallWatchdog(() => {
+      cleanup();
+      Upload.cancelUpload(nativeUploadId).catch(() => {});
+      reject(new Error('Voice upload stalled — no response from the upload service'));
+    });
     const subs = [
-      Upload.addListener('progress', nativeUploadId, (data) => onProgress?.(data.progress / 100)),
+      Upload.addListener('progress', nativeUploadId, (data) => { watchdog.bump(); onProgress?.(data.progress / 100); }),
       Upload.addListener('error', nativeUploadId, (data) => {
         cleanup();
         reject(new Error(data.error || 'Voice upload failed'));
@@ -75,8 +103,9 @@ function uploadVoiceToR2(
         else reject(new Error(`Voice upload failed (HTTP ${data.responseCode})`));
       }),
     ];
-    function cleanup() { subs.forEach((s) => s.remove()); }
+    function cleanup() { watchdog.clear(); subs.forEach((s) => s.remove()); }
 
+    watchdog.bump();
     Upload.startUpload({
       url:            plan.uploadUrl,
       path:           fileUri,
@@ -109,11 +138,17 @@ function uploadVoiceToCloudinary(
 
   return new Promise<{ publicId: string }>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const watchdog = makeStallWatchdog(() => {
+      try { xhr.abort(); } catch { /* already done */ }
+      reject(new Error('Voice upload stalled — no response from the upload service'));
+    });
     xhr.open('POST', signature.uploadUrl);
     xhr.upload.onprogress = (e) => {
+      watchdog.bump();
       if (e.lengthComputable) onProgress?.(e.loaded / e.total);
     };
     xhr.onload = () => {
+      watchdog.clear();
       if (xhr.status >= 200 && xhr.status < 300) {
         let parsed: { public_id?: string } = {};
         try { parsed = JSON.parse(xhr.responseText); } catch { /* fall through to error below */ }
@@ -123,7 +158,8 @@ function uploadVoiceToCloudinary(
         reject(new Error(`Voice upload failed (HTTP ${xhr.status}): ${xhr.responseText.slice(0, 300)}`));
       }
     };
-    xhr.onerror = () => reject(new Error('Voice upload failed: network error'));
+    xhr.onerror = () => { watchdog.clear(); reject(new Error('Voice upload failed: network error')); };
+    watchdog.bump();
     xhr.send(form);
   });
 }

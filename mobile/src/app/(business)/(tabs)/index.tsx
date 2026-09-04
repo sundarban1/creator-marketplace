@@ -1,6 +1,7 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SearchInput } from '@/components/SearchInput';
 import { AttentionBanner } from '@/components/AttentionBanner';
@@ -20,17 +21,16 @@ import { F, FONT_SIZE, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } f
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
-import { notificationService } from '@/services/notifications';
-import { profileService } from '@/services/profile';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import type { Campaign } from '@/types';
 import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EntityCard } from '@/components/EntityCard';
 import { TabColors } from '@/utilities/tabColors';
-import { getCached, setCached } from '@/utilities/offlineCache';
 
 const STATUS_STYLE = {
   active: { bg: TabColors.positive.bg, color: TabColors.positive.color, statusKey: 'business.home.statusActive' as const },
@@ -48,9 +48,15 @@ const TABLET_BREAKPOINT = 768;
 // direction of the panel transition (see useTabTransition).
 const TYPE_TAB_ORDER = ['All', 'Paid', 'Open'] as const;
 
+// Stable empty references so derived values don't get a fresh [] every render
+// while a query is pending (keeps React Compiler's memoing intact).
+const NO_CAMPAIGNS: Campaign[] = [];
+const NO_PROVIDERS: ApiCreatorListItem[] = [];
+const NO_STRINGS: string[] = [];
+
 export default function BusinessHomeScreen() {
   const { user } = useAuth();
-  const { t, languageVersion } = useLanguage();
+  const { t } = useLanguage();
   const C = useAppColors();
   const { categories: allCategories } = useAllCategories();
   // BOTH-scope rows are the shared industry/niche list (Hotels, Restaurants, …)
@@ -61,24 +67,79 @@ export default function BusinessHomeScreen() {
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
   const name = user?.name?.split(' ')[0] ?? 'there';
 
-  const { badgeCount, setBadgeCount } = useNotificationBadge();
+  const { badgeCount } = useNotificationBadge();
   const { openDrawer } = useContext(DrawerContext);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [fetchError, setFetchError] = useState('');
-  const [missingFields, setMissingFields] = useState<string[]>([]);
-  const [businessName, setBusinessName] = useState('');
-  const [businessLocation, setBusinessLocation] = useState('');
+
+  // ── Server state — cache-first, background refresh (see queryClient.ts) ────
+  // Replaces four separate useFocusEffect(fetch) blocks that re-ran on every
+  // tab focus (campaigns, business profile, recommended providers, accepted
+  // proposals) plus a manual offlineCache fallback. Each query renders its
+  // last-known data instantly and refreshes on its own staleness schedule;
+  // reconnect + language-switch refetches are handled globally now.
+  const profileQuery = useBusinessProfile();
+  const bp = profileQuery.data;
+
+  const campaignsQuery = useQuery({
+    queryKey: ['campaigns', 'my'],
+    queryFn: () => campaignService.listMy(),
+    enabled: user?.role === 'BUSINESS',
+    staleTime: STALE.list,
+  });
+
+  // "What do you usually need help with?" — first entry only (the API takes
+  // one category, not a list) is enough for a "recommended for your next hire"
+  // hint. Disabled until the profile confirms a category.
+  const recommendedCategory = bp?.defaultCreatorCategories?.[0];
+  const recommendedQuery = useQuery({
+    queryKey: ['creators', 'recommended', { category: recommendedCategory }],
+    queryFn: () => creatorService.getRecommendedCreators({ category: recommendedCategory!, limit: 5 }),
+    enabled: !!recommendedCategory,
+    staleTime: STALE.list,
+  });
+
+  const proposalsQuery = useQuery({
+    queryKey: ['proposals', 'business', { status: 'ACCEPTED', limit: 100 }],
+    queryFn: () => campaignService.getBusinessProposals({ status: 'ACCEPTED', limit: 100 }),
+    enabled: user?.role === 'BUSINESS',
+    staleTime: STALE.list,
+  });
+
+  useRefetchOnFocusIfStale(profileQuery, campaignsQuery, recommendedQuery, proposalsQuery);
+
+  const campaigns = campaignsQuery.data?.campaigns ?? NO_CAMPAIGNS;
+  const recommendedProviders = recommendedQuery.data ?? NO_PROVIDERS;
+  const loading = campaignsQuery.isPending;
+  const fetchError = campaignsQuery.isError && campaigns.length === 0
+    ? (campaignsQuery.error instanceof Error ? campaignsQuery.error.message : t('business.home.loadError'))
+    : '';
+
+  const businessName = bp?.businessName ?? '';
+  const businessLocation = bp?.location ?? '';
   // The industry/industries the business selected during onboarding
   // (`profile.categories`) — surfaced first in "Find People by Category"
   // below so the business doesn't have to scroll to its own niche.
-  const [businessIndustries, setBusinessIndustries] = useState<string[]>([]);
-  const [recommendedProviders, setRecommendedProviders] = useState<ApiCreatorListItem[]>([]);
+  const businessIndustries = bp?.categories ?? NO_STRINGS;
+
+  // `t` re-runs this on a language switch so the labels stay translated.
+  const missingFields: string[] = [];
+  if (bp) {
+    if (!bp.logoUrl) missingFields.push(t('business.home.fieldLogo'));
+    if (!bp.description) missingFields.push(t('business.home.fieldDescription'));
+    if (!bp.location) missingFields.push(t('business.home.fieldLocation'));
+    if (!bp.categories?.length) missingFields.push(t('business.home.fieldCategories'));
+    if (!bp.website) missingFields.push(t('business.home.fieldWebsite'));
+  }
+
   // Count of accepted applications actually waiting on a business action
   // (payment due, or submitted work awaiting review) — not the raw
   // applications total, which includes proposals nothing is blocked on.
-  const [attentionCount, setAttentionCount] = useState(0);
+  const attentionCount = (proposalsQuery.data?.proposals ?? []).filter((p) => {
+    const needsPayment = p.workStatus === 'NONE' && p.campaign.campaignType !== 'OPEN_EVENT' && p.paymentStatus !== 'PAID' && p.paymentStatus !== 'RELEASED';
+    const needsApproval = p.workStatus === 'SUBMITTED';
+    return needsPayment || needsApproval;
+  }).length;
+
   // Phone-only signups default `name` to the raw phone number until the user sets
   // a real one — never show that in the header (as text, or as the avatar's
   // first-letter fallback initial, which would render a bare "+").
@@ -107,110 +168,19 @@ export default function BusinessHomeScreen() {
     placeholderHeight: tabFilterPlaceholderHeight,
   } = useStickyBelowHeader();
 
-  async function fetchCampaigns(showLoader = true) {
-    if (showLoader) setLoading(true);
-    setFetchError('');
+  async function onRefresh() {
+    setRefreshing(true);
     try {
-      const { campaigns: data } = await campaignService.listMy();
-      setCampaigns(data);
-      void setCached('business_feed_campaigns', data);
-    } catch (e) {
-      // Offline or request failed — fall back to the last-known feed instead
-      // of leaving the screen blank/erroring, so it stays usable offline.
-      const cached = await getCached<Campaign[]>('business_feed_campaigns');
-      if (cached && cached.length > 0) {
-        setCampaigns(cached);
-      } else {
-        setFetchError(e instanceof Error ? e.message : t('business.home.loadError'));
-      }
+      await Promise.all([
+        profileQuery.refetch(),
+        campaignsQuery.refetch(),
+        recommendedQuery.refetch(),
+        proposalsQuery.refetch(),
+      ]);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   }
-
-  // Refetches on every focus, not just mount — otherwise editing a campaign's
-  // title/details elsewhere (e.g. from campaign-detail) and navigating back
-  // here would keep showing this screen's stale local copy indefinitely,
-  // since campaignService has no shared cache other screens invalidate.
-  // Only the very first load shows the skeleton; later refocuses refresh
-  // silently so cards don't flash/blank on every back-navigation.
-  const hasLoadedCampaignsRef = useRef(false);
-  useFocusEffect(useCallback(() => {
-    if (!hasLoadedCampaignsRef.current) {
-      // Show the last-known feed immediately (e.g. cold launch while
-      // offline) while the real fetch below runs and replaces it.
-      void getCached<Campaign[]>('business_feed_campaigns').then((cached) => {
-        if (cached && cached.length > 0) {
-          setCampaigns(cached);
-          setLoading(false);
-        }
-      });
-    }
-    void fetchCampaigns(!hasLoadedCampaignsRef.current);
-    hasLoadedCampaignsRef.current = true;
-  }, [languageVersion]));
-
-  // Refetches on every focus (not just mount) — editing the business name in
-  // edit-profile navigates back here rather than remounting this screen, so a
-  // mount-only fetch would keep showing the name typed during onboarding.
-  useFocusEffect(useCallback(() => {
-    notificationService.getBadge().then((r) => setBadgeCount(r.count)).catch(() => {});
-    profileService.getBusinessProfile()
-      .then((profile) => {
-        setBusinessName(profile.businessName);
-        setBusinessLocation(profile.location ?? '');
-        setBusinessIndustries(profile.categories ?? []);
-        const missing: string[] = [];
-        if (!profile.logoUrl)            missing.push(t('business.home.fieldLogo'));
-        if (!profile.description)        missing.push(t('business.home.fieldDescription'));
-        if (!profile.location)           missing.push(t('business.home.fieldLocation'));
-        if (!profile.categories?.length) missing.push(t('business.home.fieldCategories'));
-        if (!profile.website)            missing.push(t('business.home.fieldWebsite'));
-        setMissingFields(missing);
-
-        // "What do you usually need help with?" — first entry only (the API
-        // takes one category, not a list) is enough for a "recommended for
-        // your next hire" hint; a real multi-category blend can come later.
-        const category = profile.defaultCreatorCategories?.[0];
-        if (category) {
-          creatorService.getRecommendedCreators({ category, limit: 5 })
-            .then(setRecommendedProviders)
-            .catch(() => setRecommendedProviders([]));
-        } else {
-          setRecommendedProviders([]);
-        }
-      })
-      .catch(() => {});
-  }, [languageVersion]));
-
-  // Refetches on every focus — mirrors the creator home screen's pending-action
-  // check. Only counts applications where the ball is in the business's court:
-  // payment not yet made (paid campaigns) or submitted work not yet reviewed.
-  useFocusEffect(useCallback(() => {
-    campaignService.getBusinessProposals({ status: 'ACCEPTED', limit: 100 })
-      .then(({ proposals }) => {
-        const count = proposals.filter((p) => {
-          const needsPayment = p.workStatus === 'NONE' && p.campaign.campaignType !== 'OPEN_EVENT' && p.paymentStatus !== 'PAID' && p.paymentStatus !== 'RELEASED';
-          const needsApproval = p.workStatus === 'SUBMITTED';
-          return needsPayment || needsApproval;
-        }).length;
-        setAttentionCount(count);
-      })
-      .catch(() => {});
-  }, []));
-
-  // Auto-refresh the moment connectivity is restored after being offline.
-  const { reconnectedAt } = useNetworkStatus();
-  useEffect(() => {
-    if (reconnectedAt) void fetchCampaigns(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reconnectedAt]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    void fetchCampaigns(false);
-  }, []);
 
   const stats = {
     active:    campaigns.filter((c) => c.status === 'active').length,
@@ -357,7 +327,7 @@ export default function BusinessHomeScreen() {
           {fetchError ? (
             <View style={styles.errorCard}>
               <Text style={styles.errorText}>{fetchError}</Text>
-              <Pressable onPress={() => fetchCampaigns()}>
+              <Pressable onPress={() => campaignsQuery.refetch()}>
                 <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('business.home.retry')}</Text>
               </Pressable>
             </View>

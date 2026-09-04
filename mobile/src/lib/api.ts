@@ -362,6 +362,24 @@ class AuthRefreshInvalidError extends Error {}
 
 let pendingRefresh: Promise<string> | null = null;
 
+// ── In-flight GET de-duplication ──────────────────────────────────────────────
+// When several components mount at once and each asks for the same resource
+// (requirement §9), only the first actually hits the network — the rest await
+// the same promise. Keyed by the fully-resolved URL + language + auth identity.
+// Only GETs are coalesced; writes are never idempotent.
+const inflightGets = new Map<string, Promise<ApiEnvelope<unknown>>>();
+
+// Every follower of a coalesced GET gets its own copy of the envelope, so one
+// caller mutating the result in place (sorting a list, etc.) can't corrupt
+// another's view of it.
+function cloneEnvelope<T>(env: ApiEnvelope<T>): ApiEnvelope<T> {
+  const sc = (globalThis as { structuredClone?: <V>(v: V) => V }).structuredClone;
+  if (sc) {
+    try { return sc(env); } catch { /* not cloneable — fall through to JSON */ }
+  }
+  return JSON.parse(JSON.stringify(env)) as ApiEnvelope<T>;
+}
+
 // Exposed so the socket client can force a token refresh after a stale-auth
 // reconnect rejection, and so the app can renew a near-expired token on resume
 // from background — both without waiting for a REST call to hit a 401 first.
@@ -443,72 +461,99 @@ export async function request<T>(
     body:    body != null ? JSON.stringify(body) : undefined,
   });
 
-  // ── Proactive token refresh ───────────────────────────────────────────────
-  // Refresh a soon-to-expire access token *before* firing the request, so the
-  // common case (first action after the app has been idle past the 15-min
-  // access-token lifetime) is a single round-trip instead of request → 401 →
-  // refresh → retry. A failure here is swallowed — the request still goes out
-  // with whatever token we have and the reactive 401 path below is the
-  // backstop, including the session-expired logout.
-  if (storage.get(REFRESH_TOKEN_KEY) && accessTokenNeedsRefresh()) {
-    if (!pendingRefresh) {
-      pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
-    }
-    try { await pendingRefresh; } catch { /* fall through to the request + 401 handling */ }
-  }
-
-  // ── Retry on 529 / 503 (server temporarily overloaded) ───────────────────
-  const RETRYABLE = new Set([503, 529]);
-  let attempt = 0;
-  let { res, text } = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs);
-  while (RETRYABLE.has(res.status) && attempt < 3) {
-    await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
-    attempt++;
-    ({ res, text } = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs));
-  }
-
-  // ── Token refresh on 401 ───────────────────────────────────────────────────
-  if (res.status === 401 && storage.get(REFRESH_TOKEN_KEY)) {
-    // De-duplicate concurrent refresh calls
-    if (!pendingRefresh) {
-      pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
-    }
-
-    try {
-      const newToken = await pendingRefresh;
-      ({ res, text } = await fetchWithTimeout(url.toString(), fetchOpts(newToken), timeoutMs));
-    } catch (err) {
-      // Only a genuinely invalid/expired refresh token logs the user out —
-      // a network/timeout failure (e.g. a cold backend) should surface as a
-      // retryable error instead of discarding a still-valid session.
-      if (err instanceof AuthRefreshInvalidError) {
-        fireSessionExpired();
-        throw new Error('Your session has expired. Please sign in again.');
+  async function execute(): Promise<ApiEnvelope<T>> {
+    // ── Proactive token refresh ─────────────────────────────────────────────
+    // Refresh a soon-to-expire access token *before* firing the request, so the
+    // common case (first action after the app has been idle past the 15-min
+    // access-token lifetime) is a single round-trip instead of request → 401 →
+    // refresh → retry. A failure here is swallowed — the request still goes out
+    // with whatever token we have and the reactive 401 path below is the
+    // backstop, including the session-expired logout.
+    if (storage.get(REFRESH_TOKEN_KEY) && accessTokenNeedsRefresh()) {
+      if (!pendingRefresh) {
+        pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
       }
-      throw err;
+      try { await pendingRefresh; } catch { /* fall through to the request + 401 handling */ }
+    }
+
+    // ── Retry on 529 / 503 (server temporarily overloaded) ─────────────────
+    const RETRYABLE = new Set([503, 529]);
+    let attempt = 0;
+    let { res, text } = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs);
+    while (RETRYABLE.has(res.status) && attempt < 3) {
+      await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+      attempt++;
+      ({ res, text } = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs));
+    }
+
+    // ── Token refresh on 401 ───────────────────────────────────────────────
+    if (res.status === 401 && storage.get(REFRESH_TOKEN_KEY)) {
+      // De-duplicate concurrent refresh calls
+      if (!pendingRefresh) {
+        pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
+      }
+
+      try {
+        const newToken = await pendingRefresh;
+        ({ res, text } = await fetchWithTimeout(url.toString(), fetchOpts(newToken), timeoutMs));
+      } catch (err) {
+        // Only a genuinely invalid/expired refresh token logs the user out —
+        // a network/timeout failure (e.g. a cold backend) should surface as a
+        // retryable error instead of discarding a still-valid session.
+        if (err instanceof AuthRefreshInvalidError) {
+          fireSessionExpired();
+          throw new Error('Your session has expired. Please sign in again.');
+        }
+        throw err;
+      }
+    }
+
+    // ── Parse response ─────────────────────────────────────────────────────
+    // A proxy/CDN can answer with a non-JSON body (an HTML 502/504 page) —
+    // surface that as the HTTP status rather than an opaque SyntaxError from
+    // JSON.parse.
+    let json: ApiEnvelope<T> & { errors?: { field: string; message: string }[]; code?: string };
+    try {
+      json = parseEnvelope(text);
+    } catch {
+      if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+      throw new Error('The server returned an invalid response.');
+    }
+
+    if (!res.ok) {
+      const fieldErrors = json.errors?.map((e) => e.message).join('. ');
+      throw new ApiError(
+        fieldErrors ?? json.message ?? `Request failed (${res.status})`,
+        res.status,
+        json.code,
+        json as unknown as Record<string, unknown>,
+      );
+    }
+
+    return json;
+  }
+
+  // ── In-flight GET de-duplication ─────────────────────────────────────────
+  // A GET fired while an identical one is already in flight rides along on that
+  // request instead of opening a second one. Keyed by the resolved URL +
+  // language + auth identity so a logged-out and a logged-in caller never share
+  // a result. Followers get a cloned envelope (see cloneEnvelope).
+  const dedupeKey = method.toUpperCase() === 'GET'
+    ? `${url.toString()}::${_currentLanguage}::${storage.get(ACCESS_TOKEN_KEY) ?? ''}`
+    : null;
+
+  if (dedupeKey) {
+    const existing = inflightGets.get(dedupeKey);
+    if (existing) return cloneEnvelope(await existing) as ApiEnvelope<T>;
+
+    const p = execute();
+    inflightGets.set(dedupeKey, p as Promise<ApiEnvelope<unknown>>);
+    try {
+      return await p;
+    } finally {
+      inflightGets.delete(dedupeKey);
     }
   }
 
-  // ── Parse response ─────────────────────────────────────────────────────────
-  // A proxy/CDN can answer with a non-JSON body (an HTML 502/504 page) — surface
-  // that as the HTTP status rather than an opaque SyntaxError from JSON.parse.
-  let json: ApiEnvelope<T> & { errors?: { field: string; message: string }[]; code?: string };
-  try {
-    json = parseEnvelope(text);
-  } catch {
-    if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
-    throw new Error('The server returned an invalid response.');
-  }
-
-  if (!res.ok) {
-    const fieldErrors = json.errors?.map((e) => e.message).join('. ');
-    throw new ApiError(
-      fieldErrors ?? json.message ?? `Request failed (${res.status})`,
-      res.status,
-      json.code,
-      json as unknown as Record<string, unknown>,
-    );
-  }
-
-  return json;
+  return execute();
 }

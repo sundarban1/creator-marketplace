@@ -26,7 +26,7 @@ import { TabColors } from '@/utilities/tabColors';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED' | 'REVISION' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED';
 type AppStatus = 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
 type TabKey = 'all' | AppStatus;
 
@@ -78,6 +78,13 @@ const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof FontAwesome5.
   // A reported issue (see reportIssue) parks the job until Kolab support
   // resolves it — nothing for the creator to do but open it and read the note.
   DISPUTED:    { labelKey: 'proposal.creator.trackDisputedLabel',     icon: 'exclamation-triangle', color: '#EF4444', subKey: 'proposal.creator.trackDisputedSub' },
+  // Escrow state-machine automatic states. Copy is reused from the nearest
+  // existing stage until the dedicated state-machine UI lands; workStatus
+  // 'REVISION' in practice never persists (the backend uses IN_PROGRESS +
+  // revisionRequestedAt), so it just mirrors IN_PROGRESS here.
+  REVISION:        { labelKey: 'proposal.creator.trackInProgressLabel', icon: 'brush',                color: '#7C3AED', subKey: 'proposal.creator.trackInProgressSub' },
+  CONTENT_OVERDUE: { labelKey: 'proposal.creator.trackDisputedLabel',   icon: 'exclamation-triangle', color: '#D97706', subKey: 'proposal.creator.trackDisputedSub'   },
+  CREATOR_FAILED:  { labelKey: 'proposal.creator.trackDisputedLabel',   icon: 'exclamation-triangle', color: '#EF4444', subKey: 'proposal.creator.trackDisputedSub'   },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

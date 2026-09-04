@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/react-native';
 import { getCrashlytics, setUserId as setCrashlyticsUserId } from '@react-native-firebase/crashlytics';
 import { authService, type Identifier } from '@/services/auth';
 import { setSessionExpiredHandler, clearSessionExpiredGuard } from '@/lib/api';
+import { queryClient } from '@/lib/queryClient';
 import type { User } from '@/types';
 import { USER_KEY } from '@/utilities/constants';
 import { storage } from '@/utilities/storage';
@@ -71,6 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(identifier: Identifier, password: string, rememberMe = true) {
     clearSessionExpiredGuard(); // reset the once-guard so future expiries fire again
+    // Wipe any server-state cache left from a previous session so a new login
+    // can never briefly render the last user's profile/feed/wallet.
+    queryClient.clear();
     const u = await authService.login(identifier, password, rememberMe);
     setUser(u);
   }
@@ -86,6 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logger.warn('[auth] server logout failed', { err });
     } finally {
       setUser(null);
+      // Drop the cached server state too — a genuine logout / expired session
+      // has nothing worth keeping warm (unlike a biometric lock, which keeps
+      // both the session and the cache for a silent resume).
+      queryClient.clear();
     }
   }
 

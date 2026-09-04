@@ -186,6 +186,16 @@ export interface ApplicationDto {
   // Single derived label combining the relationship / work / escrow axes —
   // what the client should switch on (see application-state-machine.ts).
   engagementState: string;
+  // Absolute deadline timestamps for the stage the engagement is currently in
+  // (null when that stage hasn't begun). Stored absolute, never recomputed.
+  paymentDueAt: string | null;
+  creatorConfirmationDueAt: string | null;
+  creatorConfirmedAt: string | null;
+  contentDeadline: string | null;
+  contentGraceDeadline: string | null;
+  businessReviewDueAt: string | null;
+  paymentReleaseAt: string | null;
+  submittedLate: boolean;
   // Present only while a dispute has been raised on this engagement.
   dispute?: {
     status: string;
@@ -385,6 +395,14 @@ type RawApplication = {
   // `prisma.application.update()` result) omit it, defaulted to [] below.
   revisionNotes?: { note: string; createdAt: Date }[];
   submittedAt: Date | null;
+  paymentDueAt?: Date | null;
+  creatorConfirmationDueAt?: Date | null;
+  creatorConfirmedAt?: Date | null;
+  contentDeadline?: Date | null;
+  contentGraceDeadline?: Date | null;
+  businessReviewDueAt?: Date | null;
+  paymentReleaseAt?: Date | null;
+  submittedLate?: boolean;
   deliverableUrls: string | null;
   deliverableVideos?: Prisma.JsonValue;
   deliverableFiles?: Prisma.JsonValue;
@@ -451,6 +469,9 @@ function escrowStatusFromPaymentStatus(paymentStatus?: string | null, workStatus
   }
 }
 
+const iso = (d?: Date | string | null): string | null =>
+  d == null ? null : d instanceof Date ? d.toISOString() : d;
+
 export function toApplicationDto(a: RawApplication): ApplicationDto {
   const commissionRate = a.campaign?.commissionRate ?? 0;
   const platformFee = Math.round(a.proposedRate * (commissionRate / 100) * 100) / 100;
@@ -472,6 +493,14 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     revisionRequestedAt: a.revisionRequestedAt ? a.revisionRequestedAt.toISOString() : null,
     revisionNotes:   (a.revisionNotes ?? []).map((r) => ({ note: r.note, createdAt: r.createdAt.toISOString() })),
     submittedAt:     a.submittedAt ? a.submittedAt.toISOString() : null,
+    paymentDueAt:             iso(a.paymentDueAt),
+    creatorConfirmationDueAt: iso(a.creatorConfirmationDueAt),
+    creatorConfirmedAt:       iso(a.creatorConfirmedAt),
+    contentDeadline:          iso(a.contentDeadline),
+    contentGraceDeadline:     iso(a.contentGraceDeadline),
+    businessReviewDueAt:      iso(a.businessReviewDueAt),
+    paymentReleaseAt:         iso(a.paymentReleaseAt),
+    submittedLate:            a.submittedLate ?? false,
     deliverableUrls: a.deliverableUrls,
     deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
     deliverableFiles: z.array(deliverableFileSchema).catch([]).parse(a.deliverableFiles ?? []),

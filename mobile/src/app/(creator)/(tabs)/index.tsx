@@ -1,6 +1,7 @@
-import { useCallback, useContext, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,9 @@ import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCard
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
 import { creatorService, type ApiCreatorProfile, type ApiProviderMember } from '@/services/creator';
 import { campaignService } from '@/services/campaign';
+import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
 import type { Campaign } from '@/types';
 import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
@@ -43,13 +47,12 @@ function getInitials(name: string): string {
 
 type WorkItem = Awaited<ReturnType<typeof campaignService.getMyApplications>>['proposals'][number];
 
-// Screens elsewhere in the (creator) stack reach a tab via `router.push`,
-// which — crossing from a sibling Stack.Screen into this Tabs group — mounts
-// a brand-new instance of this whole navigator (including this screen)
-// rather than refocusing the existing one, so a plain component ref can't
-// remember "already loaded" across that. Module scope survives it; keying by
-// user id makes it correctly re-arm the skeleton on a different login.
-let creatorHomeLoadedForUserId: string | null = null;
+// Stable empty references so derived values don't get a fresh [] every render
+// while a query is still pending (which would defeat React Compiler's memoing
+// of everything computed from them).
+const NO_PROPOSALS: WorkItem[] = [];
+const NO_CAMPAIGNS: Campaign[] = [];
+const NO_MEMBERS: ApiProviderMember[] = [];
 
 export default function HomeScreen() {
   const C = useAppColors();
@@ -58,18 +61,73 @@ export default function HomeScreen() {
   const { openDrawer } = useContext(DrawerContext);
   const { badgeCount } = useNotificationBadge();
 
-  const [profile, setProfile] = useState<ApiCreatorProfile | null>(null);
-  const [yourWork, setYourWork] = useState<WorkItem[]>([]);
-  const [recommended, setRecommended] = useState<Campaign[]>([]);
-  // §16 — the Team dashboard block. Only a TEAM has a roster, and the
-  // roster endpoint 400s for anyone else, so it's fetched conditionally.
-  const [teamMembers, setTeamMembers] = useState<ApiProviderMember[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
-  const [missingFields, setMissingFields] = useState<string[]>([]);
-  const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work'; title: string }>>([]);
+
+  // ── Server state — cache-first, background refresh (see queryClient.ts) ────
+  // Replaces the old useFocusEffect(load) that re-fetched every section on
+  // every tab focus. Each query renders its last-known data instantly (from
+  // memory or the persisted cache on a cold start) and refreshes underneath
+  // on its own staleness schedule.
+  const profileQuery = useCreatorProfile();
+  const profile = profileQuery.data;
+
+  const applicationsQuery = useQuery({
+    queryKey: ['applications', 'creator', { status: 'ACCEPTED', limit: 10 }],
+    queryFn: () => campaignService.getMyApplications({ status: 'ACCEPTED', limit: 10 }),
+    enabled: user?.role === 'CREATOR',
+    staleTime: STALE.list,
+  });
+
+  const recommendedQuery = useQuery({
+    queryKey: ['campaigns', 'recommended', { limit: 5 }],
+    queryFn: () => campaignService.recommended({ limit: 5 }),
+    enabled: user?.role === 'CREATOR',
+    staleTime: STALE.list,
+  });
+
+  // §16 — the Team dashboard block. Only a TEAM has a roster, and the roster
+  // endpoint 400s for anyone else, so it stays disabled until the profile
+  // confirms providerType.
+  const teamQuery = useQuery({
+    queryKey: ['team', 'members'],
+    queryFn: () => creatorService.listTeamMembers(),
+    enabled: profile?.providerType === 'TEAM',
+    staleTime: STALE.profile,
+  });
+
+  useRefetchOnFocusIfStale(profileQuery, applicationsQuery, recommendedQuery, teamQuery);
+
+  const proposals = applicationsQuery.data?.proposals ?? NO_PROPOSALS;
+  const yourWork = proposals.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED');
+  const recommended = recommendedQuery.data?.campaigns ?? NO_CAMPAIGNS;
+  const teamMembers = teamQuery.data ?? NO_MEMBERS;
+
+  // Photo and social links matter most for a creator's discoverability, so
+  // they're checked first and lead the list. `t` re-runs this on a language
+  // switch so the labels stay translated.
+  const missingFields: string[] = [];
+  if (profile) {
+    if (!profile.avatarUrl) missingFields.push(t('creator.home.fieldProfilePhoto'));
+    const hasLink = profile.socialLinks && Object.values(profile.socialLinks).some((v) => !!v);
+    if (!hasLink) missingFields.push(t('creator.home.fieldSocialLinks'));
+    if (!profile.bio) missingFields.push(t('creator.home.fieldBio'));
+    if (!profile.location) missingFields.push(t('creator.home.fieldLocation'));
+    if (!profile.categories?.length) missingFields.push(t('creator.home.fieldCategories'));
+  }
+
+  // Actions actually waiting on the creator — derived from the same ACCEPTED
+  // applications fetch, no separate call. Free events (OPEN_EVENT) never wait
+  // on the creator: being accepted is the end of that flow.
+  const pendingActions: { type: 'start_work' | 'upload_work'; title: string }[] = [];
+  for (const app of proposals) {
+    if (app.campaignType !== 'PAID_CAMPAIGN' || app.paymentStatus !== 'PAID') continue;
+    if (app.workStatus === 'NONE') pendingActions.push({ type: 'start_work', title: app.campaignTitle });
+    else if (app.workStatus === 'IN_PROGRESS') pendingActions.push({ type: 'upload_work', title: app.campaignTitle });
+  }
+
+  const loading = profileQuery.isPending || applicationsQuery.isPending || recommendedQuery.isPending;
 
   // ── Nearby Opportunities ──
   const [nearbyCampaigns, setNearbyCampaigns] = useState<Campaign[]>([]);
@@ -157,69 +215,45 @@ export default function HomeScreen() {
     if (coords) void fetchNearby(coords, next, { silent: true });
   }
 
-  const load = useCallback(async (isRefresh = false) => {
-    const isFirstLoad = creatorHomeLoadedForUserId !== user?.id;
-    if (isRefresh) setRefreshing(true);
-    else if (isFirstLoad) setLoading(true);
+  // Nearby uses the profile's saved location and owns its own loading/refresh
+  // state (nearbyLoading), separate from the React Query layer above.
+  // (Re)initialise it when the profile first arrives and whenever its
+  // location-relevant fields change — replacing the old "re-run on every
+  // focus" behaviour, which recomputed the same coordinates each time.
+  const nearbyKey = profile
+    ? `${profile.locationLat}|${profile.locationLng}|${profile.location ?? ''}|${profile.nearbyRadiusKm}`
+    : null;
+  const nearbyInitedOnce = useRef(false);
+  useEffect(() => {
+    if (!profile || nearbyKey === null) return;
+    void initNearby(profile, { silent: nearbyInitedOnce.current });
+    nearbyInitedOnce.current = true;
+    // Keyed by nearbyKey (the profile's location identity), not by the
+    // `profile` object or `initNearby` closure — both change every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nearbyKey]);
+
+  // If the profile query errors with nothing cached, initNearby never runs —
+  // drop the nearby skeleton so the section falls through to its empty state
+  // rather than spinning forever (mirrors discover.tsx's catch behaviour),
+  // without a setState-in-effect just to track it.
+  const showNearbySkeleton = nearbyLoading && !(profileQuery.isError && !profile);
+
+  async function onRefresh() {
+    setRefreshing(true);
     try {
-      const p = await creatorService.getProfile();
-      setProfile(p);
-
-      // Photo and social links matter most for a creator's discoverability, so
-      // they're checked first and lead the list.
-      const missing: string[] = [];
-      const hasPhoto = !!p.avatarUrl;
-      if (!hasPhoto) missing.push(t('creator.home.fieldProfilePhoto'));
-      const hasLink = p.socialLinks && Object.values(p.socialLinks).some((v) => !!v);
-      if (!hasLink) missing.push(t('creator.home.fieldSocialLinks'));
-      if (!p.bio)                missing.push(t('creator.home.fieldBio'));
-      if (!p.location)           missing.push(t('creator.home.fieldLocation'));
-      if (!p.categories?.length) missing.push(t('creator.home.fieldCategories'));
-      setMissingFields(missing);
-
-      const isTeam = p.providerType === 'TEAM';
-      const [applications, recs, roster] = await Promise.all([
-        campaignService.getMyApplications({ status: 'ACCEPTED', limit: 10 }).catch(() => ({ proposals: [], total: 0 })),
-        campaignService.recommended({ limit: 5 }).catch(() => ({ campaigns: [] })),
-        isTeam ? creatorService.listTeamMembers().catch(() => [] as ApiProviderMember[]) : Promise.resolve([] as ApiProviderMember[]),
+      await Promise.all([
+        profileQuery.refetch(),
+        applicationsQuery.refetch(),
+        recommendedQuery.refetch(),
+        teamQuery.refetch(),
       ]);
-      setTeamMembers(roster);
-      setYourWork(applications.proposals.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED'));
-
-      // Same `status: 'ACCEPTED'` fetch above already has everything needed
-      // to flag actions actually waiting on the creator — no separate call.
-      const actions: Array<{ type: 'start_work' | 'upload_work'; title: string }> = [];
-      for (const app of applications.proposals) {
-        if (app.campaignType === 'PAID_CAMPAIGN') {
-          if (app.paymentStatus === 'PAID' && app.workStatus === 'NONE') {
-            actions.push({ type: 'start_work', title: app.campaignTitle });
-          } else if (app.paymentStatus === 'PAID' && app.workStatus === 'IN_PROGRESS') {
-            actions.push({ type: 'upload_work', title: app.campaignTitle });
-          }
-        }
-        // Free events (OPEN_EVENT) never wait on the creator: being accepted
-        // is the end of that flow — nothing to start, nothing to submit.
-      }
-      setPendingActions(actions);
-
-      setRecommended(recs.campaigns);
-      void initNearby(p, { silent: !isFirstLoad });
-    } catch {
-      // Dashboard sections degrade to empty rather than blocking the whole
-      // screen on one failed fetch — each section already has its own empty
-      // state, and this is a low-stakes landing screen, not a form.
-      // initNearby never ran, so clear its skeleton here too (mirrors discover.tsx).
-      setNearbyLoading(false);
+      const coords = resolveNearbyCoords();
+      if (coords) await fetchNearby(coords, nearbyRadiusKm, { silent: true });
     } finally {
-      creatorHomeLoadedForUserId = user?.id ?? null;
-      setLoading(false);
       setRefreshing(false);
     }
-  // `t` changes reference on every language switch (see LanguageContext) — depending
-  // on it here re-runs the missing-fields check so those labels stay translated.
-  }, [t, user?.id]);
-
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  }
 
   const hour = new Date().getHours();
   const greetingKey = hour < 12 ? 'home.greetingMorning' : hour < 17 ? 'home.greetingAfternoon' : 'home.greetingEvening';
@@ -275,7 +309,7 @@ export default function HomeScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.brinjal1} />}>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
 
           {/* Action zone — search, alerts and the primary CTA are all things
               demanding the creator's attention right now, so they're
@@ -543,7 +577,7 @@ export default function HomeScreen() {
                     </View>
                   </View>
 
-                  {nearbyLoading ? (
+                  {showNearbySkeleton ? (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railScroll}>
                       {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
                     </ScrollView>

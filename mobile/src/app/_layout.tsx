@@ -16,8 +16,10 @@ import {
   Poppins_700Bold_Italic,
   Poppins_800ExtraBold,
 } from '@expo-google-fonts/poppins';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { AuthProvider } from '@/context/AuthContext';
 import { useAuth } from '@/context/AuthContext';
+import { queryClient, persistOptions } from '@/lib/queryClient';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppThemeProvider, useAppColors, useIsDark } from '@/context/ThemeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
@@ -430,10 +432,16 @@ function RootLayout() {
         <AppThemeProvider>
           <ToastProvider>
             <LanguageProvider>
-              <View style={{ flex: 1 }}>
-                <RootLayoutInner />
-                <SplashScreen />
-              </View>
+              {/* Server-state cache — restored from disk on cold start so the
+                  first paint of a screen with a persisted query is instant.
+                  Sits above the provider tree so every screen's useQuery
+                  resolves against the same client. */}
+              <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+                <View style={{ flex: 1 }}>
+                  <RootLayoutInner />
+                  <SplashScreen />
+                </View>
+              </PersistQueryClientProvider>
             </LanguageProvider>
           </ToastProvider>
         </AppThemeProvider>

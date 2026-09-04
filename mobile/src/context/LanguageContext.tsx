@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { type Lang, getString, translations } from '@/i18n';
 import { storage } from '@/utilities/storage';
 import { setApiLanguage } from '@/lib/api';
+import { queryClient } from '@/lib/queryClient';
 
 const LANG_KEY = 'app_language';
 
@@ -29,11 +30,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Async read from SecureStore on mount to restore persisted language
   useEffect(() => {
     SecureStore.getItemAsync(LANG_KEY).then((v) => {
-      if (v === 'ne' || v === 'en') {
+      if ((v === 'ne' || v === 'en') && v !== language) {
         setLangState(v);
         setApiLanguage(v);
+        // Any query that already fired under the default language needs to be
+        // refetched now that the real one is known.
+        void queryClient.invalidateQueries();
       }
     });
+    // Runs once on mount; `language` is only read for the initial comparison.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function setLanguage(lang: Lang) {
@@ -41,6 +47,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setApiLanguage(lang);
     setLangState(lang);
     setLanguageVersion((v) => v + 1);
+    // Server responses are localized via the X-Language header, so DB-driven
+    // content (category labels, AI text, …) has to be refetched in the new
+    // language. This replaces the per-screen `languageVersion` refetch deps.
+    void queryClient.invalidateQueries();
   }
 
   function t(key: string, vars?: Record<string, string | number>): string {

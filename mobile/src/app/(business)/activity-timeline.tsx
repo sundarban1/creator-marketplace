@@ -49,7 +49,13 @@ import { useToast } from '@/components/Toast';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
+// Includes the escrow state-machine's automatic work states (REVISION /
+// CONTENT_OVERDUE / CREATOR_FAILED). ActionCard doesn't render dedicated cards
+// for those yet — they fall through to the generic in-progress / held cards,
+// which is acceptable until the full state-machine UI lands.
+type WS =
+  | 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED'
+  | 'DISPUTED' | 'REVISION' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type AppInfo = {

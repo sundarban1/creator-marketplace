@@ -1,22 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { STALE } from '@/lib/queryClient';
 import { categoryService, type ApiCategory } from '@/services/category';
 
 type CategoryScope = 'CREATOR' | 'BUSINESS' | 'BOTH';
 
 type CacheKey = 'CREATOR' | 'BUSINESS' | 'BOTH' | 'CREATOR:strict' | 'ALL';
 
-// How long a fetched list is trusted before the next mount silently refetches
-// in the background — without this, a long-running app session would never
-// notice an admin disabling/re-enabling a category until force-quit/reopened.
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-const cache: Partial<Record<CacheKey, ApiCategory[]>> = {};
-const cachedAt: Partial<Record<CacheKey, number>> = {};
-const inflight: Partial<Record<CacheKey, Promise<ApiCategory[]>>> = {};
-
-function isFresh(key: CacheKey) {
-  return cache[key] !== undefined && Date.now() - (cachedAt[key] ?? 0) < CACHE_TTL_MS;
-}
+// Stable empty reference so consumers that list `categories` in a useEffect
+// dependency array don't see a new [] every render while the query is pending.
+const EMPTY: ApiCategory[] = [];
 
 // Category.name isn't unique in the DB — only `key` is. The CREATOR-scope
 // 'Other' provider role and the BOTH-scope 'Other' industry both exist, so any
@@ -64,17 +56,21 @@ export function sortSelectedFirst<T extends { key?: string; name: string }>(cats
   return [...cats].sort((a, b) => Number(isSelected(b)) - Number(isSelected(a)));
 }
 
-function fetchScoped(key: CacheKey, scope?: CategoryScope, strict?: boolean): Promise<ApiCategory[]> {
-  if (isFresh(key)) return Promise.resolve(cache[key]!);
-  if (!inflight[key]) {
-    inflight[key] = categoryService.getCategories(scope, strict)
-      .then((raw) => {
-        const cats = dedupeByName(raw, scope);
-        cache[key] = cats; cachedAt[key] = Date.now(); return cats;
-      })
-      .finally(() => { delete inflight[key]; });
-  }
-  return inflight[key]!;
+// Maps a cache key back to the (scope, strict) pair its fetch needs. Kept as
+// one place so useCategories and useAllCategories can't drift apart.
+function resolveScope(key: CacheKey): { scope: CategoryScope | undefined; strict: boolean } {
+  if (key === 'ALL') return { scope: undefined, strict: false };
+  if (key === 'CREATOR:strict') return { scope: 'CREATOR', strict: true };
+  return { scope: key, strict: false };
+}
+
+function categoriesQuery(key: CacheKey) {
+  const { scope, strict } = resolveScope(key);
+  return {
+    queryKey: ['categories', key] as const,
+    queryFn: () => categoryService.getCategories(scope, strict).then((raw) => dedupeByName(raw, scope)),
+    staleTime: STALE.static,
+  };
 }
 
 /** Admin-created categories scoped to CREATOR or BUSINESS — for picker/selection
@@ -85,43 +81,17 @@ function fetchScoped(key: CacheKey, scope?: CategoryScope, strict?: boolean): Pr
  *  industry list on its own, with no side-specific rows mixed in. */
 export function useCategories(scope: CategoryScope, strict?: boolean) {
   const key: CacheKey = strict ? 'CREATOR:strict' : scope;
-  const [categories, setCategories] = useState<ApiCategory[]>(cache[key] ?? []);
-  const [loading, setLoading] = useState(!cache[key]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (isFresh(key)) { setCategories(cache[key]!); setLoading(false); return; }
-    // Stale (or missing) cache — show whatever we have (if anything) without a
-    // loading flash, and quietly refetch underneath it.
-    if (cache[key]) setCategories(cache[key]!);
-    setLoading(!cache[key]);
-    fetchScoped(key, scope, strict)
-      .then((cats) => { if (!cancelled) setCategories(cats); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [key, scope, strict]);
-
-  return { categories, loading };
+  const q = useQuery(categoriesQuery(key));
+  // `loading` stays false whenever cached data (fresh or stale) is already on
+  // screen — a background refetch must never flash the picker back to a spinner.
+  return { categories: q.data ?? EMPTY, loading: q.isPending };
 }
 
 /** Every active category regardless of scope — for display/lookup screens that
  *  resolve an existing campaign/creator's category string to {icon, bg, color}. */
 export function useAllCategories() {
-  const [categories, setCategories] = useState<ApiCategory[]>(cache.ALL ?? []);
-  const [loading, setLoading] = useState(!cache.ALL);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (isFresh('ALL')) { setCategories(cache.ALL!); setLoading(false); return; }
-    if (cache.ALL) setCategories(cache.ALL);
-    setLoading(!cache.ALL);
-    fetchScoped('ALL')
-      .then((cats) => { if (!cancelled) setCategories(cats); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
-
-  return { categories, loading };
+  const q = useQuery(categoriesQuery('ALL'));
+  return { categories: q.data ?? EMPTY, loading: q.isPending };
 }
 
 export type CategoryMeta = { icon: string; bg: string; color: string };

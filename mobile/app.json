@@ -125,12 +125,14 @@
         {
           "android": {
             "enableMinifyInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "# react-native-background-upload / net.gotev uploadservice — reflection-based\n# task dispatch inside the upload service. Without these keeps, R8 strips/renames\n# the classes in release builds and the native upload silently emits no\n# progress/completed/error events (voice + video chat uploads hang at 0%).\n-keep class net.gotev.uploadservice.** { *; }\n-keep class com.vydia.RNUploader.** { *; }\n-dontwarn net.gotev.uploadservice.**\n-keep class net.gotev.** { *; }"
           }
         }
       ],
       "./plugins/withFixMapsPodfile.js",
-      "./plugins/withDisableFirebaseSPM.js"
+      "./plugins/withDisableFirebaseSPM.js",
+      "./plugins/withUploadServiceForegroundType.js"
     ],
     "experiments": {
       "typedRoutes": true,

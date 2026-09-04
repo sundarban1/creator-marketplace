@@ -10,6 +10,33 @@ import type { ApiReviewReceived } from '@/services/creator';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/utilities/constants';
 
+// Submission-side work status. Widened for the escrow state machine —
+// REVISION/CONTENT_OVERDUE/CREATOR_FAILED are backend-only automatic states the
+// UI should treat gracefully (see engagementState for the single label to
+// switch on).
+export type WorkStatusValue =
+  | 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED'
+  | 'DISPUTED' | 'REVISION' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED';
+
+// The single derived engagement label emitted by the backend
+// (application-state-machine.deriveEngagementState). Prefer switching on this.
+export type EngagementStateValue =
+  | 'PROPOSAL_PENDING' | 'PROPOSAL_REJECTED' | 'PROPOSAL_EXPIRED' | 'PROPOSAL_WITHDRAWN'
+  | 'CREATOR_SELECTED' | 'PAYMENT_EXPIRED' | 'ESCROW_FUNDED' | 'CREATOR_CONFIRMATION_EXPIRED'
+  | 'IN_PROGRESS' | 'REVISION_REQUESTED' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED'
+  | 'BUSINESS_REVIEW' | 'PAYMENT_RELEASE_PENDING' | 'DISPUTED'
+  | 'PAYMENT_RELEASED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'CANCELLED' | 'COMPLETED';
+
+export interface EngagementDispute {
+  status: string;
+  reason: string;
+  raisedByRole: string;
+  resolution: string | null;
+  resolutionNote: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
 export interface DeliverableVideo {
   publicId:    string;
   url:         string;
@@ -520,7 +547,7 @@ export const campaignService = {
     proposals: Array<{
       id: string;
       status: 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
-      workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
+      workStatus: WorkStatusValue;
       // The application's own payment status — distinct from campaign.paymentStatus,
       // which tracks the campaign record itself and isn't updated by the per-application
       // pay/release flow. Use this one to know if THIS creator's payment was released.
@@ -554,7 +581,7 @@ export const campaignService = {
       proposals: res.data.map((a) => ({
         id: a.id,
         status: a.status.toLowerCase() as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired',
-        workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED',
+        workStatus: (a.workStatus ?? 'NONE') as WorkStatusValue,
         paymentStatus: (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
         coverLetter: a.coverLetter ?? '',
@@ -760,6 +787,13 @@ export const campaignService = {
     await request('PUT', `/api/campaigns/applications/${appId}/report-issue`, { reason });
   },
 
+  // Escrow state machine §27 — either the business or the accepted creator can
+  // raise a dispute, which freezes the escrow until an admin resolves it. Same
+  // endpoint as reportIssue; the backend infers the role from the caller.
+  async raiseDispute(appId: string, reason: string): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/report-issue`, { reason });
+  },
+
   async startWork(appId: string): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/start`);
   },
@@ -790,7 +824,17 @@ export const campaignService = {
     proposedRateRaw: number;
     coverLetter:     string;
     createdAt:       string;
-    workStatus:      'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
+    workStatus:      WorkStatusValue;
+    engagementState: EngagementStateValue | null;
+    escrowStatus:    string | null;
+    dispute:         EngagementDispute | null;
+    paymentDueAt:             string | null;
+    creatorConfirmationDueAt: string | null;
+    contentDeadline:          string | null;
+    contentGraceDeadline:     string | null;
+    businessReviewDueAt:      string | null;
+    paymentReleaseAt:         string | null;
+    submittedLate:            boolean;
     submittedAt:     string | null;
     deliverableUrls: string | null;
     deliverableVideos: DeliverableVideo[];
@@ -808,6 +852,10 @@ export const campaignService = {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
       workStatus?: string; submittedAt?: string | null; deliverableUrls?: string | null;
+      engagementState?: string; escrowStatus?: string; dispute?: EngagementDispute | null;
+      paymentDueAt?: string | null; creatorConfirmationDueAt?: string | null;
+      contentDeadline?: string | null; contentGraceDeadline?: string | null;
+      businessReviewDueAt?: string | null; paymentReleaseAt?: string | null; submittedLate?: boolean;
       deliverableVideos?: DeliverableVideo[];
       deliverableFiles?: DeliverableFile[];
       paymentStatus?: string; paidAt?: string | null;
@@ -823,7 +871,17 @@ export const campaignService = {
       proposedRateRaw: a.proposedRate,
       coverLetter:     a.coverLetter ?? '',
       createdAt:       a.createdAt,
-      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED',
+      workStatus:      (a.workStatus ?? 'NONE') as WorkStatusValue,
+      engagementState: (a.engagementState ?? null) as EngagementStateValue | null,
+      escrowStatus:    a.escrowStatus ?? null,
+      dispute:         a.dispute ?? null,
+      paymentDueAt:             a.paymentDueAt ?? null,
+      creatorConfirmationDueAt: a.creatorConfirmationDueAt ?? null,
+      contentDeadline:          a.contentDeadline ?? null,
+      contentGraceDeadline:     a.contentGraceDeadline ?? null,
+      businessReviewDueAt:      a.businessReviewDueAt ?? null,
+      paymentReleaseAt:         a.paymentReleaseAt ?? null,
+      submittedLate:            a.submittedLate ?? false,
       submittedAt:     a.submittedAt ?? null,
       deliverableUrls: a.deliverableUrls ?? null,
       deliverableVideos: a.deliverableVideos ?? [],
@@ -855,7 +913,20 @@ export const campaignService = {
       coverLetter:      string;
       proposedRate:     string;
       proposedRateRaw:  number;
-      workStatus:       'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED';
+      workStatus:       WorkStatusValue;
+      // Escrow state machine — the single label to drive the workspace UI off.
+      engagementState:  EngagementStateValue | null;
+      escrowStatus:     string | null;
+      dispute:          EngagementDispute | null;
+      // Absolute deadline timestamps for the stage the engagement is in (ISO,
+      // null when that stage hasn't started). Never recompute from "now".
+      paymentDueAt:              string | null;
+      creatorConfirmationDueAt:  string | null;
+      contentDeadline:           string | null;
+      contentGraceDeadline:      string | null;
+      businessReviewDueAt:       string | null;
+      paymentReleaseAt:          string | null;
+      submittedLate:             boolean;
       campaignType:     'PAID_CAMPAIGN' | 'OPEN_EVENT';
       paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
       paidAt:           string | null;
@@ -879,6 +950,16 @@ export const campaignService = {
       proposedRate:    number;
       createdAt:       string;
       workStatus?:     string;
+      engagementState?: string;
+      escrowStatus?:   string;
+      dispute?:        EngagementDispute | null;
+      paymentDueAt?:              string | null;
+      creatorConfirmationDueAt?:  string | null;
+      contentDeadline?:           string | null;
+      contentGraceDeadline?:      string | null;
+      businessReviewDueAt?:       string | null;
+      paymentReleaseAt?:          string | null;
+      submittedLate?:             boolean;
       submittedAt?:    string | null;
       deliverableUrls?: string | null;
       deliverableVideos?: DeliverableVideo[];
@@ -913,7 +994,17 @@ export const campaignService = {
         coverLetter:     a.coverLetter,
         proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
         proposedRateRaw: a.proposedRate,
-        workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED',
+        workStatus:      (a.workStatus ?? 'NONE') as WorkStatusValue,
+        engagementState: (a.engagementState ?? null) as EngagementStateValue | null,
+        escrowStatus:    a.escrowStatus ?? null,
+        dispute:         a.dispute ?? null,
+        paymentDueAt:              a.paymentDueAt ?? null,
+        creatorConfirmationDueAt:  a.creatorConfirmationDueAt ?? null,
+        contentDeadline:           a.contentDeadline ?? null,
+        contentGraceDeadline:      a.contentGraceDeadline ?? null,
+        businessReviewDueAt:       a.businessReviewDueAt ?? null,
+        paymentReleaseAt:          a.paymentReleaseAt ?? null,
+        submittedLate:             a.submittedLate ?? false,
         campaignType:    (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
         paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
