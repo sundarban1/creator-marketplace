@@ -1,6 +1,7 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FlatList, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SearchInput } from '@/components/SearchInput';
@@ -12,6 +13,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
@@ -73,33 +76,29 @@ function BusinessCard({
   );
 }
 
+const EMPTY_BUSINESSES: BusinessListItem[] = [];
+
 export default function SavedByBusinessesScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
-  const [items, setItems]     = useState<BusinessListItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState('');
   const { favoriteIds, toggle } = useFavoriteBusinesses();
+
+  const savedByQuery = useQuery({
+    queryKey: ['businesses', 'savedBy'],
+    queryFn: () => businessService.getSavedByBusinesses(),
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(savedByQuery);
+  const items = savedByQuery.data ?? EMPTY_BUSINESSES;
+  const loading = savedByQuery.isPending;
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return items;
     return items.filter((i) => (i.businessName ?? '').toLowerCase().includes(q));
   }, [items, search]);
-
-  async function load() {
-    setLoading(true);
-    try {
-      setItems(await businessService.getSavedByBusinesses());
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useFocusEffect(useCallback(() => { load(); }, []));
 
   async function handleToggleFavorite(businessId: string) {
     const wasFavorited = favoriteIds.has(businessId);

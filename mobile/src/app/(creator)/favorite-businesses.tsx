@@ -1,6 +1,7 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FlatList,
   Platform,
@@ -20,10 +21,14 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+
+const EMPTY_BUSINESSES: BusinessListItem[] = [];
 
 function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: () => void }) {
   const C = useAppColors();
@@ -78,8 +83,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
 export default function FavoriteBusinessesScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
-  const [items, setItems]     = useState<BusinessListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch]   = useState('');
   const { toggle }            = useFavoriteBusinesses();
 
@@ -92,29 +96,23 @@ export default function FavoriteBusinessesScreen() {
   const [tempCategory, setTempCategory] = useState('');
   const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
 
+  // Committed filters are the query key — changing one re-renders into a
+  // cache-first fetch, no explicit load(overrides) plumbing needed.
+  const favoritesKey = ['businesses', 'favorites', { category, platform, locations: locations.map((l) => l.label) }] as const;
+  const favoritesQuery = useQuery({
+    queryKey: favoritesKey,
+    queryFn: () => businessService.getFavoriteBusinesses({ category, platform, locations: locations.map((l) => l.label) }),
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(favoritesQuery);
+  const items = favoritesQuery.data ?? EMPTY_BUSINESSES;
+  const loading = favoritesQuery.isPending;
+
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return items;
     return items.filter((i) => (i.businessName ?? '').toLowerCase().includes(q));
   }, [items, search]);
-
-  async function load(opts?: { category?: string; platform?: string; locations?: LocationFilter }) {
-    setLoading(true);
-    try {
-      const data = await businessService.getFavoriteBusinesses({
-        category:  opts?.category  !== undefined ? opts.category  : category,
-        platform:  opts?.platform  !== undefined ? opts.platform  : platform,
-        locations: (opts?.locations !== undefined ? opts.locations : locations).map((l) => l.label),
-      });
-      setItems(data);
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useFocusEffect(useCallback(() => { load(); }, []));
 
   function openFilter() {
     setTempPlatform(platform);
@@ -128,7 +126,6 @@ export default function FavoriteBusinessesScreen() {
     setCategory(tempCategory);
     setLocations(tempLocation);
     setFilterOpen(false);
-    void load({ platform: tempPlatform, category: tempCategory, locations: tempLocation });
   }
 
   function resetFilter() {
@@ -140,12 +137,15 @@ export default function FavoriteBusinessesScreen() {
   const filterActiveCount = [!!category, !!platform, locations.length > 0].filter(Boolean).length;
   const isFilterActive    = filterActiveCount > 0;
 
+  // Optimistic removal — un-favouriting is low-risk/reversible (§20) — rolled
+  // back on failure via the snapshot taken before the write.
   async function handleRemove(businessId: string) {
-    setItems((prev) => prev.filter((i) => i.id !== businessId));
+    const previous = queryClient.getQueryData<BusinessListItem[]>(favoritesKey);
+    queryClient.setQueryData<BusinessListItem[]>(favoritesKey, (prev) => prev?.filter((i) => i.id !== businessId));
     try {
       await toggle(businessId);
     } catch {
-      load();
+      queryClient.setQueryData(favoritesKey, previous);
     }
   }
 
@@ -189,11 +189,7 @@ export default function FavoriteBusinessesScreen() {
             <Pressable
               key={loc.label}
               style={[s.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
-              onPress={() => {
-                const next = locations.filter((l) => l.label !== loc.label);
-                setLocations(next);
-                void load({ locations: next });
-              }}>
+              onPress={() => setLocations(locations.filter((l) => l.label !== loc.label))}>
               <FontAwesome5 name={loc.label === 'Remote' ? 'globe' : 'map-marker-alt'} solid size={11} color={C.brinjal1} />
               <Text style={[s.activePillText, { color: C.brinjal1 }]}>{loc.label}</Text>
               <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
@@ -202,7 +198,7 @@ export default function FavoriteBusinessesScreen() {
           {platform ? (
             <Pressable
               style={[s.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
-              onPress={() => { setPlatform(''); void load({ platform: '' }); }}>
+              onPress={() => setPlatform('')}>
               <Text style={[s.activePillText, { color: C.brinjal1 }]}>{platform}</Text>
               <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
@@ -210,12 +206,12 @@ export default function FavoriteBusinessesScreen() {
           {category ? (
             <Pressable
               style={[s.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
-              onPress={() => { setCategory(''); void load({ category: '' }); }}>
+              onPress={() => setCategory('')}>
               <Text style={[s.activePillText, { color: C.brinjal1 }]}>{category}</Text>
               <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           ) : null}
-          <Pressable onPress={() => { setCategory(''); setPlatform(''); setLocations([]); void load({ category: '', platform: '', locations: [] }); }}>
+          <Pressable onPress={() => { setCategory(''); setPlatform(''); setLocations([]); }}>
             <Text style={[s.clearAllText, { color: C.error }]}>{t('explore.businesses.clearAll')}</Text>
           </Pressable>
         </View>

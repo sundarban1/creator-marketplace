@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { request } from '@/lib/api';
 
@@ -32,6 +33,7 @@ function loadIds(): Promise<void> {
 
 export function useShortlistedCampaigns() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   // Read the two fields the effect actually depends on, so it re-runs on a
   // sign-in/role switch and not on every unrelated user-object update.
   const userId = user?.id ?? null;
@@ -73,6 +75,10 @@ export function useShortlistedCampaigns() {
       const synced = new Set(ids);
       if (res.data.isShortlisted) synced.add(campaignId); else synced.delete(campaignId);
       publish(synced);
+      // shortlisted-events.tsx caches the full campaign list separately from
+      // this ids Set — a newly-added campaign won't be in that cache yet, so
+      // invalidate it here rather than waiting out its staleTime.
+      void queryClient.invalidateQueries({ queryKey: ['campaigns', 'shortlisted'] });
       return res.data.isShortlisted;
     } catch (err) {
       const rolledBack = new Set(ids);

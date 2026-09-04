@@ -1,6 +1,7 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FlatList,
   Platform,
@@ -32,6 +33,8 @@ import {
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -109,14 +112,14 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
   );
 }
 
+const EMPTY_SAVED: SavedCreatorItem[] = [];
+
 export default function SavedCreatorsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
-
-  const [items, setItems]     = useState<SavedCreatorItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState('');
   const [searchDebounced] = useDebouncedValue(search, 400);
@@ -130,41 +133,42 @@ export default function SavedCreatorsScreen() {
   const filterActive = isCreatorFilterActive(activeFilter);
   const filterCount  = creatorFilterActiveCount(activeFilter);
 
-  async function load(filter: CreatorFilterState, nameSearch: string) {
-    setLoading(true);
-    try {
-      const locationText = filter.locations.length > 0
-        ? filter.locations.filter((l) => l.label !== 'Remote').map((l) => l.label).join(',')
-        : undefined;
+  const locationText = activeFilter.locations.length > 0
+    ? activeFilter.locations.filter((l) => l.label !== 'Remote').map((l) => l.label).join(',')
+    : undefined;
+  const trimmedSearch = searchDebounced.trim() || undefined;
 
-      const data = await creatorService.getSavedCreators({
-        search: nameSearch.trim() || undefined,
-        location: locationText || undefined,
-        categories: filter.categories.length ? filter.categories : undefined,
-        platforms: filter.platforms.length ? filter.platforms : undefined,
-        priceMin: filter.priceMin > CREATOR_SLIDER_MIN ? filter.priceMin : undefined,
-        priceMax: filter.priceMax < CREATOR_SLIDER_MAX ? filter.priceMax : undefined,
-      });
-      setItems(data);
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Root 'saved-raw' (not 'saved') — deliberately distinct from
+  // explore-creators.tsx's ['creators','saved',...] cache, which stores the
+  // list mapped to a different shape (ApiCreatorListItem via
+  // savedItemToListItem); this screen keeps the raw SavedCreatorItem shape
+  // (item.creator.*), so the two must never share a cache entry.
+  const savedKey = ['creators', 'saved-raw', { search: trimmedSearch, location: locationText, categories: activeFilter.categories, platforms: activeFilter.platforms, priceMin: activeFilter.priceMin, priceMax: activeFilter.priceMax }] as const;
+  const savedQuery = useQuery({
+    queryKey: savedKey,
+    queryFn: () => creatorService.getSavedCreators({
+      search: trimmedSearch,
+      location: locationText,
+      categories: activeFilter.categories.length ? activeFilter.categories : undefined,
+      platforms: activeFilter.platforms.length ? activeFilter.platforms : undefined,
+      priceMin: activeFilter.priceMin > CREATOR_SLIDER_MIN ? activeFilter.priceMin : undefined,
+      priceMax: activeFilter.priceMax < CREATOR_SLIDER_MAX ? activeFilter.priceMax : undefined,
+    }),
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(savedQuery);
+  const items = savedQuery.data ?? EMPTY_SAVED;
+  const loading = savedQuery.isPending;
 
-  useFocusEffect(useCallback(() => { void load(activeFilter, searchDebounced); }, []));
-
-  useEffect(() => {
-    void load(activeFilter, searchDebounced);
-  }, [searchDebounced, activeFilter]);
-
+  // Optimistic removal — un-saving is low-risk/reversible (§20) — rolled back
+  // on failure via the snapshot taken before the write.
   async function handleRemove(creatorId: string) {
-    setItems((prev) => prev.filter((i) => i.creator.id !== creatorId));
+    const previous = queryClient.getQueryData<SavedCreatorItem[]>(savedKey);
+    queryClient.setQueryData<SavedCreatorItem[]>(savedKey, (prev) => prev?.filter((i) => i.creator.id !== creatorId));
     try {
       await creatorService.toggleSaveCreator(creatorId);
     } catch {
-      void load(activeFilter, searchDebounced); // re-sync on error
+      queryClient.setQueryData(savedKey, previous);
     }
   }
 

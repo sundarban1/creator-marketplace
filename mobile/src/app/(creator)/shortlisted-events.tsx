@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '@/components/BackButton';
@@ -11,37 +12,39 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
 import { useShortlistedCampaigns } from '@/hooks/useShortlistedCampaigns';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
-// Where the bookmark icon on every event card/detail leads. Reloads on focus
-// rather than caching: un-shortlisting happens on the detail screen, so a
-// stale list would still show an event the creator just dropped.
+const EMPTY_CAMPAIGNS: Campaign[] = [];
+
+// Where the bookmark icon on every event card/detail leads.
 export default function ShortlistedEventsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
   const { shortlistedIds, reloadIds } = useShortlistedCampaigns();
-  const [items, setItems]     = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    try {
-      const { campaigns } = await campaignService.listShortlisted();
-      setItems(campaigns);
-    } catch {
-      toast.error(t('shortlistedEvents.loadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  // toast/t are stable enough for this one-shot loader; re-creating it on every
-  // render would re-fire the focus effect below in a loop.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const shortlistedQuery = useQuery({
+    queryKey: ['campaigns', 'shortlisted'],
+    queryFn: () => campaignService.listShortlisted().then((r) => r.campaigns),
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(shortlistedQuery);
+  useEffect(() => {
+    if (shortlistedQuery.isError) toast.error(t('shortlistedEvents.loadFailed'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shortlistedQuery.isError]);
+  // The ids Set (from useShortlistedCampaigns, invalidated on every toggle
+  // anywhere in the app) is the source of truth for what's actually still
+  // shortlisted; also re-synced on focus so un/re-shortlisting elsewhere
+  // shows up immediately even before the campaign-list cache above refetches.
+  useFocusEffect(useCallback(() => { void reloadIds(); }, [reloadIds]));
 
-  useFocusEffect(useCallback(() => { void load(); void reloadIds(); }, [load])); // eslint-disable-line react-hooks/exhaustive-deps
-
+  const items = shortlistedQuery.data ?? EMPTY_CAMPAIGNS;
+  const loading = shortlistedQuery.isPending;
   // Drop rows the creator un-shortlisted from a card in this very list, without
   // waiting for a refetch — the ids Set is the source of truth for that.
   const visible = items.filter((c) => shortlistedIds.has(c.id));
