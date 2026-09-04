@@ -15,7 +15,6 @@ import { notificationService } from '../notifications/notification.service';
 import { contractService } from '../contract/contract.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
-import { recordWalletTransactionIdempotent } from '../wallet/wallet.ledger';
 import { emitToRole } from '../../socket';
 import { logger } from '../../config/logger';
 import { invitationService } from './invitation/invitation.service';
@@ -23,6 +22,7 @@ import { logActivity, getActivityForEntity } from '../logging/activity.service';
 import { recordCampaignEvent } from './campaign-events';
 import { assertWorkTransition, assertEscrowTransition } from './application-state-machine';
 import { getEscrowTimings, deadlineFromNow } from './escrow-config';
+import { escrowService } from './escrow.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
@@ -1793,10 +1793,6 @@ export class CampaignService {
       return toApplicationDto(updated);
     }
 
-    // Paid campaign — hand off to the escrow release path. Behind the
-    // settlement-hold flag this becomes a delayed release instead.
-    const released = await this.releaseEscrowToCreator(app, actorUserId, { auto: opts.auto });
-
     this.repo.getUserEmails([creatorUserId]).then((emailMap) => {
       const email = emailMap.get(creatorUserId);
       if (email) {
@@ -1804,95 +1800,55 @@ export class CampaignService {
       }
     }).catch(() => {});
 
-    return toApplicationDto(released);
-  }
-
-  // Releases the escrow held for a paid application straight to the creator's
-  // wallet. Triggered automatically when the business approves the work (see
-  // approveWork) — there is no separate admin release step. Flips workStatus to
-  // COMPLETED and paymentStatus to RELEASED in one update, so the completion
-  // side effects (analytics, notifications, closing an auto-accepted chat) all
-  // fire here. `actorUserId` is the business user who approved; the payout row
-  // carries no admin id since no admin is involved.
-  private async releaseEscrowToCreator(
-    app: NonNullable<Awaited<ReturnType<CampaignRepository['findApplicationById']>>>,
-    actorUserId: string,
-    opts: { auto?: boolean } = {},
-  ) {
-    if (app.paymentStatus === 'RELEASED') return app;
-    if (app.paymentStatus !== 'PAID') {
-      throw new AppError('No escrow payment is held for this application', 400);
+    // Escrow spec §19–§20: when the settlement hold is on, approval doesn't pay
+    // out — it starts a protection window during which a dispute can still
+    // freeze the funds. The settlement sweep releases once the window passes.
+    const timings = await getEscrowTimings();
+    if (timings.settlementHoldEnabled && timings.settlementHours > 0) {
+      assertEscrowTransition(app.escrowStatus, 'RELEASE_PENDING');
+      await this.repo.setEngagementTiming(appId, {
+        workStatus:       'APPROVED',
+        escrowStatus:     'RELEASE_PENDING',
+        paymentReleaseAt: deadlineFromNow(timings.settlementHours),
+      });
+      recordCampaignEvent({
+        campaignId:    app.campaignId,
+        applicationId: appId,
+        axis:          'escrow',
+        fromStatus:    app.escrowStatus,
+        toStatus:      'RELEASE_PENDING',
+        actorId:       opts.auto ? null : actorUserId,
+        actorType,
+        metadata:      { settlementHours: timings.settlementHours },
+      });
+      notificationService.create({
+        userId:  creatorUserId,
+        type:    'work_approved',
+        title:   'Your work was approved',
+        body:    `${businessName} approved your work for "${app.campaign.title}". Payment releases to your wallet in ${timings.settlementHours}h.`,
+        refId:   app.campaignId,
+        refType: 'campaign',
+      }).catch(() => {});
+      notificationService.create({
+        userId:  app.campaign.business.userId,
+        type:    'work_approved',
+        title:   'Work approved',
+        body:    `You approved "${app.campaign.title}". Payment releases to the creator in ${timings.settlementHours}h unless you raise an issue.`,
+        refId:   app.campaignId,
+        refType: 'campaign',
+      }).catch(() => {});
+      const held = await this.repo.findApplicationById(appId);
+      return toApplicationDto(held!);
     }
-    // Escrow spec §5/§27: a frozen (disputed) escrow can only move via admin
-    // resolution, never an automatic release.
-    assertEscrowTransition(app.escrowStatus, 'RELEASED');
 
-    // Creators always receive the full proposedRate — the platform commission
-    // (snapshotted on the campaign) is charged to the business on top of the
-    // rate, not deducted from the creator's payout.
-    const updated = await this.repo.releaseApplicationPayment(app.id, null);
-    await this.repo.createPayoutTransaction({
-      applicationId: app.id,
-      campaignId:    app.campaignId,
-      businessId:    app.campaign.business.id,
-      creatorId:     app.creatorId,
-      adminId:       null,
-      amount:        app.proposedRate,
+    // Hold is off — approval releases the held escrow straight away.
+    await escrowService.release({
+      applicationId: appId,
+      actor:         { userId: opts.auto ? null : actorUserId, type: actorType },
+      reason:        opts.auto ? 'Review window elapsed' : undefined,
     });
-    // Credit the creator wallet ledger — this is the point the payout becomes
-    // spendable. Idempotent via WalletTransaction's (referenceId, type) unique
-    // index, so a retried release never double-credits.
-    await recordWalletTransactionIdempotent({
-      creatorId:     app.creatorId,
-      type:          'CAMPAIGN_PAYOUT',
-      direction:     'CREDIT',
-      amount:        app.proposedRate,
-      description:   `Payment for "${app.campaign.title}"`,
-      referenceType: 'application',
-      referenceId:   app.id,
-    });
-
-    logActivity({ userId: actorUserId, action: ActivityAction.PAYMENT_RELEASED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId, amount: app.proposedRate } });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'escrow', fromStatus: app.escrowStatus, toStatus: 'RELEASED', actorId: opts.auto ? null : actorUserId, actorType: opts.auto ? 'SYSTEM' : 'BUSINESS', metadata: { amount: app.proposedRate } });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'APPROVED', toStatus: 'COMPLETED', actorId: opts.auto ? null : actorUserId, actorType: opts.auto ? 'SYSTEM' : 'BUSINESS' });
-
-    const creatorUserId  = app.creator.userId;
-    const businessUserId  = app.campaign.business.userId;
-    analyticsService.incrPaymentReleased(creatorUserId, businessUserId, app.proposedRate);
-    analyticsService.incrCampaignCompleted(creatorUserId, businessUserId);
-
-    notificationService.create({
-      userId:  creatorUserId,
-      type:    'payment_released',
-      title:   'Payment released to your wallet',
-      body:    opts.auto
-        ? `The review window for "${app.campaign.title}" elapsed, so your payment was released to your wallet.`
-        : `Your payment for "${app.campaign.title}" has been released to your wallet.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
-    notificationService.create({
-      userId:  businessUserId,
-      type:    'project_completed',
-      title:   'Project Complete',
-      body:    `Payment for "${app.campaign.title}" has been released — the project is now complete.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
-
-    // Posted into the still-open conversation before it's closed below.
-    await messagingService
-      .sendSystemMessage(app.creator.id, app.campaign.business.id, app.campaignId, businessUserId, 'BUSINESS', 'Payment released.')
-      .catch(() => {});
-
-    // A conversation that was only ever auto-accepted (never a real chat
-    // request/accept) is closed now that the project is done and paid — it
-    // leaves both inboxes rather than lingering as a request/pending row.
-    messagingService
-      .closeConversationAfterCompletion(creatorUserId, businessUserId, app.creator.id, app.campaign.business.id)
-      .catch(() => {});
-
-    return updated;
+    const released = await this.repo.findApplicationById(appId);
+    return toApplicationDto(released!);
   }
 
   async requestRevision(appId: string, userId: string, note: string) {
@@ -1979,19 +1935,23 @@ export class CampaignService {
     const app = await this.repo.findApplicationById(appId);
     if (!app) throw new AppError('Application not found', 404);
     if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
-    if (app.workStatus !== 'SUBMITTED') throw new AppError('Nothing to report an issue on yet', 400);
+    // Escrow spec §18/§20: an issue can be raised on a fresh submission or
+    // during the post-approval settlement hold (before funds actually release).
+    const inSettlement = app.workStatus === 'APPROVED' && app.escrowStatus === 'RELEASE_PENDING';
+    if (app.workStatus !== 'SUBMITTED' && !inSettlement) throw new AppError('Nothing to report an issue on yet', 400);
     assertWorkTransition(app.workStatus, 'DISPUTED');
-    if (app.escrowStatus === 'HELD') assertEscrowTransition(app.escrowStatus, 'FROZEN');
+    assertEscrowTransition(app.escrowStatus, 'FROZEN');
+    const prevEscrow = app.escrowStatus;
 
     const updated = await this.repo.reportIssue(appId, reason);
 
-    // A frozen escrow is off the automatic clocks — the review sweep must not
-    // auto-approve a disputed submission.
-    await this.repo.setEngagementTiming(appId, { businessReviewDueAt: null }).catch(() => {});
+    // A frozen escrow is off the automatic clocks — neither the review sweep
+    // (auto-approve) nor the settlement sweep (release) may touch it.
+    await this.repo.setEngagementTiming(appId, { businessReviewDueAt: null, paymentReleaseAt: null }).catch(() => {});
 
     logActivity({ userId, action: ActivityAction.APPLICATION_DISPUTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'dispute', fromStatus: null, toStatus: 'OPEN', actorId: userId, actorType: 'BUSINESS', reason });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'escrow', fromStatus: 'HELD', toStatus: 'FROZEN', actorId: userId, actorType: 'BUSINESS', reason });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'escrow', fromStatus: prevEscrow, toStatus: 'FROZEN', actorId: userId, actorType: 'BUSINESS', reason });
 
     messagingService
       .sendSystemMessage(app.creatorId, business.id, app.campaignId, userId, 'BUSINESS', `Issue reported: ${reason}`)

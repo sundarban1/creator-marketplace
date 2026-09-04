@@ -935,17 +935,9 @@ export class CampaignRepository {
     });
   }
 
-  async approveWork(appId: string) {
-    return prisma.application.update({
-      where: { id: appId },
-      data: { workStatus: WorkStatus.APPROVED },
-    });
-  }
-
-  // Free events (OPEN_EVENT) only — see CampaignService.approveWork. There's
+  // Free events (OPEN_EVENT) only — see CampaignService.performApproval. There's
   // no payment to release, so the business's approval is itself the terminal
-  // state; a paid campaign instead reaches COMPLETED via
-  // releaseApplicationPayment, fired automatically on business approval.
+  // state; a paid campaign instead reaches COMPLETED via EscrowService.release.
   async completeWork(appId: string) {
     return prisma.application.update({
       where: { id: appId },
@@ -1105,24 +1097,6 @@ export class CampaignRepository {
     });
   }
 
-  // Payment release is the final stage of a project — no separate creator
-  // confirmation step — so workStatus flips straight to COMPLETED here too.
-  // `adminId` is null when the release is triggered automatically by the
-  // business approving the work (the normal path); it stays for legacy rows
-  // released by an admin before that became automatic.
-  async releaseApplicationPayment(appId: string, adminId: string | null) {
-    return prisma.application.update({
-      where: { id: appId },
-      data: {
-        paymentStatus:     'RELEASED',
-        escrowStatus:      'RELEASED',
-        releasedAt:        new Date(),
-        releasedByAdminId: adminId,
-        workStatus:        WorkStatus.COMPLETED,
-      },
-    });
-  }
-
   // Ledger entry for the business escrowing funds — see PaymentTransaction's
   // schema comment for why this exists alongside Application.paymentStatus.
   // Idempotent: a retried payment webhook that slips past the upstream
@@ -1147,40 +1121,6 @@ export class CampaignRepository {
           campaignId:    params.campaignId,
           businessId:    params.businessId,
           creatorId:     params.creatorId,
-          reference,
-        },
-      });
-    } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        return prisma.paymentTransaction.findUniqueOrThrow({ where: { reference } });
-      }
-      throw err;
-    }
-  }
-
-  // Ledger entry for the platform releasing escrow to the creator. `adminId` is
-  // null on the automatic release path (business approval triggers it).
-  // Idempotent via the unique `reference` — pairs with the wallet ledger's own
-  // (referenceId, type) unique index so a retried release records neither twice.
-  async createPayoutTransaction(params: {
-    applicationId: string;
-    campaignId: string;
-    businessId: string;
-    creatorId: string;
-    adminId?: string | null;
-    amount: number;
-  }) {
-    const reference = `payout:${params.applicationId}`;
-    try {
-      return await prisma.paymentTransaction.create({
-        data: {
-          type:          'PAYOUT',
-          amount:        params.amount,
-          applicationId: params.applicationId,
-          campaignId:    params.campaignId,
-          businessId:    params.businessId,
-          creatorId:     params.creatorId,
-          adminId:       params.adminId ?? null,
           reference,
         },
       });

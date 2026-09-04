@@ -185,7 +185,7 @@ export interface ApplicationDto {
     paidAt?: string | null;
     featureImageUrl?: string | null;
     commissionRate?: number | null;
-    business?: { id?: string; businessName: string | null; logoUrl: string | null };
+    business?: { id?: string; businessName: string | null; logoUrl?: string | null };
   } | null;
   creator?: {
     id?: string;
@@ -379,7 +379,7 @@ type RawApplication = {
     paidAt?: Date | null;
     featureImageUrl?: string | null;
     commissionRate?: number | null;
-    business?: { id?: string; businessName: string | null; logoUrl: string | null };
+    business?: { id?: string; businessName: string | null; logoUrl?: string | null };
   } | null;
   creator?: {
     id?: string;

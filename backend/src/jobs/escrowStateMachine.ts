@@ -258,6 +258,27 @@ async function sweepBusinessReview(now: Date): Promise<{ reminders: number; auto
   return { reminders: toRemind.length, autoApproved };
 }
 
+// ── Sweep 6: settlement hold elapsed → release to creator (§20) ──────────────
+async function sweepSettlementReleases(now: Date): Promise<number> {
+  const rows = await prisma.application.findMany({
+    where: {
+      escrowStatus:     'RELEASE_PENDING',
+      paymentReleaseAt: { lt: now },
+    },
+    select: { id: true },
+  });
+  let released = 0;
+  for (const { id } of rows) {
+    try {
+      const r = await escrowService.release({ applicationId: id, actor: { type: 'SYSTEM' }, reason: 'Settlement window elapsed' });
+      if (r.released) released += 1;
+    } catch (err) {
+      logger.error({ err, appId: id }, 'escrow sweep: settlement release failed');
+    }
+  }
+  return released;
+}
+
 async function runEscrowSweep(): Promise<void> {
   const now = new Date();
   const results: Record<string, unknown> = {};
@@ -273,6 +294,7 @@ async function runEscrowSweep(): Promise<void> {
   await step('confirmationTimeouts', () => sweepConfirmationTimeouts(now));
   await step('contentDeadlines',     () => sweepContentDeadlines(now));
   await step('creatorFailures',      () => sweepCreatorFailures(now));
+  await step('settlementReleases',   () => sweepSettlementReleases(now));
   await step('businessReview',       () => sweepBusinessReview(now));
 
   const touched = Object.values(results).some(
