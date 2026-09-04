@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Alert,
@@ -18,8 +19,10 @@ import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { SwipeableChatRow } from '@/components/SwipeableChatRow';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { STALE } from '@/lib/queryClient';
 import { getSocket } from '@/lib/socket';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
@@ -35,6 +38,7 @@ import type { Conversation } from '@/types';
 
 const ACCENT = '#0EA5E9';
 const PAGE_SIZE = 20;
+const EMPTY_CONVERSATIONS: Conversation[] = [];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -216,89 +220,123 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 type Tab = 'chats' | 'pending';
-type TabState = { items: Conversation[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
-const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
+type ConversationPage = { conversations: Conversation[]; total: number };
+
+function flattenPages(pages: ConversationPage[] | undefined): Conversation[] {
+  if (!pages) return EMPTY_CONVERSATIONS;
+  const seen = new Set<string>();
+  const out: Conversation[] = [];
+  for (const p of pages) for (const c of p.conversations) {
+    if (!seen.has(c.id)) { seen.add(c.id); out.push(c); }
+  }
+  return out;
+}
 
 export default function BusinessChatListScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   // Tab slider hidden for now — screen locked to the 'chats' view.
   const [tab]                       = useState<Tab>('chats');
-  const [tabData, setTabData]       = useState<Record<Tab, TabState>>({ chats: emptyTabState(), pending: emptyTabState() });
-  const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError]           = useState('');
-  const loadingMoreRef = useRef(false);
   const listRef = useRef<FlatList<Conversation>>(null);
   useScrollToTopOnTabPress('messages', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
-  async function loadTab(tabKey: Tab, page: number, replace: boolean) {
-    if (!replace) setTabData((prev) => ({ ...prev, [tabKey]: { ...prev[tabKey], loadingMore: true } }));
-    const status = tabKey === 'pending' ? 'PENDING' : 'ACCEPTED';
-    const { conversations, total } = await chatService.getConversations(status, { page, limit: PAGE_SIZE });
-    setTabData((prev) => {
-      const prevItems = replace ? [] : prev[tabKey].items;
-      const seen = new Set(prevItems.map((c) => c.id));
-      const merged = [...prevItems, ...conversations.filter((c) => !seen.has(c.id))];
-      return { ...prev, [tabKey]: { items: merged, page, total, loadingMore: false, loaded: true } };
-    });
-  }
+  // ── Data — cache-first, paginated (see queryClient.ts). Socket events below
+  // patch the ACCEPTED cache in place instead of reloading the whole list.
+  const pendingQuery = useInfiniteQuery({
+    queryKey: ['conversations', 'business', 'PENDING'],
+    queryFn: ({ pageParam }) => chatService.getConversations('PENDING', { page: pageParam, limit: PAGE_SIZE }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.conversations.length, 0);
+      return loaded < last.total ? all.length + 1 : undefined;
+    },
+    staleTime: STALE.list,
+  });
+  const chatsQuery = useInfiniteQuery({
+    queryKey: ['conversations', 'business', 'ACCEPTED'],
+    queryFn: ({ pageParam }) => chatService.getConversations('ACCEPTED', { page: pageParam, limit: PAGE_SIZE }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.conversations.length, 0);
+      return loaded < last.total ? all.length + 1 : undefined;
+    },
+    staleTime: STALE.list,
+  });
 
-  async function load(silent = false) {
-    if (!silent) setLoading(true);
-    try {
-      await Promise.all([loadTab('pending', 1, true), loadTab('chats', 1, true)]);
-      setError('');
-    } catch (e) {
-      // Only surface errors from user-visible (non-silent) loads — a transient
-      // failure during a background socket-triggered refresh shouldn't blow
-      // away an already-populated, still-valid list.
-      if (!silent) setError(e instanceof Error ? e.message : t('messages.loadFailedSub'));
-    } finally {
-      if (!silent) setLoading(false);
-      setRefreshing(false);
-      loadingMoreRef.current = false;
-    }
-  }
+  const pending = flattenPages(pendingQuery.data?.pages);
+  const chats   = flattenPages(chatsQuery.data?.pages);
+  const loading = pendingQuery.isPending || chatsQuery.isPending;
+  // A query only reaches 'error' status when it has never had data (initial
+  // load failed) — a background socket-triggered refetch failing leaves the
+  // already-populated, still-valid list in place instead of blowing it away.
+  const firstError = pendingQuery.error ?? chatsQuery.error;
+  const error = (pendingQuery.isError || chatsQuery.isError)
+    ? (firstError instanceof Error ? firstError.message : t('messages.loadFailedSub'))
+    : '';
+  const activeQuery = tab === 'pending' ? pendingQuery : chatsQuery;
 
   function loadMore() {
-    const state = tabData[tab];
-    if (loadingMoreRef.current || state.loadingMore || state.items.length >= state.total) return;
-    loadingMoreRef.current = true;
-    void loadTab(tab, state.page + 1, false).finally(() => { loadingMoreRef.current = false; });
+    if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) void activeQuery.fetchNextPage();
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await activeQuery.refetch();
+    setRefreshing(false);
+  }
+
+  function refetchAll() {
+    void pendingQuery.refetch();
+    void chatsQuery.refetch();
   }
 
   // Auto-refresh the moment connectivity is restored after being offline.
   const { reconnectedAt } = useNetworkStatus();
   useEffect(() => {
-    if (reconnectedAt) void load(true);
-  }, [reconnectedAt]);
+    if (reconnectedAt) void queryClient.invalidateQueries({ queryKey: ['conversations', 'business'] });
+  }, [reconnectedAt, queryClient]);
 
   useEffect(() => {
-    load();
-    const unsub = messagingEvents.subscribe(() => void load(true));
+    const unsub = messagingEvents.subscribe(() =>
+      void queryClient.invalidateQueries({ queryKey: ['conversations', 'business'] }));
     const socket = getSocket();
 
     const onMessageNew = (data: { conversationId: string; message: ApiMessage }) => {
-      setTabData((prev) => {
-        const idx = prev.chats.items.findIndex((c) => c.id === data.conversationId);
-        if (idx === -1) { void load(true); return prev; }
-        const updated = [...prev.chats.items];
-        const conv = { ...updated[idx]! };
-        conv.lastMessage = data.message.content;
-        conv.lastMessageType = data.message.type;
-        conv.lastMessageAttachmentName = data.message.attachmentName;
-        conv.lastMessageTime = data.message.createdAt;
-        if (data.message.senderId !== user?.id) {
-          conv.unreadCount = (conv.unreadCount ?? 0) + 1;
-        }
-        updated.splice(idx, 1);
-        updated.unshift(conv);
-        return { ...prev, chats: { ...prev.chats, items: updated } };
-      });
+      queryClient.setQueryData<{ pages: ConversationPage[]; pageParams: number[] }>(
+        ['conversations', 'business', 'ACCEPTED'],
+        (old) => {
+          if (!old) return old;
+          let movedConv: Conversation | null = null;
+          const pages = old.pages.map((p) => {
+            const idx = p.conversations.findIndex((c) => c.id === data.conversationId);
+            if (idx === -1) return p;
+            const conv = { ...p.conversations[idx]! };
+            conv.lastMessage = data.message.content;
+            conv.lastMessageType = data.message.type;
+            conv.lastMessageAttachmentName = data.message.attachmentName;
+            conv.lastMessageTime = data.message.createdAt;
+            if (data.message.senderId !== user?.id) {
+              conv.unreadCount = (conv.unreadCount ?? 0) + 1;
+            }
+            movedConv = conv;
+            const rest = [...p.conversations];
+            rest.splice(idx, 1);
+            return { ...p, conversations: rest };
+          });
+          if (!movedConv) {
+            void queryClient.invalidateQueries({ queryKey: ['conversations', 'business'] });
+            return old;
+          }
+          const firstPage = pages[0]!;
+          pages[0] = { ...firstPage, conversations: [movedConv, ...firstPage.conversations] };
+          return { ...old, pages };
+        },
+      );
     };
-    const onConvUpdate = () => void load(true);
+    const onConvUpdate = () => void queryClient.invalidateQueries({ queryKey: ['conversations', 'business'] });
 
     socket?.on('conversation:update', onConvUpdate);
     socket?.on('message:new', onMessageNew);
@@ -307,22 +345,32 @@ export default function BusinessChatListScreen() {
       socket?.off('conversation:update', onConvUpdate);
       socket?.off('message:new', onMessageNew);
     };
-  }, [user?.id]);
+  }, [user?.id, queryClient]);
 
+  // Other screens (chat thread markSeen, accept/decline elsewhere) call
+  // messagingEvents.refresh() to mean "something read-related changed" — kept
+  // separate from this screen's own stale-refetch-on-focus below.
   useFocusEffect(useCallback(() => {
     messagingEvents.refresh();
-    void load(true);
   }, []));
+  useRefetchOnFocusIfStale(pendingQuery, chatsQuery);
 
   function handleDeleteConversation(conversationId: string) {
-    setTabData((prev) => ({
-      ...prev,
-      chats: { ...prev.chats, items: prev.chats.items.filter((c) => c.id !== conversationId), total: Math.max(0, prev.chats.total - 1) },
-    }));
+    queryClient.setQueryData<{ pages: ConversationPage[]; pageParams: number[] }>(
+      ['conversations', 'business', 'ACCEPTED'],
+      (old) => {
+        if (!old) return old;
+        const pages = old.pages.map((p) => {
+          const hadIt = p.conversations.some((c) => c.id === conversationId);
+          return hadIt
+            ? { ...p, conversations: p.conversations.filter((c) => c.id !== conversationId), total: Math.max(0, p.total - 1) }
+            : p;
+        });
+        return { ...old, pages };
+      },
+    );
   }
 
-  const pending = tabData.pending.items;
-  const chats   = tabData.chats.items;
   // const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0); // used by hidden tab slider
 
   return (
@@ -350,7 +398,7 @@ export default function BusinessChatListScreen() {
           icon="exclamation-circle"
           title={t('messages.loadFailedTitle')}
           subtitle={error}
-          action={{ label: t('messages.retry'), onPress: () => load() }}
+          action={{ label: t('messages.retry'), onPress: refetchAll }}
         />
       ) : tab === 'pending' ? (
         <FlatList
@@ -359,7 +407,7 @@ export default function BusinessChatListScreen() {
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <PendingCard conv={item} />}
           contentContainerStyle={[s.reqList, pending.length === 0 && s.listEmpty]}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadTab('pending', 1, true).finally(() => setRefreshing(false)); }} tintColor={ACCENT} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
@@ -367,7 +415,7 @@ export default function BusinessChatListScreen() {
           maxToRenderPerBatch={10}
           windowSize={7}
           removeClippedSubviews={Platform.OS === 'android'}
-          ListFooterComponent={tabData.pending.loadingMore ? <View style={s.footerLoading}><ActivityIndicator size="small" color={ACCENT} /></View> : null}
+          ListFooterComponent={pendingQuery.isFetchingNextPage ? <View style={s.footerLoading}><ActivityIndicator size="small" color={ACCENT} /></View> : null}
           ListEmptyComponent={
             <EmptyState
               faIcon="paper-plane"
@@ -384,7 +432,7 @@ export default function BusinessChatListScreen() {
           renderItem={({ item }) => <ChatCard conv={item} onDelete={handleDeleteConversation} />}
           contentContainerStyle={[s.chatList, chats.length === 0 && s.listEmpty]}
           ItemSeparatorComponent={() => <View style={[s.sep, { backgroundColor: C.border }]} />}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadTab('chats', 1, true).finally(() => setRefreshing(false)); }} tintColor={ACCENT} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
@@ -392,7 +440,7 @@ export default function BusinessChatListScreen() {
           maxToRenderPerBatch={10}
           windowSize={7}
           removeClippedSubviews={Platform.OS === 'android'}
-          ListFooterComponent={tabData.chats.loadingMore ? <View style={s.footerLoading}><ActivityIndicator size="small" color={ACCENT} /></View> : null}
+          ListFooterComponent={chatsQuery.isFetchingNextPage ? <View style={s.footerLoading}><ActivityIndicator size="small" color={ACCENT} /></View> : null}
           ListEmptyComponent={
             <EmptyState
               faIcon="comment-dots"

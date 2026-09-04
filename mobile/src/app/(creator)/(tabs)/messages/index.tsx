@@ -2,12 +2,14 @@ import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 // import { TabSlider } from '@/components/TabSlider'; // hidden for now
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { SwipeableChatRow } from '@/components/SwipeableChatRow';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import {
   ActivityIndicator,
@@ -21,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { STALE } from '@/lib/queryClient';
 import { getSocket } from '@/lib/socket';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
@@ -34,6 +37,7 @@ import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
 
 const ACCENT = '#0EA5E9';
+const EMPTY_CONVERSATIONS: Conversation[] = [];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -285,53 +289,69 @@ export default function CreatorMessagesScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   // Tab slider hidden for now — screen locked to the 'chats' view.
   const [tab]                       = useState<Tab>('chats');
-  const [requests, setRequests]     = useState<Conversation[]>([]);
-  const [chats, setChats]           = useState<Conversation[]>([]);
-  const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError]           = useState('');
   const listRef = useRef<FlatList<Conversation>>(null);
   useScrollToTopOnTabPress('messages', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
-  async function load(silent = false) {
-    if (!silent) setLoading(true);
-    try {
-      const [pending, accepted] = await Promise.all([
-        chatService.getConversations('PENDING'),
-        chatService.getConversations('ACCEPTED'),
-      ]);
-      setRequests(pending.conversations);
-      setChats(accepted.conversations.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()));
-      setError('');
-    } catch (e) {
-      // Only surface errors from user-visible (non-silent) loads — a transient
-      // failure during a background socket-triggered refresh shouldn't blow
-      // away an already-populated, still-valid list.
-      if (!silent) setError(e instanceof Error ? e.message : t('messages.loadFailedSub'));
-    } finally {
-      if (!silent) setLoading(false);
-      setRefreshing(false);
-    }
+  // ── Data — cache-first (see queryClient.ts). Socket events below patch these
+  // caches in place instead of reloading the whole list on every message.
+  const requestsQuery = useQuery({
+    queryKey: ['conversations', 'creator', 'PENDING'],
+    queryFn: () => chatService.getConversations('PENDING').then((r) => r.conversations),
+    staleTime: STALE.list,
+  });
+  const chatsQuery = useQuery({
+    queryKey: ['conversations', 'creator', 'ACCEPTED'],
+    queryFn: () => chatService.getConversations('ACCEPTED').then((r) =>
+      r.conversations.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime())),
+    staleTime: STALE.list,
+  });
+
+  const requests = requestsQuery.data ?? EMPTY_CONVERSATIONS;
+  const chats    = chatsQuery.data ?? EMPTY_CONVERSATIONS;
+  const loading  = requestsQuery.isPending || chatsQuery.isPending;
+  // A query only reaches 'error' status when it has never had data (initial
+  // load failed) — a background socket-triggered refetch failing leaves the
+  // already-populated, still-valid list in place instead of blowing it away.
+  const firstError = requestsQuery.error ?? chatsQuery.error;
+  const error = (requestsQuery.isError || chatsQuery.isError)
+    ? (firstError instanceof Error ? firstError.message : t('messages.loadFailedSub'))
+    : '';
+
+  function refetchAll() {
+    void requestsQuery.refetch();
+    void chatsQuery.refetch();
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await Promise.allSettled([requestsQuery.refetch(), chatsQuery.refetch()]);
+    setRefreshing(false);
   }
 
   // Auto-refresh the moment connectivity is restored after being offline.
   const { reconnectedAt } = useNetworkStatus();
   useEffect(() => {
-    if (reconnectedAt) void load(true);
-  }, [reconnectedAt]);
+    if (reconnectedAt) void queryClient.invalidateQueries({ queryKey: ['conversations', 'creator'] });
+  }, [reconnectedAt, queryClient]);
 
   useEffect(() => {
-    load();
-    const unsub = messagingEvents.subscribe(() => void load(true));
+    const unsub = messagingEvents.subscribe(() =>
+      void queryClient.invalidateQueries({ queryKey: ['conversations', 'creator'] }));
     const socket = getSocket();
 
     // Real-time: update conversation in-place instead of full reload
     const onMessageNew = (data: { conversationId: string; message: ApiMessage }) => {
-      setChats((prev) => {
+      queryClient.setQueryData<Conversation[]>(['conversations', 'creator', 'ACCEPTED'], (prev) => {
+        if (!prev) return prev;
         const idx = prev.findIndex((c) => c.id === data.conversationId);
-        if (idx === -1) { void load(true); return prev; }
+        if (idx === -1) {
+          void queryClient.invalidateQueries({ queryKey: ['conversations', 'creator'] });
+          return prev;
+        }
         const updated = [...prev];
         const conv = { ...updated[idx]! };
         conv.lastMessage = data.message.content;
@@ -346,7 +366,7 @@ export default function CreatorMessagesScreen() {
         return updated;
       });
     };
-    const onConvUpdate = () => void load(true);
+    const onConvUpdate = () => void queryClient.invalidateQueries({ queryKey: ['conversations', 'creator'] });
 
     socket?.on('conversation:update', onConvUpdate);
     socket?.on('message:new', onMessageNew);
@@ -355,15 +375,19 @@ export default function CreatorMessagesScreen() {
       socket?.off('conversation:update', onConvUpdate);
       socket?.off('message:new', onMessageNew);
     };
-  }, [user?.id]);
+  }, [user?.id, queryClient]);
 
+  // Other screens (chat thread markSeen, accept/decline elsewhere) call
+  // messagingEvents.refresh() to mean "something read-related changed" — kept
+  // separate from this screen's own stale-refetch-on-focus below.
   useFocusEffect(useCallback(() => {
     messagingEvents.refresh();
-    void load(true);
   }, []));
+  useRefetchOnFocusIfStale(requestsQuery, chatsQuery);
 
   function handleDeleteConversation(conversationId: string) {
-    setChats((prev) => prev.filter((c) => c.id !== conversationId));
+    queryClient.setQueryData<Conversation[]>(['conversations', 'creator', 'ACCEPTED'], (prev) =>
+      prev?.filter((c) => c.id !== conversationId));
   }
 
   // const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0); // used by hidden tab slider
@@ -393,16 +417,16 @@ export default function CreatorMessagesScreen() {
           faIcon="exclamation-triangle"
           title={t('messages.loadFailedTitle')}
           subtitle={error}
-          action={{ label: t('messages.retry'), onPress: () => load() }}
+          action={{ label: t('messages.retry'), onPress: refetchAll }}
         />
       ) : tab === 'requests' ? (
         <FlatList
           ref={listRef}
           data={requests}
           keyExtractor={(c) => c.id}
-          renderItem={({ item }) => <RequestCard conv={item} onRespond={() => load()} />}
+          renderItem={({ item }) => <RequestCard conv={item} onRespond={refetchAll} />}
           contentContainerStyle={[s.reqList, requests.length === 0 && s.listEmpty]}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
@@ -424,7 +448,7 @@ export default function CreatorMessagesScreen() {
           renderItem={({ item }) => <ChatCard conv={item} onDelete={handleDeleteConversation} />}
           contentContainerStyle={[s.chatList, chats.length === 0 && s.listEmpty]}
           ItemSeparatorComponent={() => <View style={[s.sep, { backgroundColor: C.border }]} />}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
