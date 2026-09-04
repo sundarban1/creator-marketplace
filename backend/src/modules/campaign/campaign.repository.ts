@@ -773,6 +773,7 @@ export class CampaignRepository {
           deliverableVideos: true,
           deliverableFiles: true,
           paymentStatus: true,
+          escrowStatus: true,
           paidAt: true,
           createdAt: true,
           creator: {
@@ -853,6 +854,7 @@ export class CampaignRepository {
           deliverableVideos: true,
           deliverableFiles: true,
           paymentStatus: true,
+          escrowStatus: true,
           paidAt: true,
           createdAt: true,
           campaign: {
@@ -951,8 +953,16 @@ export class CampaignRepository {
       prisma.application.update({
         where: { id: appId },
         // Reuses revisionRequestedAt as a generic "last note flagged at"
-        // timestamp rather than adding a dedicated disputedAt column.
-        data: { workStatus: WorkStatus.DISPUTED, workNote: reason, revisionRequestedAt: new Date() },
+        // timestamp rather than adding a dedicated disputedAt column. A reported
+        // issue freezes the escrow (escrow spec §27) — no automatic release or
+        // refund may touch it until the dispute is resolved. Only applies when
+        // funds are actually held; a free event has none.
+        data: {
+          workStatus:          WorkStatus.DISPUTED,
+          workNote:            reason,
+          revisionRequestedAt: new Date(),
+          escrowStatus:        'FROZEN',
+        },
       }),
       prisma.revisionNote.create({
         data: { applicationId: appId, note: reason },
@@ -1047,7 +1057,14 @@ export class CampaignRepository {
   async payForApplication(appId: string, method: string) {
     return prisma.application.update({
       where: { id: appId },
-      data: { paymentStatus: 'PAID', paidAt: new Date(), paymentMethod: method, khaltiPidx: null, esewaTransactionUuid: null },
+      data: {
+        paymentStatus:        'PAID',
+        escrowStatus:         'HELD',
+        paidAt:               new Date(),
+        paymentMethod:        method,
+        khaltiPidx:           null,
+        esewaTransactionUuid: null,
+      },
     });
   }
 
@@ -1073,12 +1090,21 @@ export class CampaignRepository {
   async releaseApplicationPayment(appId: string, adminId: string | null) {
     return prisma.application.update({
       where: { id: appId },
-      data: { paymentStatus: 'RELEASED', releasedAt: new Date(), releasedByAdminId: adminId, workStatus: WorkStatus.COMPLETED },
+      data: {
+        paymentStatus:     'RELEASED',
+        escrowStatus:      'RELEASED',
+        releasedAt:        new Date(),
+        releasedByAdminId: adminId,
+        workStatus:        WorkStatus.COMPLETED,
+      },
     });
   }
 
   // Ledger entry for the business escrowing funds — see PaymentTransaction's
   // schema comment for why this exists alongside Application.paymentStatus.
+  // Idempotent: a retried payment webhook that slips past the upstream
+  // paymentStatus guard gets the already-recorded row back instead of a
+  // duplicate money-movement entry (unique `reference`).
   async createEscrowTransaction(params: {
     applicationId: string;
     campaignId: string;
@@ -1087,21 +1113,32 @@ export class CampaignRepository {
     amount: number;
     method: string;
   }) {
-    return prisma.paymentTransaction.create({
-      data: {
-        type:          'ESCROW_IN',
-        amount:        params.amount,
-        method:        params.method,
-        applicationId: params.applicationId,
-        campaignId:    params.campaignId,
-        businessId:    params.businessId,
-        creatorId:     params.creatorId,
-      },
-    });
+    const reference = `escrow:${params.applicationId}`;
+    try {
+      return await prisma.paymentTransaction.create({
+        data: {
+          type:          'ESCROW_IN',
+          amount:        params.amount,
+          method:        params.method,
+          applicationId: params.applicationId,
+          campaignId:    params.campaignId,
+          businessId:    params.businessId,
+          creatorId:     params.creatorId,
+          reference,
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        return prisma.paymentTransaction.findUniqueOrThrow({ where: { reference } });
+      }
+      throw err;
+    }
   }
 
   // Ledger entry for the platform releasing escrow to the creator. `adminId` is
   // null on the automatic release path (business approval triggers it).
+  // Idempotent via the unique `reference` — pairs with the wallet ledger's own
+  // (referenceId, type) unique index so a retried release records neither twice.
   async createPayoutTransaction(params: {
     applicationId: string;
     campaignId: string;
@@ -1110,17 +1147,26 @@ export class CampaignRepository {
     adminId?: string | null;
     amount: number;
   }) {
-    return prisma.paymentTransaction.create({
-      data: {
-        type:          'PAYOUT',
-        amount:        params.amount,
-        applicationId: params.applicationId,
-        campaignId:    params.campaignId,
-        businessId:    params.businessId,
-        creatorId:     params.creatorId,
-        adminId:       params.adminId ?? null,
-      },
-    });
+    const reference = `payout:${params.applicationId}`;
+    try {
+      return await prisma.paymentTransaction.create({
+        data: {
+          type:          'PAYOUT',
+          amount:        params.amount,
+          applicationId: params.applicationId,
+          campaignId:    params.campaignId,
+          businessId:    params.businessId,
+          creatorId:     params.creatorId,
+          adminId:       params.adminId ?? null,
+          reference,
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        return prisma.paymentTransaction.findUniqueOrThrow({ where: { reference } });
+      }
+      throw err;
+    }
   }
 
   async countAcceptedApplications(campaignId: string): Promise<number> {

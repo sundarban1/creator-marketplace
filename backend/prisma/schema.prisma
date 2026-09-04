@@ -935,7 +935,15 @@ model Application {
   // deliverableVideos' direct-to-Cloudinary signed flow. Cleared alongside
   // deliverableVideos on requestRevision.
   deliverableFiles     Json                    @default("[]")
+  // Legacy coarse payment flag (UNPAID/PAID/RELEASED/REFUNDED) — still written
+  // alongside escrowStatus for backward compatibility with existing reads
+  // (analytics, messaging, admin). escrowStatus below is the authoritative,
+  // finer-grained escrow state going forward.
   paymentStatus        PaymentStatus           @default(UNPAID)
+  // Authoritative escrow state for this engagement (see EscrowStatus enum).
+  // Backfilled from paymentStatus + workStatus. Kept in sync at every existing
+  // money-movement site; automatic transitions/jobs are layered on top of it.
+  escrowStatus         EscrowStatus            @default(NOT_FUNDED)
   paidAt               DateTime?
   // esewa | khalti | fonepay — set once payForApplication (mock) or a real
   // gateway (Khalti) actually completes the payment.
@@ -990,6 +998,7 @@ model Application {
   @@index([creatorId])
   @@index([creatorId, createdAt(sort: Desc)])
   @@index([campaignId, status])
+  @@index([escrowStatus])
   @@map("applications")
 }
 
@@ -1072,6 +1081,17 @@ model RevisionNote {
 // the project is complete (PAYOUT). Written at the same call sites that already
 // flip Application.paymentStatus (payForApplication / releaseApplicationPayment)
 // — this is an append-only ledger, not a replacement for those status fields.
+// One row per real money movement on the business/escrow side of a campaign
+// engagement (Application). This IS Kolab's escrow ledger — the escrow "state
+// machine" spec's EscrowTransaction entity is implemented here, not as a second
+// parallel table. Append-only, never updated or deleted (same rule as
+// audit_logs / wallet_transactions). The current escrow state is denormalised
+// onto Application.escrowStatus; this table is the immutable history behind it.
+//
+//   ESCROW_IN       business → Kolab escrow   (funding, HELD)
+//   PAYOUT          Kolab escrow → creator    (release, RELEASED)
+//   REFUND          Kolab escrow → business   (full refund, REFUNDED)
+//   PARTIAL_REFUND  Kolab escrow → business   (split settlement, PARTIALLY_REFUNDED)
 model PaymentTransaction {
   id            String                 @id @default(cuid())
   type          PaymentTransactionType
@@ -1084,8 +1104,20 @@ model PaymentTransaction {
   businessId    String
   // Set on PAYOUT only — ESCROW_IN's counterparty is the platform, not a creator.
   creatorId     String?
-  // Set on PAYOUT only — the admin who released it (mirrors Application.releasedByAdminId).
+  // Set on PAYOUT / REFUND when an admin performed the movement (dispute
+  // resolution, manual override). Null on the automatic paths.
   adminId       String?
+  // Idempotency key for every financial operation (escrow spec §43): e.g.
+  // "escrow:{appId}", "payout:{appId}", "refund:{appId}", "settlement:{disputeId}:creator".
+  // A retried webhook or background job re-running the same operation hits this
+  // unique index (Prisma P2002) instead of writing a second money-movement row,
+  // so escrow can never be released or refunded twice. Nullable — legacy rows
+  // written before this column existed keep NULL (Postgres treats NULLs as
+  // distinct), and every new write sets it.
+  reference     String?                @unique
+  // Free-form context for the movement — refund reason, dispute id, settlement
+  // split, the job that triggered it, etc.
+  metadata      Json?
   createdAt     DateTime               @default(now())
 
   application Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
@@ -1102,6 +1134,35 @@ model PaymentTransaction {
 enum PaymentTransactionType {
   ESCROW_IN
   PAYOUT
+  REFUND
+  PARTIAL_REFUND
+}
+
+// The current financial state of one Application's escrow, denormalised from
+// the append-only PaymentTransaction ledger for cheap querying and guard checks.
+// Deliberately independent of Application.status (the relationship lifecycle)
+// and Application.workStatus (the submission lifecycle) — escrow spec's core
+// rule: money state is never conflated with campaign progress.
+//
+//   NOT_FUNDED         no payment expected yet / never funded
+//   PAYMENT_PENDING    creator selected, business has a payment window open
+//   HELD               business paid, Kolab holds the funds
+//   RELEASE_PENDING    work approved, settlement/hold window counting down
+//   RELEASED           paid out to the creator wallet
+//   REFUND_PENDING     a refund has been decided, transfer in progress
+//   REFUNDED           fully returned to the business
+//   PARTIALLY_REFUNDED split between creator and business (dispute settlement)
+//   FROZEN             an open dispute blocks every automatic release/refund
+enum EscrowStatus {
+  NOT_FUNDED
+  PAYMENT_PENDING
+  HELD
+  RELEASE_PENDING
+  RELEASED
+  REFUND_PENDING
+  REFUNDED
+  PARTIALLY_REFUNDED
+  FROZEN
 }
 
 // One row per rater per completed application — a creator and a business can

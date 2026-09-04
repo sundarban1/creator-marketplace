@@ -162,6 +162,9 @@ export interface ApplicationDto {
   deliverableVideos: DeliverableVideo[];
   deliverableFiles: DeliverableFile[];
   paymentStatus: string;
+  // Authoritative escrow state (EscrowStatus). Falls back to a value derived
+  // from paymentStatus on the rare read path that doesn't select the column.
+  escrowStatus: string;
   paidAt: string | null;
   createdAt: string;
   campaign?: {
@@ -355,6 +358,7 @@ type RawApplication = {
   deliverableVideos?: Prisma.JsonValue;
   deliverableFiles?: Prisma.JsonValue;
   paymentStatus: string;
+  escrowStatus?: string | null;
   paidAt: Date | null;
   createdAt: Date;
   campaign?: {
@@ -384,6 +388,17 @@ type RawApplication = {
   } | null;
 };
 
+// Fallback for the rare read path that returns a bare application row without
+// selecting escrowStatus — mirrors the migration's backfill mapping.
+function escrowStatusFromPaymentStatus(paymentStatus?: string | null, workStatus?: string | null): string {
+  switch (paymentStatus) {
+    case 'PAID':     return workStatus === 'DISPUTED' ? 'FROZEN' : 'HELD';
+    case 'RELEASED': return 'RELEASED';
+    case 'REFUNDED': return 'REFUNDED';
+    default:         return 'NOT_FUNDED';
+  }
+}
+
 export function toApplicationDto(a: RawApplication): ApplicationDto {
   const commissionRate = a.campaign?.commissionRate ?? 0;
   const platformFee = Math.round(a.proposedRate * (commissionRate / 100) * 100) / 100;
@@ -408,6 +423,7 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
     deliverableFiles: z.array(deliverableFileSchema).catch([]).parse(a.deliverableFiles ?? []),
     paymentStatus:   a.paymentStatus ?? 'UNPAID',
+    escrowStatus:    a.escrowStatus ?? escrowStatusFromPaymentStatus(a.paymentStatus, a.workStatus),
     paidAt:          a.paidAt ? (a.paidAt instanceof Date ? a.paidAt.toISOString() : a.paidAt) : null,
     createdAt:       a.createdAt.toISOString(),
   };
