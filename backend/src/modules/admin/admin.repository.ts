@@ -55,6 +55,21 @@ const DEFAULTS: Record<string, unknown> = {
   // on. See CampaignService.getFeaturedQuota. Lowercased on comparison.
   'featuredEvent.unlimitedEmails': [] as string[],
 
+  // ── Escrow state machine (escrow spec §41) ───────────────────────────────
+  // All *Hours values are durations in hours; read through
+  // campaign/escrow-config.ts, never hard-coded in the state machine. Editing
+  // any of these affects only engagements that enter the relevant stage after
+  // the change — existing deadlines are stored as absolute timestamps and are
+  // never recalculated from "now".
+  'escrow.paymentWindowHours':          24, // business must fund after being selected
+  'escrow.creatorConfirmWindowHours':   24, // creator must confirm after escrow is funded
+  'escrow.contentGraceHours':            6, // grace period after the content deadline
+  'escrow.businessReviewHours':         24, // review window after a submission
+  'escrow.businessReviewReminderHours': 12, // nudge partway through the review window
+  'escrow.settlementHours':             24, // hold after approval before funds release
+  'escrow.maxIncludedRevisions':         2, // revisions included before a change request
+  'escrow.autoApproveOnReviewTimeout': true, // auto-approve if review window lapses
+
   // ── Marketplace ──────────────────────────────────────────────────────────
   // §79 — the current launch-focus city. Recommendations (getRecommendedCreators/
   // getRecommendedBusinesses) rank a same-city match above same-district above

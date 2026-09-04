@@ -21,6 +21,7 @@ import { logger } from '../../config/logger';
 import { invitationService } from './invitation/invitation.service';
 import { logActivity, getActivityForEntity } from '../logging/activity.service';
 import { recordCampaignEvent } from './campaign-events';
+import { assertWorkTransition, assertEscrowTransition } from './application-state-machine';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
@@ -1598,6 +1599,7 @@ export class CampaignService {
     const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
     if (isFreeEvent) throw new AppError('Free events have no work stage — being accepted is final', 400);
     if (app.paymentStatus !== 'PAID') throw new AppError('Payment not yet secured', 400);
+    assertWorkTransition(app.workStatus, 'IN_PROGRESS');
 
     const updated = await this.repo.startWork(appId);
     analyticsService.incrCampaignStarted(userId);
@@ -1642,6 +1644,7 @@ export class CampaignService {
     if (app.campaign.campaignType === 'OPEN_EVENT') {
       throw new AppError('Free events have no deliverables to submit', 400);
     }
+    assertWorkTransition(app.workStatus, 'SUBMITTED');
 
     const updated = await this.repo.submitWork(appId, data);
 
@@ -1680,8 +1683,10 @@ export class CampaignService {
     if (!app) throw new AppError('Application not found', 404);
     if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
+    if (app.escrowStatus === 'FROZEN') throw new AppError('This engagement is under dispute — resolve it before approving', 409);
 
     const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
+    assertWorkTransition(app.workStatus, isFreeEvent ? 'COMPLETED' : 'APPROVED');
 
     logActivity({ userId, action: ActivityAction.APPLICATION_WORK_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
     recordCampaignEvent({
@@ -1746,6 +1751,9 @@ export class CampaignService {
     if (app.paymentStatus !== 'PAID') {
       throw new AppError('No escrow payment is held for this application', 400);
     }
+    // Escrow spec §5/§27: a frozen (disputed) escrow can only move via admin
+    // resolution, never an automatic release.
+    assertEscrowTransition(app.escrowStatus, 'RELEASED');
 
     // Creators always receive the full proposedRate — the platform commission
     // (snapshotted on the campaign) is charged to the business on top of the
@@ -1821,6 +1829,8 @@ export class CampaignService {
     if (!app) throw new AppError('Application not found', 404);
     if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
+    if (app.escrowStatus === 'FROZEN') throw new AppError('This engagement is under dispute', 409);
+    assertWorkTransition(app.workStatus, 'IN_PROGRESS');
 
     const existingVideos = await this.repo.getDeliverableVideos(appId);
 
@@ -1885,6 +1895,8 @@ export class CampaignService {
     if (!app) throw new AppError('Application not found', 404);
     if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Nothing to report an issue on yet', 400);
+    assertWorkTransition(app.workStatus, 'DISPUTED');
+    if (app.escrowStatus === 'HELD') assertEscrowTransition(app.escrowStatus, 'FROZEN');
 
     const updated = await this.repo.reportIssue(appId, reason);
 

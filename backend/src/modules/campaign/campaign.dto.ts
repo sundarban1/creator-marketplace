@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
+import { deriveEngagementState } from './application-state-machine';
 
 // Server-verified data (built from Cloudinary's own Admin API response, never
 // from client-submitted metadata — see CampaignService.completeDeliverableVideo)
@@ -165,6 +166,9 @@ export interface ApplicationDto {
   // Authoritative escrow state (EscrowStatus). Falls back to a value derived
   // from paymentStatus on the rare read path that doesn't select the column.
   escrowStatus: string;
+  // Single derived label combining the relationship / work / escrow axes —
+  // what the client should switch on (see application-state-machine.ts).
+  engagementState: string;
   paidAt: string | null;
   createdAt: string;
   campaign?: {
@@ -402,6 +406,7 @@ function escrowStatusFromPaymentStatus(paymentStatus?: string | null, workStatus
 export function toApplicationDto(a: RawApplication): ApplicationDto {
   const commissionRate = a.campaign?.commissionRate ?? 0;
   const platformFee = Math.round(a.proposedRate * (commissionRate / 100) * 100) / 100;
+  const escrowStatus = a.escrowStatus ?? escrowStatusFromPaymentStatus(a.paymentStatus, a.workStatus);
   const dto: ApplicationDto = {
     id:              a.id,
     campaignId:      a.campaignId,
@@ -423,7 +428,15 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
     deliverableFiles: z.array(deliverableFileSchema).catch([]).parse(a.deliverableFiles ?? []),
     paymentStatus:   a.paymentStatus ?? 'UNPAID',
-    escrowStatus:    a.escrowStatus ?? escrowStatusFromPaymentStatus(a.paymentStatus, a.workStatus),
+    escrowStatus:    escrowStatus,
+    engagementState: deriveEngagementState({
+      applicationStatus:   a.status,
+      workStatus:          a.workStatus,
+      escrowStatus:        escrowStatus,
+      campaignType:        a.campaign?.campaignType ?? 'PAID_CAMPAIGN',
+      campaignStatus:      a.campaign?.status,
+      revisionRequestedAt: a.revisionRequestedAt ?? null,
+    }),
     paidAt:          a.paidAt ? (a.paidAt instanceof Date ? a.paidAt.toISOString() : a.paidAt) : null,
     createdAt:       a.createdAt.toISOString(),
   };
