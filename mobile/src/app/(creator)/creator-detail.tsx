@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
+import { useQuery } from '@tanstack/react-query';
+import { creatorService } from '@/services/creator';
+import { STALE } from '@/lib/queryClient';
 import { CreatorProfileView } from '@/features/creator/components/CreatorProfileView';
 import { toVisitorVm, privateVisitorVm } from '@/features/creator/utils/creatorProfileVm';
 
@@ -10,23 +11,17 @@ import { toVisitorVm, privateVisitorVm } from '@/features/creator/utils/creatorP
 // hiring business).
 export default function CreatorPeerDetailScreen() {
   const { id, viaTeam } = useLocalSearchParams<{ id: string; viaTeam?: string }>();
-  const [profile, setProfile] = useState<ApiCreatorPublicProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(false);
 
-  const load = useCallback(() => {
-    if (!id) return;
-    setLoading(true);
-    setError(false);
-    setProfile(null);
-    creatorService.getPeerCreatorProfile(id)
-      .then(setProfile)
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [id]);
+  // Cache-first: revisiting a peer profile (e.g. back from a message thread)
+  // renders instantly from cache while the background refresh runs.
+  const q = useQuery({
+    queryKey: ['creator', id, 'peer'],
+    queryFn: () => creatorService.getPeerCreatorProfile(id),
+    enabled: !!id,
+    staleTime: STALE.profile,
+  });
 
-  useEffect(() => { load(); }, [load]);
-
+  const profile = q.data;
   const isPrivate = !!profile?.isPrivate;
   const vm = !profile ? null : profile.isPrivate ? privateVisitorVm(profile) : toVisitorVm(profile);
 
@@ -34,10 +29,10 @@ export default function CreatorPeerDetailScreen() {
     <CreatorProfileView
       mode="peer"
       vm={vm}
-      loading={loading}
-      error={error}
+      loading={q.isPending}
+      error={q.isError && !profile}
       isPrivate={isPrivate}
-      onRetry={load}
+      onRetry={() => { void q.refetch(); }}
       viaTeam={viaTeam === '1'}
     />
   );
