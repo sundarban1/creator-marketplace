@@ -1,11 +1,13 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
@@ -17,6 +19,8 @@ import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { resolveNotificationRoute } from '@/utilities/notificationRouting';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import type { AppNotification } from '@/types';
+
+const EMPTY_NOTIFICATIONS: AppNotification[] = [];
 
 type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
@@ -145,64 +149,48 @@ export default function NotificationsScreen() {
   const { t } = useLanguage();
   const C = useAppColors();
   const { clearBadge, decrementBadge } = useNotificationBadge();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
   const listRef = useRef<FlatList<{ group: string; items: AppNotification[] }>>(null);
-  const hasLoadedOnceRef = useRef(false);
   useScrollToTopOnTabPress('bell', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
-  function loadNotifications(showLoader = true) {
-    if (showLoader) setLoading(true);
-    notificationService.getNotifications()
-      .then((data) => { setNotifications(data); setError(''); })
-      .catch((e) => {
-        // Only surface errors from the user-visible (loader-shown) path — the
-        // silent background refresh (socket-triggered) shouldn't blow away an
-        // already-populated, still-valid list on a transient failure.
-        if (showLoader) setError(e instanceof Error ? e.message : t('notifications.loadFailedSub'));
-      })
-      .finally(() => setLoading(false));
-  }
+  // ── Server state — cache-first, background refresh (see queryClient.ts) ────
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationService.getNotifications(),
+    staleTime: STALE.frequent,
+  });
+  useRefetchOnFocusIfStale(notificationsQuery);
 
-  // Reload every time the screen gains focus so new notifications always appear.
-  // Only the very first load shows the skeleton — later refocuses (tab switch,
-  // back from a notification's detail screen) reload silently in the
-  // background so the list doesn't flash/blank on every navigation.
-  useFocusEffect(useCallback(() => {
-    const showLoader = !hasLoadedOnceRef.current;
-    hasLoadedOnceRef.current = true;
-    loadNotifications(showLoader);
-  }, []));
-
-  // Auto-refresh the moment connectivity is restored after being offline.
-  const { reconnectedAt } = useNetworkStatus();
-  useEffect(() => {
-    if (reconnectedAt) loadNotifications(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reconnectedAt]);
-
-  // Also listen for real-time socket events to prepend new notifications instantly
+  // A pushed notification's socket payload isn't reliably shaped (a fanned-out
+  // batch — e.g. "new campaign" to a whole cohort — sends just { userId }, not
+  // the full row; see notification.service.ts's createMany), so this can't
+  // safely splice the cache — it invalidates and lets the query refetch.
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
-    const handler = () => loadNotifications(false);
+    const handler = () => { void queryClient.invalidateQueries({ queryKey: ['notifications'] }); };
     socket.on('notification:new', handler);
     return () => { socket.off('notification:new', handler); };
-  }, []);
+  }, [queryClient]);
+
+  const notifications = notificationsQuery.data ?? EMPTY_NOTIFICATIONS;
+  const loading = notificationsQuery.isPending;
+  const error = notificationsQuery.isError && notifications.length === 0
+    ? (notificationsQuery.error instanceof Error ? notificationsQuery.error.message : t('notifications.loadFailedSub'))
+    : '';
 
   async function handleMarkAll() {
     await notificationService.markAllRead();
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    queryClient.setQueryData<AppNotification[]>(['notifications'], (prev) => prev?.map((n) => ({ ...n, isRead: true })));
     clearBadge(); // zero out the bell badge
   }
 
   async function handlePress(id: string) {
-    const wasUnread = !notifications.find((n) => n.id === id)?.isRead;
-    await notificationService.markAsRead(id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
-    if (wasUnread) decrementBadge();
     const n = notifications.find((n) => n.id === id);
+    const wasUnread = !!n && !n.isRead;
+    await notificationService.markAsRead(id);
+    queryClient.setQueryData<AppNotification[]>(['notifications'], (prev) => prev?.map((row) => (row.id === id ? { ...row, isRead: true } : row)));
+    if (wasUnread) decrementBadge();
     if (!n) return;
     const isCreator = user?.role === 'CREATOR';
 
@@ -236,7 +224,7 @@ export default function NotificationsScreen() {
           faIcon="exclamation-triangle"
           title={t('notifications.loadFailedTitle')}
           subtitle={error}
-          action={{ label: t('notifications.retry'), onPress: () => loadNotifications() }}
+          action={{ label: t('notifications.retry'), onPress: () => notificationsQuery.refetch() }}
         />
       ) : (
         <FlatList
