@@ -1,8 +1,7 @@
-import { useCallback, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
-import { Pressable } from 'react-native';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { ErrorState } from '@/components/ErrorState';
@@ -12,6 +11,9 @@ import { ChipGroup } from '@/features/business/components/CampaignFormControls';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiAvailabilityDay } from '@/services/creator';
+import { useCreatorProfile, useInvalidateCreatorProfile } from '@/hooks/useCreatorProfile';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { OfflineError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
@@ -29,38 +31,51 @@ type DaySchedule = { availableFrom: string; availableUntil: string } | null;
 export default function AvailabilityScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  // Same shared profile cache as home/Discover/profile tab — availabilityStatus
+  // lives on it, so a successful save here (below) invalidates it and every
+  // other screen showing status picks the change up too.
+  const profileQuery = useCreatorProfile();
+  const invalidateProfile = useInvalidateCreatorProfile();
+  const scheduleQuery = useQuery({
+    queryKey: ['creator', 'availability', 'schedule'],
+    queryFn: () => creatorService.getAvailabilitySchedule(),
+    staleTime: STALE.profile,
+  });
+  useRefetchOnFocusIfStale(profileQuery, scheduleQuery);
+
+  // `status`/`schedule` are the editable working copy — seeded once from the
+  // queries above, then locally owned (toggling a day mid-edit, or the
+  // optimistic status flip below, shouldn't be clobbered by a background
+  // refetch). Persisting successfully invalidates both caches so the source
+  // of truth catches up.
   const [status, setStatus] = useState<AvailabilityStatus>('AVAILABLE');
   const [schedule, setSchedule] = useState<DaySchedule[]>(Array(7).fill(null));
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const seededRef = useRef(false);
+
+  function seedFromServer(serverStatus: AvailabilityStatus, days: ApiAvailabilityDay[]) {
+    setStatus(serverStatus);
+    const next: DaySchedule[] = Array(7).fill(null);
+    days.forEach((d) => { next[d.dayOfWeek] = { availableFrom: d.availableFrom, availableUntil: d.availableUntil }; });
+    setSchedule(next);
+  }
+
+  useEffect(() => {
+    if (seededRef.current || !profileQuery.data || !scheduleQuery.data) return;
+    seededRef.current = true;
+    seedFromServer(profileQuery.data.availabilityStatus, scheduleQuery.data);
+  }, [profileQuery.data, scheduleQuery.data]);
+
   const [savingStatus, setSavingStatus] = useState(false);
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [editingDay, setEditingDay] = useState<number | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [profile, days] = await Promise.all([
-        creatorService.getProfile(),
-        creatorService.getAvailabilitySchedule(),
-      ]);
-      setStatus(profile.availabilityStatus);
-      const next: DaySchedule[] = Array(7).fill(null);
-      days.forEach((d: ApiAvailabilityDay) => { next[d.dayOfWeek] = { availableFrom: d.availableFrom, availableUntil: d.availableUntil }; });
-      setSchedule(next);
-    } catch (err) {
-      setError(
-        err instanceof OfflineError
-          ? t('availabilityScreen.errorMessage')
-          : (err instanceof Error ? err.message : t('availabilityScreen.errorMessage'))
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  const loading = profileQuery.isPending || scheduleQuery.isPending;
+  const loadError = profileQuery.error ?? scheduleQuery.error;
+  const error = (profileQuery.isError || scheduleQuery.isError)
+    ? (loadError instanceof OfflineError
+        ? t('availabilityScreen.errorMessage')
+        : (loadError instanceof Error ? loadError.message : t('availabilityScreen.errorMessage')))
+    : null;
 
   async function handleStatusChange(next: AvailabilityStatus) {
     const prev = status;
@@ -68,6 +83,7 @@ export default function AvailabilityScreen() {
     setSavingStatus(true);
     try {
       await creatorService.updateAvailabilityStatus(next);
+      invalidateProfile();
     } catch (err) {
       setStatus(prev);
       Alert.alert(t('common.error'), err instanceof Error ? err.message : t('availabilityScreen.saveFailed'));
@@ -77,15 +93,17 @@ export default function AvailabilityScreen() {
   }
 
   async function persistSchedule(next: DaySchedule[]) {
+    const prev = schedule;
     setSavingSchedule(true);
     try {
       const days = next
         .map((d, dayOfWeek) => (d ? { dayOfWeek, availableFrom: d.availableFrom, availableUntil: d.availableUntil } : null))
         .filter((d): d is { dayOfWeek: number; availableFrom: string; availableUntil: string } => d !== null);
       await creatorService.updateAvailabilitySchedule(days);
+      void scheduleQuery.refetch();
     } catch (err) {
       Alert.alert(t('common.error'), err instanceof Error ? err.message : t('availabilityScreen.saveFailed'));
-      void load(); // revert to server state on failure
+      setSchedule(prev); // revert to the last-known-good local copy on failure
     } finally {
       setSavingSchedule(false);
     }
@@ -116,7 +134,7 @@ export default function AvailabilityScreen() {
             title={t('availabilityScreen.errorTitle')}
             message={error}
             actionLabel={t('invitations.retry')}
-            onAction={load}
+            onAction={() => { void profileQuery.refetch(); void scheduleQuery.refetch(); }}
           />
         ) : (
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
