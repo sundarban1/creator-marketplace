@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { ActivityIndicator, Animated, FlatList, Keyboard, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
@@ -11,12 +12,13 @@ import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCard
 import { FilterModal, DEFAULT_EVENT_TYPES } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
 import { useCategories, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
+import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { STALE } from '@/lib/queryClient';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
 import { ResultCountPill } from '@/components/ResultCountPill';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useTabTransition } from '@/hooks/useTabTransition';
 import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
@@ -25,7 +27,6 @@ import { RangeDropdown } from '@/components/RangeDropdown';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
-import { getCached, setCached } from '@/utilities/offlineCache';
 import { F, FONT_SIZE, RADIUS, SHADOW, SCREEN_GUTTER, SPACING, lineHeightFor } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import { trendingScores } from '@/features/creator/data/trending';
@@ -34,6 +35,11 @@ import ExploreBusinessesScreen, { type BusinessesExploreHandle } from '@/app/(cr
 import ExploreCreatorPeersScreen, { type PeopleExploreHandle } from '@/app/(creator)/explore-creators';
 
 const SLIDER_MAX = 100000;
+
+// Stable empty references so derived values (featured/trending/filteredList)
+// aren't recomputed off a fresh [] every render while the query is pending.
+const EMPTY_CAMPAIGNS: Campaign[] = [];
+const EMPTY_STRINGS: string[] = [];
 
 type SortOption = 'date-latest' | 'date-oldest' | 'price-low' | 'price-high';
 
@@ -75,24 +81,24 @@ const TABLET_BREAKPOINT = 768;
 export type CampaignsExploreHandle = { setSearchText: (text: string) => void; openFilter: () => void };
 
 const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChange?: (count: number) => void }>(function CampaignsExplore({ onFilterCountChange }, ref) {
-  const { t, languageVersion } = useLanguage();
+  const { t } = useLanguage();
   const C = useAppColors();
+  const queryClient = useQueryClient();
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
 
   const { categories: adminCategories } = useCategories('CREATOR');
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activePlatforms, setActivePlatforms] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [fetchError, setFetchError] = useState('');
 
   const [activeSearch, setActiveSearch] = useState('');
   const [activeCategories, setActiveCategories] = useState<string[]>([]);
   // The creator's own onboarding-selected niches — surfaced first in the
-  // category pill row below, matching the business side's identical
-  // treatment (see (business)/explore-creators.tsx's businessIndustries).
-  const [myCategories, setMyCategories] = useState<string[]>([]);
+  // category pill row below (from the shared creator-profile cache, which also
+  // feeds creator home). Re-syncs on its own staleness schedule instead of a
+  // getProfile() call on every tab focus.
+  const { data: creatorProfile } = useCreatorProfile();
+  const myCategories = creatorProfile?.categories ?? EMPTY_STRINGS;
   const [activeFilterTab, setActiveFilterTab] = useState('new');
   const [sortBy, setSortBy] = useState<SortOption>('date-latest');
   const [eventType, setEventType] = useState<EventTypeFilter[]>(DEFAULT_EVENT_TYPES);
@@ -117,95 +123,43 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
   const [featuredVisibleCount, setFeaturedVisibleCount] = useState(PAGE_SIZE);
   const [listVisibleCount, setListVisibleCount] = useState(PAGE_SIZE);
 
-  async function fetchCampaigns(
-    overrides: {
-      search?: string;
-      category?: string[];
-      platform?: string[];
-      priceMin?: number;
-      priceMax?: number;
-      dateFrom?: Date | null;
-      dateTo?: Date | null;
-      eventType?: EventTypeFilter[];
-      showLoader?: boolean;
-    } = {},
-  ) {
-    const showLoader = overrides.showLoader !== false;
-    if (showLoader) setLoading(true);
-    setFetchError('');
+  // ── Feed — cache-first (see queryClient.ts). The server-side filter params
+  // ARE the query key, so committing any filter (search, category, platform,
+  // budget, dates, event type) just re-renders → new key → cache-first fetch,
+  // with the previous results kept on screen until the new page lands instead
+  // of flashing a skeleton. Trending/tab/location filtering + the visible-count
+  // windowing below all still run client-side over this fetched set.
+  const listParams = {
+    search:       activeSearch || undefined,
+    category:     activeCategories,
+    platform:     activePlatforms,
+    minBudget:    priceMin > 0 ? priceMin : undefined,
+    maxBudget:    priceMax < SLIDER_MAX ? priceMax : undefined,
+    dateFrom:     dateFrom ?? undefined,
+    dateTo:       dateTo ?? undefined,
+    // Both types selected == no filter (backend has no "either of these two"
+    // query shape, just a single optional campaignType).
+    campaignType: eventType.length === 1 ? eventType[0] : undefined,
+    limit: 50,
+  };
 
-    const q    = overrides.search    !== undefined ? overrides.search    : activeSearch;
-    const cat   = overrides.category  !== undefined ? overrides.category  : activeCategories;
-    const plat  = overrides.platform  !== undefined ? overrides.platform  : activePlatforms;
-    const pMin  = overrides.priceMin  !== undefined ? overrides.priceMin  : priceMin;
-    const pMax  = overrides.priceMax  !== undefined ? overrides.priceMax  : priceMax;
-    const df    = overrides.dateFrom  !== undefined ? overrides.dateFrom  : dateFrom;
-    const dt    = overrides.dateTo    !== undefined ? overrides.dateTo    : dateTo;
-    const et    = overrides.eventType !== undefined ? overrides.eventType : eventType;
+  const campaignsQuery = useQuery({
+    queryKey: ['campaigns', 'discover', listParams],
+    queryFn: () => campaignService.list(listParams).then((r) => r.campaigns),
+    staleTime: STALE.list,
+    placeholderData: keepPreviousData,
+  });
 
-    try {
-      const { campaigns: data } = await campaignService.list({
-        search:       q || undefined,
-        category:     cat,
-        platform:     plat,
-        minBudget:    pMin > 0 ? pMin : undefined,
-        maxBudget:    pMax < SLIDER_MAX ? pMax : undefined,
-        dateFrom:     df ?? undefined,
-        dateTo:       dt ?? undefined,
-        // Both types selected == no filter (backend has no "either of these
-        // two" query shape, just a single optional campaignType).
-        campaignType: et.length === 1 ? et[0] : undefined,
-        limit: 50,
-      });
-      setCampaigns(data);
-      void setCached('creator_feed_campaigns', data);
-    } catch (e) {
-      // Offline or request failed — fall back to the last-known feed instead
-      // of leaving the screen blank/erroring, so it stays usable offline.
-      const cached = await getCached<Campaign[]>('creator_feed_campaigns');
-      if (cached && cached.length > 0) {
-        setCampaigns(cached);
-      } else {
-        setFetchError(e instanceof Error ? e.message : 'Failed to load events');
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  const campaigns = campaignsQuery.data ?? EMPTY_CAMPAIGNS;
+  const loading = campaignsQuery.isPending;
+  const fetchError = campaignsQuery.isError && campaigns.length === 0
+    ? (campaignsQuery.error instanceof Error ? campaignsQuery.error.message : 'Failed to load events')
+    : '';
+
+  async function onRefresh() {
+    setRefreshing(true);
+    try { await campaignsQuery.refetch(); } finally { setRefreshing(false); }
   }
-
-  useEffect(() => {
-    // Show the last-known feed immediately (e.g. cold launch while offline)
-    // while the real fetch below runs and replaces it once it resolves.
-    void getCached<Campaign[]>('creator_feed_campaigns').then((cached) => {
-      if (cached && cached.length > 0) {
-        setCampaigns(cached);
-        setLoading(false);
-      }
-    });
-    void fetchCampaigns();
-    creatorService.getProfile()
-      .then((profile) => { setMyCategories(profile.categories ?? []); })
-      .catch(() => {});
-  }, [languageVersion]);
-
-  // Re-sync the creator's own niches whenever this tab regains focus (e.g.
-  // returning from Edit Profile after changing them).
-  useFocusEffect(useCallback(() => {
-    creatorService.getProfile()
-      .then((profile) => { setMyCategories(profile.categories ?? []); })
-      .catch(() => {});
-  }, []));
-
-  // Keep a stable ref to the latest fetch so the socket handler never captures stale state
-  const fetchRef = useRef(fetchCampaigns);
-  useEffect(() => { fetchRef.current = fetchCampaigns; });
-
-  // Auto-refresh the moment connectivity is restored after being offline.
-  const { reconnectedAt } = useNetworkStatus();
-  useEffect(() => {
-    if (reconnectedAt) void fetchRef.current({ showLoader: false });
-  }, [reconnectedAt]);
 
   useScrollToTopOnTabPress('discover', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
   const {
@@ -216,21 +170,18 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     placeholderHeight: tabFilterPlaceholderHeight,
   } = useStickyBelowHeader();
 
-  // Subscribe to real-time campaign updates while this screen is focused
+  // Real-time: a new campaign anywhere may or may not match the active
+  // filters, so invalidate every cached discover-feed variant and let the
+  // active one refetch (§30).
   useFocusEffect(useCallback(() => {
     const socket = getSocket();
     if (!socket) return;
     const handler = () => {
-      void fetchRef.current({ showLoader: false });
+      void queryClient.invalidateQueries({ queryKey: ['campaigns', 'discover'], refetchType: 'active' });
     };
     socket.on('campaign:new', handler);
     return () => { socket.off('campaign:new', handler); };
-  }, []));
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    void fetchCampaigns({ showLoader: false });
-  }, [activeCategories, priceMin, priceMax, dateFrom, dateTo]);
+  }, [queryClient]));
 
   const filterActiveCount = [
     eventType.length === 1, // both selected == no real filter
@@ -269,15 +220,8 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     setDateTo(tempDateTo);
     setLocationTypeFilter(tempLocationTypeFilter);
     setFilterOpen(false);
-
-    // Re-fetch with the new committed values (don't wait for state to flush)
-    void fetchCampaigns({
-      eventType: tempEventType,
-      priceMin:  tempPriceMin,
-      priceMax:  tempPriceMax,
-      dateFrom:  tempDateFrom,
-      dateTo:    tempDateTo,
-    });
+    // The committed filter state above becomes the query key on the next
+    // render, which triggers the fetch — no explicit call needed.
 
     // Persist first non-Remote location's lat/lng to creator profile
     const geoLoc = tempLocation.find((l) => l.label !== 'Remote' && l.lat !== null);
@@ -311,7 +255,6 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     setActiveCategories([]);
     setActivePlatforms([]);
     setActiveFilterTab('new');
-    void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: DEFAULT_EVENT_TYPES });
   }
 
   // `useCategories('CREATOR')` widens to CREATOR + BOTH scope rows (see the
@@ -333,12 +276,10 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
       ? activeCategories.filter((c) => c !== label)
       : [...activeCategories, label];
     setActiveCategories(next);
-    void fetchCampaigns({ category: next });
   }
 
   function clearCategories() {
     setActiveCategories([]);
-    void fetchCampaigns({ category: [] });
   }
 
   const featured = campaigns.filter((c) => c.isFeatured && (c.locationType ?? 'ONSITE') === locationTypeFilter);
@@ -451,13 +392,11 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
   function setSearchText(text: string) {
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
     if (text.length >= 3) {
-      searchDebounce.current = setTimeout(() => {
-        setActiveSearch(text);
-        void fetchCampaigns({ search: text });
-      }, 400);
+      // Debounce the committed search term; it becomes the query key, which
+      // drives the fetch on the next render.
+      searchDebounce.current = setTimeout(() => setActiveSearch(text), 400);
     } else if (!text && activeSearch) {
       setActiveSearch('');
-      void fetchCampaigns({ search: '' });
     }
   }
 
@@ -596,7 +535,7 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
         {fetchError ? (
           <View style={[styles.errorCard, { backgroundColor: '#FEE2E2' }]}>
             <Text style={styles.errorText}>{fetchError}</Text>
-            <Pressable onPress={() => fetchCampaigns()}>
+            <Pressable onPress={() => campaignsQuery.refetch()}>
               <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('creator.home.retry')}</Text>
             </Pressable>
           </View>
