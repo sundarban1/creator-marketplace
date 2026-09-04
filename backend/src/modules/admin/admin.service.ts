@@ -6,6 +6,7 @@ import { recordWalletTransactionIdempotent } from '../wallet/wallet.ledger';
 import { BusinessReferralRepository } from '../business-referral/business-referral.repository';
 import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-referral/business-referral.service';
 import { CampaignService } from '../campaign/campaign.service';
+import { escrowService } from '../campaign/escrow.service';
 import { toCampaignDto } from '../campaign/campaign.dto';
 import type { UpdateCampaignInput } from '../campaign/campaign.schema';
 import { notificationService } from '../notifications/notification.service';
@@ -547,5 +548,45 @@ export class AdminService {
     }));
 
     return { transactions: rows, total };
+  }
+
+  // ── Disputes (escrow spec §28) ──────────────────────────────────────────────
+
+  async getDisputes(page: number, limit: number, status?: string) {
+    return this.repo.listDisputes(page, limit, status);
+  }
+
+  async resolveDispute(
+    disputeId: string,
+    adminUserId: string,
+    body: {
+      outcome: 'CREATOR_WON' | 'BUSINESS_WON' | 'PARTIAL' | 'DISMISSED';
+      note: string;
+      creatorAmount?: number;
+      businessAmount?: number;
+    },
+  ) {
+    const before = await this.repo.findDisputeById(disputeId);
+    if (!before) throw new AppError('Dispute not found', 404);
+
+    await escrowService.resolveDispute({
+      disputeId,
+      adminUserId,
+      outcome:        body.outcome,
+      note:           body.note,
+      creatorAmount:  body.creatorAmount,
+      businessAmount: body.businessAmount,
+    });
+
+    // Admin overrides of the money flow must be audited with the reason (§35).
+    logAudit({
+      userId:      adminUserId,
+      action:      AuditAction.DISPUTE_RESOLVED,
+      performedBy: adminUserId,
+      oldValue:    { status: before.status },
+      newValue:    { status: 'RESOLVED', outcome: body.outcome, note: body.note, creatorAmount: body.creatorAmount, businessAmount: body.businessAmount },
+    });
+
+    return this.repo.findDisputeById(disputeId);
   }
 }

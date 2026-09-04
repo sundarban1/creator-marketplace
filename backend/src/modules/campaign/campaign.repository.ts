@@ -796,6 +796,7 @@ export class CampaignRepository {
         campaign: { include: { business: { select: { id: true, userId: true, businessName: true } } } },
         creator: { select: { id: true, userId: true, fullName: true } },
         submissionVersions: { orderBy: { version: 'asc' } },
+        dispute: true,
       },
     });
   }

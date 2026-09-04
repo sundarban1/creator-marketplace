@@ -75,6 +75,9 @@ const DEFAULTS: Record<string, unknown> = {
   // sending reminders, it never pays out on the business's behalf.
   'escrow.settlementHoldEnabled':      false,
   'escrow.autoApproveOnReviewTimeout': false,
+  // Reliability score (0–100) a creator must keep to apply to new campaigns.
+  // 0 = no restriction (conservative launch); raise it to start gating.
+  'escrow.minReliabilityToApply':       0,
 
   // ── Marketplace ──────────────────────────────────────────────────────────
   // §79 — the current launch-focus city. Recommendations (getRecommendedCreators/
@@ -754,6 +757,42 @@ export class AdminRepository {
     ]);
 
     return { transactions, total };
+  }
+
+  // ── Disputes (escrow spec §28) ───────────────────────────────────────────
+
+  async listDisputes(page: number, limit: number, status?: string) {
+    const where: Record<string, unknown> = {};
+    if (status) where['status'] = status;
+
+    const [disputes, total] = await Promise.all([
+      prisma.dispute.findMany({
+        where,
+        skip:    (page - 1) * limit,
+        take:    limit,
+        orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+        include: {
+          campaign:    { select: { id: true, title: true } },
+          application: {
+            select: {
+              id: true, proposedRate: true, workStatus: true, escrowStatus: true,
+              deliverableUrls: true, deliverableVideos: true, deliverableFiles: true,
+              creator:  { select: { id: true, fullName: true, userId: true } },
+              campaign: { select: { business: { select: { id: true, businessName: true, userId: true } } } },
+              submissionVersions: { orderBy: { version: 'asc' } },
+              revisionNotes:      { orderBy: { createdAt: 'asc' } },
+            },
+          },
+        },
+      }),
+      prisma.dispute.count({ where }),
+    ]);
+
+    return { disputes, total };
+  }
+
+  findDisputeById(id: string) {
+    return prisma.dispute.findUnique({ where: { id }, include: { application: true, campaign: { select: { title: true } } } });
   }
 
   // ── Activity / Audit logs ─────────────────────────────────────────────────

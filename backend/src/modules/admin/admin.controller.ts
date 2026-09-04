@@ -518,3 +518,39 @@ export async function getPayments(req: Request, res: Response, next: NextFunctio
     next(err);
   }
 }
+
+// ── Disputes ─────────────────────────────────────────────────────────────────
+
+// GET /api/admin/disputes
+export async function getDisputes(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePagination(req);
+    const status = req.query['status'] as string | undefined;
+    const { disputes, total } = await service.getDisputes(page, limit, status);
+    return paginated(res, disputes, total, page, limit);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/admin/disputes/:id/resolve
+export async function resolveDispute(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { outcome, note, creatorAmount, businessAmount } = req.body as {
+      outcome?: string; note?: string; creatorAmount?: number; businessAmount?: number;
+    };
+    const allowed = ['CREATOR_WON', 'BUSINESS_WON', 'PARTIAL', 'DISMISSED'];
+    if (!outcome || !allowed.includes(outcome)) throw new AppError(`outcome must be one of ${allowed.join(', ')}`, 400);
+    if (!note?.trim()) throw new AppError('A resolution reason is required', 400);
+
+    const result = await service.resolveDispute(req.params.id, req.user!.id, {
+      outcome: outcome as 'CREATOR_WON' | 'BUSINESS_WON' | 'PARTIAL' | 'DISMISSED',
+      note,
+      creatorAmount,
+      businessAmount,
+    });
+    return success(res, result, 'Dispute resolved');
+  } catch (err) {
+    next(err);
+  }
+}

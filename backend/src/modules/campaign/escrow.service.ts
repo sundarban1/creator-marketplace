@@ -295,6 +295,7 @@ class EscrowService {
     });
     analyticsService.incrPaymentReleased(creatorUserId, businessUserId, amount);
     analyticsService.incrCampaignCompleted(creatorUserId, businessUserId);
+    void this.bumpReliability(app.creatorId, app.submittedLate ? 'late' : 'completed');
 
     if (!params.silent) {
       notificationService.create({
@@ -370,6 +371,343 @@ class EscrowService {
     });
 
     return { voided };
+  }
+
+  // ── Reliability (escrow spec §40) ────────────────────────────────────────
+  // One row per creator, lazily created. reliabilityScore is fully derived from
+  // the counters and floored at 0 — a single miss is a small dent, not a ban.
+  async bumpReliability(
+    creatorId: string,
+    event: 'completed' | 'late' | 'failed' | 'missedConfirmation' | 'cancelledAfterConfirmation',
+  ): Promise<void> {
+    const field: string = {
+      completed:                  'completedCampaigns',
+      late:                       'lateCampaigns',
+      failed:                     'failedCampaigns',
+      missedConfirmation:         'missedConfirmations',
+      cancelledAfterConfirmation: 'cancelledAfterConfirmation',
+    }[event];
+
+    try {
+      await prisma.creatorReliability.upsert({
+        where:  { creatorId },
+        create: { creatorId, [field]: 1, ...(event === 'late' ? { completedCampaigns: 1 } : {}) },
+        update: {
+          [field]: { increment: 1 },
+          // 'late' also counts as a completed campaign for the ratio's sake.
+          ...(event === 'late' ? { completedCampaigns: { increment: 1 } } : {}),
+        },
+      });
+      const fresh = await prisma.creatorReliability.findUniqueOrThrow({ where: { creatorId } });
+      const score = Math.max(
+        0,
+        100
+          - 15 * fresh.failedCampaigns
+          - 5  * fresh.lateCampaigns
+          - 10 * fresh.cancelledAfterConfirmation
+          - 5  * fresh.missedConfirmations,
+      );
+      if (score !== fresh.reliabilityScore) {
+        await prisma.creatorReliability.update({ where: { creatorId }, data: { reliabilityScore: score } });
+      }
+    } catch {
+      // Reliability tracking is best-effort — never fail a money operation for it.
+    }
+  }
+
+  // ── Disputes (escrow spec §27–§28) ──────────────────────────────────────
+  // Either party freezes the escrow by raising a dispute; only an admin
+  // resolution (below) moves the money afterwards.
+  async raiseDispute(params: {
+    applicationId: string;
+    raisedByUserId: string;
+    raisedByRole: 'BUSINESS' | 'CREATOR';
+    reason: string;
+  }): Promise<{ disputeId: string }> {
+    const { applicationId, raisedByUserId, raisedByRole, reason } = params;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const app = await tx.application.findUnique({
+        where: { id: applicationId },
+        include: {
+          campaign: { include: { business: { select: { id: true, userId: true, businessName: true } } } },
+          creator:  { select: { id: true, userId: true, fullName: true } },
+          dispute:  true,
+        },
+      });
+      if (!app) throw new AppError('Application not found', 404);
+      if (app.dispute) throw new AppError('A dispute is already open for this engagement', 409);
+      if (!['HELD', 'RELEASE_PENDING'].includes(app.escrowStatus)) {
+        throw new AppError('There is no held payment to dispute', 409);
+      }
+      if (['COMPLETED', 'CANCELLED', 'CREATOR_FAILED'].includes(app.workStatus)) {
+        throw new AppError('This engagement is already finished', 409);
+      }
+      assertEscrowTransition(app.escrowStatus, 'FROZEN');
+      const prevEscrow = app.escrowStatus;
+
+      const dispute = await tx.dispute.create({
+        data: {
+          applicationId,
+          campaignId:   app.campaignId,
+          raisedById:   raisedByUserId,
+          raisedByRole,
+          reason,
+        },
+      });
+
+      await tx.application.update({
+        where: { id: applicationId },
+        data: {
+          workStatus:          'DISPUTED',
+          escrowStatus:        'FROZEN',
+          businessReviewDueAt:  null,
+          paymentReleaseAt:     null,
+          contentGraceDeadline: null,
+        },
+      });
+      await tx.revisionNote.create({
+        data: { applicationId, note: `[Dispute raised by ${raisedByRole.toLowerCase()}] ${reason}` },
+      });
+      const latestVersion = await tx.campaignSubmissionVersion.findFirst({
+        where: { applicationId }, orderBy: { version: 'desc' }, select: { id: true },
+      });
+      if (latestVersion) {
+        await tx.campaignSubmissionVersion.update({
+          where: { id: latestVersion.id },
+          data:  { reviewOutcome: 'DISPUTED', reviewNote: reason, reviewedAt: new Date() },
+        });
+      }
+
+      await recordCampaignEventTx(tx, {
+        campaignId: app.campaignId, applicationId, axis: 'dispute',
+        fromStatus: null, toStatus: 'OPEN', actorId: raisedByUserId, actorType: raisedByRole, reason,
+      });
+      await recordCampaignEventTx(tx, {
+        campaignId: app.campaignId, applicationId, axis: 'escrow',
+        fromStatus: prevEscrow, toStatus: 'FROZEN', actorId: raisedByUserId, actorType: raisedByRole, reason,
+      });
+
+      return { dispute, app };
+    });
+
+    const { dispute, app } = result;
+    logActivity({
+      userId: raisedByUserId, action: ActivityAction.APPLICATION_DISPUTED,
+      entityType: EntityType.APPLICATION, entityId: applicationId,
+      metadata: { campaignId: app.campaignId, raisedByRole },
+    });
+
+    const otherUserId = raisedByRole === 'BUSINESS' ? app.creator.userId : app.campaign.business.userId;
+    notificationService.create({
+      userId:  otherUserId,
+      type:    'dispute_opened',
+      title:   'A dispute was opened',
+      body:    `A dispute was raised on "${app.campaign.title}". The payment is held while Kolab reviews it.`,
+      refId:   app.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+    notificationService.createForAdmins({
+      type:    'dispute_opened',
+      title:   '⚖️ Dispute opened',
+      body:    `${raisedByRole === 'BUSINESS' ? app.campaign.business.businessName : app.creator.fullName} raised a dispute on "${app.campaign.title}".`,
+      refId:   applicationId,
+      refType: 'dispute',
+    }).catch(() => {});
+
+    return { disputeId: dispute.id };
+  }
+
+  // Admin-only resolution. Every outcome routes through the same idempotent
+  // money primitives; the whole thing is audited with a mandatory reason (§35).
+  async resolveDispute(params: {
+    disputeId: string;
+    adminUserId: string;
+    outcome: 'CREATOR_WON' | 'BUSINESS_WON' | 'PARTIAL' | 'DISMISSED';
+    note: string;
+    creatorAmount?: number;
+    businessAmount?: number;
+  }): Promise<void> {
+    const { disputeId, adminUserId, outcome, note } = params;
+    if (!note?.trim()) throw new AppError('A resolution reason is required', 400);
+
+    const dispute = await prisma.dispute.findUnique({
+      where: { id: disputeId },
+      include: {
+        application: {
+          include: {
+            campaign: { include: { business: { select: { id: true, userId: true, businessName: true } } } },
+            creator:  { select: { id: true, userId: true, fullName: true } },
+          },
+        },
+      },
+    });
+    if (!dispute) throw new AppError('Dispute not found', 404);
+    if (dispute.status === 'RESOLVED') throw new AppError('This dispute is already resolved', 409);
+
+    const app = dispute.application;
+    const total = app.proposedRate;
+
+    if (outcome === 'CREATOR_WON') {
+      await this.release({ applicationId: app.id, actor: { userId: adminUserId, type: 'ADMIN' }, reason: `Dispute resolved — creator: ${note}` });
+    } else if (outcome === 'BUSINESS_WON') {
+      await this.refund({ applicationId: app.id, reason: `Dispute resolved — business: ${note}`, actorId: adminUserId, actorType: 'ADMIN', workStatusAfter: WorkStatus.CANCELLED, silent: true });
+    } else if (outcome === 'PARTIAL') {
+      const cAmt = Math.max(0, params.creatorAmount ?? 0);
+      const bAmt = Math.max(0, params.businessAmount ?? 0);
+      if (Math.abs(cAmt + bAmt - total) > 0.01) {
+        throw new AppError(`The split (${cAmt} + ${bAmt}) must equal the escrowed amount (${total})`, 400);
+      }
+      await this.settleSplit({ applicationId: app.id, adminUserId, creatorAmount: cAmt, businessAmount: bAmt, note });
+    } else {
+      // DISMISSED — unfreeze and let the normal flow resume.
+      await this.unfreeze({ applicationId: app.id, adminUserId, note });
+    }
+
+    await prisma.dispute.update({
+      where: { id: disputeId },
+      data: {
+        status:            'RESOLVED',
+        resolution:        outcome,
+        resolutionNote:    note,
+        creatorAmount:     params.creatorAmount ?? null,
+        businessAmount:    params.businessAmount ?? null,
+        resolvedByAdminId: adminUserId,
+        resolvedAt:        new Date(),
+      },
+    });
+
+    logActivity({
+      userId: adminUserId, action: ActivityAction.DISPUTE_RESOLVED,
+      entityType: EntityType.APPLICATION, entityId: app.id,
+      metadata: { disputeId, outcome, note, creatorAmount: params.creatorAmount, businessAmount: params.businessAmount },
+    });
+    recordCampaignEventTx(prisma, {
+      campaignId: app.campaignId, applicationId: app.id, axis: 'dispute',
+      fromStatus: 'OPEN', toStatus: 'RESOLVED', actorId: adminUserId, actorType: 'ADMIN', reason: `${outcome}: ${note}`,
+    }).catch(() => {});
+
+    for (const userId of [app.creator.userId, app.campaign.business.userId]) {
+      notificationService.create({
+        userId,
+        type:    'dispute_resolved',
+        title:   'Dispute resolved',
+        body:    `The dispute on "${app.campaign.title}" was resolved (${outcome.replace('_', ' ').toLowerCase()}). ${note}`,
+        refId:   app.campaignId,
+        refType: 'campaign',
+      }).catch(() => {});
+    }
+  }
+
+  // PARTIAL dispute settlement — one transaction that pays the creator their
+  // share and returns the rest to the business.
+  private async settleSplit(params: {
+    applicationId: string;
+    adminUserId: string;
+    creatorAmount: number;
+    businessAmount: number;
+    note: string;
+  }): Promise<void> {
+    const { applicationId, adminUserId, creatorAmount, businessAmount } = params;
+
+    await prisma.$transaction(async (tx) => {
+      const app = await tx.application.findUnique({
+        where: { id: applicationId },
+        include: { campaign: { include: { business: { select: { id: true } } } } },
+      });
+      if (!app) throw new AppError('Application not found', 404);
+      if (app.escrowStatus === 'PARTIALLY_REFUNDED' || app.escrowStatus === 'RELEASED') return;
+      assertEscrowTransition(app.escrowStatus, 'PARTIALLY_REFUNDED');
+
+      if (businessAmount > 0) {
+        const ref = `refund:${applicationId}:partial`;
+        if (!(await tx.paymentTransaction.findUnique({ where: { reference: ref } }))) {
+          await tx.paymentTransaction.create({
+            data: {
+              type: 'PARTIAL_REFUND', amount: businessAmount, method: app.paymentMethod,
+              applicationId, campaignId: app.campaignId, businessId: app.campaign.business.id,
+              adminId: adminUserId, reference: ref,
+              metadata: { reason: params.note, split: true } as Prisma.InputJsonValue,
+            },
+          });
+        }
+      }
+      if (creatorAmount > 0) {
+        const ref = `payout:${applicationId}`;
+        if (!(await tx.paymentTransaction.findUnique({ where: { reference: ref } }))) {
+          await tx.paymentTransaction.create({
+            data: {
+              type: 'PAYOUT', amount: creatorAmount,
+              applicationId, campaignId: app.campaignId, businessId: app.campaign.business.id,
+              creatorId: app.creatorId, adminId: adminUserId, reference: ref,
+              metadata: { reason: params.note, split: true } as Prisma.InputJsonValue,
+            },
+          });
+        }
+        const credited = await tx.walletTransaction.findFirst({ where: { referenceId: applicationId, type: 'CAMPAIGN_PAYOUT' }, select: { id: true } });
+        if (!credited) {
+          await recordWalletTransaction(tx, {
+            creatorId: app.creatorId, type: 'CAMPAIGN_PAYOUT', direction: 'CREDIT',
+            amount: creatorAmount, description: `Dispute settlement for "${app.campaign.title}"`,
+            referenceType: 'application', referenceId: applicationId,
+          });
+        }
+      }
+
+      await tx.application.update({
+        where: { id: applicationId },
+        data: {
+          escrowStatus:      'PARTIALLY_REFUNDED',
+          paymentStatus:     creatorAmount > 0 ? 'RELEASED' : 'REFUNDED',
+          workStatus:        'COMPLETED',
+          releasedAt:        new Date(),
+          releasedByAdminId: adminUserId,
+          paymentReleaseAt:  null,
+        },
+      });
+      await recordCampaignEventTx(tx, {
+        campaignId: app.campaignId, applicationId, axis: 'escrow',
+        fromStatus: app.escrowStatus, toStatus: 'PARTIALLY_REFUNDED', actorId: adminUserId, actorType: 'ADMIN',
+        metadata: { creatorAmount, businessAmount },
+      });
+      await recordCampaignEventTx(tx, {
+        campaignId: app.campaignId, applicationId, axis: 'work',
+        fromStatus: app.workStatus, toStatus: 'COMPLETED', actorId: adminUserId, actorType: 'ADMIN',
+      });
+    });
+  }
+
+  // DISMISSED — thaw the escrow and put the engagement back on the normal flow.
+  private async unfreeze(params: { applicationId: string; adminUserId: string; note: string }): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const app = await tx.application.findUnique({
+        where: { id: params.applicationId },
+        include: { submissionVersions: { select: { id: true }, take: 1 } },
+      });
+      if (!app || app.escrowStatus !== 'FROZEN') return;
+      assertEscrowTransition('FROZEN', 'HELD');
+
+      const nextWork = app.submissionVersions.length > 0 ? 'SUBMITTED' : 'IN_PROGRESS';
+      await tx.application.update({
+        where: { id: params.applicationId },
+        data: { escrowStatus: 'HELD', workStatus: nextWork },
+      });
+      await recordCampaignEventTx(tx, {
+        campaignId: app.campaignId, applicationId: params.applicationId, axis: 'escrow',
+        fromStatus: 'FROZEN', toStatus: 'HELD', actorId: params.adminUserId, actorType: 'ADMIN', reason: params.note,
+      });
+      await recordCampaignEventTx(tx, {
+        campaignId: app.campaignId, applicationId: params.applicationId, axis: 'work',
+        fromStatus: 'DISPUTED', toStatus: nextWork, actorId: params.adminUserId, actorType: 'ADMIN',
+      });
+    });
+  }
+
+  /** Whether a creator is currently allowed to apply, per their reliability score. */
+  async canCreatorApply(creatorId: string, minScore: number): Promise<boolean> {
+    if (minScore <= 0) return true;
+    const row = await prisma.creatorReliability.findUnique({ where: { creatorId }, select: { reliabilityScore: true } });
+    return !row || row.reliabilityScore >= minScore;
   }
 }
 

@@ -277,8 +277,9 @@ export class CampaignController {
   async reportIssue(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { reason } = req.body as { reason?: string };
-      const result = await campaignService.reportIssue(req.params.appId, req.user!.id, reason ?? '');
-      success(res, result, 'Issue reported');
+      const role = (req.user!.role === 'CREATOR' ? 'CREATOR' : 'BUSINESS') as 'CREATOR' | 'BUSINESS';
+      const result = await campaignService.raiseDispute(req.params.appId, req.user!.id, role, reason ?? '');
+      success(res, result, 'Dispute raised');
     } catch (err) {
       next(err);
     }

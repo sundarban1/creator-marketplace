@@ -436,7 +436,7 @@ router.put(
 router.put(
   '/applications/:appId/report-issue',
   authenticate,
-  authorize('BUSINESS'),
+  authorize('BUSINESS', 'CREATOR'),
   ctrl.reportIssue.bind(ctrl)
 );
 

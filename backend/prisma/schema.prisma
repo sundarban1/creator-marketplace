@@ -279,6 +279,7 @@ model CreatorProfile {
   assignedWork             ApplicationAssignment[] @relation("AssignedWork")
   memberOf                 ProviderMember[]        @relation("ProviderMemberships")
   eventQuestions           EventQuestion[]
+  reliability              CreatorReliability?
 
   @@index([isVerified])
   // Explore Creators' default ordering is `createdAt DESC, id ASC` (see
@@ -867,6 +868,7 @@ model Campaign {
   shortlistedBy         ShortlistedCampaign[]
   eventQuestions        EventQuestion[]
   events                CampaignEvent[]
+  disputes              Dispute[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -1015,6 +1017,7 @@ model Application {
   contract             Contract?
   events               CampaignEvent[]
   submissionVersions   CampaignSubmissionVersion[]
+  dispute              Dispute?
 
   // True uniqueness is enforced by two hand-written partial indexes, not a
   // plain @@unique — Prisma can't express "unique except when null" and a
@@ -1178,6 +1181,62 @@ enum CampaignEventActor {
   CREATOR
   ADMIN
   SYSTEM
+}
+
+// Escrow spec §27–§28. One dispute per engagement (applicationId unique). While
+// OPEN/UNDER_REVIEW the engagement's escrow is FROZEN and every automatic
+// release/refund is blocked; only an admin resolution moves the money.
+model Dispute {
+  id            String        @id @default(cuid())
+  applicationId String        @unique
+  campaignId    String
+  // Who raised it (User.id) and in what capacity.
+  raisedById    String
+  raisedByRole  CampaignEventActor
+  reason        String
+  status        DisputeStatus @default(OPEN)
+  // Admin resolution: CREATOR_WON | BUSINESS_WON | PARTIAL | DISMISSED.
+  resolution        String?
+  resolutionNote    String?
+  // Split amounts for a PARTIAL resolution (must sum to the escrowed amount).
+  creatorAmount     Float?
+  businessAmount     Float?
+  resolvedByAdminId String?
+  resolvedAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  campaign    Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([campaignId])
+  @@map("disputes")
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+}
+
+// Escrow spec §40 — creator reliability tracked entirely separately from any
+// campaign's state. One row per creator, created lazily on the first event.
+// reliabilityScore is derived (see EscrowService.bumpReliability) and floored
+// at 0; a single missed deadline is a warning, not a ban.
+model CreatorReliability {
+  creatorId                 String   @id
+  completedCampaigns        Int      @default(0)
+  lateCampaigns             Int      @default(0)
+  failedCampaigns           Int      @default(0)
+  missedConfirmations       Int      @default(0)
+  cancelledAfterConfirmation Int     @default(0)
+  reliabilityScore          Float    @default(100)
+  updatedAt                 DateTime @updatedAt
+
+  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("creator_reliability")
 }
 
 // One row per real money movement: a business escrowing funds for an accepted

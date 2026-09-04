@@ -186,6 +186,16 @@ export interface ApplicationDto {
   // Single derived label combining the relationship / work / escrow axes —
   // what the client should switch on (see application-state-machine.ts).
   engagementState: string;
+  // Present only while a dispute has been raised on this engagement.
+  dispute?: {
+    status: string;
+    reason: string;
+    raisedByRole: string;
+    resolution: string | null;
+    resolutionNote: string | null;
+    createdAt: string;
+    resolvedAt: string | null;
+  } | null;
   paidAt: string | null;
   createdAt: string;
   campaign?: {
@@ -392,6 +402,15 @@ type RawApplication = {
   }[];
   paymentStatus: string;
   escrowStatus?: string | null;
+  dispute?: {
+    status: string;
+    reason: string;
+    raisedByRole: string;
+    resolution: string | null;
+    resolutionNote: string | null;
+    createdAt: Date;
+    resolvedAt: Date | null;
+  } | null;
   paidAt: Date | null;
   createdAt: Date;
   campaign?: {
@@ -474,6 +493,19 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
       : {}),
     paymentStatus:   a.paymentStatus ?? 'UNPAID',
     escrowStatus:    escrowStatus,
+    ...(a.dispute
+      ? {
+          dispute: {
+            status:         a.dispute.status,
+            reason:         a.dispute.reason,
+            raisedByRole:   a.dispute.raisedByRole,
+            resolution:     a.dispute.resolution,
+            resolutionNote: a.dispute.resolutionNote,
+            createdAt:      a.dispute.createdAt.toISOString(),
+            resolvedAt:     a.dispute.resolvedAt ? a.dispute.resolvedAt.toISOString() : null,
+          },
+        }
+      : {}),
     engagementState: deriveEngagementState({
       applicationStatus:   a.status,
       workStatus:          a.workStatus,

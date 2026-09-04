@@ -31,6 +31,7 @@ export const ActivityAction = {
   APPLICATION_WORK_STARTED:        'application.work_started',
   APPLICATION_REVISION_REQUESTED:  'application.revision_requested',
   APPLICATION_DISPUTED:            'application.disputed',
+  DISPUTE_RESOLVED:                'dispute.resolved',
 } as const;
 
 export const AuditAction = {
@@ -48,6 +49,7 @@ export const AuditAction = {
   WITHDRAWAL_PROCESSING:    'withdrawal.processing',
   WITHDRAWAL_PAID:          'withdrawal.paid',
   WITHDRAWAL_REJECTED:      'withdrawal.rejected',
+  DISPUTE_RESOLVED:         'dispute.resolved',
 } as const;
 
 export const EntityType = {

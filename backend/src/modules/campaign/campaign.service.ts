@@ -744,6 +744,17 @@ export class CampaignService {
     if (submittedToday >= maxPerDay) {
       throw new AppError(`You've reached the limit of ${maxPerDay} proposals submitted per day. Please try again tomorrow.`, 429);
     }
+
+    // Escrow spec §40 — a creator whose reliability score has fallen below the
+    // configured floor is temporarily restricted from applying. Default floor
+    // is 0 (no restriction) for a conservative launch.
+    const minScore = Number(await this.adminRepo.getSetting('escrow.minReliabilityToApply')) || 0;
+    if (minScore > 0 && !(await escrowService.canCreatorApply(creatorId, minScore))) {
+      throw new AppError(
+        'Your reliability score is temporarily too low to apply to new campaigns. Complete your current commitments on time to restore it.',
+        403,
+      );
+    }
   }
 
   async apply(campaignId: string, userId: string, input: ApplyToCampaignInput) {
@@ -1945,52 +1956,42 @@ export class CampaignService {
     return toApplicationDto(updated);
   }
 
-  // §40 dispute flow — business-only, and only once the provider has marked
-  // their side done (workStatus SUBMITTED covers both a SERVICE job's "mark
-  // completed" and a DELIVERABLE job's actual file submission). Distinct
-  // from requestRevision: this flags DISPUTED rather than reopening the job,
-  // since a SERVICE job has no further work for the provider to redo.
-  async reportIssue(appId: string, userId: string, reason: string) {
-    const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+  // Escrow spec §27 — either party can raise a dispute, which freezes the
+  // escrow until an admin resolves it. The heavy lifting (Dispute row, freeze,
+  // events, notifications to the other party + admins) lives in
+  // EscrowService.raiseDispute; this only resolves the caller's role.
+  async raiseDispute(appId: string, userId: string, role: 'CREATOR' | 'BUSINESS' | 'ADMIN', reason: string) {
+    if (!reason?.trim()) throw new AppError('Please describe the issue', 400);
 
     const app = await this.repo.findApplicationById(appId);
     if (!app) throw new AppError('Application not found', 404);
-    if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
-    // Escrow spec §18/§20: an issue can be raised on a fresh submission or
-    // during the post-approval settlement hold (before funds actually release).
-    const inSettlement = app.workStatus === 'APPROVED' && app.escrowStatus === 'RELEASE_PENDING';
-    if (app.workStatus !== 'SUBMITTED' && !inSettlement) throw new AppError('Nothing to report an issue on yet', 400);
-    assertWorkTransition(app.workStatus, 'DISPUTED');
-    assertEscrowTransition(app.escrowStatus, 'FROZEN');
-    const prevEscrow = app.escrowStatus;
 
-    const updated = await this.repo.reportIssue(appId, reason);
+    let raisedByRole: 'BUSINESS' | 'CREATOR';
+    if (role === 'BUSINESS') {
+      const business = await this.businessRepo.findByUserId(userId);
+      if (!business || app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
+      raisedByRole = 'BUSINESS';
+    } else if (role === 'CREATOR') {
+      const creator = await this.creatorRepo.findByUserId(userId);
+      if (!creator || app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
+      raisedByRole = 'CREATOR';
+    } else {
+      throw new AppError('Admins resolve disputes, they do not raise them', 400);
+    }
 
-    // A frozen escrow is off the automatic clocks — neither the review sweep
-    // (auto-approve) nor the settlement sweep (release) may touch it.
-    await this.repo.setEngagementTiming(appId, { businessReviewDueAt: null, paymentReleaseAt: null }).catch(() => {});
-    await this.repo.setLatestSubmissionOutcome(appId, 'DISPUTED', reason).catch(() => {});
-
-    logActivity({ userId, action: ActivityAction.APPLICATION_DISPUTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'dispute', fromStatus: null, toStatus: 'OPEN', actorId: userId, actorType: 'BUSINESS', reason });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'escrow', fromStatus: prevEscrow, toStatus: 'FROZEN', actorId: userId, actorType: 'BUSINESS', reason });
+    await escrowService.raiseDispute({ applicationId: appId, raisedByUserId: userId, raisedByRole, reason });
 
     messagingService
-      .sendSystemMessage(app.creatorId, business.id, app.campaignId, userId, 'BUSINESS', `Issue reported: ${reason}`)
+      .sendSystemMessage(app.creatorId, app.campaign.business.id, app.campaignId, userId, raisedByRole, `Dispute raised: ${reason}`)
       .catch(() => {});
 
-    const creatorUserId = app.creator.userId;
-    notificationService.create({
-      userId:  creatorUserId,
-      type:    'issue_reported',
-      title:   'An issue was reported',
-      body:    `${business.businessName} reported an issue with "${app.campaign.title}". Check the details.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
+    const fresh = await this.repo.findApplicationById(appId);
+    return toApplicationDto(fresh!);
+  }
 
-    return toApplicationDto(updated);
+  // Back-compat entry for the existing business-only "report issue" route.
+  async reportIssue(appId: string, userId: string, reason: string) {
+    return this.raiseDispute(appId, userId, 'BUSINESS', reason);
   }
 
   // ── Deliverable videos ───────────────────────────────────────────────────────

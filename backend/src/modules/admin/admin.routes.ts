@@ -39,6 +39,8 @@ import {
   releaseBusinessReferral,
   getUserAnalytics,
   getPayments,
+  getDisputes,
+  resolveDispute,
 } from './admin.controller';
 
 const router = Router();
@@ -102,5 +104,9 @@ router.patch('/business-referrals/:id/release', releaseBusinessReferral);
 // ── Payments ─────────────────────────────────────────────────────────────────
 
 router.get('/payments', getPayments);
+
+// ── Disputes ────────────────────────────────────────────────────────────────────
+router.get('/disputes', getDisputes);
+router.post('/disputes/:id/resolve', resolveDispute);
 
 export default router;

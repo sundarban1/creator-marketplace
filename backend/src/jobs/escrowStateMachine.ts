@@ -22,6 +22,7 @@ const campaignService = new CampaignService();
 type EngagementRow = {
   id: string;
   campaignId: string;
+  creatorId: string;
   proposedRate: number;
   creator: { userId: string; fullName: string | null };
   campaign: { title: string; business: { userId: string; businessName: string | null } };
@@ -97,6 +98,7 @@ async function sweepConfirmationTimeouts(now: Date): Promise<number> {
       applicationId: app.id,
       reason:        'Creator confirmation window elapsed',
     });
+    void escrowService.bumpReliability(app.creatorId, 'missedConfirmation');
 
     logActivity({ userId: null, action: ActivityAction.CREATOR_CONFIRMATION_EXPIRED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId, refunded } });
 
@@ -183,6 +185,7 @@ async function sweepCreatorFailures(now: Date): Promise<number> {
       silent:          true,
     });
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'CONTENT_OVERDUE', toStatus: 'CREATOR_FAILED', actorType: 'SYSTEM', reason: 'Grace period elapsed with no submission' });
+    void escrowService.bumpReliability(app.creatorId, 'failed');
     logActivity({ userId: null, action: ActivityAction.CREATOR_FAILED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId } });
 
     notificationService.create({
