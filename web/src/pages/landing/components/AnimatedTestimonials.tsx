@@ -128,8 +128,8 @@ export function AnimatedTestimonials({
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             <h3 className="text-2xl font-bold text-ink dark:text-white">{current.name}</h3>
-            <p className="text-sm text-ink-soft dark:text-white/50">{current.designation}</p>
-            <motion.p className="mt-3 font-serif text-lg italic leading-relaxed text-ink-soft dark:text-white/70">
+            <p className="text-sm text-ink-soft dark:text-white">{current.designation}</p>
+            <motion.p className="mt-3 font-serif text-lg italic leading-relaxed text-ink-soft dark:text-white">
               {current.quote.split(' ').map((word, index) => (
                 <motion.span
                   key={index}

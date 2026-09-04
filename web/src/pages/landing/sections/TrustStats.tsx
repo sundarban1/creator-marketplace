@@ -17,9 +17,9 @@ function StatTile({ value, label, index }: { value: number; label: string; index
       <span className="font-mono text-xs tracking-[0.3em] text-ink/35 dark:text-white/35">{String(index + 1).padStart(2, '0')}</span>
       <div className="mt-3 font-serif text-7xl font-medium leading-none tracking-tight text-ink sm:text-8xl lg:text-9xl dark:text-white">
         {display}
-        <span className="text-ink/40 dark:text-white/40">+</span>
+        <span className="text-ink/40 dark:text-white">+</span>
       </div>
-      <div className="mt-4 text-sm uppercase tracking-[0.2em] text-ink-soft dark:text-white/50">{label}</div>
+      <div className="mt-4 text-sm uppercase tracking-[0.2em] text-ink-soft dark:text-white">{label}</div>
     </motion.div>
   );
 }
@@ -44,7 +44,7 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
 
       <div className="relative mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-14 max-w-2xl">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/50">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
             {d.trust.eyebrow}
           </motion.p>
           <TextReveal

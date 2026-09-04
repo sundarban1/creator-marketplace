@@ -27,7 +27,7 @@ const SOCIAL_ICONS = [
 // instead of the footer inventing its own.
 function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-ink-soft transition-colors duration-300 hover:text-ink dark:text-white/75 dark:hover:text-white">
+    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-ink-soft transition-colors duration-300 hover:text-ink dark:text-white dark:hover:text-white">
       <span>{children}</span>
       <ArrowUpRight
         size={13}
@@ -42,7 +42,7 @@ function FooterLink({ to, children }: { to: string; children: React.ReactNode })
 }
 
 const ANCHOR_LINK_CLASSES =
-  'group relative inline-flex w-fit items-center gap-1 py-0.5 text-left text-ink-soft transition-colors duration-300 hover:text-ink dark:text-white/75 dark:hover:text-white';
+  'group relative inline-flex w-fit items-center gap-1 py-0.5 text-left text-ink-soft transition-colors duration-300 hover:text-ink dark:text-white dark:hover:text-white';
 
 // Same visual language as FooterLink but for in-page section anchors (the
 // "Discover" column's People/Services/Opportunities/Events) rather than
@@ -85,7 +85,7 @@ function FooterAnchorLink({ id, children }: { id: string; children: React.ReactN
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <motion.div variants={fadeUp}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white/40">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white">{title}</p>
       <nav className="mt-4 flex flex-col gap-2.5 text-sm">{children}</nav>
     </motion.div>
   );
@@ -107,7 +107,7 @@ export function LandingFooter() {
             <motion.div variants={fadeUp} className="mb-3 flex w-fit items-center">
               <img src="/logo.png" alt="Kolab" loading="lazy" className="h-6 w-auto object-contain" />
             </motion.div>
-            <motion.p variants={fadeUp} className="max-w-xs text-sm leading-relaxed text-ink-soft dark:text-white/75">
+            <motion.p variants={fadeUp} className="max-w-xs text-sm leading-relaxed text-ink-soft dark:text-white">
               {d.footer.tagline}
             </motion.p>
 
@@ -124,7 +124,7 @@ export function LandingFooter() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-5 flex flex-col gap-2 text-sm text-ink-soft dark:text-white/75">
+                className="mt-5 flex flex-col gap-2 text-sm text-ink-soft dark:text-white">
                 {siteInfo.address && (
                   <span className="flex items-start gap-2">
                     <MapPin size={14} className="mt-0.5 flex-shrink-0 text-violet" />
@@ -171,7 +171,7 @@ export function LandingFooter() {
           </motion.div>
 
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp}>
-            <h3 className="mb-5 font-serif text-lg italic text-ink-soft dark:text-white/75">{d.footer.contactForm.heading}</h3>
+            <h3 className="mb-5 font-serif text-lg italic text-ink-soft dark:text-white">{d.footer.contactForm.heading}</h3>
             {/* ContactForm's `dark` prop is its own surface switch (which color
                 card it's sitting on), independent of the page theme in general —
                 but the footer's surface now follows the page theme 1:1, so it's
@@ -225,27 +225,27 @@ export function LandingFooter() {
           </FooterColumn>
 
           <motion.div variants={fadeUp}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white/40">{d.footer.downloadApp}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white">{d.footer.downloadApp}</p>
             <div className="mt-4">{comingSoon ? <ComingSoonBadge /> : <AppStoreBadges />}</div>
           </motion.div>
         </motion.div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-ink/10 pt-6 dark:border-white/10 sm:flex-row">
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-ink-soft dark:text-white/75">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-ink-soft dark:text-white">
             <FooterLink to="/privacy">{d.footer.privacy}</FooterLink>
             <FooterLink to="/terms">{d.footer.terms}</FooterLink>
             <FooterLink to="/support">{d.footer.support}</FooterLink>
           </div>
           {/* Admin-managed via the dashboard's Company page — only renders once set */}
           {(siteInfo?.companyRegistrationNumber || siteInfo?.companyPan) && (
-            <p className="text-xs text-ink-soft dark:text-white/75">
+            <p className="text-xs text-ink-soft dark:text-white">
               {[
                 siteInfo.companyRegistrationNumber && `Company Reg. No. ${siteInfo.companyRegistrationNumber}`,
                 siteInfo.companyPan && `PAN ${siteInfo.companyPan}`,
               ].filter(Boolean).join(' · ')}
             </p>
           )}
-          <p className="text-xs text-ink-soft dark:text-white/75">© {new Date().getFullYear()} Kolab Technologies Pvt. Ltd. {d.footer.rights}</p>
+          <p className="text-xs text-ink-soft dark:text-white">© {new Date().getFullYear()} Kolab Technologies Pvt. Ltd. {d.footer.rights}</p>
         </div>
       </div>
     </footer>

@@ -59,7 +59,7 @@ export function AIDiscovery() {
 
       <div ref={sectionRef} className="mx-auto max-w-6xl px-6" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/50">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
             {ai.eyebrow}
           </motion.p>
           <TextReveal
@@ -68,14 +68,14 @@ export function AIDiscovery() {
             delay={0.1}
             className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
           />
-          <motion.p variants={fadeUp} className="mt-4 text-ink-soft dark:text-white/60">
+          <motion.p variants={fadeUp} className="mt-4 text-ink-soft dark:text-white">
             {ai.sub}
           </motion.p>
         </motion.div>
 
         <div className="mt-14 flex flex-col items-stretch gap-4 lg:flex-row lg:items-center lg:gap-3">
           <PanelCard>
-            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white/50">
+            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white">
               <Search size={13} className="text-violet" />
               {ai.eyebrow}
             </span>
@@ -87,14 +87,14 @@ export function AIDiscovery() {
                 stagger={0.025}
                 className="flex-1 text-sm leading-relaxed text-ink dark:text-white"
               />
-              <Mic size={14} className="mt-0.5 flex-shrink-0 text-ink-soft dark:text-white/40" />
+              <Mic size={14} className="mt-0.5 flex-shrink-0 text-ink-soft dark:text-white" />
             </div>
           </PanelCard>
 
           <ArrowRight aria-hidden size={20} className="mx-auto hidden flex-shrink-0 text-ink/20 lg:block dark:text-white/20" />
 
           <PanelCard>
-            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white/50">
+            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white">
               <Sparkles size={13} className="text-violet" />
               {ai.understandingLabel}
             </span>
@@ -117,7 +117,7 @@ export function AIDiscovery() {
           <PanelCard className="flex flex-col items-center justify-center text-center">
             <motion.div key={`matches-${cycle}`} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 2.1, type: 'spring', stiffness: 240, damping: 18 }}>
               <span className="bg-gradient-to-br from-violet to-brand-orange bg-clip-text text-4xl font-bold text-transparent">{current.matches}</span>
-              <p className="mt-1 text-xs font-semibold text-ink-soft dark:text-white/50">{ai.matchesLabel}</p>
+              <p className="mt-1 text-xs font-semibold text-ink-soft dark:text-white">{ai.matchesLabel}</p>
               <div className="mt-4 flex items-center justify-center -space-x-2.5">
                 {MATCH_AVATARS.map((src) => (
                   <img key={src} src={src} alt="" loading="lazy" className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-paper-dim object-cover dark:border-ink-elevated" />

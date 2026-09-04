@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
-import { ChevronDown, Mic, Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import { fadeUp, scaleIn, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -80,7 +80,7 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
           <motion.div initial="hidden" animate="show" variants={stagger()} className="max-w-xl">
             <motion.span
               variants={fadeUp}
-              className="inline-flex items-center gap-2 rounded-full border border-violet/20 bg-violet/[0.06] px-3.5 py-1.5 font-serif text-sm italic text-violet dark:border-violet/30 dark:bg-violet/10"
+              className="inline-flex items-center gap-2 rounded-full border border-violet/20 bg-violet/[0.06] px-3.5 py-1.5 font-serif text-sm italic text-violet dark:border-violet/30 dark:bg-violet/10 dark:text-white"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
               {d.hero.eyebrow}
@@ -105,7 +105,7 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
               text={d.hero.sub}
               delay={0.9}
               stagger={0.015}
-              className="mt-6 max-w-md text-base leading-relaxed text-ink-soft dark:text-white/60"
+              className="mt-6 max-w-md text-base leading-relaxed text-ink-soft dark:text-white"
             />
 
             <motion.form
@@ -117,23 +117,15 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
               className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:items-center"
             >
               <div className="relative flex-1">
-                <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft dark:text-white/40" />
+                <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft dark:text-white" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   type="text"
                   placeholder={d.hero.searchPlaceholder}
                   aria-label={d.hero.searchAriaLabel}
-                  className="w-full rounded-full border border-ink/10 bg-white py-3.5 pl-11 pr-11 text-sm text-ink placeholder:text-ink-soft/60 shadow-[0_10px_30px_-14px_rgba(20,17,16,0.25)] outline-none transition-colors focus:border-violet/50 dark:border-white/10 dark:bg-ink-elevated dark:text-white dark:placeholder:text-white/35"
+                  className="w-full rounded-full border border-ink/10 bg-white py-3.5 pl-11 pr-4 text-sm text-ink placeholder:text-ink-soft/60 shadow-[0_10px_30px_-14px_rgba(20,17,16,0.25)] outline-none transition-colors focus:border-violet/50 dark:border-white/10 dark:bg-ink-elevated dark:text-white dark:placeholder:text-white/35"
                 />
-                <button
-                  type="button"
-                  onClick={() => scrollTo(`#${SECTION_IDS.finalCta}`)}
-                  aria-label={d.hero.micAriaLabel}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-ink-soft transition-colors hover:text-violet dark:text-white/40 dark:hover:text-white"
-                >
-                  <Mic size={15} />
-                </button>
               </div>
               <button
                 type="submit"
@@ -144,13 +136,13 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
             </motion.form>
 
             <motion.div variants={fadeUp} className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-ink-soft dark:text-white/50">{d.hero.popularSearchesLabel}</span>
+              <span className="text-ink-soft dark:text-white">{d.hero.popularSearchesLabel}</span>
               {d.hero.popularSearches.map((term) => (
                 <button
                   key={term}
                   type="button"
                   onClick={() => setQuery(term)}
-                  className="rounded-full border border-ink/10 bg-white px-3 py-1.5 font-medium text-ink-soft transition-colors hover:border-violet/40 hover:text-violet dark:border-white/10 dark:bg-ink-elevated dark:text-white/60 dark:hover:text-white"
+                  className="rounded-full border border-ink/10 bg-white px-3 py-1.5 font-medium text-ink-soft transition-colors hover:border-violet/40 hover:text-violet dark:border-white/10 dark:bg-ink-elevated dark:text-white dark:hover:text-white"
                 >
                   {term}
                 </button>
@@ -172,7 +164,7 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
                   />
                 ))}
               </div>
-              <p ref={countRef} className="text-sm text-ink-soft dark:text-white/60">
+              <p ref={countRef} className="text-sm text-ink-soft dark:text-white">
                 <span className="font-bold text-ink dark:text-white">{display}+</span> {d.hero.socialProofSuffix}
               </p>
             </motion.div>
@@ -195,7 +187,7 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.4, duration: 0.6 }}
-        className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1.5 text-ink-soft/60 transition-colors hover:text-ink-soft sm:flex dark:text-white/40 dark:hover:text-white/60"
+        className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1.5 text-ink-soft/60 transition-colors hover:text-ink-soft sm:flex dark:text-white dark:hover:text-white/60"
       >
         <span className="text-[10px] font-semibold uppercase tracking-widest">{d.hero.scrollLabel}</span>
         <motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>

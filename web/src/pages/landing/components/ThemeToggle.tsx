@@ -16,7 +16,7 @@ export function ThemeToggle({ dark = false }: { dark?: boolean }) {
       aria-pressed={isDark}
       className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-300 ${
         dark
-          ? 'border-ink/10 text-ink-soft hover:text-ink dark:border-white/10 dark:text-white/60 dark:hover:text-white'
+          ? 'border-ink/10 text-ink-soft hover:text-ink dark:border-white/10 dark:text-white dark:hover:text-white'
           : 'border-white/20 text-white/70 hover:text-white'
       }`}
     >

@@ -97,7 +97,7 @@ export function SectionHeading({
         {sub && (
           <motion.p
             variants={fadeUp}
-            className={`mt-3 text-[15px] leading-[1.65] text-app-muted dark:text-white/60 ${centered ? 'max-w-xl' : 'max-w-lg'}`}
+            className={`mt-3 text-[15px] leading-[1.65] text-app-muted dark:text-white ${centered ? 'max-w-xl' : 'max-w-lg'}`}
           >
             {sub}
           </motion.p>
@@ -152,9 +152,9 @@ export function AppEmptyCard({
 }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-app-md border-[1.5px] border-dashed border-app-border bg-white p-6 text-center dark:border-app-night-border dark:bg-app-night-raised">
-      <Icon size={28} className="text-app-muted dark:text-white/40" />
+      <Icon size={28} className="text-app-muted dark:text-white" />
       <p className="text-[15px] font-bold leading-[1.5] text-app-text dark:text-white">{title}</p>
-      {sub && <p className="text-sm leading-[1.6] text-app-muted dark:text-white/50">{sub}</p>}
+      {sub && <p className="text-sm leading-[1.6] text-app-muted dark:text-white">{sub}</p>}
       {action && <AppButton onClick={action.onClick}>{action.label}</AppButton>}
     </div>
   );
@@ -227,7 +227,7 @@ export function AppSearchBar({
       className="flex flex-col gap-2.5 sm:flex-row sm:items-center"
     >
       <div className="relative flex h-12 flex-1 items-center gap-2.5 rounded-app-lg border-[1.5px] border-app-border bg-app-primary-tint px-3.5 focus-within:border-app-primary/60 dark:border-app-night-border dark:bg-app-night-raised">
-        <Search size={16} strokeWidth={2.5} className="flex-shrink-0 text-app-muted dark:text-white/45" />
+        <Search size={16} strokeWidth={2.5} className="flex-shrink-0 text-app-muted dark:text-white" />
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -268,7 +268,7 @@ export function AppChip({
     primary:
       'border-app-border bg-app-primary-tint text-app-primary dark:border-app-night-border dark:bg-app-primary/15 dark:text-indigo-300',
     plain:
-      'border-app-border bg-white text-app-muted hover:border-app-primary/40 hover:text-app-primary dark:border-app-night-border dark:bg-app-night-raised dark:text-white/60 dark:hover:text-white',
+      'border-app-border bg-white text-app-muted hover:border-app-primary/40 hover:text-app-primary dark:border-app-night-border dark:bg-app-night-raised dark:text-white dark:hover:text-white',
   } as const;
   return (
     <button
@@ -323,7 +323,7 @@ export function QuickActionTile({
       >
         <Icon size={size === 'sm' ? 16 : 18} strokeWidth={2.4} />
       </span>
-      <span className="text-[11px] font-medium leading-[1.5] text-app-text sm:text-xs dark:text-white/80">{label}</span>
+      <span className="text-[11px] font-medium leading-[1.5] text-app-text sm:text-xs dark:text-white">{label}</span>
     </button>
   );
 }
@@ -424,7 +424,7 @@ export function PromoBanner({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold leading-[1.5] text-app-text dark:text-white">{title}</span>
-        <span className="block text-sm leading-[1.6] text-app-muted dark:text-white/60">
+        <span className="block text-sm leading-[1.6] text-app-muted dark:text-white">
           {sub}
           {highlight && <span className="text-[15px] font-extrabold text-emerald-600">{highlight}</span>}
           {subSuffix}

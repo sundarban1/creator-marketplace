@@ -17,7 +17,7 @@ export function StandaloneHeader() {
           <img src="/logo.png" alt="Kolab" className="h-6 w-auto object-contain" />
         </Link>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white/50">
+          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white">
             {(['en', 'ne'] as const).map((l) => (
               <button
                 key={l}

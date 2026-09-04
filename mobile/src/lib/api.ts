@@ -10,6 +10,16 @@ export class OfflineError extends Error {
   }
 }
 
+// Thrown by fetchWithTimeout when the abort timer fires — a distinct type so
+// callers (and multipart callers outside request()) can tell a timeout apart
+// from a genuine server error. Message is user-facing.
+export class RequestTimeoutError extends Error {
+  constructor() {
+    super('The server is taking too long to respond. Please try again.');
+    this.name = 'RequestTimeoutError';
+  }
+}
+
 // Carries the HTTP status and any machine-readable `code` the backend sent
 // alongside its error message (see AppError's `data` param on the backend) —
 // e.g. AI generation's NO_CAMPAIGN_INTENT — so callers can branch on it
@@ -238,6 +248,13 @@ function fireSessionExpired(): void {
 // user as the app being stuck on the splash/loading screen.
 const REQUEST_TIMEOUT_MS = 30000;
 
+// Named ceilings for the multipart callers that can't go through request() but
+// still want the same bounded round-trip (uploadImage, chat attachments,
+// audioTranscribe, the Google Places/geocode calls).
+export const API_TIMEOUT_MS    = REQUEST_TIMEOUT_MS;
+export const AI_TIMEOUT_MS      = 60_000;
+export const UPLOAD_TIMEOUT_MS  = 120_000;
+
 // Returns the response together with its already-read body text. The body is
 // read here, under the *same* abort timer as the fetch — a half-open socket
 // (common when the device resumes from sleep) can deliver the response headers
@@ -245,9 +262,9 @@ const REQUEST_TIMEOUT_MS = 30000;
 // timeout of their own, so a caller awaiting the body would hang forever with
 // the loading spinner stuck. Consuming it here means the whole round-trip is
 // bounded by `timeoutMs`.
-interface TimedResponse { res: Response; text: string; }
+export interface TimedResponse { res: Response; text: string; }
 
-async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<TimedResponse> {
+export async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<TimedResponse> {
   const controller = new AbortController();
   let timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -261,7 +278,7 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQU
     const text = await res.text();
     return { res, text };
   } catch (err) {
-    if (controller.signal.aborted) throw new Error('The server is taking too long to respond. Please try again.');
+    if (controller.signal.aborted) throw new RequestTimeoutError();
     throw err;
   } finally {
     clearTimeout(timer);
@@ -272,6 +289,13 @@ function parseEnvelope<T>(text: string): T {
   // A 204 or a proxy's empty error page leaves nothing to parse — treat it as
   // an empty envelope rather than throwing a confusing SyntaxError.
   return (text ? JSON.parse(text) : {}) as T;
+}
+
+// Fail fast instead of waiting out the timeout when we already know there's no
+// connection — NetInfo's cached state is checked synchronously. Shared with the
+// multipart callers that can't go through request().
+export function assertOnline(): void {
+  if (!network.isOnline()) throw new OfflineError();
 }
 
 // Decodes a JWT's `exp` claim (seconds since the epoch) to milliseconds,
@@ -391,9 +415,7 @@ export async function request<T>(
   params?: Record<string, string | number | undefined>,
   timeoutMs?: number,
 ): Promise<ApiEnvelope<T>> {
-  // Fail fast instead of waiting out the 30s timeout when we already know
-  // there's no connection — NetInfo's cached state is checked synchronously.
-  if (!network.isOnline()) throw new OfflineError();
+  assertOnline();
 
   const url = new URL(`${API_BASE}${path}`);
   if (params) {
@@ -468,7 +490,15 @@ export async function request<T>(
   }
 
   // ── Parse response ─────────────────────────────────────────────────────────
-  const json = parseEnvelope<ApiEnvelope<T> & { errors?: { field: string; message: string }[]; code?: string }>(text);
+  // A proxy/CDN can answer with a non-JSON body (an HTML 502/504 page) — surface
+  // that as the HTTP status rather than an opaque SyntaxError from JSON.parse.
+  let json: ApiEnvelope<T> & { errors?: { field: string; message: string }[]; code?: string };
+  try {
+    json = parseEnvelope(text);
+  } catch {
+    if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+    throw new Error('The server returned an invalid response.');
+  }
 
   if (!res.ok) {
     const fieldErrors = json.errors?.map((e) => e.message).join('. ');

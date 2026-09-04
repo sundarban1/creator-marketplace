@@ -61,7 +61,7 @@ export function FinalCTA() {
           >
             {d.finalCta.heading}
           </motion.h2>
-          <motion.p variants={fadeUp} className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-ink-soft dark:text-white/70">
+          <motion.p variants={fadeUp} className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-ink-soft dark:text-white">
             {d.finalCta.sub}
           </motion.p>
 

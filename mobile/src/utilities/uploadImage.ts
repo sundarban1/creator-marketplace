@@ -5,7 +5,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 import { isDevice } from 'expo-device';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
-import { API_BASE } from '@/lib/api';
+import { API_BASE, assertOnline, fetchWithTimeout, UPLOAD_TIMEOUT_MS } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
@@ -162,6 +162,7 @@ export type DocStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
 export type UploadResult = { url: string; status?: DocStatus };
 
 async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTarget): Promise<UploadResult> {
+  assertOnline();
   const { path, field, isDocument } = TARGET_CONFIG[target];
   const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
 
@@ -171,13 +172,13 @@ async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTa
   const form = new FormData();
   form.append(field, { uri, name: `photo.${ext}`, type: mimeType } as unknown as Blob);
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const { res, text } = await fetchWithTimeout(`${API_BASE}${path}`, {
     method:  'POST',
     headers: { Authorization: `Bearer ${token}` },
     body:    form,
-  });
+  }, UPLOAD_TIMEOUT_MS);
 
-  const json = await res.json() as { success: boolean; data: Record<string, string>; message?: string };
+  const json = (text ? JSON.parse(text) : {}) as { success: boolean; data: Record<string, string>; message?: string };
   if (!res.ok) throw new Error(json.message ?? 'Upload failed');
 
   return {

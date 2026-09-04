@@ -20,10 +20,9 @@ export const en = {
     sub: 'Kolab helps you find the skills your campaign, event or job needs — and connects you with the creators who can deliver them.',
     searchPlaceholder: "Try 'I need 3 content creators for my restaurant launch'",
     searchAriaLabel: 'Search Kolab',
-    micAriaLabel: 'Search by voice',
     searchCta: 'Search',
     popularSearchesLabel: 'Popular searches:',
-    popularSearches: ['Content Creators', 'Influencers', 'UGC Creators', 'Reels', 'Product Reviews'],
+    popularSearches: ['Content Creators', 'UGC Creators', 'Product Reviews'],
     socialProofSuffix: 'creators are already on Kolab',
     socialProofFallback: 10000,
     connectors: {

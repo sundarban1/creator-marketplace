@@ -31,7 +31,7 @@ export function Stories({ stories }: StoriesProps) {
     <section id={SECTION_IDS.stories} className="bg-paper py-24 dark:bg-ink">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/50">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
             {d.stories.eyebrow}
           </motion.p>
           <TextReveal

@@ -23,7 +23,7 @@ function ThemeToggleMobile() {
           className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-center font-serif text-base font-bold italic transition-all duration-300 ${
             theme === t
               ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm'
-              : 'text-ink-soft hover:text-ink dark:text-white/60 dark:hover:text-white'
+              : 'text-ink-soft hover:text-ink dark:text-white dark:hover:text-white'
           }`}
         >
           {t === 'light' ? <Sun size={16} /> : <Moon size={16} />}
@@ -48,7 +48,7 @@ function LanguageSwitch({ dark = false }: { dark?: boolean }) {
       aria-label={`Switch to ${LANGUAGE_NAMES[other]}`}
       className={`flex h-7 min-w-7 items-center justify-center rounded-full border px-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-300 ${
         dark
-          ? 'border-ink/10 text-ink-soft hover:text-ink dark:border-white/10 dark:text-white/60 dark:hover:text-white'
+          ? 'border-ink/10 text-ink-soft hover:text-ink dark:border-white/10 dark:text-white dark:hover:text-white'
           : 'border-white/20 text-white/70 hover:text-white'
       }`}
     >
@@ -70,7 +70,7 @@ function LanguageSwitchMobile() {
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
           className={`flex-1 rounded-xl px-4 py-3 text-center font-serif text-base font-bold italic transition-all duration-300 ${
-            lang === l ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm' : 'text-ink-soft hover:text-ink dark:text-white/60 dark:hover:text-white'
+            lang === l ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm' : 'text-ink-soft hover:text-ink dark:text-white dark:hover:text-white'
           }`}
         >
           {LANGUAGE_NAMES[l]}
@@ -135,7 +135,7 @@ export function LandingNav() {
               <button
                 key={l.key}
                 onClick={() => go(l.id)}
-                className="group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white/60 dark:hover:text-white"
+                className="group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white"
               >
                 {d.nav.links[l.key]}
                 <span
@@ -179,7 +179,7 @@ export function LandingNav() {
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.08 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="group relative w-fit rounded py-2.5 text-left font-serif text-4xl font-bold italic text-ink/85 transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white/85 dark:hover:text-white"
+                  className="group relative w-fit rounded py-2.5 text-left font-serif text-4xl font-bold italic text-ink/85 transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white"
                 >
                   {d.nav.links[l.key]}
                   <span
@@ -194,14 +194,14 @@ export function LandingNav() {
                 transition={{ delay: 0.08 + NAV_LINKS.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 className="mt-10 w-full max-w-xs border-t border-ink/10 pt-6 dark:border-white/10"
               >
-                <p className="flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white/50">
+                <p className="flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white">
                   <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
                   {d.nav.languageLabel}
                 </p>
                 <div className="mt-3">
                   <LanguageSwitchMobile />
                 </div>
-                <p className="mt-5 flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white/50">
+                <p className="mt-5 flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white">
                   <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
                   {d.nav.appearanceLabel}
                 </p>

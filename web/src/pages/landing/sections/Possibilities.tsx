@@ -27,7 +27,7 @@ export function Possibilities() {
     <section id={SECTION_IDS.possibilities} className="relative bg-paper py-24 dark:bg-ink">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/50">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
             {d.possibilities.eyebrow}
           </motion.p>
           <TextReveal
@@ -80,7 +80,7 @@ export function Possibilities() {
                 </div>
                 <div className="p-5">
                   <h3 className={`text-base font-bold ${accent}`}>{copy.title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-soft dark:text-white/60">{copy.sub}</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-soft dark:text-white">{copy.sub}</p>
                   <span className={`mt-4 inline-flex items-center gap-1.5 text-sm font-semibold transition-transform duration-300 group-hover:translate-x-1 ${accent}`}>
                     {copy.cta}
                     <ArrowRight size={14} />

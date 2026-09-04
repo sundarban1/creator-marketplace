@@ -22,10 +22,9 @@ export const ne: LandingDict = {
     sub: 'Kolab ले तपाईंको क्याम्पेन, इभेन्ट वा जबका लागि चाहिने सीप फेला पार्न र त्यो पूरा गर्न सक्ने क्रिएटरसँग जोडिन मद्दत गर्छ।',
     searchPlaceholder: '"मलाई मेरो रेस्टुरेन्ट लन्चका लागि ३ जना कन्टेन्ट क्रिएटर चाहियो" जस्तै टाइप गर्नुहोस्',
     searchAriaLabel: 'Kolab खोज्नुहोस्',
-    micAriaLabel: 'आवाजबाट खोज्नुहोस्',
     searchCta: 'खोज्नुहोस्',
     popularSearchesLabel: 'लोकप्रिय खोजहरू:',
-    popularSearches: ['कन्टेन्ट क्रिएटर', 'इन्फ्लुएन्सर', 'यूजीसी क्रिएटर', 'रिल्स', 'प्रोडक्ट रिभ्यु'],
+    popularSearches: ['कन्टेन्ट क्रिएटर', 'यूजीसी क्रिएटर', 'प्रोडक्ट रिभ्यु'],
     socialProofSuffix: 'क्रिएटरहरू पहिले नै Kolab मा छन्',
     socialProofFallback: 10000,
     connectors: {

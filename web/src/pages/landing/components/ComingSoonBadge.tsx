@@ -18,7 +18,7 @@ export function ComingSoonBadge({ variant = 'dark', className = '' }: ComingSoon
   return (
     <div
       className={`inline-flex items-center gap-3 rounded-full border px-5 py-3 ${
-        isDark ? 'border-ink/15 bg-ink/[0.03] text-ink-soft dark:border-white/15 dark:bg-white/[0.05] dark:text-white/60' : 'border-white/20 bg-white/5 text-white/70'
+        isDark ? 'border-ink/15 bg-ink/[0.03] text-ink-soft dark:border-white/15 dark:bg-white/[0.05] dark:text-white' : 'border-white/20 bg-white/5 text-white/70'
       } ${className}`}
     >
       <span className="flex items-center gap-2.5 opacity-70">

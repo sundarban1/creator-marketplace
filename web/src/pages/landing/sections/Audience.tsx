@@ -52,7 +52,7 @@ export function Audience() {
           <motion.h2 variants={fadeUp} className="mt-4 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white">
             {a.heading}
           </motion.h2>
-          <motion.p variants={fadeUp} className="mt-4 text-ink-soft dark:text-white/60">
+          <motion.p variants={fadeUp} className="mt-4 text-ink-soft dark:text-white">
             {a.sub}
           </motion.p>
         </motion.div>
@@ -62,14 +62,14 @@ export function Audience() {
           <motion.div variants={fadeUp} className="flex flex-col items-center text-center lg:col-start-1 lg:row-start-1 lg:items-start lg:text-left">
             <span className="text-xs font-bold uppercase tracking-wide text-brand-orange">{giver.label}</span>
             <h3 className="mt-2 text-xl font-bold leading-snug text-ink dark:text-white">{giver.title}</h3>
-            <p className="mt-2 max-w-sm text-sm leading-relaxed text-ink-soft dark:text-white/60">{giver.sub}</p>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-ink-soft dark:text-white">{giver.sub}</p>
           </motion.div>
 
           {/* Service taker — header */}
           <motion.div variants={fadeUp} className="flex flex-col items-center text-center lg:col-start-2 lg:row-start-1 lg:items-end lg:text-right">
             <span className="text-xs font-bold uppercase tracking-wide text-violet">{taker.label}</span>
             <h3 className="mt-2 text-xl font-bold leading-snug text-ink dark:text-white">{taker.title}</h3>
-            <p className="mt-2 max-w-sm text-sm leading-relaxed text-ink-soft dark:text-white/60">{taker.sub}</p>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-ink-soft dark:text-white">{taker.sub}</p>
           </motion.div>
 
           {/* Service giver — card, with a connector line reaching toward the
@@ -158,10 +158,10 @@ export function Audience() {
                 <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet/30 to-violet" />
                 <div className="flex items-start justify-between">
                   <span className="rounded-full bg-violet/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-violet">{taker.opportunityBadge}</span>
-                  <Bookmark size={16} className="text-ink-soft dark:text-white/40" />
+                  <Bookmark size={16} className="text-ink-soft dark:text-white" />
                 </div>
                 <h4 className="mt-3 text-base font-bold leading-snug text-ink dark:text-white">{taker.opportunityTitle}</h4>
-                <div className="mt-2.5 space-y-1.5 text-xs text-ink-soft dark:text-white/50">
+                <div className="mt-2.5 space-y-1.5 text-xs text-ink-soft dark:text-white">
                   <span className="flex items-center gap-1.5">
                     <MapPin size={12} />
                     {taker.location}
@@ -177,7 +177,7 @@ export function Audience() {
                 </div>
                 <div className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3 dark:border-white/10">
                   <span className="text-xs font-semibold text-ink dark:text-white">{taker.project}</span>
-                  <span className="rounded-full bg-paper-dim px-2.5 py-1 text-[10px] font-semibold text-ink-soft dark:bg-white/10 dark:text-white/60">{taker.projectTag}</span>
+                  <span className="rounded-full bg-paper-dim px-2.5 py-1 text-[10px] font-semibold text-ink-soft dark:bg-white/10 dark:text-white">{taker.projectTag}</span>
                 </div>
                 <button
                   onClick={() => scrollTo(`#${SECTION_IDS.finalCta}`)}
@@ -225,7 +225,7 @@ export function Audience() {
                 {giver.cta}
                 <ArrowRight size={14} />
               </button>
-              <span className="mt-2 text-xs text-ink-soft dark:text-white/50">{giver.ctaCaption}</span>
+              <span className="mt-2 text-xs text-ink-soft dark:text-white">{giver.ctaCaption}</span>
             </motion.div>
 
             {/* Service taker — CTA */}
@@ -237,7 +237,7 @@ export function Audience() {
                 {taker.cta}
                 <ArrowRight size={14} />
               </button>
-              <span className="mt-2 text-xs text-ink-soft dark:text-white/50">{taker.ctaCaption}</span>
+              <span className="mt-2 text-xs text-ink-soft dark:text-white">{taker.ctaCaption}</span>
             </motion.div>
           </div>
         </motion.div>

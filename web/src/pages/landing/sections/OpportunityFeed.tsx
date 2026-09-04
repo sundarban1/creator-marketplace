@@ -41,7 +41,7 @@ export function OpportunityFeed() {
     <section id={SECTION_IDS.opportunities} className="relative bg-white py-24 dark:bg-ink">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/50">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
             {feed.eyebrow}
           </motion.p>
           <TextReveal
@@ -83,12 +83,12 @@ export function OpportunityFeed() {
                   </div>
                   <div className="p-4">
                     <h4 className="text-sm font-bold leading-snug text-ink dark:text-white">{op.title}</h4>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-ink-soft dark:text-white/50">
+                    <p className="mt-1 flex items-center gap-1 text-xs text-ink-soft dark:text-white">
                       <MapPin size={11} />
                       {op.location}
                     </p>
                     <p className="mt-2 text-xs font-semibold text-ink dark:text-white">{op.meta}</p>
-                    <p className="text-xs text-ink-soft dark:text-white/50">{op.sub}</p>
+                    <p className="text-xs text-ink-soft dark:text-white">{op.sub}</p>
                     <a
                       href="#"
                       onClick={goToDownload}

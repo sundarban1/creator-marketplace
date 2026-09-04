@@ -75,14 +75,14 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
               <Icon size={22} />
             </motion.span>
 
-            <motion.p variants={fadeUp} className="mt-5 font-serif text-base italic text-ink-soft dark:text-white/60">{eyebrow}</motion.p>
+            <motion.p variants={fadeUp} className="mt-5 font-serif text-base italic text-ink-soft dark:text-white">{eyebrow}</motion.p>
 
             <motion.h1 variants={fadeUp} className="text-balance mt-3 font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl dark:text-white">
               {heading}
             </motion.h1>
 
             {intro && (
-              <motion.p variants={fadeUp} className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft dark:text-white/60">
+              <motion.p variants={fadeUp} className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft dark:text-white">
                 {intro}
               </motion.p>
             )}
@@ -119,7 +119,7 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
                       {r.label}
                       <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
                     </span>
-                    <p className="mt-1.5 text-sm text-ink-soft dark:text-white/60">{r.description}</p>
+                    <p className="mt-1.5 text-sm text-ink-soft dark:text-white">{r.description}</p>
                   </Link>
                 ))}
               </motion.div>

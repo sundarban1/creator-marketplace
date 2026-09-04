@@ -52,7 +52,7 @@ function LogoBadge({ item }: { item: LogoItem }) {
       >
         {item.type === 'icon' ? <item.Icon size={16} /> : <span className="text-sm font-bold">{item.name[0]}</span>}
       </span>
-      <span className="whitespace-nowrap text-sm font-semibold text-ink dark:text-white/80">{item.name}</span>
+      <span className="whitespace-nowrap text-sm font-semibold text-ink dark:text-white">{item.name}</span>
     </motion.div>
   );
 }
@@ -68,7 +68,7 @@ export function Partners() {
         whileInView="show"
         viewport={VP}
         variants={fadeUp}
-        className="mb-10 text-center font-serif text-lg italic font-normal text-ink-soft dark:text-white/60"
+        className="mb-10 text-center font-serif text-lg italic font-normal text-ink-soft dark:text-white"
       >
         {d.partners.heading}
       </motion.h2>

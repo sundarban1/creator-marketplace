@@ -32,7 +32,9 @@ Sentry.init({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
+    <Sentry.ErrorBoundary
+      fallback={({ eventId }) => <ErrorFallback eventId={eventId} />}
+    >
       <App />
     </Sentry.ErrorBoundary>
   </StrictMode>,

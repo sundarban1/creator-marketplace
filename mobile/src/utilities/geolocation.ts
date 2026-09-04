@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { buildGeocodeUrl, buildPlaceDetailsUrl } from './constants';
 import { showPermissionDeniedAlert } from './permissionAlert';
+import { assertOnline, fetchWithTimeout, API_TIMEOUT_MS } from '@/lib/api';
 
 export type LatLng = { lat: number; lng: number };
 
@@ -12,8 +13,9 @@ export type LatLng = { lat: number; lng: number };
 export async function geocodeAddress(address: string): Promise<LatLng | null> {
   if (!address.trim()) return null;
   try {
-    const res = await fetch(buildGeocodeUrl(address));
-    const json = await res.json();
+    assertOnline();
+    const { text } = await fetchWithTimeout(buildGeocodeUrl(address), {}, API_TIMEOUT_MS);
+    const json = JSON.parse(text);
     if (json.status === 'OK' && json.results?.[0]) {
       const loc = json.results[0].geometry.location;
       return { lat: loc.lat, lng: loc.lng };
@@ -47,8 +49,13 @@ function componentOf(components: any[], type: string): string | null {
  */
 export async function resolvePlaceDetails(placeId: string): Promise<ResolvedPlace | null> {
   try {
-    const res = await fetch(buildPlaceDetailsUrl(placeId, 'geometry,formatted_address,name,address_components'));
-    const json = await res.json();
+    assertOnline();
+    const { text } = await fetchWithTimeout(
+      buildPlaceDetailsUrl(placeId, 'geometry,formatted_address,name,address_components'),
+      {},
+      API_TIMEOUT_MS,
+    );
+    const json = JSON.parse(text);
     if (json.status !== 'OK' || !json.result) return null;
     const r = json.result;
     const components: any[] = r.address_components ?? [];

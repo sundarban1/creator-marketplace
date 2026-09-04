@@ -11,7 +11,7 @@ export function ContentSection({ heading, children }: { heading: string; childre
   return (
     <motion.section initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
       <motion.h2 variants={fadeUp} className="font-serif text-2xl font-medium text-ink sm:text-3xl dark:text-white">{heading}</motion.h2>
-      <motion.div variants={fadeUp} className="prose-content mt-4 max-w-2xl space-y-4 text-[15px] leading-relaxed text-ink-soft dark:text-white/60">
+      <motion.div variants={fadeUp} className="prose-content mt-4 max-w-2xl space-y-4 text-[15px] leading-relaxed text-ink-soft dark:text-white">
         {children}
       </motion.div>
     </motion.section>
@@ -45,7 +45,7 @@ export function BenefitGrid({ items }: { items: BenefitItem[] }) {
               <item.icon size={18} />
             </span>
             <h3 className="mt-4 text-[15px] font-bold text-ink dark:text-white">{item.title}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-ink-soft dark:text-white/60">{item.desc}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-soft dark:text-white">{item.desc}</p>
           </motion.div>
         );
       })}
@@ -57,7 +57,7 @@ export function ContentList({ items }: { items: string[] }) {
   return (
     <ul className="space-y-2.5">
       {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-2.5 text-[15px] leading-relaxed text-ink-soft dark:text-white/60">
+        <li key={i} className="flex items-start gap-2.5 text-[15px] leading-relaxed text-ink-soft dark:text-white">
           <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
           {item}
         </li>

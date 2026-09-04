@@ -34,7 +34,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
     <section id={SECTION_IDS.categories} className="bg-white py-24 dark:bg-ink">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/50">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
             {d.categories.eyebrow}
           </motion.p>
           <TextReveal
@@ -60,7 +60,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
               >
                 <Icon size={18} />
               </span>
-              <span className="text-xs font-semibold leading-tight text-ink dark:text-white/80">{name}</span>
+              <span className="text-xs font-semibold leading-tight text-ink dark:text-white">{name}</span>
             </motion.div>
           ))}
           <motion.button
@@ -69,10 +69,10 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
             whileHover={PILL_HOVER}
             className="flex w-16 flex-col items-center gap-2.5 text-center"
           >
-            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ink/5 text-ink-soft dark:bg-white/10 dark:text-white/60">
+            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ink/5 text-ink-soft dark:bg-white/10 dark:text-white">
               <ChevronRight size={18} />
             </span>
-            <span className="text-xs font-semibold leading-tight text-ink-soft dark:text-white/60">{d.categories.more}</span>
+            <span className="text-xs font-semibold leading-tight text-ink-soft dark:text-white">{d.categories.more}</span>
           </motion.button>
         </motion.div>
       </div>

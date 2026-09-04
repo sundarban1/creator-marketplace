@@ -157,7 +157,7 @@ export function ChatWidget() {
 
             {!session ? (
               <form onSubmit={handleStart} className="flex flex-1 flex-col justify-center gap-3 p-6">
-                <p className="mb-1 text-sm text-ink-soft dark:text-white/60">{d.chatWidget.introText}</p>
+                <p className="mb-1 text-sm text-ink-soft dark:text-white">{d.chatWidget.introText}</p>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -179,7 +179,7 @@ export function ChatWidget() {
               <>
                 <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto p-4">
                   {messages.length === 0 && (
-                    <p className="mt-6 text-center text-xs text-ink-soft/60 dark:text-white/40">{d.chatWidget.emptyMessages}</p>
+                    <p className="mt-6 text-center text-xs text-ink-soft/60 dark:text-white">{d.chatWidget.emptyMessages}</p>
                   )}
                   {messages.map((m) => (
                     <div key={m.id} className={`flex ${m.sender === 'VISITOR' ? 'justify-end' : 'justify-start'}`}>

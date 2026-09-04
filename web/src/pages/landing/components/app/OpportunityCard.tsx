@@ -89,12 +89,12 @@ export function OpportunityCard({
       <div className="p-3">
         <h4 className="truncate text-sm font-bold leading-[1.5] text-app-text dark:text-white">{data.title}</h4>
         <p className="mt-0.5 truncate text-[13px] font-bold leading-[1.5] text-app-text dark:text-white">{data.budget}</p>
-        <p className="mt-1.5 truncate text-[11px] font-medium leading-[1.5] text-app-muted dark:text-white/55">
+        <p className="mt-1.5 truncate text-[11px] font-medium leading-[1.5] text-app-muted dark:text-white">
           {data.brand} · {data.postedAgo}
         </p>
 
         <div className="mt-2 flex items-center gap-2 border-t border-app-border pt-2 dark:border-app-night-border">
-          <span className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-app-muted dark:text-white/55">
+          <span className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-app-muted dark:text-white">
             <LocationIcon size={11} className="flex-shrink-0" />
             <span className="truncate">{data.location}</span>
           </span>

@@ -1,4 +1,4 @@
-import { request, API_BASE }                from '@/lib/api';
+import { request, API_BASE, assertOnline, fetchWithTimeout, UPLOAD_TIMEOUT_MS } from '@/lib/api';
 import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -267,17 +267,18 @@ export const chatService = {
     file: { uri: string; name: string; mimeType: string },
     caption?: string,
   ): Promise<Message> {
+    assertOnline();
     const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
     const form  = new FormData();
     form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
     if (caption?.trim()) form.append('caption', caption.trim());
 
-    const res  = await fetch(`${API_BASE}/api/messaging/conversations/${conversationId}/attachments`, {
+    const { res, text } = await fetchWithTimeout(`${API_BASE}/api/messaging/conversations/${conversationId}/attachments`, {
       method:  'POST',
       headers: { Authorization: `Bearer ${token}` },
       body:    form,
-    });
-    const json = await res.json() as { success: boolean; data: ApiMessage; message?: string };
+    }, UPLOAD_TIMEOUT_MS);
+    const json = (text ? JSON.parse(text) : {}) as { success: boolean; data: ApiMessage; message?: string };
     if (!res.ok) throw new Error(json.message ?? 'Failed to send attachment');
     return toMessage(json.data);
   },

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { buildPlacesAutocompleteUrl, GOOGLE_PLACES_API_KEY, F } from '@/utilities/constants';
+import { assertOnline, fetchWithTimeout, API_TIMEOUT_MS } from '@/lib/api';
 
 export type PlacePrediction = { place_id: string; description: string };
 
@@ -68,8 +69,13 @@ export function PlacesAutocompleteInput({
     if (!text.trim() || !GOOGLE_PLACES_API_KEY) { setSuggestions([]); return; }
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(buildPlacesAutocompleteUrl(text, { types }));
-        const json = await res.json();
+        assertOnline();
+        const { text: body } = await fetchWithTimeout(
+          buildPlacesAutocompleteUrl(text, { types }),
+          {},
+          API_TIMEOUT_MS,
+        );
+        const json = JSON.parse(body);
         setSuggestions(json.status === 'OK' ? json.predictions : []);
       } catch { setSuggestions([]); }
     }, 350);

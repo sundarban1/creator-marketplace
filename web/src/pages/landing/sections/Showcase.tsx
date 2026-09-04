@@ -125,7 +125,7 @@ export function Showcase() {
         whileInView="show"
         viewport={VP}
         variants={fadeUp}
-        className="absolute left-6 top-10 z-10 font-serif text-base italic text-ink-soft sm:left-10 dark:text-white/50"
+        className="absolute left-6 top-10 z-10 font-serif text-base italic text-ink-soft sm:left-10 dark:text-white"
       >
         {d.showcase.eyebrow}
       </motion.p>
@@ -174,7 +174,7 @@ export function Showcase() {
                 >
                   {panel.heading}
                 </motion.h3>
-                <motion.p variants={fadeUp} className="mt-5 max-w-md text-lg text-ink-soft dark:text-white/60">
+                <motion.p variants={fadeUp} className="mt-5 max-w-md text-lg text-ink-soft dark:text-white">
                   {panel.sub}
                 </motion.p>
               </motion.div>

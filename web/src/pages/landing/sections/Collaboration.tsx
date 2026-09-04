@@ -274,7 +274,7 @@ function NepalConnectionMap({ cities, callouts }: { cities: string[]; callouts: 
             <PinPill lat={b.lat} lng={b.lng} text={cities[b.cityIndex]!} color={COLORS.orange} />
           </GoogleMap>
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-ink-soft dark:text-white/50">Loading map…</div>
+          <div className="flex h-full w-full items-center justify-center text-sm text-ink-soft dark:text-white">Loading map…</div>
         )}
       </div>
 
@@ -310,7 +310,7 @@ export function Collaboration() {
         {/* Top-left eyebrow + heading, same corner placement as "Why Kolab"
             in Showcase.tsx — kept consistent across the sections below it. */}
         <div className="max-w-xl">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white/60">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
             {d.collaboration.eyebrow}
           </motion.p>
 
