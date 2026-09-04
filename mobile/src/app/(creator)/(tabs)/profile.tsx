@@ -1,13 +1,18 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { creatorService, type ApiCreatorProfile } from '@/services/creator';
-import { portfolioService, type ApiPortfolioItem } from '@/services/portfolio';
+import { portfolioService } from '@/services/portfolio';
 import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
-import { getCached, setCached } from '@/utilities/offlineCache';
+import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { CreatorProfileView } from '@/features/creator/components/CreatorProfileView';
 import { toOwnerVm, emptyOwnerVm } from '@/features/creator/utils/creatorProfileVm';
+import type { ApiPortfolioItem } from '@/services/portfolio';
+
+const NO_PORTFOLIO: ApiPortfolioItem[] = [];
 
 // The creator viewing its own profile. Same page a business sees at
 // (business)/creator-detail — <CreatorProfileView mode="owner"> layers the edit
@@ -18,36 +23,40 @@ export default function CreatorProfileScreen() {
   const { focus } = useLocalSearchParams<{ focus?: string }>();
   const { favoriteIds, reloadIds } = useFavoriteBusinesses();
 
-  const [profile, setProfile]               = useState<ApiCreatorProfile | null>(null);
-  const [completedEvents, setCompleted]     = useState(0);
-  const [portfolioItems, setPortfolioItems] = useState<ApiPortfolioItem[]>([]);
+  // Shared caches — the profile query is the same entry creator home + Discover
+  // use, so tab switches are instant. Replaces the getProfile/getMyApplications/
+  // listMine trio that re-ran on every focus with a manual offlineCache fallback.
+  const profileQuery = useCreatorProfile();
+  const applicationsQuery = useQuery({
+    queryKey: ['applications', 'creator', { status: 'ACCEPTED', limit: 50 }],
+    queryFn: () => campaignService.getMyApplications({ status: 'ACCEPTED', limit: 50 }),
+    enabled: user?.role === 'CREATOR',
+    staleTime: STALE.list,
+  });
+  const portfolioQuery = useQuery({
+    queryKey: ['portfolio', 'mine'],
+    queryFn: () => portfolioService.listMine(),
+    enabled: user?.role === 'CREATOR',
+    staleTime: STALE.profile,
+  });
+  useRefetchOnFocusIfStale(profileQuery, applicationsQuery, portfolioQuery);
 
-  useFocusEffect(
-    useCallback(() => {
-      void reloadIds();
-      void getCached<ApiCreatorProfile>('creator_profile').then((cached) => {
-        if (cached) setProfile((p) => p ?? cached);
-      });
-      creatorService.getProfile()
-        .then((p) => { setProfile(p); void setCached('creator_profile', p); })
-        .catch(() => {});
-      // Only ACCEPTED + RELEASED counts as a completed event (see the pre-
-      // unification screen's comment).
-      campaignService.getMyApplications({ status: 'ACCEPTED', limit: 50 })
-        .then(({ proposals }) => {
-          setCompleted(proposals.filter((p) => p.workStatus === 'COMPLETED' && p.paymentStatus === 'RELEASED').length);
-        })
-        .catch(() => {});
-      portfolioService.listMine().then(setPortfolioItems).catch(() => {});
-    }, []),
-  );
+  // The favourite-business ids live in their own hook; keep re-syncing them on
+  // focus (cheap, and covers un-favouriting done on another screen).
+  useFocusEffect(useCallback(() => { void reloadIds(); }, [reloadIds]));
+
+  const profile = profileQuery.data;
+  // Only ACCEPTED + RELEASED counts as a completed event.
+  const completedEvents = (applicationsQuery.data?.proposals ?? []).filter(
+    (p) => p.workStatus === 'COMPLETED' && p.paymentStatus === 'RELEASED',
+  ).length;
 
   const vm = profile
     ? toOwnerVm(profile, {
         completedEvents,
         savedBrands: favoriteIds.size,
         savedByBusinesses: profile.savedByBusinessCount ?? 0,
-        portfolioItems,
+        portfolioItems: portfolioQuery.data ?? NO_PORTFOLIO,
       })
     : emptyOwnerVm(user?.name ?? 'Creator');
 

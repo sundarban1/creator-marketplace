@@ -49,6 +49,7 @@ const PERSISTED_QUERY_ROOTS = new Set<string>([
   'business',
   'applications',
   'proposals',
+  'portfolio',
   'notifications',
   'profile',
   'wallet',

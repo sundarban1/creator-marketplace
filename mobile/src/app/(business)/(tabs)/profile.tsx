@@ -1,10 +1,11 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
-import { getCached, setCached } from '@/utilities/offlineCache';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { BusinessProfileView } from '@/features/business/components/BusinessProfileView';
 import { toOwnerVm, emptyOwnerVm } from '@/features/business/utils/businessProfileVm';
 
@@ -16,27 +17,28 @@ export default function BusinessProfileScreen() {
   const { user } = useAuth();
   const { focus } = useLocalSearchParams<{ focus?: string }>();
 
-  const [profile, setProfile]                 = useState<BusinessProfile | null>(null);
-  const [activeCampaigns, setActiveCampaigns] = useState(0);
-  const [savedCreators, setSavedCreators]     = useState(0);
+  // Shared caches — the profile + campaigns queries are the same entries the
+  // business home tab uses, so switching between the two tabs is instant and
+  // costs no extra fetch. Replaces the getBusinessProfile/listMy/getSavedCreators
+  // trio that re-ran on every focus with a manual offlineCache fallback.
+  const profileQuery = useBusinessProfile();
+  const campaignsQuery = useQuery({
+    queryKey: ['campaigns', 'my'],
+    queryFn: () => campaignService.listMy(),
+    enabled: user?.role === 'BUSINESS',
+    staleTime: STALE.list,
+  });
+  const savedCreatorsQuery = useQuery({
+    queryKey: ['creators', 'saved'],
+    queryFn: () => creatorService.getSavedCreators(),
+    enabled: user?.role === 'BUSINESS',
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(profileQuery, campaignsQuery, savedCreatorsQuery);
 
-  useFocusEffect(
-    useCallback(() => {
-      // Last-known profile first (offline), without clobbering a fresher load.
-      void getCached<BusinessProfile>('business_profile').then((cached) => {
-        if (cached) setProfile((p) => p ?? cached);
-      });
-      profileService.getBusinessProfile()
-        .then((p) => { setProfile(p); void setCached('business_profile', p); })
-        .catch(() => {});
-      campaignService.listMy()
-        .then(({ campaigns }) => setActiveCampaigns(campaigns.filter((c) => c.status === 'active').length))
-        .catch(() => {});
-      creatorService.getSavedCreators()
-        .then((creators) => setSavedCreators(creators.length))
-        .catch(() => {});
-    }, []),
-  );
+  const profile = profileQuery.data;
+  const activeCampaigns = (campaignsQuery.data?.campaigns ?? []).filter((c) => c.status === 'active').length;
+  const savedCreators = savedCreatorsQuery.data?.length ?? 0;
 
   const vm = profile
     ? toOwnerVm(profile, { activeCampaigns, savedCreators })
