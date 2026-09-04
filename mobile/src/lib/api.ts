@@ -249,9 +249,15 @@ interface TimedResponse { res: Response; text: string; }
 
 async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<TimedResponse> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res  = await fetch(url, { ...opts, signal: controller.signal });
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    // Headers are in. Re-arm the timer for the body read so it gets its own
+    // full window rather than whatever's left of the first one — a slow-but-
+    // working response shouldn't abort mid-body, but a stalled body still
+    // can't hang forever.
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), timeoutMs);
     const text = await res.text();
     return { res, text };
   } catch (err) {

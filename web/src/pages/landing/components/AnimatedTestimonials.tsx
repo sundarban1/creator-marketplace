@@ -45,6 +45,14 @@ export function AnimatedTestimonials({
 }) {
   const [active, setActive] = useState(0);
 
+  // `testimonials` can change length between renders (static fallback copy →
+  // fewer/more stories once the API resolves), which leaves `active` pointing
+  // past the end of the new array. Clamp it so `testimonials[active]` is never
+  // undefined.
+  useEffect(() => {
+    setActive((prev) => (prev >= testimonials.length ? 0 : prev));
+  }, [testimonials.length]);
+
   const handleNext = () => {
     setActive((prev) => (prev + 1) % testimonials.length);
   };
@@ -65,7 +73,9 @@ export function AnimatedTestimonials({
   const randomRotateY = () => Math.floor(Math.random() * 21) - 10;
 
   if (testimonials.length === 0) return null;
-  const current = testimonials[active]!;
+  // The clamping effect above runs after render, so guard the first render that
+  // follows a length shrink here too.
+  const current = testimonials[active] ?? testimonials[0]!;
 
   return (
     <div className="mx-auto max-w-sm px-4 md:max-w-4xl md:px-8 lg:px-12">
