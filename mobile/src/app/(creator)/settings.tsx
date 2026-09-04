@@ -10,8 +10,8 @@ import { creatorService, type ApiCreatorProfile, type ApiSocialAccount, type Pro
 import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
 import { useLanguage } from '@/context/LanguageContext';
-import { legalService, type LegalSlug } from '@/services/legal';
-import { contentService } from '@/services/content';
+import { legalService } from '@/services/legal';
+import { contentService, type HelpArticle } from '@/services/content';
 import { supportService } from '@/services/support';
 import {
   ActivityIndicator,
@@ -67,6 +67,7 @@ import {
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
+const EMPTY_ARTICLES: HelpArticle[] = [];
 
 // ── Static config ─────────────────────────────────────────────
 
@@ -397,23 +398,59 @@ export default function CreatorSettingsScreen() {
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const portfolioSheetAnim = useRef(new Animated.Value(0)).current;
 
-  // Earnings
-  const [earningsSummary, setEarningsSummary] = useState<{ totalEarned: number; pendingEarnings: number; totalApplications: number } | null>(null);
-  const [earningsLoading, setEarningsLoading] = useState(false);
+  // Earnings, Help Center, FAQs, legal docs — pure reads, nothing here ever
+  // mutates them, so (unlike the seed-once fields above) these read straight
+  // off their queries with no local state at all. Each is gated `enabled` on
+  // the sub-page actually being open, matching the old "fetch once, only
+  // when this section is visited" behavior — but now a REVISIT in the same
+  // session is instant from cache instead of refetching.
+  const earningsQuery = useQuery({
+    queryKey: ['creator', 'earnings'],
+    queryFn: () => creatorService.getEarnings(),
+    enabled: section === 'earnings',
+    staleTime: STALE.profile,
+  });
+  const earningsSummary = earningsQuery.data ?? null;
+  const earningsLoading = earningsQuery.isPending && section === 'earnings';
 
-  // Help Center
-  const [helpArticles, setHelpArticles] = useState<{ id: string; question: string; answer: string; category: string }[]>([]);
-  const [helpLoading, setHelpLoading] = useState(false);
+  const helpArticlesQuery = useQuery({
+    queryKey: ['content', 'helpArticles'],
+    queryFn: () => contentService.getHelpArticles(),
+    enabled: subPage === 'help-center',
+    staleTime: STALE.static,
+  });
+  const helpArticles = helpArticlesQuery.data ?? EMPTY_ARTICLES;
+  const helpLoading = helpArticlesQuery.isPending && subPage === 'help-center';
 
-  // FAQs
-  const [faqArticles, setFaqArticles] = useState<{ id: string; question: string; answer: string; category: string }[]>([]);
-  const [faqLoading, setFaqLoading] = useState(false);
+  const faqArticlesQuery = useQuery({
+    queryKey: ['content', 'faqArticles'],
+    queryFn: () => contentService.getFaqArticles(),
+    enabled: subPage === 'faqs',
+    staleTime: STALE.static,
+  });
+  const faqArticles = faqArticlesQuery.data ?? EMPTY_ARTICLES;
+  const faqLoading = faqArticlesQuery.isPending && subPage === 'faqs';
 
-  // Legal sections (keyed by type slug)
-  type LegalSectionItem = { id: string; title: string; body: string; icon?: string | null; order: number };
-  const [legalSections, setLegalSections] = useState<Record<string, LegalSectionItem[]>>({});
-  const [legalLoading, setLegalLoading] = useState(false);
-  const [legalLastUpdated, setLegalLastUpdated] = useState<Record<string, string>>({});
+  // Legal sections (keyed by type slug) — one query per slug, each enabled
+  // only while its own sub-page is open.
+  const privacyDocQuery = useQuery({
+    queryKey: ['legal', 'privacy-policy'],
+    queryFn: () => legalService.getDocument('privacy-policy'),
+    enabled: subPage === 'privacy-policy',
+    staleTime: STALE.static,
+  });
+  const termsDocQuery = useQuery({
+    queryKey: ['legal', 'terms'],
+    queryFn: () => legalService.getDocument('terms'),
+    enabled: subPage === 'terms',
+    staleTime: STALE.static,
+  });
+  const guidelinesDocQuery = useQuery({
+    queryKey: ['legal', 'guidelines'],
+    queryFn: () => legalService.getDocument('guidelines'),
+    enabled: subPage === 'guidelines',
+    staleTime: STALE.static,
+  });
 
   // Account action modals (kept for legacy renders if any)
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
@@ -586,58 +623,7 @@ export default function CreatorSettingsScreen() {
     seedFromSocialAccounts(socialAccountsQuery.data);
   }, [socialAccountsQuery.data]);
 
-  useEffect(() => {
-    if (section !== 'earnings' || earningsSummary !== null) return;
-    setEarningsLoading(true);
-    creatorService.getEarnings().then((data) => {
-      setEarningsSummary(data);
-    }).catch(() => {}).finally(() => setEarningsLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section]);
-
-  useEffect(() => {
-    if (subPage !== 'help-center' || helpArticles.length > 0) return;
-    setHelpLoading(true);
-    contentService.getHelpArticles()
-      .then((articles) => setHelpArticles(articles))
-      .catch(() => {})
-      .finally(() => setHelpLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subPage]);
-
-  useEffect(() => {
-    if (subPage !== 'faqs' || faqArticles.length > 0) return;
-    setFaqLoading(true);
-    contentService.getFaqArticles()
-      .then((articles) => setFaqArticles(articles))
-      .catch(() => {})
-      .finally(() => setFaqLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subPage]);
-
   useEffect(() => { setExpandedItems(new Set()); }, [subPage]);
-
-  useEffect(() => {
-    const slugToType: Record<string, LegalSlug> = {
-      'privacy-policy': 'privacy-policy',
-      'terms':          'terms',
-      'guidelines':     'guidelines',
-    };
-    const slug = subPage ?? '';
-    const legalSlug = slugToType[slug];
-    if (!legalSlug || legalSections[slug]) return;
-    setLegalLoading(true);
-    legalService.getDocument(legalSlug)
-      .then((doc) => {
-        setLegalSections((prev) => ({ ...prev, [slug]: doc.sections }));
-        if (doc.lastUpdated) {
-          setLegalLastUpdated((prev) => ({ ...prev, [slug]: doc.lastUpdated! }));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLegalLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subPage]);
 
   function showToast(msg: string, isError = false) {
     if (isError) toast.error(msg);
@@ -1264,9 +1250,9 @@ export default function CreatorSettingsScreen() {
   // ── Sub-page: Privacy Policy ──────────────────────────────────
 
   function renderPrivacyPolicy() {
-    const sections = legalSections['privacy-policy'];
-    const lastUpdated = legalLastUpdated['privacy-policy'];
-    if (legalLoading && !sections) {
+    const sections = privacyDocQuery.data?.sections;
+    const lastUpdated = privacyDocQuery.data?.lastUpdated;
+    if (privacyDocQuery.isPending && !sections) {
       return (
         <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
           {[1,2,3,4].map((i) => (
@@ -1306,9 +1292,9 @@ export default function CreatorSettingsScreen() {
   // ── Sub-page: Terms & Conditions ──────────────────────────────
 
   function renderTerms() {
-    const sections = legalSections['terms'];
-    const lastUpdated = legalLastUpdated['terms'];
-    if (legalLoading && !sections) {
+    const sections = termsDocQuery.data?.sections;
+    const lastUpdated = termsDocQuery.data?.lastUpdated;
+    if (termsDocQuery.isPending && !sections) {
       return (
         <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
           {[1,2,3,4].map((i) => (
@@ -1348,8 +1334,8 @@ export default function CreatorSettingsScreen() {
   // ── Sub-page: Community Guidelines ───────────────────────────
 
   function renderGuidelines() {
-    const sections = legalSections['guidelines'];
-    if (legalLoading && !sections) {
+    const sections = guidelinesDocQuery.data?.sections;
+    if (guidelinesDocQuery.isPending && !sections) {
       return (
         <View style={{ marginHorizontal: SCREEN_GUTTER, gap: 8 }}>
           {[1,2,3].map((i) => (
