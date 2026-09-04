@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -10,6 +11,7 @@ import { Button } from '@/components/Button';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { portfolioService } from '@/services/portfolio';
+import { STALE } from '@/lib/queryClient';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 
@@ -18,32 +20,49 @@ export default function PortfolioFormScreen() {
   const { t } = useLanguage();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
+  const queryClient = useQueryClient();
 
   const [description, setDescription] = useState('');
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [externalUrl, setExternalUrl] = useState('');
 
-  const [loadingExisting, setLoadingExisting] = useState(isEdit);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Same shared cache portfolio.tsx populates — editing an item just visited
+  // there resolves instantly instead of a fresh fetch.
+  const portfolioListQuery = useQuery({
+    queryKey: ['portfolio', 'mine'],
+    queryFn: () => portfolioService.listMine(),
+    staleTime: STALE.profile,
+    enabled: isEdit,
+  });
+  const loadingExisting = isEdit && portfolioListQuery.isPending;
+
+  // Seed the form fields once, the first time the item is available — a
+  // background refetch of the shared list must never overwrite in-progress edits.
+  const seededRef = useRef(false);
+  function seedFromExisting() {
+    if (portfolioListQuery.isError) {
+      Alert.alert(t('common.error'), t('portfolioForm.loadFailed'));
+      router.back();
+      return;
+    }
+    const existing = portfolioListQuery.data?.find((i) => i.id === id);
+    if (!existing) { Alert.alert(t('common.error'), t('portfolioForm.notFound')); router.back(); return; }
+    setDescription(existing.description ?? '');
+    setMediaUrl(existing.mediaUrl);
+    setExternalUrl(existing.externalUrl ?? '');
+  }
   useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    portfolioService.listMine()
-      .then((items) => {
-        if (cancelled) return;
-        const existing = items.find((i) => i.id === id);
-        if (!existing) { Alert.alert(t('common.error'), t('portfolioForm.notFound')); router.back(); return; }
-        setDescription(existing.description ?? '');
-        setMediaUrl(existing.mediaUrl);
-        setExternalUrl(existing.externalUrl ?? '');
-      })
-      .catch((err) => { Alert.alert(t('common.error'), err instanceof Error ? err.message : t('portfolioForm.loadFailed')); router.back(); })
-      .finally(() => { if (!cancelled) setLoadingExisting(false); });
-    return () => { cancelled = true; };
-  }, [id, t]);
+    if (!isEdit || seededRef.current || portfolioListQuery.isPending) return;
+    seededRef.current = true;
+    seedFromExisting();
+  // seedFromExisting is a stable closure guarded by seededRef — including it
+  // here would just re-run this on every render (fresh closure identity).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, id, t, portfolioListQuery.isPending, portfolioListQuery.isError, portfolioListQuery.data]);
 
   async function handlePickMedia() {
     if (uploading) return;
@@ -78,6 +97,7 @@ export default function PortfolioFormScreen() {
       };
       if (isEdit && id) await portfolioService.update(id, payload);
       else await portfolioService.create(payload);
+      void queryClient.invalidateQueries({ queryKey: ['portfolio', 'mine'] });
       router.back();
     } catch (err) {
       Alert.alert(t('common.error'), err instanceof Error ? err.message : t('portfolioForm.saveFailed'));

@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FlatList, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -10,45 +11,45 @@ import { ErrorState } from '@/components/ErrorState';
 import { AppModal } from '@/components/AppModal';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { portfolioService, type ApiPortfolioItem } from '@/services/portfolio';
 import { OfflineError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW } from '@/utilities/constants';
 
 const COLUMN_GAP = 12;
+const EMPTY_ITEMS: ApiPortfolioItem[] = [];
+const PORTFOLIO_KEY = ['portfolio', 'mine'] as const;
 
 export default function PortfolioScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
-  const [items, setItems]     = useState<ApiPortfolioItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<ApiPortfolioItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setItems(await portfolioService.listMine());
-    } catch (err) {
-      setError(
-        err instanceof OfflineError
-          ? t('portfolioScreen.errorMessage')
-          : (err instanceof Error ? err.message : t('portfolioScreen.errorMessage'))
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  // Same cache portfolio-form.tsx reads/invalidates — adding, editing or
+  // deleting an item here or there keeps this one screen's data current.
+  const portfolioQuery = useQuery({
+    queryKey: PORTFOLIO_KEY,
+    queryFn: () => portfolioService.listMine(),
+    staleTime: STALE.profile,
+  });
+  useRefetchOnFocusIfStale(portfolioQuery);
+  const items = portfolioQuery.data ?? EMPTY_ITEMS;
+  const loading = portfolioQuery.isPending;
+  const error = portfolioQuery.isError
+    ? (portfolioQuery.error instanceof OfflineError
+        ? t('portfolioScreen.errorMessage')
+        : (portfolioQuery.error instanceof Error ? portfolioQuery.error.message : t('portfolioScreen.errorMessage')))
+    : null;
 
   async function confirmDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
       await portfolioService.remove(deleteTarget.id);
-      setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id));
+      queryClient.setQueryData<ApiPortfolioItem[]>(PORTFOLIO_KEY, (prev) => prev?.filter((i) => i.id !== deleteTarget.id));
       setDeleteTarget(null);
     } catch {
       // Keep the modal open (loading cleared) so the user sees it failed and can retry.
@@ -83,7 +84,7 @@ export default function PortfolioScreen() {
             title={t('portfolioScreen.errorTitle')}
             message={error}
             actionLabel={t('invitations.retry')}
-            onAction={load}
+            onAction={() => portfolioQuery.refetch()}
           />
         ) : (
           <FlatList
