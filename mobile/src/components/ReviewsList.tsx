@@ -1,5 +1,6 @@
 import { FontAwesome5 } from '@expo/vector-icons';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F, RADIUS, SPACING } from '@/utilities/constants';
@@ -42,7 +43,7 @@ export function ReviewsList({
           <View key={r.id} style={[rl.card, { borderColor: C.border }]}>
             <View style={rl.header}>
               {r.from.avatarUrl ? (
-                <Image source={{ uri: r.from.avatarUrl }} style={rl.avatar} />
+                <Image source={{ uri: r.from.avatarUrl }} style={rl.avatar} contentFit="cover" />
               ) : (
                 <View style={[rl.avatarFallback, { backgroundColor: C.primaryLight }]}>
                   <Text style={[rl.avatarFallbackTxt, { color: C.brinjal1 }]}>{initials}</Text>

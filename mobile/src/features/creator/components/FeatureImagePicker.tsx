@@ -1,5 +1,6 @@
 import { FontAwesome5 } from '@expo/vector-icons';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { RADIUS, SHADOW } from '@/utilities/constants';
@@ -14,7 +15,7 @@ export function FeatureImagePicker({ imageUrl, category, uploading, onPick, onCl
   return (
     <View style={fi.wrap}>
       <View style={fi.preview}>
-        <Image source={{ uri: previewImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={{ uri: previewImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
         {imageUrl && (
           <Pressable hitSlop={8} style={[fi.clearBtn, { opacity: uploading ? 0.5 : 1 }]} onPress={onClear} disabled={uploading}>
             <FontAwesome5 name="times" solid size={16} color="#fff" />

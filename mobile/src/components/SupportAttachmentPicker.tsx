@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, Pressable, Image, ActivityIndicator, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { pickImageFromLibrary } from '@/utilities/chatAttachments';
 import { supportService } from '@/services/support';
@@ -67,7 +68,7 @@ export function SupportAttachmentPicker({
       <View style={styles.row}>
         {items.map((item) => (
           <View key={item.id} style={[styles.thumbWrap, { borderColor: C.border }]}>
-            <Image source={{ uri: item.uri }} style={styles.thumb} />
+            <Image source={{ uri: item.uri }} style={styles.thumb} contentFit="cover" />
             {item.uploading && (
               <View style={styles.overlay}>
                 <ActivityIndicator size="small" color="#fff" />

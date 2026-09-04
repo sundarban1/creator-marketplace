@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -121,7 +122,7 @@ export default function PortfolioFormScreen() {
                   disabled={uploading}>
                   {mediaUrl ? (
                     <>
-                      <Image source={{ uri: mediaUrl }} style={styles.mediaPreview} resizeMode="cover" />
+                      <Image source={{ uri: mediaUrl }} style={styles.mediaPreview} contentFit="cover" />
                       <Pressable style={styles.mediaClear} onPress={() => setMediaUrl(null)} hitSlop={8}>
                         <FontAwesome5 name="times" solid size={14} color="#fff" />
                       </Pressable>

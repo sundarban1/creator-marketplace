@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -129,7 +130,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
 
           <Pressable style={styles.userRow} hitSlop={4} onPress={() => navigate('/(business)/(tabs)/profile')}>
             {displayAvatar ? (
-              <Image source={{ uri: displayAvatar }} style={styles.avatarCircle} />
+              <Image source={{ uri: displayAvatar }} style={styles.avatarCircle} contentFit="cover" />
             ) : (
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarInitial}>{initial}</Text>

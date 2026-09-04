@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FlatList, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -138,7 +139,7 @@ function PortfolioTile({ item, onEdit, onDelete }: {
   return (
     <Pressable style={[styles.tile, { backgroundColor: C.surface, borderColor: C.border }, SHADOW.raised]} onPress={onEdit}>
       {item.mediaUrl ? (
-        <Image source={{ uri: item.mediaUrl }} style={styles.tileImage} resizeMode="cover" />
+        <Image source={{ uri: item.mediaUrl }} style={styles.tileImage} contentFit="cover" />
       ) : (
         <Pressable
           style={[styles.tileImage, styles.linkFallback, { backgroundColor: C.primaryLight }]}

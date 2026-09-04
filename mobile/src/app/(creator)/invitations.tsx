@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -170,7 +171,7 @@ function InvitationCard({ item, onAccept, onDecline }: {
       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: item.campaignId } })}>
       <View style={styles.cardHeader}>
         {item.business.logoUrl ? (
-          <Image source={{ uri: item.business.logoUrl }} style={styles.avatar} />
+          <Image source={{ uri: item.business.logoUrl }} style={styles.avatar} contentFit="cover" />
         ) : (
           <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: C.primaryLight }]}>
             <Text style={[styles.avatarText, { color: C.brinjal1 }]}>{initials}</Text>

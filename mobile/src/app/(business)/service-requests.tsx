@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -92,7 +93,7 @@ function RequestCard({ item }: { item: ApiServiceRequestSent }) {
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: item.creator.id } })}>
       <View style={styles.cardHeader}>
         {item.creator.avatarUrl ? (
-          <Image source={{ uri: item.creator.avatarUrl }} style={styles.avatar} />
+          <Image source={{ uri: item.creator.avatarUrl }} style={styles.avatar} contentFit="cover" />
         ) : (
           <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: C.primaryLight }]}>
             <Text style={[styles.avatarText, { color: C.brinjal1 }]}>{initials}</Text>

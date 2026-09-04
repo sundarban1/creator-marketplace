@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -429,7 +430,7 @@ function Avatar({ url, name }: { url?: string | null; name?: string | null }) {
   const C = useAppColors();
   const initials = (name ?? '?').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   return url ? (
-    <Image source={{ uri: url }} style={styles.avatar} />
+    <Image source={{ uri: url }} style={styles.avatar} contentFit="cover" />
   ) : (
     <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: C.primaryLight }]}>
       <Text style={[styles.avatarText, { color: C.brinjal1 }]}>{initials}</Text>

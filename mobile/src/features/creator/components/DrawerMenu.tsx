@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -128,7 +129,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
             hitSlop={4}
             onPress={() => { onClose(); router.push('/(creator)/(tabs)/profile' as never); }}>
             {user?.avatar ? (
-              <Image source={{ uri: user.avatar }} style={styles.avatarCircle} />
+              <Image source={{ uri: user.avatar }} style={styles.avatarCircle} contentFit="cover" />
             ) : (
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarInitial}>{initial}</Text>
