@@ -85,7 +85,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
         <View style={[styles.img, { backgroundColor: catMeta.bg }]}>
           <FontAwesome5 name={catMeta.icon} size={44} color={catMeta.color} style={styles.imgIcon} />
           {cardImage && (
-            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" recyclingKey={cardImage} />
           )}
           <LinearGradient colors={['rgba(0,0,0,0.32)', 'transparent']} style={styles.imgScrim} pointerEvents="none" />
           <View style={styles.badge}>

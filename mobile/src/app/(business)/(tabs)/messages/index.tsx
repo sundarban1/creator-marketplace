@@ -78,6 +78,7 @@ function Avatar({ name, imageUrl, size = 50 }: { name: string; imageUrl?: string
         source={{ uri: imageUrl }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"
+        recyclingKey={imageUrl}
         onError={() => setFailed(true)}
       />
     );

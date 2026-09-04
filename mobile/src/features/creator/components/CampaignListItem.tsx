@@ -60,7 +60,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         <View style={[styles.thumb, { backgroundColor: catMeta.bg }]}>
           <FontAwesome5 name={catMeta.icon} size={28} color={catMeta.color} style={styles.thumbIcon} />
           {cardImage && (
-            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" recyclingKey={cardImage} />
           )}
           {campaign.isNew && (
             <View style={[styles.ribbon, { backgroundColor: C.badgeNew }]}>

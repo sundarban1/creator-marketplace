@@ -576,7 +576,7 @@ export default function CampaignsScreen() {
                       <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
                         <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
                         {cardImage && (
-                          <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                          <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" recyclingKey={cardImage} />
                         )}
                       </View>
                       <Text style={[styles.postedDay, { color: C.textSecondary }]} numberOfLines={1}>{timeAgo(c.createdAt)}</Text>

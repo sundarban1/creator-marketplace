@@ -150,7 +150,7 @@ function ProposalCard({ proposal }: {
             <View style={[styles.thumb, { backgroundColor: `${accentColor}18` }]}>
               <Text style={[styles.thumbInitials, { color: accentColor }]}>{brandInitials(proposal.brand)}</Text>
               {proposal.featureImageUrl && (
-                <Image source={{ uri: proposal.featureImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                <Image source={{ uri: proposal.featureImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" recyclingKey={proposal.featureImageUrl} />
               )}
             </View>
             <Text style={[styles.submittedText, { color: C.textSecondary }]}>{timeAgo(proposal.submittedAt, t)}</Text>

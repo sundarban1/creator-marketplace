@@ -83,6 +83,7 @@ function Avatar({ name, imageUrl, size = 50, role }: { name: string; imageUrl?: 
           source={{ uri: imageUrl }}
           style={{ width: size, height: size, borderRadius: RADIUS.full }}
           contentFit="cover"
+          recyclingKey={imageUrl}
           onError={() => setFailed(true)}
         />
         {badge}

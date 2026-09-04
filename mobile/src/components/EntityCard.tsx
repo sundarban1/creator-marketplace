@@ -132,7 +132,7 @@ export function EntityCard({
         {/* ── Avatar (left) ── */}
         <View style={[styles.thumb, { backgroundColor: avatarBg }]}>
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={[styles.avatar, ring, avatarShape]} contentFit="cover" />
+            <Image source={{ uri: avatarUrl }} style={[styles.avatar, ring, avatarShape]} contentFit="cover" recyclingKey={avatarUrl} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: initials ? '#FFFFFF' : avatarBg }, ring, avatarShape]}>
               {initials ? (
