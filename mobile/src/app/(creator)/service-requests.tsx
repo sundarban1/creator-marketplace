@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -11,9 +11,14 @@ import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { AppModal } from '@/components/AppModal';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { serviceRequestService, type ApiServiceRequestReceived } from '@/services/serviceRequest';
 import { OfflineError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+
+const EMPTY_REQUESTS: ApiServiceRequestReceived[] = [];
+const REQUESTS_KEY = ['serviceRequests', 'received'] as const;
 
 type ModalState = {
   visible: boolean;
@@ -29,29 +34,22 @@ const INITIAL_MODAL: ModalState = { visible: false, status: 'ACCEPTED', request:
 export default function ServiceRequestsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
-  const [requests, setRequests] = useState<ApiServiceRequestReceived[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [modal, setModal]     = useState<ModalState>(INITIAL_MODAL);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await serviceRequestService.listReceived();
-      setRequests(data);
-    } catch (err) {
-      setError(
-        err instanceof OfflineError
-          ? t('serviceRequests.errorMessage')
-          : (err instanceof Error ? err.message : t('serviceRequests.errorMessage'))
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  const requestsQuery = useQuery({
+    queryKey: REQUESTS_KEY,
+    queryFn: () => serviceRequestService.listReceived(),
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(requestsQuery);
+  const requests = requestsQuery.data ?? EMPTY_REQUESTS;
+  const loading = requestsQuery.isPending;
+  const error = requestsQuery.isError
+    ? (requestsQuery.error instanceof OfflineError
+        ? t('serviceRequests.errorMessage')
+        : (requestsQuery.error instanceof Error ? requestsQuery.error.message : t('serviceRequests.errorMessage')))
+    : null;
 
   function openRespond(request: ApiServiceRequestReceived, status: 'ACCEPTED' | 'DECLINED') {
     setModal({ visible: true, status, request, submitting: false });
@@ -62,7 +60,8 @@ export default function ServiceRequestsScreen() {
     setModal((m) => ({ ...m, submitting: true }));
     try {
       await serviceRequestService.respond(modal.request.id, modal.status);
-      setRequests((prev) => prev.map((r) => (r.id === modal.request!.id ? { ...r, status: modal.status } : r)));
+      queryClient.setQueryData<ApiServiceRequestReceived[]>(REQUESTS_KEY, (prev) =>
+        prev?.map((r) => (r.id === modal.request!.id ? { ...r, status: modal.status } : r)));
       setModal(INITIAL_MODAL);
     } catch (err) {
       setModal((m) => ({ ...m, submitting: false }));
@@ -83,7 +82,7 @@ export default function ServiceRequestsScreen() {
             title={t('serviceRequests.errorTitle')}
             message={error}
             actionLabel={t('invitations.retry')}
-            onAction={load}
+            onAction={() => requestsQuery.refetch()}
           />
         ) : (
           <FlatList

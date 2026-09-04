@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -10,9 +10,13 @@ import { ErrorState } from '@/components/ErrorState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { serviceRequestService, type ApiServiceRequestSent } from '@/services/serviceRequest';
 import { OfflineError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+
+const EMPTY_REQUESTS: ApiServiceRequestSent[] = [];
 
 const STATUS_STYLE: Record<ApiServiceRequestSent['status'], { bg: string; color: string; labelKey: string }> = {
   PENDING:  { bg: '#FFFBEB', color: '#D97706', labelKey: 'businessServiceRequests.statusPending' },
@@ -25,28 +29,20 @@ const STATUS_STYLE: Record<ApiServiceRequestSent['status'], { bg: string; color:
 export default function BusinessServiceRequestsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
-  const [requests, setRequests] = useState<ApiServiceRequestSent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await serviceRequestService.listSent();
-      setRequests(data);
-    } catch (err) {
-      setError(
-        err instanceof OfflineError
-          ? t('businessServiceRequests.errorMessage')
-          : (err instanceof Error ? err.message : t('businessServiceRequests.errorMessage'))
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  const requestsQuery = useQuery({
+    queryKey: ['serviceRequests', 'sent'],
+    queryFn: () => serviceRequestService.listSent(),
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(requestsQuery);
+  const requests = requestsQuery.data ?? EMPTY_REQUESTS;
+  const loading = requestsQuery.isPending;
+  const error = requestsQuery.isError
+    ? (requestsQuery.error instanceof OfflineError
+        ? t('businessServiceRequests.errorMessage')
+        : (requestsQuery.error instanceof Error ? requestsQuery.error.message : t('businessServiceRequests.errorMessage')))
+    : null;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -61,7 +57,7 @@ export default function BusinessServiceRequestsScreen() {
             title={t('businessServiceRequests.errorTitle')}
             message={error}
             actionLabel={t('invitations.retry')}
-            onAction={load}
+            onAction={() => requestsQuery.refetch()}
           />
         ) : (
           <FlatList
