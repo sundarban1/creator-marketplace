@@ -1,17 +1,19 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { RangeDropdown } from '@/components/RangeDropdown';
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useState } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { BarChart } from '@/components/charts/BarChart';
 import {
-  analyticsService, type ApiCreatorAnalytics, type AnalyticsRange,
+  analyticsService, type AnalyticsRange,
 } from '@/services/analytics';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -75,23 +77,23 @@ export default function CreatorAnalyticsScreen() {
   const { t } = useLanguage();
 
   const [range, setRange] = useState<AnalyticsRange>('30d');
-  const [data, setData] = useState<ApiCreatorAnalytics | null>(null);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback((r: AnalyticsRange, isRefresh = false) => {
-    if (isRefresh) setRefreshing(true); else setLoading(true);
-    return analyticsService.getCreatorAnalytics(r)
-      .then(setData)
-      .catch(() => {})
-      .finally(() => { setLoading(false); setRefreshing(false); });
-  }, []);
+  const analyticsQuery = useQuery({
+    queryKey: ['analytics', 'creator', range],
+    queryFn: () => analyticsService.getCreatorAnalytics(range),
+    staleTime: STALE.list,
+    // Switching range keeps the previous range's numbers on screen instead of
+    // forcing the full-screen spinner every time.
+    placeholderData: keepPreviousData,
+  });
+  useRefetchOnFocusIfStale(analyticsQuery);
+  const data = analyticsQuery.data ?? null;
+  const loading = analyticsQuery.isPending;
 
-  useFocusEffect(useCallback(() => { load(range); }, [range, load]));
-
-  function handleRangeChange(r: AnalyticsRange) {
-    setRange(r);
-    load(r);
+  async function onRefresh() {
+    setRefreshing(true);
+    try { await analyticsQuery.refetch(); } finally { setRefreshing(false); }
   }
 
   const totals = data?.totals;
@@ -116,7 +118,7 @@ export default function CreatorAnalyticsScreen() {
           <RangeDropdown
             value={range}
             options={RANGES.map((r) => ({ value: r.value, label: t(r.labelKey) }))}
-            onChange={handleRangeChange}
+            onChange={setRange}
           />
         )}
       />
@@ -129,7 +131,7 @@ export default function CreatorAnalyticsScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(range, true)} tintColor={C.brinjal1} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
         >
           {/* Stat grid */}
           <View style={s.grid}>
