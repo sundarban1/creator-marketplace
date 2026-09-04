@@ -9,7 +9,7 @@ import { notificationService } from '@/services/notifications';
 import { chatService } from '@/services/chat';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
-import type { ApiMessage } from '@/lib/api';
+import { ensureFreshAccessToken, warmUpBackend, type ApiMessage } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 import { logger } from '@/utilities/logger';
@@ -135,6 +135,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // (the call is a no-op if the token/permission state hasn't changed).
     const handleAppState = (next: AppStateStatus) => {
       if (next === 'active') {
+        // Wake a possibly-just-restarted instance and renew a stale access
+        // token *before* the badge fetches (and whatever the user taps next)
+        // go out — otherwise the first action after a long background sits
+        // through request → 401 → refresh → retry against a cold instance.
+        warmUpBackend();
+        void ensureFreshAccessToken();
         refreshBadge();
         refreshChatBadge();
         notificationService.registerPushToken().catch((err) => logger.warn('[notifications] registerPushToken failed', { err }));

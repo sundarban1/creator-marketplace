@@ -38,11 +38,15 @@ services:
   - type: web
     # Singapore replacement for the old Oregon `marketplace-backend`. New name =>
     # new URL https://kolab-api.onrender.com (used in the *_REDIRECT_URI vars
-    # below and by the web/mobile clients). Bump `plan` here if this service is
-    # later moved to a paid, multi-instance plan on the dashboard.
+    # below and by the web/mobile clients).
     name: kolab-api
     runtime: docker
-    plan: free
+    # Starter (0.5 CPU / 512 MB): no spin-down, so no cold starts. Watch the
+    # memory graph — the invitation-PNG renderer (satori + @resvg/resvg-js) and
+    # BullMQ run in-process, and concurrent renders can push past 512 MB and
+    # OOM-restart the instance. Move to `standard` (or split the BullMQ worker
+    # into its own service) if that shows up.
+    plan: starter
     region: singapore
     # Deploy on every push to master (region migration is now merged).
     branch: master
@@ -51,13 +55,12 @@ services:
     healthCheckPath: /health
     autoDeploy: true
 
-    # NOTE: `preDeployCommand` is not supported on Render's free tier, so
-    # migrations run from docker-entrypoint.sh (`npx prisma migrate deploy`) as
-    # each instance boots. Prisma advisory-locks that, so it's safe even with
-    # multiple instances, though it serialises startup. If this service is moved
-    # to a paid plan, add back:
-    #   preDeployCommand: npx prisma migrate deploy
-    # to run migrations once per deploy before any new instance starts.
+    # Runs once per deploy, before any new instance starts taking traffic — a
+    # paid-plan feature (it was unavailable on free). docker-entrypoint.sh still
+    # runs `npx prisma migrate deploy` on boot as a fallback; both are
+    # idempotent and Prisma advisory-locks the migration, so the overlap is
+    # harmless. Drop the entrypoint copy once this has proven out.
+    preDeployCommand: npx prisma migrate deploy
 
     # Skip auto-deploy when a push only touches web/ or mobile/ — without this,
     # every commit anywhere in the monorepo redeploys the backend too.

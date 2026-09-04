@@ -231,17 +231,29 @@ function fireSessionExpired(): void {
 
 // ── Core fetch ─────────────────────────────────────────────────────────────────
 
-// Render's free tier spins the backend down after inactivity — a cold start
-// can take 30-60s (occasionally longer). Without a ceiling here, a fetch made
-// right after the app resumes from background can hang indefinitely, which
-// reads to the user as the app being stuck on the splash/loading screen.
+// A deploy/restart can leave the next request hitting a booting instance
+// (30-60s, occasionally longer). Without a ceiling here — covering both the
+// fetch and the body read (see fetchWithTimeout) — a request made right after
+// the app resumes from background can hang indefinitely, which reads to the
+// user as the app being stuck on the splash/loading screen.
 const REQUEST_TIMEOUT_MS = 30000;
 
-async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
+// Returns the response together with its already-read body text. The body is
+// read here, under the *same* abort timer as the fetch — a half-open socket
+// (common when the device resumes from sleep) can deliver the response headers
+// and then stall the body indefinitely, and `res.json()` / `res.text()` have no
+// timeout of their own, so a caller awaiting the body would hang forever with
+// the loading spinner stuck. Consuming it here means the whole round-trip is
+// bounded by `timeoutMs`.
+interface TimedResponse { res: Response; text: string; }
+
+async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<TimedResponse> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...opts, signal: controller.signal });
+    const res  = await fetch(url, { ...opts, signal: controller.signal });
+    const text = await res.text();
+    return { res, text };
   } catch (err) {
     if (controller.signal.aborted) throw new Error('The server is taking too long to respond. Please try again.');
     throw err;
@@ -250,16 +262,43 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQU
   }
 }
 
+function parseEnvelope<T>(text: string): T {
+  // A 204 or a proxy's empty error page leaves nothing to parse — treat it as
+  // an empty envelope rather than throwing a confusing SyntaxError.
+  return (text ? JSON.parse(text) : {}) as T;
+}
+
+// Decodes a JWT's `exp` claim (seconds since the epoch) to milliseconds,
+// WITHOUT verifying the signature — this is only used to decide when to
+// proactively refresh, never for trust. Returns null if the token can't be
+// read, in which case callers fall back to the reactive 401 path.
+function accessTokenExpiryMs(token: string): number | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const b64  = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = typeof atob === 'function' ? atob(b64) : '';
+    if (!json) return null;
+    const exp = (JSON.parse(json) as { exp?: number }).exp;
+    return typeof exp === 'number' ? exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+// Refresh this many ms before the access token's actual expiry so a request
+// fired right on the boundary still goes out with a valid token.
+const PROACTIVE_REFRESH_SKEW_MS = 2 * 60 * 1000;
+
 // ── Cold-start warm-up ────────────────────────────────────────────────────────
 
-// Render's free plan spins the backend down after ~15 min of inactivity, and a
-// cold start takes 30-60s — longer than most of this app's request budgets, so
-// the first call after an idle period aborts and the screen falls back. Screens
-// that are about to make an expensive call (create-event's AI generate) fire
-// this on mount, giving the instance time to boot while the brand is still
-// typing their prompt. Fire-and-forget: /health needs no auth, runs a
-// `SELECT 1` (so it warms the Prisma pool too), and a failure here is
-// irrelevant — the real request will report its own error.
+// The backend no longer spins down on idle (paid Render plan), but a deploy,
+// restart or OOM-recovery still leaves the next request hitting a booting
+// instance. Screens about to make an expensive call (create-event's AI
+// generate) and the app on resume-from-background fire this so the instance is
+// warm by the time the real request goes out. Fire-and-forget: /health needs
+// no auth, runs a `SELECT 1` (so it warms the Prisma pool too), and a failure
+// here is irrelevant — the real request will report its own error.
 const WARM_UP_MIN_INTERVAL_MS = 60_000;
 let lastWarmUpAt = 0;
 
@@ -275,6 +314,17 @@ export function warmUpBackend(): void {
   void fetchWithTimeout(`${API_BASE}/health`, { method: 'GET' }, 60_000).catch(() => {});
 }
 
+// Whether the stored access token is missing, unreadable, or within the skew
+// window of expiring — i.e. worth refreshing before the next request rather
+// than letting that request eat a 401 + refresh + retry round-trip.
+function accessTokenNeedsRefresh(): boolean {
+  const at = storage.get(ACCESS_TOKEN_KEY);
+  if (!at) return true;
+  const expiry = accessTokenExpiryMs(at);
+  if (expiry === null) return false; // unreadable — leave it to the 401 path
+  return Date.now() >= expiry - PROACTIVE_REFRESH_SKEW_MS;
+}
+
 // Thrown only when the refresh token itself is genuinely missing/rejected —
 // distinct from a network/timeout failure, which shouldn't log the user out
 // (e.g. a cold Render backend timing out on refresh isn't an expired session).
@@ -283,9 +333,16 @@ class AuthRefreshInvalidError extends Error {}
 let pendingRefresh: Promise<string> | null = null;
 
 // Exposed so the socket client can force a token refresh after a stale-auth
-// reconnect rejection, without waiting for a REST call to hit a 401 first.
-export async function ensureFreshAccessToken(): Promise<string | null> {
+// reconnect rejection, and so the app can renew a near-expired token on resume
+// from background — both without waiting for a REST call to hit a 401 first.
+//
+// `force: true` refreshes unconditionally (the socket's case — it already knows
+// the token was rejected). The default only refreshes when the access token is
+// missing or within the skew window of expiry, so a routine foreground with a
+// still-valid token costs nothing.
+export async function ensureFreshAccessToken(opts?: { force?: boolean }): Promise<string | null> {
   if (!storage.get(REFRESH_TOKEN_KEY)) return null;
+  if (!opts?.force && !accessTokenNeedsRefresh()) return storage.get(ACCESS_TOKEN_KEY) ?? null;
   if (!pendingRefresh) {
     pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
   }
@@ -300,7 +357,7 @@ async function refreshAccessToken(): Promise<string> {
   const rt = storage.get(REFRESH_TOKEN_KEY);
   if (!rt) throw new AuthRefreshInvalidError('No refresh token');
 
-  const res = await fetchWithTimeout(`${API_BASE}/api/auth/refresh`, {
+  const { res, text } = await fetchWithTimeout(`${API_BASE}/api/auth/refresh`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ refreshToken: rt }),
@@ -308,7 +365,7 @@ async function refreshAccessToken(): Promise<string> {
 
   if (!res.ok) throw new AuthRefreshInvalidError('Refresh failed');
 
-  const json = await res.json() as ApiEnvelope<{ accessToken: string; refreshToken?: string }>;
+  const json = parseEnvelope<ApiEnvelope<{ accessToken: string; refreshToken?: string }>>(text);
   const newAccessToken = json.data.accessToken;
   await storage.set(ACCESS_TOKEN_KEY, newAccessToken);
 
@@ -358,14 +415,28 @@ export async function request<T>(
     body:    body != null ? JSON.stringify(body) : undefined,
   });
 
+  // ── Proactive token refresh ───────────────────────────────────────────────
+  // Refresh a soon-to-expire access token *before* firing the request, so the
+  // common case (first action after the app has been idle past the 15-min
+  // access-token lifetime) is a single round-trip instead of request → 401 →
+  // refresh → retry. A failure here is swallowed — the request still goes out
+  // with whatever token we have and the reactive 401 path below is the
+  // backstop, including the session-expired logout.
+  if (storage.get(REFRESH_TOKEN_KEY) && accessTokenNeedsRefresh()) {
+    if (!pendingRefresh) {
+      pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
+    }
+    try { await pendingRefresh; } catch { /* fall through to the request + 401 handling */ }
+  }
+
   // ── Retry on 529 / 503 (server temporarily overloaded) ───────────────────
   const RETRYABLE = new Set([503, 529]);
   let attempt = 0;
-  let res = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs);
+  let { res, text } = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs);
   while (RETRYABLE.has(res.status) && attempt < 3) {
     await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
     attempt++;
-    res = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs);
+    ({ res, text } = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs));
   }
 
   // ── Token refresh on 401 ───────────────────────────────────────────────────
@@ -377,7 +448,7 @@ export async function request<T>(
 
     try {
       const newToken = await pendingRefresh;
-      res = await fetchWithTimeout(url.toString(), fetchOpts(newToken), timeoutMs);
+      ({ res, text } = await fetchWithTimeout(url.toString(), fetchOpts(newToken), timeoutMs));
     } catch (err) {
       // Only a genuinely invalid/expired refresh token logs the user out —
       // a network/timeout failure (e.g. a cold backend) should surface as a
@@ -391,7 +462,7 @@ export async function request<T>(
   }
 
   // ── Parse response ─────────────────────────────────────────────────────────
-  const json = await res.json() as ApiEnvelope<T> & { errors?: { field: string; message: string }[]; code?: string };
+  const json = parseEnvelope<ApiEnvelope<T> & { errors?: { field: string; message: string }[]; code?: string }>(text);
 
   if (!res.ok) {
     const fieldErrors = json.errors?.map((e) => e.message).join('. ');

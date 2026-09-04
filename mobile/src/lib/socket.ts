@@ -25,7 +25,14 @@ export function connectSocket(token: string): Socket {
     // never receives in real time even though sending still works via REST.
     transports: ['websocket', 'polling'],
     reconnection: true,
+    // Exponential backoff: socket.io doubles the delay each attempt from
+    // reconnectionDelay up to reconnectionDelayMax, and randomizationFactor
+    // jitters it so a fleet of clients doesn't reconnect in lockstep. Without a
+    // raised max this was pinned at the 5s default, hammering a
+    // restarting/overloaded instance ~12x/min per client.
     reconnectionDelay: 2000,
+    reconnectionDelayMax: 30000,
+    randomizationFactor: 0.5,
     reconnectionAttempts: Infinity,
     timeout: 10000,
   });
@@ -40,7 +47,7 @@ export function connectSocket(token: string): Socket {
     // for the next unrelated REST call to 401 — otherwise every reconnection
     // attempt keeps retrying with the same stale token and never recovers.
     if (err.message === 'Invalid token') {
-      ensureFreshAccessToken().catch((refreshErr) => logger.warn('[socket] token refresh after connect_error failed', { err: refreshErr }));
+      ensureFreshAccessToken({ force: true }).catch((refreshErr) => logger.warn('[socket] token refresh after connect_error failed', { err: refreshErr }));
     }
   });
   _socket.on('disconnect', (reason) => logger.info('[socket] disconnected', { reason }));
