@@ -23,7 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
-import { campaignService, type DeliverableVideo, type DeliverableFile } from '@/services/campaign';
+import { campaignService, type DeliverableVideo, type DeliverableFile, type EngagementStateValue, type EngagementDispute } from '@/services/campaign';
 import type { ApiReviewReceived } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { useDeliverableVideoUploads, type DeliverableUploadItem } from '@/hooks/useDeliverableVideoUploads';
@@ -80,6 +80,18 @@ type AppInfo = {
   workNote: string | null;
   revisionRequestedAt: string | null;
   revisionNotes: { note: string; createdAt: string }[];
+  // Escrow state machine — the single derived label + the deadline for whatever
+  // stage the engagement is in (all ISO strings or null).
+  engagementState: EngagementStateValue | null;
+  escrowStatus: string | null;
+  dispute: EngagementDispute | null;
+  paymentDueAt: string | null;
+  creatorConfirmationDueAt: string | null;
+  contentDeadline: string | null;
+  contentGraceDeadline: string | null;
+  businessReviewDueAt: string | null;
+  paymentReleaseAt: string | null;
+  submittedLate: boolean;
 };
 
 // ─── Progress steps ────────────────────────────────────────────────────────────
@@ -152,6 +164,28 @@ function fmtDate(iso?: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+// Human "3h 20m left" / "5h overdue" for an escrow-stage deadline.
+function countdownLabel(iso: string | null | undefined, t: TFn): { text: string; overdue: boolean } {
+  if (!iso) return { text: '', overdue: false };
+  const ms = new Date(iso).getTime() - Date.now();
+  const overdue = ms < 0;
+  const mins = Math.max(1, Math.round(Math.abs(ms) / 60000));
+  const human =
+    mins < 60        ? `${mins}m` :
+    mins < 60 * 24    ? `${Math.floor(mins / 60)}h ${mins % 60}m` :
+                        `${Math.floor(mins / 1440)}d ${Math.floor((mins % 1440) / 60)}h`;
+  return {
+    text: overdue ? t('activityTimeline.banOverdueBy', { time: human }) : t('activityTimeline.banStillLeft', { time: human }),
+    overdue,
+  };
+}
+
+// Which engagement states let either party raise a dispute (payment is held /
+// settling and there's real work in flight).
+const DISPUTABLE_STATES = new Set<EngagementStateValue>([
+  'IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE', 'BUSINESS_REVIEW', 'PAYMENT_RELEASE_PENDING',
+]);
 
 function formatDuration(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -738,6 +772,134 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   );
 }
 
+// ─── Escrow state-machine status banner ───────────────────────────────────────
+// A read-only card above the action card: the countdown for whatever timed
+// stage the engagement is in, or the dispute status. Returns null when there's
+// nothing time-sensitive to surface (the action card covers the rest).
+function EngagementStatusBanner({ app, isCreator, onRaiseDispute }: {
+  app: AppInfo;
+  isCreator: boolean;
+  onRaiseDispute: () => void;
+}) {
+  const C = useAppColors();
+  const { t } = useLanguage();
+
+  const state = app.engagementState;
+  const dispute = app.dispute;
+
+  function Card({ tone, icon, title, sub, extra }: {
+    tone: 'red' | 'amber' | 'green' | 'blue';
+    icon: string; title: string; sub: string; extra?: React.ReactNode;
+  }) {
+    const palette = {
+      red:   { bg: '#FEF2F2', fg: '#EF4444' },
+      amber: { bg: '#FFF7ED', fg: '#D97706' },
+      green: { bg: '#ECFDF5', fg: '#059669' },
+      blue:  { bg: '#EFF6FF', fg: '#2563EB' },
+    }[tone];
+    return (
+      <View style={[ac.card, { backgroundColor: C.surface }]}>
+        <View style={ac.headerRow}>
+          <View style={[ac.iconBg, { backgroundColor: palette.bg }]}>
+            <FontAwesome5 name={icon as never} solid size={16} color={palette.fg} />
+          </View>
+          <Text style={[ac.heading, { color: C.text }]}>{title}</Text>
+        </View>
+        <Text style={[ac.sub, { color: C.textSecondary }]}>{sub}</Text>
+        {app.submittedLate && (
+          <Text style={[ac.sub, { color: '#D97706', fontFamily: F.semibold }]}>
+            {t('activityTimeline.banLateFlag')}
+          </Text>
+        )}
+        {extra}
+      </View>
+    );
+  }
+
+  const disputeBtn = (
+    <Pressable
+      onPress={onRaiseDispute}
+      style={[ac.btn, { backgroundColor: '#EF4444', marginTop: 8 }]}
+    >
+      <FontAwesome5 name="flag" solid size={13} color="#fff" />
+      <Text style={ac.btnTxt}>{t('activityTimeline.disputeBtn')}</Text>
+    </Pressable>
+  );
+
+  // ── Dispute takes precedence over any countdown ──
+  if (dispute) {
+    if (dispute.status === 'RESOLVED') {
+      return (
+        <Card
+          tone="blue"
+          icon="gavel"
+          title={t('activityTimeline.banDisputeDoneTitle')}
+          sub={t('activityTimeline.banDisputeDoneSub', {
+            outcome: (dispute.resolution ?? '').replace('_', ' ').toLowerCase(),
+            note: dispute.resolutionNote ?? '',
+          })}
+        />
+      );
+    }
+    return (
+      <Card
+        tone="red"
+        icon="balance-scale"
+        title={t('activityTimeline.banDisputeOpenTitle')}
+        sub={t('activityTimeline.banDisputeOpenSub', { reason: dispute.reason })}
+      />
+    );
+  }
+
+  // Either party may raise a dispute while the money is held / settling.
+  const showDisputeBtn =
+    state != null &&
+    DISPUTABLE_STATES.has(state) &&
+    (app.escrowStatus === 'HELD' || app.escrowStatus === 'RELEASE_PENDING');
+
+  switch (state) {
+    case 'CREATOR_SELECTED': {
+      const cd = countdownLabel(app.paymentDueAt, t);
+      if (!app.paymentDueAt) return null;
+      return isCreator
+        ? <Card tone="amber" icon="clock" title={t('activityTimeline.banPayTitleCreator')} sub={t('activityTimeline.banPaySubCreator', { left: cd.text })} />
+        : <Card tone={cd.overdue ? 'red' : 'amber'} icon="credit-card" title={t('activityTimeline.banPayTitleBiz')} sub={t('activityTimeline.banPaySubBiz', { left: cd.text })} />;
+    }
+    case 'ESCROW_FUNDED': {
+      if (!app.creatorConfirmationDueAt) return null;
+      const cd = countdownLabel(app.creatorConfirmationDueAt, t);
+      return isCreator
+        ? <Card tone={cd.overdue ? 'red' : 'amber'} icon="hand-point-right" title={t('activityTimeline.banConfirmTitleCreator')} sub={t('activityTimeline.banConfirmSubCreator', { left: cd.text })} />
+        : <Card tone="blue" icon="hourglass-half" title={t('activityTimeline.banConfirmTitleBiz')} sub={t('activityTimeline.banConfirmSubBiz', { left: cd.text })} />;
+    }
+    case 'IN_PROGRESS': {
+      if (!app.contentDeadline) return null;
+      return <Card tone="blue" icon="calendar-alt" title={t('activityTimeline.banContentTitle')} sub={t('activityTimeline.banContentSub', { when: fmtNPT(app.contentDeadline) })} extra={showDisputeBtn ? disputeBtn : undefined} />;
+    }
+    case 'REVISION_REQUESTED': {
+      return <Card tone="amber" icon="redo" title={t('activityTimeline.banRevisionTitle')} sub={t('activityTimeline.banRevisionSub', { when: fmtNPT(app.contentDeadline) })} extra={showDisputeBtn ? disputeBtn : undefined} />;
+    }
+    case 'CONTENT_OVERDUE': {
+      const cd = countdownLabel(app.contentGraceDeadline, t);
+      return <Card tone="red" icon="exclamation-triangle" title={t('activityTimeline.banOverdueTitle')} sub={isCreator ? t('activityTimeline.banOverdueSubCreator', { left: cd.text }) : t('activityTimeline.banOverdueSubBiz', { left: cd.text })} />;
+    }
+    case 'CREATOR_FAILED': {
+      return <Card tone="red" icon="times-circle" title={t('activityTimeline.banFailedTitle')} sub={t('activityTimeline.banFailedSub')} />;
+    }
+    case 'BUSINESS_REVIEW': {
+      if (!app.businessReviewDueAt) return null;
+      const cd = countdownLabel(app.businessReviewDueAt, t);
+      return <Card tone={cd.overdue ? 'amber' : 'blue'} icon="search" title={t('activityTimeline.banReviewTitle')} sub={isCreator ? t('activityTimeline.banReviewSubCreator', { left: cd.text }) : t('activityTimeline.banReviewSubBiz', { left: cd.text })} extra={showDisputeBtn ? disputeBtn : undefined} />;
+    }
+    case 'PAYMENT_RELEASE_PENDING': {
+      if (!app.paymentReleaseAt) return null;
+      return <Card tone="green" icon="check-circle" title={t('activityTimeline.banSettlementTitle')} sub={t('activityTimeline.banSettlementSub', { when: fmtNPT(app.paymentReleaseAt) })} extra={showDisputeBtn ? disputeBtn : undefined} />;
+    }
+    default:
+      return null;
+  }
+}
+
 // Distinguishes PDF vs Word docs in the deliverables grid (both otherwise
 // render as the same generic file icon) — anything else falls back to a
 // plain "FILE" badge rather than guessing.
@@ -804,6 +966,8 @@ export default function CampaignWorkspaceScreen() {
   const [showReview, setShowReview]     = useState(false);
   const [showRevision, setShowRevision] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showDispute, setShowDispute]   = useState(false);
+  const [disputeNote, setDisputeNote]   = useState('');
   const autoOpenedFeedback = useRef(false);
 
   // Post-completion rating (§58) — distinct from showFeedback/showReview
@@ -1062,6 +1226,16 @@ export default function CampaignWorkspaceScreen() {
             workNote:         myApp.workNote ?? null,
             revisionRequestedAt: myApp.revisionRequestedAt ?? null,
             revisionNotes:    myApp.revisionNotes ?? [],
+            engagementState:  myApp.engagementState ?? null,
+            escrowStatus:     myApp.escrowStatus ?? null,
+            dispute:          myApp.dispute ?? null,
+            paymentDueAt:              myApp.paymentDueAt ?? null,
+            creatorConfirmationDueAt:  myApp.creatorConfirmationDueAt ?? null,
+            contentDeadline:           myApp.contentDeadline ?? null,
+            contentGraceDeadline:      myApp.contentGraceDeadline ?? null,
+            businessReviewDueAt:       myApp.businessReviewDueAt ?? null,
+            paymentReleaseAt:          myApp.paymentReleaseAt ?? null,
+            submittedLate:             myApp.submittedLate ?? false,
           });
           // Sync paymentStatus from API into campaign
           setCampaign(prev => prev ? {
@@ -1098,6 +1272,16 @@ export default function CampaignWorkspaceScreen() {
             workNote:         accepted.workNote ?? null,
             revisionRequestedAt: accepted.revisionRequestedAt ?? null,
             revisionNotes:    accepted.revisionNotes ?? [],
+            engagementState:  accepted.engagementState ?? null,
+            escrowStatus:     accepted.escrowStatus ?? null,
+            dispute:          accepted.dispute ?? null,
+            paymentDueAt:              accepted.paymentDueAt ?? null,
+            creatorConfirmationDueAt:  accepted.creatorConfirmationDueAt ?? null,
+            contentDeadline:           accepted.contentDeadline ?? null,
+            contentGraceDeadline:      accepted.contentGraceDeadline ?? null,
+            businessReviewDueAt:       accepted.businessReviewDueAt ?? null,
+            paymentReleaseAt:          accepted.paymentReleaseAt ?? null,
+            submittedLate:             accepted.submittedLate ?? false,
           });
         }
       }
@@ -1368,6 +1552,24 @@ export default function CampaignWorkspaceScreen() {
     }
   }
 
+  // Escrow spec §27 — either party can raise a dispute, which freezes the
+  // escrow until a Kolab admin resolves it (report-issue endpoint, role
+  // inferred server-side).
+  async function handleRaiseDispute() {
+    if (!app || disputeNote.trim().length < 5) return;
+    setSubmitting(true);
+    try {
+      await campaignService.raiseDispute(app.id, disputeNote.trim());
+      setApp(a => a ? { ...a, workStatus: 'DISPUTED', escrowStatus: 'FROZEN', engagementState: 'DISPUTED' } : a);
+      setDisputeNote(''); setShowDispute(false);
+      topToast.success(t('activityTimeline.toastDisputeRaised'));
+    } catch (e: any) {
+      topToast.error(e?.message ?? t('activityTimeline.toastRevisionFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleMessage() {
     const otherProfileId = app?.creatorProfileId;
     const otherName      = isCreator ? (app?.creatorName ?? t('activityTimeline.fallbackBrand')) : (app?.creatorName ?? t('activityTimeline.fallbackCreator'));
@@ -1587,6 +1789,15 @@ export default function CampaignWorkspaceScreen() {
           </View>
           <ProgressTracker current={pIdx} scrollRef={progressScrollRef} labels={progressLabels} />
         </View>
+
+        {/* ── Escrow status banner (countdowns / dispute) ── */}
+        {app && (
+          <EngagementStatusBanner
+            app={app}
+            isCreator={isCreator}
+            onRaiseDispute={() => setShowDispute(true)}
+          />
+        )}
 
         {/* ── Current Action Card ── */}
         <ActionCard
@@ -2261,6 +2472,27 @@ export default function CampaignWorkspaceScreen() {
             </View>
           </View>
         )}
+      </BottomSheet>
+
+      {/* ── Raise-a-dispute sheet (either party) ── */}
+      <BottomSheet visible={showDispute} onClose={() => setShowDispute(false)} title={t('activityTimeline.disputeSheetTitle')}>
+        <Text style={sh.sub}>{t('activityTimeline.disputeSheetSub')}</Text>
+        <View style={{ marginVertical: 14 }}>
+          <TextInputWithLabel
+            label={t('activityTimeline.disputeSheetTitle')}
+            placeholder={t('activityTimeline.disputePlaceholder')}
+            value={disputeNote}
+            onChangeText={setDisputeNote}
+            multiline
+          />
+        </View>
+        <Pressable
+          style={[sh.primaryBtn, { backgroundColor: '#EF4444', opacity: (submitting || disputeNote.trim().length < 5) ? 0.6 : 1, shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
+          onPress={handleRaiseDispute}
+          disabled={submitting || disputeNote.trim().length < 5}
+        >
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.disputeSubmit')}</Text>}
+        </Pressable>
       </BottomSheet>
 
       {/* ── Feedback Modal — full revision-request history, newest first, either side ── */}
