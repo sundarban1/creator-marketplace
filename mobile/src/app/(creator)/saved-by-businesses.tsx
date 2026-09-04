@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FlatList, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SearchInput } from '@/components/SearchInput';
@@ -17,6 +17,7 @@ import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { prefetchBusiness } from '@/lib/prefetch';
 import { F, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
@@ -31,6 +32,7 @@ function BusinessCard({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories: businessCategories } = useCategories('BUSINESS');
   const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
   const extraCats = item.categories.length - 1;
@@ -63,6 +65,7 @@ function BusinessCard({
         text: hasEvents ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet'),
       }}
       ctaLabel={t('explore.businesses.viewBusiness')}
+      onPressIn={() => prefetchBusiness(queryClient, item.id)}
       onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}
       action={{
         active: isFavorited,

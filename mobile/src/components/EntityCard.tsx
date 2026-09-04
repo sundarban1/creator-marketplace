@@ -86,6 +86,11 @@ type EntityCardProps = {
    *  labeled button per card reads as too heavy. */
   ctaStyle?: 'button' | 'chevron';
   onPress:  () => void;
+  /** Fires on touch-down, ~100-300ms before `onPress` lands — pass a
+   *  prefetch call (see lib/prefetch.ts) here to warm the target detail
+   *  screen's cache before navigation even completes. Optional; omit for
+   *  cards with nothing worth prefetching. */
+  onPressIn?: () => void;
   action?:  EntityCardAction;
 };
 
@@ -93,7 +98,7 @@ export function EntityCard({
   avatarUrl, avatarBg, initials, initialsColor, circularAvatar, ringColor, name, verified, providerType, teamSize,
   locationText, description, descriptionItalic, bio,
   categoryLabel, categoryIcon, categoryColor, categoryBg, extraCount = 0, categoryPills, locationBeforeCategory,
-  stat, statInHeader, rating, ctaLabel, ctaStyle = 'button', onPress, action,
+  stat, statInHeader, rating, ctaLabel, ctaStyle = 'button', onPress, onPressIn, action,
 }: EntityCardProps) {
   const C = useAppColors();
   const ring = { borderWidth: 2, borderColor: ringColor };
@@ -121,6 +126,7 @@ export function EntityCard({
     <View style={[styles.cardWrap, { backgroundColor: C.surface }]}>
       <Pressable
         style={({ pressed }) => [styles.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
+        onPressIn={onPressIn}
         onPress={onPress}>
 
         {/* ── Avatar (left) ── */}
@@ -215,6 +221,7 @@ export function EntityCard({
             {ctaStyle === 'button' && (
               <Pressable
                 style={({ pressed }) => [styles.ctaBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+                onPressIn={onPressIn}
                 onPress={onPress}>
                 <Text style={styles.ctaBtnText}>{ctaLabel}</Text>
                 <FontAwesome5 name="arrow-right" solid size={11} color="#fff" />

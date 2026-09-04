@@ -40,6 +40,7 @@ import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { STALE } from '@/lib/queryClient';
+import { prefetchCreatorPublic } from '@/lib/prefetch';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
@@ -116,6 +117,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories: allCategories } = useAllCategories();
   const meta = firstCategoryMeta(allCategories, creator.categories);
   const categoryPills = creator.categories.slice(0, 1).map((name) => {
@@ -145,6 +147,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
       rating={creator.averageRating}
       ctaLabel={t('explore.viewProfile')}
       ctaStyle="chevron"
+      onPressIn={() => prefetchCreatorPublic(queryClient, creator.id)}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}
       action={{
         active: isSaved,
@@ -164,6 +167,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
 function ServiceCard({ service }: { service: ApiService }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const provider = service.creatorProfile;
   const initials = provider?.fullName ? getInitials(provider.fullName) : undefined;
   const plainAvatar = !provider?.avatarUrl;
@@ -190,6 +194,7 @@ function ServiceCard({ service }: { service: ApiService }) {
       stat={{ icon: 'tag', color: C.brinjal1, text: priceText }}
       ctaLabel={t('search.viewService')}
       ctaStyle="chevron"
+      onPressIn={() => prefetchCreatorPublic(queryClient, service.creatorProfileId)}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: service.creatorProfileId } })}
     />
   );

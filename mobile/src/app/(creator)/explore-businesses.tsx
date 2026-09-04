@@ -4,7 +4,7 @@ import { BackButton } from '@/components/BackButton';
 import { EntityCard } from '@/components/EntityCard';
 import { useFocusEffect } from 'expo-router';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   FlatList,
@@ -27,6 +27,7 @@ import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { STALE } from '@/lib/queryClient';
+import { prefetchBusiness } from '@/lib/prefetch';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -59,6 +60,7 @@ function BusinessCard({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories: businessCategories } = useCategories('BUSINESS');
   const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
   const extraCats = item.categories.length - 1;
@@ -94,6 +96,7 @@ function BusinessCard({
       }}
       ctaLabel={t('explore.businesses.viewBusiness')}
       ctaStyle={chevronOnly ? 'chevron' : 'button'}
+      onPressIn={() => prefetchBusiness(queryClient, item.id)}
       onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}
       action={{
         active: isFavorited,

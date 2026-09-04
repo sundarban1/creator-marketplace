@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
+import { useInfiniteQuery, keepPreviousData, useQueryClient } from '@tanstack/react-query';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
 import { EntityCard } from '@/components/EntityCard';
@@ -27,6 +27,7 @@ import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { STALE } from '@/lib/queryClient';
+import { prefetchCreatorPeer } from '@/lib/prefetch';
 import { sortOtherLast, sortSelectedFirst, useAllCategories, useCategories } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -149,6 +150,7 @@ function ExploreFilterModal({
 
 function CreatorCard({ creator, chevronOnly }: { creator: ApiCreatorListItem; /** Discover tab's cards use a plain trailing chevron instead of a full CTA button. */ chevronOnly?: boolean }) {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
   const meta = firstCategoryMeta(allCategories, creator.categories);
@@ -189,6 +191,7 @@ function CreatorCard({ creator, chevronOnly }: { creator: ApiCreatorListItem; /*
       } : undefined}
       ctaLabel={t('explore.viewProfile')}
       ctaStyle={chevronOnly ? 'chevron' : 'button'}
+      onPressIn={() => prefetchCreatorPeer(queryClient, creator.id)}
       onPress={() => router.push({ pathname: '/(creator)/creator-detail', params: { id: creator.id } })}
     />
   );

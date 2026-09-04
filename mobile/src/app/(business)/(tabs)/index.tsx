@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useContext, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SearchInput } from '@/components/SearchInput';
 import { AttentionBanner } from '@/components/AttentionBanner';
@@ -27,6 +27,7 @@ import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast, sortSe
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
+import { prefetchCampaign, prefetchCreatorPublic } from '@/lib/prefetch';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EntityCard } from '@/components/EntityCard';
@@ -58,6 +59,7 @@ export default function BusinessHomeScreen() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const C = useAppColors();
+  const queryClient = useQueryClient();
   const { categories: allCategories } = useAllCategories();
   // BOTH-scope rows are the shared industry/niche list (Hotels, Restaurants, …)
   // — the categories a business browses people *by*, as opposed to the
@@ -439,6 +441,7 @@ export default function BusinessHomeScreen() {
                 <View key={c.id} style={[styles.campaignCardWrap, numColumns === 2 && styles.campaignCardWrapHalf, { backgroundColor: C.surface }]}>
                 <Pressable
                   style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
+                  onPressIn={() => prefetchCampaign(queryClient, c.id)}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
 
                   {/* Drill-in affordance — pinned to the card's right edge,
@@ -586,6 +589,7 @@ export default function BusinessHomeScreen() {
                       } : undefined}
                       ctaLabel={t('business.home.viewProfileBtn')}
                       ctaStyle="chevron"
+                      onPressIn={() => prefetchCreatorPublic(queryClient, p.id)}
                       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: p.id } })}
                     />
                   </View>

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Animated, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '@/components/BackButton';
@@ -17,6 +17,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { STALE } from '@/lib/queryClient';
+import { prefetchBusiness, prefetchCreatorPeer } from '@/lib/prefetch';
 import { campaignService } from '@/services/campaign';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { serviceService, type ApiService } from '@/services/service';
@@ -57,6 +58,7 @@ type ResultsData = {
 function BusinessResultCard({ item }: { item: BusinessListItem }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories: businessCategories } = useCategories('BUSINESS');
   const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
   const initials = (item.businessName ?? 'Business').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -86,6 +88,7 @@ function BusinessResultCard({ item }: { item: BusinessListItem }) {
         text: item._count.campaigns > 0 ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet'),
       }}
       ctaLabel={t('explore.businesses.viewBusiness')}
+      onPressIn={() => prefetchBusiness(queryClient, item.id)}
       onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}
     />
   );
@@ -94,6 +97,7 @@ function BusinessResultCard({ item }: { item: BusinessListItem }) {
 function ServiceResultCard({ item }: { item: ApiService }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const provider = item.creatorProfile;
   const initials = provider?.fullName ? provider.fullName.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase() : undefined;
   const plainAvatar = !provider?.avatarUrl;
@@ -120,6 +124,7 @@ function ServiceResultCard({ item }: { item: ApiService }) {
         text: item.startingPrice != null ? `Rs. ${item.startingPrice.toLocaleString()}` : t(PRICING_MODEL_LABEL[item.pricingModel]),
       }}
       ctaLabel={t('search.viewService')}
+      onPressIn={() => prefetchCreatorPeer(queryClient, item.creatorProfileId)}
       onPress={() => router.push({ pathname: '/(creator)/creator-detail', params: { id: item.creatorProfileId } } as never)}
     />
   );

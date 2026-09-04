@@ -35,6 +35,7 @@ import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
+import { prefetchCreatorPublic } from '@/lib/prefetch';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -64,6 +65,7 @@ function firstCategoryMeta(categories: ReturnType<typeof useAllCategories>['cate
 function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
   const { creator } = item;
@@ -98,6 +100,7 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
         text: formatFollowers(topAccount.followers),
       } : undefined}
       ctaLabel={t('explore.viewProfile')}
+      onPressIn={() => prefetchCreatorPublic(queryClient, creator.id)}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}
       action={{
         active: true,

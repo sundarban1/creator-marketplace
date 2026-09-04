@@ -25,6 +25,7 @@ import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { prefetchBusiness } from '@/lib/prefetch';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
@@ -33,6 +34,7 @@ const EMPTY_BUSINESSES: BusinessListItem[] = [];
 function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: () => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories: businessCategories } = useCategories('BUSINESS');
   const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
   const extraCats = item.categories.length - 1;
@@ -67,6 +69,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
         text: hasEvents ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet'),
       }}
       ctaLabel={t('explore.businesses.viewBusiness')}
+      onPressIn={() => prefetchBusiness(queryClient, item.id)}
       onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } })}
       action={{
         active: true,
