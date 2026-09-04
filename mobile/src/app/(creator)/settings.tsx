@@ -1,9 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { BottomSheet } from '@/components/BottomSheet';
-import { creatorService, type ProviderType } from '@/services/creator';
+import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { STALE } from '@/lib/queryClient';
+import { creatorService, type ApiCreatorProfile, type ApiSocialAccount, type ProviderType } from '@/services/creator';
 import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
 import { useLanguage } from '@/context/LanguageContext';
@@ -330,15 +333,24 @@ export default function CreatorSettingsScreen() {
 
   const [subPage, setSubPage] = useState<string | null>(null);
 
-  // Notification settings (API-driven)
+  // Notification settings (API-driven) — cache-first, seeded once
   const [pushNotifEnabled, setPushNotifEnabled] = useState(true);
   const [emailNotifEnabled, setEmailNotifEnabled] = useState(true);
+  const notifSettingsQuery = useQuery({
+    queryKey: ['notificationSettings'],
+    queryFn: () => notificationService.getSettings(),
+    staleTime: STALE.profile,
+  });
+  const seededNotifRef = useRef(false);
+  function seedFromNotifSettings(s: { pushNotificationsEnabled: boolean; emailNotificationsEnabled: boolean }) {
+    setPushNotifEnabled(s.pushNotificationsEnabled);
+    setEmailNotifEnabled(s.emailNotificationsEnabled);
+  }
   useEffect(() => {
-    notificationService.getSettings().then((s) => {
-      setPushNotifEnabled(s.pushNotificationsEnabled);
-      setEmailNotifEnabled(s.emailNotificationsEnabled);
-    }).catch(() => {});
-  }, []);
+    if (seededNotifRef.current || !notifSettingsQuery.data) return;
+    seededNotifRef.current = true;
+    seedFromNotifSettings(notifSettingsQuery.data);
+  }, [notifSettingsQuery.data]);
   async function saveNotificationSettings(patch: { pushNotificationsEnabled?: boolean; emailNotificationsEnabled?: boolean }) {
     try {
       await notificationService.updateSettings(patch);
@@ -526,28 +538,53 @@ export default function CreatorSettingsScreen() {
 
   // Toast
 
-  // Load profile from API on mount
+  // Profile + social accounts — cache-first (see queryClient.ts). The profile
+  // query is the SAME ['profile','creator'] cache home/discover/profile-tab
+  // already warm, so opening Settings after any of those renders instantly
+  // instead of firing its own redundant getProfile(). Each field below is
+  // still local component state, seeded ONCE from the query result — this
+  // screen mutates them in place afterward (portfolio add/delete, OTP
+  // verification, doc upload, provider-type change), so it can't just read
+  // straight from the query on every render without clobbering in-progress
+  // edits with a stale background refetch.
+  const profileQuery = useCreatorProfile();
+  const socialAccountsQuery = useQuery({
+    queryKey: ['creator', 'socialAccounts'],
+    queryFn: () => creatorService.getSocialAccounts(),
+    staleTime: STALE.profile,
+  });
+
+  const seededProfileRef = useRef(false);
+  function seedFromProfile(profile: ApiCreatorProfile) {
+    if (profile.portfolioLinks?.length) {
+      setPortfolio(profile.portfolioLinks.map((l) => ({ id: l.id, label: l.label, url: l.url })));
+    }
+    // Email verified status from DB
+    if (profile.user?.isEmailVerified != null) setEmailVerified(profile.user.isEmailVerified);
+    if (profile.user?.email) setEmailInput(profile.user.email);
+    if (profile.user?.isPhoneVerified != null) setPhoneVerified(profile.user.isPhoneVerified);
+    if (profile.user?.phone) setVerifiedPhoneNumber(formatPhoneDisplay(profile.user.phone));
+    if (profile.citizenshipStatus) setCitizenshipStatus(profile.citizenshipStatus);
+    if (profile.panDocStatus) setPanStatus(profile.panDocStatus);
+    setCreatorIsVerified(profile.isVerified === true);
+    if (profile.verificationStatus) setServerVerificationStatus(profile.verificationStatus);
+    if (profile.providerType) setProviderType(profile.providerType);
+  }
   useEffect(() => {
-    creatorService.getSocialAccounts().then((accounts) => {
-      setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
-    }).catch(() => {});
-    creatorService.getProfile().then((profile) => {
-      if (profile.portfolioLinks?.length) {
-        setPortfolio(profile.portfolioLinks.map((l) => ({ id: l.id, label: l.label, url: l.url })));
-      }
-      // Email verified status from DB
-      if (profile.user?.isEmailVerified != null) setEmailVerified(profile.user.isEmailVerified);
-      if (profile.user?.email) setEmailInput(profile.user.email);
-      if (profile.user?.isPhoneVerified != null) setPhoneVerified(profile.user.isPhoneVerified);
-      if (profile.user?.phone) setVerifiedPhoneNumber(formatPhoneDisplay(profile.user.phone));
-      if (profile.citizenshipStatus) setCitizenshipStatus(profile.citizenshipStatus);
-      if (profile.panDocStatus) setPanStatus(profile.panDocStatus);
-      setCreatorIsVerified(profile.isVerified === true);
-      if (profile.verificationStatus) setServerVerificationStatus(profile.verificationStatus);
-      if (profile.providerType) setProviderType(profile.providerType);
-    }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (seededProfileRef.current || !profileQuery.data) return;
+    seededProfileRef.current = true;
+    seedFromProfile(profileQuery.data);
+  }, [profileQuery.data]);
+
+  const seededSocialRef = useRef(false);
+  function seedFromSocialAccounts(accounts: ApiSocialAccount[]) {
+    setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
+  }
+  useEffect(() => {
+    if (seededSocialRef.current || !socialAccountsQuery.data) return;
+    seededSocialRef.current = true;
+    seedFromSocialAccounts(socialAccountsQuery.data);
+  }, [socialAccountsQuery.data]);
 
   useEffect(() => {
     if (section !== 'earnings' || earningsSummary !== null) return;

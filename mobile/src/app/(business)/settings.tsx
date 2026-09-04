@@ -2,6 +2,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { STALE } from '@/lib/queryClient';
 import {
   ActivityIndicator,
   Animated,
@@ -29,9 +32,10 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { businessService, type PaymentHistoryEntry } from '@/services/business';
+import type { ApiSocialAccount } from '@/lib/api';
 import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
-import { profileService } from '@/services/profile';
+import { profileService, type BusinessProfile } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
 import { COLORS, F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -642,38 +646,115 @@ export default function BusinessSettingsScreen() {
   const [appModal, setAppModal] = useState({ visible: false, title: '', body: '', confirmLabel: '', type: 'danger' as 'danger' | 'warning', warning: undefined as string | undefined, onConfirm: () => {} });
   function closeAppModal() { setAppModal((m) => ({ ...m, visible: false })); }
 
+  // Cache-first (see queryClient.ts). businessProfileQuery is the SAME
+  // ['profile','business'] cache home/profile-tab/edit screens already warm.
+  // Each field below stays local component state, seeded ONCE — this screen
+  // mutates them in place afterward (doc upload, preference toggles,
+  // verification), so it can't just read straight from the query on every
+  // render without clobbering in-progress edits with a stale background
+  // refetch. Privacy toggles (getMyProfile) hit the same /api/business/profile
+  // endpoint but return a narrower, differently-typed slice of it, so they're
+  // kept as their own query rather than force-merged into BusinessProfile.
+  const businessProfileQuery = useBusinessProfile();
+  const privacySettingsQuery = useQuery({
+    queryKey: ['business', 'privacySettings'],
+    queryFn: () => businessService.getMyProfile(),
+    staleTime: STALE.profile,
+  });
+  const notifSettingsQuery = useQuery({
+    queryKey: ['notificationSettings'],
+    queryFn: () => notificationService.getSettings(),
+    staleTime: STALE.profile,
+  });
+  const socialAccountsQuery = useQuery({
+    queryKey: ['business', 'socialAccounts'],
+    queryFn: () => businessService.getSocialAccounts(),
+    staleTime: STALE.profile,
+  });
+  const paymentHistoryQuery = useQuery({
+    queryKey: ['business', 'paymentHistory'],
+    queryFn: () => businessService.getPaymentHistory(),
+    staleTime: STALE.profile,
+  });
+  const paymentMethodsQuery = useQuery({
+    queryKey: ['paymentMethods'],
+    queryFn: () => paymentMethodService.getPaymentMethods(),
+    staleTime: STALE.static,
+  });
+
+  const seededPrivacyRef = useRef(false);
+  function seedFromPrivacySettings(p: { showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean; hideSocialLinks: boolean }) {
+    setShowProfilePublic(p.showPublicProfile);
+    setHideContactDetails(p.hideContactDetails);
+    setHideSocialLinksPriv(p.hideSocialLinks);
+  }
   useEffect(() => {
-    businessService.getMyProfile().then((p) => {
-      setShowProfilePublic(p.showPublicProfile);
-      setHideContactDetails(p.hideContactDetails);
-      setHideSocialLinksPriv(p.hideSocialLinks);
-    }).catch(() => {});
-    notificationService.getSettings().then((s) => {
-      setPushNotifEnabled(s.pushNotificationsEnabled);
-      setEmailNotifEnabled(s.emailNotificationsEnabled);
-    }).catch(() => {});
-    businessService.getSocialAccounts().then((accounts) => {
-      setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
-    }).catch(() => {});
-    profileService.getBusinessProfile().then((p) => {
-      setIsBizVerified(p.isVerified);
-      setPanDocStatus(p.panDocStatus);
-      setCompanyRegDocStatus(p.companyRegDocStatus);
-      setIdentityDocStatus(p.identityDocStatus);
-      setRepresentingType(p.representingType);
-      setServerVerificationStatus(p.verificationStatus);
-      setRejectReason(p.verificationRejectReason);
-      if (p.defaultPlatforms?.length)         setPrefPlatforms(p.defaultPlatforms);
-      if (p.defaultCreatorCategories?.length)  setPrefCreatorCats(p.defaultCreatorCategories);
-      if (p.defaultBudgetRange)               setPrefBudget(p.defaultBudgetRange);
-      if (p.paymentMethods?.length)            setNepalPayments(p.paymentMethods);
-    }).catch(() => {});
-    businessService.getPaymentHistory()
-      .then(setPaymentHistory)
-      .catch(() => {})
-      .finally(() => setPaymentHistoryLoading(false));
-    paymentMethodService.getPaymentMethods().then(setAvailablePaymentMethods).catch(() => {});
-  }, []);
+    if (seededPrivacyRef.current || !privacySettingsQuery.data) return;
+    seededPrivacyRef.current = true;
+    seedFromPrivacySettings(privacySettingsQuery.data);
+  }, [privacySettingsQuery.data]);
+
+  const seededNotifRef = useRef(false);
+  function seedFromNotifSettings(s: { pushNotificationsEnabled: boolean; emailNotificationsEnabled: boolean }) {
+    setPushNotifEnabled(s.pushNotificationsEnabled);
+    setEmailNotifEnabled(s.emailNotificationsEnabled);
+  }
+  useEffect(() => {
+    if (seededNotifRef.current || !notifSettingsQuery.data) return;
+    seededNotifRef.current = true;
+    seedFromNotifSettings(notifSettingsQuery.data);
+  }, [notifSettingsQuery.data]);
+
+  const seededSocialRef = useRef(false);
+  function seedFromSocialAccounts(accounts: ApiSocialAccount[]) {
+    setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
+  }
+  useEffect(() => {
+    if (seededSocialRef.current || !socialAccountsQuery.data) return;
+    seededSocialRef.current = true;
+    seedFromSocialAccounts(socialAccountsQuery.data);
+  }, [socialAccountsQuery.data]);
+
+  const seededProfileRef = useRef(false);
+  function seedFromBusinessProfile(p: BusinessProfile) {
+    setIsBizVerified(p.isVerified);
+    setPanDocStatus(p.panDocStatus);
+    setCompanyRegDocStatus(p.companyRegDocStatus);
+    setIdentityDocStatus(p.identityDocStatus);
+    setRepresentingType(p.representingType);
+    setServerVerificationStatus(p.verificationStatus);
+    setRejectReason(p.verificationRejectReason);
+    if (p.defaultPlatforms?.length)         setPrefPlatforms(p.defaultPlatforms);
+    if (p.defaultCreatorCategories?.length)  setPrefCreatorCats(p.defaultCreatorCategories);
+    if (p.defaultBudgetRange)               setPrefBudget(p.defaultBudgetRange);
+    if (p.paymentMethods?.length)            setNepalPayments(p.paymentMethods);
+  }
+  useEffect(() => {
+    if (seededProfileRef.current || !businessProfileQuery.data) return;
+    seededProfileRef.current = true;
+    seedFromBusinessProfile(businessProfileQuery.data);
+  }, [businessProfileQuery.data]);
+
+  const seededPaymentHistoryRef = useRef(false);
+  function seedFromPaymentHistory(entries: PaymentHistoryEntry[] | null) {
+    if (entries) setPaymentHistory(entries);
+    setPaymentHistoryLoading(false);
+  }
+  useEffect(() => {
+    if (seededPaymentHistoryRef.current || (!paymentHistoryQuery.data && !paymentHistoryQuery.isError)) return;
+    seededPaymentHistoryRef.current = true;
+    seedFromPaymentHistory(paymentHistoryQuery.data ?? null);
+  }, [paymentHistoryQuery.data, paymentHistoryQuery.isError]);
+
+  const seededPaymentMethodsRef = useRef(false);
+  function seedFromPaymentMethods(methods: ApiPaymentMethod[]) {
+    setAvailablePaymentMethods(methods);
+  }
+  useEffect(() => {
+    if (seededPaymentMethodsRef.current || !paymentMethodsQuery.data) return;
+    seededPaymentMethodsRef.current = true;
+    seedFromPaymentMethods(paymentMethodsQuery.data);
+  }, [paymentMethodsQuery.data]);
 
   // ── Support forms ──
   const [supportTopic, setSupportTopic] = useState('');
