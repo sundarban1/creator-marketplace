@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, InteractionManager, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '@/components/BackButton';
@@ -10,6 +11,8 @@ import { CategoryPillRow } from '@/components/CategoryPillRow';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCategories } from '@/hooks/useCategories';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { STALE } from '@/lib/queryClient';
 import { campaignService } from '@/services/campaign';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { serviceService, type ApiService } from '@/services/service';
@@ -60,37 +63,32 @@ export default function SearchScreen() {
 
   const [query, setQuery]   = useState('');
   const [recent, setRecent] = useState<string[]>(() => loadRecent());
-  const [suggestions, setSuggestions]         = useState<Suggestions>(EMPTY_SUGGESTIONS);
-  const [suggestLoading, setSuggestLoading]   = useState(false);
-  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const requestedFor = useRef('');
+  const [debouncedQuery] = useDebouncedValue(query, SUGGEST_DEBOUNCE_MS);
+  const trimmedQuery = query.trim();
+  const debouncedTrimmed = debouncedQuery.trim();
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const trimmed = query.trim();
-    if (trimmed.length < SUGGEST_MIN_CHARS) {
-      setSuggestions(EMPTY_SUGGESTIONS);
-      setSuggestLoading(false);
-      return;
-    }
-    setSuggestLoading(true);
-    debounceRef.current = setTimeout(() => {
-      requestedFor.current = trimmed;
-      Promise.all([
-        campaignService.list({ search: trimmed, limit: SUGGEST_LIMIT }).catch(() => ({ campaigns: [] as Campaign[] })),
-        businessService.listBusinesses({ search: trimmed, limit: SUGGEST_LIMIT }).catch(() => ({ businesses: [] as BusinessListItem[] })),
-        serviceService.listPublic({ search: trimmed, limit: SUGGEST_LIMIT }).catch(() => ({ items: [] as ApiService[] })),
-      ]).then(([c, b, s]) => {
-        // Drop the response if the user kept typing past it — avoids flicker
-        // from an earlier, slower request landing after a newer one.
-        if (requestedFor.current !== trimmed) return;
-        setSuggestions({ campaigns: c.campaigns, businesses: b.businesses, services: s.items });
-      }).finally(() => {
-        if (requestedFor.current === trimmed) setSuggestLoading(false);
-      });
-    }, SUGGEST_DEBOUNCE_MS);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query]);
+  // Query-key-based de-dup replaces the old requestedFor ref guard — RQ
+  // already drops/ignores a stale in-flight request once the key moves on.
+  const suggestionsQuery = useQuery({
+    queryKey: ['search', 'suggestions', debouncedTrimmed],
+    queryFn: async (): Promise<Suggestions> => {
+      const [c, b, s] = await Promise.all([
+        campaignService.list({ search: debouncedTrimmed, limit: SUGGEST_LIMIT }).catch(() => ({ campaigns: [] as Campaign[] })),
+        businessService.listBusinesses({ search: debouncedTrimmed, limit: SUGGEST_LIMIT }).catch(() => ({ businesses: [] as BusinessListItem[] })),
+        serviceService.listPublic({ search: debouncedTrimmed, limit: SUGGEST_LIMIT }).catch(() => ({ items: [] as ApiService[] })),
+      ]);
+      return { campaigns: c.campaigns, businesses: b.businesses, services: s.items };
+    },
+    enabled: debouncedTrimmed.length >= SUGGEST_MIN_CHARS,
+    staleTime: STALE.list,
+  });
+  const suggestions = suggestionsQuery.data ?? EMPTY_SUGGESTIONS;
+  // Covers both "still debouncing past the threshold" (trimmedQuery hasn't
+  // caught up to debouncedTrimmed yet) and "request in flight" — matches the
+  // original's immediate spinner-on-keystroke rather than waiting out the
+  // debounce with stale suggestions on screen.
+  const suggestLoading = trimmedQuery.length >= SUGGEST_MIN_CHARS
+    && (trimmedQuery !== debouncedTrimmed || suggestionsQuery.isFetching);
 
   function runSearch(term: string) {
     const trimmed = term.trim();
@@ -103,7 +101,6 @@ export default function SearchScreen() {
     void storage.setJSON(RECENT_SEARCHES_KEY, []).then(() => setRecent([]));
   }
 
-  const trimmedQuery = query.trim();
   const showBrowse   = trimmedQuery.length < SUGGEST_MIN_CHARS;
   const hasSuggestions = suggestions.campaigns.length > 0 || suggestions.businesses.length > 0 || suggestions.services.length > 0;
 

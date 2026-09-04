@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Animated, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '@/components/BackButton';
@@ -15,6 +16,7 @@ import { CampaignListItem } from '@/features/creator/components/CampaignListItem
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { STALE } from '@/lib/queryClient';
 import { campaignService } from '@/services/campaign';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { serviceService, type ApiService } from '@/services/service';
@@ -45,6 +47,12 @@ type Row =
   | { kind: 'campaign'; campaign: Campaign }
   | { kind: 'business'; business: BusinessListItem }
   | { kind: 'service'; service: ApiService };
+
+type ResultsData = {
+  campaigns: Campaign[]; campaignsTotal: number;
+  businesses: BusinessListItem[]; businessesTotal: number;
+  services: ApiService[]; servicesTotal: number;
+};
 
 function BusinessResultCard({ item }: { item: BusinessListItem }) {
   const C = useAppColors();
@@ -125,37 +133,35 @@ export default function SearchResultsScreen() {
 
   const [tab, setTab]         = useState<Tab>('opportunities');
   const panelStyle = useTabTransition(tab, TAB_ORDER);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
 
-  const [campaigns, setCampaigns]           = useState<Campaign[]>([]);
-  const [campaignsTotal, setCampaignsTotal] = useState(0);
-  const [businesses, setBusinesses]           = useState<BusinessListItem[]>([]);
-  const [businessesTotal, setBusinessesTotal] = useState(0);
-  const [services, setServices]           = useState<ApiService[]>([]);
-  const [servicesTotal, setServicesTotal] = useState(0);
-
-  const load = useCallback(async () => {
-    if (!query) return;
-    setLoading(true);
-    setError(null);
-    try {
+  const resultsQuery = useQuery({
+    queryKey: ['search', 'results', query],
+    queryFn: async (): Promise<ResultsData> => {
       const [c, b, s] = await Promise.all([
         campaignService.list({ search: query, limit: RESULTS_LIMIT }),
         businessService.listBusinesses({ search: query, limit: RESULTS_LIMIT }),
         serviceService.listPublic({ search: query, limit: RESULTS_LIMIT }),
       ]);
-      setCampaigns(c.campaigns); setCampaignsTotal(c.total);
-      setBusinesses(b.businesses); setBusinessesTotal(b.total);
-      setServices(s.items); setServicesTotal(s.total);
-    } catch (err) {
-      setError(err instanceof OfflineError ? t('search.errorMessage') : (err instanceof Error ? err.message : t('search.errorMessage')));
-    } finally {
-      setLoading(false);
-    }
-  }, [query, t]);
+      return {
+        campaigns: c.campaigns, campaignsTotal: c.total,
+        businesses: b.businesses, businessesTotal: b.total,
+        services: s.items, servicesTotal: s.total,
+      };
+    },
+    enabled: !!query,
+    staleTime: STALE.list,
+  });
+  const loading = resultsQuery.isPending;
+  const error = resultsQuery.isError
+    ? (resultsQuery.error instanceof OfflineError ? t('search.errorMessage') : (resultsQuery.error instanceof Error ? resultsQuery.error.message : t('search.errorMessage')))
+    : null;
 
-  useEffect(() => { void load(); }, [load]);
+  const campaigns        = resultsQuery.data?.campaigns ?? [];
+  const campaignsTotal   = resultsQuery.data?.campaignsTotal ?? 0;
+  const businesses       = resultsQuery.data?.businesses ?? [];
+  const businessesTotal  = resultsQuery.data?.businessesTotal ?? 0;
+  const services         = resultsQuery.data?.services ?? [];
+  const servicesTotal    = resultsQuery.data?.servicesTotal ?? 0;
 
   const tabs = [
     { key: 'opportunities' as const, label: t('search.tabOpportunities'), count: campaignsTotal },
@@ -192,7 +198,7 @@ export default function SearchResultsScreen() {
               title={t('search.errorTitle')}
               message={error}
               actionLabel={t('search.retry')}
-              onAction={() => void load()}
+              onAction={() => resultsQuery.refetch()}
             />
           ) : rows.length === 0 ? (
             <EmptyState icon="search" title={t('search.emptyTitle')} subtitle={t('search.emptySub')} />
