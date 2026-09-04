@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useQueryClient } from '@tanstack/react-query';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ShortlistButton } from '@/components/ShortlistButton';
 import { useAppColors } from '@/context/ThemeContext';
@@ -9,6 +10,7 @@ import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
+import { prefetchCampaign } from '@/lib/prefetch';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
@@ -30,6 +32,7 @@ function expiryLabel(iso: string, t: TFn): { label: string; color: string } {
 export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories } = useAllCategories();
   const catMeta = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
@@ -50,6 +53,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
     <View style={[styles.cardWrap, { backgroundColor: C.surface }]}>
       <Pressable
         style={({ pressed }) => [styles.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
+        onPressIn={() => prefetchCampaign(queryClient, campaign.id)}
         onPress={goToDetail}>
 
         {/* ── Photo (left) ── */}

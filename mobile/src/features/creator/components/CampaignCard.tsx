@@ -2,6 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useQueryClient } from '@tanstack/react-query';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ShortlistButton } from '@/components/ShortlistButton';
 import { useAppColors } from '@/context/ThemeContext';
@@ -10,6 +11,7 @@ import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
+import { prefetchCampaign } from '@/lib/prefetch';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
@@ -56,6 +58,7 @@ function formatDistance(km: number, t: TFn): string {
 export function CampaignCard({ campaign, variant }: { campaign: Campaign; variant: 'featured' | 'nearby' }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const { categories } = useAllCategories();
   const catMeta   = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
@@ -75,6 +78,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
     <View style={styles.cardWrap}>
       <Pressable
         style={({ pressed }) => [styles.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
+        onPressIn={() => prefetchCampaign(queryClient, campaign.id)}
         onPress={goToDetail}>
 
         {/* ── Image ── */}
@@ -144,6 +148,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
             <ShortlistButton campaignId={campaign.id} size="sm" />
             <Pressable
               style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+              onPressIn={() => prefetchCampaign(queryClient, campaign.id)}
               onPress={goToDetail}>
               <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
               <FontAwesome5 name="arrow-right" solid size={13} color="#fff" />
