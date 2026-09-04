@@ -1014,6 +1014,7 @@ model Application {
   assignments          ApplicationAssignment[]
   contract             Contract?
   events               CampaignEvent[]
+  submissionVersions   CampaignSubmissionVersion[]
 
   // True uniqueness is enforced by two hand-written partial indexes, not a
   // plain @@unique — Prisma can't express "unique except when null" and a
@@ -1106,6 +1107,37 @@ model RevisionNote {
 
   @@index([applicationId, createdAt(sort: Desc)])
   @@map("revision_notes")
+}
+
+// Immutable snapshot of one submission attempt (escrow spec §5). Every call to
+// submitWork writes a new row (version 1, 2, 3, …) capturing exactly what was
+// delivered at that point — note, links, and the deliverable video/file arrays
+// as they stood. Application.deliverable* still hold the *current* attempt for
+// existing reads and are cleared on a revision request so the creator gets
+// fresh upload slots; the underlying Cloudinary/R2 assets are NOT deleted any
+// more, because this snapshot still references them.
+model CampaignSubmissionVersion {
+  id            String    @id @default(cuid())
+  applicationId String
+  version       Int
+  note          String?
+  urls          String?
+  videos        Json      @default("[]")
+  files         Json      @default("[]")
+  // Submitted after the content deadline (during grace or just late).
+  late          Boolean   @default(false)
+  // How the business responded to THIS version: APPROVED | REVISION_REQUESTED |
+  // DISPUTED | null while still under review.
+  reviewOutcome String?
+  reviewNote    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, version])
+  @@index([applicationId, version])
+  @@map("campaign_submission_versions")
 }
 
 // Immutable, structured history of every state transition in a campaign

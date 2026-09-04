@@ -795,6 +795,7 @@ export class CampaignRepository {
       include: {
         campaign: { include: { business: { select: { id: true, userId: true, businessName: true } } } },
         creator: { select: { id: true, userId: true, fullName: true } },
+        submissionVersions: { orderBy: { version: 'asc' } },
       },
     });
   }
@@ -932,6 +933,65 @@ export class CampaignRepository {
         deliverableUrls: data.urls ?? null,
         submittedAt:     new Date(),
       },
+    });
+  }
+
+  // ── Submission versions (escrow spec §5) ─────────────────────────────────
+  // Immutable snapshot per submitWork call. version = last + 1; the
+  // (applicationId, version) unique index is the backstop against a racing
+  // double-submit.
+  async createSubmissionVersion(
+    appId: string,
+    data: { note?: string | null; urls?: string | null; videos: unknown; files: unknown; late: boolean },
+  ): Promise<number> {
+    const last = await prisma.campaignSubmissionVersion.findFirst({
+      where: { applicationId: appId },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+    const version = (last?.version ?? 0) + 1;
+    await prisma.campaignSubmissionVersion.create({
+      data: {
+        applicationId: appId,
+        version,
+        note:   data.note ?? null,
+        urls:   data.urls ?? null,
+        videos: (data.videos ?? []) as Prisma.InputJsonValue,
+        files:  (data.files ?? []) as Prisma.InputJsonValue,
+        late:   data.late,
+      },
+    });
+    return version;
+  }
+
+  // Records how the business responded to the most recent submission version.
+  // The snapshot's delivered content is never touched.
+  async setLatestSubmissionOutcome(appId: string, outcome: string, reviewNote?: string | null) {
+    const last = await prisma.campaignSubmissionVersion.findFirst({
+      where: { applicationId: appId },
+      orderBy: { version: 'desc' },
+      select: { id: true },
+    });
+    if (!last) return;
+    await prisma.campaignSubmissionVersion.update({
+      where: { id: last.id },
+      data: { reviewOutcome: outcome, reviewNote: reviewNote ?? null, reviewedAt: new Date() },
+    });
+  }
+
+  listSubmissionVersions(appId: string) {
+    return prisma.campaignSubmissionVersion.findMany({
+      where: { applicationId: appId },
+      orderBy: { version: 'asc' },
+    });
+  }
+
+  // Revisions the business has already requested on this engagement — counted
+  // from the submission-version outcomes so a dispute note isn't mistaken for a
+  // revision (escrow spec §22).
+  countRevisions(appId: string): Promise<number> {
+    return prisma.campaignSubmissionVersion.count({
+      where: { applicationId: appId, reviewOutcome: 'REVISION_REQUESTED' },
     });
   }
 

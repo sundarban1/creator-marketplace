@@ -1694,8 +1694,20 @@ export class CampaignService {
       })
       .catch((err) => logger.warn({ err, appId }, 'failed to set businessReviewDueAt'));
 
-    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_SUBMITTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, hasNote: !!data.note, late: wasLate } });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: app.workStatus, toStatus: 'SUBMITTED', actorId: userId, actorType: 'CREATOR', metadata: { hasNote: !!data.note, late: wasLate } });
+    // Escrow spec §5: snapshot this submission as an immutable version, never
+    // overwriting earlier ones.
+    const version = await this.repo
+      .createSubmissionVersion(appId, {
+        note:   data.note,
+        urls:   data.urls,
+        videos: app.deliverableVideos,
+        files:  app.deliverableFiles,
+        late:   wasLate,
+      })
+      .catch((err) => { logger.warn({ err, appId }, 'failed to snapshot submission version'); return null; });
+
+    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_SUBMITTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, hasNote: !!data.note, late: wasLate, version } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: app.workStatus, toStatus: 'SUBMITTED', actorId: userId, actorType: 'CREATOR', metadata: { hasNote: !!data.note, late: wasLate, version } });
 
     const businessUserId = app.campaign.business.userId;
     notificationService.create({
@@ -1774,6 +1786,7 @@ export class CampaignService {
 
     // The review window is satisfied — stop the sweep from acting again.
     await this.repo.setEngagementTiming(appId, { businessReviewDueAt: null }).catch(() => {});
+    await this.repo.setLatestSubmissionOutcome(appId, 'APPROVED').catch(() => {});
 
     const creatorUserId = app.creator.userId;
     const businessName  = app.campaign.business.businessName ?? 'The business';
@@ -1862,9 +1875,23 @@ export class CampaignService {
     if (app.escrowStatus === 'FROZEN') throw new AppError('This engagement is under dispute', 409);
     assertWorkTransition(app.workStatus, 'IN_PROGRESS');
 
+    // Escrow spec §22: only a configurable number of revisions is included.
+    const { maxIncludedRevisions } = await getEscrowTimings();
+    const usedRevisions = await this.repo.countRevisions(appId);
+    if (usedRevisions >= maxIncludedRevisions) {
+      throw new AppError(
+        `All ${maxIncludedRevisions} included revisions for this engagement have been used. Further changes need a new agreement with the creator.`,
+        409,
+      );
+    }
+
     const existingVideos = await this.repo.getDeliverableVideos(appId);
 
     const updated = await this.repo.requestRevision(appId, note);
+
+    // Escrow spec §5/§21: record how the business responded to this exact
+    // submission version — the version snapshot itself is never mutated.
+    await this.repo.setLatestSubmissionOutcome(appId, 'REVISION_REQUESTED', note).catch(() => {});
 
     // Escrow spec §22: a revision reopens the job — snapshot a fresh content
     // deadline for the revised work and stand the review window down.
@@ -1889,18 +1916,13 @@ export class CampaignService {
       .sendRevisionRequestMessage(app.creatorId, business.id, app.campaignId, userId, note, existingVideos)
       .catch(() => {});
 
-    // Videos are appended (capped at 3), not wholesale-replaced like
-    // deliverableUrls — without clearing them here, a creator who filled all
-    // 3 slots in this round would have zero slots left for the revised
-    // submission. Delete the Cloudinary assets too so they don't linger
-    // unreferenced; best-effort, matching this file's existing notification/
-    // email error-swallowing convention.
-    await Promise.all(existingVideos.map((v) => deleteVideo(v.publicId))).catch(() => {});
+    // Clear the *current* deliverable slots so the creator has fresh capacity
+    // for the revised submission (videos append, capped at 3). The underlying
+    // Cloudinary/R2 assets are deliberately NOT deleted — the submission
+    // version snapshotted at submitWork still references them (spec §5/§24:
+    // never overwrite previous submissions).
     if (existingVideos.length > 0) await this.repo.clearDeliverableVideos(appId);
-
-    // Same reasoning as the video block above, for images/PDF/DOCX.
     const existingFiles = await this.repo.getDeliverableFiles(appId);
-    await Promise.all(existingFiles.map((f) => (f.fileType === 'IMAGE' ? deleteImage(deliverableFileCloudinaryId(f.publicId)) : deleteRawFile(deliverableFileCloudinaryId(f.publicId))))).catch(() => {});
     if (existingFiles.length > 0) await this.repo.clearDeliverableFiles(appId);
 
     const creatorUserId = app.creator.userId;
@@ -1948,6 +1970,7 @@ export class CampaignService {
     // A frozen escrow is off the automatic clocks — neither the review sweep
     // (auto-approve) nor the settlement sweep (release) may touch it.
     await this.repo.setEngagementTiming(appId, { businessReviewDueAt: null, paymentReleaseAt: null }).catch(() => {});
+    await this.repo.setLatestSubmissionOutcome(appId, 'DISPUTED', reason).catch(() => {});
 
     logActivity({ userId, action: ActivityAction.APPLICATION_DISPUTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'dispute', fromStatus: null, toStatus: 'OPEN', actorId: userId, actorType: 'BUSINESS', reason });

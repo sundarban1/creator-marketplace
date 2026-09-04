@@ -138,6 +138,19 @@ export interface CampaignRequirementDto {
   acceptedCount: number;
 }
 
+export interface SubmissionVersionDto {
+  version: number;
+  note: string | null;
+  urls: string | null;
+  videos: DeliverableVideo[];
+  files: DeliverableFile[];
+  late: boolean;
+  reviewOutcome: string | null;
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
 export interface ApplicationDto {
   id: string;
   campaignId: string;
@@ -162,6 +175,10 @@ export interface ApplicationDto {
   deliverableUrls: string | null;
   deliverableVideos: DeliverableVideo[];
   deliverableFiles: DeliverableFile[];
+  // Immutable per-attempt history (escrow spec §5) — present on the single
+  // application read path; each entry snapshots what was delivered for that
+  // version and how the business responded to it.
+  submissionVersions?: SubmissionVersionDto[];
   paymentStatus: string;
   // Authoritative escrow state (EscrowStatus). Falls back to a value derived
   // from paymentStatus on the rare read path that doesn't select the column.
@@ -361,6 +378,18 @@ type RawApplication = {
   deliverableUrls: string | null;
   deliverableVideos?: Prisma.JsonValue;
   deliverableFiles?: Prisma.JsonValue;
+  submissionVersions?: {
+    version: number;
+    note: string | null;
+    urls: string | null;
+    videos: Prisma.JsonValue;
+    files: Prisma.JsonValue;
+    late: boolean;
+    reviewOutcome: string | null;
+    reviewNote: string | null;
+    reviewedAt: Date | null;
+    createdAt: Date;
+  }[];
   paymentStatus: string;
   escrowStatus?: string | null;
   paidAt: Date | null;
@@ -427,6 +456,22 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     deliverableUrls: a.deliverableUrls,
     deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
     deliverableFiles: z.array(deliverableFileSchema).catch([]).parse(a.deliverableFiles ?? []),
+    ...(a.submissionVersions?.length
+      ? {
+          submissionVersions: a.submissionVersions.map((v) => ({
+            version:       v.version,
+            note:          v.note,
+            urls:          v.urls,
+            videos:        z.array(deliverableVideoSchema).catch([]).parse(v.videos ?? []),
+            files:         z.array(deliverableFileSchema).catch([]).parse(v.files ?? []),
+            late:          v.late,
+            reviewOutcome: v.reviewOutcome,
+            reviewNote:    v.reviewNote,
+            reviewedAt:    v.reviewedAt ? v.reviewedAt.toISOString() : null,
+            createdAt:     v.createdAt.toISOString(),
+          })),
+        }
+      : {}),
     paymentStatus:   a.paymentStatus ?? 'UNPAID',
     escrowStatus:    escrowStatus,
     engagementState: deriveEngagementState({
