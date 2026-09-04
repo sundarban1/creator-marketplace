@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
+import { useCreatorProfile, useInvalidateCreatorProfile } from '@/hooks/useCreatorProfile';
 import { sortOtherLast, useCategories } from '@/hooks/useCategories';
 import { CategoryChipGrid } from '@/components/CategoryChipGrid';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
@@ -28,17 +29,26 @@ export default function EditCategoriesScreen() {
   // BOTH-scope industry rows only, matching the onboarding step that first sets
   // this field — never the CREATOR-scope provider roles.
   const { categories: catOptions } = useCategories('BOTH');
+  // Shared cache — same entry home/Discover/profile tab already populate.
+  const profileQuery = useCreatorProfile();
+  const invalidateProfile = useInvalidateCreatorProfile();
   const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const loading = profileQuery.isPending;
 
+  // Seed the editable selection once — a background profile refetch must
+  // never overwrite an in-progress selection.
+  const seededRef = useRef(false);
+  function seedFromProfile() {
+    if (profileQuery.isError) { toast.error(t('editCategories.loadError')); return; }
+    setCategories(profileQuery.data?.categories ?? []);
+  }
   useEffect(() => {
-    creatorService
-      .getProfile()
-      .then((p) => setCategories(p.categories ?? []))
-      .catch(() => toast.error(t('editCategories.loadError')))
-      .finally(() => setLoading(false));
-  }, []);
+    if (seededRef.current || profileQuery.isPending) return;
+    seededRef.current = true;
+    seedFromProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileQuery.isPending, profileQuery.isError, profileQuery.data]);
 
   function toggle(cat: string) {
     setCategories((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
@@ -56,6 +66,7 @@ export default function EditCategoriesScreen() {
     setSaving(true);
     try {
       await creatorService.updateProfile({ categories });
+      invalidateProfile();
       toast.success(t('editCategories.savedSuccess'));
       router.back();
     } catch (err) {

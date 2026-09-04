@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { BackButton } from '@/components/BackButton';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
+import { useBusinessProfile, useInvalidateBusinessProfile } from '@/hooks/useBusinessProfile';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { LocationField } from '@/components/LocationField';
@@ -40,7 +41,10 @@ export default function EditBusinessProfileScreen() {
   const toast = useToast();
   const { updateUser } = useAuth();
 
-  const [loading, setLoading]                   = useState(true);
+  // Shared cache — same entry business home/Discover/profile tab populate.
+  const profileQuery = useBusinessProfile();
+  const invalidateProfile = useInvalidateBusinessProfile();
+  const loading = profileQuery.isPending;
   const [saving, setSaving]                     = useState(false);
   const [businessName, setBusinessName]         = useState('');
   const [nameError, setNameError]               = useState<string | undefined>(undefined);
@@ -55,20 +59,28 @@ export default function EditBusinessProfileScreen() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [categories, setCategories]             = useState<string[]>([]);
 
+  // Seed the editable fields once — a background profile refetch (e.g.
+  // triggered from another screen sharing this cache) must never overwrite
+  // fields the user is mid-edit on.
+  const seededRef = useRef(false);
+  function seedFromProfile() {
+    if (profileQuery.isError) { toast.error(t('profile.editBusiness.loadError')); return; }
+    const profile = profileQuery.data;
+    if (!profile) return;
+    setBusinessName(profile.businessName ?? '');
+    setDescription(profile.description ?? '');
+    setWebsite(profile.website ?? '');
+    setLocation(profile.location ?? '');
+    setLocationLat(profile.locationLat ?? null);
+    setLocationLng(profile.locationLng ?? null);
+    setCategories(profile.categories ?? []);
+  }
   useEffect(() => {
-    profileService.getBusinessProfile()
-      .then((profile) => {
-        setBusinessName(profile.businessName ?? '');
-        setDescription(profile.description ?? '');
-        setWebsite(profile.website ?? '');
-        setLocation(profile.location ?? '');
-        setLocationLat(profile.locationLat ?? null);
-        setLocationLng(profile.locationLng ?? null);
-        setCategories(profile.categories ?? []);
-      })
-      .catch(() => toast.error(t('profile.editBusiness.loadError')))
-      .finally(() => setLoading(false));
-  }, []);
+    if (seededRef.current || profileQuery.isPending) return;
+    seededRef.current = true;
+    seedFromProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileQuery.isPending, profileQuery.isError, profileQuery.data]);
 
   function handleLocationSelect(address: string, lat: number, lng: number) {
     setLocation(address);
@@ -119,6 +131,7 @@ export default function EditBusinessProfileScreen() {
         // silently revert whatever the dedicated Edit Industries screen most
         // recently saved back to this screen's stale mount-time snapshot.
       });
+      invalidateProfile();
       // The saved name only lives in the backend profile record until this
       // syncs it into AuthContext — every screen that reads user.name
       // (home greeting, drawer, settings) would otherwise stay stuck on

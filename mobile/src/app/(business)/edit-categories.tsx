@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
+import { useBusinessProfile, useInvalidateBusinessProfile } from '@/hooks/useBusinessProfile';
 import { useCategories } from '@/hooks/useCategories';
 import { CategoryChipGrid } from '@/components/CategoryChipGrid';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
@@ -26,17 +27,26 @@ export default function EditBusinessCategoriesScreen() {
   const { t } = useLanguage();
   const toast = useToast();
   const { categories: catOptions } = useCategories('BUSINESS');
+  // Shared cache — same entry business home/Discover/profile tab populate.
+  const profileQuery = useBusinessProfile();
+  const invalidateProfile = useInvalidateBusinessProfile();
   const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const loading = profileQuery.isPending;
 
+  // Seed the editable selection once — a background profile refetch must
+  // never overwrite an in-progress selection.
+  const seededRef = useRef(false);
+  function seedFromProfile() {
+    if (profileQuery.isError) { toast.error(t('editCategoriesBusiness.loadError')); return; }
+    setCategories(profileQuery.data?.categories ?? []);
+  }
   useEffect(() => {
-    profileService
-      .getBusinessProfile()
-      .then((p) => setCategories(p.categories ?? []))
-      .catch(() => toast.error(t('editCategoriesBusiness.loadError')))
-      .finally(() => setLoading(false));
-  }, []);
+    if (seededRef.current || profileQuery.isPending) return;
+    seededRef.current = true;
+    seedFromProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileQuery.isPending, profileQuery.isError, profileQuery.data]);
 
   function toggle(cat: string) {
     setCategories((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
@@ -54,6 +64,7 @@ export default function EditBusinessCategoriesScreen() {
     setSaving(true);
     try {
       await profileService.updateBusinessProfile({ categories });
+      invalidateProfile();
       toast.success(t('editCategoriesBusiness.savedSuccess'));
       router.back();
     } catch (err) {

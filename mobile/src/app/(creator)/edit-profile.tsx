@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -20,6 +21,7 @@ import { useToast } from '@/components/Toast';
 import { Button } from '@/components/Button';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { creatorService } from '@/services/creator';
+import { useCreatorProfile, creatorProfileKey } from '@/hooks/useCreatorProfile';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
@@ -32,8 +34,11 @@ export default function EditProfileScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
+  // Shared cache — same entry home/Discover/profile tab populate.
+  const profileQuery = useCreatorProfile();
+  const loading = profileQuery.isPending;
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState('');
   const [nameError, setNameError] = useState<string | undefined>(undefined);
@@ -51,22 +56,30 @@ export default function EditProfileScreen() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
 
+  // Seed the editable fields once — a background profile refetch (e.g.
+  // triggered from another screen sharing this cache) must never overwrite
+  // fields the user is mid-edit on.
+  const seededRef = useRef(false);
+  function seedFromProfile() {
+    if (profileQuery.isError) { toast.error(t('profile.editCreator.loadError')); return; }
+    const profile = profileQuery.data;
+    if (!profile) return;
+    setFullName(profile.fullName ?? '');
+    setUsername(profile.username ?? '');
+    setOriginalUsername(profile.username ?? '');
+    setBio(profile.bio ?? '');
+    setWebsite(profile.website ?? '');
+    setLocation(profile.location ?? '');
+    setLocationLat(profile.locationLat ?? null);
+    setLocationLng(profile.locationLng ?? null);
+    setCategories(profile.categories ?? []);
+  }
   useEffect(() => {
-    creatorService.getProfile()
-      .then((profile) => {
-        setFullName(profile.fullName ?? '');
-        setUsername(profile.username ?? '');
-        setOriginalUsername(profile.username ?? '');
-        setBio(profile.bio ?? '');
-        setWebsite(profile.website ?? '');
-        setLocation(profile.location ?? '');
-        setLocationLat(profile.locationLat ?? null);
-        setLocationLng(profile.locationLng ?? null);
-        setCategories(profile.categories ?? []);
-      })
-      .catch(() => toast.error(t('profile.editCreator.loadError')))
-      .finally(() => setLoading(false));
-  }, []);
+    if (seededRef.current || profileQuery.isPending) return;
+    seededRef.current = true;
+    seedFromProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileQuery.isPending, profileQuery.isError, profileQuery.data]);
 
   function handleUsernameChange(v: string) {
     const clean = v.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
@@ -137,6 +150,10 @@ export default function EditProfileScreen() {
         payload.locationLng = null;
       }
       const profile = await creatorService.updateProfile(payload);
+      // The server's own fresh profile, not a client guess — write it
+      // straight into the shared cache so every screen reading it (home,
+      // Discover, profile tab, …) is current without a refetch round trip.
+      queryClient.setQueryData(creatorProfileKey, profile);
       updateUser({ name: profile.fullName, avatar: profile.avatarUrl ?? undefined });
       setUsername(profile.username ?? '');
       setOriginalUsername(profile.username ?? '');
