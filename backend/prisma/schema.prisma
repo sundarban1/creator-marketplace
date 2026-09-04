@@ -866,6 +866,7 @@ model Campaign {
   requirements          CampaignRequirement[]
   shortlistedBy         ShortlistedCampaign[]
   eventQuestions        EventQuestion[]
+  events                CampaignEvent[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -982,6 +983,7 @@ model Application {
   revisionNotes        RevisionNote[]
   assignments          ApplicationAssignment[]
   contract             Contract?
+  events               CampaignEvent[]
 
   // True uniqueness is enforced by two hand-written partial indexes, not a
   // plain @@unique — Prisma can't express "unique except when null" and a
@@ -1074,6 +1076,46 @@ model RevisionNote {
 
   @@index([applicationId, createdAt(sort: Desc)])
   @@map("revision_notes")
+}
+
+// Immutable, structured history of every state transition in a campaign
+// engagement (escrow spec §34). Distinct from ActivityLog (the human-facing
+// Activity-tab timeline) and RevisionNote (revision text): this records the
+// typed from→to transitions the escrow/work/dispute state machine makes, so a
+// dispute or reconciliation can replay exactly how an engagement reached its
+// current state. Append-only — no service method ever updates or deletes a row
+// (same rule as audit_logs / wallet_transactions).
+model CampaignEvent {
+  id            String            @id @default(cuid())
+  campaignId    String
+  // The engagement this transition belongs to. Null only for whole-campaign
+  // events (publish, expire, cancel) that precede or outlive any one creator.
+  applicationId String?
+  // Which state axis moved — 'application' | 'escrow' | 'work' | 'campaign' |
+  // 'dispute'. Kept as a plain string, same convention as ActivityLog.action.
+  axis          String
+  fromStatus    String?
+  toStatus      String
+  // The user who caused the transition; null when actorType is SYSTEM.
+  actorId       String?
+  actorType     CampaignEventActor @default(SYSTEM)
+  reason        String?
+  metadata      Json?
+  createdAt     DateTime           @default(now())
+
+  campaign    Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+  @@index([applicationId, createdAt])
+  @@map("campaign_events")
+}
+
+enum CampaignEventActor {
+  BUSINESS
+  CREATOR
+  ADMIN
+  SYSTEM
 }
 
 // One row per real money movement: a business escrowing funds for an accepted

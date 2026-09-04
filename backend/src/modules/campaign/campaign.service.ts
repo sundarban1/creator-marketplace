@@ -20,6 +20,7 @@ import { emitToRole } from '../../socket';
 import { logger } from '../../config/logger';
 import { invitationService } from './invitation/invitation.service';
 import { logActivity, getActivityForEntity } from '../logging/activity.service';
+import { recordCampaignEvent } from './campaign-events';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
@@ -1004,6 +1005,16 @@ export class CampaignService {
     } else {
       logActivity({ userId, action: ActivityAction.APPLICATION_REJECTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId, creatorId: application.creatorId } });
     }
+    recordCampaignEvent({
+      campaignId,
+      applicationId: appId,
+      axis:          'application',
+      fromStatus:    application.status,
+      toStatus:      status,
+      actorId:       userId,
+      actorType:     'BUSINESS',
+      metadata:      { creatorId: application.creatorId, isFreeEvent },
+    });
 
     // Business's e-signature (see campaign-proposals.tsx, which gates the accept
     // call behind the contract modal's "I Agree" button) — completes the
@@ -1302,6 +1313,17 @@ export class CampaignService {
       metadata:   { campaignId: params.campaignId, amount: params.proposedRate, method: params.method },
     });
 
+    recordCampaignEvent({
+      campaignId:    params.campaignId,
+      applicationId: params.appId,
+      axis:          'escrow',
+      fromStatus:    'NOT_FUNDED',
+      toStatus:      'HELD',
+      actorId:       params.businessUserId,
+      actorType:     'BUSINESS',
+      metadata:      { amount: params.proposedRate, method: params.method },
+    });
+
     if (params.creatorUserId) {
       analyticsService.incrPaymentPaid(params.creatorUserId, params.proposedRate);
       notificationService.create({
@@ -1581,6 +1603,7 @@ export class CampaignService {
     analyticsService.incrCampaignStarted(userId);
 
     logActivity({ userId, action: ActivityAction.APPLICATION_WORK_STARTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: app.workStatus, toStatus: 'IN_PROGRESS', actorId: userId, actorType: 'CREATOR' });
 
     // Notify + email business
     const businessUserId = app.campaign.business.userId;
@@ -1623,6 +1646,7 @@ export class CampaignService {
     const updated = await this.repo.submitWork(appId, data);
 
     logActivity({ userId, action: ActivityAction.APPLICATION_WORK_SUBMITTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, hasNote: !!data.note } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: app.workStatus, toStatus: 'SUBMITTED', actorId: userId, actorType: 'CREATOR', metadata: { hasNote: !!data.note } });
 
     const businessUserId = app.campaign.business.userId;
     notificationService.create({
@@ -1660,6 +1684,15 @@ export class CampaignService {
     const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
 
     logActivity({ userId, action: ActivityAction.APPLICATION_WORK_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+    recordCampaignEvent({
+      campaignId:    app.campaignId,
+      applicationId: appId,
+      axis:          'work',
+      fromStatus:    'SUBMITTED',
+      toStatus:      isFreeEvent ? 'COMPLETED' : 'APPROVED',
+      actorId:       userId,
+      actorType:     'BUSINESS',
+    });
 
     const creatorUserId = app.creator.userId;
 
@@ -1740,6 +1773,8 @@ export class CampaignService {
     });
 
     logActivity({ userId: actorUserId, action: ActivityAction.PAYMENT_RELEASED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId, amount: app.proposedRate } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'escrow', fromStatus: 'HELD', toStatus: 'RELEASED', actorId: actorUserId, actorType: 'BUSINESS', metadata: { amount: app.proposedRate } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'APPROVED', toStatus: 'COMPLETED', actorId: actorUserId, actorType: 'BUSINESS' });
 
     const creatorUserId  = app.creator.userId;
     const businessUserId  = app.campaign.business.userId;
@@ -1792,6 +1827,7 @@ export class CampaignService {
     const updated = await this.repo.requestRevision(appId, note);
 
     logActivity({ userId, action: ActivityAction.APPLICATION_REVISION_REQUESTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: 'SUBMITTED', toStatus: 'REVISION_REQUESTED', actorId: userId, actorType: 'BUSINESS', reason: note });
 
     // Send the revision note as a chat message, followed by a copy of each
     // currently-submitted video (see sendRevisionRequestMessage) — awaited
@@ -1853,6 +1889,8 @@ export class CampaignService {
     const updated = await this.repo.reportIssue(appId, reason);
 
     logActivity({ userId, action: ActivityAction.APPLICATION_DISPUTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'dispute', fromStatus: null, toStatus: 'OPEN', actorId: userId, actorType: 'BUSINESS', reason });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'escrow', fromStatus: 'HELD', toStatus: 'FROZEN', actorId: userId, actorType: 'BUSINESS', reason });
 
     messagingService
       .sendSystemMessage(app.creatorId, business.id, app.campaignId, userId, 'BUSINESS', `Issue reported: ${reason}`)
@@ -2143,6 +2181,16 @@ export class CampaignService {
 
     const updated = await this.repo.cancelCampaign(campaignId);
 
+    recordCampaignEvent({
+      campaignId,
+      axis:       'campaign',
+      fromStatus: campaign.status,
+      toStatus:   'CANCELLED',
+      actorId:    userId,
+      actorType:  'BUSINESS',
+      metadata:   { wasPaid: campaign.paymentStatus === 'PAID' },
+    });
+
     // Notify all accepted creators
     this.repo.findApplicationsByCampaign(campaignId, 1, 50).then(async ({ applications }) => {
       const accepted = applications.filter((a) => a.status === 'ACCEPTED');
@@ -2203,6 +2251,7 @@ export class CampaignService {
       }).catch(() => {});
 
       logActivity({ userId: null, action: ActivityAction.CAMPAIGN_EXPIRED, entityType: EntityType.CAMPAIGN, entityId: campaign.id, metadata: { title: campaign.title } });
+      recordCampaignEvent({ campaignId: campaign.id, axis: 'campaign', fromStatus: 'ACTIVE', toStatus: 'EXPIRED', actorType: 'SYSTEM', reason: 'Past deadline' });
     }
 
     if (applications.length > 0) {
@@ -2219,6 +2268,7 @@ export class CampaignService {
 
       for (const app of applications) {
         logActivity({ userId: null, action: ActivityAction.APPLICATION_EXPIRED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId } });
+        recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'application', fromStatus: 'PENDING', toStatus: 'EXPIRED', actorType: 'SYSTEM', reason: 'Campaign past deadline' });
       }
     }
 
