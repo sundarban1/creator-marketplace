@@ -1,7 +1,8 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, type UseInfiniteQueryResult, type InfiniteData } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,6 +20,8 @@ import { TabSlider } from '@/components/TabSlider';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { campaignService } from '@/services/campaign';
 import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -320,69 +323,71 @@ function ProposalCard({ proposal }: {
 
 const PAGE_SIZE = 10;
 
-type TabState = { items: Proposal[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
-const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
-
 const STATUS_PARAM: Record<TabKey, 'PENDING' | 'SHORTLISTED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | undefined> = {
   all: undefined, pending: 'PENDING', shortlisted: 'SHORTLISTED', accepted: 'ACCEPTED', rejected: 'REJECTED', expired: 'EXPIRED',
 };
+
+type ApplicationsPage = Awaited<ReturnType<typeof campaignService.getMyApplications>>;
+const EMPTY_PROPOSALS: Proposal[] = [];
+
+/** One tab's paginated feed. Every tab gets its own query (see ProposalsScreen)
+ *  so the tab strip can show every tab's total count immediately, not just the
+ *  active one — but only the tabs the user has actually opened (or 'all', on
+ *  mount) are `enabled`, matching the old lazy-load-on-first-visit behaviour. */
+function useTabQuery(tab: TabKey, enabled: boolean) {
+  return useInfiniteQuery({
+    queryKey: ['applications', 'creator', 'paginated', tab],
+    queryFn: ({ pageParam }) => campaignService.getMyApplications({ page: pageParam, limit: PAGE_SIZE, status: STATUS_PARAM[tab] }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.proposals.length, 0);
+      return loaded < last.total ? all.length + 1 : undefined;
+    },
+    enabled,
+    staleTime: STALE.list,
+  });
+}
+
+function flattenProposals(pages: ApplicationsPage[] | undefined): Proposal[] {
+  if (!pages) return EMPTY_PROPOSALS;
+  const seen = new Set<string>();
+  const out: Proposal[] = [];
+  for (const page of pages) for (const p of page.proposals) {
+    if (!seen.has(p.id)) { seen.add(p.id); out.push(p); }
+  }
+  return out;
+}
 
 export default function ProposalsScreen() {
   const { t } = useLanguage();
   const C = useAppColors();
   const params = useLocalSearchParams<{ tab?: string }>();
-  const [tabData, setTabData] = useState<Record<TabKey, TabState>>({
-    all: emptyTabState(), pending: emptyTabState(), shortlisted: emptyTabState(), accepted: emptyTabState(), rejected: emptyTabState(), expired: emptyTabState(),
-  });
-  const [loading, setLoading]     = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError]         = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('all');
-  const loadingMoreRef = useRef(false);
-  const hasLoadedOnceRef = useRef(false);
+  // Which tabs have been opened at least once — the rest stay `enabled: false`
+  // (no request, count shows 0) until visited, matching the old lazy-load.
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabKey>>(() => new Set(['all']));
+  const [refreshing, setRefreshing] = useState(false);
   const listRef = useRef<FlatList<Proposal>>(null);
   useScrollToTopOnTabPress('proposals', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
-  async function loadTab(tab: TabKey, page: number, replace: boolean) {
-    if (replace) { setError(''); } else { setTabData((prev) => ({ ...prev, [tab]: { ...prev[tab], loadingMore: true } })); }
-    try {
-      const { proposals, total } = await campaignService.getMyApplications({
-        page, limit: PAGE_SIZE, status: STATUS_PARAM[tab],
-      });
-      setTabData((prev) => {
-        const prevItems = replace ? [] : prev[tab].items;
-        const seen = new Set(prevItems.map((p) => p.id));
-        const merged = [...prevItems, ...proposals.filter((p) => !seen.has(p.id))];
-        return { ...prev, [tab]: { items: merged, page, total, loadingMore: false, loaded: true } };
-      });
-    } catch (e) {
-      if (replace) setError(e instanceof Error ? e.message : 'Failed to load proposals');
-    } finally {
-      loadingMoreRef.current = false;
-      if (replace) setLoading(false);
-      setRefreshing(false);
-    }
-  }
-
-  useFocusEffect(useCallback(() => {
-    // Only show the full-screen skeleton on the very first load. Later
-    // focuses (e.g. coming back from campaign-detail) refresh the "all" tab
-    // silently in the background instead of flashing the skeleton again —
-    // on a slow connection (production API vs. local LAN) that reload was
-    // visible as a jarring flicker/reload every time you navigated back.
-    if (!hasLoadedOnceRef.current) {
-      hasLoadedOnceRef.current = true;
-      setLoading(true);
-    }
-    void loadTab('all', 1, true);
-  }, []));
+  // One query per tab (see useTabQuery) so every tab's count is visible in
+  // the strip at once — only `visitedTabs` are actually enabled/fetched.
+  const allQuery         = useTabQuery('all', visitedTabs.has('all'));
+  const pendingQuery     = useTabQuery('pending', visitedTabs.has('pending'));
+  const shortlistedQuery = useTabQuery('shortlisted', visitedTabs.has('shortlisted'));
+  const acceptedQuery    = useTabQuery('accepted', visitedTabs.has('accepted'));
+  const rejectedQuery    = useTabQuery('rejected', visitedTabs.has('rejected'));
+  const expiredQuery     = useTabQuery('expired', visitedTabs.has('expired'));
+  const queryByTab: Record<TabKey, UseInfiniteQueryResult<InfiniteData<ApplicationsPage>>> = {
+    all: allQuery, pending: pendingQuery, shortlisted: shortlistedQuery,
+    accepted: acceptedQuery, rejected: rejectedQuery, expired: expiredQuery,
+  };
+  const activeQuery = queryByTab[activeTab];
+  useRefetchOnFocusIfStale(activeQuery);
 
   function selectTab(tab: TabKey) {
     setActiveTab(tab);
-    if (!tabData[tab].loaded) {
-      setLoading(true);
-      void loadTab(tab, 1, true);
-    }
+    setVisitedTabs((prev) => (prev.has(tab) ? prev : new Set(prev).add(tab)));
   }
 
   // Lets other screens (e.g. Home's "My Campaigns" quick action) land directly
@@ -394,28 +399,30 @@ export default function ProposalsScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.tab]);
 
-  const onRefresh = useCallback(() => {
+  async function onRefresh() {
     setRefreshing(true);
-    void loadTab(activeTab, 1, true);
-  }, [activeTab]);
-
-  function loadMore() {
-    const state = tabData[activeTab];
-    if (loadingMoreRef.current || state.loadingMore || state.items.length >= state.total) return;
-    loadingMoreRef.current = true;
-    void loadTab(activeTab, state.page + 1, false);
+    try { await activeQuery.refetch(); } finally { setRefreshing(false); }
   }
 
-  const tabs = [
-    { key: 'all',         label: t('proposal.creator.tabAll'),         icon: 'copy'          as const, color: TabColors.neutral.color,  count: tabData.all.total },
-    { key: 'pending',     label: t('proposal.creator.tabPending'),     icon: 'clock'          as const, color: TabColors.brand.color,    count: tabData.pending.total },
-    { key: 'shortlisted', label: t('proposal.creator.tabShortlisted'), icon: 'star'           as const, color: TabColors.info.color,     count: tabData.shortlisted.total },
-    { key: 'accepted',    label: t('proposal.creator.tabAccepted'),    icon: 'check-circle'   as const, color: TabColors.positive.color, count: tabData.accepted.total },
-    { key: 'rejected',    label: t('proposal.creator.tabRejected'),    icon: 'times-circle'   as const, color: TabColors.danger.color,   count: tabData.rejected.total },
-    { key: 'expired',     label: t('proposal.creator.tabExpired'),     icon: 'hourglass-end'  as const, color: TabColors.closed.color,   count: tabData.expired.total },
-  ];
+  function loadMore() {
+    if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) void activeQuery.fetchNextPage();
+  }
 
-  const current = tabData[activeTab];
+  const items = flattenProposals(activeQuery.data?.pages);
+  const loading = activeQuery.isPending;
+  const loadingMore = activeQuery.isFetchingNextPage;
+  const error = activeQuery.isError && items.length === 0
+    ? (activeQuery.error instanceof Error ? activeQuery.error.message : 'Failed to load proposals')
+    : '';
+
+  const tabs = [
+    { key: 'all',         label: t('proposal.creator.tabAll'),         icon: 'copy'          as const, color: TabColors.neutral.color,  count: allQuery.data?.pages[0]?.total ?? 0 },
+    { key: 'pending',     label: t('proposal.creator.tabPending'),     icon: 'clock'          as const, color: TabColors.brand.color,    count: pendingQuery.data?.pages[0]?.total ?? 0 },
+    { key: 'shortlisted', label: t('proposal.creator.tabShortlisted'), icon: 'star'           as const, color: TabColors.info.color,     count: shortlistedQuery.data?.pages[0]?.total ?? 0 },
+    { key: 'accepted',    label: t('proposal.creator.tabAccepted'),    icon: 'check-circle'   as const, color: TabColors.positive.color, count: acceptedQuery.data?.pages[0]?.total ?? 0 },
+    { key: 'rejected',    label: t('proposal.creator.tabRejected'),    icon: 'times-circle'   as const, color: TabColors.danger.color,   count: rejectedQuery.data?.pages[0]?.total ?? 0 },
+    { key: 'expired',     label: t('proposal.creator.tabExpired'),     icon: 'hourglass-end'  as const, color: TabColors.closed.color,   count: expiredQuery.data?.pages[0]?.total ?? 0 },
+  ];
 
   const emptyMessages: Record<TabKey, { faIcon: string; title: string; sub: string }> = {
     all:         { faIcon: 'inbox',          title: t('proposal.creator.emptyTitle'),            sub: t('proposal.creator.emptySub')            },
@@ -446,17 +453,17 @@ export default function ProposalsScreen() {
           faIcon="exclamation-triangle"
           title={t('proposal.creator.loadError')}
           subtitle={error}
-          action={{ label: t('proposal.creator.retry'), onPress: () => loadTab(activeTab, 1, true) }}
+          action={{ label: t('proposal.creator.retry'), onPress: () => activeQuery.refetch() }}
         />
       ) : (
         <FlatList
           ref={listRef}
-          data={current.items}
+          data={items}
           keyExtractor={(p) => p.id}
           renderItem={({ item }) => (
             <ProposalCard proposal={item} />
           )}
-          contentContainerStyle={[styles.list, current.items.length === 0 && styles.listEmpty]}
+          contentContainerStyle={[styles.list, items.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           onEndReached={loadMore}
@@ -465,7 +472,7 @@ export default function ProposalsScreen() {
           maxToRenderPerBatch={8}
           windowSize={7}
           removeClippedSubviews={Platform.OS === 'android'}
-          ListFooterComponent={current.loadingMore ? (
+          ListFooterComponent={loadingMore ? (
             <View style={styles.footerLoading}><ActivityIndicator size="small" color={C.brinjal1} /></View>
           ) : null}
           ListEmptyComponent={

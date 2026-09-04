@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { router, useFocusEffect } from 'expo-router';
+import { useRef, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,6 +20,8 @@ import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { STALE } from '@/lib/queryClient';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
@@ -243,78 +246,58 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
 
 const PAGE_SIZE = 30;
 
+type ProposalsPage = Awaited<ReturnType<typeof campaignService.getBusinessProposals>>;
+const EMPTY_PROPOSALS: Proposal[] = [];
+
+function flattenProposals(pages: ProposalsPage[] | undefined): Proposal[] {
+  if (!pages) return EMPTY_PROPOSALS;
+  const seen = new Set<string>();
+  const out: Proposal[] = [];
+  for (const page of pages) for (const p of page.proposals) {
+    if (!seen.has(p.id)) { seen.add(p.id); out.push(p); }
+  }
+  return out;
+}
+
 export default function ProposalsScreen() {
   const C = useAppColors();
-  const { t, languageVersion } = useLanguage();
+  const { t } = useLanguage();
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const listRef = useRef<FlatList<CampaignCard>>(null);
+  useScrollToTopOnTabPress('proposals', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
+
   // These 4 tabs are overlapping categorical views over the SAME set of
   // applications (Paid/Free split by campaign type, Accepted by application
   // status, All = everything) rather than independent partitions — a per-
   // campaign card's stats (total/pending/accepted/rejected) need the full
-  // picture for that campaign, so we paginate ONE shared, growing, deduped
-  // application list and derive every tab's cards from it client-side,
-  // rather than giving each tab its own server cursor (which would starve
-  // a card of the sibling-application counts it needs to render correctly).
-  const [proposals, setProposals]   = useState<Proposal[]>([]);
-  const [page, setPage]             = useState(0);
-  const [total, setTotal]           = useState(0);
-  const [loading, setLoading]       = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab]   = useState<TabKey>('all');
-  const loadingMoreRef = useRef(false);
-  const listRef = useRef<FlatList<CampaignCard>>(null);
-  useScrollToTopOnTabPress('proposals', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
+  // picture for that campaign, so this is ONE shared, growing, deduped cache
+  // that every tab's cards are derived from client-side, rather than giving
+  // each tab its own server cursor (which would starve a card of the
+  // sibling-application counts it needs to render correctly).
+  const proposalsQuery = useInfiniteQuery({
+    queryKey: ['proposals', 'business', 'paginated'],
+    queryFn: ({ pageParam }) => campaignService.getBusinessProposals({ page: pageParam, limit: PAGE_SIZE }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.proposals.length, 0);
+      return loaded < last.total ? all.length + 1 : undefined;
+    },
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(proposalsQuery);
 
-  async function loadPage(p: number, replace: boolean) {
-    if (!replace) setLoadingMore(true);
-    const { proposals: data, total: newTotal } = await campaignService.getBusinessProposals({ page: p, limit: PAGE_SIZE });
-    setProposals((prev) => {
-      const prevItems = replace ? [] : prev;
-      const seen = new Set(prevItems.map((x) => x.id));
-      return [...prevItems, ...data.filter((x) => !seen.has(x.id))];
-    });
-    setTotal(newTotal);
-    setPage(p);
+  const proposals = flattenProposals(proposalsQuery.data?.pages);
+  const loading = proposalsQuery.isPending;
+  const loadingMore = proposalsQuery.isFetchingNextPage;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    try { await proposalsQuery.refetch(); } finally { setRefreshing(false); }
   }
-
-  async function load(mode: 'initial' | 'refresh' | 'silent' = 'initial') {
-    if (mode === 'refresh') setRefreshing(true);
-    else if (mode === 'initial') setLoading(true);
-    try {
-      await loadPage(1, true);
-    } catch { /* empty state shows */ }
-    finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-      loadingMoreRef.current = false;
-    }
-  }
-
-  useEffect(() => { void load('initial'); }, [languageVersion]);
-
-  // Silently refetch every time this tab regains focus after the initial
-  // mount — accepting/rejecting a proposal from campaign-proposals.tsx and
-  // navigating back here previously left this list showing the
-  // pre-decision status. Must not drive the RefreshControl's `refreshing`
-  // prop: toggling it outside of an actual pull-to-refresh gesture (e.g.
-  // right as the screen pops back into focus) can leave the native spinner
-  // visually stuck even after JS state resets.
-  const hasFocusedOnceRef = useRef(false);
-  useFocusEffect(useCallback(() => {
-    if (!hasFocusedOnceRef.current) {
-      hasFocusedOnceRef.current = true;
-      return;
-    }
-    void load('silent');
-  }, []));
-
-  const onRefresh = useCallback(() => void load('refresh'), []);
 
   function loadMore() {
-    if (loadingMoreRef.current || loadingMore || proposals.length >= total) return;
-    loadingMoreRef.current = true;
-    void loadPage(page + 1, false).finally(() => { loadingMoreRef.current = false; setLoadingMore(false); });
+    if (proposalsQuery.hasNextPage && !proposalsQuery.isFetchingNextPage) void proposalsQuery.fetchNextPage();
   }
 
   const allCards      = buildCampaignCards(proposals);
