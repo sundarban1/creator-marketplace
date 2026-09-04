@@ -893,11 +893,34 @@ export class CampaignRepository {
     });
   }
 
-  async startWork(appId: string) {
+  async startWork(appId: string, extra?: Prisma.ApplicationUpdateInput) {
     return prisma.application.update({
       where: { id: appId },
-      data: { workStatus: WorkStatus.IN_PROGRESS },
+      data: { workStatus: WorkStatus.IN_PROGRESS, ...extra },
     });
+  }
+
+  // Escrow state-machine deadline / flag writer. Every field is optional; only
+  // what's passed is written. Used by the transition points that open a new
+  // timed stage and by the escrow sweep job.
+  async setEngagementTiming(
+    appId: string,
+    data: Pick<
+      Prisma.ApplicationUncheckedUpdateInput,
+      | 'paymentDueAt'
+      | 'creatorConfirmationDueAt'
+      | 'creatorConfirmedAt'
+      | 'contentDeadline'
+      | 'contentGraceDeadline'
+      | 'submittedLate'
+      | 'businessReviewDueAt'
+      | 'businessReviewReminderSentAt'
+      | 'paymentReleaseAt'
+      | 'workStatus'
+      | 'escrowStatus'
+    >,
+  ) {
+    return prisma.application.update({ where: { id: appId }, data });
   }
 
   async submitWork(appId: string, data: { note?: string; urls?: string }) {

@@ -22,6 +22,7 @@ import { invitationService } from './invitation/invitation.service';
 import { logActivity, getActivityForEntity } from '../logging/activity.service';
 import { recordCampaignEvent } from './campaign-events';
 import { assertWorkTransition, assertEscrowTransition } from './application-state-machine';
+import { getEscrowTimings, deadlineFromNow } from './escrow-config';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
@@ -1017,6 +1018,15 @@ export class CampaignService {
       metadata:      { creatorId: application.creatorId, isFreeEvent },
     });
 
+    // Escrow spec §9–§10: selecting a creator on a paid campaign opens the
+    // business's funding window. Stored absolute; the sweep job expires it.
+    if (status === 'ACCEPTED' && !isFreeEvent) {
+      const { paymentWindowHours } = await getEscrowTimings();
+      await this.repo
+        .setEngagementTiming(appId, { paymentDueAt: deadlineFromNow(paymentWindowHours) })
+        .catch((err) => logger.warn({ err, appId }, 'failed to set paymentDueAt'));
+    }
+
     // Business's e-signature (see campaign-proposals.tsx, which gates the accept
     // call behind the contract modal's "I Agree" button) — completes the
     // agreement and generates the downloadable PDF. Paid campaigns only; free
@@ -1325,6 +1335,16 @@ export class CampaignService {
       metadata:      { amount: params.proposedRate, method: params.method },
     });
 
+    // Escrow spec §13: funding opens the creator's confirmation window. Clears
+    // paymentDueAt (the funding window is satisfied).
+    const { creatorConfirmWindowHours } = await getEscrowTimings();
+    await this.repo
+      .setEngagementTiming(params.appId, {
+        paymentDueAt:             null,
+        creatorConfirmationDueAt: deadlineFromNow(creatorConfirmWindowHours),
+      })
+      .catch((err) => logger.warn({ err, appId: params.appId }, 'failed to set creatorConfirmationDueAt'));
+
     if (params.creatorUserId) {
       analyticsService.incrPaymentPaid(params.creatorUserId, params.proposedRate);
       notificationService.create({
@@ -1601,7 +1621,19 @@ export class CampaignService {
     if (app.paymentStatus !== 'PAID') throw new AppError('Payment not yet secured', 400);
     assertWorkTransition(app.workStatus, 'IN_PROGRESS');
 
-    const updated = await this.repo.startWork(appId);
+    // Escrow spec §16/§37: confirming ("Let's Create Content") records the
+    // commitment timestamp, closes the confirmation window, and snapshots an
+    // absolute content deadline — max(campaign deadline, now + floor) — so a
+    // later campaign edit can never move this creator's deadline.
+    const { minContentWindowHours } = await getEscrowTimings();
+    const floor = deadlineFromNow(minContentWindowHours);
+    const contentDeadline = app.campaign.deadline && app.campaign.deadline > floor ? app.campaign.deadline : floor;
+
+    const updated = await this.repo.startWork(appId, {
+      creatorConfirmedAt:       new Date(),
+      creatorConfirmationDueAt: null,
+      contentDeadline,
+    });
     analyticsService.incrCampaignStarted(userId);
 
     logActivity({ userId, action: ActivityAction.APPLICATION_WORK_STARTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
@@ -1648,8 +1680,22 @@ export class CampaignService {
 
     const updated = await this.repo.submitWork(appId, data);
 
-    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_SUBMITTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, hasNote: !!data.note } });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: app.workStatus, toStatus: 'SUBMITTED', actorId: userId, actorType: 'CREATOR', metadata: { hasNote: !!data.note } });
+    // Escrow spec §24/§26: opens the business's review window, clears the grace
+    // deadline, and flags a late submission for reliability scoring (never
+    // blocks payout).
+    const wasLate = app.workStatus === 'CONTENT_OVERDUE' || (!!app.contentDeadline && app.contentDeadline < new Date());
+    const { businessReviewHours } = await getEscrowTimings();
+    await this.repo
+      .setEngagementTiming(appId, {
+        businessReviewDueAt:          deadlineFromNow(businessReviewHours),
+        businessReviewReminderSentAt: null,
+        contentGraceDeadline:         null,
+        submittedLate:                wasLate,
+      })
+      .catch((err) => logger.warn({ err, appId }, 'failed to set businessReviewDueAt'));
+
+    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_SUBMITTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId, hasNote: !!data.note, late: wasLate } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: app.workStatus, toStatus: 'SUBMITTED', actorId: userId, actorType: 'CREATOR', metadata: { hasNote: !!data.note, late: wasLate } });
 
     const businessUserId = app.campaign.business.userId;
     notificationService.create({
@@ -1685,46 +1731,71 @@ export class CampaignService {
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
     if (app.escrowStatus === 'FROZEN') throw new AppError('This engagement is under dispute — resolve it before approving', 409);
 
+    return this.performApproval(app, userId, { auto: false });
+  }
+
+  // Escrow spec §26 — the review-window sweep calls this when the business
+  // never acted and escrow.autoApproveOnReviewTimeout is on. Same effect as a
+  // manual approval, attributed to the system.
+  async systemApproveWork(appId: string) {
+    const app = await this.repo.findApplicationById(appId);
+    if (!app) return;
+    if (app.workStatus !== 'SUBMITTED') return;
+    if (app.escrowStatus === 'FROZEN') return;
+    if (app.campaign.campaignType === 'OPEN_EVENT') return;
+
+    logActivity({ userId: null, action: ActivityAction.BUSINESS_REVIEW_AUTO_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+    await this.performApproval(app, app.campaign.business.userId, { auto: true });
+  }
+
+  private async performApproval(
+    app: NonNullable<Awaited<ReturnType<CampaignRepository['findApplicationById']>>>,
+    actorUserId: string,
+    opts: { auto: boolean },
+  ) {
+    const appId = app.id;
     const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
+    const actorType = opts.auto ? 'SYSTEM' : 'BUSINESS';
     assertWorkTransition(app.workStatus, isFreeEvent ? 'COMPLETED' : 'APPROVED');
 
-    logActivity({ userId, action: ActivityAction.APPLICATION_WORK_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+    if (!opts.auto) {
+      logActivity({ userId: actorUserId, action: ActivityAction.APPLICATION_WORK_APPROVED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
+    }
     recordCampaignEvent({
       campaignId:    app.campaignId,
       applicationId: appId,
       axis:          'work',
       fromStatus:    'SUBMITTED',
       toStatus:      isFreeEvent ? 'COMPLETED' : 'APPROVED',
-      actorId:       userId,
-      actorType:     'BUSINESS',
+      actorId:       opts.auto ? null : actorUserId,
+      actorType,
+      reason:        opts.auto ? 'Review window elapsed' : undefined,
     });
 
-    const creatorUserId = app.creator.userId;
+    // The review window is satisfied — stop the sweep from acting again.
+    await this.repo.setEngagementTiming(appId, { businessReviewDueAt: null }).catch(() => {});
 
-    // A free event has no escrow to release, so the business's approval is
-    // itself the end of the job — park it at COMPLETED rather than APPROVED,
-    // which would otherwise wait forever on a payment release that never
-    // comes (and keep the campaign permanently unclosable, see
-    // countUnresolvedApplications).
+    const creatorUserId = app.creator.userId;
+    const businessName  = app.campaign.business.businessName ?? 'The business';
+
+    // A free event has no escrow to release, so approval is itself the end of
+    // the job — park it at COMPLETED rather than APPROVED.
     if (isFreeEvent) {
       const updated = await this.repo.completeWork(appId);
       notificationService.create({
         userId:  creatorUserId,
         type:    'work_approved',
         title:   'Your project has been approved!',
-        body:    `${business.businessName} confirmed your work for "${app.campaign.title}". This collaboration is complete — thanks for taking part!`,
+        body:    `${businessName} confirmed your work for "${app.campaign.title}". This collaboration is complete — thanks for taking part!`,
         refId:   app.campaignId,
         refType: 'event',
       }).catch(() => {});
       return toApplicationDto(updated);
     }
 
-    // Paid campaign — the business approving the work now releases the held
-    // escrow straight to the creator's wallet, with no separate admin step.
-    // releaseEscrowToCreator flips workStatus to COMPLETED + paymentStatus to
-    // RELEASED and fires every completion side effect (wallet credit,
-    // notifications, closing an auto-accepted chat).
-    const released = await this.releaseEscrowToCreator(app, userId);
+    // Paid campaign — hand off to the escrow release path. Behind the
+    // settlement-hold flag this becomes a delayed release instead.
+    const released = await this.releaseEscrowToCreator(app, actorUserId, { auto: opts.auto });
 
     this.repo.getUserEmails([creatorUserId]).then((emailMap) => {
       const email = emailMap.get(creatorUserId);
@@ -1746,6 +1817,7 @@ export class CampaignService {
   private async releaseEscrowToCreator(
     app: NonNullable<Awaited<ReturnType<CampaignRepository['findApplicationById']>>>,
     actorUserId: string,
+    opts: { auto?: boolean } = {},
   ) {
     if (app.paymentStatus === 'RELEASED') return app;
     if (app.paymentStatus !== 'PAID') {
@@ -1781,8 +1853,8 @@ export class CampaignService {
     });
 
     logActivity({ userId: actorUserId, action: ActivityAction.PAYMENT_RELEASED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId, amount: app.proposedRate } });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'escrow', fromStatus: 'HELD', toStatus: 'RELEASED', actorId: actorUserId, actorType: 'BUSINESS', metadata: { amount: app.proposedRate } });
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'APPROVED', toStatus: 'COMPLETED', actorId: actorUserId, actorType: 'BUSINESS' });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'escrow', fromStatus: app.escrowStatus, toStatus: 'RELEASED', actorId: opts.auto ? null : actorUserId, actorType: opts.auto ? 'SYSTEM' : 'BUSINESS', metadata: { amount: app.proposedRate } });
+    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'APPROVED', toStatus: 'COMPLETED', actorId: opts.auto ? null : actorUserId, actorType: opts.auto ? 'SYSTEM' : 'BUSINESS' });
 
     const creatorUserId  = app.creator.userId;
     const businessUserId  = app.campaign.business.userId;
@@ -1793,7 +1865,9 @@ export class CampaignService {
       userId:  creatorUserId,
       type:    'payment_released',
       title:   'Payment released to your wallet',
-      body:    `Admin released your payment for "${app.campaign.title}" to your wallet.`,
+      body:    opts.auto
+        ? `The review window for "${app.campaign.title}" elapsed, so your payment was released to your wallet.`
+        : `Your payment for "${app.campaign.title}" has been released to your wallet.`,
       refId:   app.campaignId,
       refType: 'campaign',
     }).catch(() => {});
@@ -1835,6 +1909,17 @@ export class CampaignService {
     const existingVideos = await this.repo.getDeliverableVideos(appId);
 
     const updated = await this.repo.requestRevision(appId, note);
+
+    // Escrow spec §22: a revision reopens the job — snapshot a fresh content
+    // deadline for the revised work and stand the review window down.
+    const { minContentWindowHours } = await getEscrowTimings();
+    await this.repo
+      .setEngagementTiming(appId, {
+        businessReviewDueAt:  null,
+        contentGraceDeadline: null,
+        contentDeadline:      deadlineFromNow(minContentWindowHours),
+      })
+      .catch((err) => logger.warn({ err, appId }, 'failed to reset deadlines on revision'));
 
     logActivity({ userId, action: ActivityAction.APPLICATION_REVISION_REQUESTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: 'SUBMITTED', toStatus: 'REVISION_REQUESTED', actorId: userId, actorType: 'BUSINESS', reason: note });
@@ -1899,6 +1984,10 @@ export class CampaignService {
     if (app.escrowStatus === 'HELD') assertEscrowTransition(app.escrowStatus, 'FROZEN');
 
     const updated = await this.repo.reportIssue(appId, reason);
+
+    // A frozen escrow is off the automatic clocks — the review sweep must not
+    // auto-approve a disputed submission.
+    await this.repo.setEngagementTiming(appId, { businessReviewDueAt: null }).catch(() => {});
 
     logActivity({ userId, action: ActivityAction.APPLICATION_DISPUTED, entityType: EntityType.APPLICATION, entityId: appId, metadata: { campaignId: app.campaignId } });
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'dispute', fromStatus: null, toStatus: 'OPEN', actorId: userId, actorType: 'BUSINESS', reason });

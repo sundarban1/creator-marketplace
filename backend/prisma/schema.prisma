@@ -961,6 +961,36 @@ model Application {
   // brand approval no longer releases funds automatically, see approveWork().
   releasedAt           DateTime?
   releasedByAdminId    String?
+
+  // ── Escrow state-machine deadlines (escrow spec §37) ────────────────────
+  // Every deadline is stored as an absolute timestamp the moment its stage
+  // begins, and is NEVER recomputed from "now" — see escrow-config.deadlineFromNow.
+  // All nullable: an engagement only carries the deadlines for stages it has
+  // actually entered, and pre-existing rows carry none.
+  //
+  // Business funding window — set when the creator is accepted (paid campaign).
+  paymentDueAt                 DateTime?
+  // Creator confirmation ("Let's Create Content") window — set when escrow funds.
+  creatorConfirmationDueAt     DateTime?
+  // When the creator actually confirmed (startWork). Distinct from workStatus.
+  creatorConfirmedAt           DateTime?
+  // Snapshotted content deadline for this engagement — max(campaign.deadline,
+  // now + minContentWindowHours) captured at confirmation, so later campaign
+  // edits never move it.
+  contentDeadline              DateTime?
+  // End of the post-deadline grace period — set when the engagement goes
+  // CONTENT_OVERDUE; CREATOR_FAILED fires once this passes with no submission.
+  contentGraceDeadline         DateTime?
+  // True when the submission arrived after contentDeadline (during grace or
+  // just late) — retained for creator reliability scoring, never blocks payout.
+  submittedLate                Boolean   @default(false)
+  // Business review window — set on each submission (now + businessReviewHours).
+  businessReviewDueAt          DateTime?
+  // Guards the one-time "please review" reminder so the job doesn't re-notify.
+  businessReviewReminderSentAt DateTime?
+  // Settlement hold expiry — set on approval when escrow.settlementHoldEnabled
+  // is on; the release job pays out once it passes and no dispute intervened.
+  paymentReleaseAt             DateTime?
   // Dynamic open-event invitation PNG (OPEN_EVENT + status ACCEPTED only).
   // Generated on acceptance, re-generated when any invitation-visible field
   // changes (event title/date/venue/location/description, business name/logo).
@@ -1813,6 +1843,10 @@ enum WorkStatus {
   REVISION
   CANCELLED
   DISPUTED
+  // Escrow spec §23/§25 — content deadline passed with nothing submitted
+  // (grace period running), then grace elapsed with still nothing.
+  CONTENT_OVERDUE
+  CREATOR_FAILED
 }
 
 enum PaymentStatus {

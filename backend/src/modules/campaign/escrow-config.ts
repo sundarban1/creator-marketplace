@@ -11,6 +11,8 @@ export interface EscrowTimings {
   paymentWindowHours: number;
   /** Hours the creator has to confirm ("Let's Create Content") after funding. */
   creatorConfirmWindowHours: number;
+  /** Floor for the content deadline snapshotted when the creator confirms. */
+  minContentWindowHours: number;
   /** Grace hours after the content deadline before the creator is failed. */
   contentGraceHours: number;
   /** Hours the business has to review a submission. */
@@ -21,6 +23,8 @@ export interface EscrowTimings {
   settlementHours: number;
   /** Revisions included before further changes need a change request. */
   maxIncludedRevisions: number;
+  /** Whether business approval holds funds for settlementHours before release. */
+  settlementHoldEnabled: boolean;
   /** Whether a lapsed review window auto-approves the submission. */
   autoApproveOnReviewTimeout: boolean;
 }
@@ -28,12 +32,14 @@ export interface EscrowTimings {
 const FALLBACK: EscrowTimings = {
   paymentWindowHours:          24,
   creatorConfirmWindowHours:   24,
+  minContentWindowHours:       24,
   contentGraceHours:            6,
   businessReviewHours:         24,
   businessReviewReminderHours: 12,
   settlementHours:             24,
   maxIncludedRevisions:         2,
-  autoApproveOnReviewTimeout: true,
+  settlementHoldEnabled:      false,
+  autoApproveOnReviewTimeout: false,
 };
 
 function nonNegNumber(value: unknown, fallback: number): number {
@@ -50,11 +56,13 @@ export async function getEscrowTimings(): Promise<EscrowTimings> {
   return {
     paymentWindowHours:          nonNegNumber(s['escrow.paymentWindowHours'], FALLBACK.paymentWindowHours),
     creatorConfirmWindowHours:   nonNegNumber(s['escrow.creatorConfirmWindowHours'], FALLBACK.creatorConfirmWindowHours),
+    minContentWindowHours:       nonNegNumber(s['escrow.minContentWindowHours'], FALLBACK.minContentWindowHours),
     contentGraceHours:           nonNegNumber(s['escrow.contentGraceHours'], FALLBACK.contentGraceHours),
     businessReviewHours:         nonNegNumber(s['escrow.businessReviewHours'], FALLBACK.businessReviewHours),
     businessReviewReminderHours: nonNegNumber(s['escrow.businessReviewReminderHours'], FALLBACK.businessReviewReminderHours),
     settlementHours:             nonNegNumber(s['escrow.settlementHours'], FALLBACK.settlementHours),
     maxIncludedRevisions:        Math.floor(nonNegNumber(s['escrow.maxIncludedRevisions'], FALLBACK.maxIncludedRevisions)),
+    settlementHoldEnabled:       boolean(s['escrow.settlementHoldEnabled'], FALLBACK.settlementHoldEnabled),
     autoApproveOnReviewTimeout:  boolean(s['escrow.autoApproveOnReviewTimeout'], FALLBACK.autoApproveOnReviewTimeout),
   };
 }

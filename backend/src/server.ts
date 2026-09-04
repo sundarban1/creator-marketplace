@@ -8,6 +8,7 @@ import { initSocket } from './socket';
 import { startCampaignExpiryJob } from './jobs/expireCampaigns';
 import { startSocialFollowerRefreshJob } from './jobs/refreshSocialFollowers';
 import { startCounterFlushJob } from './jobs/flushCounters';
+import { startEscrowStateMachineJob } from './jobs/escrowStateMachine';
 import { startPushWorker, stopPushWorker } from './workers/pushWorker';
 import { closeQueues } from './config/queue';
 
@@ -30,6 +31,7 @@ export async function startServer(app: Express): Promise<void> {
     startCampaignExpiryJob();
     startSocialFollowerRefreshJob();
     startCounterFlushJob();
+    startEscrowStateMachineJob();
     startPushWorker();
 
     httpServer.listen(PORT, () => {

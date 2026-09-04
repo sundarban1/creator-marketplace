@@ -63,12 +63,18 @@ const DEFAULTS: Record<string, unknown> = {
   // never recalculated from "now".
   'escrow.paymentWindowHours':          24, // business must fund after being selected
   'escrow.creatorConfirmWindowHours':   24, // creator must confirm after escrow is funded
+  'escrow.minContentWindowHours':       24, // floor for the content deadline snapshotted at confirmation
   'escrow.contentGraceHours':            6, // grace period after the content deadline
   'escrow.businessReviewHours':         24, // review window after a submission
   'escrow.businessReviewReminderHours': 12, // nudge partway through the review window
-  'escrow.settlementHours':             24, // hold after approval before funds release
+  'escrow.settlementHours':             24, // hold after approval before funds release (when the hold is on)
   'escrow.maxIncludedRevisions':         2, // revisions included before a change request
-  'escrow.autoApproveOnReviewTimeout': true, // auto-approve if review window lapses
+  // Conservative launch defaults — both OFF. When settlementHoldEnabled is
+  // false, business approval releases escrow immediately (current behaviour).
+  // When autoApproveOnReviewTimeout is false, a lapsed review window only keeps
+  // sending reminders, it never pays out on the business's behalf.
+  'escrow.settlementHoldEnabled':      false,
+  'escrow.autoApproveOnReviewTimeout': false,
 
   // ── Marketplace ──────────────────────────────────────────────────────────
   // §79 — the current launch-focus city. Recommendations (getRecommendedCreators/
