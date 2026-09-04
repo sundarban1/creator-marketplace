@@ -14,9 +14,13 @@ export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' 
 
 const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?: [number, number]; isDocument?: boolean }> = {
   'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   aspect: [1, 1]  },
-  'creator-cover':       { path: '/api/creator/cover',       field: 'cover',    aspect: [16, 9] },
+  // Cover renders in a full-width × 180pt box (≈2:1), the bottom ~60pt of which
+  // sits behind the profile card — so the crop frame is 2:1 (what fills the box
+  // with no extra clipping) and the user learns the lower third tucks behind the
+  // avatar card. Keep the focal subject in the upper-centre of the crop.
+  'creator-cover':       { path: '/api/creator/cover',       field: 'cover',    aspect: [2, 1]  },
   'business-logo':       { path: '/api/business/logo',       field: 'logo',     aspect: [1, 1]  },
-  'business-cover':      { path: '/api/business/cover',      field: 'cover',    aspect: [16, 9] },
+  'business-cover':      { path: '/api/business/cover',      field: 'cover',    aspect: [2, 1]  },
   'creator-citizenship': { path: '/api/creator/citizenship', field: 'document', isDocument: true },
   'creator-pan':             { path: '/api/creator/pan',                       field: 'document', isDocument: true },
   'creator-company-reg':     { path: '/api/creator/company-registration',      field: 'document', isDocument: true },
