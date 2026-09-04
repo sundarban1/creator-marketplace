@@ -1,0 +1,1 @@
+var e=`@phone.kolab.internal`;function t(t){return t.endsWith(e)}function n(e){return t(e)?e.slice(0,-21).replace(/^\+?977/,``):e}function r(e){return e.replace(/[^\s@]+@phone\.kolab\.internal/gi,e=>n(e))}function i(e){return e?.trim()||`Unnamed business`}export{r as i,n,t as r,i as t};

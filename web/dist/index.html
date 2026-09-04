@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R74M17YZQ6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-R74M17YZQ6');
+    </script>
+    <script>
+      // Applied before first paint so the landing page never flashes the
+      // wrong theme. Mirrors the logic in ThemeContext.tsx exactly — keep
+      // the two in sync if the storage key or default ever changes.
+      // Defaults to light for first-time visitors (no stored preference) —
+      // not driven by prefers-color-scheme, so it stays light even for
+      // visitors whose OS is set to dark.
+      (function () {
+        try {
+          var stored = localStorage.getItem('kolab-landing-theme');
+          var dark = stored ? stored === 'dark' : false;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations</title>
+    <meta name="description" content="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations." />
+    <link rel="canonical" href="https://www.ourkolab.com/" />
+
+    <!-- Static fallback for the "/" route only — every page's <SEO> component
+         (src/lib/seo/SEO.tsx) overrides these client-side once React hydrates
+         with page-specific values. These exist so link-preview crawlers that
+         don't execute JS (Slack, WhatsApp, iMessage, Facebook's first-fetch)
+         still see a correct title/description/image instead of nothing. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Kolab" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content="https://www.ourkolab.com/" />
+    <meta property="og:title" content="Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations" />
+    <meta property="og:description" content="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations." />
+    <meta property="og:image" content="https://www.ourkolab.com/icon.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations" />
+    <meta name="twitter:description" content="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations." />
+    <meta name="twitter:image" content="https://www.ourkolab.com/icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/assets/index-JSFVIT6u.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/createLucideIcon-BgnLVNzM.js">
+    <link rel="modulepreload" crossorigin href="/assets/chunk-6CSD65Y2-CGeCEn71.js">
+    <link rel="modulepreload" crossorigin href="/assets/proxy-Db7toP1c.js">
+    <link rel="modulepreload" crossorigin href="/assets/iconBase-DoavuGuN.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-zdNTYRUO.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

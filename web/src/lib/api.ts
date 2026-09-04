@@ -443,6 +443,42 @@ export interface ApiWithdrawalList {
   limit:       number;
 }
 
+export type DisputeStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED';
+export type DisputeResolution = 'CREATOR_WON' | 'BUSINESS_WON' | 'PARTIAL' | 'DISMISSED';
+
+export interface ApiAdminDispute {
+  id:               string;
+  applicationId:    string;
+  campaignId:       string;
+  raisedById:       string;
+  raisedByRole:     'BUSINESS' | 'CREATOR';
+  reason:           string;
+  status:           DisputeStatus;
+  resolution:       DisputeResolution | null;
+  resolutionNote:   string | null;
+  creatorAmount:    number | null;
+  businessAmount:   number | null;
+  resolvedByAdminId: string | null;
+  resolvedAt:       string | null;
+  createdAt:        string;
+  campaign:         { id: string; title: string };
+  application: {
+    id:            string;
+    proposedRate:  number;
+    workStatus:    string;
+    escrowStatus:  string;
+    deliverableUrls: string | null;
+    creator:       { id: string; fullName: string | null; userId: string };
+    campaign:      { business: { id: string; businessName: string | null; userId: string } };
+    submissionVersions: {
+      version: number; note: string | null; urls: string | null;
+      late: boolean; reviewOutcome: string | null; reviewNote: string | null;
+      reviewedAt: string | null; createdAt: string;
+    }[];
+    revisionNotes: { note: string; createdAt: string }[];
+  };
+}
+
 export interface ApiNotification {
   id:        string;
   userId:    string;
@@ -997,6 +1033,13 @@ export const api = {
       if (fields.adminNotes) form.append('adminNotes', fields.adminNotes);
       return uploadForm<ApiAdminWithdrawalDetail>(`/api/admin/withdrawals/${id}/mark-paid`, form);
     },
+
+    disputes: (params?: { page?: number; limit?: number; status?: string }) =>
+      request<ApiAdminDispute[]>('GET', '/api/admin/disputes', undefined,
+        params as Record<string, string | number | undefined>),
+
+    resolveDispute: (id: string, body: { outcome: DisputeResolution; note: string; creatorAmount?: number; businessAmount?: number }) =>
+      request<ApiAdminDispute>('POST', `/api/admin/disputes/${id}/resolve`, body),
 
     analytics: (userId: string, range?: AnalyticsRange) =>
       request<ApiUserAnalytics>('GET', `/api/admin/analytics/${userId}`, undefined, range ? { range } : undefined),
