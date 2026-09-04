@@ -1,6 +1,7 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
 import { EntityCard } from '@/components/EntityCard';
@@ -24,6 +25,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { STALE } from '@/lib/queryClient';
 import { sortOtherLast, sortSelectedFirst, useAllCategories, useCategories } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -33,6 +36,11 @@ import { ResultCountPill } from '@/components/ResultCountPill';
 
 const PAGE_SIZE = 10;
 const MAX_LOCS = 3;
+
+// Stable empty references so derived values aren't recomputed off a fresh []
+// every render while a query is pending.
+const EMPTY_CREATORS: ApiCreatorListItem[] = [];
+const EMPTY_STRINGS: string[] = [];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -201,13 +209,7 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
   const C = useAppColors();
   const { t } = useLanguage();
 
-  const [creators, setCreators] = useState<ApiCreatorListItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [error, setError] = useState('');
 
   const [search, setSearch] = useState('');
   const [searchDebounced] = useDebouncedValue(search, 400);
@@ -219,18 +221,68 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
   // `categories`, which onboarding/edit-categories now fill from that same
   // BOTH-scope list — a CREATOR-scope provider-role pill would match nobody.
   const { categories: adminCategories } = useCategories('BOTH');
-  // The creator's own onboarding-selected niches — surfaced first in the
-  // pill row below, mirroring the business side's identical treatment (see
-  // (business)/explore-creators.tsx's businessIndustries).
-  const [myCategories, setMyCategories] = useState<string[]>([]);
-  useFocusEffect(useCallback(() => {
-    creatorService.getProfile()
-      .then((profile) => setMyCategories(profile.categories ?? []))
-      .catch(() => {});
-  }, []));
+  // The creator's own onboarding-selected niches — surfaced first in the pill
+  // row below. From the shared creator-profile cache (also feeds creator home
+  // + Discover), so no getProfile() call on every focus.
+  const { data: creatorProfile } = useCreatorProfile();
+  const myCategories = creatorProfile?.categories ?? EMPTY_STRINGS;
 
   const filterActive = isFilterActive(activeFilter);
   const filterCount  = filterActiveCount(activeFilter);
+
+  // ── Data — cache-first infinite list (see queryClient.ts). Committed search
+  // + filter values are the query key, so changing one re-renders into a
+  // cache-first fetch; keepPreviousData keeps the current results on screen
+  // until the new page lands instead of flashing the skeleton.
+  const locationText = activeFilter.locations.length > 0
+    ? activeFilter.locations.map((l) => l.label).join(',')
+    : undefined;
+  const trimmedSearch = searchDebounced.trim() || undefined;
+
+  const creatorsQuery = useInfiniteQuery({
+    queryKey: ['creators', 'peers', { search: trimmedSearch, location: locationText, categories: activeFilter.categories }],
+    queryFn: ({ pageParam }) => creatorService.listPeerCreators({
+      page: pageParam, limit: PAGE_SIZE,
+      search: trimmedSearch,
+      location: locationText,
+      categories: activeFilter.categories.length ? activeFilter.categories : undefined,
+    }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.creators.length, 0);
+      return loaded < last.total ? all.length + 1 : undefined;
+    },
+    staleTime: STALE.list,
+    placeholderData: keepPreviousData,
+  });
+
+  const creators: ApiCreatorListItem[] = (() => {
+    const pages = creatorsQuery.data?.pages;
+    if (!pages) return EMPTY_CREATORS;
+    const seen = new Set<string>();
+    const out: ApiCreatorListItem[] = [];
+    for (const p of pages) for (const c of p.creators) {
+      if (!seen.has(c.id)) { seen.add(c.id); out.push(c); }
+    }
+    return out;
+  })();
+  const total = creatorsQuery.data?.pages[0]?.total ?? 0;
+  const loading = creatorsQuery.isPending;
+  const loadingMore = creatorsQuery.isFetchingNextPage;
+  const error = creatorsQuery.isError && creators.length === 0
+    ? (creatorsQuery.error instanceof Error ? creatorsQuery.error.message : 'Failed to load creators')
+    : '';
+
+  function loadMore() {
+    if (creatorsQuery.hasNextPage && !creatorsQuery.isFetchingNextPage) {
+      void creatorsQuery.fetchNextPage();
+    }
+  }
+
+  async function onRefresh() {
+    setRefreshing(true);
+    try { await creatorsQuery.refetch(); } finally { setRefreshing(false); }
+  }
 
   // See explore-businesses.tsx's identical effect for why onFilterCountChange
   // is deliberately left out of the deps array (a fresh closure every parent
@@ -247,60 +299,6 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
 
   function clearCategories() {
     setActiveFilter({ ...activeFilter, categories: [] });
-  }
-
-  // Ref (not state) so the guard is synchronous — FlatList's onEndReached can
-  // fire multiple times before a state update commits, otherwise triggering
-  // the same page fetch twice and appending duplicate creators (duplicate keys).
-  const loadingMoreRef = useRef(false);
-
-  async function fetchCreators(p: number, replace: boolean, filter: FilterState, nameSearch: string) {
-    if (p === 1 && replace) setLoading(true);
-    else if (!replace) setLoadingMore(true);
-    setError('');
-    try {
-      const locationText = filter.locations.length > 0
-        ? filter.locations.map((l) => l.label).join(',')
-        : undefined;
-
-      const res = await creatorService.listPeerCreators({
-        page: p,
-        limit: PAGE_SIZE,
-        search: nameSearch.trim() || undefined,
-        location: locationText || undefined,
-        categories: filter.categories.length ? filter.categories : undefined,
-      });
-      setTotal(res.total);
-      setCreators((prev) => {
-        if (replace) return res.creators;
-        const seen = new Set(prev.map((c) => c.id));
-        return [...prev, ...res.creators.filter((c) => !seen.has(c.id))];
-      });
-      setPage(p);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load creators');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      loadingMoreRef.current = false;
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => {
-    void fetchCreators(1, true, activeFilter, searchDebounced);
-  }, [searchDebounced, activeFilter]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    void fetchCreators(1, true, activeFilter, searchDebounced);
-  }, [searchDebounced, activeFilter]);
-
-  function loadMore() {
-    if (loadingMoreRef.current || page >= Math.ceil(total / PAGE_SIZE)) return;
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    void fetchCreators(page + 1, false, activeFilter, searchDebounced);
   }
 
   function openFilter() {
@@ -386,7 +384,7 @@ const ExploreCreatorPeersScreen = forwardRef<PeopleExploreHandle, { embedded?: b
             icon="exclamation-circle"
             title={t('common.error')}
             subtitle={error}
-            action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}
+            action={{ label: t('common.retry'), onPress: () => creatorsQuery.refetch() }}
           />
         ) : creators.length === 0 ? (
           <EmptyState

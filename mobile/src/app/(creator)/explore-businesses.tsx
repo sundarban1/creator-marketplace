@@ -4,6 +4,7 @@ import { BackButton } from '@/components/BackButton';
 import { EntityCard } from '@/components/EntityCard';
 import { useFocusEffect } from 'expo-router';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   FlatList,
@@ -23,8 +24,9 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { type LocationFilter } from '@/components/LocationSearchPicker';
 import { businessService, type BusinessListItem } from '@/services/business';
-import { creatorService } from '@/services/creator';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
+import { useCreatorProfile } from '@/hooks/useCreatorProfile';
+import { STALE } from '@/lib/queryClient';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -34,6 +36,12 @@ import { ResultCountPill } from '@/components/ResultCountPill';
 import { realImageUrl } from '@/utilities/avatar';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
+
+// Stable empty references so derived values aren't recomputed off a fresh []
+// every render while a query is pending.
+const EMPTY_BUSINESSES: BusinessListItem[] = [];
+const EMPTY_STRINGS: string[] = [];
+const PAGE_SIZE = 20;
 
 // ─── Business Card ────────────────────────────────────────────────────────────
 
@@ -120,29 +128,21 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
   const toast  = useToast();
   const { favoriteIds, toggle, reloadIds } = useFavoriteBusinesses();
   const { categories: businessCategories } = useCategories('BUSINESS');
-  // The creator's own onboarding-selected niches — surfaced first in the
-  // pill row below, matching the business side's identical treatment (see
-  // (business)/explore-creators.tsx's businessIndustries).
-  const [myCategories, setMyCategories] = useState<string[]>([]);
-  useFocusEffect(useCallback(() => {
-    creatorService.getProfile()
-      .then((profile) => setMyCategories(profile.categories ?? []))
-      .catch(() => {});
-  }, []));
+  // The creator's own onboarding-selected niches — surfaced first in the pill
+  // row below. From the shared creator-profile cache (also feeds creator home
+  // + Discover), so no getProfile() call on every focus.
+  const { data: creatorProfile } = useCreatorProfile();
+  const myCategories = creatorProfile?.categories ?? EMPTY_STRINGS;
   const pillCategories = sortOtherLast(sortSelectedFirst(businessCategories, myCategories));
 
-  const [businesses, setBusinesses] = useState<BusinessListItem[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage]             = useState(1);
-  const [total, setTotal]           = useState(0);
-  const [error, setError]           = useState('');
-
-  const [search,    setSearch]    = useState('');
-  const [category,  setCategory]  = useState('');
-  const [platform,  setPlatform]  = useState('');
+  const [search, setSearch] = useState('');
+  // Debounced copy that actually feeds the query key — `search` stays live for
+  // the text input, `committedSearch` lags it by 450ms.
+  const [committedSearch, setCommittedSearch] = useState('');
+  const [category, setCategory]   = useState('');
+  const [platform, setPlatform]   = useState('');
   const [locations, setLocations] = useState<LocationFilter>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [filterOpen,   setFilterOpen]   = useState(false);
   const [tempPlatform, setTempPlatform] = useState('');
@@ -150,86 +150,60 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
   const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
 
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(null);
-  const PAGE_SIZE = 20;
+  const locationLabels = locations.map((l) => l.label);
 
-  async function fetchBusinesses(opts?: {
-    search?:    string;
-    category?:  string;
-    platform?:  string;
-    locations?: LocationFilter;
-    silent?:    boolean;
-  }) {
-    if (!opts?.silent) setLoading(true);
-    setError('');
-    try {
-      const locs = opts?.locations !== undefined ? opts.locations : locations;
-      const cat  = opts?.category  !== undefined ? opts.category  : category;
-      const plat = opts?.platform  !== undefined ? opts.platform  : platform;
-      if (savedOnly) {
-        // Favourites come back as one un-paginated list; search is applied
-        // client-side (see visibleItems below), matching the standalone
-        // /favorite-businesses screen.
-        const favs = await businessService.getFavoriteBusinesses({
-          category: cat, platform: plat, locations: locs.map((l) => l.label),
-        });
-        setBusinesses(favs);
-        setTotal(favs.length);
-        setPage(1);
-        return;
-      }
-      const data = await businessService.listBusinesses({
-        search:    opts?.search    !== undefined ? opts.search    : search,
-        category:  cat,
-        platform:  plat,
-        locations: locs.map((l) => l.label),
-        page:      1,
-        limit:     PAGE_SIZE,
-      });
-      setBusinesses(data.businesses);
-      setTotal(data.total);
-      setPage(1);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load businesses');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  // ── Data — cache-first (see queryClient.ts). The paginated directory and the
+  // un-paginated favourites list are two separate caches; `savedOnly` switches
+  // which one is enabled. Every committed filter is part of the query key, so
+  // changing one just re-renders into a cache-first fetch.
+  const listQuery = useInfiniteQuery({
+    queryKey: ['businesses', 'list', { search: committedSearch, category, platform, locationLabels }],
+    queryFn: ({ pageParam }) => businessService.listBusinesses({
+      search: committedSearch || undefined,
+      category, platform, locations: locationLabels,
+      page: pageParam, limit: PAGE_SIZE,
+    }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.businesses.length, 0);
+      return loaded < last.total ? all.length + 1 : undefined;
+    },
+    enabled: !savedOnly,
+    staleTime: STALE.list,
+  });
+
+  const savedQuery = useQuery({
+    queryKey: ['businesses', 'favorites', { category, platform, locationLabels }],
+    queryFn: () => businessService.getFavoriteBusinesses({ category, platform, locations: locationLabels }),
+    enabled: savedOnly,
+    staleTime: STALE.list,
+  });
+
+  const businesses: BusinessListItem[] = savedOnly
+    ? (savedQuery.data ?? EMPTY_BUSINESSES)
+    : (() => {
+        const pages = listQuery.data?.pages;
+        if (!pages) return EMPTY_BUSINESSES;
+        const seen = new Set<string>();
+        const out: BusinessListItem[] = [];
+        for (const p of pages) for (const b of p.businesses) {
+          if (!seen.has(b.id)) { seen.add(b.id); out.push(b); }
+        }
+        return out;
+      })();
+  const total = savedOnly ? businesses.length : (listQuery.data?.pages[0]?.total ?? 0);
+  const loading = savedOnly ? savedQuery.isPending : listQuery.isPending;
+  const loadingMore = listQuery.isFetchingNextPage;
+  const activeQuery = savedOnly ? savedQuery : listQuery;
+  const error = activeQuery.isError && businesses.length === 0
+    ? (activeQuery.error instanceof Error ? activeQuery.error.message : 'Failed to load businesses')
+    : '';
+
+  function loadMoreBusinesses() {
+    if (!savedOnly && listQuery.hasNextPage && !listQuery.isFetchingNextPage) {
+      void listQuery.fetchNextPage();
     }
   }
-
-  async function loadMoreBusinesses() {
-    if (savedOnly) return; // favourites are returned in one shot
-    if (loadingMore || loading || refreshing || businesses.length >= total) return;
-    setLoadingMore(true);
-    try {
-      const nextPage = page + 1;
-      const data = await businessService.listBusinesses({
-        search, category, platform,
-        locations: locations.map((l) => l.label),
-        page:      nextPage,
-        limit:     PAGE_SIZE,
-      });
-      setBusinesses((prev) => {
-        const seen = new Set(prev.map((b) => b.id));
-        return [...prev, ...data.businesses.filter((b) => !seen.has(b.id))];
-      });
-      setTotal(data.total);
-      setPage(nextPage);
-    } catch {
-      // Silent — the user can trigger another attempt just by scrolling again.
-    } finally {
-      setLoadingMore(false);
-    }
-  }
-
-  useEffect(() => { void fetchBusinesses(); }, []);
-
-  // Re-fetch from the other data source when the shell toggles "Saved".
-  const didMountSaved = useRef(false);
-  useEffect(() => {
-    if (!didMountSaved.current) { didMountSaved.current = true; return; }
-    void fetchBusinesses();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedOnly]);
 
   // Re-sync favorite IDs whenever this screen comes back into focus
   // (handles the case where user removed favorites on the Favorites screen)
@@ -237,17 +211,14 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
 
   function onSearchChange(text: string) {
     setSearch(text);
-    if (savedOnly) return; // favourites list is filtered client-side (visibleItems)
+    if (savedOnly) return; // favourites list is filtered client-side (displayItems)
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => void fetchBusinesses({ search: text, silent: true }), 450);
+    searchTimer.current = setTimeout(() => setCommittedSearch(text), 450);
   }
 
-  // Single-select — tapping the already-active category clears it, matching
-  // the existing `category` filter's single-string shape.
+  // Single-select — tapping the already-active category clears it.
   function toggleCategory(label: string) {
-    const next = category === label ? '' : label;
-    setCategory(next);
-    void fetchBusinesses({ category: next, silent: true });
+    setCategory((prev) => (prev === label ? '' : label));
   }
 
   useImperativeHandle(ref, () => ({ setSearchText: onSearchChange, openFilter }));
@@ -264,7 +235,7 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
     setCategory(tempCategory);
     setLocations(tempLocation);
     setFilterOpen(false);
-    void fetchBusinesses({ platform: tempPlatform, category: tempCategory, locations: tempLocation, silent: true });
+    // Committed filter state becomes the query key on the next render.
   }
 
   function resetFilter() {
@@ -274,22 +245,21 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
   }
 
   function clearAll() {
-    setSearch(''); setCategory(''); setPlatform(''); setLocations([]);
-    void fetchBusinesses({ search: '', category: '', platform: '', locations: [], silent: true });
+    setSearch(''); setCommittedSearch(''); setCategory(''); setPlatform(''); setLocations([]);
   }
 
-  const onRefresh = useCallback(() => {
+  async function onRefresh() {
     setRefreshing(true);
-    void fetchBusinesses({ silent: true });
-  }, [search, category, platform]);
+    try { await activeQuery.refetch(); } finally { setRefreshing(false); }
+  }
 
   async function handleToggleFavorite(businessId: string) {
     const wasFavorited = favoriteIds.has(businessId);
     try {
       const isFavorited = await toggle(businessId);
       if (isFavorited) toast.success(t('explore.businesses.addedToFavorites'));
-      // In the saved-only view, un-favouriting drops it from the list right away.
-      if (savedOnly && !isFavorited) setBusinesses((prev) => prev.filter((b) => b.id !== businessId));
+      // In the saved-only view, un-favouriting drops it from the list right
+      // away — displayItems below filters out anything no longer in favoriteIds.
     } catch {
       toast.error(wasFavorited ? t('explore.businesses.couldNotRemoveFav') : t('explore.businesses.couldNotAddFav'));
     }
@@ -305,12 +275,15 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onFilterCountChange?.(filterActiveCount); }, [filterActiveCount]);
   const displayItems: DisplayBusiness[] = businesses
+    .map((b) => ({ ...b, isFavorited: favoriteIds.has(b.id) }))
     .filter((b) => {
-      // Favourites endpoint has no server search — filter by name here.
-      if (!savedOnly || !search.trim()) return true;
-      return (b.businessName ?? '').toLowerCase().includes(search.trim().toLowerCase());
-    })
-    .map((b) => ({ ...b, isFavorited: favoriteIds.has(b.id) }));
+      if (!savedOnly) return true;
+      // Saved view: a just-un-favourited row disappears immediately; the
+      // favourites endpoint has no server search, so filter by name here too.
+      if (!b.isFavorited) return false;
+      const q = search.trim().toLowerCase();
+      return !q || (b.businessName ?? '').toLowerCase().includes(q);
+    });
 
   const content = (
     <>
@@ -375,7 +348,7 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
         activeLabels={category ? [category] : []}
         onToggle={toggleCategory}
         showAll
-        onAllPress={() => { setCategory(''); void fetchBusinesses({ category: '', silent: true }); }}
+        onAllPress={() => setCategory('')}
       />
 
       {/* Active filters aren't echoed as a pill row on the listing — the
@@ -391,7 +364,7 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
             {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
           </View>
         ) : error ? (
-          <EmptyState faIcon="exclamation-triangle" title={t('explore.businesses.loadError')} subtitle={error} action={{ label: t('explore.businesses.retry'), onPress: () => fetchBusinesses() }} />
+          <EmptyState faIcon="exclamation-triangle" title={t('explore.businesses.loadError')} subtitle={error} action={{ label: t('explore.businesses.retry'), onPress: () => activeQuery.refetch() }} />
         ) : displayItems.length === 0 ? (
           <EmptyState
             faIcon={savedOnly ? 'heart' : 'building'}
@@ -419,7 +392,7 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
-            onEndReached={() => void loadMoreBusinesses()}
+            onEndReached={loadMoreBusinesses}
             onEndReachedThreshold={0.4}
             initialNumToRender={8}
             maxToRenderPerBatch={8}
