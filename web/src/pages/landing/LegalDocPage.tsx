@@ -35,46 +35,46 @@ function LegalDocContent({ slug }: { slug: LegalSlug }) {
 
   return (
     <motion.div initial="hidden" animate="show" variants={stagger()}>
-      <motion.p variants={fadeUp} className="font-serif text-sm italic text-ink-soft">
-        <a href="/" className="hover:text-ink">{d.legalPages.backToHome}</a>
+      <motion.p variants={fadeUp} className="font-serif text-sm italic text-ink-soft dark:text-white">
+        <a href="/" className="hover:text-ink dark:hover:text-white">{d.legalPages.backToHome}</a>
       </motion.p>
 
-      <motion.h1 variants={fadeUp} className="mt-4 text-balance font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl">
+      <motion.h1 variants={fadeUp} className="mt-4 text-balance font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl dark:text-white">
         {title}
       </motion.h1>
 
       {lastUpdated && (
-        <motion.p variants={fadeUp} className="mt-3 text-sm text-ink-soft">
+        <motion.p variants={fadeUp} className="mt-3 text-sm text-ink-soft dark:text-white">
           {d.legalPages.lastUpdated.replace('{{date}}', new Date(lastUpdated).toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }))}
         </motion.p>
       )}
 
-      <motion.div variants={fadeUp} className="mt-10 border-t border-ink/10" />
+      <motion.div variants={fadeUp} className="mt-10 border-t border-ink/10 dark:border-white/10" />
 
       {error ? (
-        <motion.p variants={fadeUp} className="mt-10 text-ink-soft">{d.legalPages.loadError}</motion.p>
+        <motion.p variants={fadeUp} className="mt-10 text-ink-soft dark:text-white">{d.legalPages.loadError}</motion.p>
       ) : sections === null ? (
         <div className="mt-10 space-y-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse space-y-2">
-              <div className="h-4 w-1/3 rounded bg-ink/10" />
-              <div className="h-3 w-full rounded bg-ink/5" />
-              <div className="h-3 w-5/6 rounded bg-ink/5" />
+              <div className="h-4 w-1/3 rounded bg-ink/10 dark:bg-white/10" />
+              <div className="h-3 w-full rounded bg-ink/5 dark:bg-white/5" />
+              <div className="h-3 w-5/6 rounded bg-ink/5 dark:bg-white/5" />
             </div>
           ))}
         </div>
       ) : sections.length === 0 ? (
-        <motion.div variants={fadeUp} className="mt-14 flex flex-col items-center gap-3 text-center text-ink-soft">
-          <FileQuestion size={32} className="text-ink/20" />
-          <p className="font-serif text-lg italic text-ink">{d.legalPages.emptyTitle}</p>
+        <motion.div variants={fadeUp} className="mt-14 flex flex-col items-center gap-3 text-center text-ink-soft dark:text-white">
+          <FileQuestion size={32} className="text-ink/20 dark:text-white/20" />
+          <p className="font-serif text-lg italic text-ink dark:text-white">{d.legalPages.emptyTitle}</p>
           <p className="max-w-sm text-sm">{d.legalPages.emptyBody}</p>
         </motion.div>
       ) : (
         <div className="mt-10 space-y-10">
           {sections.map((section) => (
             <motion.section key={section.id} variants={fadeUp}>
-              <h2 className="font-serif text-xl font-medium text-ink">{section.title}</h2>
-              <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-ink-soft">{section.body}</p>
+              <h2 className="font-serif text-xl font-medium text-ink dark:text-white">{section.title}</h2>
+              <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-ink-soft dark:text-white">{section.body}</p>
             </motion.section>
           ))}
         </div>

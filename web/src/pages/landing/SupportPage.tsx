@@ -18,8 +18,8 @@ function FaqAccordionItem({ faq }: { faq: HelpArticle }) {
         className="flex w-full items-center justify-between gap-4 text-left"
         aria-expanded={open}
       >
-        <span className="font-serif text-lg text-ink">{faq.question}</span>
-        <ChevronDown size={18} className={`flex-shrink-0 text-ink-soft transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+        <span className="font-serif text-lg text-ink dark:text-white">{faq.question}</span>
+        <ChevronDown size={18} className={`flex-shrink-0 text-ink-soft transition-transform duration-300 dark:text-white ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -30,7 +30,7 @@ function FaqAccordionItem({ faq }: { faq: HelpArticle }) {
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <p className="whitespace-pre-wrap pt-3 text-[15px] leading-relaxed text-ink-soft">{faq.answer}</p>
+            <p className="whitespace-pre-wrap pt-3 text-[15px] leading-relaxed text-ink-soft dark:text-white">{faq.answer}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -61,37 +61,37 @@ function SupportContent() {
           ...(faqs && faqs.length > 0 ? [faqSchema(faqs.map((f) => ({ question: f.question, answer: f.answer })))] : []),
         ]}
       />
-      <motion.p variants={fadeUp} className="font-serif text-sm italic text-ink-soft">
-        <a href="/" className="hover:text-ink">{d.legalPages.backToHome}</a>
+      <motion.p variants={fadeUp} className="font-serif text-sm italic text-ink-soft dark:text-white">
+        <a href="/" className="hover:text-ink dark:hover:text-white">{d.legalPages.backToHome}</a>
       </motion.p>
 
       <motion.div variants={fadeUp} className="mt-4 flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-violet/10 text-violet">
           <LifeBuoy size={18} />
         </span>
-        <h1 className="text-balance font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl">
+        <h1 className="text-balance font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl dark:text-white">
           {d.supportPage.title}
         </h1>
       </motion.div>
-      <motion.p variants={fadeUp} className="mt-4 max-w-lg text-ink-soft">
+      <motion.p variants={fadeUp} className="mt-4 max-w-lg text-ink-soft dark:text-white">
         {d.supportPage.subtitle}
       </motion.p>
 
-      <motion.h2 variants={fadeUp} className="mt-14 font-serif text-sm italic text-ink-soft">
+      <motion.h2 variants={fadeUp} className="mt-14 font-serif text-sm italic text-ink-soft dark:text-white">
         {d.supportPage.faqHeading}
       </motion.h2>
 
-      <div className="mt-2 border-t border-ink/10">
+      <div className="mt-2 border-t border-ink/10 dark:border-white/10">
         {faqs === null ? (
           <div className="space-y-6 py-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="animate-pulse space-y-2">
-                <div className="h-4 w-2/3 rounded bg-ink/10" />
+                <div className="h-4 w-2/3 rounded bg-ink/10 dark:bg-white/10" />
               </div>
             ))}
           </div>
         ) : faqs.length === 0 ? (
-          <motion.p variants={fadeUp} className="py-8 text-sm text-ink-soft">{d.supportPage.faqEmpty}</motion.p>
+          <motion.p variants={fadeUp} className="py-8 text-sm text-ink-soft dark:text-white">{d.supportPage.faqEmpty}</motion.p>
         ) : (
           faqs.map((faq) => <FaqAccordionItem key={faq.id} faq={faq} />)
         )}

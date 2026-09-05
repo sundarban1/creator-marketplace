@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
-import { ChevronDown, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { fadeUp, scaleIn, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -63,7 +63,7 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
       id={SECTION_IDS.hero}
       onMouseMove={handlePointerMove}
       onMouseLeave={resetPointer}
-      className="relative overflow-hidden bg-paper pt-40 pb-24 dark:bg-ink"
+      className="relative overflow-hidden bg-paper pt-40 pb-10 dark:bg-ink"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <motion.div style={{ x: glowSpringX, y: glowSpringY }} className="absolute inset-0">
@@ -180,20 +180,6 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
           </motion.div>
         </div>
       </motion.div>
-
-      <motion.button
-        aria-label={d.hero.scrollAriaLabel}
-        onClick={() => scrollTo(`#${SECTION_IDS.possibilities}`)}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.4, duration: 0.6 }}
-        className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1.5 text-ink-soft/60 transition-colors hover:text-ink-soft sm:flex dark:text-white dark:hover:text-white/60"
-      >
-        <span className="text-[10px] font-semibold uppercase tracking-widest">{d.hero.scrollLabel}</span>
-        <motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>
-          <ChevronDown size={16} />
-        </motion.span>
-      </motion.button>
     </section>
   );
 }

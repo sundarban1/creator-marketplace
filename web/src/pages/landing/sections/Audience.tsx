@@ -199,10 +199,10 @@ export function Audience() {
             aria-hidden
             className="pointer-events-none relative z-10 hidden lg:col-start-1 lg:col-span-2 lg:row-start-2 lg:flex lg:items-start lg:justify-center"
           >
-            <div className="flex flex-col items-center gap-3 lg:mt-[103px]">
+            <div className="flex flex-col items-center gap-3 lg:mt-[110px]">
               <span className="flex h-16 w-16 translate-y-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-orange to-violet p-[2px] shadow-[0_10px_30px_-8px_rgba(123,92,245,0.45)]">
                 <span className="flex h-full w-full items-center justify-center rounded-full bg-white dark:bg-ink-elevated-2">
-                  <img src="/logo.png" alt="" className="h-8 w-8 object-contain" />
+                  <img src="/icon.png" alt="" className="h-14 w-14 object-contain" />
                 </span>
               </span>
               <span className="flex translate-y-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
