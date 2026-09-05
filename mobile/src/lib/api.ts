@@ -396,7 +396,14 @@ export async function ensureFreshAccessToken(opts?: { force?: boolean }): Promis
   }
   try {
     return await pendingRefresh;
-  } catch {
+  } catch (err) {
+    // A genuinely invalid/expired refresh token means the session is over —
+    // without this, a socket stuck in the connect_error → refresh → reject loop
+    // (backend/src/socket.ts rejects every reconnect attempt) never surfaces
+    // that to the user; it just retries forever with the same dead token. A
+    // network/timeout failure isn't a dead session, so it falls through to null
+    // and lets the next attempt retry.
+    if (err instanceof AuthRefreshInvalidError) fireSessionExpired();
     return null;
   }
 }
