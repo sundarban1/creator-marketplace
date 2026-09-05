@@ -474,7 +474,9 @@ export default function HomeScreen() {
                 {yourWork.length > 0 && (
                   <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                      <Text style={[styles.sectionTitle, { color: C.text }]}>{t('home.yourWork')}</Text>
+                      <Text style={[styles.sectionTitle, { color: C.text }]}>
+                        {t(yourWork.length === 1 ? 'home.yourWork' : 'home.yourWorks')}
+                      </Text>
                       <Pressable onPress={() => router.push('/(creator)/(tabs)/proposals')}>
                         <Text style={[styles.seeAll, { color: C.brinjal1 }]}>{t('home.seeAll')}</Text>
                       </Pressable>
