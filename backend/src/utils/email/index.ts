@@ -23,3 +23,4 @@ export {
   sendVerificationRejectedEmail,
   sendAccountDeletedEmail,
 } from './accountActions';
+export { sendResourceAlertEmail } from './resourceAlert';

@@ -95,6 +95,43 @@ services:
       - key: SENTRY_TRACES_SAMPLE_RATE
         value: 0.1
 
+      # ── Resource threshold alerts (backend/src/jobs/resourceAlerts.ts) ──────
+      # Checks Postgres storage/connections, both Redis instances' memory, and
+      # this service's own process memory every RESOURCE_ALERT_CHECK_MINUTES,
+      # and emails ALERT_EMAIL the first time any crosses its threshold (then
+      # waits RESOURCE_ALERT_COOLDOWN_MINUTES before repeating, unless it drops
+      # back under threshold and re-crosses sooner).
+      - key: ALERT_EMAIL
+        value: sundarban007@gmail.com
+
+      - key: RESOURCE_ALERT_CHECK_MINUTES
+        value: 10
+
+      - key: RESOURCE_ALERT_COOLDOWN_MINUTES
+        value: 60
+
+      # kolab-db is dashboard-managed (see the note at the top of this file) so
+      # its actual plan size/connection ceiling isn't visible here — these are
+      # placeholders. Set them to match whatever plan is selected in the
+      # Render dashboard for kolab-db.
+      - key: DB_STORAGE_ALERT_LIMIT_MB
+        value: 1024
+
+      - key: DB_MAX_CONNECTIONS
+        value: 97
+
+      # Both Redis instances are on the free 25 MB plan below — raise these
+      # only if either is upgraded.
+      - key: REDIS_CACHE_LIMIT_MB
+        value: 25
+
+      - key: REDIS_QUEUE_LIMIT_MB
+        value: 25
+
+      # Matches this service's own `plan: starter` (0.5 CPU / 512 MB) below.
+      - key: WEB_MEMORY_LIMIT_MB
+        value: 512
+
       # Sentry error tracking (see src/instrument.ts). Optional — errors just
       # aren't reported when unset. The backend has its OWN DSN, separate from
       # the web/mobile ones.

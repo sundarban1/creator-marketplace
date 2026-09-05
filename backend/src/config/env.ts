@@ -151,6 +151,29 @@ const envSchema = z.object({
   // (tracing off). A small value like 0.1 gives useful latency/APM data at
   // negligible cost for this traffic volume.
   SENTRY_TRACES_SAMPLE_RATE: z.string().optional(),
+
+  // ── Resource threshold alerts (see jobs/resourceAlerts.ts) ────────────────
+  // Where the "you're approaching a plan limit" email goes.
+  ALERT_EMAIL: z.string().default('sundarban007@gmail.com'),
+  // How often the checker runs, and how long it waits before re-alerting on
+  // the same resource once it's already fired (resets early if the resource
+  // drops back under threshold and re-crosses it).
+  RESOURCE_ALERT_CHECK_MINUTES: z.string().optional(),
+  RESOURCE_ALERT_COOLDOWN_MINUTES: z.string().optional(),
+  // Render Postgres disk size for the `kolab-db` plan, in MB — set this to
+  // match whatever plan is actually selected in the dashboard (unknown from
+  // here; kolab-db is dashboard-managed, not declared in render.yaml).
+  // Defaults to 1024 (1 GB) as a placeholder.
+  DB_STORAGE_ALERT_LIMIT_MB: z.string().optional(),
+  // Postgres max_connections for the kolab-db plan. Defaults to 97, Render's
+  // typical Basic-tier default — adjust to match the actual plan.
+  DB_MAX_CONNECTIONS: z.string().optional(),
+  // Both Redis instances are on the free 25 MB plan (render.yaml) — raise
+  // these only if the plan is upgraded.
+  REDIS_CACHE_LIMIT_MB: z.string().optional(),
+  REDIS_QUEUE_LIMIT_MB: z.string().optional(),
+  // kolab-api is on the starter plan (0.5 CPU / 512 MB, render.yaml).
+  WEB_MEMORY_LIMIT_MB: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
