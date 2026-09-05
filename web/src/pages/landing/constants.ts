@@ -35,5 +35,5 @@ export const NAV_LINKS: { key: 'discover' | 'services' | 'opportunities' | 'cont
   // ~65px scrolled height) and lands past it, directly on the "Get in touch"
   // heading/form — a negative offset stops short so that hairline clears the
   // header and is visible before the form.
-  { key: 'contact', id: SECTION_IDS.contact, offset: -50 },
+  { key: 'contact', id: SECTION_IDS.contact, offset: -80 },
 ];
