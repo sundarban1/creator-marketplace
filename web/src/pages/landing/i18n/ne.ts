@@ -6,7 +6,7 @@ export const ne: LandingDict = {
       discover: 'खोज',
       services: 'सेवाहरू',
       opportunities: 'अवसरहरू',
-      events: 'इभेन्टहरू',
+      contact: 'सम्पर्क गर्नुहोस्',
       howItWorks: 'यसरी काम गर्छ',
     },
     toggleMenuAriaLabel: 'मेनु टगल गर्नुहोस्',

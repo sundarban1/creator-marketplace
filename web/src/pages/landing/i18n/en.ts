@@ -4,7 +4,7 @@ export const en = {
       discover: 'Discover',
       services: 'Services',
       opportunities: 'Opportunities',
-      events: 'Events',
+      contact: 'Contact us',
       howItWorks: 'How it works',
     },
     toggleMenuAriaLabel: 'Toggle menu',

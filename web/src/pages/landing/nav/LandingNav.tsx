@@ -98,9 +98,9 @@ export function LandingNav() {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
-  function go(id: string) {
+  function go(id: string, offset?: number) {
     setOpen(false);
-    setTimeout(() => scrollTo(`#${id}`), open ? 350 : 0);
+    setTimeout(() => scrollTo(`#${id}`, { offset }), open ? 350 : 0);
   }
 
   return (
@@ -134,7 +134,7 @@ export function LandingNav() {
             {NAV_LINKS.map((l) => (
               <button
                 key={l.key}
-                onClick={() => go(l.id)}
+                onClick={() => go(l.id, l.offset)}
                 className="group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white"
               >
                 {d.nav.links[l.key]}
@@ -175,7 +175,7 @@ export function LandingNav() {
               {NAV_LINKS.map((l, i) => (
                 <motion.button
                   key={l.key}
-                  onClick={() => go(l.id)}
+                  onClick={() => go(l.id, l.offset)}
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.08 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}

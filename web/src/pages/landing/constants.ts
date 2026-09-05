@@ -26,9 +26,14 @@ export const SECTION_IDS = {
   contact: 'contact',
 } as const;
 
-export const NAV_LINKS: { key: 'discover' | 'services' | 'opportunities' | 'events'; id: string }[] = [
+export const NAV_LINKS: { key: 'discover' | 'services' | 'opportunities' | 'contact'; id: string; offset?: number }[] = [
   { key: 'discover', id: SECTION_IDS.possibilities },
   { key: 'opportunities', id: SECTION_IDS.opportunities },
   { key: 'services', id: SECTION_IDS.categories },
-  { key: 'events', id: SECTION_IDS.opportunities },
+  // The footer's hairline top border sits right at #contact's own top edge,
+  // which otherwise scrolls to right under the fixed LandingNav header (its
+  // ~65px scrolled height) and lands past it, directly on the "Get in touch"
+  // heading/form — a negative offset stops short so that hairline clears the
+  // header and is visible before the form.
+  { key: 'contact', id: SECTION_IDS.contact, offset: -50 },
 ];
