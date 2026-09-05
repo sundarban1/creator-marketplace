@@ -2,6 +2,9 @@ import OpenAI, { toFile } from 'openai';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const REQUEST_TIMEOUT_MS = 45_000;
 
@@ -32,7 +35,7 @@ export class AiAssistantService {
   // bias/mistranscribe whichever one doesn't match. Whisper auto-detects the
   // spoken language instead, transcribing Nepali speech into Devanagari script.
   async transcribeAudio(buffer: Buffer, mimetype: string): Promise<string> {
-    if (!env.OPENAI_API_KEY) throw new AppError('Voice input is not available right now', 503);
+    if (!env.OPENAI_API_KEY) throw new AppError(getDict().aiAssistant.voiceInputUnavailable, HttpStatus.SERVICE_UNAVAILABLE);
 
     const ext = mimetype.includes('wav') ? 'wav' : mimetype.includes('webm') ? 'webm' : mimetype.includes('3gp') ? '3gp' : 'm4a';
     const file = await toFile(buffer, `voice.${ext}`, { type: mimetype });
@@ -62,7 +65,7 @@ export class AiAssistantService {
       return text;
     } catch (err) {
       logger.warn({ err: err instanceof Error ? err.message : err }, 'Audio transcription failed');
-      throw new AppError('Could not understand the audio — please try again', 422);
+      throw new AppError(getDict().aiAssistant.couldNotUnderstandAudio, HttpStatus.UNPROCESSABLE_ENTITY);
     }
   }
 }

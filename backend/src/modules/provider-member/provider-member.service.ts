@@ -4,6 +4,9 @@ import { ProviderMemberRepository } from './provider-member.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { notificationService } from '../notifications/notification.service';
 import type { InviteMemberInput, UpdateMemberInput, RespondToMemberInviteInput } from './provider-member.schema';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 export class ProviderMemberService {
   private repo = new ProviderMemberRepository();
@@ -11,7 +14,7 @@ export class ProviderMemberService {
 
   private async requireProfile(userId: string) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Provider profile not found', 404);
+    if (!profile) throw new AppError(getDict().providerMember.providerProfileNotFound, HttpStatus.NOT_FOUND);
     return profile;
   }
 
@@ -30,17 +33,17 @@ export class ProviderMemberService {
 
     if (!providerId || providerId === profile.id) {
       if (profile.providerType !== 'TEAM' && profile.providerType !== 'AGENCY') {
-        throw new AppError('Only a Team or Agency can have members. Change how you provide services in Settings first.', 400);
+        throw new AppError(getDict().providerMember.onlyTeamOrAgencyCanHaveMembers, HttpStatus.BAD_REQUEST);
       }
       return profile.id;
     }
 
     const membership = await this.repo.findByProviderAndMember(providerId, profile.id);
     if (!membership || membership.status !== InvitationStatus.ACCEPTED) {
-      throw new AppError('Not authorized to manage this team', 403);
+      throw new AppError(getDict().providerMember.notAuthorizedToManageTeam, HttpStatus.FORBIDDEN);
     }
     if (membership.accessRole !== ProviderMemberRole.ADMIN && membership.accessRole !== ProviderMemberRole.OWNER) {
-      throw new AppError('Only an Admin can manage this team', 403);
+      throw new AppError(getDict().providerMember.onlyAdminCanManageTeam, HttpStatus.FORBIDDEN);
     }
     return providerId;
   }
@@ -59,24 +62,24 @@ export class ProviderMemberService {
   async invite(userId: string, input: InviteMemberInput) {
     const providerProfileId = await this.resolveManagedProviderId(userId, input.providerId);
     const provider = await this.creatorRepo.findById(providerProfileId);
-    if (!provider) throw new AppError('Provider profile not found', 404);
+    if (!provider) throw new AppError(getDict().providerMember.providerProfileNotFound, HttpStatus.NOT_FOUND);
 
     const user = await this.repo.findCreatorByEmailOrPhone({ email: input.email, phone: input.phone });
     if (!user || !user.creatorProfile) {
-      throw new AppError('No Kolab provider account found with those details. Ask them to sign up first, then invite them.', 404);
+      throw new AppError(getDict().providerMember.noProviderAccountFound, HttpStatus.NOT_FOUND);
     }
     if (user.role !== 'CREATOR') {
-      throw new AppError('That account is not a service provider account', 400);
+      throw new AppError(getDict().providerMember.accountNotServiceProvider, HttpStatus.BAD_REQUEST);
     }
     if (user.creatorProfile.id === provider.id) {
-      throw new AppError('You cannot invite the team itself', 400);
+      throw new AppError(getDict().providerMember.cannotInviteTeamItself, HttpStatus.BAD_REQUEST);
     }
 
     const accessRole = (input.accessRole ?? 'MEMBER') as ProviderMemberRole;
     const existing = await this.repo.findByProviderAndMember(provider.id, user.creatorProfile.id);
     if (existing) {
-      if (existing.status === InvitationStatus.ACCEPTED) throw new AppError('They are already in your team', 409);
-      if (existing.status === InvitationStatus.PENDING)  throw new AppError('They already have a pending invitation', 409);
+      if (existing.status === InvitationStatus.ACCEPTED) throw new AppError(getDict().providerMember.alreadyInYourTeam, HttpStatus.CONFLICT);
+      if (existing.status === InvitationStatus.PENDING)  throw new AppError(getDict().providerMember.alreadyHasPendingInvitation, HttpStatus.CONFLICT);
       // DECLINED — let the provider ask again rather than blocking forever.
       const reinvited = await this.repo.reinvite(existing.id, { jobRole: input.jobRole, accessRole });
       this.notifyInvited(user.id, provider.fullName, reinvited.id);
@@ -108,7 +111,7 @@ export class ProviderMemberService {
   // an admin managing someone else's team never has to name it explicitly.
   private async requireManageable(userId: string, membershipId: string) {
     const membership = await this.repo.findById(membershipId);
-    if (!membership) throw new AppError('Member not found', 404);
+    if (!membership) throw new AppError(getDict().providerMember.memberNotFound, HttpStatus.NOT_FOUND);
     await this.resolveManagedProviderId(userId, membership.providerId);
 
     // An admin editing their own row could promote themselves or quietly drop
@@ -116,7 +119,7 @@ export class ProviderMemberService {
     // roster-management action; leaving a team would be its own feature.
     const profile = await this.requireProfile(userId);
     if (membership.memberId === profile.id) {
-      throw new AppError('You cannot change your own membership', 403);
+      throw new AppError(getDict().providerMember.cannotChangeOwnMembership, HttpStatus.FORBIDDEN);
     }
     return membership;
   }
@@ -144,7 +147,7 @@ export class ProviderMemberService {
 
   private async requireAssignableApplication(userId: string, applicationId: string) {
     const application = await this.repo.findApplicationForAssignment(applicationId);
-    if (!application) throw new AppError('Booking not found', 404);
+    if (!application) throw new AppError(getDict().providerMember.bookingNotFound, HttpStatus.NOT_FOUND);
     // Same authorization as the roster: the provider that won the work, or an
     // ACCEPTED ADMIN member of it.
     await this.resolveManagedProviderId(userId, application.creatorId);
@@ -162,17 +165,17 @@ export class ProviderMemberService {
     // Staffing a job the team hasn't won yet would be meaningless, and would
     // let a rejected application accumulate assignments.
     if (application.status !== 'ACCEPTED') {
-      throw new AppError('Only an accepted booking can have members assigned', 400);
+      throw new AppError(getDict().providerMember.onlyAcceptedBookingCanHaveMembersAssigned, HttpStatus.BAD_REQUEST);
     }
 
     const membership = await this.repo.findByProviderAndMember(application.creatorId, memberId);
     if (!membership || membership.status !== InvitationStatus.ACCEPTED) {
-      throw new AppError('That provider is not an active member of this team', 400);
+      throw new AppError(getDict().providerMember.providerNotActiveMember, HttpStatus.BAD_REQUEST);
     }
 
     const existing = await this.repo.findAssignments(applicationId);
     if (existing.some((a) => a.memberId === memberId)) {
-      throw new AppError('They are already assigned to this booking', 409);
+      throw new AppError(getDict().providerMember.alreadyAssignedToBooking, HttpStatus.CONFLICT);
     }
 
     const created = await this.repo.createAssignment({ applicationId, memberId, note });
@@ -191,7 +194,7 @@ export class ProviderMemberService {
 
   async unassignMember(userId: string, assignmentId: string) {
     const assignment = await this.repo.findAssignmentById(assignmentId);
-    if (!assignment) throw new AppError('Assignment not found', 404);
+    if (!assignment) throw new AppError(getDict().providerMember.assignmentNotFound, HttpStatus.NOT_FOUND);
     await this.resolveManagedProviderId(userId, assignment.application.creatorId);
     await this.repo.deleteAssignment(assignmentId);
   }
@@ -207,9 +210,9 @@ export class ProviderMemberService {
   async respond(userId: string, membershipId: string, input: RespondToMemberInviteInput) {
     const profile = await this.requireProfile(userId);
     const membership = await this.repo.findById(membershipId);
-    if (!membership) throw new AppError('Invitation not found', 404);
-    if (membership.memberId !== profile.id) throw new AppError('Not authorized to respond to this invitation', 403);
-    if (membership.status !== InvitationStatus.PENDING) throw new AppError('This invitation has already been responded to', 409);
+    if (!membership) throw new AppError(getDict().providerMember.invitationNotFound, HttpStatus.NOT_FOUND);
+    if (membership.memberId !== profile.id) throw new AppError(getDict().providerMember.notAuthorizedToRespondToInvitation, HttpStatus.FORBIDDEN);
+    if (membership.status !== InvitationStatus.PENDING) throw new AppError(getDict().providerMember.invitationAlreadyResponded, HttpStatus.CONFLICT);
 
     const updated = await this.repo.respond(membershipId, input.status as InvitationStatus);
 

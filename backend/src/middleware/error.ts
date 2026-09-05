@@ -3,7 +3,9 @@ import { ZodError } from 'zod';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import multer from 'multer';
-import * as Sentry from '@sentry/node';
+import { reportToSentry, LogEvent } from '../config/observability';
+
+import { HttpStatus } from '../constants/httpStatus';
 
 // req.log is normally always set by pinoHttp, but errors can originate before it
 // runs (e.g. a malformed body). Falls back to console so logging itself never throws
@@ -57,7 +59,7 @@ export function errorHandler(
 
   // Malformed request body (invalid JSON) from express.json()
   if (err instanceof SyntaxError && 'status' in err && (err as { status?: number }).status === 400 && 'body' in err) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: 'Malformed JSON in request body',
     });
@@ -70,7 +72,7 @@ export function errorHandler(
       field: e.path.join('.'),
       message: e.message,
     }));
-    res.status(422).json({
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
       success: false,
       message: 'Validation failed',
       errors: formattedErrors,
@@ -80,7 +82,7 @@ export function errorHandler(
 
   // JWT errors
   if (err instanceof TokenExpiredError) {
-    res.status(401).json({
+    res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: 'Token has expired',
     });
@@ -88,7 +90,7 @@ export function errorHandler(
   }
 
   if (err instanceof JsonWebTokenError) {
-    res.status(401).json({
+    res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: 'Invalid token',
     });
@@ -99,7 +101,7 @@ export function errorHandler(
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
       const fields = (err.meta?.target as string[])?.join(', ') || 'field';
-      res.status(409).json({
+      res.status(HttpStatus.CONFLICT).json({
         success: false,
         message: `A record with this ${fields} already exists`,
       });
@@ -107,7 +109,7 @@ export function errorHandler(
     }
 
     if (err.code === 'P2025') {
-      res.status(404).json({
+      res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: 'Record not found',
       });
@@ -115,7 +117,7 @@ export function errorHandler(
     }
 
     if (err.code === 'P2003') {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'Related record not found',
       });
@@ -124,7 +126,7 @@ export function errorHandler(
   }
 
   if (err instanceof Prisma.PrismaClientValidationError) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: 'Invalid data provided',
     });
@@ -141,7 +143,7 @@ export function errorHandler(
     const message = err.code === 'LIMIT_FILE_SIZE'
       ? 'File is too large'
       : err.message;
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message,
     });
@@ -155,7 +157,7 @@ export function errorHandler(
     // Only genuinely unexpected server faults go to Sentry — expected 4xx
     // AppErrors (validation, auth, not-found, etc.) are normal traffic, not
     // exceptions worth an alert.
-    if (err.statusCode >= 500) Sentry.captureException(err);
+    if (err.statusCode >= 500) reportToSentry(err, { event: LogEvent.HTTP_SERVER_ERROR, route: req.originalUrl, method: req.method });
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
@@ -166,8 +168,8 @@ export function errorHandler(
 
   // Generic / unknown errors
   logError(req, err, 'Unhandled error');
-  Sentry.captureException(err);
-  res.status(500).json({
+  reportToSentry(err, { event: LogEvent.HTTP_UNHANDLED_ERROR, route: req.originalUrl, method: req.method });
+  res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
     success: false,
     message:
       process.env.NODE_ENV === 'production'
@@ -177,7 +179,7 @@ export function errorHandler(
 }
 
 export function notFoundHandler(req: Request, res: Response): void {
-  res.status(404).json({
+  res.status(HttpStatus.NOT_FOUND).json({
     success: false,
     message: `Route ${req.method} ${req.originalUrl} not found`,
   });

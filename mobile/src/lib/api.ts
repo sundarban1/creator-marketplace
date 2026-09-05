@@ -214,6 +214,12 @@ export function setApiLanguage(lang: string): void {
   _currentLanguage = lang;
 }
 
+// Read by the multipart callers below that build their own headers instead of
+// going through request()/buildHeaders() — so uploads carry X-Language too.
+export function getApiLanguage(): string {
+  return _currentLanguage;
+}
+
 // ── Session expiry handler ─────────────────────────────────────────────────────
 // AuthContext registers its logout function here so any failed token refresh
 // automatically clears the user and redirects to login without requiring

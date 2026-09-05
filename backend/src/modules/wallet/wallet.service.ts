@@ -1,5 +1,6 @@
 import prisma from '../../prisma';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { WalletRepository } from './wallet.repository';
 import { PayoutMethodRepository } from '../payout-method/payout-method.repository';
 import { buildUnifiedStatement, toWithdrawalDto } from './wallet.dto';
@@ -8,6 +9,8 @@ import { notificationService } from '../notifications/notification.service';
 import { getCachedSettings } from '../../utils/settingsCache';
 import type { PayoutMethod, Prisma } from '@prisma/client';
 import type { CreateWithdrawalInput } from './wallet.schema';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const DEFAULT_MIN_WITHDRAWAL = 500;
 const DEFAULT_MAX_WITHDRAWAL = 10000;
@@ -114,7 +117,7 @@ export class WalletService {
 
   private async resolveCreatorId(userId: string) {
     const profile = await this.repo.findCreatorProfileByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().wallet.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return profile;
   }
 
@@ -128,15 +131,15 @@ export class WalletService {
 
     const payoutMethod = await this.payoutRepo.findById(input.payoutMethodId);
     if (!payoutMethod || payoutMethod.creatorId !== profile.id) {
-      throw new AppError('Payout method not found', 404);
+      throw new AppError(getDict().wallet.payoutMethodNotFound, HttpStatus.NOT_FOUND);
     }
 
     const limits = await this.getWithdrawalLimits();
     if (input.amount < limits.min) {
-      throw new AppError(`The minimum you can withdraw is Rs. ${limits.min.toLocaleString()}.`, 400);
+      throw new AppError(getDict().wallet.minimumWithdrawalAmount(limits.min.toLocaleString()), HttpStatus.BAD_REQUEST);
     }
     if (input.amount > limits.max) {
-      throw new AppError(`You can withdraw at most Rs. ${limits.max.toLocaleString()} in a single request.`, 400);
+      throw new AppError(getDict().wallet.maximumWithdrawalAmount(limits.max.toLocaleString()), HttpStatus.BAD_REQUEST);
     }
 
     // Auto-generated at request time — the creator sees it immediately and the
@@ -155,16 +158,16 @@ export class WalletService {
       const pendingCount = await this.repo.countReservedWithdrawals(profile.id);
       if (pendingCount > 0) {
         throw new AppError(
-          'You already have a withdrawal request being processed. Please wait for it to be completed before requesting another.',
-          409,
+          getDict().wallet.pendingWithdrawalExists,
+          HttpStatus.CONFLICT,
         );
       }
 
       const { withdrawableBalance } = await this.computeBalances(profile.id);
       if (input.amount > withdrawableBalance) {
         throw new AppError(
-          `You can only withdraw up to your available balance of Rs. ${withdrawableBalance.toLocaleString()}.`,
-          400,
+          getDict().wallet.amountExceedsAvailableBalance(withdrawableBalance.toLocaleString()),
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -179,9 +182,9 @@ export class WalletService {
       if (dailyUsed + input.amount > limits.daily) {
         throw new AppError(
           left < limits.min
-            ? `You've reached your withdrawal limit for today (Rs. ${limits.daily.toLocaleString()}). Please come back and request again tomorrow.`
-            : `This would take you over today's withdrawal limit of Rs. ${limits.daily.toLocaleString()}. You can still withdraw up to Rs. ${left.toLocaleString()} today.`,
-          400,
+            ? getDict().wallet.dailyLimitReachedToday(limits.daily.toLocaleString())
+            : getDict().wallet.wouldExceedDailyLimit(limits.daily.toLocaleString(), left.toLocaleString()),
+          HttpStatus.BAD_REQUEST,
         );
       }
 

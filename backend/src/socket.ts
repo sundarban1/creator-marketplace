@@ -10,7 +10,7 @@ import prisma from './prisma';
 import { env } from './config/env';
 import { logger } from './config/logger';
 import { isUserOnlineCached, invalidatePresence } from './utils/presence';
-import * as Sentry from '@sentry/node';
+import { reportToSentry, LogEvent } from './config/observability';
 import type { Role } from '@prisma/client';
 
 const messagingService = new MessagingService();
@@ -67,17 +67,24 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
         socket.data.visitorChatId = payload.chatId;
         return next();
       } catch {
+        // Expired/invalid visitor tokens are routine (link shared, tab left
+        // open) — worth a warn for volume monitoring, not a Sentry alert.
+        logger.warn({ event: LogEvent.SOCKET_AUTHENTICATION_FAILED, reason: 'invalid_visitor_token' }, 'Socket authentication failed');
         return next(new Error('Invalid visitor token'));
       }
     }
 
-    if (!token) return next(new Error('No token'));
+    if (!token) {
+      logger.warn({ event: LogEvent.SOCKET_AUTHENTICATION_FAILED, reason: 'no_token' }, 'Socket authentication failed');
+      return next(new Error('No token'));
+    }
     try {
       const payload = verifyAccessToken(token);
       socket.data.userId = payload.id;
       socket.data.role   = payload.role;
       next();
     } catch {
+      logger.warn({ event: LogEvent.SOCKET_AUTHENTICATION_FAILED, reason: 'invalid_token' }, 'Socket authentication failed');
       next(new Error('Invalid token'));
     }
   });
@@ -226,7 +233,7 @@ export async function initSocket(httpServer: HttpServer): Promise<Server> {
           const message = err instanceof AppError ? err.message : 'Failed to send message';
           if (!(err instanceof AppError) || !err.isOperational) {
             logger.error({ err, conversationId, userId }, 'Socket message:send failed');
-            Sentry.captureException(err);
+            reportToSentry(err, { event: LogEvent.SOCKET_MESSAGE_SEND_FAILED, conversationId, actorId: userId });
           }
           socket.emit('message:error', { conversationId, message });
         });

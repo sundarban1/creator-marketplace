@@ -5,6 +5,8 @@ import { logAudit } from '../logging/audit.service';
 import { AuditAction } from '../logging/logging.constants';
 import type { CreateReportInput } from './report.schema';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 export class ReportService {
   private repo = new ReportRepository();
 
@@ -18,7 +20,7 @@ export class ReportService {
 
   async updateStatus(id: string, adminUserId: string, status: 'UNDER_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED', actionNote?: string) {
     const report = await this.repo.findById(id);
-    if (!report) throw new AppError('Report not found', 404);
+    if (!report) throw new AppError('Report not found', HttpStatus.NOT_FOUND);
 
     const updated = await this.repo.updateStatus(id, { status, reviewedBy: adminUserId, actionNote });
 

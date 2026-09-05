@@ -1,4 +1,5 @@
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { logger } from '../../config/logger';
 import { toBusinessProfileDto, toPublicBusinessDto, toBusinessListItemDto, toPrivateBusinessDto } from './business.dto';
 import { toSocialAccountDto } from '../creator/creator.dto';
@@ -13,6 +14,8 @@ import { invitationService } from '../campaign/invitation/invitation.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
 import { cached, invalidatePrefix } from '../../utils/cache';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const BUSINESS_FIELDS = ['description', 'location', 'categories'] as const;
 
@@ -43,7 +46,7 @@ export class BusinessService {
   async getProfile(userId: string) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) {
-      throw new AppError('Business profile not found', 404);
+      throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
     }
     // Every review this business has received (latest first, no cap) — shown as
     // the last section on their own profile screen, mirroring the creator side.
@@ -58,15 +61,15 @@ export class BusinessService {
   async updateProfile(userId: string, input: UpdateBusinessProfileInput) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) {
-      throw new AppError('Business profile not found', 404);
+      throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
     const { email, ...rest } = input;
     if (email) {
       const account = await this.repo.getUserEmailStatus(userId);
-      if (account?.isEmailVerified) throw new AppError('Your account already has a verified email', 409);
+      if (account?.isEmailVerified) throw new AppError(getDict().business.emailAlreadyVerified, HttpStatus.CONFLICT);
       const existing = await this.repo.findUserByEmail(email);
-      if (existing && existing.id !== userId) throw new AppError('This email is already in use by another account', 409);
+      if (existing && existing.id !== userId) throw new AppError(getDict().business.emailAlreadyInUseByAnother, HttpStatus.CONFLICT);
       await this.repo.setAccountEmail(userId, email);
     }
 
@@ -132,7 +135,7 @@ export class BusinessService {
 
   async getBusinessPublic(id: string, lang = 'en') {
     const business = await this.repo.findPublicById(id);
-    if (!business) throw new AppError('Business not found', 404);
+    if (!business) throw new AppError(getDict().business.businessNotFound, HttpStatus.NOT_FOUND);
     if (!business.showPublicProfile) return toPrivateBusinessDto(business);
 
     return cached(publicBusinessCacheKey(id, lang), PUBLIC_PROFILE_CACHE_TTL_SEC, async () => {
@@ -157,9 +160,9 @@ export class BusinessService {
   // an orphaned file in Cloudinary.
   async assertCanUploadIdentityDoc(userId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
     if (profile.representingType !== 'INDIVIDUAL') {
-      throw new AppError('Identity documents apply to individual accounts. Upload your PAN and company registration instead.', 400);
+      throw new AppError(getDict().business.identityDocsIndividualOnly, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -173,7 +176,7 @@ export class BusinessService {
 
   async getPaymentHistory(userId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const { applications, referrals } = await this.repo.getPaymentHistoryData(profile.id);
 
@@ -222,33 +225,33 @@ export class BusinessService {
 
   async addSocialAccount(userId: string, input: AddSocialAccountInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const platforms = await this.platformRepo.findManyPublic();
-    if (!platforms.some((p) => p.key === input.platform)) throw new AppError('Invalid platform', 400);
+    if (!platforms.some((p) => p.key === input.platform)) throw new AppError(getDict().business.invalidPlatform, HttpStatus.BAD_REQUEST);
 
     const existing = await this.repo.findSocialAccountByPlatform(profile.id, input.platform);
-    if (existing) throw new AppError(`${input.platform} account is already added`, 409);
+    if (existing) throw new AppError(getDict().business.socialAccountAlreadyAdded(input.platform), HttpStatus.CONFLICT);
 
     return toSocialAccountDto(await this.repo.addSocialAccount(profile.id, input));
   }
 
   async updateSocialAccount(userId: string, accountId: string, input: UpdateSocialAccountInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const account = await this.repo.findSocialAccountById(accountId);
-    if (!account || account.businessProfileId !== profile.id) throw new AppError('Social account not found', 404);
+    if (!account || account.businessProfileId !== profile.id) throw new AppError(getDict().business.socialAccountNotFound, HttpStatus.NOT_FOUND);
 
     return toSocialAccountDto(await this.repo.updateSocialAccount(accountId, input));
   }
 
   async deleteSocialAccount(userId: string, accountId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const account = await this.repo.findSocialAccountById(accountId);
-    if (!account || account.businessProfileId !== profile.id) throw new AppError('Social account not found', 404);
+    if (!account || account.businessProfileId !== profile.id) throw new AppError(getDict().business.socialAccountNotFound, HttpStatus.NOT_FOUND);
 
     await this.repo.deleteSocialAccount(accountId);
   }
@@ -258,7 +261,7 @@ export class BusinessService {
     clientPlatform?: 'ios' | 'android' | 'web',
   ) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const channel = await fetchYoutubeChannel(accessToken);
 
@@ -295,12 +298,12 @@ export class BusinessService {
 
   async connectFacebookPage(userId: string, accessToken: string, pageId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const longLivedToken = await exchangeForLongLivedFacebookToken(accessToken);
     const pages = await this.creatorService.fetchFacebookPages(longLivedToken);
     const page = pages.find((p) => p.id === pageId);
-    if (!page) throw new AppError('Facebook Page not found — please reconnect and try again', 404);
+    if (!page) throw new AppError(getDict().business.facebookPageNotFound, HttpStatus.NOT_FOUND);
 
     const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'facebook', {
       profileUrl: page.link ?? `https://www.facebook.com/${page.id}`,
@@ -315,15 +318,15 @@ export class BusinessService {
 
   async connectInstagramAccount(userId: string, accessToken: string, pageId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const longLivedToken = await exchangeForLongLivedFacebookToken(accessToken);
     const pages = await this.creatorService.fetchFacebookPages(longLivedToken);
     const page = pages.find((p) => p.id === pageId);
-    if (!page) throw new AppError('Facebook Page not found — please reconnect and try again', 404);
+    if (!page) throw new AppError(getDict().business.facebookPageNotFound, HttpStatus.NOT_FOUND);
 
     const ig = page.instagram_business_account;
-    if (!ig) throw new AppError('This Facebook Page has no linked Instagram Business account', 404);
+    if (!ig) throw new AppError(getDict().business.instagramNoLinkedBusinessAccount, HttpStatus.NOT_FOUND);
 
     const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'instagram', {
       profileUrl: ig.username ? `https://www.instagram.com/${ig.username}` : 'https://www.instagram.com/',

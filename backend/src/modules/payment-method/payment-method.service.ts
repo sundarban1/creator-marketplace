@@ -3,6 +3,8 @@ import { AppError } from '../../middleware/error';
 import { PaymentMethodRepository } from './payment-method.repository';
 import type { CreatePaymentMethodInput, UpdatePaymentMethodInput } from './payment-method.schema';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 export class PaymentMethodService {
   private repo: PaymentMethodRepository;
 
@@ -24,30 +26,30 @@ export class PaymentMethodService {
 
   async create(input: CreatePaymentMethodInput) {
     const existing = await this.repo.findByKey(input.key);
-    if (existing) throw new AppError('A payment method with this key already exists', 409);
+    if (existing) throw new AppError('A payment method with this key already exists', HttpStatus.CONFLICT);
     return this.repo.create(input);
   }
 
   async update(id: string, input: UpdatePaymentMethodInput) {
     const method = await this.repo.findById(id);
-    if (!method) throw new AppError('Payment method not found', 404);
+    if (!method) throw new AppError('Payment method not found', HttpStatus.NOT_FOUND);
 
     if (input.key !== method.key) {
       const existing = await this.repo.findByKey(input.key);
-      if (existing) throw new AppError('A payment method with this key already exists', 409);
+      if (existing) throw new AppError('A payment method with this key already exists', HttpStatus.CONFLICT);
     }
     return this.repo.update(id, input);
   }
 
   async updateStatus(id: string, status: PaymentMethodStatus) {
     const method = await this.repo.findById(id);
-    if (!method) throw new AppError('Payment method not found', 404);
+    if (!method) throw new AppError('Payment method not found', HttpStatus.NOT_FOUND);
     return this.repo.updateStatus(id, status);
   }
 
   async remove(id: string) {
     const method = await this.repo.findById(id);
-    if (!method) throw new AppError('Payment method not found', 404);
+    if (!method) throw new AppError('Payment method not found', HttpStatus.NOT_FOUND);
     await this.repo.delete(id);
   }
 }

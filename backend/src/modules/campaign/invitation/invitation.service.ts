@@ -1,10 +1,13 @@
 import { prisma } from '../../../prisma';
 import { AppError } from '../../../middleware/error';
+import { getDict } from '../../../i18n';
 import { logger } from '../../../config/logger';
 import * as r2 from '../../../services/r2.service';
 import { renderInvitationPng } from './invitation.renderer';
 import type { InvitationData, InvitationResult } from './invitation.types';
 import { INVITATION_WIDTH, INVITATION_HEIGHT } from './invitation.types';
+
+import { HttpStatus } from '../../../constants/httpStatus';
 
 const TZ = 'Asia/Kathmandu';
 const DEFAULT_TEMPLATE = 'elegant';
@@ -137,10 +140,10 @@ function r2Key(campaignId: string, applicationId: string, version: number): stri
 // dev box without R2 still works.
 export async function generateAndStore(applicationId: string): Promise<InvitationResult | null> {
   const app = await loadApplication(applicationId);
-  if (!app) throw new AppError('Application not found', 404);
-  if (app.status !== 'ACCEPTED') throw new AppError('Creator is not confirmed for this event', 400);
+  if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+  if (app.status !== 'ACCEPTED') throw new AppError(getDict().campaign.creatorNotConfirmedForEvent, HttpStatus.BAD_REQUEST);
   if (app.campaign.campaignType !== 'OPEN_EVENT') {
-    throw new AppError('Invitations are only available for open events', 400);
+    throw new AppError(getDict().campaign.invitationsOnlyForOpenEvents, HttpStatus.BAD_REQUEST);
   }
   if (!r2.isConfigured()) {
     logger.warn({ applicationId }, 'invitation: R2 not configured, skipping generate-and-store');
@@ -154,7 +157,7 @@ export async function generateAndStore(applicationId: string): Promise<Invitatio
   const key = r2Key(app.campaignId, app.id, nextVersion);
   await r2.putObject(key, png, 'image/png');
   const url = r2.publicUrlFor(key);
-  if (!url) throw new AppError('R2 public URL is not configured', 500);
+  if (!url) throw new AppError('R2 public URL is not configured', HttpStatus.INTERNAL_SERVER_ERROR);
 
   const previousKey = app.invitationImageKey;
 
@@ -182,7 +185,7 @@ export async function generateAndStore(applicationId: string): Promise<Invitatio
 
 export async function getForCreator(campaignId: string, userId: string): Promise<InvitationResult> {
   const creator = await prisma.creatorProfile.findUnique({ where: { userId }, select: { id: true } });
-  if (!creator) throw new AppError('Creator profile not found', 404);
+  if (!creator) throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
   const app = await prisma.application.findFirst({
     where: { campaignId, creatorId: creator.id, status: 'ACCEPTED' },
@@ -192,9 +195,9 @@ export async function getForCreator(campaignId: string, userId: string): Promise
       campaign: { select: { campaignType: true } },
     },
   });
-  if (!app) throw new AppError('No confirmed invitation for this event', 404);
+  if (!app) throw new AppError(getDict().campaign.noConfirmedInvitationForEvent, HttpStatus.NOT_FOUND);
   if (app.campaign.campaignType !== 'OPEN_EVENT') {
-    throw new AppError('Invitations are only available for open events', 404);
+    throw new AppError(getDict().campaign.invitationsOnlyForOpenEvents, HttpStatus.NOT_FOUND);
   }
 
   if (app.invitationImageUrl) {
@@ -234,7 +237,7 @@ export async function getForCreator(campaignId: string, userId: string): Promise
     logger.error({ err, applicationId: app.id }, 'invitation: on-demand generation failed');
     return null;
   });
-  if (!generated) throw new AppError('We could not prepare your invitation. Please try again.', 503);
+  if (!generated) throw new AppError(getDict().campaign.couldNotPrepareInvitation, HttpStatus.SERVICE_UNAVAILABLE);
   return generated;
 }
 

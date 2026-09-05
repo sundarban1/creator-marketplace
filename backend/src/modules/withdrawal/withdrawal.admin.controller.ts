@@ -3,6 +3,8 @@ import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import { WithdrawalAdminService } from './withdrawal.admin.service';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 const service = new WithdrawalAdminService();
 
 function parsePagination(req: Request) {
@@ -52,7 +54,7 @@ export class WithdrawalAdminController {
 
   async markPaid(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('A transaction screenshot is required', 400);
+      if (!req.file) throw new AppError('A transaction screenshot is required', HttpStatus.BAD_REQUEST);
       success(res, await service.markPaid(req.params.id, req.user!.id, req.body, req.file.buffer), 'Withdrawal marked as paid');
     } catch (err) {
       next(err);

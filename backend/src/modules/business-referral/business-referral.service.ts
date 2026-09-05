@@ -1,5 +1,8 @@
 import { AppError } from '../../middleware/error';
 import { BusinessReferralRepository } from './business-referral.repository';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 export const BUSINESS_REFERRAL_REWARD_AMOUNT = 500;
 const REFERRAL_WINDOW_DAYS = 90; // ~3 months
@@ -35,11 +38,11 @@ export class BusinessReferralService {
     const trimmedCode = code.trim().toUpperCase();
 
     const referrer = await this.repo.findBusinessProfileByReferralCode(trimmedCode);
-    if (!referrer) throw new AppError('Invalid referral code', 404);
-    if (referrer.id === referredProfileId) throw new AppError('You cannot use your own referral code', 400);
+    if (!referrer) throw new AppError(getDict().businessReferral.invalidReferralCode, HttpStatus.NOT_FOUND);
+    if (referrer.id === referredProfileId) throw new AppError(getDict().businessReferral.cannotUseOwnReferralCode, HttpStatus.BAD_REQUEST);
 
     const existing = await this.repo.findReferralByReferredId(referredProfileId);
-    if (existing) throw new AppError('This account is already linked to a referral', 409);
+    if (existing) throw new AppError(getDict().businessReferral.accountAlreadyLinkedToReferral, HttpStatus.CONFLICT);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFERRAL_WINDOW_DAYS);
@@ -55,7 +58,7 @@ export class BusinessReferralService {
 
   async applyReferralCode(userId: string, code: string) {
     const profile = await this.repo.findBusinessProfileByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().businessReferral.businessProfileNotFound, HttpStatus.NOT_FOUND);
     return this.linkBusinessToReferrer(profile.id, code);
   }
 
@@ -69,12 +72,12 @@ export class BusinessReferralService {
 
   async resendReferral(userId: string, referralId: string) {
     const profile = await this.repo.findBusinessProfileByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().businessReferral.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const referral = await this.repo.findReferralById(referralId);
-    if (!referral) throw new AppError('Referral not found', 404);
-    if (referral.referrerId !== profile.id) throw new AppError('You can only resend your own referrals', 403);
-    if (referral.status !== 'EXPIRED') throw new AppError('Only expired referrals can be resent', 400);
+    if (!referral) throw new AppError(getDict().businessReferral.referralNotFound, HttpStatus.NOT_FOUND);
+    if (referral.referrerId !== profile.id) throw new AppError(getDict().businessReferral.canOnlyResendOwnReferrals, HttpStatus.FORBIDDEN);
+    if (referral.status !== 'EXPIRED') throw new AppError(getDict().businessReferral.onlyExpiredReferralsCanBeResent, HttpStatus.BAD_REQUEST);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFERRAL_WINDOW_DAYS);
@@ -83,7 +86,7 @@ export class BusinessReferralService {
 
   async getMyReferralOverview(userId: string) {
     const profile = await this.repo.findBusinessProfileByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().businessReferral.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const code = await this.repo.getOrCreateReferralCode(profile.id);
 

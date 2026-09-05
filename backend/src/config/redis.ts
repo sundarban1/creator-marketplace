@@ -1,6 +1,7 @@
 import { createClient, type RedisClientType } from 'redis';
 import { env } from './env';
 import { logger } from './logger';
+import { reportError, LogEvent } from './observability';
 
 // App-level Redis connections. There are two, deliberately separate:
 //
@@ -52,6 +53,10 @@ function managedClient(url: string | undefined, label: string): ManagedClient {
     });
     c.on('end', () => {
       logger.warn({ redis: label }, 'Redis connection closed — this Redis is disabled until restart');
+      // A warn alone is easy to miss in a log stream — this Redis is now down
+      // until the process restarts, which is worth a Sentry alert (deduped so
+      // it fires once per instance-lifetime, not on every stray 'end' event).
+      reportError(new Error(`Redis "${label}" disabled — reconnect attempts exhausted`), { event: LogEvent.REDIS_CONNECTION_DISABLED, redis: label });
       client = null;
       disabled = true;
     });

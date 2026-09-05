@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { notificationService } from './notification.service';
 import { paginated } from '../../utils/response';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 export class NotificationController {
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -43,7 +45,7 @@ export class NotificationController {
   async registerPushToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { token } = req.body as { token: string };
-      if (!token) { res.status(400).json({ success: false, message: 'token required' }); return; }
+      if (!token) { res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'token required' }); return; }
       const deviceId = req.headers['x-device-id'] as string | undefined;
       await notificationService.registerPushToken(req.user!.id, token, deviceId);
       res.json({ success: true });

@@ -4,6 +4,9 @@ import { emitToRoom } from '../../socket';
 import { VisitorChatRepository } from './visitorChat.repository';
 import type { StartVisitorChatInput } from './visitorChat.schema';
 import type { VisitorChatStatus } from '@prisma/client';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 export function visitorChatRoom(chatId: string): string {
   return `visitor-chat:${chatId}`;
@@ -39,7 +42,7 @@ export class VisitorChatService {
 
   async getChat(chatId: string) {
     const chat = await this.repo.findChatById(chatId);
-    if (!chat) throw new AppError('Chat not found', 404);
+    if (!chat) throw new AppError(getDict().visitorChat.chatNotFound, HttpStatus.NOT_FOUND);
     return chat;
   }
 
@@ -54,7 +57,7 @@ export class VisitorChatService {
 
   async sendVisitorMessage(chatId: string, content: string) {
     const chat = await this.getChat(chatId);
-    if (chat.status === 'CLOSED') throw new AppError('This chat has been closed', 400);
+    if (chat.status === 'CLOSED') throw new AppError(getDict().visitorChat.chatClosed, HttpStatus.BAD_REQUEST);
     const message = await this.repo.createMessage({ chatId, sender: 'VISITOR', content });
     emitToRoom(visitorChatRoom(chatId), 'visitor-chat:message', { chatId, message });
     emitToRoom(ADMIN_VISITOR_CHATS_ROOM, 'visitor-chat:message', { chatId, message });

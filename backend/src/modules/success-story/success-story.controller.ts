@@ -3,6 +3,9 @@ import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { SuccessStoryService } from './success-story.service';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const successStoryService = new SuccessStoryService();
 const PHOTO_TRANSFORMATION = [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }];
@@ -11,7 +14,7 @@ export class SuccessStoryController {
   async listPublic(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const stories = await successStoryService.listPublic();
-      success(res, stories, 'Success stories retrieved');
+      success(res, stories, getDict().successStory.successStoriesRetrieved);
     } catch (err) {
       next(err);
     }
@@ -20,7 +23,7 @@ export class SuccessStoryController {
   async listForAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const stories = await successStoryService.listForAdmin();
-      success(res, stories, 'Success stories retrieved');
+      success(res, stories, getDict().successStory.successStoriesRetrieved);
     } catch (err) {
       next(err);
     }
@@ -28,7 +31,7 @@ export class SuccessStoryController {
 
   async uploadPhoto(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError('No image file provided', HttpStatus.BAD_REQUEST);
       const photoUrl = await uploadToCloudinary(
         req.file.buffer,
         'success-stories/photos',

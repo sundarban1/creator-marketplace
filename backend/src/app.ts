@@ -17,6 +17,14 @@ const app = express();
 
 applySecurityMiddleware(app);
 
+// Stamped before requestLogger so its customLogLevel/customSuccessObject hooks
+// (see middleware/requestLogger.ts) can compute request duration themselves —
+// pino-http's own responseTime is internal and not exposed to those hooks.
+app.use((_req, res, next) => {
+  res.locals.startAt = process.hrtime.bigint();
+  next();
+});
+
 // Registered before body parsing so req.log is always set, even if a request
 // fails to parse (malformed JSON) — errorHandler relies on req.log existing.
 app.use(requestLogger);

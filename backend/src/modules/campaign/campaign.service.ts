@@ -2,6 +2,7 @@ import { CampaignStatus, ApplicationStatus, CampaignType, WorkStatus } from '@pr
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { toCampaignDto, toApplicationDto, toActivityLogDto, toEventQuestionDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
 import { videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, uploadImage as uploadImageToCloudinary, uploadRawFile, deleteImage, deleteRawFile } from '../../utils/cloudinary';
 import { createVideoUploadPlan, finalizeR2Object, completeR2Multipart, deleteR2Object, abortR2Multipart } from '../../utils/r2Media';
@@ -17,6 +18,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { emitToRole } from '../../socket';
 import { logger } from '../../config/logger';
+import { reportError, LogEvent } from '../../config/observability';
 import { invitationService } from './invitation/invitation.service';
 import { logActivity, getActivityForEntity } from '../logging/activity.service';
 import { recordCampaignEvent } from './campaign-events';
@@ -29,6 +31,7 @@ import { haversineKm } from '../../utils/geo';
 import { env } from '../../config/env';
 import { initiateKhaltiPayment as khaltiInitiate, lookupKhaltiPayment as khaltiLookup } from '../../utils/khalti';
 import { buildEsewaSignedFields, decodeEsewaResponse, verifyEsewaSignature, checkEsewaStatus, parseEsewaAmount, friendlyEsewaStatusMessage, type EsewaFormFields } from '../../utils/esewa';
+import { HttpStatus } from '../../constants/httpStatus';
 import {
   sendPaymentSecuredEmail,
   sendWorkStartedEmail,
@@ -239,7 +242,7 @@ export class CampaignService {
   // gets `freeQuota` free features before the toggle locks behind `price`.
   async getFeaturedQuota(userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const [paywallSetting, freeQuotaSetting, priceSetting, unlimitedEmailsSetting, used] = await Promise.all([
       this.adminRepo.getSetting('featuredEvent.paywallEnabled'),
@@ -306,7 +309,7 @@ export class CampaignService {
       const accountAgeMs = Date.now() - business.createdAt.getTime();
       if (accountAgeMs < cooldownMs) {
         const hoursLeft = Math.ceil((cooldownMs - accountAgeMs) / (60 * 60 * 1000));
-        throw new AppError(`New accounts must wait ${cooldownHours}h before creating an event. Please try again in about ${hoursLeft}h.`, 403);
+        throw new AppError(getDict().campaign.newAccountCooldown(cooldownHours, hoursLeft), HttpStatus.FORBIDDEN);
       }
     }
 
@@ -315,7 +318,7 @@ export class CampaignService {
       startOfDay.setHours(0, 0, 0, 0);
       const createdToday = await this.repo.countCampaignsCreatedSince(business.id, startOfDay);
       if (createdToday >= maxPerDay) {
-        throw new AppError(`You've reached the limit of ${maxPerDay} events created per day. Please try again tomorrow.`, 429);
+        throw new AppError(getDict().campaign.dailyEventCreationLimitReached(maxPerDay), HttpStatus.TOO_MANY_REQUESTS);
       }
     }
   }
@@ -323,14 +326,14 @@ export class CampaignService {
   async create(userId: string, input: CreateCampaignInput) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
-      throw new AppError('Business profile not found', 404);
+      throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
     await this.assertCampaignCreationAllowed(business, input.status);
 
     const locationType = input.locationType ?? 'ONSITE';
     if (locationType === 'ONSITE' && !input.location?.trim()) {
-      throw new AppError('Location is required for onsite events', 400);
+      throw new AppError(getDict().campaign.locationRequiredForOnsite, HttpStatus.BAD_REQUEST);
     }
 
     // Each requirement's categoryId must be a real, active, strict
@@ -340,9 +343,9 @@ export class CampaignService {
     if (input.requirements?.length) {
       for (const r of input.requirements) {
         const category = await this.categoryRepo.findById(r.categoryId);
-        if (!category) throw new AppError(`Category not found for requirement`, 404);
-        if (category.status !== 'ACTIVE') throw new AppError(`Category "${category.name}" is not active`, 400);
-        if (category.scope !== 'CREATOR') throw new AppError(`Category "${category.name}" is not usable as a campaign requirement`, 400);
+        if (!category) throw new AppError(getDict().campaign.categoryNotFoundForRequirement, HttpStatus.NOT_FOUND);
+        if (category.status !== 'ACTIVE') throw new AppError(getDict().campaign.categoryNotActive(category.name), HttpStatus.BAD_REQUEST);
+        if (category.scope !== 'CREATOR') throw new AppError(getDict().campaign.categoryNotUsableAsRequirement(category.name), HttpStatus.BAD_REQUEST);
       }
     }
 
@@ -451,7 +454,7 @@ export class CampaignService {
    */
   async getRecommendedForCreator(userId: string, limit = 10, lang = 'en') {
     const creator = await this.creatorRepo.findByUserId(userId);
-    if (!creator) throw new AppError('Creator profile not found', 404);
+    if (!creator) throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const cappedLimit = Math.min(limit, 20);
     const excludeCampaignIds = await this.repo.findAppliedCampaignIds(creator.id);
@@ -517,7 +520,7 @@ export class CampaignService {
   async getById(id: string, lang = 'en') {
     const campaign = await this.repo.findById(id);
     if (!campaign) {
-      throw new AppError('Campaign not found', 404);
+      throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
     const dto = toCampaignDto(campaign);
     return translateFields(dto, [...CAMPAIGN_FIELDS], lang);
@@ -526,22 +529,22 @@ export class CampaignService {
   async update(id: string, userId: string, input: UpdateCampaignInput) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
-      throw new AppError('Business profile not found', 404);
+      throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
     const campaign = await this.repo.findById(id);
     if (!campaign) {
-      throw new AppError('Campaign not found', 404);
+      throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
 
     if (campaign.businessId !== business.id) {
-      throw new AppError('You are not authorized to update this campaign', 403);
+      throw new AppError(getDict().campaign.notAuthorizedToUpdateCampaign, HttpStatus.FORBIDDEN);
     }
 
     if (campaign._count.applications > 0) {
       for (const field of FIELDS_LOCKED_AFTER_PROPOSALS) {
         if (input[field] !== undefined) {
-          throw new AppError(`Cannot change ${field} — proposals have already been submitted for this event`, 400);
+          throw new AppError(getDict().campaign.cannotChangeFieldAfterProposals(field), HttpStatus.BAD_REQUEST);
         }
       }
     }
@@ -552,7 +555,7 @@ export class CampaignService {
     if (input.eventTime !== undefined && input.eventTime !== (campaign as any).eventTime) {
       const acceptedCount = await this.repo.countAcceptedApplications(id);
       if (acceptedCount > 0) {
-        throw new AppError('Cannot change the event time — a creator has already been confirmed for this event', 400);
+        throw new AppError(getDict().campaign.cannotChangeEventTimeConfirmed, HttpStatus.BAD_REQUEST);
       }
     }
 
@@ -562,7 +565,7 @@ export class CampaignService {
     if (input.status === 'CLOSED' && campaign.status !== 'CLOSED') {
       const unresolved = await this.repo.countUnresolvedApplications(id);
       if (unresolved > 0) {
-        throw new AppError('Cannot close this event — some proposals are still pending or in progress', 400);
+        throw new AppError(getDict().campaign.cannotCloseEventPendingProposals, HttpStatus.BAD_REQUEST);
       }
     }
 
@@ -572,7 +575,7 @@ export class CampaignService {
     if (input.status === 'PAUSED' && campaign.status !== 'PAUSED') {
       const activeWork = await this.repo.countActiveWorkApplications(id);
       if (activeWork > 0) {
-        throw new AppError('Cannot pause this event — a creator is actively working on an accepted proposal', 400);
+        throw new AppError(getDict().campaign.cannotPauseEventActiveWork, HttpStatus.BAD_REQUEST);
       }
     }
 
@@ -648,20 +651,20 @@ export class CampaignService {
   async updateAsAdmin(id: string, input: UpdateCampaignInput) {
     const campaign = await this.repo.findById(id);
     if (!campaign) {
-      throw new AppError('Campaign not found', 404);
+      throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
 
     if (input.status === 'CLOSED' && campaign.status !== 'CLOSED') {
       const unresolved = await this.repo.countUnresolvedApplications(id);
       if (unresolved > 0) {
-        throw new AppError('Cannot close this event — some proposals are still pending or in progress', 400);
+        throw new AppError(getDict().campaign.cannotCloseEventPendingProposals, HttpStatus.BAD_REQUEST);
       }
     }
 
     if (input.status === 'PAUSED' && campaign.status !== 'PAUSED') {
       const activeWork = await this.repo.countActiveWorkApplications(id);
       if (activeWork > 0) {
-        throw new AppError('Cannot pause this event — a creator is actively working on an accepted proposal', 400);
+        throw new AppError(getDict().campaign.cannotPauseEventActiveWork, HttpStatus.BAD_REQUEST);
       }
     }
 
@@ -698,26 +701,26 @@ export class CampaignService {
   async delete(id: string, userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
-      throw new AppError('Business profile not found', 404);
+      throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
     const campaign = await this.repo.findById(id);
     if (!campaign) {
-      throw new AppError('Campaign not found', 404);
+      throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
 
     if (campaign.businessId !== business.id) {
-      throw new AppError('You are not authorized to delete this campaign', 403);
+      throw new AppError(getDict().campaign.notAuthorizedToDeleteCampaign, HttpStatus.FORBIDDEN);
     }
 
     await this.repo.delete(id);
-    return { message: 'Campaign deleted successfully' };
+    return { message: getDict().campaign.campaignDeletedSuccessfully };
   }
 
   async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en', status?: CampaignStatus, search?: string) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
-      throw new AppError('Business profile not found', 404);
+      throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
     const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50), status, search);
@@ -742,7 +745,7 @@ export class CampaignService {
     startOfDayUtc.setUTCHours(0, 0, 0, 0);
     const submittedToday = await this.repo.countApplicationsCreatedSince(creatorId, startOfDayUtc);
     if (submittedToday >= maxPerDay) {
-      throw new AppError(`You've reached the limit of ${maxPerDay} proposals submitted per day. Please try again tomorrow.`, 429);
+      throw new AppError(getDict().campaign.dailyProposalLimitReached(maxPerDay), HttpStatus.TOO_MANY_REQUESTS);
     }
 
     // Escrow spec §40 — a creator whose reliability score has fallen below the
@@ -751,8 +754,8 @@ export class CampaignService {
     const minScore = Number(await this.adminRepo.getSetting('escrow.minReliabilityToApply')) || 0;
     if (minScore > 0 && !(await escrowService.canCreatorApply(creatorId, minScore))) {
       throw new AppError(
-        'Your reliability score is temporarily too low to apply to new campaigns. Complete your current commitments on time to restore it.',
-        403,
+        getDict().campaign.reliabilityTooLowToApply,
+        HttpStatus.FORBIDDEN,
       );
     }
   }
@@ -760,16 +763,16 @@ export class CampaignService {
   async apply(campaignId: string, userId: string, input: ApplyToCampaignInput) {
     const creator = await this.creatorRepo.findByUserId(userId);
     if (!creator) {
-      throw new AppError('Creator profile not found', 404);
+      throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
     const campaign = await this.repo.findById(campaignId);
     if (!campaign) {
-      throw new AppError('Campaign not found', 404);
+      throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
 
     if (campaign.status !== 'ACTIVE') {
-      throw new AppError('This campaign is not accepting applications', 400);
+      throw new AppError(getDict().campaign.campaignNotAcceptingApplications, HttpStatus.BAD_REQUEST);
     }
 
     // Requirement-scoped applications (multi-role campaigns) validate and
@@ -780,16 +783,16 @@ export class CampaignService {
     if (input.requirementId) {
       requirement = await this.repo.findRequirementById(input.requirementId);
       if (!requirement || requirement.campaignId !== campaignId) {
-        throw new AppError('Requirement not found on this campaign', 404);
+        throw new AppError(getDict().campaign.requirementNotFound, HttpStatus.NOT_FOUND);
       }
       const existingForRequirement = await this.repo.findApplicationForRequirement(input.requirementId, creator.id);
       if (existingForRequirement) {
-        throw new AppError('You have already applied to this role', 409);
+        throw new AppError(getDict().campaign.alreadyAppliedToRole, HttpStatus.CONFLICT);
       }
     } else {
       const existingApplication = await this.repo.findApplication(campaignId, creator.id);
       if (existingApplication) {
-        throw new AppError('You have already applied to this campaign', 409);
+        throw new AppError(getDict().campaign.alreadyAppliedToCampaign, HttpStatus.CONFLICT);
       }
     }
 
@@ -804,16 +807,16 @@ export class CampaignService {
         // A fixed budget is a ceiling, not an exact price — a creator may
         // underbid it, but never ask for more than the business set aside.
         if (input.proposedRate > requirement.budgetFixed) {
-          throw new AppError(`Proposed rate cannot exceed Rs. ${requirement.budgetFixed.toLocaleString()} for this role`, 400);
+          throw new AppError(getDict().campaign.proposedRateExceedsRoleBudget(requirement.budgetFixed.toLocaleString()), HttpStatus.BAD_REQUEST);
         }
         if (!isFreeCampaign && requirement.budgetFixed > 0 && input.proposedRate <= 0) {
-          throw new AppError('Proposed rate must be greater than zero', 400);
+          throw new AppError(getDict().campaign.proposedRateMustBeGreaterThanZero, HttpStatus.BAD_REQUEST);
         }
       } else if (requirement.budgetType === 'RANGE' && requirement.budgetMin != null && requirement.budgetMax != null) {
         if (input.proposedRate < requirement.budgetMin || input.proposedRate > requirement.budgetMax) {
           throw new AppError(
-            `Proposed rate must be between Rs. ${requirement.budgetMin.toLocaleString()} and Rs. ${requirement.budgetMax.toLocaleString()}`,
-            400,
+            getDict().campaign.proposedRateMustBeBetween(requirement.budgetMin.toLocaleString(), requirement.budgetMax.toLocaleString()),
+            HttpStatus.BAD_REQUEST,
           );
         }
       }
@@ -821,15 +824,15 @@ export class CampaignService {
       if (campaign.budgetMin === campaign.budgetMax) {
         // Fixed budget: underbidding is allowed, overbidding is not.
         if (input.proposedRate > campaign.budgetMax) {
-          throw new AppError(`Proposed rate cannot exceed Rs. ${campaign.budgetMax.toLocaleString()}`, 400);
+          throw new AppError(getDict().campaign.proposedRateExceedsBudget(campaign.budgetMax.toLocaleString()), HttpStatus.BAD_REQUEST);
         }
         if (input.proposedRate <= 0) {
-          throw new AppError('Proposed rate must be greater than zero', 400);
+          throw new AppError(getDict().campaign.proposedRateMustBeGreaterThanZero, HttpStatus.BAD_REQUEST);
         }
       } else if (input.proposedRate < campaign.budgetMin || input.proposedRate > campaign.budgetMax) {
         throw new AppError(
-          `Proposed rate must be between Rs. ${campaign.budgetMin.toLocaleString()} and Rs. ${campaign.budgetMax.toLocaleString()}`,
-          400,
+          getDict().campaign.proposedRateMustBeBetween(campaign.budgetMin.toLocaleString(), campaign.budgetMax.toLocaleString()),
+          HttpStatus.BAD_REQUEST,
         );
       }
     }
@@ -895,16 +898,16 @@ export class CampaignService {
   async getCampaignApplications(campaignId: string, userId: string, page: number, limit: number) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
-      throw new AppError('Business profile not found', 404);
+      throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
     const campaign = await this.repo.findById(campaignId);
     if (!campaign) {
-      throw new AppError('Campaign not found', 404);
+      throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
 
     if (campaign.businessId !== business.id) {
-      throw new AppError('You are not authorized to view these applications', 403);
+      throw new AppError(getDict().campaign.notAuthorizedToViewApplications, HttpStatus.FORBIDDEN);
     }
 
     const { applications: raw, total } = await this.repo.findApplicationsByCampaign(
@@ -924,7 +927,7 @@ export class CampaignService {
     campaignType?: CampaignType,
   ) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
     const { applications: raw, total } = await this.repo.findApplicationsByBusinessId(
       business.id, page, Math.min(limit, 100), status, campaignType
     );
@@ -946,17 +949,17 @@ export class CampaignService {
   // business changing their mind a few times doesn't spam the provider.
   async shortlistApplication(campaignId: string, appId: string, userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const campaign = await this.repo.findById(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
-    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
 
     const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError('Application not found', 404);
-    if (application.campaignId !== campaignId) throw new AppError('Application does not belong to this campaign', 400);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (application.campaignId !== campaignId) throw new AppError(getDict().campaign.applicationNotInCampaign, HttpStatus.BAD_REQUEST);
     if (application.status !== 'PENDING' && application.status !== 'SHORTLISTED') {
-      throw new AppError('Only pending applications can be shortlisted', 400);
+      throw new AppError(getDict().campaign.onlyPendingCanBeShortlisted, HttpStatus.BAD_REQUEST);
     }
 
     const nextStatus = application.status === 'PENDING' ? 'SHORTLISTED' : 'PENDING';
@@ -988,16 +991,16 @@ export class CampaignService {
     status: 'ACCEPTED' | 'REJECTED'
   ) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const campaign = await this.repo.findById(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
-    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
-    if (campaign.status !== 'ACTIVE') throw new AppError('This campaign is no longer active', 400);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    if (campaign.status !== 'ACTIVE') throw new AppError(getDict().campaign.campaignNoLongerActive, HttpStatus.BAD_REQUEST);
 
     const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError('Application not found', 404);
-    if (application.campaignId !== campaignId) throw new AppError('Application does not belong to this campaign', 400);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (application.campaignId !== campaignId) throw new AppError(getDict().campaign.applicationNotInCampaign, HttpStatus.BAD_REQUEST);
 
     // A free event (OPEN_EVENT) ends at the acceptance itself: there are no
     // deliverables to submit and no work stage to start, so approving a
@@ -1247,7 +1250,7 @@ export class CampaignService {
   async getMyApplications(userId: string, page: number, limit: number, status?: ApplicationStatus) {
     const creator = await this.creatorRepo.findByUserId(userId);
     if (!creator) {
-      throw new AppError('Creator profile not found', 404);
+      throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
     const { applications: raw, total } = await this.repo.findApplicationsByCreator(
@@ -1262,13 +1265,13 @@ export class CampaignService {
 
   async payForCampaign(campaignId: string, userId: string, method: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const campaign = await this.repo.findById(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
-    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
     if (campaign.paymentStatus === 'PAID' || campaign.paymentStatus === 'RELEASED') {
-      throw new AppError('Payment already made for this campaign', 400);
+      throw new AppError(getDict().campaign.paymentAlreadyMadeForCampaign, HttpStatus.BAD_REQUEST);
     }
 
     const updated = await this.repo.payForCampaign(campaignId, method);
@@ -1386,17 +1389,17 @@ export class CampaignService {
 
   async payForApplication(appId: string, userId: string, method = 'esewa') {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError('Application not found', 404);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
     const campaign = await this.repo.findById(application.campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
-    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
-    if (application.status !== 'ACCEPTED') throw new AppError('Creator must be accepted first', 400);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    if (application.status !== 'ACCEPTED') throw new AppError(getDict().campaign.creatorMustBeAcceptedFirst, HttpStatus.BAD_REQUEST);
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
-      throw new AppError('Payment already made for this application', 400);
+      throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
     }
 
     await this.finalizeApplicationPayment({
@@ -1420,20 +1423,20 @@ export class CampaignService {
   // marked paid here — that only happens once confirmKhaltiPayment verifies the
   // payment actually completed (see khaltiCallback in the controller).
   async initiateKhaltiPayment(appId: string, userId: string): Promise<{ paymentUrl: string }> {
-    if (!env.KHALTI_RETURN_URL) throw new AppError('Khalti is not configured on the server yet.', 503);
+    if (!env.KHALTI_RETURN_URL) throw new AppError(getDict().khalti.notConfigured, HttpStatus.SERVICE_UNAVAILABLE);
 
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError('Application not found', 404);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
     const campaign = await this.repo.findById(application.campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
-    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
-    if (application.status !== 'ACCEPTED') throw new AppError('Creator must be accepted first', 400);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    if (application.status !== 'ACCEPTED') throw new AppError(getDict().campaign.creatorMustBeAcceptedFirst, HttpStatus.BAD_REQUEST);
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
-      throw new AppError('Payment already made for this application', 400);
+      throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
     }
 
     const businessUser = (business as any).user as { email?: string | null; phone?: string | null } | undefined;
@@ -1462,25 +1465,28 @@ export class CampaignService {
   // params alone) before finalizing anything.
   async confirmKhaltiPayment(appId: string, pidx: string): Promise<void> {
     const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError('Application not found', 404);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
     // Already finalized — a reloaded callback or a double-redirect lands here
     // as a harmless no-op instead of double-charging the escrow ledger.
-    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') return;
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
+      logger.info({ event: LogEvent.PAYMENT_CALLBACK_ALREADY_PROCESSED, appId, method: 'khalti' }, 'Khalti callback: payment already processed');
+      return;
+    }
 
     if (!application.khaltiPidx || application.khaltiPidx !== pidx) {
-      throw new AppError('This Khalti payment does not match any pending payment.', 400);
+      throw new AppError(getDict().campaign.khaltiPaymentMismatch, HttpStatus.BAD_REQUEST);
     }
 
     const result = await khaltiLookup(pidx);
     if (result.status !== 'Completed') {
-      throw new AppError(`Khalti payment ${result.status}`, 400);
+      throw new AppError(getDict().campaign.khaltiPaymentStatus(result.status), HttpStatus.BAD_REQUEST);
     }
 
     const expectedPaisa = Math.round((await applicationTotalNpr(this.adminRepo, application.proposedRate)) * 100);
     if (result.totalAmountPaisa !== expectedPaisa) {
-      logger.error({ appId, pidx, expectedPaisa, got: result.totalAmountPaisa }, 'Khalti payment amount mismatch');
-      throw new AppError('The paid amount does not match what was due.', 400);
+      reportError(new Error('Khalti payment amount mismatch'), { event: LogEvent.PAYMENT_AMOUNT_MISMATCH, method: 'khalti', appId, pidx, expectedPaisa, got: result.totalAmountPaisa });
+      throw new AppError(getDict().campaign.paidAmountMismatch, HttpStatus.BAD_REQUEST);
     }
 
     const campaign = application.campaign as any;
@@ -1503,17 +1509,17 @@ export class CampaignService {
   // nothing's been paid yet.
   private async validatePendingPayment(appId: string, userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError('Application not found', 404);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
     const campaign = await this.repo.findById(application.campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
-    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
-    if (application.status !== 'ACCEPTED') throw new AppError('Creator must be accepted first', 400);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    if (application.status !== 'ACCEPTED') throw new AppError(getDict().campaign.creatorMustBeAcceptedFirst, HttpStatus.BAD_REQUEST);
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
-      throw new AppError('Payment already made for this application', 400);
+      throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
     }
 
     return { business, application, campaign };
@@ -1525,7 +1531,7 @@ export class CampaignService {
   // the client at our own checkout page (getEsewaCheckoutForm), which renders
   // that form. Nothing is marked paid here — see confirmEsewaPayment.
   async initiateEsewaPayment(appId: string, userId: string): Promise<{ paymentUrl: string }> {
-    if (!env.ESEWA_RETURN_BASE_URL) throw new AppError('eSewa is not configured on the server yet.', 503);
+    if (!env.ESEWA_RETURN_BASE_URL) throw new AppError(getDict().esewa.notConfigured, HttpStatus.SERVICE_UNAVAILABLE);
 
     await this.validatePendingPayment(appId, userId);
 
@@ -1540,12 +1546,12 @@ export class CampaignService {
   // resurrect a transaction_uuid after payment already completed elsewhere.
   async getEsewaCheckoutForm(appId: string): Promise<EsewaFormFields> {
     const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError('Application not found', 404);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
-      throw new AppError('Payment already made for this application', 400);
+      throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
     }
     if (!application.esewaTransactionUuid) {
-      throw new AppError('No pending eSewa payment for this application.', 400);
+      throw new AppError(getDict().campaign.noPendingEsewaPayment, HttpStatus.BAD_REQUEST);
     }
 
     return buildEsewaSignedFields({
@@ -1561,26 +1567,29 @@ export class CampaignService {
   // same principle as confirmKhaltiPayment's lookup call) before finalizing.
   async confirmEsewaPayment(appId: string, rawDataParam: string): Promise<void> {
     const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError('Application not found', 404);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
-    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') return;
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
+      logger.info({ event: LogEvent.PAYMENT_CALLBACK_ALREADY_PROCESSED, appId, method: 'esewa' }, 'eSewa callback: payment already processed');
+      return;
+    }
 
     const decoded = decodeEsewaResponse(rawDataParam);
     verifyEsewaSignature(decoded);
 
     if (!application.esewaTransactionUuid || decoded.transaction_uuid !== application.esewaTransactionUuid) {
-      throw new AppError('This eSewa payment does not match any pending payment.', 400);
+      throw new AppError(getDict().campaign.esewaPaymentMismatch, HttpStatus.BAD_REQUEST);
     }
 
     const expectedNpr = await applicationTotalNpr(this.adminRepo, application.proposedRate);
     const result = await checkEsewaStatus({ transactionUuid: application.esewaTransactionUuid, totalAmountNpr: expectedNpr });
     if (result.status !== 'COMPLETE') {
-      throw new AppError(friendlyEsewaStatusMessage(result.status), 400);
+      throw new AppError(friendlyEsewaStatusMessage(result.status), HttpStatus.BAD_REQUEST);
     }
 
     if (decoded.total_amount && parseEsewaAmount(decoded.total_amount) !== expectedNpr) {
-      logger.error({ appId, expectedNpr, got: decoded.total_amount }, 'eSewa payment amount mismatch');
-      throw new AppError('The paid amount does not match what was due.', 400);
+      reportError(new Error('eSewa payment amount mismatch'), { event: LogEvent.PAYMENT_AMOUNT_MISMATCH, method: 'esewa', appId, expectedNpr, got: decoded.total_amount });
+      throw new AppError(getDict().campaign.paidAmountMismatch, HttpStatus.BAD_REQUEST);
     }
 
     const campaign = application.campaign as any;
@@ -1602,7 +1611,7 @@ export class CampaignService {
   // or the campaign's owning business) can read it, never a third party.
   async getApplicationActivity(appId: string, userId: string) {
     const app = await this.repo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
+    if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
     const [creator, business] = await Promise.all([
       this.creatorRepo.findByUserId(userId),
@@ -1610,7 +1619,7 @@ export class CampaignService {
     ]);
     const isCreator = creator != null && app.creatorId === creator.id;
     const isBusiness = business != null && app.campaign.business.id === business.id;
-    if (!isCreator && !isBusiness) throw new AppError('Not authorized', 403);
+    if (!isCreator && !isBusiness) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
 
     const logs = await getActivityForEntity(EntityType.APPLICATION, appId);
     return logs.map(toActivityLogDto);
@@ -1618,18 +1627,18 @@ export class CampaignService {
 
   async startWork(appId: string, userId: string) {
     const creator = await this.creatorRepo.findByUserId(userId);
-    if (!creator) throw new AppError('Creator profile not found', 404);
+    if (!creator) throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const app = await this.repo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
-    if (app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
-    if (app.status !== 'ACCEPTED') throw new AppError('Application is not accepted', 400);
+    if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (app.creatorId !== creator.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    if (app.status !== 'ACCEPTED') throw new AppError(getDict().campaign.applicationNotAccepted, HttpStatus.BAD_REQUEST);
     // A free event (OPEN_EVENT) has no work stage at all: being accepted is
     // itself the end of the flow (the application is already COMPLETED, see
     // updateApplicationStatus), so there is nothing to start.
     const isFreeEvent = app.campaign.campaignType === 'OPEN_EVENT';
-    if (isFreeEvent) throw new AppError('Free events have no work stage — being accepted is final', 400);
-    if (app.paymentStatus !== 'PAID') throw new AppError('Payment not yet secured', 400);
+    if (isFreeEvent) throw new AppError(getDict().campaign.freeEventsNoWorkStage, HttpStatus.BAD_REQUEST);
+    if (app.paymentStatus !== 'PAID') throw new AppError(getDict().campaign.paymentNotYetSecured, HttpStatus.BAD_REQUEST);
     assertWorkTransition(app.workStatus, 'IN_PROGRESS');
 
     // Escrow spec §16/§37: confirming ("Let's Create Content") records the
@@ -1677,15 +1686,15 @@ export class CampaignService {
 
   async submitWork(appId: string, userId: string, data: { note?: string; urls?: string }) {
     const creator = await this.creatorRepo.findByUserId(userId);
-    if (!creator) throw new AppError('Creator profile not found', 404);
+    if (!creator) throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const app = await this.repo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
-    if (app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
-    if (app.status !== 'ACCEPTED') throw new AppError('Application is not accepted', 400);
+    if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (app.creatorId !== creator.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    if (app.status !== 'ACCEPTED') throw new AppError(getDict().campaign.applicationNotAccepted, HttpStatus.BAD_REQUEST);
     // Free events never ask for a deliverable — see startWork above.
     if (app.campaign.campaignType === 'OPEN_EVENT') {
-      throw new AppError('Free events have no deliverables to submit', 400);
+      throw new AppError(getDict().campaign.freeEventsNoDeliverablesToSubmit, HttpStatus.BAD_REQUEST);
     }
     assertWorkTransition(app.workStatus, 'SUBMITTED');
 
@@ -1746,13 +1755,13 @@ export class CampaignService {
 
   async approveWork(appId: string, userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const app = await this.repo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
-    if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
-    if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
-    if (app.escrowStatus === 'FROZEN') throw new AppError('This engagement is under dispute — resolve it before approving', 409);
+    if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (app.campaign.business.id !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    if (app.workStatus !== 'SUBMITTED') throw new AppError(getDict().campaign.workNotSubmittedYet, HttpStatus.BAD_REQUEST);
+    if (app.escrowStatus === 'FROZEN') throw new AppError(getDict().campaign.engagementUnderDisputeApproving, HttpStatus.CONFLICT);
 
     return this.performApproval(app, userId, { auto: false });
   }
@@ -1877,13 +1886,13 @@ export class CampaignService {
 
   async requestRevision(appId: string, userId: string, note: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const app = await this.repo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
-    if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
-    if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
-    if (app.escrowStatus === 'FROZEN') throw new AppError('This engagement is under dispute', 409);
+    if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (app.campaign.business.id !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    if (app.workStatus !== 'SUBMITTED') throw new AppError(getDict().campaign.workNotSubmittedYet, HttpStatus.BAD_REQUEST);
+    if (app.escrowStatus === 'FROZEN') throw new AppError(getDict().campaign.engagementUnderDispute, HttpStatus.CONFLICT);
     assertWorkTransition(app.workStatus, 'IN_PROGRESS');
 
     // Escrow spec §22: only a configurable number of revisions is included.
@@ -1891,8 +1900,8 @@ export class CampaignService {
     const usedRevisions = await this.repo.countRevisions(appId);
     if (usedRevisions >= maxIncludedRevisions) {
       throw new AppError(
-        `All ${maxIncludedRevisions} included revisions for this engagement have been used. Further changes need a new agreement with the creator.`,
-        409,
+        getDict().campaign.maxRevisionsUsed(maxIncludedRevisions),
+        HttpStatus.CONFLICT,
       );
     }
 
@@ -1961,22 +1970,22 @@ export class CampaignService {
   // events, notifications to the other party + admins) lives in
   // EscrowService.raiseDispute; this only resolves the caller's role.
   async raiseDispute(appId: string, userId: string, role: 'CREATOR' | 'BUSINESS' | 'ADMIN', reason: string) {
-    if (!reason?.trim()) throw new AppError('Please describe the issue', 400);
+    if (!reason?.trim()) throw new AppError(getDict().campaign.pleaseDescribeIssue, HttpStatus.BAD_REQUEST);
 
     const app = await this.repo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
+    if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
     let raisedByRole: 'BUSINESS' | 'CREATOR';
     if (role === 'BUSINESS') {
       const business = await this.businessRepo.findByUserId(userId);
-      if (!business || app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
+      if (!business || app.campaign.business.id !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
       raisedByRole = 'BUSINESS';
     } else if (role === 'CREATOR') {
       const creator = await this.creatorRepo.findByUserId(userId);
-      if (!creator || app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
+      if (!creator || app.creatorId !== creator.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
       raisedByRole = 'CREATOR';
     } else {
-      throw new AppError('Admins resolve disputes, they do not raise them', 400);
+      throw new AppError(getDict().campaign.adminsDoNotRaiseDisputes, HttpStatus.BAD_REQUEST);
     }
 
     await escrowService.raiseDispute({ applicationId: appId, raisedByUserId: userId, raisedByRole, reason });
@@ -2005,23 +2014,23 @@ export class CampaignService {
 
   private async assertCanUploadDeliverable(appId: string, userId: string) {
     const creator = await this.creatorRepo.findByUserId(userId);
-    if (!creator) throw new AppError('Creator profile not found', 404);
+    if (!creator) throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const app = await this.repo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
-    if (app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
+    if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (app.creatorId !== creator.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
     // Free events have no deliverable stage at all (see submitWork) — checked
     // before the workStatus rule below so the error says why, rather than the
     // misleading "already approved" that COMPLETED would otherwise produce.
     if (app.campaign.campaignType === 'OPEN_EVENT') {
-      throw new AppError('Free events have no deliverables to upload', 400);
+      throw new AppError(getDict().campaign.freeEventsNoDeliverablesToUpload, HttpStatus.BAD_REQUEST);
     }
     // Ownership alone (what submitWork checks) isn't enough here — workStatus
     // can advance to APPROVED/COMPLETED while `status` stays 'ACCEPTED' for the
     // application's entire lifetime, so a plain status check would let a creator
     // keep attaching videos after the business already signed off.
     if (['APPROVED', 'COMPLETED'].includes(app.workStatus)) {
-      throw new AppError('This project has already been approved — videos can no longer be added', 400);
+      throw new AppError(getDict().campaign.projectAlreadyApprovedNoVideos, HttpStatus.BAD_REQUEST);
     }
     return app;
   }
@@ -2034,8 +2043,8 @@ export class CampaignService {
   ) {
     await this.assertCanUploadDeliverable(appId, userId);
     const existing = await this.repo.getDeliverableVideos(appId);
-    if (existing.length >= 3) throw new AppError('Maximum of 3 videos already uploaded for this application', 409);
-    if (sizeBytes > MAX_VIDEO_SIZE_BYTES) throw new AppError('Video exceeds the 500MB limit', 400);
+    if (existing.length >= 3) throw new AppError(getDict().campaign.maxVideosUploaded, HttpStatus.CONFLICT);
+    if (sizeBytes > MAX_VIDEO_SIZE_BYTES) throw new AppError(getDict().campaign.videoExceeds500MB, HttpStatus.BAD_REQUEST);
 
     const ext = mimeType === 'video/quicktime' ? 'mov' : 'mp4';
     const publicId = `deliverable_${appId}_${Date.now()}_${randomUUID()}`;
@@ -2069,7 +2078,7 @@ export class CampaignService {
 
     if (ref.key) {
       if (!ref.key.startsWith(`users/${userId}/videos/`)) {
-        throw new AppError('Invalid upload reference', 400);
+        throw new AppError(getDict().campaign.invalidUploadReference, HttpStatus.BAD_REQUEST);
       }
 
       let result;
@@ -2077,15 +2086,15 @@ export class CampaignService {
         result = ref.uploadId ? await completeR2Multipart(ref.key, ref.uploadId) : await finalizeR2Object(ref.key);
       } catch {
         if (ref.uploadId) await abortR2Multipart(ref.key, ref.uploadId);
-        throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+        throw new AppError(getDict().campaign.couldNotVerifyVideo, HttpStatus.BAD_REQUEST);
       }
       if (!result.url) {
         await deleteR2Object(ref.key);
-        throw new AppError('Video storage is not fully configured yet. Please try again later.', 500);
+        throw new AppError(getDict().campaign.videoStorageNotConfigured, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       if (result.sizeBytes > MAX_VIDEO_SIZE_BYTES) {
         await deleteR2Object(ref.key);
-        throw new AppError('Video exceeds the 500MB limit', 400);
+        throw new AppError(getDict().campaign.videoExceeds500MB, HttpStatus.BAD_REQUEST);
       }
 
       url          = result.url;
@@ -2112,26 +2121,26 @@ export class CampaignService {
       const publicId = ref.publicId!;
       const expectedPrefix = 'campaigns/deliverables/deliverable_';
       if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${appId}_`)) {
-        throw new AppError('Invalid upload reference', 400);
+        throw new AppError(getDict().campaign.invalidUploadReference, HttpStatus.BAD_REQUEST);
       }
 
       let resource;
       try {
         resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
       } catch {
-        throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+        throw new AppError(getDict().campaign.couldNotVerifyVideo, HttpStatus.BAD_REQUEST);
       }
 
       if (!ALLOWED_DELIVERABLE_VIDEO_FORMATS.has((resource.format ?? '').toLowerCase())) {
         await deleteVideo(publicId);
-        throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
+        throw new AppError(getDict().campaign.unsupportedVideoFormat, HttpStatus.BAD_REQUEST);
       }
 
       // Client-side picker already caps size at 500MB, but that check is trivially
       // bypassable — the server is the only source of truth, same as the format check above.
       if ((resource.bytes ?? 0) > MAX_VIDEO_SIZE_BYTES) {
         await deleteVideo(publicId);
-        throw new AppError('Video exceeds the 500MB limit', 400);
+        throw new AppError(getDict().campaign.videoExceeds500MB, HttpStatus.BAD_REQUEST);
       }
 
       url          = videoPlaybackUrl(resource.secure_url);
@@ -2167,7 +2176,7 @@ export class CampaignService {
     if (!appended) {
       if (provider === 'R2') await deleteR2Object(storedId);
       else await deleteVideo(storedId);
-      throw new AppError('Maximum of 3 videos already uploaded for this application', 409);
+      throw new AppError(getDict().campaign.maxVideosUploaded, HttpStatus.CONFLICT);
     }
 
     return entry;
@@ -2208,9 +2217,9 @@ export class CampaignService {
     await this.assertCanUploadDeliverable(appId, userId);
 
     const existing = await this.repo.getDeliverableFiles(appId);
-    if (existing.length >= 10) throw new AppError('Maximum of 10 files already uploaded for this application', 409);
+    if (existing.length >= 10) throw new AppError(getDict().campaign.maxFilesUploaded, HttpStatus.CONFLICT);
 
-    if (isClientDisconnected()) throw new AppError('Upload cancelled', 499);
+    if (isClientDisconnected()) throw new AppError('Upload cancelled', HttpStatus.CLIENT_CLOSED_REQUEST);
 
     const isImage = file.mimetype.startsWith('image/');
     const publicId = `deliverable_${appId}_${Date.now()}_${randomUUID()}`;
@@ -2222,7 +2231,7 @@ export class CampaignService {
       // Fire-and-forget: the client is already gone, so there's no response
       // left to hold up waiting on Cloudinary's delete API round-trip for.
       void (isImage ? deleteImage(deliverableFileCloudinaryId(publicId)) : deleteRawFile(deliverableFileCloudinaryId(publicId)));
-      throw new AppError('Upload cancelled', 499);
+      throw new AppError('Upload cancelled', HttpStatus.CLIENT_CLOSED_REQUEST);
     }
 
     const entry: DeliverableFile = {
@@ -2239,7 +2248,7 @@ export class CampaignService {
     const appended = await this.repo.appendDeliverableFile(appId, entry);
     if (!appended) {
       await (isImage ? deleteImage(deliverableFileCloudinaryId(publicId)) : deleteRawFile(deliverableFileCloudinaryId(publicId)));
-      throw new AppError('Maximum of 10 files already uploaded for this application', 409);
+      throw new AppError(getDict().campaign.maxFilesUploaded, HttpStatus.CONFLICT);
     }
 
     return entry;
@@ -2258,11 +2267,11 @@ export class CampaignService {
 
   async cancelCampaign(campaignId: string, userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const campaign = await this.repo.findById(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
-    if (campaign.businessId !== business.id) throw new AppError('Not authorized', 403);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
 
     const updated = await this.repo.cancelCampaign(campaignId);
 
@@ -2369,9 +2378,9 @@ export class CampaignService {
   // needed. Returns the campaign plus flags/ids the three methods below share.
   private async resolveEventQAViewer(campaignId: string, userId: string) {
     const campaign = await this.repo.findById(campaignId);
-    if (!campaign) throw new AppError('Event not found', 404);
+    if (!campaign) throw new AppError(getDict().campaign.eventNotFound, HttpStatus.NOT_FOUND);
     if (campaign.campaignType !== 'OPEN_EVENT') {
-      throw new AppError('Q&A is only available for free events', 400);
+      throw new AppError(getDict().campaign.qaOnlyForFreeEvents, HttpStatus.BAD_REQUEST);
     }
 
     const business = await this.businessRepo.findByUserId(userId);
@@ -2387,7 +2396,7 @@ export class CampaignService {
     }
 
     if (!isBusinessOwner && !creatorId) {
-      throw new AppError('Only the organizer and accepted creators can view this page', 403);
+      throw new AppError(getDict().campaign.onlyOrganizerAndCreatorsCanView, HttpStatus.FORBIDDEN);
     }
 
     return { campaign, isBusinessOwner, creatorId };
@@ -2404,7 +2413,7 @@ export class CampaignService {
   async askEventQuestion(campaignId: string, userId: string, question: string) {
     const { campaign, isBusinessOwner, creatorId } = await this.resolveEventQAViewer(campaignId, userId);
     if (isBusinessOwner || !creatorId) {
-      throw new AppError('Only accepted creators can ask a question', 403);
+      throw new AppError(getDict().campaign.onlyAcceptedCreatorsCanAsk, HttpStatus.FORBIDDEN);
     }
 
     const raw = await this.repo.createEventQuestion({ campaignId, creatorId, question });
@@ -2427,12 +2436,12 @@ export class CampaignService {
   async answerEventQuestion(campaignId: string, questionId: string, userId: string, answer: string) {
     const { campaign, isBusinessOwner } = await this.resolveEventQAViewer(campaignId, userId);
     if (!isBusinessOwner) {
-      throw new AppError('Only the organizer can answer questions', 403);
+      throw new AppError(getDict().campaign.onlyOrganizerCanAnswer, HttpStatus.FORBIDDEN);
     }
 
     const existing = await this.repo.findEventQuestionById(questionId);
     if (!existing || existing.campaignId !== campaignId) {
-      throw new AppError('Question not found', 404);
+      throw new AppError(getDict().campaign.questionNotFound, HttpStatus.NOT_FOUND);
     }
 
     const firstAnswer = existing.answeredAt === null;

@@ -3,6 +3,8 @@ import { AppError } from '../../middleware/error';
 import { SuccessStoryRepository } from './success-story.repository';
 import type { CreateSuccessStoryInput, UpdateSuccessStoryInput } from './success-story.schema';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 export class SuccessStoryService {
   private repo: SuccessStoryRepository;
 
@@ -24,19 +26,19 @@ export class SuccessStoryService {
 
   async update(id: string, input: UpdateSuccessStoryInput) {
     const story = await this.repo.findById(id);
-    if (!story) throw new AppError('Success story not found', 404);
+    if (!story) throw new AppError('Success story not found', HttpStatus.NOT_FOUND);
     return this.repo.update(id, input);
   }
 
   async updateStatus(id: string, status: SuccessStoryStatus) {
     const story = await this.repo.findById(id);
-    if (!story) throw new AppError('Success story not found', 404);
+    if (!story) throw new AppError('Success story not found', HttpStatus.NOT_FOUND);
     return this.repo.updateStatus(id, status);
   }
 
   async remove(id: string) {
     const story = await this.repo.findById(id);
-    if (!story) throw new AppError('Success story not found', 404);
+    if (!story) throw new AppError('Success story not found', HttpStatus.NOT_FOUND);
     await this.repo.delete(id);
   }
 }

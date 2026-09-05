@@ -3,6 +3,9 @@ import { CategoryScope } from '@prisma/client';
 import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import { CategoryService } from './category.service';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const categoryService = new CategoryService();
 
@@ -11,11 +14,11 @@ export class CategoryController {
     try {
       const scopeRaw = req.query.scope as string | undefined;
       if (scopeRaw && !Object.values(CategoryScope).includes(scopeRaw as CategoryScope)) {
-        throw new AppError(`Invalid scope. Must be one of: ${Object.values(CategoryScope).join(', ')}`, 400);
+        throw new AppError(getDict().category.invalidScopeFilter(Object.values(CategoryScope).join(', ')), HttpStatus.BAD_REQUEST);
       }
       const strict = req.query.strict === 'true';
       const categories = await categoryService.listPublic(scopeRaw as CategoryScope | undefined, strict);
-      success(res, categories, 'Categories retrieved');
+      success(res, categories, getDict().category.categoriesRetrieved);
     } catch (err) {
       next(err);
     }
@@ -24,7 +27,7 @@ export class CategoryController {
   async listForAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const categories = await categoryService.listForAdmin();
-      success(res, categories, 'Categories retrieved');
+      success(res, categories, getDict().category.categoriesRetrieved);
     } catch (err) {
       next(err);
     }

@@ -2,6 +2,9 @@ import { AppError } from '../../middleware/error';
 import { WalletRepository } from '../wallet/wallet.repository';
 import { PayoutMethodRepository } from './payout-method.repository';
 import type { CreatePayoutMethodInput } from './payout-method.schema';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 // Maps the validated (discriminated) input to the flat column set, nulling the
 // fields that don't apply to the chosen channel.
@@ -24,13 +27,13 @@ export class PayoutMethodService {
 
   private async resolveCreatorId(userId: string) {
     const profile = await this.walletRepo.findCreatorProfileByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().payoutMethod.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return profile.id;
   }
 
   private async ownedOrThrow(creatorId: string, id: string) {
     const method = await this.repo.findById(id);
-    if (!method || method.creatorId !== creatorId) throw new AppError('Payout method not found', 404);
+    if (!method || method.creatorId !== creatorId) throw new AppError(getDict().payoutMethod.payoutMethodNotFound, HttpStatus.NOT_FOUND);
     return method;
   }
 
@@ -44,7 +47,7 @@ export class PayoutMethodService {
     const existing = await this.repo.findByCreator(creatorId);
     // One payout method per channel — the creator edits the existing one instead.
     if (existing.some((m) => m.type === input.type)) {
-      throw new AppError('You already have a payout method of this type. Edit the existing one instead.', 409);
+      throw new AppError(getDict().payoutMethod.duplicatePayoutMethodType, HttpStatus.CONFLICT);
     }
     // First method is always the default; otherwise honour the explicit flag.
     const makeDefault = input.isDefault === true || existing.length === 0;
@@ -65,7 +68,7 @@ export class PayoutMethodService {
     const existing = await this.ownedOrThrow(creatorId, id);
 
     if (await this.repo.hasBlockingWithdrawal(id)) {
-      throw new AppError("This payout method has a withdrawal in progress and can't be removed yet", 400);
+      throw new AppError(getDict().payoutMethod.withdrawalInProgress, HttpStatus.BAD_REQUEST);
     }
     await this.repo.delete(id);
 

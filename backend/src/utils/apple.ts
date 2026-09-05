@@ -4,6 +4,8 @@ import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { AppError } from '../middleware/error';
 
+import { HttpStatus } from '../constants/httpStatus';
+
 // Apple publishes the rotating set of RSA public keys its identity tokens are
 // signed with here. jwks-rsa caches keys by `kid` and rate-limits fetches, so
 // this is cheap to call on every sign-in.
@@ -54,7 +56,7 @@ export interface AppleIdentity {
 export async function verifyAppleIdentityToken(identityToken: string): Promise<AppleIdentity> {
   if (!env.APPLE_CLIENT_ID) {
     logger.error('Sign in with Apple attempted but APPLE_CLIENT_ID is not configured');
-    throw new AppError('Unable to authenticate with Apple.', 503);
+    throw new AppError('Unable to authenticate with Apple.', HttpStatus.SERVICE_UNAVAILABLE);
   }
 
   let payload: jwt.JwtPayload;
@@ -80,13 +82,13 @@ export async function verifyAppleIdentityToken(identityToken: string): Promise<A
     });
   } catch (err) {
     logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'Apple identity token verification failed');
-    throw new AppError('Unable to authenticate with Apple.', 401);
+    throw new AppError('Unable to authenticate with Apple.', HttpStatus.UNAUTHORIZED);
   }
 
   const sub = typeof payload.sub === 'string' ? payload.sub : '';
   if (!sub) {
     logger.warn('Apple identity token passed verification but carried no sub claim');
-    throw new AppError('Unable to authenticate with Apple.', 401);
+    throw new AppError('Unable to authenticate with Apple.', HttpStatus.UNAUTHORIZED);
   }
 
   const email = typeof payload.email === 'string' ? payload.email.toLowerCase() : undefined;
@@ -118,7 +120,7 @@ export interface AppleNotificationEvent {
 export async function verifyAppleNotification(signedPayload: string): Promise<AppleNotificationEvent> {
   if (!env.APPLE_CLIENT_ID) {
     logger.error('Apple S2S notification received but APPLE_CLIENT_ID is not configured');
-    throw new AppError('Apple notifications are not configured.', 503);
+    throw new AppError('Apple notifications are not configured.', HttpStatus.SERVICE_UNAVAILABLE);
   }
 
   let claims: jwt.JwtPayload;
@@ -139,7 +141,7 @@ export async function verifyAppleNotification(signedPayload: string): Promise<Ap
     });
   } catch (err) {
     logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'Apple S2S notification verification failed');
-    throw new AppError('Invalid Apple notification.', 400);
+    throw new AppError('Invalid Apple notification.', HttpStatus.BAD_REQUEST);
   }
 
   // `events` is a stringified JSON object, not a nested claim.
@@ -147,12 +149,12 @@ export async function verifyAppleNotification(signedPayload: string): Promise<Ap
   try {
     events = typeof claims.events === 'string' ? JSON.parse(claims.events) : (claims.events as Record<string, unknown>);
   } catch {
-    throw new AppError('Invalid Apple notification.', 400);
+    throw new AppError('Invalid Apple notification.', HttpStatus.BAD_REQUEST);
   }
 
   const type = events?.type as AppleNotificationType | undefined;
   const sub = typeof events?.sub === 'string' ? events.sub : '';
-  if (!type || !sub) throw new AppError('Invalid Apple notification.', 400);
+  if (!type || !sub) throw new AppError('Invalid Apple notification.', HttpStatus.BAD_REQUEST);
 
   return {
     type,
@@ -185,7 +187,7 @@ function applePrivateKeyPem(): string {
  */
 export function generateAppleClientSecret(): string {
   if (!appleClientSecretConfigured()) {
-    throw new AppError('Apple server credentials are not configured.', 503);
+    throw new AppError('Apple server credentials are not configured.', HttpStatus.SERVICE_UNAVAILABLE);
   }
   const now = Math.floor(Date.now() / 1000);
   return jwt.sign(

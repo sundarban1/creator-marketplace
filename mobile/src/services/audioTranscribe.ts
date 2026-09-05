@@ -1,4 +1,4 @@
-import { API_BASE, assertOnline, fetchWithTimeout, AI_TIMEOUT_MS } from '@/lib/api';
+import { API_BASE, assertOnline, fetchWithTimeout, getApiLanguage, AI_TIMEOUT_MS } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 
@@ -14,7 +14,7 @@ export async function transcribeAudio(uri: string): Promise<string> {
 
   const { res, text } = await fetchWithTimeout(`${API_BASE}/api/ai-assistant/transcribe`, {
     method:  'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, 'X-Language': getApiLanguage() },
     body:    form,
   }, AI_TIMEOUT_MS);
   const json = (text ? JSON.parse(text) : {}) as { success: boolean; data?: { text: string }; message?: string };

@@ -1,10 +1,12 @@
 import { Response } from 'express';
 
+import { HttpStatus } from '../constants/httpStatus';
+
 export function success<T>(
   res: Response,
   data: T,
   message = 'Success',
-  statusCode = 200
+  statusCode: number = HttpStatus.OK
 ): Response {
   return res.status(statusCode).json({
     success: true,
@@ -20,7 +22,7 @@ export function paginated<T>(
   page: number,
   limit: number
 ): Response {
-  return res.status(200).json({
+  return res.status(HttpStatus.OK).json({
     success: true,
     message: 'Success',
     data,
@@ -33,7 +35,7 @@ export function paginated<T>(
   });
 }
 
-export function error(res: Response, message: string, statusCode = 400): Response {
+export function error(res: Response, message: string, statusCode: number = HttpStatus.BAD_REQUEST): Response {
   return res.status(statusCode).json({
     success: false,
     message,

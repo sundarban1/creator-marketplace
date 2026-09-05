@@ -5,7 +5,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 import { isDevice } from 'expo-device';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
-import { API_BASE, assertOnline, fetchWithTimeout, UPLOAD_TIMEOUT_MS } from '@/lib/api';
+import { API_BASE, assertOnline, fetchWithTimeout, getApiLanguage, UPLOAD_TIMEOUT_MS } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
@@ -174,7 +174,7 @@ async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTa
 
   const { res, text } = await fetchWithTimeout(`${API_BASE}${path}`, {
     method:  'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, 'X-Language': getApiLanguage() },
     body:    form,
   }, UPLOAD_TIMEOUT_MS);
 

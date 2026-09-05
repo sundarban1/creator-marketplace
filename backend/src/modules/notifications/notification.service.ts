@@ -7,6 +7,9 @@ import { logger } from '../../config/logger';
 import { AppError } from '../../middleware/error';
 import prisma from '../../prisma';
 import { enqueuePushDeliver, enqueuePushReceiptCheck } from '../../queues/pushQueue';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const expo = new Expo();
 const NOTIFICATION_FIELDS = ['title', 'body'] as const;
@@ -204,7 +207,7 @@ export const notificationService = {
       where: { id: userId },
       select: { pushNotificationsEnabled: true, emailNotificationsEnabled: true },
     });
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().notification.userNotFound, HttpStatus.NOT_FOUND);
     return user;
   },
 

@@ -1,4 +1,4 @@
-import { request, API_BASE, ensureFreshAccessToken } from '@/lib/api';
+import { request, API_BASE, ensureFreshAccessToken, getApiLanguage } from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign, EventQuestion } from '@/types';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -672,6 +672,7 @@ export const campaignService = {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${API_BASE}/api/campaigns/applications/${appId}/deliverables/file`);
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('X-Language', getApiLanguage());
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress?.(e.loaded / e.total);

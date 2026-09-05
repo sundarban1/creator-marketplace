@@ -14,6 +14,8 @@ import {
 import { searchStockPhoto } from '../../utils/imageSearch';
 import dummyData from './campaign-ai.dummy.json';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 // Thrown when the model determines the brand's prompt doesn't express any
 // intent to promote/host something (e.g. "hello", "what's the weather") —
 // distinct from an infra failure, so callers must NOT fall back to a dummy
@@ -22,7 +24,7 @@ import dummyData from './campaign-ai.dummy.json';
 // validation) without string-matching the message.
 class CampaignIntentError extends AppError {
   constructor(message: string) {
-    super(message, 422, true, { code: 'NO_CAMPAIGN_INTENT' });
+    super(message, HttpStatus.UNPROCESSABLE_ENTITY, true, { code: 'NO_CAMPAIGN_INTENT' });
   }
 }
 

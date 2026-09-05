@@ -4,6 +4,9 @@ import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { PortfolioService } from './portfolio.service';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const portfolioService = new PortfolioService();
 
@@ -11,7 +14,7 @@ export class PortfolioController {
   async listMine(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const items = await portfolioService.listMine(req.user!.id);
-      success(res, items, 'Portfolio items retrieved');
+      success(res, items, getDict().portfolio.portfolioItemsRetrieved);
     } catch (err) { next(err); }
   }
 
@@ -23,35 +26,35 @@ export class PortfolioController {
   // shared client-side parser needs no changes for this new upload target.
   async uploadMedia(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError(getDict().portfolio.noImageFileProvided, HttpStatus.BAD_REQUEST);
       const imageUrl = await uploadToCloudinary(
         req.file.buffer,
         'creators/portfolio',
         `portfolio_${req.user!.id}_${randomUUID()}`,
         [{ width: 1200, crop: 'limit' }],
       );
-      success(res, { imageUrl }, 'Media uploaded');
+      success(res, { imageUrl }, getDict().portfolio.mediaUploaded);
     } catch (err) { next(err); }
   }
 
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const item = await portfolioService.create(req.user!.id, req.body);
-      success(res, item, 'Portfolio item added', 201);
+      success(res, item, getDict().portfolio.portfolioItemAdded, 201);
     } catch (err) { next(err); }
   }
 
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const item = await portfolioService.update(req.user!.id, req.params.id, req.body);
-      success(res, item, 'Portfolio item updated');
+      success(res, item, getDict().portfolio.portfolioItemUpdated);
     } catch (err) { next(err); }
   }
 
   async remove(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       await portfolioService.remove(req.user!.id, req.params.id);
-      success(res, null, 'Portfolio item removed');
+      success(res, null, getDict().portfolio.portfolioItemRemoved);
     } catch (err) { next(err); }
   }
 }

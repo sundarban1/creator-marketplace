@@ -1,7 +1,11 @@
 import crypto from 'crypto';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
+import { reportError, LogEvent } from '../config/observability';
 import { AppError } from '../middleware/error';
+import { getDict } from '../i18n';
+
+import { HttpStatus } from '../constants/httpStatus';
 
 // eSewa's ePay v2 flow (unlike Khalti's simple initiate/lookup API pair) has the
 // browser POST a signed HTML form directly to eSewa, then eSewa redirects back
@@ -40,18 +44,11 @@ export type EsewaStatusResult = {
 
 // eSewa's transaction-status values, mapped to something a business can
 // actually act on instead of a raw enum string — same purpose as Khalti's
-// KHALTI_ERROR_MESSAGES table.
-const ESEWA_STATUS_MESSAGES: Record<string, string> = {
-  PENDING: 'This eSewa payment is still pending. Please wait a moment and try again.',
-  FULL_REFUND: 'This eSewa payment was refunded.',
-  PARTIAL_REFUND: 'This eSewa payment was partially refunded.',
-  AMBIGUOUS: 'eSewa could not confirm this payment yet — please try again shortly.',
-  NOT_FOUND: 'eSewa has no record of this payment. Please try again.',
-  CANCELED: 'This eSewa payment was canceled.',
-};
-
+// KHALTI_ERROR_MESSAGES table. Both languages' copies live in ../i18n; getDict()
+// resolves the current request's language on its own (see i18n/index.ts).
 export function friendlyEsewaStatusMessage(status: string): string {
-  return ESEWA_STATUS_MESSAGES[status] ?? `eSewa payment ${status.toLowerCase()}.`;
+  const dict = getDict();
+  return (dict.esewa.status as Record<string, string>)[status] ?? `eSewa payment ${status.toLowerCase()}.`;
 }
 
 // eSewa's error responses are typically shaped `{ code, message }` (sometimes
@@ -65,7 +62,7 @@ function friendlyEsewaErrorMessage(body: Record<string, unknown> | null, fallbac
 
 function assertConfigured(): { secretKey: string; returnBaseUrl: string } {
   if (!env.ESEWA_SECRET_KEY || !env.ESEWA_RETURN_BASE_URL) {
-    throw new AppError('eSewa is not configured on the server yet.', 503);
+    throw new AppError(getDict().esewa.notConfigured, HttpStatus.SERVICE_UNAVAILABLE);
   }
   return { secretKey: env.ESEWA_SECRET_KEY, returnBaseUrl: env.ESEWA_RETURN_BASE_URL };
 }
@@ -162,14 +159,14 @@ export function decodeEsewaResponse(dataParam: string): EsewaDecodedResponse {
     return JSON.parse(json) as EsewaDecodedResponse;
   } catch (err) {
     logger.error({ err }, 'Could not decode eSewa response payload');
-    throw new AppError('Could not read the eSewa payment response.', 400);
+    throw new AppError(getDict().esewa.decodeFailed, HttpStatus.BAD_REQUEST);
   }
 }
 
 export function verifyEsewaSignature(decoded: EsewaDecodedResponse): void {
   const { secretKey } = assertConfigured();
   if (!decoded.signed_field_names || !decoded.signature) {
-    throw new AppError('eSewa response is missing its signature.', 400);
+    throw new AppError(getDict().esewa.missingSignature, HttpStatus.BAD_REQUEST);
   }
 
   const fieldNames = decoded.signed_field_names.split(',');
@@ -180,7 +177,7 @@ export function verifyEsewaSignature(decoded: EsewaDecodedResponse): void {
 
   if (expected !== decoded.signature) {
     logger.error({ decoded }, 'eSewa response signature mismatch');
-    throw new AppError('eSewa payment signature could not be verified.', 400);
+    throw new AppError(getDict().esewa.invalidSignature, HttpStatus.BAD_REQUEST);
   }
 }
 
@@ -191,6 +188,7 @@ export async function checkEsewaStatus(params: {
   transactionUuid: string;
   totalAmountNpr: number;
 }): Promise<EsewaStatusResult> {
+  const dict = getDict();
   assertConfigured();
   const productCode = env.ESEWA_MERCHANT_CODE;
   const totalAmount = formatAmount(params.totalAmountNpr);
@@ -204,16 +202,22 @@ export async function checkEsewaStatus(params: {
   try {
     res = await fetch(url.toString());
   } catch (err) {
-    logger.error({ err, transactionUuid: params.transactionUuid }, 'eSewa status request failed to send');
-    throw new AppError('Could not confirm the eSewa payment. Please try again.', 502);
+    // Network/transport failure talking to eSewa at all — unexpected and
+    // actionable, worth a Sentry alert (unlike a merely-declined payment).
+    reportError(err, { event: LogEvent.PAYMENT_ESEWA_STATUS_CHECK_FAILED, transactionUuid: params.transactionUuid });
+    throw new AppError(dict.esewa.statusCheckNetworkError, HttpStatus.BAD_GATEWAY);
   }
 
   const body = await res.json().catch(() => null) as Record<string, unknown> | null;
   if (!res.ok || !body?.status) {
-    logger.error({ status: res.status, body, transactionUuid: params.transactionUuid }, 'eSewa status check rejected');
-    const message = friendlyEsewaErrorMessage(body, 'Could not confirm the eSewa payment.');
-    throw new AppError(message, 502);
+    // eSewa reached but rejected/couldn't confirm — an expected business
+    // outcome (pending, not found, malformed reply), not an exception.
+    logger.warn({ status: res.status, body, transactionUuid: params.transactionUuid }, 'eSewa status check rejected');
+    const message = friendlyEsewaErrorMessage(body, dict.esewa.statusCheckRejected);
+    throw new AppError(message, HttpStatus.BAD_GATEWAY);
   }
+
+  logger.info({ event: LogEvent.PAYMENT_ESEWA_STATUS_CHECK, status: body.status, transactionUuid: params.transactionUuid }, 'eSewa status check');
 
   return {
     status: String(body.status),

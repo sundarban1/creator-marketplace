@@ -4,7 +4,10 @@ import { BusinessRepository } from './business.repository';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import prisma from '../../prisma';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const savedRepo   = new SavedCreatorRepository();
 const businessRepo = new BusinessRepository();
@@ -13,7 +16,7 @@ export class SavedCreatorController {
   async toggle(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const business = await businessRepo.findByUserId(req.user!.id);
-      if (!business) throw new AppError('Business profile not found', 404);
+      if (!business) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
       const creatorId = req.params.id;
       const result = await savedRepo.toggle(business.id, creatorId);
@@ -42,7 +45,7 @@ export class SavedCreatorController {
   async listSaved(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const business = await businessRepo.findByUserId(req.user!.id);
-      if (!business) throw new AppError('Business profile not found', 404);
+      if (!business) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
       const search = req.query.search as string | undefined;
       const location = req.query.location as string | undefined;
       const categoriesRaw = req.query.categories as string | undefined;
@@ -59,7 +62,7 @@ export class SavedCreatorController {
   async getSavedIds(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const business = await businessRepo.findByUserId(req.user!.id);
-      if (!business) throw new AppError('Business profile not found', 404);
+      if (!business) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
       const ids = await savedRepo.getSavedIds(business.id);
       res.json({ success: true, data: { ids } });
     } catch (err) { next(err); }
@@ -68,13 +71,13 @@ export class SavedCreatorController {
   async inviteCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const business = await businessRepo.findByUserId(req.user!.id);
-      if (!business) throw new AppError('Business profile not found', 404);
+      if (!business) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
       const { campaignId } = req.params;
       const { creatorIds, message } = req.body as { creatorIds: string[]; message?: string };
 
       if (!Array.isArray(creatorIds) || creatorIds.length === 0) {
-        throw new AppError('creatorIds must be a non-empty array', 400);
+        throw new AppError(getDict().business.creatorIdsRequired, HttpStatus.BAD_REQUEST);
       }
 
       const campaign = await prisma.campaign.findUnique({
@@ -82,7 +85,7 @@ export class SavedCreatorController {
         select: { id: true, title: true, businessId: true },
       });
       if (!campaign || campaign.businessId !== business.id) {
-        throw new AppError('Campaign not found', 404);
+        throw new AppError(getDict().business.campaignNotFound, HttpStatus.NOT_FOUND);
       }
 
       // A creator can only be invited to a campaign once. Anyone who already has
@@ -142,7 +145,7 @@ export class SavedCreatorController {
   async listCampaignInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const business = await businessRepo.findByUserId(req.user!.id);
-      if (!business) throw new AppError('Business profile not found', 404);
+      if (!business) throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
       const { campaignId } = req.params;
       const campaign = await prisma.campaign.findUnique({
@@ -150,7 +153,7 @@ export class SavedCreatorController {
         select: { id: true, businessId: true },
       });
       if (!campaign || campaign.businessId !== business.id) {
-        throw new AppError('Campaign not found', 404);
+        throw new AppError(getDict().business.campaignNotFound, HttpStatus.NOT_FOUND);
       }
 
       const invitations = await prisma.campaignInvitation.findMany({

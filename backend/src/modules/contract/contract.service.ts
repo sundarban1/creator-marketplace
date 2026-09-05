@@ -5,6 +5,9 @@ import { AppError } from '../../middleware/error';
 import { logger } from '../../config/logger';
 import { uploadRawFile } from '../../utils/cloudinary';
 import { CreatorRepository } from '../creator/creator.repository';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 // Contracts only apply to paid campaigns — a free/open event has no price or
 // deliverable-for-payment exchange to put under agreement.
@@ -137,7 +140,7 @@ type RequirementForContract = {
 
 function assertPaidCampaign(campaignType: string): void {
   if (campaignType !== CONTRACT_CAMPAIGN_TYPE) {
-    throw new AppError('Contracts are only available for paid campaigns', 400);
+    throw new AppError(getDict().contract.contractsOnlyForPaidCampaigns, HttpStatus.BAD_REQUEST);
   }
 }
 
@@ -220,7 +223,7 @@ async function getOrCreateTemplate() {
 function assertParty(contract: { creator: { userId: string }; business: { userId: string } }, userId: string, role: Role) {
   if (role === Role.ADMIN) return;
   if (contract.creator.userId !== userId && contract.business.userId !== userId) {
-    throw new AppError('You are not authorized to view this contract', 403);
+    throw new AppError(getDict().contract.notAuthorizedToViewContract, HttpStatus.FORBIDDEN);
   }
 }
 
@@ -231,14 +234,14 @@ export class ContractService {
   // the in-progress proposal form, before an Application exists yet.
   async previewForCampaign(campaignId: string, userId: string, proposedRate: number, timeline: string, requirementId?: string) {
     const creator = await this.creatorRepo.findByUserId(userId);
-    if (!creator) throw new AppError('Creator profile not found', 404);
+    if (!creator) throw new AppError(getDict().contract.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
-    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (!campaign) throw new AppError(getDict().contract.campaignNotFound, HttpStatus.NOT_FOUND);
     assertPaidCampaign(campaign.campaignType);
 
     const business = await prisma.businessProfile.findUnique({ where: { id: campaign.businessId } });
-    if (!business) throw new AppError('Business not found', 404);
+    if (!business) throw new AppError(getDict().contract.businessNotFound, HttpStatus.NOT_FOUND);
 
     let requirement: RequirementForContract = null;
     if (requirementId) {
@@ -246,7 +249,7 @@ export class ContractService {
         where: { id: requirementId },
         select: { campaignId: true, deliverables: true, description: true, format: true, deadline: true, category: { select: { name: true } } },
       });
-      if (!found || found.campaignId !== campaignId) throw new AppError('Requirement not found on this campaign', 404);
+      if (!found || found.campaignId !== campaignId) throw new AppError(getDict().contract.requirementNotFoundOnCampaign, HttpStatus.NOT_FOUND);
       requirement = found;
     }
 
@@ -298,7 +301,7 @@ export class ContractService {
     const contract = await prisma.contract.findUnique({ where: { applicationId } });
     if (!contract) return null;
     if (contract.businessId !== businessId) {
-      throw new AppError('You are not authorized to sign this contract', 403);
+      throw new AppError(getDict().contract.notAuthorizedToSignContract, HttpStatus.FORBIDDEN);
     }
     if (contract.status === 'EXECUTED') return contract;
 
@@ -337,7 +340,7 @@ export class ContractService {
           requirement: { select: { deliverables: true, description: true, format: true, deadline: true, category: { select: { name: true } } } },
         },
       });
-      if (!application) throw new AppError('Application not found', 404);
+      if (!application) throw new AppError(getDict().contract.applicationNotFound, HttpStatus.NOT_FOUND);
       assertPaidCampaign(application.campaign.campaignType);
 
       const created = await this.createForApplication({
@@ -365,7 +368,7 @@ export class ContractService {
       where: { id: contractId },
       include: { creator: { select: { userId: true } }, business: { select: { userId: true } } },
     });
-    if (!contract) throw new AppError('Contract not found', 404);
+    if (!contract) throw new AppError(getDict().contract.contractNotFound, HttpStatus.NOT_FOUND);
     assertParty(contract, userId, role);
     if (contract.pdfUrl) return contract.pdfUrl;
     const updated = await this.generatePdf(contract);

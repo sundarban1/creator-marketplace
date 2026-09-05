@@ -7,6 +7,7 @@ import { AppError } from '../../middleware/error';
 import { logActivity } from '../logging/activity.service';
 import { logAudit } from '../logging/audit.service';
 import { ActivityAction, AuditAction, EntityType } from '../logging/logging.constants';
+import { HttpStatus } from '../../constants/httpStatus';
 import {
   sendAccountSuspendedEmail,
   sendAccountReactivatedEmail,
@@ -49,7 +50,7 @@ export async function verifyUser(req: Request, res: Response, next: NextFunction
   try {
     const { id }       = req.params;
     const { verified } = req.body as { verified: boolean };
-    if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', 400);
+    if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', HttpStatus.BAD_REQUEST);
     const updated = await service.verifyUser(id, verified);
     return success(res, updated, 'User verification updated');
   } catch (err) {
@@ -62,7 +63,7 @@ export async function suspendUser(req: Request, res: Response, next: NextFunctio
   try {
     const { id }       = req.params;
     const { isActive } = req.body as { isActive: boolean };
-    if (typeof isActive !== 'boolean') throw new AppError('isActive must be a boolean', 400);
+    if (typeof isActive !== 'boolean') throw new AppError('isActive must be a boolean', HttpStatus.BAD_REQUEST);
     const updated = await service.suspendUser(id!, isActive);
 
     logAudit({
@@ -179,7 +180,7 @@ export async function getCampaigns(req: Request, res: Response, next: NextFuncti
 export async function getCampaignDetail(req: Request, res: Response, next: NextFunction) {
   try {
     const campaign = await service.getCampaignDetail(req.params['id']!);
-    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (!campaign) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
     return success(res, campaign, 'Campaign detail fetched');
   } catch (err) {
     next(err);
@@ -203,7 +204,7 @@ export async function updateCampaignStatus(req: Request, res: Response, next: Ne
     const { id }     = req.params;
     const { status } = req.body as { status: string };
     if (!Object.values(CampaignStatus).includes(status as CampaignStatus)) {
-      throw new AppError(`Invalid status. Must be one of: ${Object.values(CampaignStatus).join(', ')}`, 400);
+      throw new AppError(`Invalid status. Must be one of: ${Object.values(CampaignStatus).join(', ')}`, HttpStatus.BAD_REQUEST);
     }
     const updated = await service.setCampaignStatus(id, status as CampaignStatus);
     return success(res, updated, 'Campaign status updated');
@@ -229,7 +230,7 @@ export async function rejectCampaign(req: Request, res: Response, next: NextFunc
     const { id } = req.params;
     const { reason } = req.body as { reason?: string };
     if (!reason || !reason.trim()) {
-      throw new AppError('Rejection reason is required', 400);
+      throw new AppError('Rejection reason is required', HttpStatus.BAD_REQUEST);
     }
     const campaign = await service.rejectCampaign(id, reason.trim());
     return success(res, campaign, 'Campaign rejected');
@@ -282,7 +283,7 @@ export async function updateSettings(req: Request, res: Response, next: NextFunc
   try {
     const settings = req.body as Record<string, unknown>;
     if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
-      throw new AppError('Settings must be a flat key-value object', 400);
+      throw new AppError('Settings must be a flat key-value object', HttpStatus.BAD_REQUEST);
     }
     await service.updateSettings(settings);
     const updated = await service.getSettings();
@@ -338,7 +339,7 @@ export async function getReferrals(req: Request, res: Response, next: NextFuncti
   try {
     const statusRaw = req.query['status'] as string | undefined;
     if (statusRaw && !Object.values(ReferralStatus).includes(statusRaw as ReferralStatus)) {
-      throw new AppError(`Invalid status. Must be one of: ${Object.values(ReferralStatus).join(', ')}`, 400);
+      throw new AppError(`Invalid status. Must be one of: ${Object.values(ReferralStatus).join(', ')}`, HttpStatus.BAD_REQUEST);
     }
     const referrals = await service.listReferrals(statusRaw as ReferralStatus | undefined);
     return success(res, referrals, 'Referrals fetched');
@@ -373,7 +374,7 @@ export async function verifyCreator(req: Request, res: Response, next: NextFunct
   try {
     const { id }       = req.params;
     const { verified } = req.body as { verified: boolean };
-    if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', 400);
+    if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', HttpStatus.BAD_REQUEST);
     const updated = await service.setCreatorVerified(id!, verified, req.user!.id);
     return success(res, updated, 'Creator verification badge updated');
   } catch (err) {
@@ -390,9 +391,9 @@ export async function setCreatorDocumentStatus(req: Request, res: Response, next
     // here an agency could upload a document no admin could ever act on,
     // leaving it stuck at PENDING and permanently unverifiable.
     if (doc !== 'citizenship' && doc !== 'pan' && doc !== 'companyReg') {
-      throw new AppError('doc must be "citizenship", "pan" or "companyReg"', 400);
+      throw new AppError('doc must be "citizenship", "pan" or "companyReg"', HttpStatus.BAD_REQUEST);
     }
-    if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', 400);
+    if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', HttpStatus.BAD_REQUEST);
     const updated = await service.setCreatorDocumentStatus(id!, doc, approved);
     return success(res, updated, 'Document status updated');
   } catch (err) {
@@ -406,9 +407,9 @@ export async function setBusinessDocumentStatus(req: Request, res: Response, nex
     const { id, doc }  = req.params;
     const { approved } = req.body as { approved: boolean };
     if (doc !== 'pan' && doc !== 'companyReg' && doc !== 'identity') {
-      throw new AppError('doc must be "pan", "companyReg" or "identity"', 400);
+      throw new AppError('doc must be "pan", "companyReg" or "identity"', HttpStatus.BAD_REQUEST);
     }
-    if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', 400);
+    if (typeof approved !== 'boolean') throw new AppError('approved must be a boolean', HttpStatus.BAD_REQUEST);
     const updated = await service.setBusinessDocumentStatus(id!, doc, approved);
     return success(res, updated, 'Document status updated');
   } catch (err) {
@@ -443,7 +444,7 @@ export async function rejectCreator(req: Request, res: Response, next: NextFunct
   try {
     const { id }     = req.params;
     const { reason } = req.body as { reason: string };
-    if (!reason?.trim()) throw new AppError('reason is required', 400);
+    if (!reason?.trim()) throw new AppError('reason is required', HttpStatus.BAD_REQUEST);
     const updated = await service.rejectCreator(id!, reason.trim(), req.user!.id);
     return success(res, updated, 'Creator verification rejected');
   } catch (err) {
@@ -456,7 +457,7 @@ export async function verifyBusiness(req: Request, res: Response, next: NextFunc
   try {
     const { id }       = req.params;
     const { verified } = req.body as { verified: boolean };
-    if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', 400);
+    if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', HttpStatus.BAD_REQUEST);
     const updated = await service.setBusinessVerified(id!, verified, req.user!.id);
     return success(res, updated, 'Business verification badge updated');
   } catch (err) {
@@ -469,7 +470,7 @@ export async function rejectBusiness(req: Request, res: Response, next: NextFunc
   try {
     const { id }     = req.params;
     const { reason } = req.body as { reason: string };
-    if (!reason?.trim()) throw new AppError('reason is required', 400);
+    if (!reason?.trim()) throw new AppError('reason is required', HttpStatus.BAD_REQUEST);
     const updated = await service.rejectBusiness(id!, reason.trim(), req.user!.id);
     return success(res, updated, 'Business verification rejected');
   } catch (err) {
@@ -484,7 +485,7 @@ export async function getBusinessReferrals(req: Request, res: Response, next: Ne
   try {
     const statusRaw = req.query['status'] as string | undefined;
     if (statusRaw && !Object.values(ReferralStatus).includes(statusRaw as ReferralStatus)) {
-      throw new AppError(`Invalid status. Must be one of: ${Object.values(ReferralStatus).join(', ')}`, 400);
+      throw new AppError(`Invalid status. Must be one of: ${Object.values(ReferralStatus).join(', ')}`, HttpStatus.BAD_REQUEST);
     }
     const referrals = await service.listBusinessReferrals(statusRaw as ReferralStatus | undefined);
     return success(res, referrals, 'Business referrals fetched');
@@ -540,8 +541,8 @@ export async function resolveDispute(req: Request, res: Response, next: NextFunc
       outcome?: string; note?: string; creatorAmount?: number; businessAmount?: number;
     };
     const allowed = ['CREATOR_WON', 'BUSINESS_WON', 'PARTIAL', 'DISMISSED'];
-    if (!outcome || !allowed.includes(outcome)) throw new AppError(`outcome must be one of ${allowed.join(', ')}`, 400);
-    if (!note?.trim()) throw new AppError('A resolution reason is required', 400);
+    if (!outcome || !allowed.includes(outcome)) throw new AppError(`outcome must be one of ${allowed.join(', ')}`, HttpStatus.BAD_REQUEST);
+    if (!note?.trim()) throw new AppError('A resolution reason is required', HttpStatus.BAD_REQUEST);
 
     const result = await service.resolveDispute(req.params.id, req.user!.id, {
       outcome: outcome as 'CREATOR_WON' | 'BUSINESS_WON' | 'PARTIAL' | 'DISMISSED',

@@ -3,6 +3,9 @@ import { ReportStatus } from '@prisma/client';
 import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import { ReportService } from './report.service';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const reportService = new ReportService();
 
@@ -16,7 +19,7 @@ export class ReportController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const report = await reportService.create(req.user!.id, req.body);
-      success(res, report, 'Report submitted', 201);
+      success(res, report, getDict().report.reportSubmitted, 201);
     } catch (err) { next(err); }
   }
 
@@ -25,7 +28,7 @@ export class ReportController {
       const { page, limit } = parsePage(req);
       const statusRaw = req.query.status as string | undefined;
       if (statusRaw && !Object.values(ReportStatus).includes(statusRaw as ReportStatus)) {
-        throw new AppError(`Invalid status. Must be one of: ${Object.values(ReportStatus).join(', ')}`, 400);
+        throw new AppError(`Invalid status. Must be one of: ${Object.values(ReportStatus).join(', ')}`, HttpStatus.BAD_REQUEST);
       }
       const targetType = req.query.targetType as string | undefined;
       const result = await reportService.listForAdmin({ status: statusRaw as ReportStatus | undefined, targetType, page, limit });

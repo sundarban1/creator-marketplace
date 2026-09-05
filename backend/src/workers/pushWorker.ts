@@ -2,6 +2,7 @@ import { Worker } from 'bullmq';
 import { QUEUE_NAMES, createQueueConnection } from '../config/queue';
 import { deliverExpoPush, checkPushReceipt } from '../modules/notifications/notification.service';
 import { logger } from '../config/logger';
+import { reportError, LogEvent } from '../config/observability';
 import type { PushJob } from '../queues/pushQueue';
 
 let worker: Worker | null = null;
@@ -26,8 +27,15 @@ export function startPushWorker(): void {
     { connection, concurrency: 5 },
   );
 
+  worker.on('completed', (job) => {
+    const durationMs = job.finishedOn && job.processedOn ? job.finishedOn - job.processedOn : undefined;
+    logger.info({ event: LogEvent.JOB_COMPLETED, queue: QUEUE_NAMES.push, jobId: job.id, name: job.name, attempt: job.attemptsMade, durationMs }, 'push job completed');
+  });
   worker.on('failed', (job, err) => {
-    logger.warn({ jobId: job?.id, name: job?.name, err: err.message }, 'push job failed');
+    const durationMs = job?.finishedOn && job?.processedOn ? job.finishedOn - job.processedOn : undefined;
+    // Deduped by queue+job+message — a job's own retries (attempts: 3, see
+    // config/queue.ts) would otherwise open a fresh Sentry issue per attempt.
+    reportError(err, { event: LogEvent.JOB_FAILED, queue: QUEUE_NAMES.push, jobId: job?.id, name: job?.name, attempt: job?.attemptsMade, durationMs });
   });
   worker.on('error', (err) => logger.warn({ err: err.message }, 'push worker error'));
 

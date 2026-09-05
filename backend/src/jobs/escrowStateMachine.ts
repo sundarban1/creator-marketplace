@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import prisma from '../prisma';
 import { logger } from '../config/logger';
+import { reportError, LogEvent } from '../config/observability';
 import { notificationService } from '../modules/notifications/notification.service';
 import { escrowService } from '../modules/campaign/escrow.service';
 import { getEscrowTimings, deadlineFromNow } from '../modules/campaign/escrow-config';
@@ -61,7 +62,7 @@ async function sweepPaymentTimeouts(now: Date): Promise<number> {
       body:    `The 24-hour payment window for "${app.campaign.title}" passed, so the creator selection was released. You can select a creator again.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
     notificationService.create({
       userId:  app.creator.userId,
       type:    'proposal_expired',
@@ -69,7 +70,7 @@ async function sweepPaymentTimeouts(now: Date): Promise<number> {
       body:    `"${app.campaign.title}" was not funded in time. You're free to take on other campaigns.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
   }
   return rows.length;
 }
@@ -109,7 +110,7 @@ async function sweepConfirmationTimeouts(now: Date): Promise<number> {
       body:    `The creator for "${app.campaign.title}" didn't confirm in time. Your payment is being refunded in full and you can select another creator.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
     notificationService.create({
       userId:  app.creator.userId,
       type:    'proposal_expired',
@@ -117,7 +118,7 @@ async function sweepConfirmationTimeouts(now: Date): Promise<number> {
       body:    `You didn't confirm "${app.campaign.title}" in time, so it was released and the business refunded. Confirming promptly keeps your reliability score healthy.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
   }
   return rows.length;
 }
@@ -152,7 +153,7 @@ async function sweepContentDeadlines(now: Date): Promise<number> {
       body:    `The deadline for "${app.campaign.title}" has passed. Please submit your content as soon as possible — you have a short grace period.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
     notificationService.create({
       userId:  app.campaign.business.userId,
       type:    'content_overdue',
@@ -160,7 +161,7 @@ async function sweepContentDeadlines(now: Date): Promise<number> {
       body:    `The creator for "${app.campaign.title}" has missed the content deadline. They have a short grace period to deliver.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
   }
   return rows.length;
 }
@@ -195,7 +196,7 @@ async function sweepCreatorFailures(now: Date): Promise<number> {
       body:    `The creator for "${app.campaign.title}" did not deliver any content. Your payment is being refunded in full.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
     notificationService.create({
       userId:  app.creator.userId,
       type:    'reliability_warning',
@@ -203,7 +204,7 @@ async function sweepCreatorFailures(now: Date): Promise<number> {
       body:    `You didn't deliver content for "${app.campaign.title}" and the business was refunded. Repeated misses affect your reliability score and campaign ranking.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
   }
   return rows.length;
 }
@@ -234,7 +235,7 @@ async function sweepBusinessReview(now: Date): Promise<{ reminders: number; auto
       body:    `"${app.campaign.title}" has content awaiting your review. Approve it or request changes before the review window closes.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
   }
 
   // Auto-approve — only when the admin switch is on.
@@ -253,7 +254,7 @@ async function sweepBusinessReview(now: Date): Promise<{ reminders: number; auto
         await campaignService.systemApproveWork(id);
         autoApproved += 1;
       } catch (err) {
-        logger.error({ err, appId: id }, 'escrow sweep: auto-approve failed');
+        reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: 'businessReview.autoApprove', appId: id });
       }
     }
   }
@@ -276,7 +277,7 @@ async function sweepSettlementReleases(now: Date): Promise<number> {
       const r = await escrowService.release({ applicationId: id, actor: { type: 'SYSTEM' }, reason: 'Settlement window elapsed' });
       if (r.released) released += 1;
     } catch (err) {
-      logger.error({ err, appId: id }, 'escrow sweep: settlement release failed');
+      reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: 'settlementReleases', appId: id });
     }
   }
   return released;
@@ -289,7 +290,7 @@ async function runEscrowSweep(): Promise<void> {
     try {
       results[name] = await fn();
     } catch (err) {
-      logger.error({ err, sweep: name }, 'escrow sweep step failed');
+      reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: name });
     }
   };
 
@@ -310,7 +311,7 @@ export function startEscrowStateMachineJob(): void {
   // Every 5 minutes — the spec's windows are measured in hours, so 5-minute
   // resolution keeps transitions timely without hammering the DB.
   cron.schedule('*/5 * * * *', () => {
-    runEscrowSweep().catch((err) => logger.error({ err }, 'Escrow sweep failed'));
+    runEscrowSweep().catch((err) => reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: 'top_level' }));
   });
 }
 

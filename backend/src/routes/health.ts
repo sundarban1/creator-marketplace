@@ -2,6 +2,8 @@ import type { Express } from 'express';
 import { env } from '../config/env';
 import prisma from '../prisma';
 
+import { HttpStatus } from '../constants/httpStatus';
+
 /**
  * @swagger
  * /health:
@@ -40,7 +42,7 @@ export function registerHealthCheck(app: Express): void {
   app.get('/health', async (_req, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         status: 'ok',
         uptime: process.uptime(),
         timestamp: new Date().toISOString(),
@@ -48,7 +50,7 @@ export function registerHealthCheck(app: Express): void {
         database: 'connected',
       });
     } catch {
-      res.status(503).json({
+      res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
         status: 'error',
         uptime: process.uptime(),
         timestamp: new Date().toISOString(),

@@ -2,6 +2,9 @@ import { AppError } from '../../middleware/error';
 import { PortfolioRepository } from './portfolio.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import type { CreatePortfolioItemInput, UpdatePortfolioItemInput } from './portfolio.schema';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 export class PortfolioService {
   private repo = new PortfolioRepository();
@@ -9,22 +12,22 @@ export class PortfolioService {
 
   async listMine(userId: string) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().portfolio.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return this.repo.findByCreatorProfileId(profile.id);
   }
 
   async create(userId: string, input: CreatePortfolioItemInput) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().portfolio.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return this.repo.create(profile.id, input);
   }
 
   private async findOwned(userId: string, itemId: string) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().portfolio.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     const item = await this.repo.findById(itemId);
-    if (!item) throw new AppError('Portfolio item not found', 404);
-    if (item.creatorProfileId !== profile.id) throw new AppError('Not authorized to modify this portfolio item', 403);
+    if (!item) throw new AppError(getDict().portfolio.itemNotFound, HttpStatus.NOT_FOUND);
+    if (item.creatorProfileId !== profile.id) throw new AppError(getDict().portfolio.notAuthorizedToModifyItem, HttpStatus.FORBIDDEN);
     return item;
   }
 

@@ -6,6 +6,9 @@ import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { notificationService } from '../notifications/notification.service';
 import type { CreateServiceRequestInput } from './service-request.schema';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 export class ServiceRequestService {
   private repo = new ServiceRequestRepository();
@@ -15,13 +18,13 @@ export class ServiceRequestService {
 
   async create(userId: string, input: CreateServiceRequestInput) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().serviceRequest.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const service = await this.serviceRepo.findById(input.serviceId);
-    if (!service || service.status !== 'ACTIVE') throw new AppError('Service not found', 404);
+    if (!service || service.status !== 'ACTIVE') throw new AppError(getDict().serviceRequest.serviceNotFound, HttpStatus.NOT_FOUND);
 
     const existing = await this.repo.findExisting(input.serviceId, business.id);
-    if (existing) throw new AppError('You already have a pending request for this service', 409);
+    if (existing) throw new AppError(getDict().serviceRequest.alreadyHasPendingRequest, HttpStatus.CONFLICT);
 
     const request = await this.repo.create({
       serviceId: input.serviceId,
@@ -47,24 +50,24 @@ export class ServiceRequestService {
 
   async listReceived(userId: string, status?: ServiceRequestStatus) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().serviceRequest.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return this.repo.findByCreatorId(profile.id, status);
   }
 
   async listSent(userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().serviceRequest.businessProfileNotFound, HttpStatus.NOT_FOUND);
     return this.repo.findByBusinessId(business.id);
   }
 
   async respond(userId: string, requestId: string, status: 'ACCEPTED' | 'DECLINED') {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().serviceRequest.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const request = await this.repo.findById(requestId);
-    if (!request) throw new AppError('Request not found', 404);
-    if (request.creatorId !== profile.id) throw new AppError('Not authorized to respond to this request', 403);
-    if (request.status !== 'PENDING') throw new AppError('This request has already been responded to', 400);
+    if (!request) throw new AppError(getDict().serviceRequest.requestNotFound, HttpStatus.NOT_FOUND);
+    if (request.creatorId !== profile.id) throw new AppError(getDict().serviceRequest.notAuthorizedToRespond, HttpStatus.FORBIDDEN);
+    if (request.status !== 'PENDING') throw new AppError(getDict().serviceRequest.alreadyResponded, HttpStatus.BAD_REQUEST);
 
     const updated = await this.repo.updateStatus(requestId, status);
 

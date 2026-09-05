@@ -87,6 +87,12 @@ app.use((req, res) => {
   return res.status(404).sendFile(existsSync(notFound) ? notFound : join(DIST, 'index.html'));
 });
 
-app.listen(PORT, () => {
+// Render's Docker health check connects to the container from outside the
+// process — binding without an explicit host can resolve to the IPv6-only
+// `::1`/loopback interface in some container network configs, which accepts
+// connections from inside the container (why the log below still prints) but
+// is unreachable from Render's checker, so the deploy sits at "listening"
+// until it times out. `0.0.0.0` guarantees it's reachable from outside.
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`[server] listening on :${PORT}`);
 });

@@ -1,5 +1,6 @@
 import { ConversationStatus, Role } from '@prisma/client';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { logger } from '../../config/logger';
 import { toConversationDto, toMessageDto } from './messaging.dto';
 import { CreatorRepository } from '../creator/creator.repository';
@@ -36,6 +37,8 @@ const MAX_VOICE_SIZE_BYTES = 15 * 1024 * 1024;
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
 import type { DeliverableVideo } from '../campaign/campaign.dto';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 const ATTACHMENT_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
 
 // Per-user messages-per-minute tracker, module-level (not a class field) so
@@ -55,7 +58,7 @@ async function assertMessageRateOk(adminRepo: AdminRepository, userId: string): 
   const now = Date.now();
   const recent = (recentSendTimestamps.get(userId) ?? []).filter((t) => now - t < MESSAGE_RATE_WINDOW_MS);
   if (recent.length >= maxPerMinute) {
-    throw new AppError('You are sending messages too quickly. Please slow down.', 429);
+    throw new AppError(getDict().messaging.sendingTooQuickly, HttpStatus.TOO_MANY_REQUESTS);
   }
   recent.push(now);
   recentSendTimestamps.set(userId, recent);
@@ -87,7 +90,7 @@ export class MessagingService {
 
   private async assertMessagingEnabled(): Promise<void> {
     if ((await this.adminRepo.getSetting('messaging.enabled')) === false) {
-      throw new AppError('Messaging is currently disabled by the platform.', 403);
+      throw new AppError(getDict().messaging.messagingDisabled, HttpStatus.FORBIDDEN);
     }
   }
 
@@ -95,13 +98,13 @@ export class MessagingService {
 
   private async resolveCreator(userId: string) {
     const creator = await this.creatorRepo.findByUserId(userId);
-    if (!creator) throw new AppError('Creator profile not found', 404);
+    if (!creator) throw new AppError(getDict().messaging.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return creator;
   }
 
   private async resolveBusiness(userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
-    if (!business) throw new AppError('Business profile not found', 404);
+    if (!business) throw new AppError(getDict().messaging.businessProfileNotFound, HttpStatus.NOT_FOUND);
     return business;
   }
 
@@ -113,10 +116,10 @@ export class MessagingService {
     if (role === 'ADMIN') return;
     if (role === 'CREATOR') {
       const creator = await this.resolveCreator(userId);
-      if (creator.id !== conversation.creatorId && creator.id !== conversation.creatorId2) throw new AppError('Access denied', 403);
+      if (creator.id !== conversation.creatorId && creator.id !== conversation.creatorId2) throw new AppError(getDict().messaging.accessDenied, HttpStatus.FORBIDDEN);
     } else if (role === 'BUSINESS') {
       const business = await this.resolveBusiness(userId);
-      if (business.id !== conversation.businessId) throw new AppError('Access denied', 403);
+      if (business.id !== conversation.businessId) throw new AppError(getDict().messaging.accessDenied, HttpStatus.FORBIDDEN);
     }
   }
 
@@ -172,7 +175,7 @@ export class MessagingService {
 
   private async assertNotBlocked(userIdA: string, userIdB: string): Promise<void> {
     const block = await this.repo.findBlockBetween(userIdA, userIdB);
-    if (block) throw new AppError('You cannot message this user.', 403);
+    if (block) throw new AppError(getDict().messaging.cannotMessageBlockedUser, HttpStatus.FORBIDDEN);
   }
 
   // Boolean, non-throwing variant of verifyConversationAccess — lets the socket
@@ -242,7 +245,7 @@ export class MessagingService {
     if (role === 'BUSINESS') {
       const business     = await this.resolveBusiness(userId);
       const otherCreator = await this.creatorRepo.findByUserId(input.otherUserId);
-      if (!otherCreator) throw new AppError('Creator not found', 404);
+      if (!otherCreator) throw new AppError(getDict().messaging.creatorNotFound, HttpStatus.NOT_FOUND);
       const conv = await this.repo.findOrCreateConversation(
         otherCreator.id,
         business.id,
@@ -257,7 +260,7 @@ export class MessagingService {
     if (role === 'CREATOR') {
       const creator      = await this.resolveCreator(userId);
       const otherBusiness = await this.businessRepo.findByUserId(input.otherUserId);
-      if (!otherBusiness) throw new AppError('Business not found', 404);
+      if (!otherBusiness) throw new AppError(getDict().messaging.businessNotFound, HttpStatus.NOT_FOUND);
       // Direct-message-enabled businesses skip the request step entirely; others still require approval.
       const initialStatus: ConversationStatus = otherBusiness.allowDirectMessages ? 'ACCEPTED' : 'PENDING';
       const conv = await this.repo.findOrCreateConversation(
@@ -272,7 +275,7 @@ export class MessagingService {
       return toConversationDto(conv, 'CREATOR', creator.id);
     }
 
-    throw new AppError('Unauthorized', 403);
+    throw new AppError(getDict().messaging.unauthorized, HttpStatus.FORBIDDEN);
   }
 
   // Check if a conversation exists between the current user and the given counterpart profile
@@ -297,8 +300,8 @@ export class MessagingService {
 
     const creator      = await this.resolveCreator(userId);
     const otherCreator = await this.creatorRepo.findByUserId(otherUserId);
-    if (!otherCreator) throw new AppError('Creator not found', 404);
-    if (otherCreator.id === creator.id) throw new AppError('You cannot message yourself', 400);
+    if (!otherCreator) throw new AppError(getDict().messaging.creatorNotFound, HttpStatus.NOT_FOUND);
+    if (otherCreator.id === creator.id) throw new AppError(getDict().messaging.cannotMessageYourself, HttpStatus.BAD_REQUEST);
 
     await this.assertNotBlocked(userId, otherUserId);
 
@@ -315,11 +318,11 @@ export class MessagingService {
   // ── Blocking (creator<->creator conversations only) ────────────────────────
 
   async blockInConversation(conversationId: string, userId: string, role: Role) {
-    if (role !== 'CREATOR') throw new AppError('Access denied', 403);
+    if (role !== 'CREATOR') throw new AppError(getDict().messaging.accessDenied, HttpStatus.FORBIDDEN);
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
-    if (conversation.creatorId2 == null) throw new AppError('Blocking is only available for creator-to-creator conversations', 400);
+    if (conversation.creatorId2 == null) throw new AppError(getDict().messaging.blockingCreatorToCreatorOnly, HttpStatus.BAD_REQUEST);
 
     const [pA, pB] = this.participantsOf(conversation);
     const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
@@ -329,11 +332,11 @@ export class MessagingService {
   }
 
   async unblockInConversation(conversationId: string, userId: string, role: Role) {
-    if (role !== 'CREATOR') throw new AppError('Access denied', 403);
+    if (role !== 'CREATOR') throw new AppError(getDict().messaging.accessDenied, HttpStatus.FORBIDDEN);
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
-    if (conversation.creatorId2 == null) throw new AppError('Blocking is only available for creator-to-creator conversations', 400);
+    if (conversation.creatorId2 == null) throw new AppError(getDict().messaging.blockingCreatorToCreatorOnly, HttpStatus.BAD_REQUEST);
 
     const [pA, pB] = this.participantsOf(conversation);
     const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
@@ -343,7 +346,7 @@ export class MessagingService {
 
   async getBlockStatus(conversationId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
     if (conversation.creatorId2 == null) return { blockedByMe: false, blockedByOther: false };
 
@@ -359,11 +362,11 @@ export class MessagingService {
   // ── Request accept / decline ───────────────────────────────────────────────
 
   async respondToRequest(conversationId: string, userId: string, role: Role, action: 'accept' | 'decline') {
-    if (role !== 'CREATOR' && role !== 'BUSINESS') throw new AppError('Access denied', 403);
+    if (role !== 'CREATOR' && role !== 'BUSINESS') throw new AppError(getDict().messaging.accessDenied, HttpStatus.FORBIDDEN);
 
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
-    if (conversation.status !== 'PENDING') throw new AppError('Request is not pending', 400);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
+    if (conversation.status !== 'PENDING') throw new AppError(getDict().messaging.requestNotPending, HttpStatus.BAD_REQUEST);
 
     // Whichever side (creator, creator2, or business) received the request may respond
     await this.verifyConversationAccess(conversation, userId, role);
@@ -397,7 +400,7 @@ export class MessagingService {
 
   async getMessages(conversationId: string, userId: string, role: Role, page: number, limit: number) {
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
     const hiddenField = role === 'ADMIN' ? null : this.hiddenFieldFor(conversation, userId, role);
     const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 200), hiddenField);
@@ -409,10 +412,10 @@ export class MessagingService {
   /** "Delete for me" — hides one message from the caller's own view only. */
   async deleteMessageForMe(conversationId: string, messageId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
     const message = await this.repo.findMessageById(messageId);
-    if (!message || message.conversationId !== conversationId) throw new AppError('Message not found', 404);
+    if (!message || message.conversationId !== conversationId) throw new AppError(getDict().messaging.messageNotFound, HttpStatus.NOT_FOUND);
 
     const field = this.hiddenFieldFor(conversation, userId, role);
     await this.repo.hideMessageForUser(messageId, field);
@@ -421,11 +424,11 @@ export class MessagingService {
   /** "Delete for everyone" — sender-only, tombstones the message for both sides. */
   async deleteMessageForEveryone(conversationId: string, messageId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
     const message = await this.repo.findMessageById(messageId);
-    if (!message || message.conversationId !== conversationId) throw new AppError('Message not found', 404);
-    if (message.senderId !== userId) throw new AppError('You can only delete your own messages for everyone', 403);
+    if (!message || message.conversationId !== conversationId) throw new AppError(getDict().messaging.messageNotFound, HttpStatus.NOT_FOUND);
+    if (message.senderId !== userId) throw new AppError(getDict().messaging.canOnlyDeleteOwnMessageForEveryone, HttpStatus.FORBIDDEN);
 
     await this.repo.softDeleteMessage(messageId, userId);
     deleteAttachmentStorage(message);
@@ -441,13 +444,13 @@ export class MessagingService {
    *  precedent rather than a short edit window. */
   async editMessage(conversationId: string, messageId: string, userId: string, role: Role, content: string) {
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
     const message = await this.repo.findMessageById(messageId);
-    if (!message || message.conversationId !== conversationId) throw new AppError('Message not found', 404);
-    if (message.senderId !== userId) throw new AppError('You can only edit your own messages', 403);
-    if (message.deletedAt) throw new AppError('Cannot edit a deleted message', 400);
-    if (message.type !== 'TEXT') throw new AppError('Only text messages can be edited', 400);
+    if (!message || message.conversationId !== conversationId) throw new AppError(getDict().messaging.messageNotFound, HttpStatus.NOT_FOUND);
+    if (message.senderId !== userId) throw new AppError(getDict().messaging.canOnlyEditOwnMessage, HttpStatus.FORBIDDEN);
+    if (message.deletedAt) throw new AppError(getDict().messaging.cannotEditDeletedMessage, HttpStatus.BAD_REQUEST);
+    if (message.type !== 'TEXT') throw new AppError(getDict().messaging.onlyTextMessagesCanBeEdited, HttpStatus.BAD_REQUEST);
 
     const updated = await this.repo.editMessage(messageId, content);
     const dto = toMessageDto(updated);
@@ -462,7 +465,7 @@ export class MessagingService {
   /** "Delete conversation" — per-side hide from the inbox; resets on the next new message. */
   async deleteConversationForMe(conversationId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
 
     const field = this.hiddenFieldFor(conversation, userId, role);
@@ -477,7 +480,7 @@ export class MessagingService {
   // the response-time analytics below must not fire for it).
   private async assertConversationSendable(conversationId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
 
     if (conversation.creatorId2 != null) {
@@ -487,13 +490,13 @@ export class MessagingService {
     }
 
     if (conversation.status === 'PENDING') {
-      throw new AppError('Cannot send messages until the request is accepted', 403);
+      throw new AppError(getDict().messaging.cannotSendUntilAccepted, HttpStatus.FORBIDDEN);
     }
     if (conversation.status === 'DECLINED') {
-      throw new AppError('This conversation request was declined', 403);
+      throw new AppError(getDict().messaging.conversationRequestDeclined, HttpStatus.FORBIDDEN);
     }
     if (conversation.status === 'CLOSED') {
-      throw new AppError('This collaboration has ended. Accept a new proposal to chat again.', 403);
+      throw new AppError(getDict().messaging.collaborationEnded, HttpStatus.FORBIDDEN);
     }
 
     return conversation;
@@ -580,7 +583,7 @@ export class MessagingService {
       const content = input.content.trim();
       const lastOwn = await this.repo.findLastMessageBySender(conversationId, userId);
       if (lastOwn && lastOwn.content === content) {
-        throw new AppError('You just sent this exact message — please wait before sending it again.', 429);
+        throw new AppError(getDict().messaging.duplicateMessageWait, HttpStatus.TOO_MANY_REQUESTS);
       }
     }
 
@@ -659,22 +662,22 @@ export class MessagingService {
 
     if (ref.key) {
       if (!ref.key.startsWith(`users/${userId}/audio/`)) {
-        throw new AppError('Invalid upload reference', 400);
+        throw new AppError(getDict().messaging.invalidUploadReference, HttpStatus.BAD_REQUEST);
       }
 
       let result;
       try {
         result = await finalizeR2Object(ref.key);
       } catch {
-        throw new AppError('Could not verify the uploaded voice message. Please try again.', 400);
+        throw new AppError(getDict().messaging.couldNotVerifyVoiceMessage, HttpStatus.BAD_REQUEST);
       }
       if (!result.url) {
         await deleteR2Object(ref.key);
-        throw new AppError('Voice storage is not fully configured yet. Please try again later.', 500);
+        throw new AppError(getDict().messaging.voiceStorageNotConfigured, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       if (result.sizeBytes > MAX_VOICE_SIZE_BYTES) {
         await deleteR2Object(ref.key);
-        throw new AppError('Voice message exceeds the 15MB limit', 400);
+        throw new AppError(getDict().messaging.voiceExceeds15MB, HttpStatus.BAD_REQUEST);
       }
 
       // No independent duration source for R2 — trust the client's
@@ -687,24 +690,24 @@ export class MessagingService {
       const publicId = ref.publicId!;
       const expectedPrefix = 'messages/attachments/voice_';
       if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${conversationId}_`)) {
-        throw new AppError('Invalid upload reference', 400);
+        throw new AppError(getDict().messaging.invalidUploadReference, HttpStatus.BAD_REQUEST);
       }
 
       let resource;
       try {
         resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
       } catch {
-        throw new AppError('Could not verify the uploaded voice message. Please try again.', 400);
+        throw new AppError(getDict().messaging.couldNotVerifyVoiceMessage, HttpStatus.BAD_REQUEST);
       }
 
       if (!ALLOWED_VOICE_FORMATS.has((resource.format ?? '').toLowerCase())) {
         await deleteVideo(publicId);
-        throw new AppError('Unsupported audio format', 400);
+        throw new AppError(getDict().messaging.unsupportedAudioFormat, HttpStatus.BAD_REQUEST);
       }
 
       if ((resource.bytes ?? 0) > MAX_VOICE_SIZE_BYTES) {
         await deleteVideo(publicId);
-        throw new AppError('Voice message exceeds the 15MB limit', 400);
+        throw new AppError(getDict().messaging.voiceExceeds15MB, HttpStatus.BAD_REQUEST);
       }
 
       // Cloudinary's own duration wins when present (occasionally not yet
@@ -720,7 +723,7 @@ export class MessagingService {
     if (rawDurationSec < 1 || rawDurationSec > 120) {
       if (ref.key) await deleteR2Object(ref.key);
       else await deleteVideo(ref.publicId!);
-      throw new AppError('Voice message must be between 1 and 120 seconds', 400);
+      throw new AppError(getDict().messaging.voiceDurationOutOfRange, HttpStatus.BAD_REQUEST);
     }
 
     return this.persistAndBroadcast(conversation, userId, role, {
@@ -751,8 +754,8 @@ export class MessagingService {
     await this.assertMessagingEnabled();
     const conversation = await this.assertConversationSendable(conversationId, userId, role);
     // Video is only allowed in creator<->business conversations, not creator<->creator.
-    if (conversation.creatorId2 != null) throw new AppError('Video is not available in creator-to-creator conversations', 403);
-    if (sizeBytes > MAX_VIDEO_SIZE_BYTES) throw new AppError('Video exceeds the 500MB limit', 400);
+    if (conversation.creatorId2 != null) throw new AppError(getDict().messaging.videoNotAvailableCreatorToCreator, HttpStatus.FORBIDDEN);
+    if (sizeBytes > MAX_VIDEO_SIZE_BYTES) throw new AppError(getDict().messaging.videoExceeds500MB, HttpStatus.BAD_REQUEST);
 
     const ext = mimeType === 'video/quicktime' ? 'mov' : 'mp4';
     const publicId = `video_${conversationId}_${Date.now()}_${randomUUID()}`;
@@ -777,7 +780,7 @@ export class MessagingService {
   ) {
     const conversation = await this.prepareSend(conversationId, userId, role);
     // Video is only allowed in creator<->business conversations, not creator<->creator.
-    if (conversation.creatorId2 != null) throw new AppError('Video is not available in creator-to-creator conversations', 403);
+    if (conversation.creatorId2 != null) throw new AppError(getDict().messaging.videoNotAvailableCreatorToCreator, HttpStatus.FORBIDDEN);
 
     const content  = caption?.trim() ?? '';
     const pushBody = content || 'Video';
@@ -793,7 +796,7 @@ export class MessagingService {
 
     if (ref.key) {
       if (!ref.key.startsWith(`users/${userId}/videos/`)) {
-        throw new AppError('Invalid upload reference', 400);
+        throw new AppError(getDict().messaging.invalidUploadReference, HttpStatus.BAD_REQUEST);
       }
 
       let result;
@@ -801,17 +804,17 @@ export class MessagingService {
         result = ref.uploadId ? await completeR2Multipart(ref.key, ref.uploadId) : await finalizeR2Object(ref.key);
       } catch {
         if (ref.uploadId) await abortR2Multipart(ref.key, ref.uploadId);
-        throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+        throw new AppError(getDict().messaging.couldNotVerifyVideo, HttpStatus.BAD_REQUEST);
       }
       if (!result.url) {
         await deleteR2Object(ref.key);
-        throw new AppError('Video storage is not fully configured yet. Please try again later.', 500);
+        throw new AppError(getDict().messaging.videoStorageNotConfigured, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       // Client-side picker already caps size at 500MB, but that check is trivially
       // bypassable — HeadObject's real byte size is the source of truth here.
       if (result.sizeBytes > MAX_VIDEO_SIZE_BYTES) {
         await deleteR2Object(ref.key);
-        throw new AppError('Video exceeds the 500MB limit', 400);
+        throw new AppError(getDict().messaging.videoExceeds500MB, HttpStatus.BAD_REQUEST);
       }
 
       // No independent duration/dimension source for R2 — trust the client's
@@ -839,26 +842,26 @@ export class MessagingService {
       const publicId = ref.publicId!;
       const expectedPrefix = 'messages/attachments/video_';
       if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${conversationId}_`)) {
-        throw new AppError('Invalid upload reference', 400);
+        throw new AppError(getDict().messaging.invalidUploadReference, HttpStatus.BAD_REQUEST);
       }
 
       let resource;
       try {
         resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
       } catch {
-        throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+        throw new AppError(getDict().messaging.couldNotVerifyVideo, HttpStatus.BAD_REQUEST);
       }
 
       if (!ALLOWED_VIDEO_FORMATS.has((resource.format ?? '').toLowerCase())) {
         await deleteVideo(publicId);
-        throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
+        throw new AppError(getDict().messaging.unsupportedVideoFormat, HttpStatus.BAD_REQUEST);
       }
 
       // Client-side picker already caps size at 500MB, but that check is trivially
       // bypassable — the server is the only source of truth, same as the format check above.
       if ((resource.bytes ?? 0) > MAX_VIDEO_SIZE_BYTES) {
         await deleteVideo(publicId);
-        throw new AppError('Video exceeds the 500MB limit', 400);
+        throw new AppError(getDict().messaging.videoExceeds500MB, HttpStatus.BAD_REQUEST);
       }
 
       // Cloudinary's own duration wins when present — it's occasionally not
@@ -984,7 +987,7 @@ export class MessagingService {
 
   async markSeen(conversationId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError('Conversation not found', 404);
+    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
 
     const field = this.seenFieldFor(conversation, userId, role);

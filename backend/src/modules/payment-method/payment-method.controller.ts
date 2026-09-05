@@ -3,6 +3,9 @@ import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { PaymentMethodService } from './payment-method.service';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const paymentMethodService = new PaymentMethodService();
 const ICON_TRANSFORMATION = [{ width: 200, height: 200, crop: 'fit' }];
@@ -11,7 +14,7 @@ export class PaymentMethodController {
   async listPublic(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const methods = await paymentMethodService.listPublic();
-      success(res, methods, 'Payment methods retrieved');
+      success(res, methods, getDict().paymentMethod.paymentMethodsRetrieved);
     } catch (err) {
       next(err);
     }
@@ -28,7 +31,7 @@ export class PaymentMethodController {
 
   async uploadIcon(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError('No image file provided', HttpStatus.BAD_REQUEST);
       const iconUrl = await uploadToCloudinary(
         req.file.buffer,
         'payment-methods/icons',

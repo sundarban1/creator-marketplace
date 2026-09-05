@@ -1,6 +1,7 @@
 import { Prisma, WorkStatus, CampaignEventActor } from '@prisma/client';
 import prisma from '../../prisma';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
@@ -9,6 +10,8 @@ import { recordWalletTransaction } from '../wallet/wallet.ledger';
 import { assertEscrowTransition } from './application-state-machine';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const messagingService = new MessagingService();
 
@@ -66,7 +69,7 @@ class EscrowService {
           creator:  { select: { userId: true, fullName: true } },
         },
       });
-      if (!app) throw new AppError('Application not found', 404);
+      if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
       const REFUNDABLE = ['HELD', 'FROZEN', 'RELEASE_PENDING', 'REFUND_PENDING'];
       if (!REFUNDABLE.includes(app.escrowStatus)) {
@@ -193,15 +196,15 @@ class EscrowService {
           creator:  { select: { id: true, userId: true, fullName: true } },
         },
       });
-      if (!app) throw new AppError('Application not found', 404);
+      if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
       if (app.escrowStatus === 'RELEASED') return { moved: false as const, app };
       if (!['HELD', 'RELEASE_PENDING', 'FROZEN'].includes(app.escrowStatus)) {
-        throw new AppError(`Escrow is not in a releasable state (${app.escrowStatus})`, 409);
+        throw new AppError(getDict().campaign.escrowNotReleasable(app.escrowStatus), HttpStatus.CONFLICT);
       }
       // A frozen (disputed) escrow only moves under admin resolution.
       if (app.escrowStatus === 'FROZEN' && actor.type !== 'ADMIN') {
-        throw new AppError('This engagement is under dispute', 409);
+        throw new AppError(getDict().campaign.engagementUnderDispute, HttpStatus.CONFLICT);
       }
       assertEscrowTransition(app.escrowStatus, 'RELEASED');
 
@@ -435,13 +438,13 @@ class EscrowService {
           dispute:  true,
         },
       });
-      if (!app) throw new AppError('Application not found', 404);
-      if (app.dispute) throw new AppError('A dispute is already open for this engagement', 409);
+      if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+      if (app.dispute) throw new AppError(getDict().campaign.disputeAlreadyOpen, HttpStatus.CONFLICT);
       if (!['HELD', 'RELEASE_PENDING'].includes(app.escrowStatus)) {
-        throw new AppError('There is no held payment to dispute', 409);
+        throw new AppError(getDict().campaign.noHeldPaymentToDispute, HttpStatus.CONFLICT);
       }
       if (['COMPLETED', 'CANCELLED', 'CREATOR_FAILED'].includes(app.workStatus)) {
-        throw new AppError('This engagement is already finished', 409);
+        throw new AppError(getDict().campaign.engagementAlreadyFinished, HttpStatus.CONFLICT);
       }
       assertEscrowTransition(app.escrowStatus, 'FROZEN');
       const prevEscrow = app.escrowStatus;
@@ -529,7 +532,7 @@ class EscrowService {
     businessAmount?: number;
   }): Promise<void> {
     const { disputeId, adminUserId, outcome, note } = params;
-    if (!note?.trim()) throw new AppError('A resolution reason is required', 400);
+    if (!note?.trim()) throw new AppError(getDict().campaign.resolutionReasonRequired, HttpStatus.BAD_REQUEST);
 
     const dispute = await prisma.dispute.findUnique({
       where: { id: disputeId },
@@ -542,8 +545,8 @@ class EscrowService {
         },
       },
     });
-    if (!dispute) throw new AppError('Dispute not found', 404);
-    if (dispute.status === 'RESOLVED') throw new AppError('This dispute is already resolved', 409);
+    if (!dispute) throw new AppError(getDict().campaign.disputeNotFound, HttpStatus.NOT_FOUND);
+    if (dispute.status === 'RESOLVED') throw new AppError(getDict().campaign.disputeAlreadyResolved, HttpStatus.CONFLICT);
 
     const app = dispute.application;
     const total = app.proposedRate;
@@ -556,7 +559,7 @@ class EscrowService {
       const cAmt = Math.max(0, params.creatorAmount ?? 0);
       const bAmt = Math.max(0, params.businessAmount ?? 0);
       if (Math.abs(cAmt + bAmt - total) > 0.01) {
-        throw new AppError(`The split (${cAmt} + ${bAmt}) must equal the escrowed amount (${total})`, 400);
+        throw new AppError(getDict().campaign.splitMustEqualEscrowedAmount(cAmt, bAmt, total), HttpStatus.BAD_REQUEST);
       }
       await this.settleSplit({ applicationId: app.id, adminUserId, creatorAmount: cAmt, businessAmount: bAmt, note });
     } else {
@@ -615,7 +618,7 @@ class EscrowService {
         where: { id: applicationId },
         include: { campaign: { include: { business: { select: { id: true } } } } },
       });
-      if (!app) throw new AppError('Application not found', 404);
+      if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
       if (app.escrowStatus === 'PARTIALLY_REFUNDED' || app.escrowStatus === 'RELEASED') return;
       assertEscrowTransition(app.escrowStatus, 'PARTIALLY_REFUNDED');
 

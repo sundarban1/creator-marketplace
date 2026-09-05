@@ -4,6 +4,8 @@ import { CategoryRepository } from './category.repository';
 import type { CreateCategoryInput, UpdateCategoryInput } from './category.schema';
 import { cached, invalidatePrefix } from '../../utils/cache';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 // Public category lists are read constantly by both clients and change only
 // when an admin edits them — cache for an hour and blow the whole namespace
 // away on any write.
@@ -36,7 +38,7 @@ export class CategoryService {
 
   async create(input: CreateCategoryInput) {
     const existing = await this.repo.findByKey(input.key);
-    if (existing) throw new AppError('A category with this key already exists', 409);
+    if (existing) throw new AppError('A category with this key already exists', HttpStatus.CONFLICT);
     const created = await this.repo.create(input);
     await this.invalidatePublicCache();
     return created;
@@ -44,11 +46,11 @@ export class CategoryService {
 
   async update(id: string, input: UpdateCategoryInput) {
     const category = await this.repo.findById(id);
-    if (!category) throw new AppError('Category not found', 404);
+    if (!category) throw new AppError('Category not found', HttpStatus.NOT_FOUND);
 
     if (input.key !== category.key) {
       const existing = await this.repo.findByKey(input.key);
-      if (existing) throw new AppError('A category with this key already exists', 409);
+      if (existing) throw new AppError('A category with this key already exists', HttpStatus.CONFLICT);
     }
     const updated = await this.repo.update(id, input);
     await this.invalidatePublicCache();
@@ -57,7 +59,7 @@ export class CategoryService {
 
   async updateStatus(id: string, status: CategoryStatus) {
     const category = await this.repo.findById(id);
-    if (!category) throw new AppError('Category not found', 404);
+    if (!category) throw new AppError('Category not found', HttpStatus.NOT_FOUND);
     const updated = await this.repo.updateStatus(id, status);
     await this.invalidatePublicCache();
     return updated;
@@ -65,7 +67,7 @@ export class CategoryService {
 
   async remove(id: string) {
     const category = await this.repo.findById(id);
-    if (!category) throw new AppError('Category not found', 404);
+    if (!category) throw new AppError('Category not found', HttpStatus.NOT_FOUND);
     await this.repo.delete(id);
     await this.invalidatePublicCache();
   }

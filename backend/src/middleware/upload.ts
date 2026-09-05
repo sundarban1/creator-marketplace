@@ -1,17 +1,46 @@
 import multer from 'multer';
 import { AppError } from './error';
 
+import { HttpStatus } from '../constants/httpStatus';
+
+// Static (not Google-Translate-API) messages for these fileFilter rejections —
+// they're a small fixed set of UI strings, not user-generated content, so they
+// don't belong in utils/translation.ts's live-translate pipeline. Keyed by
+// req.language (set by middleware/language.ts from the X-Language header).
+const UPLOAD_ERROR_MESSAGES = {
+  imageType: {
+    en: 'Only JPEG, PNG, and WebP images are allowed',
+    ne: 'JPEG, PNG, र WebP फोटोहरू मात्र स्वीकृत छन्',
+  },
+  deliverableFileType: {
+    en: 'Only JPG, PNG, PDF, and DOCX files are allowed',
+    ne: 'JPG, PNG, PDF, र DOCX फाइलहरू मात्र स्वीकृत छन्',
+  },
+  chatFileType: {
+    en: 'This file type is not supported',
+    ne: 'यो फाइल प्रकार समर्थित छैन',
+  },
+  audioFormat: {
+    en: 'Unsupported audio format',
+    ne: 'असमर्थित अडियो ढाँचा',
+  },
+} as const satisfies Record<string, { en: string; ne: string }>;
+
+function uploadErrorMessage(key: keyof typeof UPLOAD_ERROR_MESSAGES, lang: string): string {
+  return lang === 'ne' ? UPLOAD_ERROR_MESSAGES[key].ne : UPLOAD_ERROR_MESSAGES[key].en;
+}
+
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export const uploadImage = multer({
   storage: multer.memoryStorage(),
   limits:  { fileSize: MAX_SIZE_BYTES },
-  fileFilter(_req, file, cb) {
+  fileFilter(req, file, cb) {
     if (ALLOWED_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new AppError('Only JPEG, PNG, and WebP images are allowed', 400) as unknown as null, false);
+      cb(new AppError(uploadErrorMessage('imageType', req.language), HttpStatus.BAD_REQUEST) as unknown as null, false);
     }
   },
 });
@@ -21,11 +50,11 @@ const CHAT_IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 export const uploadChatImage = multer({
   storage: multer.memoryStorage(),
   limits:  { fileSize: CHAT_IMAGE_MAX_BYTES },
-  fileFilter(_req, file, cb) {
+  fileFilter(req, file, cb) {
     if (ALLOWED_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new AppError('Only JPEG, PNG, and WebP images are allowed', 400) as unknown as null, false);
+      cb(new AppError(uploadErrorMessage('imageType', req.language), HttpStatus.BAD_REQUEST) as unknown as null, false);
     }
   },
 });
@@ -43,11 +72,11 @@ const DELIVERABLE_FILE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 export const uploadDeliverableFile = multer({
   storage: multer.memoryStorage(),
   limits:  { fileSize: DELIVERABLE_FILE_MAX_BYTES },
-  fileFilter(_req, file, cb) {
+  fileFilter(req, file, cb) {
     if (DELIVERABLE_FILE_ALLOWED_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new AppError('Only JPG, PNG, PDF, and DOCX files are allowed', 400) as unknown as null, false);
+      cb(new AppError(uploadErrorMessage('deliverableFileType', req.language), HttpStatus.BAD_REQUEST) as unknown as null, false);
     }
   },
 });
@@ -67,11 +96,11 @@ const CHAT_FILE_MAX_BYTES = 20 * 1024 * 1024; // 20 MB
 export const uploadChatFile = multer({
   storage: multer.memoryStorage(),
   limits:  { fileSize: CHAT_FILE_MAX_BYTES },
-  fileFilter(_req, file, cb) {
+  fileFilter(req, file, cb) {
     if (CHAT_FILE_ALLOWED_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new AppError('This file type is not supported', 400) as unknown as null, false);
+      cb(new AppError(uploadErrorMessage('chatFileType', req.language), HttpStatus.BAD_REQUEST) as unknown as null, false);
     }
   },
 });
@@ -84,11 +113,11 @@ const AUDIO_MAX_BYTES = 10 * 1024 * 1024; // 10 MB — comfortably more than a f
 export const uploadAudio = multer({
   storage: multer.memoryStorage(),
   limits:  { fileSize: AUDIO_MAX_BYTES },
-  fileFilter(_req, file, cb) {
+  fileFilter(req, file, cb) {
     if (AUDIO_ALLOWED_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new AppError('Unsupported audio format', 400) as unknown as null, false);
+      cb(new AppError(uploadErrorMessage('audioFormat', req.language), HttpStatus.BAD_REQUEST) as unknown as null, false);
     }
   },
 });

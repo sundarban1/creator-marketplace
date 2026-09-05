@@ -6,6 +6,12 @@ export interface RequestContext {
   userAgent?: string;
   deviceId?: string;
   requestId?: string;
+  // Set by middleware/language.ts once it runs (this middleware is registered
+  // before it, ahead of body parsing — see below) — lets utils/i18n's getDict()
+  // read the current request's language from deep inside services/utils that
+  // only receive (userId, input), never `req`, without threading a `lang` param
+  // through every function signature down to them.
+  language?: string;
 }
 
 const als = new AsyncLocalStorage<RequestContext>();
@@ -26,4 +32,8 @@ export function requestContext(req: Request, _res: Response, next: NextFunction)
 
 export function getRequestContext(): RequestContext | undefined {
   return als.getStore();
+}
+
+export function getRequestLanguage(): string {
+  return getRequestContext()?.language ?? 'en';
 }

@@ -6,6 +6,9 @@ import { BusinessRepository } from '../business/business.repository';
 import { parseRange, rangeStart, bucketGranularity, bucketKey, type AnalyticsRange } from './dateRange';
 import { notificationService } from '../notifications/notification.service';
 import { bufferIncrement, peekBufferedCount } from '../../utils/counters';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const PROFILE_VIEW_DEDUP_MS = 24 * 60 * 60 * 1000;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -119,21 +122,21 @@ export class AnalyticsService {
   // admin payment release + creator confirmation (see campaign.service.ts
   // completeProject()). One review per rater per application.
   async submitReview(appId: string, fromUserId: string, rating: number, comment: string | undefined) {
-    if (rating < 1 || rating > 5) throw new AppError('Rating must be between 1 and 5', 400);
+    if (rating < 1 || rating > 5) throw new AppError(getDict().analytics.ratingOutOfRange, HttpStatus.BAD_REQUEST);
 
     const app = await this.campaignRepo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
-    if (app.workStatus !== 'COMPLETED') throw new AppError('Reviews can only be left once the project is complete', 400);
+    if (!app) throw new AppError(getDict().analytics.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (app.workStatus !== 'COMPLETED') throw new AppError(getDict().analytics.reviewsOnlyAfterCompletion, HttpStatus.BAD_REQUEST);
 
     const creatorUserId = app.creator.userId;
     const businessUserId = app.campaign.business.userId;
     if (fromUserId !== creatorUserId && fromUserId !== businessUserId) {
-      throw new AppError('Not authorized to review this application', 403);
+      throw new AppError(getDict().analytics.notAuthorizedToReviewApplication, HttpStatus.FORBIDDEN);
     }
     const toUserId = fromUserId === creatorUserId ? businessUserId : creatorUserId;
 
     const existing = await this.repo.findExistingReview(appId, fromUserId);
-    if (existing) throw new AppError('You have already reviewed this project', 409);
+    if (existing) throw new AppError(getDict().analytics.alreadyReviewedProject, HttpStatus.CONFLICT);
 
     const review = await this.repo.createReview({ applicationId: appId, fromUserId, toUserId, rating, comment });
 
@@ -214,7 +217,7 @@ export class AnalyticsService {
 
   async getCreatorAnalytics(userId: string, rawRange: unknown) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().analytics.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const range = parseRange(rawRange);
     const since = rangeStart(range);
@@ -289,7 +292,7 @@ export class AnalyticsService {
 
   async getBrandAnalytics(userId: string, rawRange: unknown) {
     const profile = await this.businessRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Business profile not found', 404);
+    if (!profile) throw new AppError(getDict().analytics.businessProfileNotFound, HttpStatus.NOT_FOUND);
 
     const range = parseRange(rawRange);
     const since = rangeStart(range);
@@ -372,7 +375,7 @@ export class AnalyticsService {
     ]);
     if (creatorProfile) return { role: 'CREATOR' as const, ...(await this.getCreatorAnalytics(targetUserId, rawRange)) };
     if (businessProfile) return { role: 'BUSINESS' as const, ...(await this.getBrandAnalytics(targetUserId, rawRange)) };
-    throw new AppError('User has no creator or business profile', 404);
+    throw new AppError('User has no creator or business profile', HttpStatus.NOT_FOUND);
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────

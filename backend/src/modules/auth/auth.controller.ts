@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
 import { success } from '../../utils/response';
 import { logError, AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const authService = new AuthService();
 
@@ -10,7 +13,7 @@ export class AuthController {
     try {
       const deviceId = req.headers['x-device-id'] as string | undefined;
       const result = await authService.register(req.body, deviceId);
-      success(res, result, 'Account created successfully', 201);
+      success(res, result, getDict().auth.accountCreated, 201);
     } catch (err) {
       next(err);
     }
@@ -20,7 +23,7 @@ export class AuthController {
     try {
       const deviceId = req.headers['x-device-id'] as string | undefined;
       const result = await authService.login(req.body, deviceId);
-      success(res, result, 'Login successful');
+      success(res, result, getDict().auth.loginSuccessful);
     } catch (err) {
       logError(req, err, 'Login failed');
       next(err);
@@ -30,7 +33,7 @@ export class AuthController {
   async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.refresh(req.body);
-      success(res, result, 'Token refreshed');
+      success(res, result, getDict().auth.tokenRefreshed);
     } catch (err) {
       next(err);
     }
@@ -42,7 +45,7 @@ export class AuthController {
         const refreshToken = req.body?.refreshToken as string | undefined;
         await authService.logout(req.user.id, refreshToken);
       }
-      success(res, {}, 'Logged out successfully');
+      success(res, {}, getDict().auth.loggedOut);
     } catch (err) {
       next(err);
     }
@@ -51,7 +54,7 @@ export class AuthController {
   async verifyOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.verifyOtp(req.body);
-      success(res, result, 'Email verified successfully');
+      success(res, result, getDict().auth.emailVerifiedSuccess);
     } catch (err) {
       next(err);
     }
@@ -87,7 +90,7 @@ export class AuthController {
   async verifyResetOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.verifyResetOtp(req.body);
-      success(res, result, 'OTP verified');
+      success(res, result, getDict().auth.otpVerifiedGeneric);
     } catch (err) {
       next(err);
     }
@@ -123,7 +126,7 @@ export class AuthController {
   async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.googleAuth(req.body);
-      success(res, result, result.needsRole ? 'Role selection required' : 'Google sign-in successful');
+      success(res, result, result.needsRole ? getDict().auth.roleSelectionRequired : getDict().auth.googleSignInSuccessful);
     } catch (err) {
       next(err);
     }
@@ -132,7 +135,7 @@ export class AuthController {
   async facebookAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.facebookAuth(req.body);
-      success(res, result, result.needsRole ? 'Role selection required' : 'Facebook sign-in successful');
+      success(res, result, result.needsRole ? getDict().auth.roleSelectionRequired : getDict().auth.facebookSignInSuccessful);
     } catch (err) {
       next(err);
     }
@@ -141,7 +144,7 @@ export class AuthController {
   async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.appleAuth(req.body);
-      success(res, result, result.needsRole ? 'Role selection required' : 'Apple sign-in successful');
+      success(res, result, result.needsRole ? getDict().auth.roleSelectionRequired : getDict().auth.appleSignInSuccessful);
     } catch (err) {
       next(err);
     }
@@ -150,7 +153,7 @@ export class AuthController {
   async appleLink(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.appleLink(req.user!.id, req.body);
-      success(res, result, 'Apple account linked');
+      success(res, result, getDict().auth.appleAccountLinkedMsg);
     } catch (err) {
       next(err);
     }
@@ -159,7 +162,7 @@ export class AuthController {
   async appleNotifications(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.handleAppleNotification(req.body);
-      success(res, result, 'Notification received');
+      success(res, result, getDict().auth.notificationReceived);
     } catch (err) {
       next(err);
     }
@@ -168,7 +171,7 @@ export class AuthController {
   async getAuthMethods(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.getAuthMethods(req.user!.id);
-      success(res, result, 'Login methods');
+      success(res, result, getDict().auth.loginMethodsLabel);
     } catch (err) {
       next(err);
     }
@@ -177,7 +180,7 @@ export class AuthController {
   async unlinkProvider(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.unlinkProvider(req.user!.id, req.params as { provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK' });
-      success(res, result, 'Login method disconnected');
+      success(res, result, getDict().auth.loginMethodDisconnected);
     } catch (err) {
       next(err);
     }
@@ -204,9 +207,9 @@ export class AuthController {
   async checkEmailAvailability(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const email = req.query.email as string | undefined;
-      if (!email) throw new AppError('Email query param is required', 400);
+      if (!email) throw new AppError(getDict().auth.emailQueryRequired, HttpStatus.BAD_REQUEST);
       const result = await authService.isEmailAvailable(email.trim().toLowerCase(), req.user!.id);
-      success(res, result, 'Email availability checked');
+      success(res, result, getDict().auth.emailAvailabilityChecked);
     } catch (err) {
       next(err);
     }

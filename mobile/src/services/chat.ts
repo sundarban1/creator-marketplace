@@ -1,4 +1,4 @@
-import { request, API_BASE, assertOnline, fetchWithTimeout, UPLOAD_TIMEOUT_MS } from '@/lib/api';
+import { request, API_BASE, assertOnline, fetchWithTimeout, getApiLanguage, UPLOAD_TIMEOUT_MS } from '@/lib/api';
 import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -275,7 +275,7 @@ export const chatService = {
 
     const { res, text } = await fetchWithTimeout(`${API_BASE}/api/messaging/conversations/${conversationId}/attachments`, {
       method:  'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}`, 'X-Language': getApiLanguage() },
       body:    form,
     }, UPLOAD_TIMEOUT_MS);
     const json = (text ? JSON.parse(text) : {}) as { success: boolean; data: ApiMessage; message?: string };

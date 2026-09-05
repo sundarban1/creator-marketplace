@@ -1,4 +1,7 @@
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Engagement state machine (escrow spec §3–§35).
@@ -137,7 +140,7 @@ function assertTransition(
   if (from === to) return;
   const allowed = table[from] ?? [];
   if (!allowed.includes(to)) {
-    throw new AppError(`Illegal ${axis} transition: ${from} → ${to}`, 409);
+    throw new AppError(getDict().campaign.illegalTransition(axis, from, to), HttpStatus.CONFLICT);
   }
 }
 
@@ -196,6 +199,6 @@ export function canPerform(action: EngagementAction, actor: EngagementActor): bo
 
 export function assertCanPerform(action: EngagementAction, actor: EngagementActor): void {
   if (!canPerform(action, actor)) {
-    throw new AppError(`A ${actor.toLowerCase()} may not ${action}`, 403);
+    throw new AppError(getDict().campaign.actorMayNotPerformAction(actor.toLowerCase(), action), HttpStatus.FORBIDDEN);
   }
 }

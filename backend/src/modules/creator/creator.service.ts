@@ -1,5 +1,6 @@
 import { randomUUID, randomBytes, createHash } from 'crypto';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { logger } from '../../config/logger';
 import { env } from '../../config/env';
 import { signOAuthState, verifyOAuthState } from '../../utils/jwt';
@@ -37,6 +38,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
 import { notificationService } from '../notifications/notification.service';
+import { HttpStatus } from '../../constants/httpStatus';
 import type {
   UpdateCreatorProfileInput,
   AddPortfolioLinkInput,
@@ -189,7 +191,7 @@ async function fetchYoutubeSubscriberCount(accessToken: string): Promise<number>
     'https://www.googleapis.com/youtube/v3/channels?part=statistics&mine=true',
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
-  if (!res.ok) throw new AppError(`Could not refresh YouTube subscriber count (${res.status})`, 502);
+  if (!res.ok) throw new AppError(`Could not refresh YouTube subscriber count (${res.status})`, HttpStatus.BAD_GATEWAY);
   const data = (await res.json()) as YoutubeChannelResponse;
   const stats = data.items?.[0]?.statistics;
   return stats?.hiddenSubscriberCount ? 0 : parseInt(stats?.subscriberCount ?? '0', 10);
@@ -210,18 +212,18 @@ export async function fetchYoutubeChannel(accessToken: string): Promise<{
     logger.error({ status: res.status, body }, 'YouTube Data API request failed');
     const reason = (() => { try { return JSON.parse(body)?.error?.errors?.[0]?.reason; } catch { return undefined; } })();
 
-    if (res.status === 401) throw new AppError('Google session expired — please reconnect', 401);
+    if (res.status === 401) throw new AppError(getDict().creator.googleSessionExpired, HttpStatus.UNAUTHORIZED);
     if (reason === 'accessNotConfigured') {
-      throw new AppError('YouTube Data API v3 is not enabled for this app yet — enable it in Google Cloud Console and try again', 502);
+      throw new AppError(getDict().creator.youtubeApiNotEnabled, HttpStatus.BAD_GATEWAY);
     }
     if (res.status === 403) {
-      throw new AppError('Google denied access to YouTube data — check the youtube.readonly scope is added to the OAuth consent screen', 403);
+      throw new AppError(getDict().creator.googleAccessDenied, HttpStatus.FORBIDDEN);
     }
-    throw new AppError(`Could not reach YouTube (${res.status})`, 502);
+    throw new AppError(getDict().creator.couldNotReachYoutube(res.status), HttpStatus.BAD_GATEWAY);
   }
   const data = (await res.json()) as YoutubeChannelResponse;
   const channel = data.items?.[0];
-  if (!channel) throw new AppError('No YouTube channel found for this Google account', 404);
+  if (!channel) throw new AppError(getDict().creator.noYoutubeChannelFound, HttpStatus.NOT_FOUND);
 
   const profileUrl = channel.snippet?.customUrl
     ? `https://www.youtube.com/${channel.snippet.customUrl}`
@@ -418,7 +420,7 @@ export class CreatorService {
 
   async getCreatorPublicProfile(creatorId: string, lang = 'en', viewerUserId?: string) {
     const profile = await this.repo.findByIdPublic(creatorId);
-    if (!profile) throw new AppError('Creator not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorNotFound, HttpStatus.NOT_FOUND);
     // showPublicProfile only hides the profile from other viewers — a creator
     // who reaches their own id here (e.g. via search) should still see it in full.
     const isOwnProfile = viewerUserId != null && profile.userId === viewerUserId;
@@ -491,7 +493,7 @@ export class CreatorService {
 
   async getProfile(userId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     // Every review this creator has received — shown as a section at the bottom
     // of their own profile screen (limit null = no cap).
     const reviews = await analyticsService.getReviewsReceived(profile.userId, null).catch(() => []);
@@ -510,12 +512,12 @@ export class CreatorService {
 
   async updateProfile(userId: string, input: UpdateCreatorProfileInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     // Enforce username uniqueness (only if changing)
     if (input.username && input.username !== profile.username) {
       const taken = await this.repo.findByUsername(input.username);
-      if (taken) throw new AppError('This username is already taken', 409);
+      if (taken) throw new AppError(getDict().creator.usernameAlreadyTaken, HttpStatus.CONFLICT);
     }
 
     const { email, ...rest } = input;
@@ -544,9 +546,9 @@ export class CreatorService {
     }
     if (email) {
       const account = await this.repo.getUserEmailStatus(userId);
-      if (account?.isEmailVerified) throw new AppError('Your account already has a verified email', 409);
+      if (account?.isEmailVerified) throw new AppError(getDict().creator.emailAlreadyVerified, HttpStatus.CONFLICT);
       const existing = await this.repo.findUserByEmail(email);
-      if (existing && existing.id !== userId) throw new AppError('This email is already in use by another account', 409);
+      if (existing && existing.id !== userId) throw new AppError(getDict().creator.emailAlreadyInUseByAnother, HttpStatus.CONFLICT);
       await this.repo.setAccountEmail(userId, email);
     }
 
@@ -570,9 +572,9 @@ export class CreatorService {
   // business.service.ts's identity-document endpoint.
   async assertCanUploadCompanyRegDoc(userId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     if (profile.providerType !== 'AGENCY') {
-      throw new AppError('Only an Agency uploads a company registration document', 400);
+      throw new AppError(getDict().creator.onlyAgencyUploadsCompanyRegDoc, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -586,7 +588,7 @@ export class CreatorService {
 
   async addPortfolioLink(userId: string, input: AddPortfolioLinkInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const currentLinks = (profile.portfolioLinks as { id: string; label: string; url: string }[]) || [];
     const newLink = { id: randomUUID(), label: input.label, url: input.url };
@@ -595,16 +597,16 @@ export class CreatorService {
 
   async removePortfolioLink(userId: string, linkId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const currentLinks = (profile.portfolioLinks as { id: string; label: string; url: string }[]) || [];
-    if (!currentLinks.some((l) => l.id === linkId)) throw new AppError('Portfolio link not found', 404);
+    if (!currentLinks.some((l) => l.id === linkId)) throw new AppError(getDict().creator.portfolioLinkNotFound, HttpStatus.NOT_FOUND);
     return toCreatorProfileDto(await this.repo.removePortfolioLink(userId, linkId, currentLinks));
   }
 
   async updateSocialLinks(userId: string, input: UpdateSocialLinksInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const currentLinks = (profile.socialLinks as Record<string, string>) || {};
     return toCreatorProfileDto(await this.repo.updateSocialLinks(userId, { ...currentLinks, ...input }));
@@ -631,33 +633,33 @@ export class CreatorService {
 
   async addSocialAccount(userId: string, input: AddSocialAccountInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const platforms = await this.platformRepo.findManyPublic();
-    if (!platforms.some((p) => p.key === input.platform)) throw new AppError('Invalid platform', 400);
+    if (!platforms.some((p) => p.key === input.platform)) throw new AppError(getDict().creator.invalidPlatform, HttpStatus.BAD_REQUEST);
 
     const existing = await this.repo.findSocialAccountByPlatform(profile.id, input.platform);
-    if (existing) throw new AppError(`${input.platform} account is already added`, 409);
+    if (existing) throw new AppError(getDict().creator.socialAccountAlreadyAdded(input.platform), HttpStatus.CONFLICT);
 
     return toSocialAccountDto(await this.repo.addSocialAccount(profile.id, input));
   }
 
   async updateSocialAccount(userId: string, accountId: string, input: UpdateSocialAccountInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const account = await this.repo.findSocialAccountById(accountId);
-    if (!account || account.creatorProfileId !== profile.id) throw new AppError('Social account not found', 404);
+    if (!account || account.creatorProfileId !== profile.id) throw new AppError(getDict().creator.socialAccountNotFound, HttpStatus.NOT_FOUND);
 
     return toSocialAccountDto(await this.repo.updateSocialAccount(accountId, input));
   }
 
   async deleteSocialAccount(userId: string, accountId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const account = await this.repo.findSocialAccountById(accountId);
-    if (!account || account.creatorProfileId !== profile.id) throw new AppError('Social account not found', 404);
+    if (!account || account.creatorProfileId !== profile.id) throw new AppError(getDict().creator.socialAccountNotFound, HttpStatus.NOT_FOUND);
 
     await this.repo.deleteSocialAccount(accountId);
   }
@@ -674,7 +676,7 @@ export class CreatorService {
     clientPlatform?: 'ios' | 'android' | 'web',
   ) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const channel = await fetchYoutubeChannel(accessToken);
 
@@ -698,7 +700,7 @@ export class CreatorService {
   // into the app via the custom scheme once the exchange + save is done.
   async getTiktokAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): Promise<string> {
     if (!env.TIKTOK_CLIENT_KEY || !env.TIKTOK_REDIRECT_URI) {
-      throw new AppError('TikTok login is not configured', 500);
+      throw new AppError(getDict().creator.tiktokLoginNotConfigured, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     const codeVerifier = randomBytes(32).toString('base64url');
     const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
@@ -730,14 +732,14 @@ export class CreatorService {
       statePayload = await verifyOAuthState(state);
     } catch (err) {
       logger.warn({ err }, 'TikTok OAuth state verification failed');
-      throw new AppError('TikTok authorization expired — please try again', 400);
+      throw new AppError(getDict().creator.tiktokAuthorizationExpired, HttpStatus.BAD_REQUEST);
     }
     const { userId, codeVerifier, role } = statePayload;
-    if (!codeVerifier) throw new AppError('TikTok authorization expired — please try again', 400);
+    if (!codeVerifier) throw new AppError(getDict().creator.tiktokAuthorizationExpired, HttpStatus.BAD_REQUEST);
 
     const isBusiness = role === 'BUSINESS';
     const profile = isBusiness ? await this.businessRepo.findByUserId(userId) : await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError(`${isBusiness ? 'Business' : 'Creator'} profile not found`, 404);
+    if (!profile) throw new AppError(getDict().creator.profileNotFoundForRole(isBusiness), HttpStatus.NOT_FOUND);
 
     const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
       method: 'POST',
@@ -754,7 +756,7 @@ export class CreatorService {
     const tokenData = (await tokenRes.json()) as TiktokTokenResponse;
     if (!tokenRes.ok || !tokenData.access_token) {
       logger.error({ status: tokenRes.status, tokenData }, 'TikTok token exchange failed');
-      throw new AppError(tokenData.error_description ?? 'Could not connect TikTok account', 502);
+      throw new AppError(tokenData.error_description ?? getDict().creator.couldNotConnectTiktokAccount, HttpStatus.BAD_GATEWAY);
     }
 
     const infoRes = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url', {
@@ -764,7 +766,7 @@ export class CreatorService {
     const tiktokUser = infoData.data?.user;
     if (!infoRes.ok || !tiktokUser) {
       logger.error({ status: infoRes.status, infoData }, 'TikTok user info request failed');
-      throw new AppError('Could not read TikTok profile', 502);
+      throw new AppError(getDict().creator.couldNotReadTiktokProfile, HttpStatus.BAD_GATEWAY);
     }
 
     // TikTok only returns the real @handle / profile_deep_link under the
@@ -804,9 +806,9 @@ export class CreatorService {
     if (!res.ok || data.error) {
       logger.error({ status: res.status, error: data.error }, 'Facebook Pages request failed');
       if (res.status === 401 || data.error?.code === 190) {
-        throw new AppError('Facebook session expired — please reconnect', 401);
+        throw new AppError(getDict().creator.facebookSessionExpired, HttpStatus.UNAUTHORIZED);
       }
-      throw new AppError(data.error?.message ?? 'Could not reach Facebook', 502);
+      throw new AppError(data.error?.message ?? getDict().creator.couldNotReachFacebook, HttpStatus.BAD_GATEWAY);
     }
     return data.data ?? [];
   }
@@ -827,7 +829,7 @@ export class CreatorService {
 
   async connectFacebookPage(userId: string, accessToken: string, pageId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     // Exchange the client's short-lived (~2h) token for a long-lived one first —
     // the Page token that comes back from fetchFacebookPages() below inherits that
@@ -836,7 +838,7 @@ export class CreatorService {
     const longLivedToken = await exchangeForLongLivedFacebookToken(accessToken);
     const pages = await this.fetchFacebookPages(longLivedToken);
     const page = pages.find((p) => p.id === pageId);
-    if (!page) throw new AppError('Facebook Page not found — please reconnect and try again', 404);
+    if (!page) throw new AppError(getDict().creator.facebookPageNotFound, HttpStatus.NOT_FOUND);
 
     const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'facebook', {
       profileUrl: page.link ?? `https://www.facebook.com/${page.id}`,
@@ -851,15 +853,15 @@ export class CreatorService {
 
   async connectInstagramAccount(userId: string, accessToken: string, pageId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const longLivedToken = await exchangeForLongLivedFacebookToken(accessToken);
     const pages = await this.fetchFacebookPages(longLivedToken);
     const page = pages.find((p) => p.id === pageId);
-    if (!page) throw new AppError('Facebook Page not found — please reconnect and try again', 404);
+    if (!page) throw new AppError(getDict().creator.facebookPageNotFound, HttpStatus.NOT_FOUND);
 
     const ig = page.instagram_business_account;
-    if (!ig) throw new AppError('This Facebook Page has no linked Instagram Business account', 404);
+    if (!ig) throw new AppError(getDict().creator.instagramNoLinkedBusinessAccount, HttpStatus.NOT_FOUND);
 
     const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'instagram', {
       profileUrl: ig.username ? `https://www.instagram.com/${ig.username}` : 'https://www.instagram.com/',
@@ -885,7 +887,7 @@ export class CreatorService {
   // above for the OTHER Instagram path (via a linked Facebook Page).
   async getInstagramLoginAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): Promise<string> {
     if (!env.INSTAGRAM_APP_ID || !env.INSTAGRAM_REDIRECT_URI) {
-      throw new AppError('Instagram direct login is not configured', 500);
+      throw new AppError(getDict().creator.instagramLoginNotConfigured, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     // Same single-registered-redirect-URI reasoning as getTiktokAuthorizeUrl above.
     const state = await signOAuthState({ userId, role });
@@ -908,13 +910,13 @@ export class CreatorService {
       statePayload = await verifyOAuthState(state);
     } catch (err) {
       logger.warn({ err }, 'Instagram OAuth state verification failed');
-      throw new AppError('Instagram authorization expired — please try again', 400);
+      throw new AppError(getDict().creator.instagramAuthorizationExpired, HttpStatus.BAD_REQUEST);
     }
     const { userId, role } = statePayload;
 
     const isBusiness = role === 'BUSINESS';
     const profile = isBusiness ? await this.businessRepo.findByUserId(userId) : await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError(`${isBusiness ? 'Business' : 'Creator'} profile not found`, 404);
+    if (!profile) throw new AppError(getDict().creator.profileNotFoundForRole(isBusiness), HttpStatus.NOT_FOUND);
 
     // Step 1: exchange the authorization code for a short-lived access token.
     const tokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
@@ -931,7 +933,7 @@ export class CreatorService {
     const tokenData = (await tokenRes.json()) as InstagramTokenResponse;
     if (!tokenRes.ok || !tokenData.access_token) {
       logger.error({ status: tokenRes.status, tokenData }, 'Instagram token exchange failed');
-      throw new AppError(tokenData.error_message ?? 'Could not connect Instagram account', 502);
+      throw new AppError(tokenData.error_message ?? getDict().creator.couldNotConnectInstagramAccount, HttpStatus.BAD_GATEWAY);
     }
 
     // Step 2: exchange for a long-lived token (60 days) so the connection doesn't
@@ -956,12 +958,12 @@ export class CreatorService {
     const me = (await meRes.json()) as InstagramMeResponse;
     if (!meRes.ok || me.error) {
       logger.error({ status: meRes.status, error: me.error }, 'Instagram profile request failed');
-      throw new AppError(me.error?.message ?? 'Could not read Instagram profile', 502);
+      throw new AppError(me.error?.message ?? getDict().creator.couldNotReadInstagramProfile, HttpStatus.BAD_GATEWAY);
     }
     if (me.account_type === 'PERSONAL' || !me.account_type) {
       throw new AppError(
-        'Your Instagram account must be a Business or Creator account to connect. Open Instagram, go to Settings > Account type and tools > Switch account type, choose Business or Creator, then try again.',
-        400,
+        getDict().creator.instagramMustBeBusinessAccount,
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -1003,7 +1005,7 @@ export class CreatorService {
       });
       const refreshData = (await refreshRes.json()) as { access_token?: string; expires_in?: number };
       if (!refreshRes.ok || !refreshData.access_token) {
-        throw new AppError('Google refresh token is no longer valid — please reconnect', 401);
+        throw new AppError('Google refresh token is no longer valid — please reconnect', HttpStatus.UNAUTHORIZED);
       }
       accessToken = refreshData.access_token;
       return {
@@ -1025,8 +1027,8 @@ export class CreatorService {
     const res = await fetch(url);
     const data = (await res.json()) as { fan_count?: number; error?: { message?: string; code?: number } };
     if (!res.ok || data.error) {
-      if (res.status === 401 || data.error?.code === 190) throw new AppError('Facebook session expired — please reconnect', 401);
-      throw new AppError(data.error?.message ?? 'Could not refresh Facebook follower count', 502);
+      if (res.status === 401 || data.error?.code === 190) throw new AppError('Facebook session expired — please reconnect', HttpStatus.UNAUTHORIZED);
+      throw new AppError(data.error?.message ?? 'Could not refresh Facebook follower count', HttpStatus.BAD_GATEWAY);
     }
     return { followers: data.fan_count ?? 0 };
   }
@@ -1038,8 +1040,8 @@ export class CreatorService {
     const res = await fetch(url);
     const data = (await res.json()) as { followers_count?: number; error?: { message?: string; code?: number } };
     if (!res.ok || data.error) {
-      if (res.status === 401 || data.error?.code === 190) throw new AppError('Facebook session expired — please reconnect', 401);
-      throw new AppError(data.error?.message ?? 'Could not refresh Instagram follower count', 502);
+      if (res.status === 401 || data.error?.code === 190) throw new AppError('Facebook session expired — please reconnect', HttpStatus.UNAUTHORIZED);
+      throw new AppError(data.error?.message ?? 'Could not refresh Instagram follower count', HttpStatus.BAD_GATEWAY);
     }
     return { followers: data.followers_count ?? 0 };
   }
@@ -1070,7 +1072,7 @@ export class CreatorService {
     const meRes = await fetch(meUrl);
     const me = (await meRes.json()) as InstagramMeResponse;
     if (!meRes.ok || me.error) {
-      throw new AppError(me.error?.message ?? 'Could not refresh Instagram follower count', 502);
+      throw new AppError(me.error?.message ?? 'Could not refresh Instagram follower count', HttpStatus.BAD_GATEWAY);
     }
     return {
       followers: me.followers_count ?? 0,
@@ -1100,7 +1102,7 @@ export class CreatorService {
       });
       const refreshData = (await refreshRes.json()) as TiktokTokenResponse;
       if (!refreshRes.ok || !refreshData.access_token) {
-        throw new AppError('TikTok refresh token is no longer valid — please reconnect', 401);
+        throw new AppError('TikTok refresh token is no longer valid — please reconnect', HttpStatus.UNAUTHORIZED);
       }
       accessToken = refreshData.access_token;
       newRefreshToken = refreshData.refresh_token;
@@ -1111,7 +1113,7 @@ export class CreatorService {
     });
     const infoData = (await infoRes.json()) as TiktokUserInfoResponse;
     if (!infoRes.ok || !infoData.data?.user) {
-      throw new AppError('Could not refresh TikTok profile', 502);
+      throw new AppError('Could not refresh TikTok profile', HttpStatus.BAD_GATEWAY);
     }
     return {
       followers: 0,
@@ -1122,7 +1124,7 @@ export class CreatorService {
   }
 
   private async refreshOneAccountFollowers(account: RawSocialAccountRow): Promise<RefreshResult> {
-    if (!account.accessToken) throw new AppError('No stored token for this account', 400);
+    if (!account.accessToken) throw new AppError('No stored token for this account', HttpStatus.BAD_REQUEST);
     switch (account.platform) {
       case 'youtube':   return this.refreshYoutubeFollowers(account);
       case 'facebook':  return this.refreshFacebookFollowers(account);
@@ -1131,7 +1133,7 @@ export class CreatorService {
           ? this.refreshInstagramDirectFollowers(account)
           : this.refreshInstagramViaPageFollowers(account);
       case 'tiktok':    return this.refreshTiktokFollowers(account);
-      default: throw new AppError(`No refresh handler for platform ${account.platform}`, 400);
+      default: throw new AppError(`No refresh handler for platform ${account.platform}`, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -1194,13 +1196,13 @@ export class CreatorService {
 
   async updatePaymentMethods(userId: string, input: UpdatePaymentMethodsInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     if (input.methods.length) {
       const methods = await this.paymentMethodRepo.findManyPublic();
       const validKeys = new Set(methods.map((m) => m.key));
       const invalid = input.methods.filter((m) => !validKeys.has(m));
-      if (invalid.length) throw new AppError(`Invalid payment method(s): ${invalid.join(', ')}`, 400);
+      if (invalid.length) throw new AppError(getDict().creator.invalidPaymentMethods(invalid.join(', ')), HttpStatus.BAD_REQUEST);
     }
 
     return toCreatorProfileDto(await this.repo.updatePaymentMethods(userId, input.methods));
@@ -1210,13 +1212,13 @@ export class CreatorService {
 
   async updateCampaignPrefs(userId: string, input: UpdateCampaignPrefsInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     if (input.prefPlatforms?.length) {
       const platforms = await this.platformRepo.findManyPublic();
       const validNames = new Set(platforms.map((p) => p.name));
       const invalid = input.prefPlatforms.filter((p) => !validNames.has(p));
-      if (invalid.length) throw new AppError(`Invalid platform(s): ${invalid.join(', ')}`, 400);
+      if (invalid.length) throw new AppError(getDict().creator.invalidPlatforms(invalid.join(', ')), HttpStatus.BAD_REQUEST);
     }
 
     return toCreatorProfileDto(await this.repo.updateCampaignPrefs(userId, input));
@@ -1232,19 +1234,19 @@ export class CreatorService {
 
   async updateAvailabilityStatus(userId: string, input: UpdateAvailabilityStatusInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return toCreatorProfileDto(await this.repo.updateAvailabilityStatus(userId, input.status));
   }
 
   async getAvailabilitySchedule(userId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return this.repo.getAvailabilitySchedule(profile.id);
   }
 
   async updateAvailabilitySchedule(userId: string, input: UpdateAvailabilityScheduleInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     await this.repo.replaceAvailabilitySchedule(profile.id, input.days);
     return this.repo.getAvailabilitySchedule(profile.id);
   }
@@ -1260,18 +1262,18 @@ export class CreatorService {
 
   async listInvitations(userId: string) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return this.repo.findInvitations(profile.id);
   }
 
   async respondToInvitation(userId: string, invitationId: string, input: RespondToInvitationInput) {
     const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const invitation = await this.repo.findInvitationById(invitationId);
-    if (!invitation) throw new AppError('Invitation not found', 404);
-    if (invitation.creatorId !== profile.id) throw new AppError('Not authorized to respond to this invitation', 403);
-    if (invitation.status !== 'PENDING') throw new AppError('This invitation has already been responded to', 409);
+    if (!invitation) throw new AppError(getDict().creator.invitationNotFound, HttpStatus.NOT_FOUND);
+    if (invitation.creatorId !== profile.id) throw new AppError(getDict().creator.notAuthorizedToRespondToInvitation, HttpStatus.FORBIDDEN);
+    if (invitation.status !== 'PENDING') throw new AppError(getDict().creator.invitationAlreadyResponded, HttpStatus.CONFLICT);
 
     const updated = await this.repo.respondToInvitation(invitationId, input.status);
 

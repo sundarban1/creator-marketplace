@@ -12,6 +12,9 @@ import { env } from '../../config/env';
 import { AppError } from '../../middleware/error';
 import prisma from '../../prisma';
 import { notificationService } from '../notifications/notification.service';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const ADMIN_EMAIL = env.ADMIN_EMAIL ?? env.EMAIL_USERNAME ?? 'sundarban007@gmail.com';
 
@@ -48,10 +51,10 @@ const statusSchema = z.object({
 
 router.post('/attachments', authenticate, uploadImageMiddleware.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.file) throw new AppError('No file provided', 400);
+    if (!req.file) throw new AppError(getDict().support.noFileProvided, HttpStatus.BAD_REQUEST);
     const publicId = `support_${req.user!.id}_${Date.now()}_${randomUUID()}`;
     const url = await uploadImageToCloudinary(req.file.buffer, 'support/attachments', publicId);
-    success(res, { url }, 'Uploaded', 201);
+    success(res, { url }, getDict().support.attachmentUploaded, 201);
   } catch (err) { next(err); }
 });
 
@@ -82,7 +85,7 @@ router.post('/contact', authenticate, validate(contactSchema), async (req: Reque
       refId:   supportRequest.id,
       refType: 'support_request',
     }).catch(() => {});
-    success(res, supportRequest, 'Support request submitted', 201);
+    success(res, supportRequest, getDict().support.supportRequestSubmitted, 201);
   } catch (err) { next(err); }
 });
 
@@ -107,7 +110,7 @@ router.post('/contact-public', validate(publicContactSchema), async (req: Reques
       refId:   supportRequest.id,
       refType: 'support_request',
     }).catch(() => {});
-    success(res, supportRequest, 'Message sent', 201);
+    success(res, supportRequest, getDict().support.contactMessageSent, 201);
   } catch (err) { next(err); }
 });
 
@@ -138,7 +141,7 @@ router.post('/report', authenticate, validate(reportSchema), async (req: Request
       refId:   report.id,
       refType: 'issue_report',
     }).catch(() => {});
-    success(res, report, 'Issue reported', 201);
+    success(res, report, getDict().support.issueReported, 201);
   } catch (err) { next(err); }
 });
 

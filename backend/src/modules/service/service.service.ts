@@ -4,6 +4,9 @@ import { ServiceRepository } from './service.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CategoryRepository } from '../category/category.repository';
 import type { CreateServiceInput, UpdateServiceInput } from './service.schema';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 export class ServiceService {
   private repo = new ServiceRepository();
@@ -15,31 +18,31 @@ export class ServiceService {
   // provider-role category (Photographer, Videographer, ...).
   private async assertCategoryUsable(categoryId: string) {
     const category = await this.categoryRepo.findById(categoryId);
-    if (!category) throw new AppError('Category not found', 404);
-    if (category.status !== CategoryStatus.ACTIVE) throw new AppError('Category is not active', 400);
-    if (category.scope !== CategoryScope.BOTH) throw new AppError('Category is not usable for provider services', 400);
+    if (!category) throw new AppError(getDict().service.categoryNotFound, HttpStatus.NOT_FOUND);
+    if (category.status !== CategoryStatus.ACTIVE) throw new AppError(getDict().service.categoryNotActive, HttpStatus.BAD_REQUEST);
+    if (category.scope !== CategoryScope.BOTH) throw new AppError(getDict().service.categoryNotUsableForServices, HttpStatus.BAD_REQUEST);
     return category;
   }
 
   async listMine(userId: string) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().service.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     return this.repo.findByCreatorProfileId(profile.id);
   }
 
   async create(userId: string, input: CreateServiceInput) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().service.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     await this.assertCategoryUsable(input.categoryId);
     return this.repo.create(profile.id, input);
   }
 
   private async findOwned(userId: string, serviceId: string) {
     const profile = await this.creatorRepo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    if (!profile) throw new AppError(getDict().service.creatorProfileNotFound, HttpStatus.NOT_FOUND);
     const service = await this.repo.findById(serviceId);
-    if (!service) throw new AppError('Service not found', 404);
-    if (service.creatorProfileId !== profile.id) throw new AppError('Not authorized to modify this service', 403);
+    if (!service) throw new AppError(getDict().service.serviceNotFound, HttpStatus.NOT_FOUND);
+    if (service.creatorProfileId !== profile.id) throw new AppError(getDict().service.notAuthorizedToModifyService, HttpStatus.FORBIDDEN);
     return service;
   }
 
@@ -60,7 +63,7 @@ export class ServiceService {
 
   async getPublicDetail(serviceId: string) {
     const service = await this.repo.findById(serviceId);
-    if (!service || service.status !== ServiceStatus.ACTIVE) throw new AppError('Service not found', 404);
+    if (!service || service.status !== ServiceStatus.ACTIVE) throw new AppError(getDict().service.serviceNotFound, HttpStatus.NOT_FOUND);
     return service;
   }
 
@@ -70,7 +73,7 @@ export class ServiceService {
 
   async updateStatusAsAdmin(serviceId: string, status: ServiceStatus) {
     const service = await this.repo.findById(serviceId);
-    if (!service) throw new AppError('Service not found', 404);
+    if (!service) throw new AppError(getDict().service.serviceNotFound, HttpStatus.NOT_FOUND);
     return this.repo.updateStatus(serviceId, status);
   }
 }

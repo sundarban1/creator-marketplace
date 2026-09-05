@@ -1,8 +1,10 @@
 import crypto from 'crypto';
 import { AuthProvider, Prisma, Role } from '@prisma/client';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
+import { LogEvent } from '../../config/observability';
 import { hashPassword, comparePassword } from '../../utils/hash';
 import {
   signAccessToken,
@@ -27,6 +29,7 @@ import { logAudit } from '../logging/audit.service';
 import { ActivityAction, AuditAction } from '../logging/logging.constants';
 import { toUserDto } from './auth.dto';
 import { isRefreshTokenDenied } from '../../utils/tokenDenylist';
+import { HttpStatus } from '../../constants/httpStatus';
 import type {
   RegisterInput,
   LoginInput,
@@ -91,9 +94,9 @@ export class AuthService {
     if (enabled === false) {
       throw new AppError(
         role === 'CREATOR'
-          ? 'Creator registration is currently closed. Please check back later.'
-          : 'Business registration is currently closed. Please check back later.',
-        403,
+          ? getDict().auth.registrationClosedCreator
+          : getDict().auth.registrationClosedBusiness,
+        HttpStatus.FORBIDDEN,
       );
     }
   }
@@ -112,7 +115,7 @@ export class AuthService {
     } else if (smsLive) {
       await sendOtpSms(destination, code);
     } else if (env.NODE_ENV !== 'production') {
-      logger.debug({ phone: destination, code }, 'Phone OTP issued (SMS stub — not actually sent)');
+      logger.debug({ phone: destination }, 'Phone OTP issued (SMS stub — not actually sent, see PHONE_OTP_CODE)');
     }
   }
 
@@ -123,10 +126,10 @@ export class AuthService {
 
     if (channel === 'email') {
       const existing = await this.repo.findUserByEmail(input.email!);
-      if (existing) throw new AppError('An account with this email already exists', 409);
+      if (existing) throw new AppError(getDict().auth.emailAlreadyExists, HttpStatus.CONFLICT);
     } else {
       const existing = await this.repo.findUserByPhone(normalizePhone(input.phone!));
-      if (existing) throw new AppError('An account with this phone number already exists', 409);
+      if (existing) throw new AppError(getDict().auth.phoneAlreadyExists, HttpStatus.CONFLICT);
     }
 
     const hashedPassword = await hashPassword(input.password);
@@ -180,13 +183,13 @@ export class AuthService {
     const user = channel === 'email'
       ? await this.repo.findUserByEmail(input.email!)
       : await this.repo.findUserByPhone(normalizePhone(input.phone!));
-    if (!user) throw new AppError(`No account found with this ${channel === 'email' ? 'email' : 'phone number'}`, 404);
+    if (!user) throw new AppError(channel === 'email' ? getDict().auth.accountNotFoundEmail : getDict().auth.accountNotFoundPhone, HttpStatus.NOT_FOUND);
 
     const alreadyVerified = channel === 'email' ? user.isEmailVerified : user.isPhoneVerified;
-    if (alreadyVerified) throw new AppError('This account is already verified', 400);
+    if (alreadyVerified) throw new AppError(getDict().auth.alreadyVerified, HttpStatus.BAD_REQUEST);
 
     const otp = await this.repo.findValidOtp(user.id, input.code);
-    if (!otp) throw new AppError('Invalid or expired verification code', 400);
+    if (!otp) throw new AppError(getDict().auth.invalidOrExpiredVerificationCode, HttpStatus.BAD_REQUEST);
 
     const verifiedUser = channel === 'email'
       ? await this.repo.verifyEmail(user.id)
@@ -225,14 +228,14 @@ export class AuthService {
     const user = channel === 'email'
       ? await this.repo.findUserByEmail(input.email!)
       : await this.repo.findUserByPhone(normalizePhone(input.phone!));
-    if (!user) throw new AppError(`No account found with this ${channel === 'email' ? 'email' : 'phone number'}`, 404);
+    if (!user) throw new AppError(channel === 'email' ? getDict().auth.accountNotFoundEmail : getDict().auth.accountNotFoundPhone, HttpStatus.NOT_FOUND);
 
     const alreadyVerified = channel === 'email' ? user.isEmailVerified : user.isPhoneVerified;
-    if (alreadyVerified) throw new AppError('This account is already verified', 400);
+    if (alreadyVerified) throw new AppError(getDict().auth.alreadyVerified, HttpStatus.BAD_REQUEST);
 
     await this.issueOtp(user.id, channel, channel === 'email' ? user.email : normalizePhone(input.phone!));
 
-    return { message: `Verification code resent to your ${channel === 'email' ? 'email' : 'phone number'}` };
+    return { message: channel === 'email' ? getDict().auth.verificationResentEmail : getDict().auth.verificationResentPhone };
   }
 
   async login(input: LoginInput, deviceId?: string) {
@@ -240,7 +243,7 @@ export class AuthService {
     const user = channel === 'email'
       ? await this.repo.findUserByEmail(input.email!)
       : await this.repo.findUserByPhone(normalizePhone(input.phone!));
-    if (!user) throw new AppError(`Invalid ${channel === 'email' ? 'email' : 'phone number'} or password`, 401);
+    if (!user) throw new AppError(channel === 'email' ? getDict().auth.invalidCredentialsEmail : getDict().auth.invalidCredentialsPhone, HttpStatus.UNAUTHORIZED);
 
     const isValidPassword = await comparePassword(input.password, user.password);
     if (!isValidPassword) {
@@ -252,9 +255,10 @@ export class AuthService {
       const captchaEnabled = await this.adminRepo.getSetting('rateLimit.captcha.enabled');
       const captchaThreshold = Number(await this.adminRepo.getSetting('rateLimit.captcha.failedAttemptThreshold')) || 3;
       const captchaRequired = captchaEnabled === true && failedCount >= captchaThreshold;
+      logger.warn({ event: LogEvent.AUTH_LOGIN_FAILED, userId: user.id, channel, failedCount }, 'Login failed');
       throw new AppError(
-        `Invalid ${channel === 'email' ? 'email' : 'phone number'} or password`,
-        401,
+        channel === 'email' ? getDict().auth.invalidCredentialsEmail : getDict().auth.invalidCredentialsPhone,
+        HttpStatus.UNAUTHORIZED,
         true,
         captchaRequired ? { captchaRequired: true } : undefined,
       );
@@ -270,7 +274,7 @@ export class AuthService {
       if (!(await this.repo.hasValidOtp(user.id))) {
         await this.issueOtp(user.id, channel, channel === 'email' ? user.email : normalizePhone(input.phone!));
       }
-      throw new AppError(`Please verify your ${channel === 'email' ? 'email' : 'phone number'} before logging in`, 403);
+      throw new AppError(channel === 'email' ? getDict().auth.verifyBeforeLoginEmail : getDict().auth.verifyBeforeLoginPhone, HttpStatus.FORBIDDEN);
     }
 
     // Admin-suspended accounts are blocked outright — never silently
@@ -280,7 +284,7 @@ export class AuthService {
     let reactivated = false;
     if (!user.isActive) {
       if (user.suspendedAt) {
-        throw new AppError('Your account has been suspended. Please contact admin support.', 403);
+        throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN);
       }
       activeUser = await this.repo.reactivateAccount(user.id);
       reactivated = true;
@@ -293,13 +297,14 @@ export class AuthService {
     if (deviceId) await this.repo.setDeviceId(activeUser.id, deviceId);
 
     logActivity({ userId: activeUser.id, action: ActivityAction.USER_LOGIN, metadata: { channel, reactivated, deviceId } });
+    logger.info({ event: LogEvent.AUTH_LOGIN, userId: activeUser.id, channel }, 'Login succeeded');
 
     return { user: toUserDto(activeUser), accessToken, refreshToken, reactivated };
   }
 
   async completeOnboarding(userId: string) {
     await this.repo.setOnboarded(userId);
-    return { message: 'Onboarding complete' };
+    return { message: getDict().auth.onboardingComplete };
   }
 
   async refresh(input: RefreshTokenInput) {
@@ -307,21 +312,21 @@ export class AuthService {
     try {
       decoded = verifyRefreshToken(input.refreshToken);
     } catch {
-      throw new AppError('Invalid or expired refresh token', 401);
+      throw new AppError(getDict().auth.invalidRefreshToken, HttpStatus.UNAUTHORIZED);
     }
 
     // Fast reject for tokens invalidated by a logout/reset. The sessions-table
     // check below is still the authority — this only short-circuits and adds
     // defence in depth. No-ops when the queue Redis is unavailable.
     if (await isRefreshTokenDenied(input.refreshToken)) {
-      throw new AppError('Refresh token mismatch. Please login again.', 401);
+      throw new AppError(getDict().auth.refreshTokenMismatch, HttpStatus.UNAUTHORIZED);
     }
 
     const session = await this.repo.findSessionByRefreshToken(input.refreshToken);
-    if (!session) throw new AppError('Refresh token mismatch. Please login again.', 401);
+    if (!session) throw new AppError(getDict().auth.refreshTokenMismatch, HttpStatus.UNAUTHORIZED);
 
     const user = await this.repo.findUserById(decoded.id);
-    if (!user) throw new AppError('User not found', 401);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.UNAUTHORIZED);
 
     const tokenPayload = { id: user.id, email: user.email, role: user.role };
     const accessToken  = signAccessToken(tokenPayload);
@@ -338,12 +343,12 @@ export class AuthService {
     } else {
       await this.repo.deleteAllSessions(userId);
     }
-    return { message: 'Logged out successfully' };
+    return { message: getDict().auth.loggedOut };
   }
 
   async deactivateAccount(userId: string) {
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
     await this.repo.deactivateAccount(userId);
     await this.repo.deleteAllSessions(userId);
 
@@ -355,12 +360,12 @@ export class AuthService {
       refType: 'user',
     }).catch(() => {});
 
-    return { message: 'Account deactivated. Log in at any time to reactivate.' };
+    return { message: getDict().auth.accountDeactivated };
   }
 
   async deleteAccount(userId: string) {
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
 
     // Sever the Apple ↔ Kolab link so that Apple ID can't sign back into the
     // deleted account (App Store requirement, spec §26). Best-effort — never
@@ -378,14 +383,14 @@ export class AuthService {
       body:    `${user.email} permanently deleted their account.`,
     }).catch(() => {});
 
-    return { message: 'Account permanently deleted.' };
+    return { message: getDict().auth.accountDeleted };
   }
 
   // ── Forgot password (email or phone — same logic, different delivery) ───────
 
   async forgotPassword(input: ForgotPasswordInput) {
     const channel: Channel = input.email ? 'email' : 'phone';
-    const genericMessage = `If that ${channel === 'email' ? 'email' : 'phone number'} is registered, a reset code has been sent`;
+    const genericMessage = channel === 'email' ? getDict().auth.forgotPasswordGenericEmail : getDict().auth.forgotPasswordGenericPhone;
 
     const user = channel === 'email'
       ? await this.repo.findUserByEmail(input.email!)
@@ -402,7 +407,7 @@ export class AuthService {
     } else if (smsLive) {
       await sendPasswordResetOtpSms(normalizePhone(input.phone!), code);
     } else if (env.NODE_ENV !== 'production') {
-      logger.debug({ phone: input.phone, code }, 'Password reset OTP issued (SMS stub — not actually sent)');
+      logger.debug({ phone: input.phone }, 'Password reset OTP issued (SMS stub — not actually sent, see PHONE_OTP_CODE)');
     }
 
     return { message: genericMessage };
@@ -413,10 +418,10 @@ export class AuthService {
     const user = channel === 'email'
       ? await this.repo.findUserByEmail(input.email!)
       : await this.repo.findUserByPhone(normalizePhone(input.phone!));
-    if (!user) throw new AppError(`No account found with this ${channel === 'email' ? 'email' : 'phone number'}`, 404);
+    if (!user) throw new AppError(channel === 'email' ? getDict().auth.accountNotFoundEmail : getDict().auth.accountNotFoundPhone, HttpStatus.NOT_FOUND);
 
     const otp = await this.repo.findValidOtp(user.id, input.code);
-    if (!otp) throw new AppError('Invalid or expired code', 400);
+    if (!otp) throw new AppError(getDict().auth.invalidOrExpiredCode, HttpStatus.BAD_REQUEST);
 
     await this.repo.deleteOtpsByUserId(user.id);
 
@@ -430,28 +435,28 @@ export class AuthService {
     const phone = normalizePhone(input.phone);
     const existing = await this.repo.findUserByPhone(phone);
     if (existing && existing.id !== userId) {
-      throw new AppError('This phone number is already in use by another account', 409);
+      throw new AppError(getDict().auth.phoneAlreadyInUse, HttpStatus.CONFLICT);
     }
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
 
     await this.issueOtp(userId, 'phone', phone);
-    return { message: 'Verification code sent to your phone number' };
+    return { message: getDict().auth.verificationSentPhone };
   }
 
   async verifyPhoneOtp(userId: string, input: VerifyPhoneOtpInput) {
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
 
     const otp = await this.repo.findValidOtp(userId, input.code);
-    if (!otp) throw new AppError('Invalid or expired verification code', 400);
+    if (!otp) throw new AppError(getDict().auth.invalidOrExpiredVerificationCode, HttpStatus.BAD_REQUEST);
 
     await this.repo.deleteOtpsByUserId(userId);
     await this.repo.updateUserPhone(userId, normalizePhone(input.phone));
 
     logAudit({ userId, action: AuditAction.PHONE_CHANGED, performedBy: userId });
 
-    return { message: 'Phone number verified successfully' };
+    return { message: getDict().auth.phoneVerifiedSuccess };
   }
 
   // Live-checks an email against the DB while a phone-signup account is
@@ -467,28 +472,28 @@ export class AuthService {
   async requestEmailOtp(userId: string, input: RequestEmailOtpInput) {
     const existing = await this.repo.findUserByEmail(input.email);
     if (existing && existing.id !== userId) {
-      throw new AppError('This email is already in use by another account', 409);
+      throw new AppError(getDict().auth.emailAlreadyInUse, HttpStatus.CONFLICT);
     }
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
 
     await this.issueOtp(userId, 'email', input.email);
-    return { message: 'Verification code sent to your email' };
+    return { message: getDict().auth.verificationSentEmail };
   }
 
   async verifyEmailOtp(userId: string, input: VerifyEmailOtpInput) {
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
 
     const otp = await this.repo.findValidOtp(userId, input.code);
-    if (!otp) throw new AppError('Invalid or expired verification code', 400);
+    if (!otp) throw new AppError(getDict().auth.invalidOrExpiredVerificationCode, HttpStatus.BAD_REQUEST);
 
     await this.repo.deleteOtpsByUserId(userId);
     await this.repo.updateUserEmail(userId, input.email);
 
     logAudit({ userId, action: AuditAction.EMAIL_CHANGED, performedBy: userId });
 
-    return { message: 'Email verified successfully' };
+    return { message: getDict().auth.emailVerifiedSuccess };
   }
 
   // Records the provider identity for a social sign-in without ever failing the
@@ -507,17 +512,17 @@ export class AuthService {
     const googleRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${input.accessToken}` },
     });
-    if (!googleRes.ok) throw new AppError('Invalid or expired Google token. Please try again.', 401);
+    if (!googleRes.ok) throw new AppError(getDict().auth.googleTokenInvalid, HttpStatus.UNAUTHORIZED);
 
     const gUser = await googleRes.json() as { id: string; email: string; name?: string; picture?: string };
-    if (!gUser.email) throw new AppError('Could not retrieve email from Google.', 400);
+    if (!gUser.email) throw new AppError(getDict().auth.googleNoEmail, HttpStatus.BAD_REQUEST);
 
     const existing = await this.repo.findUserByEmail(gUser.email);
 
     if (existing) {
       if (!existing.isActive) {
         if (existing.suspendedAt) {
-          throw new AppError('Your account has been suspended. Please contact admin support.', 403);
+          throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN);
         }
         await this.repo.reactivateAccount(existing.id);
       }
@@ -566,17 +571,17 @@ export class AuthService {
     const fbRes = await fetch(
       `https://graph.facebook.com/me?fields=id,name,email&access_token=${input.accessToken}`
     );
-    if (!fbRes.ok) throw new AppError('Invalid or expired Facebook token. Please try again.', 401);
+    if (!fbRes.ok) throw new AppError(getDict().auth.facebookTokenInvalid, HttpStatus.UNAUTHORIZED);
 
     const fbUser = await fbRes.json() as { id: string; name?: string; email?: string };
-    if (!fbUser.email) throw new AppError('Facebook account has no email. Please use a different sign-in method.', 400);
+    if (!fbUser.email) throw new AppError(getDict().auth.facebookNoEmail, HttpStatus.BAD_REQUEST);
 
     const existing = await this.repo.findUserByEmail(fbUser.email);
 
     if (existing) {
       if (!existing.isActive) {
         if (existing.suspendedAt) {
-          throw new AppError('Your account has been suspended. Please contact admin support.', 403);
+          throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN);
         }
         await this.repo.reactivateAccount(existing.id);
       }
@@ -639,7 +644,7 @@ export class AuthService {
       const user = linked.user;
       if (!user.isActive) {
         if (user.suspendedAt) {
-          throw new AppError('Your account has been suspended. Please contact admin support.', 403);
+          throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN);
         }
         await this.repo.reactivateAccount(user.id);
       }
@@ -664,8 +669,8 @@ export class AuthService {
       if (emailOwner) {
         logger.info({ userId: emailOwner.id }, 'Apple sign-in requires account linking');
         throw new AppError(
-          'This Apple account needs to be linked to an existing Kolab account.',
-          409,
+          getDict().auth.appleLinkRequired,
+          HttpStatus.CONFLICT,
           true,
           { code: 'ACCOUNT_LINKING_REQUIRED', appleLinkToken: signAppleLinkToken({ sub, email: resolvedEmail, name: nameFromClient }) },
         );
@@ -753,7 +758,7 @@ export class AuthService {
         sub = decoded.sub;
         email = decoded.email;
       } catch {
-        throw new AppError('This Apple link request has expired. Please try again.', 400);
+        throw new AppError(getDict().auth.appleLinkExpired, HttpStatus.BAD_REQUEST);
       }
     } else {
       const verified = await verifyAppleIdentityToken(input.identityToken!);
@@ -766,11 +771,11 @@ export class AuthService {
       if (already.userId === userId) {
         return { user: toUserDto((await this.repo.findUserById(userId))!) };
       }
-      throw new AppError('This Apple account is already linked to a different Kolab account.', 409);
+      throw new AppError(getDict().auth.appleAlreadyLinkedOther, HttpStatus.CONFLICT);
     }
 
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
 
     // Settings "Connect Apple" also passes the auth code → exchange it now so a
     // later account deletion can revoke the Apple link. Best-effort.
@@ -788,7 +793,7 @@ export class AuthService {
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        throw new AppError('This Apple account is already linked to a Kolab account.', 409);
+        throw new AppError(getDict().auth.appleAlreadyLinked, HttpStatus.CONFLICT);
       }
       throw err;
     }
@@ -838,7 +843,7 @@ export class AuthService {
 
   async getAuthMethods(userId: string) {
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
     const accounts = await this.repo.listAuthAccounts(userId);
     return {
       hasPassword: user.hasPassword,
@@ -855,19 +860,19 @@ export class AuthService {
   async unlinkProvider(userId: string, input: UnlinkProviderInput) {
     const provider = input.provider as AuthProvider;
     const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
 
     const accounts = await this.repo.listAuthAccounts(userId);
     const target = accounts.find((a) => a.provider === provider);
-    if (!target) throw new AppError('That login method is not connected to your account.', 404);
+    if (!target) throw new AppError(getDict().auth.loginMethodNotConnected, HttpStatus.NOT_FOUND);
 
     // Never leave the account with no way back in (spec §25). A usable method is
     // a real password or any OTHER linked provider.
     const remaining = (user.hasPassword ? 1 : 0) + accounts.filter((a) => a.provider !== provider).length;
     if (remaining === 0) {
       throw new AppError(
-        'Add a password or another login method before disconnecting this one.',
-        409,
+        getDict().auth.lastLoginMethod,
+        HttpStatus.CONFLICT,
         true,
         { code: 'LAST_LOGIN_METHOD' },
       );
@@ -890,11 +895,11 @@ export class AuthService {
     try {
       decoded = verifyPasswordResetToken(input.token);
     } catch {
-      throw new AppError('Invalid or expired reset token', 400);
+      throw new AppError(getDict().auth.invalidResetToken, HttpStatus.BAD_REQUEST);
     }
 
     const user = await this.repo.findUserById(decoded.id);
-    if (!user) throw new AppError('User not found', 404);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
 
     const hashedPassword = await hashPassword(input.newPassword);
     await this.repo.updatePassword(user.id, hashedPassword);
@@ -905,6 +910,6 @@ export class AuthService {
 
     logAudit({ userId: user.id, action: AuditAction.PASSWORD_RESET, performedBy: user.id });
 
-    return { message: 'Password reset successfully. Please login with your new password.' };
+    return { message: getDict().auth.passwordResetSuccess };
   }
 }

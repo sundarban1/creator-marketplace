@@ -5,10 +5,14 @@ import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
+import { LogEvent } from '../../config/observability';
 import { buildEsewaCheckoutHtml, decodeEsewaResponse, esewaCheckoutCsp } from '../../utils/esewa';
 import type { SubmitReviewInput, DeliverableVideoSignatureRequestInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput, AskEventQuestionInput, AnswerEventQuestionInput } from './campaign.schema';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const campaignService = new CampaignService();
 const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
@@ -16,7 +20,7 @@ const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }]
 export class CampaignController {
   async uploadFeatureImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError(getDict().campaign.noImageFileProvided, HttpStatus.BAD_REQUEST);
       const imageUrl = await uploadToCloudinary(
         req.file.buffer,
         'campaigns/features',
@@ -325,7 +329,7 @@ export class CampaignController {
   async removeDeliverableVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const publicId = req.query.publicId as string;
-      if (!publicId) throw new AppError('publicId is required', 400);
+      if (!publicId) throw new AppError(getDict().campaign.publicIdRequired, HttpStatus.BAD_REQUEST);
       const result = await campaignService.removeDeliverableVideo(req.params.appId, req.user!.id, publicId);
       success(res, result, 'Video removed');
     } catch (err) {
@@ -345,7 +349,7 @@ export class CampaignController {
 
   async uploadDeliverableFile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No file provided', 400);
+      if (!req.file) throw new AppError(getDict().campaign.noFileProvided, HttpStatus.BAD_REQUEST);
       // Must listen on res (not req) for 'close': by this point multer has
       // already fully consumed the request body, so req's readable stream
       // closes on its own almost immediately regardless of the socket —
@@ -369,7 +373,7 @@ export class CampaignController {
   async removeDeliverableFile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const fileId = req.query.fileId as string;
-      if (!fileId) throw new AppError('fileId is required', 400);
+      if (!fileId) throw new AppError(getDict().campaign.fileIdRequired, HttpStatus.BAD_REQUEST);
       const result = await campaignService.removeDeliverableFile(req.params.appId, req.user!.id, fileId);
       success(res, result, 'File removed');
     } catch (err) {
@@ -404,6 +408,8 @@ export class CampaignController {
     const { pidx, purchase_order_id: appId } = req.query as { pidx?: string; purchase_order_id?: string };
     const redirectBase = `${env.APP_SCHEME}://khalti-callback`;
 
+    logger.info({ event: LogEvent.PAYMENT_KHALTI_CALLBACK_RECEIVED, appId, hasPidx: !!pidx }, 'Khalti callback hit');
+
     if (!pidx || !appId) {
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent('missing_payment_reference')}`);
       return;
@@ -413,6 +419,7 @@ export class CampaignController {
       res.redirect(`${redirectBase}?success=true`);
     } catch (err) {
       const message = err instanceof AppError ? err.message : 'Could not confirm the Khalti payment';
+      logger.warn({ appId, err }, 'Khalti callback: confirmation failed');
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
     }
   }

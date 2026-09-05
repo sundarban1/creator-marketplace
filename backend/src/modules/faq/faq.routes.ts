@@ -6,6 +6,9 @@ import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import { createHelpArticleSchema, updateHelpArticleSchema } from '../help/help.schema';
 import prisma from '../../prisma';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const router = Router();
 
@@ -17,7 +20,7 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
       where:   { published: true },
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     });
-    success(res, faqs, 'FAQs retrieved');
+    success(res, faqs, getDict().faq.faqsRetrieved);
   } catch (err) { next(err); }
 });
 
@@ -48,7 +51,7 @@ router.post('/', authenticate, authorize(Role.ADMIN), validate(createHelpArticle
 router.put('/:id', authenticate, authorize(Role.ADMIN), validate(updateHelpArticleSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await prisma.faqArticle.findUnique({ where: { id: req.params['id']! } });
-    if (!existing) throw new AppError('FAQ not found', 404);
+    if (!existing) throw new AppError('FAQ not found', HttpStatus.NOT_FOUND);
     const faq = await prisma.faqArticle.update({ where: { id: req.params['id']! }, data: { ...req.body, updatedAt: new Date() } });
     success(res, faq, 'FAQ updated');
   } catch (err) { next(err); }
@@ -57,7 +60,7 @@ router.put('/:id', authenticate, authorize(Role.ADMIN), validate(updateHelpArtic
 router.delete('/:id', authenticate, authorize(Role.ADMIN), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await prisma.faqArticle.findUnique({ where: { id: req.params['id']! } });
-    if (!existing) throw new AppError('FAQ not found', 404);
+    if (!existing) throw new AppError('FAQ not found', HttpStatus.NOT_FOUND);
     await prisma.faqArticle.delete({ where: { id: req.params['id']! } });
     success(res, null, 'FAQ deleted');
   } catch (err) { next(err); }
@@ -66,9 +69,9 @@ router.delete('/:id', authenticate, authorize(Role.ADMIN), async (req: Request, 
 router.patch('/:id/publish', authenticate, authorize(Role.ADMIN), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await prisma.faqArticle.findUnique({ where: { id: req.params['id']! } });
-    if (!existing) throw new AppError('FAQ not found', 404);
+    if (!existing) throw new AppError('FAQ not found', HttpStatus.NOT_FOUND);
     const { published } = req.body as { published: boolean };
-    if (typeof published !== 'boolean') throw new AppError('published must be a boolean', 400);
+    if (typeof published !== 'boolean') throw new AppError('published must be a boolean', HttpStatus.BAD_REQUEST);
     const faq = await prisma.faqArticle.update({ where: { id: req.params['id']! }, data: { published, updatedAt: new Date() } });
     success(res, faq, published ? 'FAQ published' : 'FAQ unpublished');
   } catch (err) { next(err); }

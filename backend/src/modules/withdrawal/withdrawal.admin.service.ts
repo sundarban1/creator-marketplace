@@ -10,6 +10,8 @@ import { WithdrawalRepository } from './withdrawal.repository';
 import { toAdminWithdrawalDetailDto, toAdminWithdrawalListDto } from './withdrawal.admin.dto';
 import type { MarkWithdrawalPaidInput, RejectWithdrawalInput } from './withdrawal.admin.schema';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 const VALID_STATUSES: WithdrawalStatus[] = ['PENDING', 'PROCESSING', 'PAID', 'REJECTED', 'CANCELLED'];
 
 export class WithdrawalAdminService {
@@ -28,15 +30,15 @@ export class WithdrawalAdminService {
 
   async detail(id: string) {
     const w = await this.repo.findById(id);
-    if (!w) throw new AppError('Withdrawal not found', 404);
+    if (!w) throw new AppError('Withdrawal not found', HttpStatus.NOT_FOUND);
     return toAdminWithdrawalDetailDto(w);
   }
 
   async startProcessing(id: string, adminId: string) {
     const w = await this.repo.findById(id);
-    if (!w) throw new AppError('Withdrawal not found', 404);
+    if (!w) throw new AppError('Withdrawal not found', HttpStatus.NOT_FOUND);
     if (w.status !== 'PENDING') {
-      throw new AppError(`Only a pending withdrawal can be moved to processing`, 400);
+      throw new AppError(`Only a pending withdrawal can be moved to processing`, HttpStatus.BAD_REQUEST);
     }
     const updated = await this.repo.update(id, { status: 'PROCESSING', processedByAdminId: adminId });
 
@@ -55,10 +57,10 @@ export class WithdrawalAdminService {
 
   async reject(id: string, adminId: string, input: RejectWithdrawalInput) {
     const w = await this.repo.findById(id);
-    if (!w) throw new AppError('Withdrawal not found', 404);
-    if (w.status === 'PAID')     throw new AppError('A paid withdrawal cannot be rejected', 400);
-    if (w.status === 'REJECTED') throw new AppError('This withdrawal is already rejected', 400);
-    if (w.status === 'CANCELLED') throw new AppError('This withdrawal was cancelled', 400);
+    if (!w) throw new AppError('Withdrawal not found', HttpStatus.NOT_FOUND);
+    if (w.status === 'PAID')     throw new AppError('A paid withdrawal cannot be rejected', HttpStatus.BAD_REQUEST);
+    if (w.status === 'REJECTED') throw new AppError('This withdrawal is already rejected', HttpStatus.BAD_REQUEST);
+    if (w.status === 'CANCELLED') throw new AppError('This withdrawal was cancelled', HttpStatus.BAD_REQUEST);
 
     const updated = await this.repo.update(id, {
       status:             'REJECTED',
@@ -85,10 +87,10 @@ export class WithdrawalAdminService {
   async markPaid(id: string, adminId: string, input: MarkWithdrawalPaidInput, screenshotBuffer: Buffer) {
     // Pre-flight so we don't upload a screenshot for a withdrawal that can't be paid.
     const existing = await this.repo.findById(id);
-    if (!existing) throw new AppError('Withdrawal not found', 404);
-    if (existing.status === 'PAID')      throw new AppError('This withdrawal has already been marked paid', 409);
-    if (existing.status === 'REJECTED')  throw new AppError('A rejected withdrawal cannot be paid', 400);
-    if (existing.status === 'CANCELLED') throw new AppError('A cancelled withdrawal cannot be paid', 400);
+    if (!existing) throw new AppError('Withdrawal not found', HttpStatus.NOT_FOUND);
+    if (existing.status === 'PAID')      throw new AppError('This withdrawal has already been marked paid', HttpStatus.CONFLICT);
+    if (existing.status === 'REJECTED')  throw new AppError('A rejected withdrawal cannot be paid', HttpStatus.BAD_REQUEST);
+    if (existing.status === 'CANCELLED') throw new AppError('A cancelled withdrawal cannot be paid', HttpStatus.BAD_REQUEST);
 
     const screenshotUrl = await uploadImage(
       screenshotBuffer,
@@ -105,10 +107,10 @@ export class WithdrawalAdminService {
       const locked = await tx.$queryRaw<{ status: WithdrawalStatus; amount: number; creatorId: string; method: string }[]>`
         SELECT status, amount, "creatorId", method FROM withdrawals WHERE id = ${id} FOR UPDATE`;
       const row = locked[0];
-      if (!row) throw new AppError('Withdrawal not found', 404);
-      if (row.status === 'PAID') throw new AppError('This withdrawal has already been marked paid', 409);
+      if (!row) throw new AppError('Withdrawal not found', HttpStatus.NOT_FOUND);
+      if (row.status === 'PAID') throw new AppError('This withdrawal has already been marked paid', HttpStatus.CONFLICT);
       if (row.status !== 'PENDING' && row.status !== 'PROCESSING') {
-        throw new AppError(`Cannot mark a ${row.status.toLowerCase()} withdrawal as paid`, 400);
+        throw new AppError(`Cannot mark a ${row.status.toLowerCase()} withdrawal as paid`, HttpStatus.BAD_REQUEST);
       }
 
       await tx.withdrawal.update({

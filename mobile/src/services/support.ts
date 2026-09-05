@@ -1,4 +1,4 @@
-import { request, API_BASE, ensureFreshAccessToken } from '@/lib/api';
+import { request, API_BASE, ensureFreshAccessToken, getApiLanguage } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/utilities/constants';
 import type { PickedAttachment } from '@/utilities/chatAttachments';
@@ -21,7 +21,7 @@ export const supportService = {
       form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
       const res = await fetch(`${API_BASE}/api/support/attachments`, {
         method:  'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-Language': getApiLanguage() },
         body:    form,
       });
       const json = await res.json() as { success: boolean; data: { url: string }; message?: string };

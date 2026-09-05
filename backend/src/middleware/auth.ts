@@ -3,11 +3,13 @@ import { Role } from '@prisma/client';
 import { verifyAccessToken, verifyVisitorChatToken } from '../utils/jwt';
 import { AppError } from './error';
 
+import { HttpStatus } from '../constants/httpStatus';
+
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    next(new AppError('No token provided. Please authenticate.', 401));
+    next(new AppError('No token provided. Please authenticate.', HttpStatus.UNAUTHORIZED));
     return;
   }
 
@@ -45,25 +47,25 @@ export function optionalAuthenticate(req: Request, _res: Response, next: NextFun
 export function verifyVisitorChat(req: Request, _res: Response, next: NextFunction): void {
   const token = req.headers['x-visitor-token'] as string | undefined;
   if (!token) {
-    next(new AppError('Missing visitor token', 401));
+    next(new AppError('Missing visitor token', HttpStatus.UNAUTHORIZED));
     return;
   }
   try {
     const decoded = verifyVisitorChatToken(token);
     if (decoded.chatId !== req.params['chatId']) {
-      next(new AppError('Visitor token does not match this chat', 403));
+      next(new AppError('Visitor token does not match this chat', HttpStatus.FORBIDDEN));
       return;
     }
     next();
   } catch {
-    next(new AppError('Invalid or expired visitor token', 401));
+    next(new AppError('Invalid or expired visitor token', HttpStatus.UNAUTHORIZED));
   }
 }
 
 export function authorize(...roles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
-      next(new AppError('Not authenticated', 401));
+      next(new AppError('Not authenticated', HttpStatus.UNAUTHORIZED));
       return;
     }
 
@@ -71,7 +73,7 @@ export function authorize(...roles: Role[]) {
       next(
         new AppError(
           `Access denied. Required role: ${roles.join(' or ')}. Your role: ${req.user.role}`,
-          403
+          HttpStatus.FORBIDDEN
         )
       );
       return;

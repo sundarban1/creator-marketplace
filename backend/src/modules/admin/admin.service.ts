@@ -17,6 +17,8 @@ import { logActivity } from '../logging/activity.service';
 import { logAudit } from '../logging/audit.service';
 import { ActivityAction, AuditAction, EntityType } from '../logging/logging.constants';
 
+import { HttpStatus } from '../../constants/httpStatus';
+
 export class AdminService {
   private repo: AdminRepository;
   private referralRepo: ReferralRepository;
@@ -101,7 +103,7 @@ export class AdminService {
   async setCampaignStatus(campaignId: string, status: CampaignStatus) {
     if (status === 'CLOSED') {
       const campaign = await this.repo.findCampaignForClose(campaignId);
-      if (!campaign) throw new AppError('Campaign not found', 404);
+      if (!campaign) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
 
       // Every proposal must be resolved before the event can close: a
       // rejected proposal is already a closed matter, but a pending one
@@ -114,7 +116,7 @@ export class AdminService {
       if (hasUnfinishedProposal) {
         throw new AppError(
           'This event still has proposals that are pending or in progress — every proposal must be completed (or declined) before it can be closed.',
-          400,
+          HttpStatus.BAD_REQUEST,
         );
       }
     }
@@ -123,9 +125,9 @@ export class AdminService {
 
   async approveCampaign(campaignId: string) {
     const campaign = await this.repo.findCampaignForApproval(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (!campaign) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
     if (campaign.status !== 'PENDING_APPROVAL') {
-      throw new AppError('Campaign is not pending approval', 400);
+      throw new AppError('Campaign is not pending approval', HttpStatus.BAD_REQUEST);
     }
 
     const updated = await this.repo.approveCampaign(campaignId);
@@ -146,9 +148,9 @@ export class AdminService {
 
   async rejectCampaign(campaignId: string, reason: string) {
     const campaign = await this.repo.findCampaignForApproval(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (!campaign) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
     if (campaign.status !== 'PENDING_APPROVAL') {
-      throw new AppError('Campaign is not pending approval', 400);
+      throw new AppError('Campaign is not pending approval', HttpStatus.BAD_REQUEST);
     }
 
     const updated = await this.repo.updateCampaignStatus(campaignId, 'CANCELLED');
@@ -170,8 +172,8 @@ export class AdminService {
   // whether proposals are pending, accepted, paid, or in progress.
   async deleteCampaign(campaignId: string) {
     const campaign = await this.repo.findCampaignForDeletion(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', 404);
-    if (campaign.deletedAt) throw new AppError('Event is already deleted', 400);
+    if (!campaign) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
+    if (campaign.deletedAt) throw new AppError('Event is already deleted', HttpStatus.BAD_REQUEST);
 
     const affectedUserIds = campaign.applications.map((a) => a.creator.userId);
 
@@ -264,20 +266,20 @@ export class AdminService {
 
   async releaseReferral(referralId: string, adminUserId: string) {
     const referral = await this.referralRepo.findReferralById(referralId);
-    if (!referral) throw new AppError('Referral not found', 404);
-    if (referral.status !== 'PENDING') throw new AppError('Referral is not pending', 400);
+    if (!referral) throw new AppError('Referral not found', HttpStatus.NOT_FOUND);
+    if (referral.status !== 'PENDING') throw new AppError('Referral is not pending', HttpStatus.BAD_REQUEST);
     if (new Date() > referral.expiresAt) {
       await this.referralRepo.updateReferralStatus(referralId, { status: 'EXPIRED' });
-      throw new AppError('Referral has expired', 400);
+      throw new AppError('Referral has expired', HttpStatus.BAD_REQUEST);
     }
 
     const referred = await this.referralRepo.findCreatorProfileById(referral.referredId);
-    if (!referred) throw new AppError('Referred creator not found', 404);
-    if (!referred.isVerified) throw new AppError('Referred creator is not verified yet', 400);
-    if (!isCreatorProfileComplete(referred)) throw new AppError('Referred creator profile is not complete yet', 400);
+    if (!referred) throw new AppError('Referred creator not found', HttpStatus.NOT_FOUND);
+    if (!referred.isVerified) throw new AppError('Referred creator is not verified yet', HttpStatus.BAD_REQUEST);
+    if (!isCreatorProfileComplete(referred)) throw new AppError('Referred creator profile is not complete yet', HttpStatus.BAD_REQUEST);
 
     const firstEventCompleted = await this.referralRepo.hasApprovedApplication(referral.referredId);
-    if (!firstEventCompleted) throw new AppError('Referred creator has not completed a first event yet', 400);
+    if (!firstEventCompleted) throw new AppError('Referred creator has not completed a first event yet', HttpStatus.BAD_REQUEST);
 
     const updated = await this.referralRepo.updateReferralStatus(referralId, {
       status: 'COMPLETED',
@@ -487,39 +489,39 @@ export class AdminService {
 
   async releaseBusinessReferral(referralId: string, adminUserId: string) {
     const referral = await this.businessReferralRepo.findReferralById(referralId);
-    if (!referral) throw new AppError('Referral not found', 404);
-    if (referral.status !== 'PENDING') throw new AppError('Referral is not pending', 400);
+    if (!referral) throw new AppError('Referral not found', HttpStatus.NOT_FOUND);
+    if (referral.status !== 'PENDING') throw new AppError('Referral is not pending', HttpStatus.BAD_REQUEST);
     if (new Date() > referral.expiresAt) {
       await this.businessReferralRepo.updateReferralStatus(referralId, { status: 'EXPIRED' });
-      throw new AppError('Referral has expired', 400);
+      throw new AppError('Referral has expired', HttpStatus.BAD_REQUEST);
     }
 
     const referrer = await this.businessReferralRepo.findBusinessProfileById(referral.referrerId);
     const referred = await this.businessReferralRepo.findBusinessProfileById(referral.referredId);
-    if (!referrer || !referred) throw new AppError('Business not found', 404);
+    if (!referrer || !referred) throw new AppError('Business not found', HttpStatus.NOT_FOUND);
 
-    if (!referred.isVerified) throw new AppError('Referred business is not verified yet', 400);
-    if (!isBusinessProfileComplete(referred)) throw new AppError('Referred business profile is not complete yet', 400);
+    if (!referred.isVerified) throw new AppError('Referred business is not verified yet', HttpStatus.BAD_REQUEST);
+    if (!isBusinessProfileComplete(referred)) throw new AppError('Referred business profile is not complete yet', HttpStatus.BAD_REQUEST);
 
     const qualifyingCampaign = await this.businessReferralRepo.findQualifyingCampaign(referral.referredId);
-    if (!qualifyingCampaign) throw new AppError('Referred business has not published a funded campaign yet', 400);
+    if (!qualifyingCampaign) throw new AppError('Referred business has not published a funded campaign yet', HttpStatus.BAD_REQUEST);
     const ageMs = Date.now() - qualifyingCampaign.createdAt.getTime();
     if (ageMs < REFERRAL_HOLD_DAYS * 24 * 60 * 60 * 1000) {
-      throw new AppError(`The funded campaign must be at least ${REFERRAL_HOLD_DAYS} days old before releasing (anti-collusion hold)`, 400);
+      throw new AppError(`The funded campaign must be at least ${REFERRAL_HOLD_DAYS} days old before releasing (anti-collusion hold)`, HttpStatus.BAD_REQUEST);
     }
 
     if (referred.panNo) {
-      if (referred.panNo === referrer.panNo) throw new AppError('Referred business shares a PAN/VAT number with the referrer', 400);
+      if (referred.panNo === referrer.panNo) throw new AppError('Referred business shares a PAN/VAT number with the referrer', HttpStatus.BAD_REQUEST);
       const panReused = await this.businessReferralRepo.hasCompletedReferralForPanNo(referred.panNo, referral.referredId);
-      if (panReused) throw new AppError('This PAN/VAT number has already collected a referral reward', 400);
+      if (panReused) throw new AppError('This PAN/VAT number has already collected a referral reward', HttpStatus.BAD_REQUEST);
     }
 
     const sharedPayout = referred.paymentMethods.length > 0
       && referred.paymentMethods.some((m) => referrer.paymentMethods.includes(m));
-    if (sharedPayout) throw new AppError('Referred business shares a payout account with the referrer', 400);
+    if (sharedPayout) throw new AppError('Referred business shares a payout account with the referrer', HttpStatus.BAD_REQUEST);
 
     if (referrer.user?.deviceId && referred.user?.deviceId && referrer.user.deviceId === referred.user.deviceId) {
-      throw new AppError('Referred business signed up from the same device as the referrer', 400);
+      throw new AppError('Referred business signed up from the same device as the referrer', HttpStatus.BAD_REQUEST);
     }
 
     return this.businessReferralRepo.updateReferralStatus(referralId, {
@@ -567,7 +569,7 @@ export class AdminService {
     },
   ) {
     const before = await this.repo.findDisputeById(disputeId);
-    if (!before) throw new AppError('Dispute not found', 404);
+    if (!before) throw new AppError('Dispute not found', HttpStatus.NOT_FOUND);
 
     await escrowService.resolveDispute({
       disputeId,

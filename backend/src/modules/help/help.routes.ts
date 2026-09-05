@@ -6,6 +6,9 @@ import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import { HelpRepository } from './help.repository';
 import { createHelpArticleSchema, updateHelpArticleSchema } from './help.schema';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const router = Router();
 const repo   = new HelpRepository();
@@ -15,7 +18,7 @@ const repo   = new HelpRepository();
 router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const articles = await repo.listPublished();
-    success(res, articles, 'Help articles retrieved');
+    success(res, articles, getDict().help.helpArticlesRetrieved);
   } catch (err) { next(err); }
 });
 
@@ -38,7 +41,7 @@ router.post('/', authenticate, authorize(Role.ADMIN), validate(createHelpArticle
 router.put('/:id', authenticate, authorize(Role.ADMIN), validate(updateHelpArticleSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await repo.findById(req.params['id']!);
-    if (!existing) throw new AppError('Help article not found', 404);
+    if (!existing) throw new AppError('Help article not found', HttpStatus.NOT_FOUND);
     const article = await repo.update(req.params['id']!, req.body);
     success(res, article, 'Help article updated');
   } catch (err) { next(err); }
@@ -47,7 +50,7 @@ router.put('/:id', authenticate, authorize(Role.ADMIN), validate(updateHelpArtic
 router.delete('/:id', authenticate, authorize(Role.ADMIN), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await repo.findById(req.params['id']!);
-    if (!existing) throw new AppError('Help article not found', 404);
+    if (!existing) throw new AppError('Help article not found', HttpStatus.NOT_FOUND);
     await repo.delete(req.params['id']!);
     success(res, null, 'Help article deleted');
   } catch (err) { next(err); }
@@ -56,9 +59,9 @@ router.delete('/:id', authenticate, authorize(Role.ADMIN), async (req: Request, 
 router.patch('/:id/publish', authenticate, authorize(Role.ADMIN), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await repo.findById(req.params['id']!);
-    if (!existing) throw new AppError('Help article not found', 404);
+    if (!existing) throw new AppError('Help article not found', HttpStatus.NOT_FOUND);
     const { published } = req.body as { published: boolean };
-    if (typeof published !== 'boolean') throw new AppError('published must be a boolean', 400);
+    if (typeof published !== 'boolean') throw new AppError('published must be a boolean', HttpStatus.BAD_REQUEST);
     const article = await repo.togglePublished(req.params['id']!, published);
     success(res, article, `Help article ${published ? 'published' : 'unpublished'}`);
   } catch (err) { next(err); }

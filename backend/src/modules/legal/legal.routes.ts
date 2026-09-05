@@ -6,6 +6,9 @@ import { validate } from '../../middleware/validate';
 import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import prisma from '../../prisma';
+import { getDict } from '../../i18n';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const router = Router();
 
@@ -34,7 +37,7 @@ const updateSchema = sectionSchema.partial().omit({ type: true });
 router.get('/:typeSlug', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const legalType = TYPE_MAP[req.params['typeSlug']!];
-    if (!legalType) throw new AppError('Unknown legal document type', 404);
+    if (!legalType) throw new AppError(getDict().legal.unknownLegalDocumentType, HttpStatus.NOT_FOUND);
 
     const sections = await prisma.legalSection.findMany({
       where:   { type: legalType, published: true },
@@ -46,7 +49,7 @@ router.get('/:typeSlug', async (req: Request, res: Response, next: NextFunction)
       return !max || s.updatedAt > max ? s.updatedAt : max;
     }, null);
 
-    success(res, { sections, lastUpdated }, 'Legal document retrieved');
+    success(res, { sections, lastUpdated }, getDict().legal.legalDocumentRetrieved);
   } catch (err) { next(err); }
 });
 
@@ -87,7 +90,7 @@ router.post('/', authenticate, authorize(Role.ADMIN), validate(sectionSchema), a
 router.put('/:id', authenticate, authorize(Role.ADMIN), validate(updateSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await prisma.legalSection.findUnique({ where: { id: req.params['id']! } });
-    if (!existing) throw new AppError('Section not found', 404);
+    if (!existing) throw new AppError('Section not found', HttpStatus.NOT_FOUND);
     const section = await prisma.legalSection.update({
       where: { id: req.params['id']! },
       data:  { ...req.body, updatedAt: new Date() },
@@ -101,7 +104,7 @@ router.put('/:id', authenticate, authorize(Role.ADMIN), validate(updateSchema), 
 router.delete('/:id', authenticate, authorize(Role.ADMIN), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await prisma.legalSection.findUnique({ where: { id: req.params['id']! } });
-    if (!existing) throw new AppError('Section not found', 404);
+    if (!existing) throw new AppError('Section not found', HttpStatus.NOT_FOUND);
     await prisma.legalSection.delete({ where: { id: req.params['id']! } });
     success(res, null, 'Section deleted');
   } catch (err) { next(err); }
@@ -112,9 +115,9 @@ router.delete('/:id', authenticate, authorize(Role.ADMIN), async (req: Request, 
 router.patch('/:id/publish', authenticate, authorize(Role.ADMIN), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await prisma.legalSection.findUnique({ where: { id: req.params['id']! } });
-    if (!existing) throw new AppError('Section not found', 404);
+    if (!existing) throw new AppError('Section not found', HttpStatus.NOT_FOUND);
     const { published } = req.body as { published: boolean };
-    if (typeof published !== 'boolean') throw new AppError('published must be a boolean', 400);
+    if (typeof published !== 'boolean') throw new AppError('published must be a boolean', HttpStatus.BAD_REQUEST);
     const section = await prisma.legalSection.update({
       where: { id: req.params['id']! },
       data:  { published, updatedAt: new Date() },

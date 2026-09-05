@@ -2243,15 +2243,30 @@ model ActivityLog {
 model AuditLog {
   id          String   @id @default(cuid())
   userId      String?
+  // Who/what performed the action — "USER" | "ADMIN" | "SYSTEM". Nullable:
+  // existing rows predate this column and userId alone still identifies the
+  // actor for them.
+  actorType   String?
   action      String
+  entityType  String?
+  entityId    String?
+  // Denormalized alongside entityType/entityId so campaign-scoped audit rows
+  // (payments, escrow, disputes) can be filtered without a join.
+  campaignId  String?
   oldValue    Json?
   newValue    Json?
+  // Generic context bag for rows that don't fit the oldValue/newValue diff
+  // shape (e.g. a financial event's amount/currency/transactionId).
+  metadata    Json?
   performedBy String?
   ipAddress   String?
+  userAgent   String?
+  requestId   String?
   createdAt   DateTime @default(now())
 
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+  @@index([campaignId])
   @@map("audit_logs")
 }

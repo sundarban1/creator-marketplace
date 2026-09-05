@@ -4,7 +4,10 @@ import { analyticsService } from '../analytics/analytics.service';
 import { success } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
+import { getDict } from '../../i18n';
 import { env } from '../../config/env';
+
+import { HttpStatus } from '../../constants/httpStatus';
 
 const creatorService = new CreatorService();
 
@@ -24,7 +27,7 @@ export class CreatorController {
       const sortRaw = req.query.sort as string | undefined;
       const sort = sortRaw === 'oldest' || sortRaw === 'followers' ? sortRaw : 'newest';
       const result = await creatorService.listCreators({ page, limit, search, categories, location, platforms, priceMin, priceMax, sort, lang: req.language });
-      success(res, result, 'Creators retrieved');
+      success(res, result, getDict().creator.creatorsRetrieved);
     } catch (err) {
       next(err);
     }
@@ -33,7 +36,7 @@ export class CreatorController {
   async getRecommendedCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const category = req.query.category as string | undefined;
-      if (!category) throw new AppError('category is required', 400);
+      if (!category) throw new AppError(getDict().creator.categoryRequired, HttpStatus.BAD_REQUEST);
       const lat = req.query.lat ? parseFloat(String(req.query.lat)) : undefined;
       const lng = req.query.lng ? parseFloat(String(req.query.lng)) : undefined;
       const budgetMin = req.query.budgetMin ? parseFloat(String(req.query.budgetMin)) : undefined;
@@ -42,7 +45,7 @@ export class CreatorController {
       const minFollowers = req.query.minFollowers ? parseInt(String(req.query.minFollowers), 10) : undefined;
       const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
       const creators = await creatorService.getRecommendedForCampaign({ category, lat, lng, budgetMin, budgetMax, platforms, minFollowers, limit, lang: req.language });
-      success(res, creators, 'Recommended creators retrieved');
+      success(res, creators, getDict().creator.recommendedCreatorsRetrieved);
     } catch (err) {
       next(err);
     }
@@ -51,7 +54,7 @@ export class CreatorController {
   async getCreatorPublicProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language, req.user?.id);
-      success(res, profile, 'Creator profile retrieved');
+      success(res, profile, getDict().creator.creatorProfileRetrieved);
     } catch (err) {
       next(err);
     }
@@ -78,7 +81,7 @@ export class CreatorController {
         page, limit, search, categories, location, platforms, priceMin, priceMax,
         excludeId: viewer?.id, lang: req.language,
       });
-      success(res, result, 'Creators retrieved');
+      success(res, result, getDict().creator.creatorsRetrieved);
     } catch (err) {
       next(err);
     }
@@ -91,7 +94,7 @@ export class CreatorController {
       // business-side profile-view analytics counter since that branch looks up
       // a business record for this id, which a creator's userId never matches.
       const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language, req.user!.id);
-      success(res, profile, 'Creator profile retrieved');
+      success(res, profile, getDict().creator.creatorProfileRetrieved);
     } catch (err) {
       next(err);
     }
@@ -100,7 +103,7 @@ export class CreatorController {
   async getCreatorFilterOptions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const options = await creatorService.getFilterOptions();
-      success(res, options, 'Filter options retrieved');
+      success(res, options, getDict().creator.filterOptionsRetrieved);
     } catch (err) {
       next(err);
     }
@@ -109,9 +112,9 @@ export class CreatorController {
   async checkUsernameAvailability(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const username = req.query.username as string | undefined;
-      if (!username) throw new AppError('Username query param is required', 400);
+      if (!username) throw new AppError(getDict().creator.usernameQueryRequired, HttpStatus.BAD_REQUEST);
       const result = await creatorService.isUsernameAvailable(username);
-      success(res, result, 'Username availability checked');
+      success(res, result, getDict().creator.usernameAvailabilityChecked);
     } catch (err) {
       next(err);
     }
@@ -120,7 +123,7 @@ export class CreatorController {
   async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.getProfile(req.user!.id);
-      success(res, profile, 'Profile retrieved successfully');
+      success(res, profile, getDict().creator.profileRetrieved);
     } catch (err) {
       next(err);
     }
@@ -129,7 +132,7 @@ export class CreatorController {
   async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.updateProfile(req.user!.id, req.body);
-      success(res, profile, 'Profile updated successfully');
+      success(res, profile, getDict().creator.profileUpdated);
     } catch (err) {
       next(err);
     }
@@ -138,7 +141,7 @@ export class CreatorController {
   async addPortfolioLink(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.addPortfolioLink(req.user!.id, req.body);
-      success(res, profile, 'Portfolio link added', 201);
+      success(res, profile, getDict().creator.portfolioLinkAdded, 201);
     } catch (err) {
       next(err);
     }
@@ -147,7 +150,7 @@ export class CreatorController {
   async removePortfolioLink(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.removePortfolioLink(req.user!.id, req.params.id);
-      success(res, profile, 'Portfolio link removed');
+      success(res, profile, getDict().creator.portfolioLinkRemoved);
     } catch (err) {
       next(err);
     }
@@ -156,7 +159,7 @@ export class CreatorController {
   async updateSocialLinks(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.updateSocialLinks(req.user!.id, req.body);
-      success(res, profile, 'Social links updated');
+      success(res, profile, getDict().creator.socialLinksUpdated);
     } catch (err) {
       next(err);
     }
@@ -165,7 +168,7 @@ export class CreatorController {
   async getSocialAccounts(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const accounts = await creatorService.getSocialAccounts(req.user!.id);
-      success(res, accounts, 'Social accounts retrieved');
+      success(res, accounts, getDict().creator.socialAccountsRetrieved);
     } catch (err) {
       next(err);
     }
@@ -174,7 +177,7 @@ export class CreatorController {
   async addSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const account = await creatorService.addSocialAccount(req.user!.id, req.body);
-      success(res, account, 'Social account added', 201);
+      success(res, account, getDict().creator.socialAccountAdded, 201);
     } catch (err) {
       next(err);
     }
@@ -183,7 +186,7 @@ export class CreatorController {
   async updateSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const account = await creatorService.updateSocialAccount(req.user!.id, req.params.id, req.body);
-      success(res, account, 'Social account updated');
+      success(res, account, getDict().creator.socialAccountUpdated);
     } catch (err) {
       next(err);
     }
@@ -192,7 +195,7 @@ export class CreatorController {
   async deleteSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       await creatorService.deleteSocialAccount(req.user!.id, req.params.id);
-      success(res, null, 'Social account removed');
+      success(res, null, getDict().creator.socialAccountRemoved);
     } catch (err) {
       next(err);
     }
@@ -203,7 +206,7 @@ export class CreatorController {
       const account = await creatorService.connectYoutubeAccount(
         req.user!.id, req.body.accessToken, req.body.refreshToken, req.body.expiresIn, req.body.clientPlatform,
       );
-      success(res, account, 'YouTube account connected', 201);
+      success(res, account, getDict().creator.youtubeAccountConnected, 201);
     } catch (err) {
       next(err);
     }
@@ -212,7 +215,7 @@ export class CreatorController {
   async getTiktokAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const url = await creatorService.getTiktokAuthorizeUrl(req.user!.id);
-      success(res, { url }, 'TikTok authorize URL generated');
+      success(res, { url }, getDict().creator.tiktokAuthorizeUrlGenerated);
     } catch (err) {
       next(err);
     }
@@ -233,7 +236,7 @@ export class CreatorController {
       await creatorService.handleTiktokCallback(code, state);
       res.redirect(`${redirectBase}?success=true`);
     } catch (err) {
-      const message = err instanceof AppError ? err.message : 'Could not connect TikTok account';
+      const message = err instanceof AppError ? err.message : getDict().creator.couldNotConnectTiktokAccount;
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
     }
   }
@@ -241,7 +244,7 @@ export class CreatorController {
   async getInstagramLoginAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const url = await creatorService.getInstagramLoginAuthorizeUrl(req.user!.id);
-      success(res, { url }, 'Instagram authorize URL generated');
+      success(res, { url }, getDict().creator.instagramAuthorizeUrlGenerated);
     } catch (err) {
       next(err);
     }
@@ -262,7 +265,7 @@ export class CreatorController {
       await creatorService.handleInstagramLoginCallback(code, state);
       res.redirect(`${redirectBase}?success=true`);
     } catch (err) {
-      const message = err instanceof AppError ? err.message : 'Could not connect Instagram account';
+      const message = err instanceof AppError ? err.message : getDict().creator.couldNotConnectInstagramAccount;
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
     }
   }
@@ -270,7 +273,7 @@ export class CreatorController {
   async getFacebookPages(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const pages = await creatorService.listFacebookPages(req.body.accessToken);
-      success(res, pages, 'Facebook Pages retrieved');
+      success(res, pages, getDict().creator.facebookPagesRetrieved);
     } catch (err) {
       next(err);
     }
@@ -279,7 +282,7 @@ export class CreatorController {
   async connectFacebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const account = await creatorService.connectFacebookPage(req.user!.id, req.body.accessToken, req.body.pageId);
-      success(res, account, 'Facebook Page connected', 201);
+      success(res, account, getDict().creator.facebookPageConnected, 201);
     } catch (err) {
       next(err);
     }
@@ -288,7 +291,7 @@ export class CreatorController {
   async connectInstagramAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const account = await creatorService.connectInstagramAccount(req.user!.id, req.body.accessToken, req.body.pageId);
-      success(res, account, 'Instagram account connected', 201);
+      success(res, account, getDict().creator.instagramAccountConnected, 201);
     } catch (err) {
       next(err);
     }
@@ -297,7 +300,7 @@ export class CreatorController {
   async getEarnings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const summary = await creatorService.getEarningsSummary(req.user!.id);
-      success(res, summary, 'Earnings retrieved');
+      success(res, summary, getDict().creator.earningsRetrieved);
     } catch (err) {
       next(err);
     }
@@ -306,7 +309,7 @@ export class CreatorController {
   async updatePaymentMethods(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.updatePaymentMethods(req.user!.id, req.body);
-      success(res, { paymentMethods: profile.paymentMethods }, 'Payment methods updated');
+      success(res, { paymentMethods: profile.paymentMethods }, getDict().creator.paymentMethodsUpdated);
     } catch (err) {
       next(err);
     }
@@ -321,7 +324,7 @@ export class CreatorController {
         prefLocations: profile.prefLocations,
         prefBudgetMin: profile.prefBudgetMin,
         prefBudgetMax: profile.prefBudgetMax,
-      }, 'Campaign preferences updated');
+      }, getDict().creator.campaignPreferencesUpdated);
     } catch (err) {
       next(err);
     }
@@ -329,14 +332,14 @@ export class CreatorController {
 
   async uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError(getDict().creator.noImageFileProvided, HttpStatus.BAD_REQUEST);
       const avatarUrl = await uploadToCloudinary(
         req.file.buffer,
         'creators/avatars',
         `creator_${req.user!.id}`,
       );
       const profile = await creatorService.updateProfile(req.user!.id, { avatarUrl });
-      success(res, { avatarUrl: profile.avatarUrl }, 'Avatar updated');
+      success(res, { avatarUrl: profile.avatarUrl }, getDict().creator.avatarUpdated);
     } catch (err) {
       next(err);
     }
@@ -344,14 +347,14 @@ export class CreatorController {
 
   async uploadCoverImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError(getDict().creator.noImageFileProvided, HttpStatus.BAD_REQUEST);
       const coverImageUrl = await uploadToCloudinary(
         req.file.buffer,
         'creators/covers',
         `creator_cover_${req.user!.id}`,
       );
       const profile = await creatorService.updateProfile(req.user!.id, { coverImageUrl });
-      success(res, { coverImageUrl: profile.coverImageUrl }, 'Cover image updated');
+      success(res, { coverImageUrl: profile.coverImageUrl }, getDict().creator.coverImageUpdated);
     } catch (err) {
       next(err);
     }
@@ -359,7 +362,7 @@ export class CreatorController {
 
   async uploadCitizenship(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError(getDict().creator.noImageFileProvided, HttpStatus.BAD_REQUEST);
       const docUrl = await uploadToCloudinary(
         req.file.buffer,
         'creators/citizenship',
@@ -367,7 +370,7 @@ export class CreatorController {
         [],
       );
       const profile = await creatorService.uploadCitizenship(req.user!.id, docUrl);
-      success(res, { docUrl: profile.citizenshipDocUrl, citizenshipStatus: profile.citizenshipStatus }, 'Citizenship document uploaded');
+      success(res, { docUrl: profile.citizenshipDocUrl, citizenshipStatus: profile.citizenshipStatus }, getDict().creator.citizenshipDocumentUploaded);
     } catch (err) {
       next(err);
     }
@@ -377,7 +380,7 @@ export class CreatorController {
     try {
       // Guard first: rejecting after the upload would orphan a Cloudinary file.
       await creatorService.assertCanUploadCompanyRegDoc(req.user!.id);
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError(getDict().creator.noImageFileProvided, HttpStatus.BAD_REQUEST);
       const docUrl = await uploadToCloudinary(
         req.file.buffer,
         'creators/company-registration',
@@ -385,7 +388,7 @@ export class CreatorController {
         [],
       );
       const profile = await creatorService.uploadCompanyRegDoc(req.user!.id, docUrl);
-      success(res, { docUrl: profile.companyRegDocUrl, companyRegDocStatus: profile.companyRegDocStatus }, 'Company registration document uploaded');
+      success(res, { docUrl: profile.companyRegDocUrl, companyRegDocStatus: profile.companyRegDocStatus }, getDict().creator.companyRegistrationDocumentUploaded);
     } catch (err) {
       next(err);
     }
@@ -393,7 +396,7 @@ export class CreatorController {
 
   async uploadPan(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No image file provided', 400);
+      if (!req.file) throw new AppError(getDict().creator.noImageFileProvided, HttpStatus.BAD_REQUEST);
       const docUrl = await uploadToCloudinary(
         req.file.buffer,
         'creators/pan',
@@ -401,7 +404,7 @@ export class CreatorController {
         [],
       );
       const profile = await creatorService.uploadPan(req.user!.id, docUrl);
-      success(res, { docUrl: profile.panDocUrl, panDocStatus: profile.panDocStatus }, 'PAN document uploaded');
+      success(res, { docUrl: profile.panDocUrl, panDocStatus: profile.panDocStatus }, getDict().creator.panDocumentUploaded);
     } catch (err) {
       next(err);
     }
@@ -410,7 +413,7 @@ export class CreatorController {
   async getMyAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await analyticsService.getCreatorAnalytics(req.user!.id, req.query['range']);
-      success(res, result, 'Analytics retrieved');
+      success(res, result, getDict().creator.analyticsRetrieved);
     } catch (err) {
       next(err);
     }
@@ -419,35 +422,35 @@ export class CreatorController {
   async updateAvailabilityStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.updateAvailabilityStatus(req.user!.id, req.body);
-      success(res, { availabilityStatus: profile.availabilityStatus }, 'Availability updated');
+      success(res, { availabilityStatus: profile.availabilityStatus }, getDict().creator.availabilityUpdated);
     } catch (err) { next(err); }
   }
 
   async getAvailabilitySchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const schedule = await creatorService.getAvailabilitySchedule(req.user!.id);
-      success(res, schedule, 'Availability schedule retrieved');
+      success(res, schedule, getDict().creator.availabilityScheduleRetrieved);
     } catch (err) { next(err); }
   }
 
   async updateAvailabilitySchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const schedule = await creatorService.updateAvailabilitySchedule(req.user!.id, req.body);
-      success(res, schedule, 'Availability schedule updated');
+      success(res, schedule, getDict().creator.availabilityScheduleUpdated);
     } catch (err) { next(err); }
   }
 
   async listInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const invitations = await creatorService.listInvitations(req.user!.id);
-      success(res, invitations, 'Invitations retrieved');
+      success(res, invitations, getDict().creator.invitationsRetrieved);
     } catch (err) { next(err); }
   }
 
   async respondToInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const invitation = await creatorService.respondToInvitation(req.user!.id, req.params.id, req.body);
-      success(res, invitation, 'Invitation response recorded');
+      success(res, invitation, getDict().creator.invitationResponseRecorded);
     } catch (err) { next(err); }
   }
 }
