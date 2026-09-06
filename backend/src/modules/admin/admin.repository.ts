@@ -155,8 +155,8 @@ export class AdminRepository {
         email: true,
         role: true,
         createdAt: true,
-        creatorProfile:  { select: { fullName: true } },
-        businessProfile: { select: { businessName: true } },
+        creatorProfile:  { select: { fullName: true, avatarUrl: true } },
+        businessProfile: { select: { businessName: true, logoUrl: true } },
       },
     });
 

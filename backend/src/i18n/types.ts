@@ -107,6 +107,7 @@ export interface BackendDict {
     notAuthorizedToDeleteCampaign: string;
     notAuthorizedToViewApplications: string;
     locationRequiredForOnsite: string;
+    budgetRequiredToPublish: string;
     categoryNotFoundForRequirement: string;
     categoryNotActive: (categoryName: string) => string;
     categoryNotUsableAsRequirement: (categoryName: string) => string;
@@ -115,6 +116,7 @@ export interface BackendDict {
     dailyProposalLimitReached: (maxPerDay: number) => string;
     reliabilityTooLowToApply: string;
     cannotChangeFieldAfterProposals: (field: string) => string;
+    cannotReduceCreatorsBelowConfirmed: (confirmed: number) => string;
     cannotChangeEventTimeConfirmed: string;
     cannotCloseEventPendingProposals: string;
     cannotPauseEventActiveWork: string;

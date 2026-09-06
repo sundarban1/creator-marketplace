@@ -142,8 +142,8 @@ export interface ApiStats {
     email:     string;
     role:      string;
     createdAt: string;
-    creatorProfile?:  { fullName: string } | null;
-    businessProfile?: { businessName: string | null } | null;
+    creatorProfile?:  { fullName: string; avatarUrl?: string | null } | null;
+    businessProfile?: { businessName: string | null; logoUrl?: string | null } | null;
   }>;
 }
 
@@ -376,8 +376,14 @@ export interface ApiCampaign {
   title:     string;
   category:  string;
   platforms: string[];
+  // Per-creator bounds (equal for a flat fee); totalBudget is the campaign-wide
+  // figure. budgetRateType/budgetInputType/totalBudget absent on older rows.
   budgetMin: number;
   budgetMax: number;
+  budgetRateType?:  'FIXED' | 'RANGE' | null;
+  budgetInputType?: 'PER_CREATOR' | 'TOTAL' | null;
+  totalBudget?:     number | null;
+  creatorsNeeded?:  number;
   status:    string;
   deadline:  string;
   createdAt: string;
@@ -551,8 +557,12 @@ export interface ApiCampaignDetail {
   description:    string;
   category:       string;
   platforms:      string[];
+  // Per-creator bounds (equal for a flat fee); totalBudget is campaign-wide.
   budgetMin:      number;
   budgetMax:      number;
+  budgetRateType?:  'FIXED' | 'RANGE' | null;
+  budgetInputType?: 'PER_CREATOR' | 'TOTAL' | null;
+  totalBudget?:     number | null;
   paymentType:    string;
   status:         string;
   campaignType:   string;

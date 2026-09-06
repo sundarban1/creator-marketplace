@@ -78,8 +78,15 @@ export function mapAiCampaignDraftToForm(draft: AiCampaignDraft, aiPrompt: strin
     aiPrompt,
     aiSuggestedCategories: draft.aiSuggestedCategories,
     needsInput:            draft.needsInput,
+    // budgetMin/budgetMax are the backend-derived per-creator bounds: real
+    // numbers only when the brand stated a per-creator amount, 0/0 otherwise.
     aiBudgetMin: draft.budgetMin,
     aiBudgetMax: draft.budgetMax,
+    budgetRateType: draft.budgetRateType ?? 'FIXED',
+    budgetInputType: draft.budgetStatus === 'STATED_TOTAL' ? 'TOTAL' : 'PER_CREATOR',
+    budgetSet: draft.budgetStatus === 'STATED_PER_CREATOR' && draft.budgetMax > 0,
+    aiBudgetStatus: draft.budgetStatus ?? 'NOT_STATED',
+    aiStatedAmount: draft.statedAmount ?? null,
     completionType:   draft.completionType,
     completionReason: draft.completionReason,
     requirements: mapAiRequirementsToForm(draft.requirements, providerCategoryOptions),

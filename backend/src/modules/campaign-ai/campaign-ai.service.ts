@@ -77,12 +77,49 @@ function wantsNepaliFallback(prompt: string, language: string): boolean {
   return language === 'ne';
 }
 
+// The model only CLASSIFIES the budget (budgetStatus + the raw figure the brand
+// said); the authoritative per-creator budgetMin/budgetMax are computed here so
+// they can never drift from the natural-language prompt (AI paid-event budget
+// spec §4). 0/0 means "not set" — the review screen resolves it with the brand.
+export function normalizeCampaignBudget(draft: AiCampaignDraft): AiCampaignDraft {
+  const count = Math.max(1, Math.round(draft.creatorsNeeded || 1));
+  const amount = draft.statedAmount != null && draft.statedAmount > 0 ? Math.round(draft.statedAmount) : null;
+  const amountMax = draft.statedAmountMax != null && draft.statedAmountMax > 0 ? Math.round(draft.statedAmountMax) : null;
+
+  let budgetMin = 0;
+  let budgetMax = 0;
+  let budgetRateType: 'FIXED' | 'RANGE' = 'FIXED';
+
+  if (draft.budgetStatus === 'STATED_PER_CREATOR' && amount != null) {
+    if (draft.budgetRateType === 'RANGE' && amountMax != null && amountMax > amount) {
+      budgetMin = amount;
+      budgetMax = amountMax;
+      budgetRateType = 'RANGE';
+    } else {
+      budgetMin = amount;
+      budgetMax = amount;
+    }
+  } else if (draft.budgetStatus === 'STATED_TOTAL' && amount != null) {
+    // A stated total divides evenly across the creators; the review screen
+    // still flags it (budgetMin/Max derived, budgetStatus !== STATED_PER_CREATOR).
+    const perCreator = Math.floor(amount / count);
+    budgetMin = perCreator;
+    budgetMax = perCreator;
+  }
+  // AMBIGUOUS / NOT_STATED: leave 0/0 but keep statedAmount so the mobile
+  // "per creator or total?" chooser can show the figure (spec §3).
+
+  return { ...draft, budgetMin, budgetMax, budgetRateType, statedAmount: amount, statedAmountMax: amountMax };
+}
+
 // Used when the OpenAI API is unavailable (no key, auth/billing failure, timeout,
 // or a malformed response) so campaign creation still works end-to-end for demos/dev.
 function pickDummyDraft(prompt: string, language: string): AiCampaignDraft {
   const { keywords, ne, ...draft } = matchByKeywords(dummy.campaignTemplates, prompt);
   const localized = wantsNepaliFallback(prompt, language) && ne ? { ...draft, ...ne } : draft;
-  return aiCampaignDraftSchema.parse(localized);
+  // A fallback draft must never fabricate a budget either — the templates carry
+  // budgetStatus NOT_STATED, so this zeroes budgetMin/budgetMax.
+  return normalizeCampaignBudget(aiCampaignDraftSchema.parse(localized));
 }
 
 function pickDummyEventDraft(prompt: string, language: string): AiEventDraft {
@@ -254,15 +291,22 @@ Respond with a JSON object with EXACTLY these keys:
 - goal: string, EXACTLY ONE of: "Brand Awareness", "More Customers", "Sales", "Followers & Engagement" — whichever best matches the campaign's main aim
 - suggestedDurationDays: number, how many days the campaign should run (typically 7-30)
 - creatorsNeeded: number, how many creators to recruit (typically 1-10)
-- budgetMin: number, suggested minimum budget in NPR (Nepali Rupees) for the whole campaign
-- budgetMax: number, suggested maximum budget in NPR
+- budgetStatus: string, EXACTLY ONE of "STATED_PER_CREATOR", "STATED_TOTAL", "AMBIGUOUS", "NOT_STATED" — how the brand expressed what they will PAY each creator:
+    * "STATED_PER_CREATOR" — an amount clearly tied to each creator ("Rs. 8,000 per creator", "8k each", "we'll pay every creator 5000").
+    * "STATED_TOTAL" — an amount clearly for the whole campaign ("total budget 20,000", "we have Rs. 50k for all of this combined").
+    * "AMBIGUOUS" — a single amount with NO word like "per"/"each"/"total"/"combined"/"altogether" making it clear which it is (e.g. "Need 2 creators. Budget is Rs. 8,000.").
+    * "NOT_STATED" — the brand gave no payment figure at all.
+  NEVER invent, estimate, or suggest a budget. If the brand did not say a number, it is "NOT_STATED". Do not treat a deliverable count or follower count as a budget.
+- statedAmount: number or null — the exact figure the brand said (the LOWER number if they gave a range). null when "NOT_STATED".
+- statedAmountMax: number or null — the upper figure ONLY when the brand gave a per-creator range ("Rs. 8,000 to 10,000 per creator"); null otherwise.
+- budgetRateType: string, "FIXED" or "RANGE" — "RANGE" only when the brand gave a per-creator range, otherwise "FIXED".
 - paymentType: string, e.g. "Fixed Fee"
 - deliverables: object with EXACTLY these integer keys, each 0-10: "REEL", "STORY", "PHOTO_POST", "VISIT_STORE", "PRODUCT_REVIEW_VIDEO", "EVENT_COVERAGE_VIDEO", "MENTION_IN_CAPTION", "TAG_BUSINESS", "GOOGLE_REVIEW". Each number is how many pieces of that content type EACH INDIVIDUAL creator should produce (not multiplied by creatorsNeeded, not a campaign-wide total) — keep these small and realistic, typically 1-3 for the 2-3 content types that best fit the brief, 0 for everything else. At least one key must be > 0.
 - hashtags: string[] (3-8 relevant hashtags, no # needed but allowed)
 - sampleCaption: string, a ready-to-use example caption a creator could post
 - location: string or null, a city/area if inferable, otherwise null
 - imageQuery: string, 2-5 words in ENGLISH naming the single best stock photo for this campaign, describing the photo's SUBJECT only — e.g. "momo dumplings on table", "holi festival colour powder", "himalaya trekking trail", "barista pouring latte", "jewellery display case". Concrete and photographable: no brand names, no person's name, no business or street names (a well-known natural landmark like "himalaya" is fine when it genuinely IS the subject), no words like "photo"/"image"/"banner"/"poster", no adjectives about mood. Base it on what the campaign is actually ABOUT, not on the category name — a Holi party at a cafe is "holi festival colour powder", not "cafe interior". ALWAYS English even when every other field is Nepali, because it is used verbatim as a stock-photo search query.
-- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
+- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless. Do NOT put budget here — budgetStatus already reports that.
 
 ${buildLanguageInstruction(language, CAMPAIGN_LOCALIZED_FIELDS, inputSource)}
 
@@ -391,6 +435,7 @@ export class CampaignAiService {
       const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language, businessContext, inputSource), prompt);
       this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response', NEEDS_INPUT_FIELDS);
+      draft = normalizeCampaignBudget(draft);
       draft = await this.localizeStragglers(draft, CAMPAIGN_LOCALIZED_KEYS);
     } catch (err) {
       if (err instanceof CampaignIntentError) throw err;

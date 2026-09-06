@@ -37,15 +37,16 @@ import { TabColors } from '@/utilities/tabColors';
 
 type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
-const FILTERS = ['All', 'Active', 'Draft', 'Closed'] as const;
+const FILTERS = ['All', 'Active', 'Draft', 'Closed', 'Expired'] as const;
 
 const EMPTY_CFG: Record<typeof FILTERS[number], {
   icon: IoniconName; iconColor: string; iconBg: string; showCreate: boolean;
 }> = {
-  All:    { icon: 'bullhorn',    iconColor: TabColors.neutral.color,  iconBg: TabColors.neutral.bg,  showCreate: true  },
-  Active: { icon: 'bolt',        iconColor: TabColors.positive.color, iconBg: TabColors.positive.bg, showCreate: true  },
-  Draft:  { icon: 'edit',       iconColor: TabColors.warning.color,  iconBg: TabColors.warning.bg,  showCreate: true  },
-  Closed: { icon: 'lock',  iconColor: TabColors.closed.color,   iconBg: TabColors.closed.bg,   showCreate: false },
+  All:     { icon: 'bullhorn',    iconColor: TabColors.neutral.color,  iconBg: TabColors.neutral.bg,  showCreate: true  },
+  Active:  { icon: 'bolt',        iconColor: TabColors.positive.color, iconBg: TabColors.positive.bg, showCreate: true  },
+  Draft:   { icon: 'edit',       iconColor: TabColors.warning.color,  iconBg: TabColors.warning.bg,  showCreate: true  },
+  Closed:  { icon: 'lock',  iconColor: TabColors.closed.color,   iconBg: TabColors.closed.bg,   showCreate: false },
+  Expired: { icon: 'hourglass-end', iconColor: TabColors.closed.color, iconBg: TabColors.closed.bg, showCreate: false },
 };
 
 const STATUS_CFG = {
@@ -83,8 +84,8 @@ type FilterKey = typeof FILTERS[number];
 type TabState = { items: Campaign[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
 const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
 
-const STATUS_PARAM: Record<FilterKey, 'ACTIVE' | 'DRAFT' | 'CLOSED' | undefined> = {
-  All: undefined, Active: 'ACTIVE', Draft: 'DRAFT', Closed: 'CLOSED',
+const STATUS_PARAM: Record<FilterKey, 'ACTIVE' | 'DRAFT' | 'CLOSED' | 'EXPIRED' | undefined> = {
+  All: undefined, Active: 'ACTIVE', Draft: 'DRAFT', Closed: 'CLOSED', Expired: 'EXPIRED',
 };
 
 export default function CampaignsScreen() {
@@ -100,7 +101,7 @@ export default function CampaignsScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
   const [tabData, setTabData] = useState<Record<FilterKey, TabState>>({
-    All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(),
+    All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(), Expired: emptyTabState(),
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -250,7 +251,7 @@ export default function CampaignsScreen() {
   // between tabs — invalidate everything and refetch the tab in view rather
   // than trying to patch each cached tab's items/counts individually.
   function invalidateAllTabs() {
-    setTabData({ All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState() });
+    setTabData({ All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(), Expired: emptyTabState() });
   }
 
   async function loadRecommended(c: Campaign) {
@@ -388,6 +389,7 @@ export default function CampaignsScreen() {
     { key: 'Active', label: t('campaigns.active'), icon: 'bolt'       as const, color: TabColors.positive.color, count: tabData.Active.total },
     { key: 'Draft',  label: t('campaigns.draft'),  icon: 'edit'      as const, color: TabColors.warning.color,  count: tabData.Draft.total },
     { key: 'Closed', label: t('campaigns.closed'), icon: 'lock' as const, color: TabColors.closed.color,   count: tabData.Closed.total },
+    { key: 'Expired', label: t('campaigns.expired'), icon: 'hourglass-end' as const, color: TabColors.closed.color, count: tabData.Expired.total },
   ];
 
   const shown = tabData[activeFilter].items;
@@ -521,10 +523,10 @@ export default function CampaignsScreen() {
 
                 {/* Text */}
                 <Text style={[styles.emptyTitle, { color: C.text }]}>
-                  {activeFilter === 'All' ? t('campaigns.emptyNoEvents') : activeFilter === 'Active' ? t('campaigns.emptyNoActive') : activeFilter === 'Draft' ? t('campaigns.emptyNoDrafts') : t('campaigns.emptyNoClosed')}
+                  {activeFilter === 'All' ? t('campaigns.emptyNoEvents') : activeFilter === 'Active' ? t('campaigns.emptyNoActive') : activeFilter === 'Draft' ? t('campaigns.emptyNoDrafts') : activeFilter === 'Expired' ? t('campaigns.emptyNoExpired') : t('campaigns.emptyNoClosed')}
                 </Text>
                 <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                  {activeFilter === 'All' ? t('campaigns.emptyNoEventsSub') : activeFilter === 'Active' ? t('campaigns.emptyNoActiveSub') : activeFilter === 'Draft' ? t('campaigns.emptyNoDraftsSub') : t('campaigns.emptyNoClosedSub')}
+                  {activeFilter === 'All' ? t('campaigns.emptyNoEventsSub') : activeFilter === 'Active' ? t('campaigns.emptyNoActiveSub') : activeFilter === 'Draft' ? t('campaigns.emptyNoDraftsSub') : activeFilter === 'Expired' ? t('campaigns.emptyNoExpiredSub') : t('campaigns.emptyNoClosedSub')}
                 </Text>
 
                 {/* Create button */}

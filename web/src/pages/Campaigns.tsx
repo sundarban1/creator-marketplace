@@ -40,6 +40,16 @@ function formatBudget(min: number, max: number): string {
   return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`;
 }
 
+// Per-creator bounds → campaign-wide total (server-computed totalBudget, or
+// creators × per-creator ceiling as a fallback). Null when there's nothing
+// monetary to total (free event / product exchange / unset).
+function formatCampaignTotal(row: ApiCampaign): string | null {
+  if (row.budgetMax <= 0) return null;
+  const total = row.totalBudget ?? row.budgetMax * Math.max(1, row.creatorsNeeded ?? 1);
+  const isRange = row.budgetRateType === 'RANGE' || row.budgetMin !== row.budgetMax;
+  return `${isRange ? '≤ ' : ''}Rs. ${total.toLocaleString()} total`;
+}
+
 export function Campaigns() {
   const navigate = useNavigate();
   const [statusFilter,   setStatusFilter]   = useState<string>('All');
@@ -167,12 +177,16 @@ export function Campaigns() {
     },
     {
       key:    'budget',
-      header: 'Budget',
-      render: (row: ApiCampaign) => (
-        <span className="font-semibold text-gray-800 text-sm">
-          {formatBudget(row.budgetMin, row.budgetMax)}
-        </span>
-      ),
+      header: 'Per creator',
+      render: (row: ApiCampaign) => {
+        const total = formatCampaignTotal(row);
+        return (
+          <div className="text-sm">
+            <span className="font-semibold text-gray-800">{formatBudget(row.budgetMin, row.budgetMax)}</span>
+            {total && <span className="block text-xs text-gray-400">{total}</span>}
+          </div>
+        );
+      },
     },
     {
       key:    'proposals',

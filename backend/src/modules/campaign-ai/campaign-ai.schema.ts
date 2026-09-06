@@ -181,8 +181,24 @@ export const aiCampaignDraftSchema = z.object({
   goal: z.enum(GOAL_OPTIONS),
   suggestedDurationDays: z.number().int().min(1).max(180),
   creatorsNeeded: z.number().int().min(1).max(50),
-  budgetMin: z.number().min(0),
-  budgetMax: z.number().min(0),
+  // How the brand expressed creator payment in their prompt. The model
+  // CLASSIFIES only — it must never invent an amount (AI paid-event budget
+  // spec §1-4). The service turns statedAmount + this into the authoritative
+  // per-creator budgetMin/budgetMax below.
+  budgetStatus: z.enum(['STATED_PER_CREATOR', 'STATED_TOTAL', 'AMBIGUOUS', 'NOT_STATED']).default('NOT_STATED'),
+  // The exact figure the brand said (the lower one for a range); null when
+  // NOT_STATED. Kept on the draft through to the client so the review screen's
+  // "is Rs. X per creator or total?" chooser can show the number (spec §3).
+  statedAmount: z.number().min(0).nullable().default(null),
+  // Upper bound when the brand gave a per-creator range ("8k-10k each").
+  statedAmountMax: z.number().min(0).nullable().default(null),
+  // FIXED unless the brand gave a per-creator range.
+  budgetRateType: z.enum(['FIXED', 'RANGE']).default('FIXED'),
+  // Per-creator bounds — DERIVED by the service from budgetStatus/statedAmount,
+  // never sent by the model. 0/0 means "not set" (NOT_STATED or AMBIGUOUS),
+  // which the review screen must resolve before publish.
+  budgetMin: z.number().min(0).default(0),
+  budgetMax: z.number().min(0).default(0),
   paymentType: z.string().min(1).default('Fixed Fee'),
   deliverables: deliverablesSchema,
   hashtags: z.array(z.string().regex(/^#?[A-Za-z0-9_]+$/).max(40)).min(1).max(10),

@@ -45,6 +45,9 @@ export class CampaignRepository {
     locationType?: 'ONSITE' | 'REMOTE';
     budgetMin: number;
     budgetMax: number;
+    budgetRateType?: 'FIXED' | 'RANGE';
+    budgetInputType?: 'PER_CREATOR' | 'TOTAL';
+    totalBudget?: number;
     paymentType: string;
     creatorsNeeded?: number;
     isFeatured?: boolean;
@@ -569,6 +572,9 @@ export class CampaignRepository {
     locationType: 'ONSITE' | 'REMOTE';
     budgetMin: number;
     budgetMax: number;
+    budgetRateType: 'FIXED' | 'RANGE';
+    budgetInputType: 'PER_CREATOR' | 'TOTAL';
+    totalBudget: number;
     paymentType: string;
     creatorsNeeded: number;
     status: CampaignStatus;

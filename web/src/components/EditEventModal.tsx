@@ -119,6 +119,8 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
         platforms:      form.platforms,
         budgetMin:      Number(form.budgetMin),
         budgetMax:      Number(form.budgetMax),
+        // Derived from the two inputs — a flat fee is min === max.
+        budgetRateType: Number(form.budgetMin) === Number(form.budgetMax) ? 'FIXED' : 'RANGE',
         deliverables:   form.deliverables.trim(),
         deadline:       new Date(form.deadline).toISOString(),
         location:       form.location.trim() || null,
@@ -224,20 +226,29 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Budget Min (NPR) <span className="text-red-500">*</span></label>
-                  <input type="number" min={0} value={form.budgetMin} onChange={(e) => update('budgetMin', e.target.value)}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['budgetMin'] ? 'border-red-400' : 'border-gray-200'}`} />
-                  {errors['budgetMin'] && <p className="text-xs text-red-500 mt-1">{errors['budgetMin']}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Budget Max (NPR) <span className="text-red-500">*</span></label>
-                  <input type="number" min={0} value={form.budgetMax} onChange={(e) => update('budgetMax', e.target.value)}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['budgetMax'] ? 'border-red-400' : 'border-gray-200'}`} />
-                  {errors['budgetMax'] && <p className="text-xs text-red-500 mt-1">{errors['budgetMax']}</p>}
-                </div>
-              </div>
+              {!isEvent && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">Per creator — Min (NPR) <span className="text-red-500">*</span></label>
+                      <input type="number" min={0} value={form.budgetMin} onChange={(e) => update('budgetMin', e.target.value)}
+                        className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['budgetMin'] ? 'border-red-400' : 'border-gray-200'}`} />
+                      {errors['budgetMin'] && <p className="text-xs text-red-500 mt-1">{errors['budgetMin']}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">Per creator — Max (NPR) <span className="text-red-500">*</span></label>
+                      <input type="number" min={0} value={form.budgetMax} onChange={(e) => update('budgetMax', e.target.value)}
+                        className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['budgetMax'] ? 'border-red-400' : 'border-gray-200'}`} />
+                      {errors['budgetMax'] && <p className="text-xs text-red-500 mt-1">{errors['budgetMax']}</p>}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 -mt-2">
+                    {Number(form.budgetMax) > 0
+                      ? `${Number(form.budgetMin) === Number(form.budgetMax) ? 'Flat fee' : 'Range'} · ${Number(form.creatorsNeeded) || 1} creators · ${Number(form.budgetMin) !== Number(form.budgetMax) ? '≤ ' : ''}NPR ${(Number(form.budgetMax) * (Number(form.creatorsNeeded) || 1)).toLocaleString()} total`
+                      : 'Set a per-creator amount before publishing.'}
+                  </p>
+                </>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

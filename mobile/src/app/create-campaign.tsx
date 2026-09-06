@@ -45,7 +45,7 @@ import {
   GOAL_OPTIONS, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
 import {
-  SectionCard, ChipGroup, ChipMultiGroup, BudgetTierPicker, Stepper,
+  SectionCard, ChipGroup, ChipMultiGroup, PerCreatorBudgetPicker, Stepper,
   DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
 import type { FormData } from '@/features/business/types/campaignForm.types';
@@ -822,6 +822,11 @@ export default function CreateCampaignScreen() {
     needsInput: [],
     aiBudgetMin: 0,
     aiBudgetMax: 0,
+    budgetRateType: 'FIXED',
+    budgetInputType: 'PER_CREATOR',
+    budgetSet: false,
+    aiBudgetStatus: 'NOT_STATED',
+    aiStatedAmount: null,
     completionType: null,
     completionReason: '',
     requirements: [],
@@ -980,6 +985,40 @@ export default function CreateCampaignScreen() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  // Per-creator budget edits (PerCreatorBudgetPicker) — keeps aiBudgetMin/Max,
+  // the Fixed/Range choice and the "is an amount set?" flag in sync.
+  function updateBudget(min: number, max: number, rateType: 'FIXED' | 'RANGE') {
+    setForm((prev) => ({
+      ...prev,
+      aiBudgetMin: rateType === 'FIXED' ? max : min,
+      aiBudgetMax: max,
+      budgetRateType: rateType,
+      budgetSet: max >= MIN_BUDGET_PER_CREATOR && (rateType === 'FIXED' || max >= min),
+    }));
+    if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
+  }
+
+  // Spec §3 — the brand stated one figure and the AI couldn't tell if it was
+  // per-creator or a whole-campaign total. This applies their answer.
+  function resolveAmbiguousBudget(mode: 'PER_CREATOR' | 'TOTAL') {
+    setForm((prev) => {
+      const amt = prev.aiStatedAmount ?? 0;
+      const perCreator = mode === 'TOTAL'
+        ? Math.max(0, Math.floor(amt / Math.max(1, prev.creatorsNeeded)))
+        : amt;
+      return {
+        ...prev,
+        aiBudgetMin: perCreator,
+        aiBudgetMax: perCreator,
+        budgetRateType: 'FIXED',
+        budgetInputType: mode,
+        budgetSet: perCreator >= MIN_BUDGET_PER_CREATOR,
+        aiBudgetStatus: 'STATED_PER_CREATOR',
+      };
+    });
+    if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
+  }
+
   function resetFormForType(newType: 'PAID_CAMPAIGN' | 'OPEN_EVENT', targetPhase: Phase = 'setup') {
     const eventDate   = dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
     const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
@@ -1015,6 +1054,11 @@ export default function CreateCampaignScreen() {
       needsInput: [],
       aiBudgetMin: 0,
       aiBudgetMax: 0,
+      budgetRateType: 'FIXED',
+      budgetInputType: 'PER_CREATOR',
+      budgetSet: false,
+      aiBudgetStatus: 'NOT_STATED',
+      aiStatedAmount: null,
       completionType: null,
       completionReason: '',
       requirements: [],
@@ -1100,9 +1144,16 @@ export default function CreateCampaignScreen() {
         aiGenerated:           true,
         aiPrompt:              prompt,
         aiSuggestedCategories: [],
-        needsInput:            ['budgetMin', 'category'],
+        needsInput:            ['category'],
+        // The offline fallback never fabricates a budget — the brand sets the
+        // per-creator amount on the review screen before publishing.
         aiBudgetMin: GENERIC_AI_TEMPLATE.budgetMin,
         aiBudgetMax: GENERIC_AI_TEMPLATE.budgetMax,
+        budgetRateType: 'FIXED',
+        budgetInputType: 'PER_CREATOR',
+        budgetSet: false,
+        aiBudgetStatus: 'NOT_STATED',
+        aiStatedAmount: null,
         requirements: [],
       }));
       setRequirementMode('single');
@@ -1377,6 +1428,10 @@ export default function CreateCampaignScreen() {
       deadline:       form.deadline!.toISOString(),
       budgetMin:      budget.min,
       budgetMax:      budget.max,
+      // Single-role: the brand's Fixed/Range choice + per-creator framing.
+      // Multi-role: budget lives per requirement, so let the backend derive.
+      budgetRateType:  isMultiRole ? undefined : form.budgetRateType,
+      budgetInputType: isMultiRole ? undefined : form.budgetInputType,
       paymentType:    budget.payment,
       creatorsNeeded: isMultiRole ? form.requirements.reduce((sum, r) => sum + r.quantity, 0) : form.creatorsNeeded,
       isFeatured:     form.isFeatured,
@@ -1480,11 +1535,19 @@ export default function CreateCampaignScreen() {
     if (!form.title.trim())        errs.title    = t('createEvent.errNoTitle');
     if (!form.deadline)     errs.deadline = t('createEvent.errNoDeadline');
     if (requirementMode === 'single') {
-      if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) errs.budget = t('createEvent.errBudgetMin');
-      // The Publish screen's Budget row opens BudgetTierPicker's custom
-      // inputs, where the two numbers are typed independently — nothing else
-      // stops a max below the min, which would publish an inverted range.
-      else if (form.aiBudgetMax < form.aiBudgetMin) errs.budget = t('createEvent.errBudgetMinMax');
+      // The AI heard a figure it couldn't place, and the brand hasn't answered
+      // the "per creator or total?" chooser yet — can't publish until they do.
+      if (form.aiBudgetStatus === 'AMBIGUOUS' && !form.budgetSet) {
+        errs.budget = t('createEvent.errBudgetNotSet');
+      // No per-creator amount at all (AI never heard one, or the brand cleared it).
+      } else if (!form.budgetSet || form.aiBudgetMax <= 0) {
+        errs.budget = t('createEvent.errBudgetNotSet');
+      } else if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) {
+        errs.budget = t('createEvent.errBudgetMin');
+      // Range mode: nothing else stops a max typed below the min.
+      } else if (form.aiBudgetMax < form.aiBudgetMin) {
+        errs.budget = t('createEvent.errBudgetMinMax');
+      }
     }
     return errs;
   }
@@ -1559,12 +1622,37 @@ export default function CreateCampaignScreen() {
       }, { min: Infinity, max: 0 })
     : { min: form.aiBudgetMin, max: form.aiBudgetMax };
 
+  // Budget shown to the business on the review/confirm screens, framed
+  // per-creator with the campaign-wide total as the secondary line — never the
+  // total alone (AI paid-event budget spec §1). "Payment not set" until an
+  // amount is in place.
+  function budgetPerCreatorText(): string {
+    if (requirementMode === 'multiple' && form.requirements.length > 0) {
+      const { min, max } = confirmBudgetRange;
+      return min === max ? `Rs. ${min.toLocaleString()}` : `Rs. ${min.toLocaleString()} – ${max.toLocaleString()}`;
+    }
+    if (!form.budgetSet || form.aiBudgetMax <= 0) return t('createEvent.budgetNotSetTitle');
+    const isRange = form.budgetRateType === 'RANGE' && form.aiBudgetMax > form.aiBudgetMin;
+    return isRange
+      ? t('createEvent.budgetSummaryPerCreatorRange', { min: form.aiBudgetMin.toLocaleString(), max: form.aiBudgetMax.toLocaleString() })
+      : t('createEvent.budgetSummaryPerCreator', { amount: form.aiBudgetMax.toLocaleString() });
+  }
+  function budgetTotalText(): string | null {
+    if (requirementMode === 'multiple') return null;
+    if (!form.budgetSet || form.aiBudgetMax <= 0) return null;
+    const count = Math.max(1, form.creatorsNeeded);
+    const isRange = form.budgetRateType === 'RANGE' && form.aiBudgetMax > form.aiBudgetMin;
+    return t(isRange ? 'createEvent.budgetSummaryTotalUpTo' : 'createEvent.budgetSummaryTotal', {
+      count, total: (form.aiBudgetMax * count).toLocaleString(),
+    });
+  }
+
   // The Publish step's "People Needed" card — one synthetic row from the
   // top-level form fields (every campaign is a single content-creator ask).
   const peopleRows = [{
     key: '__single__',
     label: form.template ? `${form.template} ×${form.creatorsNeeded}` : String(form.creatorsNeeded),
-    budget: `Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}`,
+    budget: [budgetPerCreatorText(), budgetTotalText()].filter(Boolean).join('  ·  '),
     work: summarizeDeliverables(form.deliverables, form.goals, t) || undefined,
     onEdit: () => setEditingRequirementKey('__single__'),
     onRemove: undefined as (() => void) | undefined,
@@ -1934,7 +2022,7 @@ export default function CreateCampaignScreen() {
                 <PreviewRow
                   icon="money-bill-alt"
                   label={t('createEvent.confirmSectionBudget')}
-                  value={`Rs. ${confirmBudgetRange.min.toLocaleString()} – ${confirmBudgetRange.max.toLocaleString()}`}
+                  value={[budgetPerCreatorText(), budgetTotalText()].filter(Boolean).join('\n')}
                   colors={C}
                   onPress={() => setEditingField('budget')}
                 />
@@ -2926,14 +3014,14 @@ export default function CreateCampaignScreen() {
                     <>
                       {/* Budget */}
                       <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} icon="money-bill-alt" colors={C}>
-                        <BudgetTierPicker
+                        <PerCreatorBudgetPicker
+                          rateType={form.budgetRateType}
                           budgetMin={form.aiBudgetMin}
                           budgetMax={form.aiBudgetMax}
-                          onChange={(min, max) => {
-                            update('aiBudgetMin', min);
-                            update('aiBudgetMax', max);
-                            if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
-                          }}
+                          creatorsNeeded={form.creatorsNeeded}
+                          onChange={updateBudget}
+                          ambiguousAmount={form.aiBudgetStatus === 'AMBIGUOUS' ? form.aiStatedAmount : null}
+                          onResolveAmbiguous={resolveAmbiguousBudget}
                           colors={C}
                           error={reviewErrors.budget}
                         />
@@ -3205,7 +3293,7 @@ export default function CreateCampaignScreen() {
                   colors={C}
                 />
                 <PreviewRow icon="film" label={t('createEvent.confirmSectionDeliverables')} value={summarizeDeliverables(form.deliverables, form.goals, t)} colors={C} />
-                <PreviewRow icon="money-bill-alt" label={t('createEvent.confirmSectionBudget')} value={`Rs. ${confirmBudgetRange.min.toLocaleString()} – ${confirmBudgetRange.max.toLocaleString()}`} colors={C} />
+                <PreviewRow icon="money-bill-alt" label={t('createEvent.confirmSectionBudget')} value={[budgetPerCreatorText(), budgetTotalText()].filter(Boolean).join('\n')} colors={C} />
                 <PreviewRow icon="calendar-alt" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} last />
               </View>
 
@@ -3470,20 +3558,22 @@ export default function CreateCampaignScreen() {
           />
         )}
         {editingField === 'budget' && (
-          <BudgetTierPicker
-            budgetMin={form.aiBudgetMin}
-            budgetMax={form.aiBudgetMax}
-            onChange={(min, max) => {
-              update('aiBudgetMin', min);
-              update('aiBudgetMax', max);
-              // Publishing re-runs validatePaidReview, which rejects a
-              // below-minimum budget — clear the stale error as soon as the
-              // number changes rather than leaving it under the row.
-              if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
-            }}
-            colors={C}
-            error={reviewErrors.budget}
-          />
+          <View style={{ gap: 8 }}>
+            <Text style={[rq.fieldLabel, { color: C.textSecondary, marginTop: 0 }]}>{t('createEvent.secCreatorsNeededTitle')}</Text>
+            <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
+            <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.secBudgetTitle')}</Text>
+            <PerCreatorBudgetPicker
+              rateType={form.budgetRateType}
+              budgetMin={form.aiBudgetMin}
+              budgetMax={form.aiBudgetMax}
+              creatorsNeeded={form.creatorsNeeded}
+              onChange={updateBudget}
+              ambiguousAmount={form.aiBudgetStatus === 'AMBIGUOUS' ? form.aiStatedAmount : null}
+              onResolveAmbiguous={resolveAmbiguousBudget}
+              colors={C}
+              error={reviewErrors.budget}
+            />
+          </View>
         )}
         {editingField === 'roles' && (
           <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
@@ -3542,12 +3632,19 @@ export default function CreateCampaignScreen() {
         title={t('createEvent.secCreatorsNeededTitle')}>
         {editingRequirementKey === '__single__' && (
           <View style={{ gap: 8 }}>
-            <Text style={[rq.fieldLabel, { color: C.textSecondary, marginTop: 0 }]}>{t('createEvent.secBudgetTitle')}</Text>
-            <BudgetTierPicker
+            <Text style={[rq.fieldLabel, { color: C.textSecondary, marginTop: 0 }]}>{t('createEvent.secCreatorsNeededTitle')}</Text>
+            <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
+            <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.secBudgetTitle')}</Text>
+            <PerCreatorBudgetPicker
+              rateType={form.budgetRateType}
               budgetMin={form.aiBudgetMin}
               budgetMax={form.aiBudgetMax}
-              onChange={(min, max) => { update('aiBudgetMin', min); update('aiBudgetMax', max); }}
+              creatorsNeeded={form.creatorsNeeded}
+              onChange={updateBudget}
+              ambiguousAmount={form.aiBudgetStatus === 'AMBIGUOUS' ? form.aiStatedAmount : null}
+              onResolveAmbiguous={resolveAmbiguousBudget}
               colors={C}
+              error={reviewErrors.budget}
             />
             <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.reqDeliverablesLabel')}</Text>
             <DeliverablesCounterList

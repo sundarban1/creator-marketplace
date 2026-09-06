@@ -18,7 +18,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { AuthProvider } from '@/context/AuthContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, hasSignedInThisLaunch } from '@/context/AuthContext';
 import { queryClient, persistOptions } from '@/lib/queryClient';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppThemeProvider, useAppColors, useIsDark } from '@/context/ThemeContext';
@@ -303,7 +303,11 @@ function RootNavigator() {
     // the actual runtime shape being checked for here — cast around the mismatch.
     const onSplash     = (segments as readonly string[]).length === 0;
 
-    if (!user && !inAuthGroup && !isPublic && !onSplash) {
+    // `onSplash` (the root welcome route) is normally left alone so a genuine
+    // first launch can park there — but once a session has existed this launch,
+    // landing back on it means Logout unwound the stack through here, so push on
+    // to /login instead of stranding the user on the intro screen.
+    if (!user && !inAuthGroup && !isPublic && (!onSplash || hasSignedInThisLaunch())) {
       // Logout (or a token-refresh failure) fired from somewhere deep in the
       // authenticated stack. A bare replace() swaps the current screen for
       // /login but leaves every authenticated screen below it in the history —
@@ -373,7 +377,11 @@ function RootNavigator() {
   // replace('/login'). Render a themed blank in the meantime. onboarding /
   // add-email are separate segments that still require a user, so unaffected.
   const seg0 = (segments as readonly string[])[0];
-  if (!isLoading && !user && (seg0 === '(creator)' || seg0 === '(business)')) {
+  const onSplashNow = (segments as readonly string[]).length === 0;
+  if (
+    !isLoading && !user &&
+    (seg0 === '(creator)' || seg0 === '(business)' || (onSplashNow && hasSignedInThisLaunch()))
+  ) {
     return <View style={{ flex: 1, backgroundColor: C.background }} />;
   }
 

@@ -1,10 +1,11 @@
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth, hasSignedInThisLaunch } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { withAlpha } from '@/utilities/color';
 import { COLORS, F, FONT_SIZE, RADIUS, SPACING, lineHeightFor } from '@/utilities/constants';
@@ -28,11 +29,21 @@ const LANG_LABELS = { en: 'Eng', ne: 'ने' } as const;
 // users parked here until they choose Get Started or Log in.
 export default function WelcomeScreen() {
   const { language, setLanguage, t } = useLanguage();
+  const { user } = useAuth();
   const contentOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(contentOpacity, { toValue: 1, duration: 420, useNativeDriver: true }).start();
   }, []);
+
+  // A signed-out user only reaches this root route by way of Logout —
+  // RootNavigator tears down the authed stack, which unwinds through here on its
+  // way to /login. Skip the welcome UI entirely in that case so logout lands
+  // straight on the login screen with no intro-screen flash. A genuine first
+  // launch (never signed in this session) still gets the welcome screen.
+  if (!user && hasSignedInThisLaunch()) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <View style={styles.root}>

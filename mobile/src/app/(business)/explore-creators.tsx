@@ -56,7 +56,6 @@ type EntityTab = 'people' | 'services';
 const EMPTY_CREATORS: ApiCreatorListItem[] = [];
 const EMPTY_SERVICES: ApiService[] = [];
 const EMPTY_STRINGS: string[] = [];
-const EMPTY_IDS: Set<string> = new Set();
 
 /** Comma-free location filter for listCreators/getSavedCreators — "Remote"
  *  is a people-search-only concept (there's no matching creator field), so
@@ -275,13 +274,18 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const filterCount  = creatorFilterActiveCount(activeFilter);
 
   // Saved-ids is its own small cache — every card everywhere on this screen
-  // (browse or saved-only) reads it for its bookmark state.
+  // (browse or saved-only) reads it for its bookmark state. Stored as a plain
+  // string[] (not a Set): this query root is on the persist whitelist, and a
+  // Set dehydrates to `{}` — which then rehydrates on the next cold start as a
+  // plain object whose `.has` is undefined, crashing every card that reads it.
   const savedIdsQuery = useQuery({
     queryKey: ['creators', 'savedIds'],
-    queryFn: () => creatorService.getSavedCreatorIds().then((ids) => new Set(ids)),
+    queryFn: () => creatorService.getSavedCreatorIds(),
     staleTime: STALE.list,
   });
-  const savedIds = savedIdsQuery.data ?? EMPTY_IDS;
+  // `Array.isArray` guard: a build before this fix persisted a Set here, which
+  // hydrates back as a non-iterable `{}` — feeding that to `new Set()` throws.
+  const savedIds = new Set(Array.isArray(savedIdsQuery.data) ? savedIdsQuery.data : EMPTY_STRINGS);
 
   // Save is a low-risk, easily-reversible action (§20) — optimistic write to
   // the shared savedIds cache, rolled back on failure. The saved-only list
@@ -289,16 +293,16 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   // cache, so un-saving drops the card the instant this write lands.
   async function handleToggleSave(creatorId: string) {
     const wasSaved = savedIds.has(creatorId);
-    const flip = (from: Set<string>) => {
-      const next = new Set(from);
-      wasSaved ? next.delete(creatorId) : next.add(creatorId);
-      return next;
-    };
-    queryClient.setQueryData<Set<string>>(['creators', 'savedIds'], (prev) => flip(prev ?? EMPTY_IDS));
+    const asArray = (v: unknown): string[] => (Array.isArray(v) ? v : EMPTY_STRINGS);
+    const withId = (from: string[]) => (from.includes(creatorId) ? from : [...from, creatorId]);
+    const withoutId = (from: string[]) => from.filter((id) => id !== creatorId);
+    const apply  = (prev: unknown) => (wasSaved ? withoutId(asArray(prev)) : withId(asArray(prev)));
+    const revert = (prev: unknown) => (wasSaved ? withId(asArray(prev)) : withoutId(asArray(prev)));
+    queryClient.setQueryData<string[]>(['creators', 'savedIds'], apply);
     try {
       await creatorService.toggleSaveCreator(creatorId);
     } catch {
-      queryClient.setQueryData<Set<string>>(['creators', 'savedIds'], (prev) => flip(prev ?? EMPTY_IDS));
+      queryClient.setQueryData<string[]>(['creators', 'savedIds'], revert);
     }
   }
 

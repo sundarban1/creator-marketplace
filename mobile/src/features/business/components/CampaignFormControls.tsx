@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -280,6 +280,167 @@ const bt = StyleSheet.create({
   errorText: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 });
 
+// ─── PerCreatorBudgetPicker ─────────────────────────────────────────────────
+// Paid-campaign budget, framed per-creator (AI paid-event budget spec). The
+// business picks a flat fee or a range, types the per-creator amount, and sees
+// the campaign-wide total computed live. When the AI heard a single figure it
+// couldn't place (spec §3) this renders a "per creator or total?" chooser
+// instead of the inputs.
+
+function toInt(raw: string): number {
+  return parseInt(raw.replace(/[^0-9]/g, ''), 10) || 0;
+}
+function rs(n: number): string {
+  return n.toLocaleString();
+}
+
+export function PerCreatorBudgetPicker({
+  rateType, budgetMin, budgetMax, creatorsNeeded, onChange,
+  ambiguousAmount, onResolveAmbiguous, colors, error, disabled,
+}: {
+  rateType: 'FIXED' | 'RANGE';
+  budgetMin: number;
+  budgetMax: number;
+  creatorsNeeded: number;
+  onChange: (min: number, max: number, rateType: 'FIXED' | 'RANGE') => void;
+  ambiguousAmount?: number | null;
+  onResolveAmbiguous?: (mode: 'PER_CREATOR' | 'TOTAL') => void;
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+  disabled?: boolean;
+}) {
+  const C = colors;
+  const { t } = useLanguage();
+  const count = Math.max(1, creatorsNeeded || 1);
+
+  // Spec §3 — the brand stated one number and the AI can't tell if it's per
+  // creator or total. Resolve it before showing the normal inputs.
+  if (ambiguousAmount != null && ambiguousAmount > 0 && onResolveAmbiguous) {
+    const perCreatorTotal = ambiguousAmount * count;
+    const totalPerCreator = Math.floor(ambiguousAmount / count);
+    return (
+      <View style={{ gap: 10, opacity: disabled ? 0.6 : 1 }}>
+        <Text style={[pcb.ambiguousTitle, { color: C.text }]}>
+          {t('createEvent.budgetAmbiguousTitle', { amount: rs(ambiguousAmount) })}
+        </Text>
+        <Pressable
+          disabled={disabled}
+          style={[pcb.choice, { borderColor: C.border, backgroundColor: C.surface }]}
+          onPress={() => onResolveAmbiguous('PER_CREATOR')}>
+          <Text style={[pcb.choiceLabel, { color: C.text }]}>{t('createEvent.budgetAmbiguousPerCreator', { amount: rs(ambiguousAmount) })}</Text>
+          <Text style={[pcb.choiceSub, { color: C.textSecondary }]}>{t('createEvent.budgetAmbiguousPerCreatorSub', { total: rs(perCreatorTotal) })}</Text>
+        </Pressable>
+        <Pressable
+          disabled={disabled}
+          style={[pcb.choice, { borderColor: C.border, backgroundColor: C.surface }]}
+          onPress={() => onResolveAmbiguous('TOTAL')}>
+          <Text style={[pcb.choiceLabel, { color: C.text }]}>{t('createEvent.budgetAmbiguousTotal', { amount: rs(ambiguousAmount) })}</Text>
+          <Text style={[pcb.choiceSub, { color: C.textSecondary }]}>{t('createEvent.budgetAmbiguousTotalSub', { perCreator: rs(totalPerCreator) })}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // budgetMax is the per-creator ceiling in both modes, so the campaign-wide
+  // exposure is always creators × budgetMax.
+  const isSet = budgetMax > 0 && (rateType === 'FIXED' || budgetMax >= budgetMin);
+  const total = budgetMax * count;
+
+  return (
+    <View style={{ gap: 10, opacity: disabled ? 0.6 : 1 }}>
+      <View style={pcb.toggleRow}>
+        {(['FIXED', 'RANGE'] as const).map((rt) => {
+          const sel = rateType === rt;
+          return (
+            <Pressable
+              key={rt}
+              disabled={disabled}
+              style={[pcb.toggle, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
+              onPress={() => {
+                if (rt === rateType) return;
+                if (rt === 'FIXED') onChange(budgetMax || budgetMin, budgetMax || budgetMin, 'FIXED');
+                else onChange(budgetMin || budgetMax, Math.max(budgetMax, budgetMin) || budgetMax, 'RANGE');
+              }}>
+              <Text style={[pcb.toggleText, { color: sel ? C.brinjal1 : C.textSecondary }]}>
+                {t(rt === 'FIXED' ? 'createEvent.budgetRateFixed' : 'createEvent.budgetRateRange')}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {rateType === 'FIXED' ? (
+        <TextInputWithLabel
+          label={t('createEvent.budgetPerCreatorLabel')}
+          leftIcon="dollar-sign"
+          value={budgetMax ? String(budgetMax) : ''}
+          onChangeText={(v) => { const n = toInt(v); onChange(n, n, 'FIXED'); }}
+          keyboardType="number-pad"
+          editable={!disabled}
+        />
+      ) : (
+        <View style={bt.budgetRow}>
+          <View style={bt.budgetInputWrap}>
+            <TextInputWithLabel
+              label={t('createEvent.budgetPerCreatorMinLabel')}
+              leftIcon="dollar-sign"
+              value={budgetMin ? String(budgetMin) : ''}
+              onChangeText={(v) => onChange(toInt(v), budgetMax, 'RANGE')}
+              keyboardType="number-pad"
+              editable={!disabled}
+            />
+          </View>
+          <View style={bt.budgetInputWrap}>
+            <TextInputWithLabel
+              label={t('createEvent.budgetPerCreatorMaxLabel')}
+              leftIcon="dollar-sign"
+              value={budgetMax ? String(budgetMax) : ''}
+              onChangeText={(v) => onChange(budgetMin, toInt(v), 'RANGE')}
+              keyboardType="number-pad"
+              editable={!disabled}
+            />
+          </View>
+        </View>
+      )}
+
+      {isSet ? (
+        <View style={[pcb.summary, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+          <Text style={[pcb.summaryPrimary, { color: C.brinjal1 }]}>
+            {rateType === 'FIXED'
+              ? t('createEvent.budgetSummaryPerCreator', { amount: rs(budgetMax) })
+              : t('createEvent.budgetSummaryPerCreatorRange', { min: rs(budgetMin), max: rs(budgetMax) })}
+          </Text>
+          <Text style={[pcb.summarySecondary, { color: C.textSecondary }]}>
+            {t(rateType === 'FIXED' ? 'createEvent.budgetSummaryTotal' : 'createEvent.budgetSummaryTotalUpTo', { count, total: rs(total) })}
+          </Text>
+        </View>
+      ) : (
+        <View style={[pcb.notSet, { borderColor: C.border, backgroundColor: C.surface }]}>
+          <Text style={[pcb.notSetTitle, { color: C.text }]}>{t('createEvent.budgetNotSetTitle')}</Text>
+          <Text style={[pcb.notSetBody, { color: C.textSecondary }]}>{t('createEvent.budgetNotSetBody')}</Text>
+        </View>
+      )}
+      {error ? <Text style={bt.errorText}>{error}</Text> : null}
+    </View>
+  );
+}
+
+const pcb = StyleSheet.create({
+  toggleRow:  { flexDirection: 'row', gap: 8 },
+  toggle:     { flex: 1, borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 10, alignItems: 'center' },
+  toggleText: { fontSize: 13, fontFamily: F.semibold },
+  summary:          { borderRadius: RADIUS.md, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, gap: 2 },
+  summaryPrimary:   { fontSize: 15, fontFamily: F.bold },
+  summarySecondary: { fontSize: 12, fontFamily: F.regular },
+  notSet:      { borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
+  notSetTitle: { fontSize: 13, fontFamily: F.semibold },
+  notSetBody:  { fontSize: 12, fontFamily: F.regular },
+  ambiguousTitle: { fontSize: 14, fontFamily: F.semibold },
+  choice:      { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
+  choiceLabel: { fontSize: 14, fontFamily: F.semibold },
+  choiceSub:   { fontSize: 12, fontFamily: F.regular },
+});
+
 // ─── Stepper ─────────────────────────────────────────────────────────────────
 
 export function Stepper({ value, onChange, min = 1, max = 50, colors }: {
@@ -455,17 +616,15 @@ export function FeaturedToggle({ value, onChange, quota, colors, t, labelKey = '
   lockedSubKey?: string;
 }) {
   const C = colors;
-  const isDark = useIsDark();
   const locked = quota !== null && !quota.unlimited && quota.remaining <= 0;
-  // "On" tint: warm cream in light mode, a dark amber-black in dark mode so the
-  // card doesn't flash white — the amber border + switch already signal "on".
-  const onBg = isDark ? '#1F1A0E' : '#FFF8E8';
+  // The card keeps the theme surface (white in light, near-black in dark) in
+  // both states — the amber border + switch are what signal "on".
 
   return (
     <Pressable
       style={[
         ft.toggle,
-        { backgroundColor: value ? onBg : C.surface, borderColor: value ? '#F59E0B' : C.border },
+        { backgroundColor: C.surface, borderColor: value ? '#F59E0B' : C.border },
         locked && ft.locked,
       ]}
       onPress={() => { if (!locked) onChange(!value); }}

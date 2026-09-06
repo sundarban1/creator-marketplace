@@ -43,8 +43,10 @@ export function genericCampaignTemplate(lang: Lang) {
     description: str(lang, 'campaignDescription'),
     suggestedDurationDays: 14,
     creatorsNeeded: 4,
-    budgetMin: 6000,
-    budgetMax: 15000,
+    // A fallback draft must never fabricate a payment — the brand sets the
+    // per-creator amount on the review screen (AI paid-event budget spec §2).
+    budgetMin: 0,
+    budgetMax: 0,
     deliverables: { REEL: 1, STORY: 2 } as Record<string, number>,
     // Hashtags stay Latin in both languages — they're literal social handles.
     hashtags: ['NewBrand', 'MustTry', 'SupportLocal'],

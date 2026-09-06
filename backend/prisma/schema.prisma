@@ -804,8 +804,24 @@ model Campaign {
   locationLat           Float?
   locationLng           Float?
   locationType          LocationType          @default(ONSITE)
+  // budgetMin / budgetMax are always PER-CREATOR bounds (a creator's proposed
+  // rate is validated against them, and escrow is funded from the accepted
+  // rate). budgetMin == budgetMax means a flat per-creator fee.
   budgetMin             Float
   budgetMax             Float
+  // How the per-creator amount is expressed: FIXED = a single flat fee,
+  // RANGE = a band creators propose within. Explicit rather than inferred from
+  // budgetMin == budgetMax, so an intentional flat fee and a degenerate range
+  // stay distinguishable. Null on rows created before this field.
+  budgetRateType        BudgetRateType?
+  // Whether the business stated/entered the amount as a per-creator figure or
+  // a whole-campaign total. A display echo only — budgetMin/budgetMax are
+  // always stored per-creator regardless. Null on older rows.
+  budgetInputType       BudgetInputType?
+  // creatorsNeeded * budgetMax (the ceiling for a RANGE). Computed and stored
+  // server-side on create/update so the campaign-wide figure is never
+  // re-derived from the natural-language prompt. Null on older rows.
+  totalBudget           Float?
   paymentType           String
   status                CampaignStatus        @default(ACTIVE)
   // Admin soft-delete (see AdminRepository.softDeleteCampaignCascade) — the
@@ -1094,6 +1110,18 @@ enum RequirementBudgetType {
   FIXED
   RANGE
   NEGOTIABLE
+}
+
+// Campaign-level per-creator budget shape (see Campaign.budgetRateType).
+enum BudgetRateType {
+  FIXED
+  RANGE
+}
+
+// How the business expressed the paid-campaign budget (see Campaign.budgetInputType).
+enum BudgetInputType {
+  PER_CREATOR
+  TOTAL
 }
 
 // Append-only history of every revision request a business has sent for an

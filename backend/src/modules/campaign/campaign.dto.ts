@@ -76,6 +76,11 @@ export interface CampaignDto {
   locationType: string;
   budgetMin: number;
   budgetMax: number;
+  // Per-creator budget shape + the server-computed campaign-wide total. Null
+  // on campaigns created before this field existed.
+  budgetRateType: string | null;
+  budgetInputType: string | null;
+  totalBudget: number | null;
   status: string;
   isFeatured: boolean;
   creatorsNeeded: number;
@@ -258,6 +263,9 @@ type RawCampaign = {
   locationType: string;
   budgetMin: number;
   budgetMax: number;
+  budgetRateType: string | null;
+  budgetInputType: string | null;
+  totalBudget: number | null;
   status: string;
   isFeatured: boolean;
   creatorsNeeded: number;
@@ -329,6 +337,9 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     locationType:   c.locationType,
     budgetMin:      c.budgetMin,
     budgetMax:      c.budgetMax,
+    budgetRateType:  c.budgetRateType ?? null,
+    budgetInputType: c.budgetInputType ?? null,
+    totalBudget:     c.totalBudget ?? null,
     status:         c.status,
     isFeatured:     c.isFeatured,
     creatorsNeeded: c.creatorsNeeded,

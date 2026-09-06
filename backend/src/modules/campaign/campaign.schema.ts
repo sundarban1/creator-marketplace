@@ -1,5 +1,35 @@
 import { z } from 'zod';
 
+// A paid campaign, once ACTIVE (published), must carry a real per-creator
+// payment — the business confirms "Rs. X per creator" on the review screen
+// before it goes live (AI paid-event budget spec §2). Drafts, free events,
+// multi-role campaigns (budget lives per requirement) and product-exchange
+// campaigns (no cash) are exempt. Mirrors the mobile MIN_BUDGET_PER_CREATOR.
+export const MIN_BUDGET_PER_CREATOR = 500;
+
+// budgetMin/budgetMax are per-creator bounds; the campaign-wide figure is the
+// per-creator ceiling times the number of creators. Always computed here, never
+// trusted from the client (the natural-language prompt is not authoritative).
+export function computeTotalBudget(creatorsNeeded: number, budgetMax: number): number {
+  return Math.max(0, Math.round((creatorsNeeded || 1) * (budgetMax || 0)));
+}
+
+export function deriveBudgetRateType(budgetMin: number, budgetMax: number): 'FIXED' | 'RANGE' {
+  return budgetMin === budgetMax ? 'FIXED' : 'RANGE';
+}
+
+// A business editing a single-role paid campaign can raise creatorsNeeded
+// freely, but can't cut it below the number of creators already accepted onto
+// the campaign — those are live commitments. Increases (and no-ops) always pass.
+export function canReduceCreatorsNeeded(
+  next: number,
+  current: number,
+  acceptedCount: number,
+): boolean {
+  if (next >= current) return true;
+  return next >= acceptedCount;
+}
+
 // One role-slot for a multi-requirement campaign (§ CampaignRequirement).
 // Optional on createCampaignSchema — omitting `requirements` entirely keeps
 // a campaign in the simple single-category mode every existing campaign uses.
@@ -42,6 +72,11 @@ export const createCampaignSchema = z.object({
   locationType: z.enum(['ONSITE', 'REMOTE']).optional().default('ONSITE'),
   budgetMin: z.number().min(0, 'Budget minimum must be non-negative').default(0),
   budgetMax: z.number().min(0, 'Budget maximum must be non-negative').default(0),
+  // Per-creator budget shape. Optional — the server derives it from
+  // budgetMin/budgetMax when omitted, and recomputes totalBudget itself
+  // (any client-sent total is ignored).
+  budgetRateType:  z.enum(['FIXED', 'RANGE']).optional(),
+  budgetInputType: z.enum(['PER_CREATOR', 'TOTAL']).optional(),
   paymentType:    z.string().default('Fixed Fee'),
   creatorsNeeded: z.number().int().positive().default(1),
   isFeatured:     z.boolean().optional().default(false),
@@ -71,6 +106,18 @@ export const createCampaignSchema = z.object({
 }).refine((data) => data.budgetMax >= data.budgetMin, {
   message: 'Budget maximum must be greater than or equal to budget minimum',
   path: ['budgetMax'],
+}).refine((data) => {
+  // Publish gate: a cash paid campaign can't go ACTIVE without a per-creator
+  // amount. Drafts, free events, multi-role (budget per requirement) and
+  // product-exchange campaigns are exempt.
+  if (data.campaignType !== 'PAID_CAMPAIGN') return true;
+  if (data.status !== 'ACTIVE') return true;
+  if (data.requirements?.length) return true;
+  if (data.paymentType === 'Product Exchange') return true;
+  return data.budgetMax >= MIN_BUDGET_PER_CREATOR;
+}, {
+  message: `Set a payment of at least Rs. ${MIN_BUDGET_PER_CREATOR} per creator before publishing`,
+  path: ['budgetMax'],
 });
 
 export const updateCampaignSchema = z.object({
@@ -93,6 +140,8 @@ export const updateCampaignSchema = z.object({
   locationType: z.enum(['ONSITE', 'REMOTE']).optional(),
   budgetMin: z.number().min(0).optional(),
   budgetMax: z.number().min(0).optional(),
+  budgetRateType:  z.enum(['FIXED', 'RANGE']).optional(),
+  budgetInputType: z.enum(['PER_CREATOR', 'TOTAL']).optional(),
   paymentType:    z.string().optional(),
   creatorsNeeded: z.number().int().positive().optional(),
   status:         z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED']).optional(),

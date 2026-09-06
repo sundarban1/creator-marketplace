@@ -42,8 +42,22 @@ export type FormData = {
   aiPrompt: string;
   aiSuggestedCategories: string[];
   needsInput: string[];
+  // Per-creator payment. aiBudgetMin === aiBudgetMax for a flat fee; they
+  // differ for a RANGE. Both 0 when the brand hasn't set an amount yet.
   aiBudgetMin: number;
   aiBudgetMax: number;
+  // 'FIXED' = a single flat per-creator fee; 'RANGE' = a band creators propose within.
+  budgetRateType: 'FIXED' | 'RANGE';
+  // Whether the brand entered the amount as per-creator or as a whole-campaign
+  // total — resolved from the AI's classification / the ambiguous-budget chooser.
+  budgetInputType: 'PER_CREATOR' | 'TOTAL';
+  // True once a real per-creator amount is in place (the AI stated one, or the
+  // brand typed one). Publishing a paid campaign is blocked while this is false.
+  budgetSet: boolean;
+  // The AI's raw budget classification + the single figure it heard, kept so
+  // the review screen can show the "per creator or total?" chooser (spec §3).
+  aiBudgetStatus: 'STATED_PER_CREATOR' | 'STATED_TOTAL' | 'AMBIGUOUS' | 'NOT_STATED';
+  aiStatedAmount: number | null;
   // AI-determined (or business-corrected) completion type — see
   // CompletionTypePicker. Null only before the AI draft has ever populated
   // it (e.g. a brand-new, not-yet-generated form).

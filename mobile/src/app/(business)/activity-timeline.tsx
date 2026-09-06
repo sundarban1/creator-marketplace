@@ -413,7 +413,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   onPay: () => void; onStartWork: () => void; onUpload: () => void; onMarkComplete: () => void;
   onApprove: () => void; onRevision: () => void;
   onPlayVideo: (v: { url: string; label: string }) => void;
-  onViewImage: (img: { url: string; label: string }) => void;
+  onViewImage: (images: { url: string; label: string }[], index: number) => void;
   onViewDoc: (doc: { url: string; label: string }) => void;
   onOpenLink: (url: string) => void;
 }) {
@@ -582,8 +582,8 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
         <View style={ac.deliverySection}>
           <Text style={ac.deliveryLabel}>{t('activityTimeline.acImageLabel')}</Text>
           <View style={ac.thumbRow}>
-            {imageFiles.map((f) => (
-              <Pressable key={f.id} style={ac.thumb} onPress={() => onViewImage({ url: f.url, label: f.originalFileName })}>
+            {imageFiles.map((f, i) => (
+              <Pressable key={f.id} style={ac.thumb} onPress={() => onViewImage(imageFiles.map((x) => ({ url: x.url, label: x.originalFileName })), i)}>
                 <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
               </Pressable>
             ))}
@@ -677,8 +677,8 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
         <View style={ac.deliverySection}>
           <Text style={ac.deliveryLabel}>{t('activityTimeline.acImageLabel')}</Text>
           <View style={ac.thumbRow}>
-            {imageFiles.map((f) => (
-              <Pressable key={f.id} style={ac.thumb} onPress={() => onViewImage({ url: f.url, label: f.originalFileName })}>
+            {imageFiles.map((f, i) => (
+              <Pressable key={f.id} style={ac.thumb} onPress={() => onViewImage(imageFiles.map((x) => ({ url: x.url, label: x.originalFileName })), i)}>
                 <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
               </Pressable>
             ))}
@@ -999,7 +999,9 @@ export default function CampaignWorkspaceScreen() {
   // a plain "Deliverable Link" that turns out to be a direct video URL can
   // open in the same player without needing a full fake DeliverableVideo.
   const [playingVideo, setPlayingVideo] = useState<{ url: string; label: string } | null>(null);
-  const [previewImage, setPreviewImage] = useState<{ url: string; label: string } | null>(null);
+  // Image preview carries the whole sibling set + the tapped index so the modal
+  // can page ‹ › between deliverable images (same list for creator and business).
+  const [previewImage, setPreviewImage] = useState<{ items: { url: string; label: string }[]; index: number } | null>(null);
   const [previewDoc, setPreviewDoc]     = useState<{ url: string; label: string } | null>(null);
   // Which BottomSheet (if any) was closed to make way for the video/image/doc
   // preview below — RN presents each <Modal> as its own native window, and
@@ -1812,7 +1814,7 @@ export default function CampaignWorkspaceScreen() {
           onApprove={handleApprove}
           onRevision={() => setShowRevision(true)}
           onPlayVideo={(v) => setPlayingVideo(v)}
-          onViewImage={(img) => setPreviewImage(img)}
+          onViewImage={(images, index) => setPreviewImage({ items: images, index })}
           onViewDoc={(doc) => setPreviewDoc(doc)}
           onOpenLink={(url) => {
             if (isDirectVideoUrl(url)) {
@@ -1850,7 +1852,7 @@ export default function CampaignWorkspaceScreen() {
               </View>
             ) : (
               <Pressable
-                style={[s.ratingCta, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
+                style={[s.ratingCta, { backgroundColor: C.surface, borderColor: '#FDE68A' }]}
                 onPress={() => { setRatingValue(0); setRatingComment(''); setShowRatingModal(true); }}>
                 <FontAwesome5 name="star" solid size={18} color="#F59E0B" />
                 <View style={{ flex: 1 }}>
@@ -2162,13 +2164,18 @@ export default function CampaignWorkspaceScreen() {
               </View>
             ))}
 
-            {persistedFiles.map((f) => (
+            {persistedFiles.map((f) => {
+              const persistedImages = persistedFiles.filter((x) => x.fileType === 'IMAGE');
+              return (
               <View key={f.id} style={up.videoCard}>
                 <View style={up.thumbWrap}>
                   <Pressable
                     style={up.videoThumb}
                     onPress={() => openPreviewFrom('upload', () => (f.fileType === 'IMAGE'
-                      ? setPreviewImage({ url: f.url, label: f.originalFileName })
+                      ? setPreviewImage({
+                          items: persistedImages.map((x) => ({ url: x.url, label: x.originalFileName })),
+                          index: Math.max(0, persistedImages.findIndex((x) => x.id === f.id)),
+                        })
                       : setPreviewDoc({ url: f.url, label: f.originalFileName })))}
                   >
                     {f.fileType === 'IMAGE' ? (
@@ -2186,7 +2193,8 @@ export default function CampaignWorkspaceScreen() {
                 </View>
                 <Text style={up.videoLabel} numberOfLines={1}>{f.originalFileName}</Text>
               </View>
-            ))}
+              );
+            })}
 
             {fileUploads.items.filter(i => i.status !== 'cancelled').map((item) => (
               <View key={item.localId} style={up.videoCard}>
@@ -2348,18 +2356,24 @@ export default function CampaignWorkspaceScreen() {
               <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewFilesSection', { name: app?.creatorName ?? '—' })}</Text>
             </View>
             <View style={{ gap: 8 }}>
-              {(app?.deliverableFiles ?? []).map((f) => (
+              {(app?.deliverableFiles ?? []).map((f) => {
+                const reviewImages = (app?.deliverableFiles ?? []).filter((x) => x.fileType === 'IMAGE');
+                return (
                 <Pressable
                   key={f.id}
                   style={rv.linkRow}
                   onPress={() => openPreviewFrom('review', () => (f.fileType === 'IMAGE'
-                    ? setPreviewImage({ url: f.url, label: f.originalFileName })
+                    ? setPreviewImage({
+                        items: reviewImages.map((x) => ({ url: x.url, label: x.originalFileName })),
+                        index: Math.max(0, reviewImages.findIndex((x) => x.id === f.id)),
+                      })
                     : setPreviewDoc({ url: f.url, label: f.originalFileName })))}>
                   <FontAwesome5 name={f.fileType === 'IMAGE' ? 'image' : 'file-alt'} solid size={16} color="#2563EB" />
                   <Text style={rv.linkTxt} numberOfLines={1}>{f.originalFileName}</Text>
                   <FontAwesome5 name="chevron-right" solid size={13} color="#A78BFA" />
                 </Pressable>
-              ))}
+                );
+              })}
             </View>
           </View>
         )}
@@ -2548,8 +2562,11 @@ export default function CampaignWorkspaceScreen() {
 
       <ImagePreviewModal
         visible={!!previewImage}
-        url={previewImage?.url ?? null}
-        title={previewImage?.label ?? ''}
+        url={previewImage?.items[previewImage.index]?.url ?? null}
+        title={previewImage?.items[previewImage.index]?.label ?? ''}
+        items={previewImage?.items}
+        index={previewImage?.index ?? 0}
+        onIndexChange={(i) => setPreviewImage((p) => (p ? { ...p, index: i } : p))}
         onClose={() => closePreviewAndReturn(() => setPreviewImage(null))}
       />
 

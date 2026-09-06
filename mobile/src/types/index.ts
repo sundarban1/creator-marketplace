@@ -23,8 +23,14 @@ export type Campaign = {
   platforms: string[];
   platformIcons: string[];
   budget: string;
+  // budgetRaw / budgetMax are the PER-CREATOR bounds (equal for a flat fee).
   budgetRaw: number;
   budgetMax?: number;
+  // Per-creator budget shape + backend-computed campaign-wide total. Absent on
+  // older campaigns / free events.
+  budgetRateType?: 'FIXED' | 'RANGE' | null;
+  budgetInputType?: 'PER_CREATOR' | 'TOTAL' | null;
+  totalBudget?: number | null;
   template?: string;
   featureImageUrl?: string;
   category: string;

@@ -22,6 +22,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Flips true the first time a real session exists in this app launch (a fresh
+// login or a restored session) and never resets. Lets a screen tell a genuine
+// first-run "no user" — where the welcome/intro screen is the right landing —
+// apart from a post-logout "no user", which must go straight to /login.
+let signedInThisLaunch = false;
+export function hasSignedInThisLaunch(): boolean {
+  return signedInThisLaunch;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // at each call site. Telemetry must never break auth, so both are swallowed.
   useEffect(() => {
     if (user?.id) {
+      signedInThisLaunch = true;
       try {
         Sentry.setUser({ id: user.id });
       } catch {

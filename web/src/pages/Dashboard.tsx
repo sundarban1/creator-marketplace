@@ -6,11 +6,11 @@ import {
   AlertTriangle,
   TrendingUp,
   Clock,
-  UserPlus,
   MessageSquare,
   Send,
 } from 'lucide-react';
 import { StatCard }  from '../components/StatCard';
+import { Avatar }    from '../components/Avatar';
 import { useAuth }   from '../context/AuthContext';
 import { api }       from '../lib/api';
 import { useApi }    from '../lib/useApi';
@@ -166,14 +166,14 @@ export function Dashboard() {
                 u.creatorProfile?.fullName ??
                 u.businessProfile?.businessName ??
                 displayEmailOrPhone(u.email);
+              const avatarSrc =
+                u.creatorProfile?.avatarUrl ?? u.businessProfile?.logoUrl ?? null;
               return (
                 <li
                   key={u.id}
                   className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0"
                 >
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <UserPlus size={14} className="text-indigo-600" />
-                  </div>
+                  <Avatar initials={name.slice(0, 2).toUpperCase()} src={avatarSrc} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-800 truncate">{name}</p>
                     <p className="text-xs text-gray-400 truncate">{displayEmailOrPhone(u.email)}</p>

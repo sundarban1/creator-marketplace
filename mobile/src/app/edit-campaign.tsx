@@ -30,7 +30,7 @@ import {
   DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
 import {
-  SectionCard, ChipGroup, ChipMultiGroup, BudgetTierPicker, Stepper,
+  SectionCard, ChipGroup, ChipMultiGroup, PerCreatorBudgetPicker, Stepper,
   DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
 import { ListingHeroCard, PreviewRow } from '@/features/business/components/CampaignSummary';
@@ -139,8 +139,10 @@ type EditForm = {
   hashtags: string[];
   creatorsNeeded: string;
   status: NonNullable<Campaign['status']>;
+  // Per-creator budget (PAID_CAMPAIGN). budgetMin === budgetMax for a flat fee.
   budgetMin: string;
   budgetMax: string;
+  budgetRateType: 'FIXED' | 'RANGE';
   deadline: Date | null;
   location: string;
   locationType: 'ONSITE' | 'REMOTE';
@@ -193,7 +195,7 @@ export default function EditCampaignScreen() {
   const [editForm, setEditForm] = useState<EditForm>({
     title: '', description: '', featureImageUrl: null, template: '',
     deliverables: DEFAULT_DELIVERABLES, hashtags: [], creatorsNeeded: '1', completionType: null,
-    status: 'active', budgetMin: '', budgetMax: '', deadline: null,
+    status: 'active', budgetMin: '', budgetMax: '', budgetRateType: 'FIXED', deadline: null,
     location: '', locationType: 'ONSITE', isFeatured: false,
     eventDate: null, eventTime: null, venue: '', capacity: '20', benefits: [],
   });
@@ -203,6 +205,10 @@ export default function EditCampaignScreen() {
   // the backend rejects a change once anyone is ACCEPTED, so the field is
   // shown read-only here in that case.
   const [timeLocked, setTimeLocked] = useState(false);
+  // Number of creators already accepted onto a paid campaign — the floor the
+  // business can't take creatorsNeeded below (they'd be dropping a confirmed
+  // collaboration). Raising the count is always fine.
+  const [confirmedCreators, setConfirmedCreators] = useState(0);
   const [saving, setSaving] = useState(false);
   const [featureImageUploading, setFeatureImageUploading] = useState(false);
   // Only relevant while the campaign isn't already featured — see the `quota`
@@ -277,6 +283,7 @@ export default function EditCampaignScreen() {
           status:       c.status ?? 'active',
           budgetMin:    String(c.budgetRaw ?? ''),
           budgetMax:    String(c.budgetMax ?? ''),
+          budgetRateType: c.budgetRateType ?? ((c.budgetRaw ?? 0) === (c.budgetMax ?? 0) ? 'FIXED' : 'RANGE'),
           deadline:     c.deadline ? new Date(c.deadline) : null,
           location:     c.location ?? '',
           locationType: c.locationType ?? 'ONSITE',
@@ -295,6 +302,10 @@ export default function EditCampaignScreen() {
           campaignService.getApplications(campaignId)
             .then((apps) => setTimeLocked(apps.some((a) => a.status === 'accepted')))
             .catch(() => {});
+        } else {
+          campaignService.getApplications(campaignId)
+            .then((apps) => setConfirmedCreators(apps.filter((a) => a.status === 'accepted').length))
+            .catch(() => {});
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
@@ -306,6 +317,17 @@ export default function EditCampaignScreen() {
   function updateEdit<K extends keyof EditForm>(key: K, value: EditForm[K]) {
     setEditForm((prev) => ({ ...prev, [key]: value }));
     if (editErrors[key]) setEditErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+  }
+
+  // Guarded setter for the creators-needed stepper: raising is always fine, but
+  // it can't drop below the number of creators already accepted onto the
+  // campaign (mirrors the backend check — this just gives instant feedback).
+  function setCreatorsNeeded(v: number) {
+    if (v < (Number(editForm.creatorsNeeded) || 1) && v < confirmedCreators) {
+      showToast(t('campaignDetail.cannotReduceCreatorsBelowConfirmed', { confirmed: confirmedCreators }), 'error');
+      return;
+    }
+    updateEdit('creatorsNeeded', String(v));
   }
 
   function validateEdit(): EditErrors {
@@ -382,6 +404,7 @@ export default function EditCampaignScreen() {
             deliverables: summarizeDeliverables(editForm.deliverables, [], t),
             budgetMin:    Number(editForm.budgetMin),
             budgetMax:    Number(editForm.budgetMax),
+            budgetRateType: editForm.budgetRateType,
             location:     editForm.locationType === 'REMOTE' ? null : editForm.location.trim(),
             locationType: editForm.locationType,
             isFeatured:   editForm.isFeatured,
@@ -732,12 +755,14 @@ export default function EditCampaignScreen() {
         {editingField === 'people' && (
           <View style={{ gap: 8 }}>
             <Text style={[s.label, { color: C.text, marginTop: 0 }]}>{t('createEvent.secCreatorsNeededTitle')}</Text>
-            <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={(v) => updateEdit('creatorsNeeded', String(v))} colors={C} />
+            <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={setCreatorsNeeded} colors={C} />
             <Text style={[s.label, { color: C.text }]}>{t('createEvent.secBudgetTitle')}</Text>
-            <BudgetTierPicker
+            <PerCreatorBudgetPicker
+              rateType={editForm.budgetRateType}
               budgetMin={Number(editForm.budgetMin) || 0}
               budgetMax={Number(editForm.budgetMax) || 0}
-              onChange={(min, max) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); }}
+              creatorsNeeded={Number(editForm.creatorsNeeded) || 1}
+              onChange={(min, max, rt) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); updateEdit('budgetRateType', rt); }}
               colors={C}
               error={editErrors.budgetMin || editErrors.budgetMax}
               disabled={hasProposals}
@@ -748,13 +773,21 @@ export default function EditCampaignScreen() {
           </View>
         )}
         {editingField === 'budget' && (
-          <BudgetTierPicker
-            budgetMin={Number(editForm.budgetMin) || 0}
-            budgetMax={Number(editForm.budgetMax) || 0}
-            onChange={(min, max) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); }}
-            colors={C}
-            error={editErrors.budgetMin || editErrors.budgetMax}
-          />
+          <View style={{ gap: 8 }}>
+            <Text style={[s.label, { color: C.text, marginTop: 0 }]}>{t('createEvent.secCreatorsNeededTitle')}</Text>
+            <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={setCreatorsNeeded} colors={C} />
+            <Text style={[s.label, { color: C.text }]}>{t('createEvent.secBudgetTitle')}</Text>
+            <PerCreatorBudgetPicker
+              rateType={editForm.budgetRateType}
+              budgetMin={Number(editForm.budgetMin) || 0}
+              budgetMax={Number(editForm.budgetMax) || 0}
+              creatorsNeeded={Number(editForm.creatorsNeeded) || 1}
+              onChange={(min, max, rt) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); updateEdit('budgetRateType', rt); }}
+              colors={C}
+              error={editErrors.budgetMin || editErrors.budgetMax}
+              disabled={hasProposals}
+            />
+          </View>
         )}
         {editingField === 'capacity' && (
           <Stepper value={Number(editForm.capacity) || 1} onChange={(v) => updateEdit('capacity', String(v))} colors={C} />

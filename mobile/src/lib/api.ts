@@ -117,6 +117,11 @@ export interface ApiCampaign {
   locationType?: 'ONSITE' | 'REMOTE';
   budgetMin:     number;
   budgetMax:     number;
+  // Per-creator budget shape + the backend-computed campaign-wide total.
+  // Absent on campaigns created before this existed.
+  budgetRateType?:  'FIXED' | 'RANGE' | null;
+  budgetInputType?: 'PER_CREATOR' | 'TOTAL' | null;
+  totalBudget?:     number | null;
   status:        'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'EXPIRED';
   isFeatured:    boolean;
   creatorsNeeded?: number;

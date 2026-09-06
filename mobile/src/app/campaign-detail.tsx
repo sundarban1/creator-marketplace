@@ -138,6 +138,17 @@ export default function CampaignDetailScreen() {
   const posted  = daysAgo(campaign.createdAt);
   const heroImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
 
+  // Paid-campaign budget, framed per-creator (AI paid-event budget spec §5).
+  // campaign.budget is already the per-creator figure (formatBudget of the
+  // per-creator bounds). The total is the campaign-wide exposure.
+  const perCreatorMax = campaign.budgetMax ?? campaign.budgetRaw;
+  const showPaidBudget = !isOpenEvent && perCreatorMax > 0 && campaign.paymentType !== 'Product Exchange';
+  const budgetTotal = campaign.totalBudget ?? perCreatorMax * Math.max(1, campaign.creatorsNeeded ?? 1);
+  const budgetIsRange = (campaign.budgetRateType === 'RANGE') || (campaign.budgetRaw !== perCreatorMax);
+  const totalBudgetText = showPaidBudget
+    ? `${budgetIsRange ? '≤ ' : ''}Rs. ${budgetTotal.toLocaleString()}`
+    : null;
+
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
@@ -301,6 +312,18 @@ export default function CampaignDetailScreen() {
           );
         })()}
 
+        {/* 3. Creator Need — how many creators this campaign is hiring. Its own
+            card so it reads clearly; previously it was buried as a row in
+            Event Details. Paid campaigns only (open events use Capacity). */}
+        {!isOpenEvent && campaign.creatorsNeeded != null ? (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCreatorNeed')}</Text>
+            <Text style={[s.description, { color: C.text }]}>
+              {t('campaignDetail.creatorNeedTotal', { count: campaign.creatorsNeeded })}
+            </Text>
+          </View>
+        ) : null}
+
         {/* 4. Event Details */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDetails')}</Text>
@@ -314,10 +337,15 @@ export default function CampaignDetailScreen() {
             <DetailRow icon="calendar-alt" label={isOpenEvent ? 'Registration Deadline' : t('campaignDetail.detailDeadline')} value={formatDeadline(campaign.deadline)} C={C} />
             {!isOpenEvent && (
               <>
-                <DetailRow icon="wallet" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
-                {campaign.creatorsNeeded != null && (
-                  <DetailRow icon="users" label={t('campaignDetail.detailCreatorsNeeded')} value={String(campaign.creatorsNeeded)} C={C} />
-                )}
+                <DetailRow
+                  icon="wallet"
+                  label={isBusiness ? t('campaignDetail.detailPerCreator') : t('campaignDetail.youWillEarn')}
+                  value={campaign.budget}
+                  C={C}
+                />
+                {isBusiness && totalBudgetText ? (
+                  <DetailRow icon="coins" label={t('campaignDetail.detailTotalBudget')} value={totalBudgetText} C={C} />
+                ) : null}
               </>
             )}
             {campaign.locationType === 'REMOTE' ? (

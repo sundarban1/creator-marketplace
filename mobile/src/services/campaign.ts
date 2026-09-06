@@ -91,6 +91,17 @@ export interface AiCampaignDraft {
   goal: string;
   suggestedDurationDays: number;
   creatorsNeeded: number;
+  // How the brand expressed creator payment in their prompt. The backend
+  // classifies it and never invents an amount (AI paid-event budget spec).
+  // Optional so an older backend that doesn't send it is treated as NOT_STATED.
+  budgetStatus?: 'STATED_PER_CREATOR' | 'STATED_TOTAL' | 'AMBIGUOUS' | 'NOT_STATED';
+  // The exact figure the brand said (lower bound of a range) — kept so the
+  // review screen's "is this per creator or total?" chooser can show it.
+  statedAmount?: number | null;
+  statedAmountMax?: number | null;
+  budgetRateType?: 'FIXED' | 'RANGE';
+  // Per-creator bounds — DERIVED by the backend from budgetStatus/statedAmount.
+  // 0/0 means "not set" (NOT_STATED or AMBIGUOUS): the brand must set it before publish.
   budgetMin: number;
   budgetMax: number;
   paymentType: string;
@@ -223,6 +234,9 @@ export function toCampaign(api: ApiCampaign): Campaign {
     budget:       formatBudget(api.budgetMin, api.budgetMax, api.paymentType),
     budgetRaw:    api.budgetMin,
     budgetMax:    api.budgetMax,
+    budgetRateType:  api.budgetRateType ?? null,
+    budgetInputType: api.budgetInputType ?? null,
+    totalBudget:     api.totalBudget ?? null,
     template:     api.template ?? undefined,
     featureImageUrl: api.featureImageUrl ?? undefined,
     category:     api.category,
@@ -276,7 +290,7 @@ export const campaignService = {
   async listMy(params?: {
     page?:   number;
     limit?:  number;
-    status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED';
+    status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED';
     search?: string;
   }): Promise<{ campaigns: Campaign[]; total: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns/my', undefined, {
@@ -439,6 +453,10 @@ export const campaignService = {
     locationType?: 'ONSITE' | 'REMOTE';
     budgetMin: number;
     budgetMax: number;
+    // Per-creator budget shape. The backend derives budgetRateType when omitted
+    // and always computes the campaign-wide total itself.
+    budgetRateType?: 'FIXED' | 'RANGE';
+    budgetInputType?: 'PER_CREATOR' | 'TOTAL';
     paymentType: string;
     creatorsNeeded?: number;
     isFeatured?: boolean;
@@ -510,6 +528,8 @@ export const campaignService = {
     status?: Campaign['status'];
     budgetMin?: number;
     budgetMax?: number;
+    budgetRateType?: 'FIXED' | 'RANGE';
+    budgetInputType?: 'PER_CREATOR' | 'TOTAL';
     creatorsNeeded?: number;
     deadline?: string;
     location?: string | null;

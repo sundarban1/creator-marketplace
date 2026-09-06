@@ -98,7 +98,7 @@ function deliverableFileCloudinaryId(publicId: string): string {
 // (price, platform, deliverables) can no longer change under them — everything
 // else (title, description, deadline, status, etc.) can still be edited.
 const FIELDS_LOCKED_AFTER_PROPOSALS = [
-  'budgetMin', 'budgetMax', 'platforms', 'deliverables',
+  'budgetMin', 'budgetMax', 'budgetRateType', 'budgetInputType', 'platforms', 'deliverables',
   'location', 'locationLat', 'locationLng', 'locationType', 'isFeatured', 'completionType',
 ] as const;
 
@@ -140,6 +140,7 @@ import type {
   CampaignListQuery,
   ApplyToCampaignInput,
 } from './campaign.schema';
+import { canReduceCreatorsNeeded, computeTotalBudget, deriveBudgetRateType, MIN_BUDGET_PER_CREATOR } from './campaign.schema';
 
 const messagingService = new MessagingService();
 
@@ -364,6 +365,12 @@ export class CampaignService {
       isFeatured: input.isFeatured && featuredAllowed,
       status:     resolvedStatus,
       commissionRate,
+      // Structured budget: budgetMin/budgetMax are the per-creator bounds the
+      // client sends; the rate shape is derived when omitted and the
+      // campaign-wide total is always computed here, never trusted.
+      budgetRateType:  input.budgetRateType ?? deriveBudgetRateType(input.budgetMin ?? 0, input.budgetMax ?? 0),
+      budgetInputType: input.budgetInputType ?? 'PER_CREATOR',
+      totalBudget:     computeTotalBudget(input.creatorsNeeded ?? 1, input.budgetMax ?? 0),
       deadline:  new Date(input.deadline),
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
       requirements: input.requirements?.map((r) => ({
@@ -549,6 +556,23 @@ export class CampaignService {
       }
     }
 
+    // A business can raise the creator requirement freely, but can't cut it
+    // below the number of creators already accepted onto the campaign — those
+    // are live commitments (a creator who accepted and started working can't be
+    // silently dropped). Single-role only; multi-role requirement quantities are
+    // already locked once proposals exist.
+    if (input.creatorsNeeded !== undefined
+      && campaign.requirements.length === 0
+      && input.creatorsNeeded < campaign.creatorsNeeded) {
+      const acceptedCount = await this.repo.countAcceptedApplications(id);
+      if (!canReduceCreatorsNeeded(input.creatorsNeeded, campaign.creatorsNeeded, acceptedCount)) {
+        throw new AppError(
+          getDict().campaign.cannotReduceCreatorsBelowConfirmed(acceptedCount),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
     // The event time is printed on every confirmed creator's invitation — once
     // anyone is accepted it can no longer move (date/venue stay editable and
     // just regenerate the invitation; the time is the harder commitment).
@@ -585,6 +609,18 @@ export class CampaignService {
       ? await this.resolvePublishStatus('ACTIVE')
       : input.status;
 
+    // Same publish gate as create(): a cash paid campaign can't go ACTIVE
+    // without a per-creator amount (AI paid-event budget spec §2).
+    if (input.status === 'ACTIVE' && campaign.status !== 'ACTIVE'
+      && (campaign as { campaignType?: string }).campaignType === 'PAID_CAMPAIGN'
+      && campaign.requirements.length === 0
+      && (input.paymentType ?? campaign.paymentType) !== 'Product Exchange') {
+      const effectiveBudgetMax = input.budgetMax ?? campaign.budgetMax;
+      if (effectiveBudgetMax < MIN_BUDGET_PER_CREATOR) {
+        throw new AppError(getDict().campaign.budgetRequiredToPublish, HttpStatus.BAD_REQUEST);
+      }
+    }
+
     // Same free-quota gate as create() — without this, a business could
     // create a campaign unfeatured (no quota check needed there) and then
     // flip Featured on via edit to bypass the limit indefinitely. Only
@@ -599,6 +635,7 @@ export class CampaignService {
 
     const updated = await this.repo.update(id, {
       ...input,
+      ...this.budgetUpdateFields(input, campaign),
       isFeatured: resolvedIsFeatured,
       status:    resolvedStatus,
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
@@ -619,6 +656,28 @@ export class CampaignService {
     this.maybeRegenerateInvitations(campaign, input);
 
     return dto;
+  }
+
+  // Recomputes the derived budget columns when an edit changes a budget input.
+  // Returns {} when nothing budget-related is being touched, so an unrelated
+  // edit never rewrites these. budgetInputType is only ever changed when the
+  // client explicitly sends it.
+  private budgetUpdateFields(
+    input: UpdateCampaignInput,
+    current: { budgetMin: number; budgetMax: number; creatorsNeeded: number },
+  ): { budgetRateType?: 'FIXED' | 'RANGE'; budgetInputType?: 'PER_CREATOR' | 'TOTAL'; totalBudget?: number } {
+    const out: { budgetRateType?: 'FIXED' | 'RANGE'; budgetInputType?: 'PER_CREATOR' | 'TOTAL'; totalBudget?: number } = {};
+    if (input.budgetInputType !== undefined) out.budgetInputType = input.budgetInputType;
+    const shapeTouched = input.budgetMin !== undefined || input.budgetMax !== undefined
+      || input.creatorsNeeded !== undefined || input.budgetRateType !== undefined;
+    if (shapeTouched) {
+      const nextMin = input.budgetMin ?? current.budgetMin;
+      const nextMax = input.budgetMax ?? current.budgetMax;
+      const nextCreators = input.creatorsNeeded ?? current.creatorsNeeded;
+      out.budgetRateType = input.budgetRateType ?? deriveBudgetRateType(nextMin, nextMax);
+      out.totalBudget = computeTotalBudget(nextCreators, nextMax);
+    }
+    return out;
   }
 
   // Open-event invitations bake in the event title/date/venue/location and the
@@ -674,6 +733,7 @@ export class CampaignService {
 
     const updated = await this.repo.update(id, {
       ...input,
+      ...this.budgetUpdateFields(input, campaign),
       status:    resolvedStatus,
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,

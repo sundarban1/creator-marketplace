@@ -31,6 +31,17 @@ function formatBudget(min: number, max: number) {
   return min === max ? f(min) : `${f(min)} – ${f(max)}`;
 }
 
+// budgetMin/budgetMax are per-creator bounds; the campaign-wide figure is the
+// server-computed totalBudget (or creators × per-creator ceiling as a fallback).
+function formatTotalBudget(c: {
+  budgetMin: number; budgetMax: number; totalBudget?: number | null;
+  budgetRateType?: string | null; creatorsNeeded?: number;
+}) {
+  const total = c.totalBudget ?? c.budgetMax * Math.max(1, c.creatorsNeeded ?? 1);
+  const isRange = c.budgetRateType === 'RANGE' || c.budgetMin !== c.budgetMax;
+  return `${isRange ? '≤ ' : ''}NPR ${total.toLocaleString()}`;
+}
+
 function formatRequirementBudget(r: { budgetType: string; budgetFixed: number | null; budgetMin: number | null; budgetMax: number | null }) {
   const f = (n: number) => `NPR ${n.toLocaleString()}`;
   if (r.budgetType === 'FIXED')  return f(r.budgetFixed ?? 0);
@@ -505,7 +516,10 @@ export function CampaignDetail() {
             {/* Key stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { icon: DollarSign, label: 'Budget',   value: formatBudget(campaign.budgetMin, campaign.budgetMax) },
+                { icon: DollarSign, label: campaign.campaignType === 'OPEN_EVENT' ? 'Budget' : 'Per creator', value: formatBudget(campaign.budgetMin, campaign.budgetMax) },
+                ...(campaign.campaignType !== 'OPEN_EVENT' && campaign.paymentType !== 'Product Exchange' && campaign.budgetMax > 0
+                  ? [{ icon: Wallet, label: 'Total budget', value: formatTotalBudget(campaign) }]
+                  : []),
                 { icon: Calendar,   label: 'Deadline', value: fmt(campaign.deadline) },
                 { icon: Users,      label: 'Needed',   value: `${campaign.creatorsNeeded} creator${campaign.creatorsNeeded !== 1 ? 's' : ''}` },
                 { icon: Target,     label: 'Platform', value: campaign.platforms.length ? campaign.platforms.join(', ') : '—' },
