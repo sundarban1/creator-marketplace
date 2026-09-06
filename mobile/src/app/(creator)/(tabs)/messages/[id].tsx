@@ -31,7 +31,7 @@ import { VoiceBubblePlayer } from '@/features/chat/components/VoiceBubblePlayer'
 import { ChatLoadingView } from '@/features/chat/components/ChatLoadingView';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { notificationService } from '@/services/notifications';
-import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING, lineHeightFor } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
@@ -46,8 +46,10 @@ import type { Message } from '@/types';
 const AVATAR_COLORS = ['#7C3AED', '#0EA5E9', '#059669', '#D97706', '#EC4899', '#06B6D4', '#EF4444'];
 
 // Bounds for the composer's auto-grow height — MIN keeps it a one-line pill
-// at rest, MAX caps growth before the text scrolls internally.
-const MIN_INPUT_HEIGHT = 20;
+// at rest, MAX caps growth before the text scrolls internally. MIN matches the
+// inner height of the 44pt pill (44 − 2×8 padding) so a single line of text is
+// fully absorbed and starting to type never nudges the composer/messages.
+const MIN_INPUT_HEIGHT = 28;
 const MAX_INPUT_HEIGHT = 100;
 
 // Attaching a (visually empty) accessory view replaces iOS's default
@@ -801,9 +803,9 @@ export default function CreatorChatRoomScreen() {
               </View>
               {(chat.text.trim() || chat.editingMessage) && (
                 <Pressable
-                  style={[s.sendBtn, { backgroundColor: C.brinjal1 }]}
+                  style={s.sendBtn}
                   onPress={chat.handleSend}>
-                  <FontAwesome5 name={chat.editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
+                  <FontAwesome5 name={chat.editingMessage ? 'check' : 'paper-plane'} solid size={20} color={C.brinjal1} />
                 </Pressable>
               )}
             </View>
@@ -944,9 +946,9 @@ const s = StyleSheet.create({
   inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: 8 },
   inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   inlineIconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  input:     { flex: 1, fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },
+  input:     { flex: 1, fontSize: 15, lineHeight: lineHeightFor(15), fontFamily: F.regular, paddingVertical: 2, textAlignVertical: 'center' },
   charCount: { fontSize: 10, fontFamily: F.regular },
-  sendBtn:   { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  sendBtn:   { width: 44, minHeight: 44, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center' },
 
   // Emoji panel
   emojiPanel: { height: 260, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingTop: 8 },

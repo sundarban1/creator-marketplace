@@ -27,7 +27,7 @@ import { VoiceRecorderButton } from '@/features/chat/components/VoiceRecorderBut
 import { VoiceBubblePlayer } from '@/features/chat/components/VoiceBubblePlayer';
 import { ChatLoadingView } from '@/features/chat/components/ChatLoadingView';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
-import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SPACING, lineHeightFor } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
@@ -672,9 +672,9 @@ export default function BusinessChatRoomScreen() {
               </View>
               {(chat.text.trim() || chat.editingMessage) && (
                 <Pressable
-                  style={[s.sendBtn, { backgroundColor: C.brinjal1 }]}
+                  style={s.sendBtn}
                   onPress={chat.handleSend}>
-                  <FontAwesome5 name={chat.editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
+                  <FontAwesome5 name={chat.editingMessage ? 'check' : 'paper-plane'} solid size={20} color={C.brinjal1} />
                 </Pressable>
               )}
             </View>
@@ -808,9 +808,9 @@ const s = StyleSheet.create({
   inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: 8 },
   inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   inlineIconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  input:     { flex: 1, fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },
+  input:     { flex: 1, fontSize: 15, lineHeight: lineHeightFor(15), fontFamily: F.regular, paddingVertical: 2, textAlignVertical: 'center' },
   charCount: { fontSize: 10, fontFamily: F.regular },
-  sendBtn:   { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  sendBtn:   { width: 44, minHeight: 44, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center' },
 
   // Emoji panel
   emojiPanel: { height: 260, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingTop: 8 },
