@@ -82,8 +82,9 @@ export function SplashScreen() {
         <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} contentFit="contain" />
       </View>
 
-      {/* Tagline — absolutely positioned so revealing it never nudges the
-          centred logo off the spot the native splash left it in */}
+      {/* Tagline — sits just below the logo card, absolutely positioned off
+          the vertical centre so revealing it never nudges the centred logo
+          off the spot the native splash left it in */}
       <Animated.View entering={textKf.duration(TOTAL)} style={styles.textBlock}>
         <Text style={styles.tagline}>{t('splash.tagline')}</Text>
       </Animated.View>
@@ -151,7 +152,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 72,
+    // Anchored to the screen's vertical centre (where the logo card sits) and
+    // pushed down past the card's lower edge so the tagline reads directly
+    // below the logo instead of near the bottom of the screen.
+    top: '50%',
+    marginTop: 84,
     alignItems: 'center',
     gap: 8,
   },

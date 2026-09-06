@@ -363,6 +363,20 @@ function RootNavigator() {
     return <BiometricGateScreen onUnlock={() => setBiometricUnlocked(true)} />;
   }
 
+  // Logout / session-expiry flash guard. `logout()` just nulls `user`; the
+  // redirect to /login happens in the effect above, which only runs *after*
+  // this render commits and paints — so for one frame the now-unauthorised
+  // (creator)/(business) screen is still mounted and visibly rendered (often
+  // with blank user data) before it slides away to /login. Scoped strictly to
+  // those two authenticated groups: the only time you're inside them with no
+  // user is that post-logout frame, and the effect is already on its way to
+  // replace('/login'). Render a themed blank in the meantime. onboarding /
+  // add-email are separate segments that still require a user, so unaffected.
+  const seg0 = (segments as readonly string[])[0];
+  if (!isLoading && !user && (seg0 === '(creator)' || seg0 === '(business)')) {
+    return <View style={{ flex: 1, backgroundColor: C.background }} />;
+  }
+
   return (
     <>
       {/* contentStyle here matters as much as the individual screens' own
@@ -376,7 +390,12 @@ function RootNavigator() {
         <Stack.Screen name="oauthredirect" />
         <Stack.Screen name="esewa-callback" />
         <Stack.Screen name="khalti-callback" />
-        <Stack.Screen name="(auth)" />
+        {/* Fade rather than slide: this group is entered via replace('/login')
+            on logout / session-expiry, where a lateral slide of the outgoing
+            authenticated screen draws the eye to content that's on its way out.
+            Entering the app after login animates the (creator)/(business)
+            screen instead, so that transition is unaffected. */}
+        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
         <Stack.Screen name="add-email" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="business-onboarding" />

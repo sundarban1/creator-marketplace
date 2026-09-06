@@ -27,6 +27,10 @@ function initials(u: ApiUser): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+function avatarSrc(u: ApiUser): string | null {
+  return u.creatorProfile?.avatarUrl ?? u.businessProfile?.logoUrl ?? null;
+}
+
 function displayName(u: ApiUser): string {
   return (
     u.creatorProfile?.fullName ??
@@ -121,7 +125,7 @@ export function Users() {
           onClick={() => setViewing(row)}
           className="flex items-center gap-3 text-left group"
         >
-          <Avatar initials={initials(row)} size="sm" />
+          <Avatar initials={initials(row)} src={avatarSrc(row)} size="sm" />
           <div>
             <p className="font-medium text-gray-900 group-hover:text-indigo-600 group-hover:underline">{displayName(row)}</p>
             <p className="text-xs text-gray-500">{displayEmailOrPhone(row.email)}</p>
@@ -262,7 +266,7 @@ export function Users() {
         <DetailModal
           open={!!viewing}
           onClose={() => setViewing(null)}
-          avatar={<Avatar initials={initials(viewing)} size="md" />}
+          avatar={<Avatar initials={initials(viewing)} src={avatarSrc(viewing)} size="md" />}
           title={displayName(viewing)}
           subtitle={displayEmailOrPhone(viewing.email)}
           badges={<StatusBadge status={verifiedStatus(viewing)} />}
