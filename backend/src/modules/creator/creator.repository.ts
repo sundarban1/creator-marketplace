@@ -655,6 +655,18 @@ export class CreatorRepository {
     });
   }
 
+  // Which of the given campaigns this creator has already applied to — used to
+  // surface an "Applied" state on paid-campaign invitations (which skip the
+  // accept/decline step and route the creator through the proposal flow).
+  async findAppliedCampaignIds(creatorProfileId: string, campaignIds: string[]): Promise<Set<string>> {
+    if (campaignIds.length === 0) return new Set();
+    const rows = await prisma.application.findMany({
+      where: { creatorId: creatorProfileId, campaignId: { in: campaignIds } },
+      select: { campaignId: true },
+    });
+    return new Set(rows.map((r) => r.campaignId));
+  }
+
   async findInvitationById(id: string) {
     return prisma.campaignInvitation.findUnique({
       where: { id },

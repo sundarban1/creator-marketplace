@@ -287,6 +287,7 @@ export const en: BackendDict = {
     invitationNotFound:                  'Invitation not found',
     notAuthorizedToRespondToInvitation:  'Not authorized to respond to this invitation',
     invitationAlreadyResponded:          'This invitation has already been responded to',
+    invitationApplyInsteadOfRespond:     'This invitation is for a paid campaign — open the campaign and submit a proposal to apply.',
     // creator.controller.ts
     categoryRequired:                    'category is required',
     usernameQueryRequired:               'Username query param is required',

@@ -287,6 +287,7 @@ export const ne: BackendDict = {
     invitationNotFound:                  'निमन्त्रणा फेला परेन',
     notAuthorizedToRespondToInvitation:  'तपाईंलाई यो निमन्त्रणाको जवाफ दिने अनुमति छैन',
     invitationAlreadyResponded:          'यो निमन्त्रणाको जवाफ पहिले नै दिइसकिएको छ',
+    invitationApplyInsteadOfRespond:     'यो निमन्त्रणा भुक्तानी अभियानको लागि हो — आवेदन दिन अभियान खोल्नुहोस् र प्रस्ताव पेश गर्नुहोस्।',
     // creator.controller.ts
     categoryRequired:                    'श्रेणी आवश्यक छ',
     usernameQueryRequired:               'युजरनेम क्वेरी प्यारामिटर आवश्यक छ',

@@ -111,6 +111,7 @@ export default function InvitationsScreen() {
                 item={item}
                 onAccept={() => openRespond(item, 'ACCEPTED')}
                 onDecline={() => openRespond(item, 'DECLINED')}
+                onApplyNow={() => router.push({ pathname: '/campaign-detail', params: { campaignId: item.campaignId } })}
               />
             )}
             contentContainerStyle={[styles.list, invitations.length === 0 && styles.listEmpty]}
@@ -147,10 +148,11 @@ export default function InvitationsScreen() {
   );
 }
 
-function InvitationCard({ item, onAccept, onDecline }: {
+function InvitationCard({ item, onAccept, onDecline, onApplyNow }: {
   item: ApiCampaignInvitation;
   onAccept: () => void;
   onDecline: () => void;
+  onApplyNow: () => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -164,6 +166,9 @@ function InvitationCard({ item, onAccept, onDecline }: {
   const offering = isFreeEvent
     ? eventOptionLabels(item.campaign.benefits ?? [], 'offering', t).join(', ')
     : '';
+  // Paid campaigns aren't accepted/declined here — the creator applies through
+  // the normal proposal flow. Show "Apply Now" until they have, then "Applied".
+  const isPaidInvite = !isFreeEvent;
 
   return (
     <Pressable
@@ -181,13 +186,17 @@ function InvitationCard({ item, onAccept, onDecline }: {
           <Text style={[styles.businessName, { color: C.textSecondary }]} numberOfLines={1}>{item.business.businessName}</Text>
           <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={2}>{item.campaign.title}</Text>
         </View>
-        {item.status !== 'PENDING' && (
+        {isPaidInvite && item.hasApplied ? (
+          <View style={[styles.statusBadge, { backgroundColor: '#F0FDF4' }]}>
+            <Text style={[styles.statusBadgeText, { color: '#16A34A' }]}>{t('invitations.statusApplied')}</Text>
+          </View>
+        ) : !isPaidInvite && item.status !== 'PENDING' ? (
           <View style={[styles.statusBadge, { backgroundColor: item.status === 'ACCEPTED' ? '#F0FDF4' : '#FEF2F2' }]}>
             <Text style={[styles.statusBadgeText, { color: item.status === 'ACCEPTED' ? '#16A34A' : '#DC2626' }]}>
               {item.status === 'ACCEPTED' ? t('invitations.statusAccepted') : t('invitations.statusDeclined')}
             </Text>
           </View>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.metaRow}>
@@ -209,7 +218,7 @@ function InvitationCard({ item, onAccept, onDecline }: {
         </Text>
       ) : null}
 
-      {item.status === 'PENDING' && (
+      {!isPaidInvite && item.status === 'PENDING' && (
         <View style={styles.actions}>
           <Pressable
             style={[styles.declineBtn, { borderColor: C.border, backgroundColor: C.background }]}
@@ -223,6 +232,22 @@ function InvitationCard({ item, onAccept, onDecline }: {
             <FontAwesome5 name="check-circle" solid size={15} color="#fff" />
             <Text style={[styles.actionText, { color: '#fff' }]}>{t('invitations.accept')}</Text>
           </Pressable>
+        </View>
+      )}
+
+      {isPaidInvite && !item.hasApplied && (
+        <View style={{ gap: 8 }}>
+          <Text style={[styles.applyHint, { color: C.textSecondary, borderTopColor: C.border }]}>
+            {t('invitations.applyHint')}
+          </Text>
+          <View style={styles.actions}>
+            <Pressable
+              style={[styles.acceptBtn, { backgroundColor: C.brinjal1 }]}
+              onPress={onApplyNow}>
+              <FontAwesome5 name="paper-plane" solid size={14} color="#fff" />
+              <Text style={[styles.actionText, { color: '#fff' }]}>{t('invitations.applyNow')}</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </Pressable>
@@ -254,4 +279,5 @@ const styles = StyleSheet.create({
   declineBtn: { flex: 1, flexDirection: 'row', gap: 6, height: 44, borderRadius: RADIUS.md, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   acceptBtn:  { flex: 1, flexDirection: 'row', gap: 6, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   actionText: { fontSize: 14, fontFamily: F.semibold },
+  applyHint: { fontSize: 12, fontFamily: F.regular, lineHeight: 18, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, marginTop: 2 },
 });

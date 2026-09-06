@@ -105,6 +105,9 @@ export interface ApiCampaignInvitation {
   status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
   respondedAt: string | null;
   createdAt: string;
+  // Paid-campaign invitations are not accepted/declined — the creator applies
+  // via the normal proposal flow. This flags whether they already have.
+  hasApplied?: boolean;
   // Backend returns the full Campaign row — only the fields this UI needs are
   // declared here; extra fields are present at runtime but untyped.
   campaign: {

@@ -288,6 +288,7 @@ export interface BackendDict {
     invitationNotFound: string;
     notAuthorizedToRespondToInvitation: string;
     invitationAlreadyResponded: string;
+    invitationApplyInsteadOfRespond: string;
     // creator.controller.ts
     categoryRequired: string;
     usernameQueryRequired: string;

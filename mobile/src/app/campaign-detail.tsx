@@ -98,13 +98,16 @@ export default function CampaignDetailScreen() {
   const hasApplied = !!myApp;
   const applicationStatus = myApp ? myApp.status as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired' : null;
   const appliedRequirementIds = new Set(myApps.filter((a) => a.requirementId).map((a) => a.requirementId!));
-  // A still-pending invitation the business sent this creator for THIS campaign.
-  // When set, the sticky CTA points at the Invitations screen instead of
-  // offering "Submit Proposal" — the creator was already asked directly.
-  const pendingInvitation = (invitationsQuery.data ?? NO_INVITATIONS)
-    .find((i) => i.campaignId === campaignId && i.status === 'PENDING') ?? null;
-
   const isOpenEvent = campaign?.campaignType === 'OPEN_EVENT';
+
+  // A still-pending invitation the business sent this creator for THIS campaign.
+  // Only free events use accept/decline — for those the sticky CTA points at the
+  // Invitations screen. Paid-campaign invitees apply through the normal proposal
+  // flow, so they fall through to the standard "Submit Proposal" CTA below.
+  const pendingInvitation = isOpenEvent
+    ? ((invitationsQuery.data ?? NO_INVITATIONS)
+        .find((i) => i.campaignId === campaignId && i.status === 'PENDING') ?? null)
+    : null;
 
   if (loading) {
     return (

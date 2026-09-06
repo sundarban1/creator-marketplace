@@ -1263,7 +1263,15 @@ export class CreatorService {
   async listInvitations(userId: string) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
-    return this.repo.findInvitations(profile.id);
+    const invitations = await this.repo.findInvitations(profile.id);
+    // Paid-campaign invitations route the creator through the proposal flow
+    // rather than an accept/decline — tag each with whether they've applied so
+    // the invitations screen can show "Applied" instead of "Apply Now".
+    const applied = await this.repo.findAppliedCampaignIds(
+      profile.id,
+      invitations.map((i) => i.campaignId),
+    );
+    return invitations.map((i) => ({ ...i, hasApplied: applied.has(i.campaignId) }));
   }
 
   async respondToInvitation(userId: string, invitationId: string, input: RespondToInvitationInput) {
@@ -1274,6 +1282,11 @@ export class CreatorService {
     if (!invitation) throw new AppError(getDict().creator.invitationNotFound, HttpStatus.NOT_FOUND);
     if (invitation.creatorId !== profile.id) throw new AppError(getDict().creator.notAuthorizedToRespondToInvitation, HttpStatus.FORBIDDEN);
     if (invitation.status !== 'PENDING') throw new AppError(getDict().creator.invitationAlreadyResponded, HttpStatus.CONFLICT);
+    // Only free events (OPEN_EVENT) use the accept/decline flow. Paid campaigns
+    // route the creator through the normal proposal flow instead.
+    if (invitation.campaign.campaignType !== 'OPEN_EVENT') {
+      throw new AppError(getDict().creator.invitationApplyInsteadOfRespond, HttpStatus.BAD_REQUEST);
+    }
 
     const updated = await this.repo.respondToInvitation(invitationId, input.status);
 
