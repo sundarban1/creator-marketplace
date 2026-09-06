@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { authenticate, getBiometricLabel, type BiometricLabel } from '@/services/biometric';
+import { authenticate, cancelActivePrompt, getBiometricLabel, type BiometricLabel } from '@/services/biometric';
 import { F, SPACING } from '@/utilities/constants';
 
 type Props = { onUnlock: () => void };
@@ -43,7 +43,32 @@ export function BiometricGateScreen({ onUnlock }: Props) {
 
   useEffect(() => {
     getBiometricLabel().then(setLabel);
+    // Kick off the unlock attempt on mount; the setState it does is the point.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     tryUnlock();
+
+    // Backgrounding while the OS prompt is up (or while it's mid-check) can leave
+    // the native prompt orphaned on some Android devices. Dismiss it on the way
+    // out and start a fresh attempt when the user comes back, rather than
+    // returning to a frozen spinner.
+    // Key off 'background' specifically, not 'inactive' — iOS reports 'inactive'
+    // while its own Face ID system sheet is up, which would otherwise cancel the
+    // very prompt we're waiting on.
+    let wasBackgrounded = false;
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'background') {
+        wasBackgrounded = true;
+        if (inProgressRef.current) {
+          void cancelActivePrompt();
+          inProgressRef.current = false;
+          setChecking(false);
+        }
+      } else if (next === 'active' && wasBackgrounded) {
+        wasBackgrounded = false;
+        if (!inProgressRef.current) tryUnlock();
+      }
+    });
+    return () => sub.remove();
     // Only run once on mount — re-triggering on every render would re-open the
     // native prompt as soon as it's dismissed.
     // eslint-disable-next-line react-hooks/exhaustive-deps

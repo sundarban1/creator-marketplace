@@ -33,20 +33,59 @@ export async function getBiometricLabel(): Promise<BiometricLabel> {
 // replaces the whole navigator, so no in-app screen exists to withdraw from.
 let inFlight: Promise<LocalAuthentication.LocalAuthenticationResult> | null = null;
 
+// On some Android OEM ROMs the device-PIN / credential branch of BiometricPrompt
+// never delivers a callback, so `authenticateAsync` neither resolves nor rejects
+// (the native module even documents this: "react-native doesn't pass this value
+// to the underlying fragment - we won't resolve the promise"). Without a ceiling
+// the module-level `inFlight` would pin forever and every later unlock/step-up
+// call would silently await a dead promise — the gate would sit on an infinite
+// spinner and the login screen's quick-login button would stay frozen too. Force
+// the prompt to settle and reset native state if it runs long.
+const PROMPT_TIMEOUT_MS = 60_000;
+
 /**
  * Raw prompt. Prefer `authenticate()` (login/unlock) or `confirmSensitiveAction()`
  * (step-up before a money-moving action) — they carry the right cancel labels.
  */
 function prompt(promptMessage: string, cancelLabel: string) {
   if (inFlight) return inFlight;
-  inFlight = LocalAuthentication.authenticateAsync({
+
+  const native = LocalAuthentication.authenticateAsync({
     promptMessage,
     cancelLabel,
     // Device passcode/PIN stays available as the OS-level fallback — a user whose
     // face doesn't scan in bad light must never be locked out of their own money.
     disableDeviceFallback: false,
-  }).finally(() => { inFlight = null; });
+  });
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const guarded = new Promise<LocalAuthentication.LocalAuthenticationResult>((resolve, reject) => {
+    timer = setTimeout(() => {
+      // Tear down the orphaned native prompt so `isAuthenticating` doesn't stay
+      // stuck, then report it as a system cancel (quiet abort, same as backgrounding).
+      LocalAuthentication.cancelAuthenticate().catch(() => {});
+      resolve({ success: false, error: 'system_cancel' });
+    }, PROMPT_TIMEOUT_MS);
+    native.then(resolve, reject);
+  });
+
+  inFlight = guarded.finally(() => { clearTimeout(timer); inFlight = null; });
   return inFlight;
+}
+
+/**
+ * Dismiss any biometric prompt that's currently on screen and clear the in-flight
+ * guard. Call this when the app is leaving the foreground so a prompt the user
+ * walked away from can't outlive its context and wedge the shared `inFlight`.
+ * No-op on iOS (the native method is Android-only) and when nothing is pending.
+ */
+export async function cancelActivePrompt(): Promise<void> {
+  if (!inFlight) return;
+  try {
+    await LocalAuthentication.cancelAuthenticate();
+  } catch {
+    // cancelAuthenticate is Android-only / best-effort — ignore if unavailable.
+  }
 }
 
 export function authenticate(promptMessage: string): Promise<boolean> {
