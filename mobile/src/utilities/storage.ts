@@ -38,12 +38,24 @@ export const storage = {
     cache.set(key, JSON.stringify(value));
   },
 
-  // Call once on app start to warm the in-memory cache from secure storage
+  // Call once on app start to warm the in-memory cache from secure storage.
+  // Each read is bounded by a timeout: SecureStore (Android Keystore) has been
+  // observed to hang indefinitely on some devices, and this call gates the
+  // auth `isLoading` flag — a hung read there leaves the app stuck on the
+  // splash / welcome screen forever. A key that doesn't resolve in time is
+  // treated as absent (worst case: the user signs in again).
   async hydrate(keys: string[]): Promise<void> {
     await Promise.all(
       keys.map(async (key) => {
-        const val = await SecureStore.getItemAsync(key);
-        if (val != null) cache.set(key, val);
+        try {
+          const val = await Promise.race([
+            SecureStore.getItemAsync(key),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+          ]);
+          if (val != null) cache.set(key, val);
+        } catch {
+          // decryption failure / unavailable keystore — treat as absent
+        }
       })
     );
   },

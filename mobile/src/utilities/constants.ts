@@ -16,9 +16,10 @@ export const COLORS = {
   // above being flattened to white for the logged-in app.
   preLoginBackground: '#F4F6FB',
 
-  // Borders
-  border:     '#E5E7F0',
-  borderDark: '#C7C9D9',
+  // Borders — Instagram's neutral hairline grey (#DBDBDB), de-tinted off the
+  // old blue-grey so separators read as plain 1px rules like IG's.
+  border:     '#DBDBDB',
+  borderDark: '#C7C7C7',
 
   // Typography
   text:          '#0F172A',
@@ -26,12 +27,12 @@ export const COLORS = {
   // renders near-black for both roles rather than a washed-out grey. Input
   // placeholders stay grey — use `textPlaceholder`, never `textSecondary`.
   textSecondary: '#1E293B',
-  textPlaceholder: '#94A3B8',
+  textPlaceholder: '#8E8E8E',
 
   // Status
   active: '#10B981',
   draft:  '#F59E0B',
-  closed: '#94A3B8',
+  closed: '#8E8E8E',
   error:  '#EF4444',
 
   // Badge accents

@@ -275,33 +275,46 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    // Best-effort, run before the tokens below are cleared (the endpoint is
-    // authenticated) — stops this device from receiving this user's pushes
-    // immediately, rather than waiting on Expo's stale-token cleanup.
-    await request('DELETE', '/api/notifications/push-token').catch(() => {});
+    // Snapshot the tokens for the best-effort server-side teardown below, then
+    // clear all local session state right away. Nothing user-visible should
+    // wait on the network here — a slow/offline connection must not delay
+    // sign-out, and a restart mid-logout must not be able to restore the
+    // session because the token wipe hadn't happened yet.
+    const accessToken  = storage.get(ACCESS_TOKEN_KEY) ?? '';
+    const refreshToken = storage.get(REFRESH_TOKEN_KEY) ?? '';
 
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-      await fetch(`${API_BASE}/api/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${storage.get(ACCESS_TOKEN_KEY) ?? ''}`,
-        },
-        // Scopes the server-side session teardown to this device only, so
-        // other logged-in devices aren't signed out.
-        body: JSON.stringify({ refreshToken: storage.get(REFRESH_TOKEN_KEY) }),
-        signal: controller.signal,
-      }).finally(() => clearTimeout(timer));
-    } catch {
-      // ignore — server-side invalidation is best-effort
-    }
     await Promise.all(
       [ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, APPLE_USER_ID_KEY].map((k) =>
         storage.remove(k).catch(() => {})
       )
     );
+
+    // Fire-and-forget, each bounded by a short abort timer:
+    //  - DELETE push-token: stops this device receiving this user's pushes
+    //    immediately, rather than waiting on Expo's stale-token cleanup.
+    //  - POST logout: scopes server-side session teardown to this device only,
+    //    so other logged-in devices aren't signed out.
+    // Both fully best-effort — refresh-token expiry is the backstop.
+    void (async () => {
+      const authedFetch = (path: string, init: RequestInit) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 4000);
+        return fetch(`${API_BASE}${path}`, {
+          ...init,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+            ...init.headers,
+          },
+          signal: controller.signal,
+        }).catch(() => {}).finally(() => clearTimeout(timer));
+      };
+      await authedFetch('/api/notifications/push-token', { method: 'DELETE' });
+      await authedFetch('/api/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken }),
+      });
+    })();
   },
 
   getStoredAppleUserId(): string | null {

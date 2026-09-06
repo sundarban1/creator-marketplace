@@ -2084,7 +2084,8 @@ export class CampaignService {
       let result;
       try {
         result = ref.uploadId ? await completeR2Multipart(ref.key, ref.uploadId) : await finalizeR2Object(ref.key);
-      } catch {
+      } catch (err) {
+        logger.error({ err, key: ref.key, uploadId: ref.uploadId, appId, userId }, 'deliverable video: R2 verification failed');
         if (ref.uploadId) await abortR2Multipart(ref.key, ref.uploadId);
         throw new AppError(getDict().campaign.couldNotVerifyVideo, HttpStatus.BAD_REQUEST);
       }
@@ -2127,7 +2128,8 @@ export class CampaignService {
       let resource;
       try {
         resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
-      } catch {
+      } catch (err) {
+        logger.error({ err, publicId, appId, userId }, 'deliverable video: Cloudinary verification failed');
         throw new AppError(getDict().campaign.couldNotVerifyVideo, HttpStatus.BAD_REQUEST);
       }
 

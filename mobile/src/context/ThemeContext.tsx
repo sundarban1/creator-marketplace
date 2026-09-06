@@ -3,28 +3,40 @@ import { useColorScheme } from 'react-native';
 import { COLORS, BUSINESS_COLORS } from '@/utilities/constants';
 import { useAuth } from '@/context/AuthContext';
 
-// brinjal1/brinjal2 are hue-matched to the light theme's brinjal (#4F46E5) —
-// lightened for legibility against a dark surface, rather than an unrelated violet.
+// Dark palette modelled on Instagram's dark mode: a neutral, near-black system
+// (pure-black app background, flat dark-grey surfaces, hairline #262626-style
+// borders instead of shadows, muted-grey secondary text) rather than a tinted
+// dark blue. Brand hues (brinjal / accent) stay saturated for interactive
+// elements — the way Instagram keeps its action blue on a neutral ground.
+// brinjal1/brinjal2 are hue-matched to the light theme's brinjal (#4F46E5),
+// lightened for legibility against a dark surface.
+//
+// `accent` in dark mode is Claude's "crail" terracotta (#CC785C) rather than
+// the light theme's Nepal saffron (#F97316) — the brighter orange reads as
+// harsh/alerting against the near-black ground, the softer terracotta sits
+// better. Only screens that consume the `accent` *token* pick this up;
+// hardcoded orange hexes elsewhere (status badges, warning icons) are
+// unchanged.
 export const DARK_COLORS: typeof COLORS = {
   brinjal1:    '#7C74EE',
   brinjal2:    '#5B52D6',
-  primaryLight:'#2D2B52',
-  accent:      '#FB923C',
-  accentLight: '#431407',
-  background:  '#12121E',
-  surface:     '#1E1E30',
-  preLoginBackground: '#12121E',
-  border:      '#2E2E45',
-  borderDark:  '#3D3D58',
-  text:        '#F1F5F9',
-  textSecondary:'#E2E8F0',
-  textPlaceholder:'#64748B',
+  primaryLight:'#1C1C1C',
+  accent:      '#CC785C',
+  accentLight: '#2A1C16',
+  background:  '#000000',
+  surface:     '#1A1A1A',
+  preLoginBackground: '#000000',
+  border:      '#262626',
+  borderDark:  '#363636',
+  text:        '#FFFFFF',
+  textSecondary:'#A8A8A8',
+  textPlaceholder:'#8E8E8E',
   active:      '#34D399',
   draft:       '#FBBF24',
-  closed:      '#6B7280',
-  error:       '#F87171',
-  badgeFeatured:'#312E81',
-  badgeNew:    '#064E3B',
+  closed:      '#8E8E8E',
+  error:       '#ED4956',
+  badgeFeatured:'#262626',
+  badgeNew:    '#0A2A1E',
 };
 
 // Dark-mode counterpart of BUSINESS_COLORS (@/utilities/constants) — same
@@ -34,7 +46,7 @@ export const BUSINESS_DARK_COLORS: typeof COLORS = {
   ...DARK_COLORS,
   brinjal1:    '#4ADE80',
   brinjal2:    '#22C55E',
-  primaryLight:'#14291C',
+  primaryLight:'#12261A',
 };
 
 // Pins a subtree to one palette instead of deriving it from the live auth

@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 
-// Google's Android OAuth redirect lands here (scheme matches app.json's `scheme`,
-// so Expo Router treats it as a navigable route instead of letting expo-auth-session
-// silently consume it) — without this file it fell through to the default
-// "Unmatched Route" screen. The actual token/code is already resolved via
-// expo-auth-session's response state in useGoogleAccessToken/login.tsx; this route
-// only needs to bounce back so RootNavigator's auth-based redirect can take over.
+// Fallback route for the `…:/oauthredirect` OAuth deep link. In normal operation
+// `src/app/+native-intent.ts` returns null for this URL so Expo Router never navigates
+// here — expo-web-browser resolves the pending promptAsync() promise in place and the
+// (auth) login screen finishes the code exchange + backend sign-in itself. This screen
+// only renders if that interception is bypassed (e.g. a cold start launched straight
+// from the redirect); it just bounces to root so RootNavigator can take over.
 export default function OAuthRedirect() {
   const router = useRouter();
 

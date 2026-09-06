@@ -802,7 +802,8 @@ export class MessagingService {
       let result;
       try {
         result = ref.uploadId ? await completeR2Multipart(ref.key, ref.uploadId) : await finalizeR2Object(ref.key);
-      } catch {
+      } catch (err) {
+        logger.error({ err, key: ref.key, uploadId: ref.uploadId, userId }, 'chat video: R2 verification failed');
         if (ref.uploadId) await abortR2Multipart(ref.key, ref.uploadId);
         throw new AppError(getDict().messaging.couldNotVerifyVideo, HttpStatus.BAD_REQUEST);
       }
@@ -848,7 +849,8 @@ export class MessagingService {
       let resource;
       try {
         resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
-      } catch {
+      } catch (err) {
+        logger.error({ err, publicId, userId }, 'chat video: Cloudinary verification failed');
         throw new AppError(getDict().messaging.couldNotVerifyVideo, HttpStatus.BAD_REQUEST);
       }
 

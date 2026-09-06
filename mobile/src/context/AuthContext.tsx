@@ -83,17 +83,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // genuinely invalid/expired (the session-expired handler below), where there
   // is nothing valid left to preserve for a biometric resume.
   async function forceLogout() {
+    // Clear UI/session state FIRST so RootNavigator redirects to /login
+    // immediately. The server-side teardown that follows is best-effort and
+    // must never keep the user on an authenticated screen — awaiting it here
+    // used to delay the redirect by up to ~30s on a slow or offline network
+    // (the push-token request carries the full request() timeout + retries).
+    setUser(null);
+    // Drop the cached server state too — a genuine logout / expired session
+    // has nothing worth keeping warm (unlike a biometric lock, which keeps
+    // both the session and the cache for a silent resume).
+    queryClient.clear();
     try {
       await authService.logout();
     } catch (err) {
-      // always clear state even if server call fails
       logger.warn('[auth] server logout failed', { err });
-    } finally {
-      setUser(null);
-      // Drop the cached server state too — a genuine logout / expired session
-      // has nothing worth keeping warm (unlike a biometric lock, which keeps
-      // both the session and the cache for a silent resume).
-      queryClient.clear();
     }
   }
 

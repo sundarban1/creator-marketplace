@@ -1,5 +1,5 @@
-import { useContext, useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useContext, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -19,7 +19,7 @@ import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { CampaignCard } from '@/features/creator/components/CampaignCard';
 import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCardSkeleton';
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
-import { creatorService, type ApiCreatorProfile, type ApiProviderMember } from '@/services/creator';
+import { creatorService, type ApiProviderMember } from '@/services/creator';
 import { campaignService } from '@/services/campaign';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
@@ -58,6 +58,7 @@ export default function HomeScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { openDrawer } = useContext(DrawerContext);
   const { badgeCount } = useNotificationBadge();
 
@@ -129,115 +130,96 @@ export default function HomeScreen() {
 
   const loading = profileQuery.isPending || applicationsQuery.isPending || recommendedQuery.isPending;
 
-  // ── Nearby Opportunities ──
-  const [nearbyCampaigns, setNearbyCampaigns] = useState<Campaign[]>([]);
-  const [nearbyLoading, setNearbyLoading] = useState(true);
-  const [nearbySource, setNearbySource] = useState<NearbySource>('current');
-  const [nearbyRadiusKm, setNearbyRadiusKm] = useState(25);
-  const [nearbyHomeLabel, setNearbyHomeLabel] = useState<string | null>(null);
-  const [nearbyHomeAddress, setNearbyHomeAddress] = useState<string | null>(null);
-  const [nearbyHomeCoords, setNearbyHomeCoords] = useState<LatLng | null>(null);
-  const [nearbyCurrentCoords, setNearbyCurrentCoords] = useState<LatLng | null>(null);
-  const [nearbyCustomCoords, setNearbyCustomCoords] = useState<LatLng | null>(null);
-  const [nearbyLocationDenied, setNearbyLocationDenied] = useState(false);
+  // ── Nearby Opportunities ──────────────────────────────────────────────────
+  // Fully React Query-backed now: the device GPS fix, the text→coords geocode
+  // fallback and the campaign list are each their own query, so opening the
+  // tab paints from cache instantly and refreshes underneath instead of
+  // re-running an ~8s GPS wait before the rail can show anything.
   const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
+  // Overrides picked in the location sheet. Until one is set the section
+  // follows the profile: saved home location if there is one, else live GPS.
+  const [nearbySourceOverride, setNearbySourceOverride] = useState<NearbySource | null>(null);
+  const [nearbyRadiusOverride, setNearbyRadiusOverride] = useState<number | null>(null);
+  const [nearbyCustomCoords, setNearbyCustomCoords] = useState<LatLng | null>(null);
 
-  async function fetchNearby(coords: LatLng, radiusKm: number, opts: { silent?: boolean } = {}) {
-    const { silent = false } = opts;
-    if (!silent) setNearbyLoading(true);
-    try {
-      const { campaigns: data } = await campaignService.nearby({ lat: coords.lat, lng: coords.lng, radiusKm, limit: 6 });
-      setNearbyCampaigns(data);
-    } catch {
-      if (!silent) setNearbyCampaigns([]);
-    } finally {
-      // Always clear — `silent` only suppresses the skeleton *transition* (we
-      // never set loading true on that path), never the completion. Leaving it
-      // set strands the section on its skeleton whenever a silent fetch lands
-      // on a freshly-mounted screen where nearbyLoading is still at its `true`
-      // default (Fast Refresh, re-login, a failed earlier load).
-      setNearbyLoading(false);
-    }
-  }
+  const nearbyRadiusKm = nearbyRadiusOverride ?? profile?.nearbyRadiusKm ?? 25;
+  const nearbyHomeAddress = profile?.location ?? null;
+  const nearbyHomeLabel = profile?.location?.split(',')[0]?.replace(/\s*\d{4,6}\s*$/, '')?.trim() ?? null;
 
-  function resolveNearbyCoords(): LatLng | null {
-    if (nearbySource === 'home')   return nearbyHomeCoords   ?? nearbyCurrentCoords;
-    if (nearbySource === 'custom') return nearbyCustomCoords ?? nearbyCurrentCoords;
-    return nearbyCurrentCoords;
-  }
+  // The device's current position — cached so every tab focus doesn't re-lock
+  // GPS. A `null` result (permission denied / no fix) is a valid answer, so
+  // don't retry it.
+  const currentLocationQuery = useQuery({
+    queryKey: ['deviceLocation'],
+    queryFn: () => getCurrentLocation(),
+    enabled: user?.role === 'CREATOR',
+    staleTime: STALE.profile,
+    retry: false,
+  });
+  const nearbyCurrentCoords = currentLocationQuery.data ?? null;
+  const nearbyLocationDenied = currentLocationQuery.isFetched && currentLocationQuery.data == null;
 
-  async function initNearby(p: ApiCreatorProfile, opts: { silent?: boolean } = {}) {
-    const radius = p.nearbyRadiusKm ?? 25;
-    setNearbyRadiusKm(radius);
-    setNearbyHomeLabel(p.location?.split(',')[0]?.replace(/\s*\d{4,6}\s*$/, '')?.trim() ?? null);
-    setNearbyHomeAddress(p.location ?? null);
+  // Coordinates for a "Home" that was only ever saved as free text (no Places
+  // picker, so no lat/lng on the profile) — geocoded once and cached forever.
+  const needsGeocode = !!profile?.location && (profile.locationLat == null || profile.locationLng == null);
+  const homeGeocodeQuery = useQuery({
+    queryKey: ['geocode', profile?.location ?? null],
+    queryFn: () => geocodeAddress(profile!.location!),
+    enabled: user?.role === 'CREATOR' && needsGeocode,
+    staleTime: Infinity,
+    retry: false,
+  });
+  const nearbyHomeCoords: LatLng | null =
+    profile?.locationLat != null && profile?.locationLng != null
+      ? { lat: profile.locationLat, lng: profile.locationLng }
+      : homeGeocodeQuery.data ?? null;
 
-    const [current, home] = await Promise.all([
-      getCurrentLocation(),
-      p.locationLat != null && p.locationLng != null
-        ? Promise.resolve<LatLng>({ lat: p.locationLat, lng: p.locationLng })
-        // Profiles that only ever saved location as free text (no Places picker used)
-        // have no coordinates — geocode the text so "Home" is still selectable.
-        : p.location ? geocodeAddress(p.location) : Promise.resolve(null),
-    ]);
-    setNearbyCurrentCoords(current);
-    setNearbyHomeCoords(home);
-    setNearbyLocationDenied(current === null);
+  // Default to the saved home location whenever there is one; live GPS is only
+  // the fallback for creators who never set a location.
+  const nearbySource: NearbySource = nearbySourceOverride ?? (nearbyHomeCoords ? 'home' : 'current');
 
-    // Default to the creator's saved home address whenever one is available —
-    // only fall back to their live GPS position if no home location is set.
-    const preferredSource: NearbySource = home ? 'home' : 'current';
-    setNearbySource(preferredSource);
+  const nearbyCoords: LatLng | null =
+    nearbySource === 'home'   ? (nearbyHomeCoords   ?? nearbyCurrentCoords) :
+    nearbySource === 'custom' ? (nearbyCustomCoords ?? nearbyCurrentCoords) :
+    nearbyCurrentCoords;
 
-    const coords = preferredSource === 'home' ? (home ?? current) : current;
-    if (coords) void fetchNearby(coords, radius, { silent: opts.silent });
-    else setNearbyLoading(false);
-  }
+  // Round to ~3dp (~110m) so GPS jitter between fixes doesn't thrash the key
+  // and force a refetch on every focus.
+  const nearbyCoordsKey = nearbyCoords
+    ? { lat: Math.round(nearbyCoords.lat * 1000) / 1000, lng: Math.round(nearbyCoords.lng * 1000) / 1000 }
+    : null;
+
+  const nearbyQuery = useQuery({
+    queryKey: ['campaigns', 'nearby', { ...nearbyCoordsKey, radiusKm: nearbyRadiusKm }],
+    queryFn: () => campaignService.nearby({ lat: nearbyCoords!.lat, lng: nearbyCoords!.lng, radiusKm: nearbyRadiusKm, limit: 6 }),
+    enabled: user?.role === 'CREATOR' && !!nearbyCoords,
+    staleTime: STALE.list,
+  });
+  useRefetchOnFocusIfStale(nearbyQuery);
+  const nearbyCampaigns = nearbyQuery.data?.campaigns ?? NO_CAMPAIGNS;
 
   function handleNearbyApply(source: NearbySource, radiusKm: number, coords: LatLng) {
-    setNearbySource(source);
-    setNearbyRadiusKm(radiusKm);
+    setNearbySourceOverride(source);
+    setNearbyRadiusOverride(radiusKm);
     creatorService.updateProfile({ nearbyRadiusKm: radiusKm, nearbyUseHomeLocation: source === 'home' }).catch(() => {});
-
     if (source === 'custom') setNearbyCustomCoords(coords);
-    if (source === 'current') setNearbyCurrentCoords(coords);
-
-    void fetchNearby(coords, radiusKm);
+    // Seed the location cache so switching to "Current" doesn't re-wait on GPS.
+    if (source === 'current') queryClient.setQueryData(['deviceLocation'], coords);
   }
 
   function handleExpandNearbyRadius() {
     const next = RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100;
-    setNearbyRadiusKm(next);
-    // Persist it, otherwise the next screen focus re-runs initNearby() and
-    // snaps the radius back to the stored value.
+    setNearbyRadiusOverride(next);
+    // Persist it, otherwise the next profile refetch snaps the radius back.
     creatorService.updateProfile({ nearbyRadiusKm: next }).catch(() => {});
-    const coords = resolveNearbyCoords();
-    if (coords) void fetchNearby(coords, next, { silent: true });
   }
 
-  // Nearby uses the profile's saved location and owns its own loading/refresh
-  // state (nearbyLoading), separate from the React Query layer above.
-  // (Re)initialise it when the profile first arrives and whenever its
-  // location-relevant fields change — replacing the old "re-run on every
-  // focus" behaviour, which recomputed the same coordinates each time.
-  const nearbyKey = profile
-    ? `${profile.locationLat}|${profile.locationLng}|${profile.location ?? ''}|${profile.nearbyRadiusKm}`
-    : null;
-  const nearbyInitedOnce = useRef(false);
-  useEffect(() => {
-    if (!profile || nearbyKey === null) return;
-    void initNearby(profile, { silent: nearbyInitedOnce.current });
-    nearbyInitedOnce.current = true;
-    // Keyed by nearbyKey (the profile's location identity), not by the
-    // `profile` object or `initNearby` closure — both change every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nearbyKey]);
-
-  // If the profile query errors with nothing cached, initNearby never runs —
-  // drop the nearby skeleton so the section falls through to its empty state
-  // rather than spinning forever (mirrors discover.tsx's catch behaviour),
-  // without a setState-in-effect just to track it.
-  const showNearbySkeleton = nearbyLoading && !(profileQuery.isError && !profile);
+  // Skeleton while the campaign list is loading, or while we're still waiting
+  // on the GPS fix that is the only usable location (no saved home) — but not
+  // once the profile has hard-errored with nothing cached.
+  const showNearbySkeleton =
+    (nearbyQuery.isLoading || (!nearbyCoords && !nearbyLocationDenied && currentLocationQuery.isLoading))
+    && !(profileQuery.isError && !profile);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -247,9 +229,9 @@ export default function HomeScreen() {
         applicationsQuery.refetch(),
         recommendedQuery.refetch(),
         teamQuery.refetch(),
+        currentLocationQuery.refetch(),
+        nearbyQuery.refetch(),
       ]);
-      const coords = resolveNearbyCoords();
-      if (coords) await fetchNearby(coords, nearbyRadiusKm, { silent: true });
     } finally {
       setRefreshing(false);
     }

@@ -54,7 +54,7 @@
       },
       "package": "com.sundarban.kolab",
       "googleServicesFile": "./google-services.json",
-      "scheme": "com.sundarban.kolab"
+      "scheme": ["com.sundarban.kolab", "fb1740519673635792"]
     },
     "web": {
       "output": "static",
@@ -68,10 +68,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#4F46E5",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 248
         }
       ],
       [

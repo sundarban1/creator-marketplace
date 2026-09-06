@@ -1,6 +1,7 @@
 import './instrument'; // Sentry.init — must run before express/other modules are required; also loads and validates env first
 import express from 'express';
 
+import { installProcessGuards } from './config/processGuards';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { timezoneMiddleware } from './middleware/timezone';
 import { languageMiddleware } from './middleware/language';
@@ -12,6 +13,8 @@ import { registerHealthCheck } from './routes/health';
 import { registerApiDocs } from './routes/docs';
 import { registerApiRoutes } from './routes';
 import { startServer } from './server';
+
+installProcessGuards();
 
 const app = express();
 

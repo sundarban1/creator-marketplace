@@ -136,6 +136,7 @@ function FlatInput({ value, onChangeText, placeholder, icon, trailing, secureTog
   error?: string;
 }) {
   const C = useAppColors();
+  const { isDark } = useIsDark();
   const s = useMemo(() => makeStyles(C), [C]);
   const [hidden, setHidden] = useState(secureTextEntry ?? false);
   const [focused, setFocused] = useState(false);
@@ -144,11 +145,14 @@ function FlatInput({ value, onChangeText, placeholder, icon, trailing, secureTog
     <View>
       <View style={[
         s.flatInputRow,
-        { backgroundColor: '#FFFFFF', borderColor: focused ? ACCENT : FIELD_BORDER },
+        // Dark mode: fill with the page ground (near-black) so the field reads
+        // as a well on the surface card, not a white block; keep the cream
+        // hairline only in light where it belongs to the saffron identity.
+        { backgroundColor: isDark ? C.background : '#FFFFFF', borderColor: focused ? C.brinjal1 : isDark ? C.border : FIELD_BORDER },
         !!error && { borderColor: C.error },
       ]}>
         {!!icon && (
-          <FontAwesome5 name={icon} solid size={15} color={error ? C.error : focused ? ACCENT : C.textSecondary} />
+          <FontAwesome5 name={icon} solid size={15} color={error ? C.error : focused ? C.brinjal1 : C.textSecondary} />
         )}
         <TextInput
           value={value}
@@ -236,6 +240,13 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
         <View style={[s.dividerLine, { backgroundColor: C.border }]} />
       </View>
 
+      {/* Provider errors sit directly under the "OR" divider, above the
+          provider buttons, so the message is right where the user is looking
+          when a sign-in attempt bounces back. */}
+      {!!googleError && <FormBanner tone="error" icon="exclamation-circle" text={googleError} />}
+      {FACEBOOK_LOGIN_ENABLED && !!facebookError && <FormBanner tone="error" icon="exclamation-circle" text={facebookError} />}
+      {!!appleError && <FormBanner tone="error" icon="exclamation-circle" text={appleError} />}
+
       <View style={s.socialCardRow}>
         <Pressable
           style={({ pressed }) => [
@@ -286,14 +297,10 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
           accessibilityLabel={appleLabel}>
           {appleLoading
             ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.socialCardIcon} contentFit="contain" />}
+            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.socialCardIcon} contentFit="contain" tintColor={C.text} />}
           <Text style={[s.socialCardText, { color: C.text }]}>{appleLabel}</Text>
         </Pressable>
       )}
-
-      {!!googleError && <FormBanner tone="error" icon="exclamation-circle" text={googleError} />}
-      {FACEBOOK_LOGIN_ENABLED && !!facebookError && <FormBanner tone="error" icon="exclamation-circle" text={facebookError} />}
-      {!!appleError && <FormBanner tone="error" icon="exclamation-circle" text={appleError} />}
     </View>
   );
 }
@@ -561,7 +568,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
             accessibilityRole="checkbox"
             accessibilityState={{ checked: rememberMe }}
             accessibilityLabel={t('auth.login.rememberMe')}>
-            <FontAwesome5 name={rememberMe ? 'check-square' : 'square'} solid={rememberMe} size={18} color={rememberMe ? ACCENT : C.textSecondary} />
+            <FontAwesome5 name={rememberMe ? 'check-square' : 'square'} solid={rememberMe} size={18} color={rememberMe ? C.brinjal1 : C.textSecondary} />
             <Text style={s.checkRowText}>{t('auth.login.rememberMe')}</Text>
           </Pressable>
           <Pressable onPress={() => router.push('/forgot-password')} hitSlop={8}>
@@ -576,7 +583,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           accessibilityRole="button"
           accessibilityLabel={t('auth.login.loginBtn')}
           style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-          <LinearGradient colors={[ACCENT, ACCENT_2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.primaryBtn}>
+          <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.primaryBtn}>
             {loading
               ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
               : <Text style={s.primaryBtnText}>{t('auth.login.loginBtn')}</Text>}
@@ -783,7 +790,7 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
           accessibilityRole="button"
           accessibilityLabel={t('auth.signup.createAccountBtn')}
           style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-          <LinearGradient colors={[ACCENT, ACCENT_2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.primaryBtn}>
+          <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.primaryBtn}>
             {loading
               ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
               : <Text style={s.primaryBtnText}>{t('auth.signup.createAccountBtn')}</Text>}
@@ -1317,7 +1324,7 @@ export default function LoginScreen() {
 
 function makeStyles(C: typeof COLORS) {
   return StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+  root: { flex: 1, backgroundColor: C.background },
   // Light-brinjal wash carried behind the whole screen (not just the hero) —
   // sits on the white root, deepening slightly toward the bottom. Every layer
   // above it (scroll body, form shell, footer) is transparent so it shows
@@ -1363,8 +1370,17 @@ function makeStyles(C: typeof COLORS) {
   },
   brandLogo:    { width: 208, height: 74 },
 
-  headlineWrap:      { alignItems: 'center' },
-  headline:          { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: ON_HERO, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
+  headlineWrap:      { alignSelf: 'stretch', alignItems: 'center' },
+  // This heading renders Devanagari — Poppins has no देवनागरी glyphs, so Android
+  // shapes it with the system fallback font. Two things bite on Android only:
+  //  1. maxWidth: without a bounded width (every ancestor is alignItems:'center')
+  //     RN measures the Text unconstrained and never wraps.
+  //  2. no explicit lineHeight: when the line DOES wrap ("हामी मिलेर, / सम्भावनालाई"
+  //     on a narrow screen), a lineHeight below the fallback font's natural extent
+  //     makes Android's CustomLineHeightSpan clamp the ascent and render the
+  //     wrapped line blank — which is why "सम्भावनालाई" was missing. Letting the
+  //     font pick its own line height keeps every wrapped line visible.
+  headline:          { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: ON_HERO, textAlign: 'center', maxWidth: 340 },
   headline2Wrap:     { alignItems: 'center' },
   headline2:         { color: ON_HERO },
   // Amazon-style swoosh — a shallow smile arc under the headline. Built from a
@@ -1387,7 +1403,7 @@ function makeStyles(C: typeof COLORS) {
   formCard:  { borderRadius: RADIUS.xl, borderWidth: 1, padding: SPACING.xl, gap: SPACING.lg },
 
   formHeading:         { gap: 2, alignItems: 'center' },
-  formHeadingTitle:    { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: ACCENT, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
+  formHeadingTitle:    { fontSize: FONT_SIZE.xl, fontFamily: F.bold, color: C.brinjal1, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xl) },
   formHeadingSubtitle: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: C.textSecondary, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
 
   // Role chip — confirms the choice made on /account-type and links back to it.
@@ -1438,7 +1454,7 @@ function makeStyles(C: typeof COLORS) {
   primaryBtn:     { minHeight: 54, borderRadius: RADIUS.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, overflow: 'hidden' },
   primaryBtnText: { fontSize: FONT_SIZE.md, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3, lineHeight: lineHeightFor(FONT_SIZE.md) },
 
-  forgotText: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, color: ACCENT },
+  forgotText: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, color: C.brinjal1 },
 
   // ── Social auth ── full-width stacked cards, as in the mock.
   socialGroup:       { gap: SPACING.md },
@@ -1466,11 +1482,11 @@ function makeStyles(C: typeof COLORS) {
 
   // Switch-tab bar — pinned below the scroll, the temple frieze running faintly
   // behind the "Create an account" prompt.
-  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(COLORS.brinjal2, 0.14), paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
-  // The prompt sits in a white pill so it stays legible over the temple frieze.
-  switchTabPill: { backgroundColor: '#FFFFFF', borderRadius: RADIUS.full, borderWidth: 1, borderColor: withAlpha(COLORS.brinjal2, 0.14), paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg },
+  footerBar:     { position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border, paddingTop: SPACING.lg, paddingHorizontal: SCREEN_GUTTER, minHeight: 56 },
+  // The prompt sits in a surface pill so it stays legible over the temple frieze.
+  switchTabPill: { backgroundColor: C.surface, borderRadius: RADIUS.full, borderWidth: 1, borderColor: C.border, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg },
   switchTabText: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, color: COLORS.accent, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm) },
-  switchTabLink: { fontFamily: F.bold, color: COLORS.brinjal1 },
+  switchTabLink: { fontFamily: F.bold, color: C.brinjal1 },
 
   // Temple frieze — a faint line-art pagoda skyline along the bottom edge.
   temple:     { position: 'absolute', left: 0, right: 0, bottom: 0, height: 88, opacity: 0.5 },

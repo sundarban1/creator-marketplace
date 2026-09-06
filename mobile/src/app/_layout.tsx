@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Application from 'expo-application';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { LogBox, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   useFonts,
@@ -39,6 +39,23 @@ import { initSentry } from '@/utilities/sentry';
 import { isVersionBelowMinimum } from '@/utilities/versionCheck';
 import { F } from '@/utilities/constants';
 import type { UserRole } from '@/types';
+
+// Dev-only noise from expo-router internals: on Android `Linking.getInitialURL()`
+// always resolves asynchronously, and expo-router's forked NavigationContainer
+// (via useThenable → useLinking.native) calls `setLastUnhandledLink` from that
+// promise's `.then` during its very first render — before the fiber commits —
+// whenever the launch URL is a non-null string (which in dev is every launch,
+// because the dev client opens the app with the Metro connection deep link).
+// React then warns "Can't perform a React state update on a component that
+// hasn't mounted yet". It's harmless (the update lands on mount), never fires in
+// a production launcher-icon start, and does not touch the OAuth deep-link path
+// (+native-intent returns null for oauthredirect / fb://authorize before
+// useLinking sees the URL). Suppress the LogBox spam only; keep it in __DEV__.
+if (__DEV__) {
+  LogBox.ignoreLogs([
+    /Can't perform a React state update on a component that hasn't mounted yet/,
+  ]);
+}
 
 // Must run before the provider tree renders — this is what wires up global JS
 // exception / unhandled-promise-rejection capture for the whole app.
@@ -410,7 +427,7 @@ function RootLayout() {
   // session (this is what caused chat's composer icons to intermittently pop in
   // a beat after the message list, since it's the icons that were blank, not the
   // surrounding layout — the message text uses Poppins, already preloaded here).
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     'Poppins-Regular':    Poppins_400Regular,
     'Poppins-Medium':     Poppins_500Medium,
     'Poppins-SemiBold':   Poppins_600SemiBold,
@@ -420,7 +437,18 @@ function RootLayout() {
     ...FontAwesome5.font,
   });
 
-  if (!fontsLoaded) return null;
+  // Hard ceiling on how long the native splash may be held for font loading.
+  // useFonts has been seen to sit pending indefinitely on some Android devices
+  // (and reports errors rather than resolving on others) — either way the app
+  // must still boot. Missing custom fonts just fall back to the system face
+  // and re-apply once loaded; a permanently stuck splash is far worse.
+  const [fontWaitElapsed, setFontWaitElapsed] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setFontWaitElapsed(true), 3000);
+    return () => clearTimeout(id);
+  }, []);
+
+  if (!fontsLoaded && !fontError && !fontWaitElapsed) return null;
 
   return (
     <Sentry.ErrorBoundary

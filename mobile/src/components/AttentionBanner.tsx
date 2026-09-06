@@ -12,14 +12,17 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 // the same visual language, not four near-identical one-offs.
 //
 // Light theme is a white card with an amber border + amber icon/text; dark
-// theme shifts to a burnt-orange tint on a dark surface (a light card would
-// glare against the dark UI), keeping the same "warm alert" meaning in both.
+// theme sits on the same near-black surface + hairline grey border the app's
+// search field uses (see SearchInput — C.background / C.border), so the banner
+// reads as part of the dark UI rather than a glaring warm card. The icon chip
+// and icon/title/sub text stay warm in both themes, keeping the "needs you"
+// meaning.
 const ATTENTION_LIGHT = {
   bg: '#FFFFFF', border: '#FDE68A', iconBg: '#FEF3C7',
   icon: '#F3742E', title: '#F3742E', sub: '#F3742E',
 };
 const ATTENTION_DARK = {
-  bg: '#2A1608', border: '#7A3208', iconBg: '#3D1C05',
+  bg: '#000000', border: '#262626', iconBg: '#3D1C05',
   icon: '#F76307', title: '#F87171', sub: '#F87171',
 };
 
