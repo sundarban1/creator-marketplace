@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useAppColors } from '@/context/ThemeContext';
+import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -455,13 +455,17 @@ export function FeaturedToggle({ value, onChange, quota, colors, t, labelKey = '
   lockedSubKey?: string;
 }) {
   const C = colors;
+  const isDark = useIsDark();
   const locked = quota !== null && !quota.unlimited && quota.remaining <= 0;
+  // "On" tint: warm cream in light mode, a dark amber-black in dark mode so the
+  // card doesn't flash white — the amber border + switch already signal "on".
+  const onBg = isDark ? '#1F1A0E' : '#FFF8E8';
 
   return (
     <Pressable
       style={[
         ft.toggle,
-        { backgroundColor: value ? '#FFF8E8' : C.surface, borderColor: value ? '#F59E0B' : C.border },
+        { backgroundColor: value ? onBg : C.surface, borderColor: value ? '#F59E0B' : C.border },
         locked && ft.locked,
       ]}
       onPress={() => { if (!locked) onChange(!value); }}

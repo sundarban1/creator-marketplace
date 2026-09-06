@@ -130,7 +130,8 @@
       ],
       "./plugins/withFixMapsPodfile.js",
       "./plugins/withDisableFirebaseSPM.js",
-      "./plugins/withUploadServiceForegroundType.js"
+      "./plugins/withUploadServiceForegroundType.js",
+      "./plugins/withForceUploadServiceVersion.js"
     ],
     "experiments": {
       "typedRoutes": true,

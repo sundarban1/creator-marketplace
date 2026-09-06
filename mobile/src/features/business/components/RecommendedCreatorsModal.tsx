@@ -130,7 +130,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                 return (
                   <Pressable
                     key={creator.id}
-                    style={[s.card, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? `${C.brinjal1}0A` : '#fff' }]}
+                    style={[s.card, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? `${C.brinjal1}0A` : C.surface }]}
                     onPress={() => toggle(creator.id)}>
 
                     <View style={s.cardTop}>
