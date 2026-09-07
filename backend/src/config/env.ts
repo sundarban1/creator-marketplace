@@ -119,10 +119,20 @@ const envSchema = z.object({
   // URLs eSewa's browser flow needs (unlike Khalti, eSewa gives no single
   // "initiate" API call that returns a hosted URL for us).
   ESEWA_RETURN_BASE_URL: z.string().optional(),
-  // Sparrow SMS (Nepal). sendSms() only sends when SPARROW_SMS_TOKEN is set —
-  // otherwise it logs and no-ops, so the signup / forgot-password OTP flows keep
-  // working without a gateway. SMS is used for those two OTPs only, never for
-  // other notifications.
+  // SMS gateways (Nepal). sendSms() tries SMS Pasal first, then falls back to
+  // Sparrow SMS. It only sends when at least one is configured — otherwise it
+  // logs and no-ops, so the signup / forgot-password OTP flows keep working
+  // without a gateway. SMS is used for those two OTPs only, never for other
+  // notifications.
+  //
+  // SMS Pasal (primary). Configured by SMSPASAL_API_KEY.
+  SMSPASAL_API_KEY: z.string().optional(),
+  // Approved sender identity for SMS Pasal. Falls back to "Kolab" when unset.
+  SMSPASAL_SENDER_ID: z.string().optional(),
+  // Optional campaign / route overrides (account defaults are used when unset).
+  SMSPASAL_CAMPAIGN_ID: z.string().optional(),
+  SMSPASAL_ROUTE_ID: z.string().optional(),
+  // Sparrow SMS (fallback). Configured by SPARROW_SMS_TOKEN.
   SPARROW_SMS_TOKEN: z.string().optional(),
   // Sender name shown on the SMS. Falls back to "Kolab" when unset; override
   // only if a different sender identity has been approved with Sparrow.

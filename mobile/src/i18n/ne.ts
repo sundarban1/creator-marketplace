@@ -2902,6 +2902,7 @@ const ne = {
     budgetSummaryTotalPrimaryRange: 'जम्मा रु. {{min}} – {{max}}',
     budgetNotSetTitle:            'भुक्तानी सेट गरिएको छैन',
     budgetNotSetBody:             'प्रत्येक क्रिएटरलाई कति भुक्तानी गर्ने राख्नुहोस् — पब्लिस गर्न आवश्यक।',
+    budgetMinHint:                'न्यूनतम प्रति क्रिएटर रु. ५००।',
     budgetAmbiguousTitle:         'रु. {{amount}} को बजेट कसरी लागू गर्ने?',
     budgetAmbiguousPerCreator:    'रु. {{amount}} प्रति क्रिएटर',
     budgetAmbiguousPerCreatorSub: 'जम्मा रु. {{total}}',
@@ -3035,6 +3036,10 @@ const ne = {
     warnBodyPost: '। प्रकाशन अघि सबै विवरणहरू ध्यानपूर्वक हेर्नुहोस्।\n\nआफ्नो इभेन्टको शीर्षक, विवरण, बजेट र आवश्यकताहरू सही र पूर्ण छन् भनी सुनिश्चित गर्नुहोस्।',
     warnGoBack: 'फर्केर हेर्नुहोस्',
     warnPublishNow: 'अहिले प्रकाशित गर्नुहोस्',
+    budgetFloorWarnTitle: 'बजेट न्यूनतमभन्दा कम छ',
+    budgetFloorWarnPerCreatorBody: 'प्रत्येक क्रिएटरलाई कम्तीमा रु. {{min}} भुक्तानी हुनुपर्छ। आफ्नो प्रम्प्टमा बजेट अपडेट गरी फेरि प्रयास गर्नुहोस्।',
+    budgetFloorWarnTotalBody: 'तपाईंले {{creators}} जना क्रिएटर माग्नुभयो, त्यसैले कुल बजेट कम्तीमा रु. {{min}} हुनुपर्छ (प्रति क्रिएटर रु. ५००)। आफ्नो प्रम्प्टमा बजेट अपडेट गरी फेरि प्रयास गर्नुहोस्।',
+    budgetFloorWarnCta: 'प्रम्प्ट सम्पादन गर्नुहोस्',
   },
 
   // ── Create Opportunity (AI-first flow, Paid Campaigns only) ──────

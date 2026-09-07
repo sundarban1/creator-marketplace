@@ -83,8 +83,11 @@ export function mapAiCampaignDraftToForm(draft: AiCampaignDraft, aiPrompt: strin
     aiBudgetMin: draft.budgetMin,
     aiBudgetMax: draft.budgetMax,
     budgetRateType: draft.budgetRateType ?? 'FIXED',
-    budgetInputType: draft.budgetStatus === 'STATED_TOTAL' ? 'TOTAL' : 'PER_CREATOR',
-    budgetSet: draft.budgetStatus === 'STATED_PER_CREATOR' && draft.budgetMax > 0,
+    // The budget editor is per-creator only (the Per creator / Total pills were
+    // removed). A stated whole-campaign total is already divided down to a
+    // per-creator figure by the backend, so it counts as a set budget too.
+    budgetInputType: 'PER_CREATOR',
+    budgetSet: (draft.budgetStatus === 'STATED_PER_CREATOR' || draft.budgetStatus === 'STATED_TOTAL') && draft.budgetMax > 0,
     aiBudgetStatus: draft.budgetStatus ?? 'NOT_STATED',
     aiStatedAmount: draft.statedAmount ?? null,
     completionType:   draft.completionType,

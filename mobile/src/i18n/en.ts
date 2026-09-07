@@ -2931,6 +2931,7 @@ const en = {
     budgetSummaryTotalPrimaryRange: 'Rs. {{min}} – {{max}} total',
     budgetNotSetTitle:            'Payment not set',
     budgetNotSetBody:             'Enter what each creator will be paid — required before you can publish.',
+    budgetMinHint:                'Minimum Rs. 500 per creator.',
     budgetAmbiguousTitle:         'How should the Rs. {{amount}} budget be applied?',
     budgetAmbiguousPerCreator:    'Rs. {{amount}} per creator',
     budgetAmbiguousPerCreatorSub: 'Rs. {{total}} total',
@@ -3076,6 +3077,10 @@ const en = {
     warnBodyPost: '. Please review all details carefully before publishing.\n\nMake sure your event title, description, budget, and requirements are accurate and complete.',
     warnGoBack:   'Go Back & Review',
     warnPublishNow: 'Publish Now',
+    budgetFloorWarnTitle: 'Budget is below the minimum',
+    budgetFloorWarnPerCreatorBody: 'Each creator must be paid at least Rs. {{min}}. Update the budget in your prompt and try again.',
+    budgetFloorWarnTotalBody: 'You asked for {{creators}} creators, so the total budget must be at least Rs. {{min}} (Rs. 500 per creator). Update the budget in your prompt and try again.',
+    budgetFloorWarnCta: 'Edit prompt',
   },
 
   // ── Create Opportunity (AI-first flow, Paid Campaigns only) ──────

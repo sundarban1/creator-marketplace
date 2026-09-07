@@ -348,6 +348,8 @@ export default function EditCampaignScreen() {
       if (!editForm.location.trim())     errs.location     = t('campaignDetail.errLocationRequired');
       if (!editForm.budgetMin.trim() || isNaN(Number(editForm.budgetMin))) {
         errs.budgetMin = t('campaignDetail.errMinBudgetRequired');
+      } else if (Number(editForm.budgetMin) < 500) {
+        errs.budgetMin = t('createEvent.errBudgetMin');
       }
       if (!editForm.budgetMax.trim() || isNaN(Number(editForm.budgetMax))) {
         errs.budgetMax = t('campaignDetail.errMaxBudgetRequired');

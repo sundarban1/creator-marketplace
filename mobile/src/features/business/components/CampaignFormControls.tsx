@@ -384,26 +384,6 @@ export function PerCreatorBudgetPicker({
   return (
     <View style={{ gap: 10, opacity: disabled ? 0.6 : 1 }}>
       <View style={pcb.toggleRow}>
-        {(['PER_CREATOR', 'TOTAL'] as const).map((it) => {
-          const sel = inputType === it;
-          return (
-            <Pressable
-              key={it}
-              disabled={disabled}
-              style={[pcb.toggle, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
-              onPress={() => {
-                if (it === inputType) return;
-                onChange(budgetMin, budgetMax, rateType, it);
-              }}>
-              <Text style={[pcb.toggleText, { color: sel ? C.brinjal1 : C.textSecondary }]}>
-                {t(it === 'PER_CREATOR' ? 'createEvent.budgetInputPerCreator' : 'createEvent.budgetInputTotal')}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={pcb.toggleRow}>
         {(['FIXED', 'RANGE'] as const).map((rt) => {
           const sel = rateType === rt;
           return (
@@ -458,6 +438,8 @@ export function PerCreatorBudgetPicker({
         </View>
       )}
 
+      <Text style={[pcb.minHint, { color: C.textSecondary }]}>{t('createEvent.budgetMinHint')}</Text>
+
       {isSet ? (
         <View style={[pcb.summary, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
           <Text style={[pcb.summaryPrimary, { color: C.brinjal1 }]}>
@@ -492,6 +474,7 @@ const pcb = StyleSheet.create({
   toggleRow:  { flexDirection: 'row', gap: 8 },
   toggle:     { flex: 1, borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 10, alignItems: 'center' },
   toggleText: { fontSize: 13, fontFamily: F.semibold },
+  minHint:    { fontSize: 12, fontFamily: F.regular, marginTop: -2 },
   summary:          { borderRadius: RADIUS.md, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, gap: 2 },
   summaryPrimary:   { fontSize: 15, fontFamily: F.bold },
   summarySecondary: { fontSize: 12, fontFamily: F.regular },

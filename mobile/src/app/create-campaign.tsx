@@ -770,6 +770,10 @@ export default function CreateCampaignScreen() {
   const [publishWarnVisible, setPublishWarnVisible] = useState(false);
   // Open Event publish — warn once when the event has no start time set.
   const [timeWarnVisible, setTimeWarnVisible] = useState(false);
+  // AI Opportunity flow — the prompt named a budget the AI heard correctly but
+  // that falls below the Rs. 500-per-creator floor. Shows a warning modal and
+  // keeps the brand on the prompt screen so they can fix the amount and retry.
+  const [budgetWarn, setBudgetWarn] = useState<{ creators: number; isTotal: boolean } | null>(null);
   const [publishedCampaign, setPublishedCampaign] = useState<{ id: string; category: string; lat: number | null; lng: number | null; budgetMin?: number; budgetMax?: number } | null>(null);
 
   function handleRecommendedDone() {
@@ -1104,6 +1108,21 @@ export default function CreateCampaignScreen() {
     const inputSource = promptOverride !== undefined ? 'voice' : 'text';
     try {
       const draft = await campaignService.generateWithAi(prompt, inputSource);
+      // The AI never invents a budget, but it can faithfully report one the
+      // brand stated that's below the floor — Rs. 500 per creator, so
+      // Rs. 500 × N as a campaign-wide total. Catch it before the flow leaves
+      // the prompt screen: warn, keep the typed prompt, let them fix the number.
+      const statedBudget = draft.budgetStatus === 'STATED_PER_CREATOR' || draft.budgetStatus === 'STATED_TOTAL';
+      const perCreatorLow = draft.budgetRateType === 'RANGE'
+        ? (draft.budgetMin || draft.budgetMax)
+        : (draft.budgetMax || draft.budgetMin);
+      if (statedBudget && perCreatorLow > 0 && perCreatorLow < MIN_BUDGET_PER_CREATOR) {
+        setBudgetWarn({
+          creators: draft.creatorsNeeded || form.creatorsNeeded || 1,
+          isTotal: draft.budgetStatus === 'STATED_TOTAL',
+        });
+        return;
+      }
       setForm((prev) => ({ ...prev, ...mapAiCampaignDraftToForm(draft, prompt, prev, providerCategoryOptions) }));
       // The app connects content creators with businesses only — every campaign
       // is a single content-creator ask, no multi-role breakdown.
@@ -1567,8 +1586,10 @@ export default function CreateCampaignScreen() {
     // The AI heard a figure it couldn't place, and the brand hasn't answered
     // the "per creator or total?" chooser yet — can't move on until they do.
     if (form.aiBudgetStatus === 'AMBIGUOUS' && !form.budgetSet) return t('createEvent.errBudgetNotSet');
-    // No per-creator amount at all (AI never heard one, or the brand cleared it).
-    if (!form.budgetSet || form.aiBudgetMax <= 0) return t('createEvent.errBudgetNotSet');
+    // No per-creator amount at all (AI never heard one, or the brand cleared the
+    // field). A valid figure — typed here or auto-filled from the prompt — is all
+    // Continue needs; the budgetSet flag isn't consulted for the amount itself.
+    if (form.aiBudgetMax <= 0) return t('createEvent.errBudgetNotSet');
     if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) return t('createEvent.errBudgetMin');
     // Range mode: nothing else stops a max typed below the min.
     if (form.aiBudgetMax < form.aiBudgetMin) return t('createEvent.errBudgetMinMax');
@@ -3487,6 +3508,33 @@ export default function CreateCampaignScreen() {
                 style={[s.warnConfirmBtn, { backgroundColor: C.brinjal1 }]}
                 onPress={() => { setTimeWarnVisible(false); void handlePublish(); }}>
                 <Text style={s.warnConfirmText}>{t('createInvitation.timeWarnSkip')}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* AI Opportunity — budget below the Rs. 500-per-creator floor */}
+      <Modal visible={!!budgetWarn} transparent animationType="fade" onRequestClose={() => setBudgetWarn(null)}>
+        <Pressable style={s.warnScrim} onPress={() => setBudgetWarn(null)}>
+          <Pressable style={[s.warnSheet, { backgroundColor: C.surface }]} onPress={(e) => e.stopPropagation()}>
+            <View style={s.warnIconWrap}>
+              <FontAwesome5 name="exclamation-triangle" solid size={32} color="#F59E0B" />
+            </View>
+            <Text style={[s.warnTitle, { color: C.text }]}>{t('createEvent.budgetFloorWarnTitle')}</Text>
+            <Text style={[s.warnBody, { color: C.textSecondary }]}>
+              {budgetWarn?.isTotal
+                ? t('createEvent.budgetFloorWarnTotalBody', {
+                    creators: budgetWarn.creators,
+                    min: (budgetWarn.creators * MIN_BUDGET_PER_CREATOR).toLocaleString(),
+                  })
+                : t('createEvent.budgetFloorWarnPerCreatorBody', { min: MIN_BUDGET_PER_CREATOR.toLocaleString() })}
+            </Text>
+            <View style={s.warnActions}>
+              <Pressable
+                style={[s.warnConfirmBtn, { backgroundColor: C.brinjal1 }]}
+                onPress={() => setBudgetWarn(null)}>
+                <Text style={s.warnConfirmText}>{t('createEvent.budgetFloorWarnCta')}</Text>
               </Pressable>
             </View>
           </Pressable>
