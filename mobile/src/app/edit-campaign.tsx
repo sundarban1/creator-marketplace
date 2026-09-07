@@ -30,7 +30,7 @@ import {
   DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
 import {
-  SectionCard, ChipGroup, ChipMultiGroup, PerCreatorBudgetPicker, Stepper,
+  SectionCard, ChipGroup, ChipMultiGroup, PerCreatorBudgetPicker, budgetPickerResetKey, Stepper,
   DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
 import { ListingHeroCard, PreviewRow } from '@/features/business/components/CampaignSummary';
@@ -143,6 +143,9 @@ type EditForm = {
   budgetMin: string;
   budgetMax: string;
   budgetRateType: 'FIXED' | 'RANGE';
+  // Display echo — whether the business entered the amount per creator or as a
+  // campaign-wide total. budgetMin/budgetMax stay per-creator either way.
+  budgetInputType: 'PER_CREATOR' | 'TOTAL';
   deadline: Date | null;
   location: string;
   locationType: 'ONSITE' | 'REMOTE';
@@ -195,7 +198,7 @@ export default function EditCampaignScreen() {
   const [editForm, setEditForm] = useState<EditForm>({
     title: '', description: '', featureImageUrl: null, template: '',
     deliverables: DEFAULT_DELIVERABLES, hashtags: [], creatorsNeeded: '1', completionType: null,
-    status: 'active', budgetMin: '', budgetMax: '', budgetRateType: 'FIXED', deadline: null,
+    status: 'active', budgetMin: '', budgetMax: '', budgetRateType: 'FIXED', budgetInputType: 'PER_CREATOR', deadline: null,
     location: '', locationType: 'ONSITE', isFeatured: false,
     eventDate: null, eventTime: null, venue: '', capacity: '20', benefits: [],
   });
@@ -284,6 +287,7 @@ export default function EditCampaignScreen() {
           budgetMin:    String(c.budgetRaw ?? ''),
           budgetMax:    String(c.budgetMax ?? ''),
           budgetRateType: c.budgetRateType ?? ((c.budgetRaw ?? 0) === (c.budgetMax ?? 0) ? 'FIXED' : 'RANGE'),
+          budgetInputType: c.budgetInputType ?? 'PER_CREATOR',
           deadline:     c.deadline ? new Date(c.deadline) : null,
           location:     c.location ?? '',
           locationType: c.locationType ?? 'ONSITE',
@@ -405,6 +409,7 @@ export default function EditCampaignScreen() {
             budgetMin:    Number(editForm.budgetMin),
             budgetMax:    Number(editForm.budgetMax),
             budgetRateType: editForm.budgetRateType,
+            budgetInputType: editForm.budgetInputType,
             location:     editForm.locationType === 'REMOTE' ? null : editForm.location.trim(),
             locationType: editForm.locationType,
             isFeatured:   editForm.isFeatured,
@@ -758,11 +763,13 @@ export default function EditCampaignScreen() {
             <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={setCreatorsNeeded} colors={C} />
             <Text style={[s.label, { color: C.text }]}>{t('createEvent.secBudgetTitle')}</Text>
             <PerCreatorBudgetPicker
+              key={budgetPickerResetKey({ inputType: editForm.budgetInputType, rateType: editForm.budgetRateType, creatorsNeeded: Number(editForm.creatorsNeeded) || 1 })}
               rateType={editForm.budgetRateType}
+              inputType={editForm.budgetInputType}
               budgetMin={Number(editForm.budgetMin) || 0}
               budgetMax={Number(editForm.budgetMax) || 0}
               creatorsNeeded={Number(editForm.creatorsNeeded) || 1}
-              onChange={(min, max, rt) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); updateEdit('budgetRateType', rt); }}
+              onChange={(min, max, rt, it) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); updateEdit('budgetRateType', rt); updateEdit('budgetInputType', it); }}
               colors={C}
               error={editErrors.budgetMin || editErrors.budgetMax}
               disabled={hasProposals}
@@ -778,11 +785,13 @@ export default function EditCampaignScreen() {
             <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={setCreatorsNeeded} colors={C} />
             <Text style={[s.label, { color: C.text }]}>{t('createEvent.secBudgetTitle')}</Text>
             <PerCreatorBudgetPicker
+              key={budgetPickerResetKey({ inputType: editForm.budgetInputType, rateType: editForm.budgetRateType, creatorsNeeded: Number(editForm.creatorsNeeded) || 1 })}
               rateType={editForm.budgetRateType}
+              inputType={editForm.budgetInputType}
               budgetMin={Number(editForm.budgetMin) || 0}
               budgetMax={Number(editForm.budgetMax) || 0}
               creatorsNeeded={Number(editForm.creatorsNeeded) || 1}
-              onChange={(min, max, rt) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); updateEdit('budgetRateType', rt); }}
+              onChange={(min, max, rt, it) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); updateEdit('budgetRateType', rt); updateEdit('budgetInputType', it); }}
               colors={C}
               error={editErrors.budgetMin || editErrors.budgetMax}
               disabled={hasProposals}

@@ -281,11 +281,16 @@ const bt = StyleSheet.create({
 });
 
 // ─── PerCreatorBudgetPicker ─────────────────────────────────────────────────
-// Paid-campaign budget, framed per-creator (AI paid-event budget spec). The
-// business picks a flat fee or a range, types the per-creator amount, and sees
-// the campaign-wide total computed live. When the AI heard a single figure it
-// couldn't place (spec §3) this renders a "per creator or total?" chooser
-// instead of the inputs.
+// Paid-campaign budget (AI paid-event budget spec). The business picks a flat
+// fee or a range, chooses whether the amount is per creator or a campaign-wide
+// total, types the figure(s), and sees both framings computed live. When the
+// AI heard a single figure it couldn't place (spec §3) this renders a "per
+// creator or total?" chooser instead of the inputs.
+//
+// `budgetMin`/`budgetMax` are ALWAYS the per-creator bounds (the source of
+// truth everywhere — proposals, escrow, the publish payload). In TOTAL mode the
+// visible inputs show `perCreator × creatorsNeeded` and divide back down on
+// change, so the rest of the app never sees a total.
 
 function toInt(raw: string): number {
   return parseInt(raw.replace(/[^0-9]/g, ''), 10) || 0;
@@ -294,15 +299,26 @@ function rs(n: number): string {
   return n.toLocaleString();
 }
 
+// PerCreatorBudgetPicker seeds its visible fields from props once on mount and
+// keeps them as the user types. Pass this as its `key` so switching the
+// per-creator/total mode, the flat/range mode, the creator count, or resolving
+// the AI's ambiguous amount remounts it and re-seeds from the current props.
+export function budgetPickerResetKey(o: {
+  inputType: string; rateType: string; creatorsNeeded: number; budgetStatus?: string;
+}): string {
+  return `bpk:${o.inputType}:${o.rateType}:${o.creatorsNeeded}:${o.budgetStatus ?? ''}`;
+}
+
 export function PerCreatorBudgetPicker({
-  rateType, budgetMin, budgetMax, creatorsNeeded, onChange,
+  rateType, inputType, budgetMin, budgetMax, creatorsNeeded, onChange,
   ambiguousAmount, onResolveAmbiguous, colors, error, disabled,
 }: {
   rateType: 'FIXED' | 'RANGE';
+  inputType: 'PER_CREATOR' | 'TOTAL';
   budgetMin: number;
   budgetMax: number;
   creatorsNeeded: number;
-  onChange: (min: number, max: number, rateType: 'FIXED' | 'RANGE') => void;
+  onChange: (min: number, max: number, rateType: 'FIXED' | 'RANGE', inputType: 'PER_CREATOR' | 'TOTAL') => void;
   ambiguousAmount?: number | null;
   onResolveAmbiguous?: (mode: 'PER_CREATOR' | 'TOTAL') => void;
   colors: ReturnType<typeof useAppColors>;
@@ -312,6 +328,24 @@ export function PerCreatorBudgetPicker({
   const C = colors;
   const { t } = useLanguage();
   const count = Math.max(1, creatorsNeeded || 1);
+
+  // The visible fields hold per-creator figures in PER_CREATOR mode and
+  // campaign-wide totals in TOTAL mode. They're local state (seeded from the
+  // per-creator props, the source of truth) so typing a total that doesn't
+  // divide evenly by the creator count isn't yanked around by the round-trip
+  // through the parent on every keystroke. Callers pass a `key` that folds in
+  // inputType / rateType / creator count so a switch to any of those remounts
+  // this and re-seeds the fields from the current props.
+  const factor = inputType === 'TOTAL' ? count : 1;
+  const [minText, setMinText] = useState(() => (budgetMin > 0 ? String(budgetMin * factor) : ''));
+  const [maxText, setMaxText] = useState(() => (budgetMax > 0 ? String(budgetMax * factor) : ''));
+
+  function emit(nextMinText: string, nextMaxText: string, nextRate: 'FIXED' | 'RANGE', nextInput: 'PER_CREATOR' | 'TOTAL') {
+    const div = nextInput === 'TOTAL' ? count : 1;
+    const pcMax = Math.floor(toInt(nextMaxText) / div);
+    const pcMin = Math.floor(toInt(nextMinText) / div);
+    onChange(nextRate === 'FIXED' ? pcMax : pcMin, pcMax, nextRate, nextInput);
+  }
 
   // Spec §3 — the brand stated one number and the AI can't tell if it's per
   // creator or total. Resolve it before showing the normal inputs.
@@ -341,13 +375,34 @@ export function PerCreatorBudgetPicker({
     );
   }
 
-  // budgetMax is the per-creator ceiling in both modes, so the campaign-wide
+  // budgetMax is the per-creator ceiling in every mode, so the campaign-wide
   // exposure is always creators × budgetMax.
   const isSet = budgetMax > 0 && (rateType === 'FIXED' || budgetMax >= budgetMin);
   const total = budgetMax * count;
+  const totalMin = budgetMin * count;
 
   return (
     <View style={{ gap: 10, opacity: disabled ? 0.6 : 1 }}>
+      <View style={pcb.toggleRow}>
+        {(['PER_CREATOR', 'TOTAL'] as const).map((it) => {
+          const sel = inputType === it;
+          return (
+            <Pressable
+              key={it}
+              disabled={disabled}
+              style={[pcb.toggle, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
+              onPress={() => {
+                if (it === inputType) return;
+                onChange(budgetMin, budgetMax, rateType, it);
+              }}>
+              <Text style={[pcb.toggleText, { color: sel ? C.brinjal1 : C.textSecondary }]}>
+                {t(it === 'PER_CREATOR' ? 'createEvent.budgetInputPerCreator' : 'createEvent.budgetInputTotal')}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       <View style={pcb.toggleRow}>
         {(['FIXED', 'RANGE'] as const).map((rt) => {
           const sel = rateType === rt;
@@ -358,8 +413,8 @@ export function PerCreatorBudgetPicker({
               style={[pcb.toggle, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
               onPress={() => {
                 if (rt === rateType) return;
-                if (rt === 'FIXED') onChange(budgetMax || budgetMin, budgetMax || budgetMin, 'FIXED');
-                else onChange(budgetMin || budgetMax, Math.max(budgetMax, budgetMin) || budgetMax, 'RANGE');
+                if (rt === 'FIXED') onChange(budgetMax || budgetMin, budgetMax || budgetMin, 'FIXED', inputType);
+                else onChange(budgetMin || budgetMax, Math.max(budgetMax, budgetMin) || budgetMax, 'RANGE', inputType);
               }}>
               <Text style={[pcb.toggleText, { color: sel ? C.brinjal1 : C.textSecondary }]}>
                 {t(rt === 'FIXED' ? 'createEvent.budgetRateFixed' : 'createEvent.budgetRateRange')}
@@ -371,10 +426,10 @@ export function PerCreatorBudgetPicker({
 
       {rateType === 'FIXED' ? (
         <TextInputWithLabel
-          label={t('createEvent.budgetPerCreatorLabel')}
+          label={t(inputType === 'TOTAL' ? 'createEvent.budgetTotalLabel' : 'createEvent.budgetPerCreatorLabel')}
           leftIcon="dollar-sign"
-          value={budgetMax ? String(budgetMax) : ''}
-          onChangeText={(v) => { const n = toInt(v); onChange(n, n, 'FIXED'); }}
+          value={maxText}
+          onChangeText={(v) => { setMinText(v); setMaxText(v); emit(v, v, 'FIXED', inputType); }}
           keyboardType="number-pad"
           editable={!disabled}
         />
@@ -382,20 +437,20 @@ export function PerCreatorBudgetPicker({
         <View style={bt.budgetRow}>
           <View style={bt.budgetInputWrap}>
             <TextInputWithLabel
-              label={t('createEvent.budgetPerCreatorMinLabel')}
+              label={t(inputType === 'TOTAL' ? 'createEvent.budgetTotalMinLabel' : 'createEvent.budgetPerCreatorMinLabel')}
               leftIcon="dollar-sign"
-              value={budgetMin ? String(budgetMin) : ''}
-              onChangeText={(v) => onChange(toInt(v), budgetMax, 'RANGE')}
+              value={minText}
+              onChangeText={(v) => { setMinText(v); emit(v, maxText, 'RANGE', inputType); }}
               keyboardType="number-pad"
               editable={!disabled}
             />
           </View>
           <View style={bt.budgetInputWrap}>
             <TextInputWithLabel
-              label={t('createEvent.budgetPerCreatorMaxLabel')}
+              label={t(inputType === 'TOTAL' ? 'createEvent.budgetTotalMaxLabel' : 'createEvent.budgetPerCreatorMaxLabel')}
               leftIcon="dollar-sign"
-              value={budgetMax ? String(budgetMax) : ''}
-              onChangeText={(v) => onChange(budgetMin, toInt(v), 'RANGE')}
+              value={maxText}
+              onChangeText={(v) => { setMaxText(v); emit(minText, v, 'RANGE', inputType); }}
               keyboardType="number-pad"
               editable={!disabled}
             />
@@ -406,12 +461,20 @@ export function PerCreatorBudgetPicker({
       {isSet ? (
         <View style={[pcb.summary, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
           <Text style={[pcb.summaryPrimary, { color: C.brinjal1 }]}>
-            {rateType === 'FIXED'
-              ? t('createEvent.budgetSummaryPerCreator', { amount: rs(budgetMax) })
-              : t('createEvent.budgetSummaryPerCreatorRange', { min: rs(budgetMin), max: rs(budgetMax) })}
+            {inputType === 'TOTAL'
+              ? (rateType === 'FIXED'
+                  ? t('createEvent.budgetSummaryTotalPrimary', { total: rs(total) })
+                  : t('createEvent.budgetSummaryTotalPrimaryRange', { min: rs(totalMin), max: rs(total) }))
+              : (rateType === 'FIXED'
+                  ? t('createEvent.budgetSummaryPerCreator', { amount: rs(budgetMax) })
+                  : t('createEvent.budgetSummaryPerCreatorRange', { min: rs(budgetMin), max: rs(budgetMax) }))}
           </Text>
           <Text style={[pcb.summarySecondary, { color: C.textSecondary }]}>
-            {t(rateType === 'FIXED' ? 'createEvent.budgetSummaryTotal' : 'createEvent.budgetSummaryTotalUpTo', { count, total: rs(total) })}
+            {inputType === 'TOTAL'
+              ? (rateType === 'FIXED'
+                  ? t('createEvent.budgetSummaryPerCreatorSub', { count, amount: rs(budgetMax) })
+                  : t('createEvent.budgetSummaryPerCreatorSubRange', { count, min: rs(budgetMin), max: rs(budgetMax) }))
+              : t(rateType === 'FIXED' ? 'createEvent.budgetSummaryTotal' : 'createEvent.budgetSummaryTotalUpTo', { count, total: rs(total) })}
           </Text>
         </View>
       ) : (

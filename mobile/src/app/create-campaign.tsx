@@ -45,7 +45,7 @@ import {
   GOAL_OPTIONS, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
 import {
-  SectionCard, ChipGroup, ChipMultiGroup, PerCreatorBudgetPicker, Stepper,
+  SectionCard, ChipGroup, ChipMultiGroup, PerCreatorBudgetPicker, budgetPickerResetKey, Stepper,
   DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
 import type { FormData } from '@/features/business/types/campaignForm.types';
@@ -439,8 +439,10 @@ const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 export type ReviewErrors = Partial<Record<'title' | 'deadline' | 'eventDate' | 'budget' | 'requirements', string>>;
 
 // 'chooseType' — top-level Paid vs Free picker, the new default boot phase.
-// 'describe' | 'publish' — AI-first "Create Opportunity" (Paid
-// Campaign), single prompt straight to a directly-editable Publish screen.
+// 'describe' | 'budget' | 'publish' — AI-first "Create Opportunity" (Paid
+// Campaign): single prompt straight to a directly-editable Publish screen.
+// 'budget' is only inserted when the prompt carried no usable budget (the AI
+// never invents one) — a focused "What is your budget?" step before publish.
 // 'inviteOffer' | 'inviteDescribe' | 'inviteDraft' | 'invitePublish'
 // — AI-first "Create Free Invitation" (Open Event). 'setup' | 'roles' |
 // 'review' | 'confirm' is the legacy multi-step editor, kept as the "Edit
@@ -449,7 +451,7 @@ export type ReviewErrors = Partial<Record<'title' | 'deadline' | 'eventDate' | '
 type Phase =
   | 'setup' | 'roles' | 'review' | 'confirm'
   | 'chooseType'
-  | 'describe' | 'publish'
+  | 'describe' | 'budget' | 'publish'
   | 'inviteOffer' | 'inviteDescribe' | 'inviteDraft' | 'invitePublish';
 
 // Shared dropdown-trigger/bottom-sheet styles, used by MultiCheckboxDropdown below.
@@ -781,6 +783,11 @@ export default function CreateCampaignScreen() {
   // returns to the right draft screen instead of the legacy 'setup' screen.
   // Read by the header back-button and the review phase's own back link.
   const cameFromNewFlowRef = useRef<'publish' | 'inviteDraft' | null>(null);
+  // True for the current AI Opportunity run when the prompt carried no usable
+  // budget, so the flow routed describe → budget → publish. Drives back-nav out
+  // of the publish screen and the 3-vs-2 step count in the progress bar (state,
+  // not a ref, because the progress bar renders off it).
+  const [routedThroughBudget, setRoutedThroughBudget] = useState(false);
   // Event Category lists the BOTH-scope industry rows only — never the
   // BUSINESS-scope rows — with the catch-all "Other" pinned to the end.
   const { categories: liveCategories } = useCategories('BOTH');
@@ -987,12 +994,16 @@ export default function CreateCampaignScreen() {
 
   // Per-creator budget edits (PerCreatorBudgetPicker) — keeps aiBudgetMin/Max,
   // the Fixed/Range choice and the "is an amount set?" flag in sync.
-  function updateBudget(min: number, max: number, rateType: 'FIXED' | 'RANGE') {
+  function updateBudget(min: number, max: number, rateType: 'FIXED' | 'RANGE', inputType: 'PER_CREATOR' | 'TOTAL') {
     setForm((prev) => ({
       ...prev,
+      // min/max arrive already converted to per-creator by PerCreatorBudgetPicker
+      // (it divides by the creator count in TOTAL mode) — the rest of the app
+      // only ever deals in per-creator bounds. budgetInputType is the display echo.
       aiBudgetMin: rateType === 'FIXED' ? max : min,
       aiBudgetMax: max,
       budgetRateType: rateType,
+      budgetInputType: inputType,
       budgetSet: max >= MIN_BUDGET_PER_CREATOR && (rateType === 'FIXED' || max >= min),
     }));
     if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
@@ -1098,7 +1109,13 @@ export default function CreateCampaignScreen() {
       // is a single content-creator ask, no multi-role breakdown.
       setRequirementMode('single');
       setAiPromptText('');
-      setPhase(targetPhase);
+      // AI Opportunity flow: the prompt gave no usable budget (the AI never
+      // invents one), so route through the dedicated "What is your budget?"
+      // step before the publish screen instead of landing there budget-less.
+      const budgetKnown = draft.budgetStatus === 'STATED_PER_CREATOR' && draft.budgetMax > 0;
+      const resolvedPhase = targetPhase === 'publish' && !budgetKnown ? 'budget' : targetPhase;
+      setRoutedThroughBudget(resolvedPhase === 'budget');
+      setPhase(resolvedPhase);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
       // The request succeeded but the backend couldn't reach OpenAI and served
       // a canned draft — say so, otherwise it's indistinguishable from a real
@@ -1158,7 +1175,10 @@ export default function CreateCampaignScreen() {
       }));
       setRequirementMode('single');
       setAiPromptText('');
-      setPhase(targetPhase);
+      // Offline fallback carries no budget — same routing as the success path.
+      const resolvedPhase = targetPhase === 'publish' ? 'budget' : targetPhase;
+      setRoutedThroughBudget(resolvedPhase === 'budget');
+      setPhase(resolvedPhase);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
       showToast(t('createEvent.aiNetworkFallback'), 'error');
     } finally {
@@ -1535,21 +1555,32 @@ export default function CreateCampaignScreen() {
     if (!form.title.trim())        errs.title    = t('createEvent.errNoTitle');
     if (!form.deadline)     errs.deadline = t('createEvent.errNoDeadline');
     if (requirementMode === 'single') {
-      // The AI heard a figure it couldn't place, and the brand hasn't answered
-      // the "per creator or total?" chooser yet — can't publish until they do.
-      if (form.aiBudgetStatus === 'AMBIGUOUS' && !form.budgetSet) {
-        errs.budget = t('createEvent.errBudgetNotSet');
-      // No per-creator amount at all (AI never heard one, or the brand cleared it).
-      } else if (!form.budgetSet || form.aiBudgetMax <= 0) {
-        errs.budget = t('createEvent.errBudgetNotSet');
-      } else if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) {
-        errs.budget = t('createEvent.errBudgetMin');
-      // Range mode: nothing else stops a max typed below the min.
-      } else if (form.aiBudgetMax < form.aiBudgetMin) {
-        errs.budget = t('createEvent.errBudgetMinMax');
-      }
+      const budgetErr = validatePaidBudget();
+      if (budgetErr) errs.budget = budgetErr;
     }
     return errs;
+  }
+
+  // The single-role budget gate — shared by the dedicated "What is your budget?"
+  // step (handleContinueFromBudget) and the publish-time validatePaidReview().
+  function validatePaidBudget(): string | undefined {
+    // The AI heard a figure it couldn't place, and the brand hasn't answered
+    // the "per creator or total?" chooser yet — can't move on until they do.
+    if (form.aiBudgetStatus === 'AMBIGUOUS' && !form.budgetSet) return t('createEvent.errBudgetNotSet');
+    // No per-creator amount at all (AI never heard one, or the brand cleared it).
+    if (!form.budgetSet || form.aiBudgetMax <= 0) return t('createEvent.errBudgetNotSet');
+    if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) return t('createEvent.errBudgetMin');
+    // Range mode: nothing else stops a max typed below the min.
+    if (form.aiBudgetMax < form.aiBudgetMin) return t('createEvent.errBudgetMinMax');
+    return undefined;
+  }
+
+  function handleContinueFromBudget() {
+    const budgetErr = validatePaidBudget();
+    if (budgetErr) { setReviewErrors((e) => ({ ...e, budget: budgetErr })); return; }
+    setReviewErrors((e) => ({ ...e, budget: undefined }));
+    setPhase('publish');
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
 
   function handleContinueToRoles() {
@@ -1647,12 +1678,34 @@ export default function CreateCampaignScreen() {
     });
   }
 
+  // Per-creator + total budget lines for the review/publish summaries, ordered
+  // to lead with whichever framing the business actually chose on the budget
+  // step (TOTAL → total first, PER_CREATOR → per-creator first).
+  function budgetSummaryLines(): string[] {
+    const perCreator = budgetPerCreatorText();
+    const total = budgetTotalText();
+    const lines = form.budgetInputType === 'TOTAL' && form.budgetSet
+      ? [total, perCreator]
+      : [perCreator, total];
+    return lines.filter((l): l is string => Boolean(l));
+  }
+
+  // Remounts PerCreatorBudgetPicker (re-seeding its visible fields from the
+  // per-creator props) whenever the mode / rate / creator count / ambiguous
+  // resolution changes — see budgetPickerResetKey.
+  const budgetPickerKey = budgetPickerResetKey({
+    inputType: form.budgetInputType,
+    rateType: form.budgetRateType,
+    creatorsNeeded: form.creatorsNeeded,
+    budgetStatus: form.aiBudgetStatus,
+  });
+
   // The Publish step's "People Needed" card — one synthetic row from the
   // top-level form fields (every campaign is a single content-creator ask).
   const peopleRows = [{
     key: '__single__',
     label: form.template ? `${form.template} ×${form.creatorsNeeded}` : String(form.creatorsNeeded),
-    budget: [budgetPerCreatorText(), budgetTotalText()].filter(Boolean).join('  ·  '),
+    budget: budgetSummaryLines().join('  ·  '),
     work: summarizeDeliverables(form.deliverables, form.goals, t) || undefined,
     onEdit: () => setEditingRequirementKey('__single__'),
     onRemove: undefined as (() => void) | undefined,
@@ -1685,12 +1738,16 @@ export default function CreateCampaignScreen() {
   // from either new flow). 'chooseType' precedes all three and has no
   // progress pill of its own (see `showProgress` below). Each track computes
   // its own phase count/position.
-  const isNewFlow = phase === 'describe' || phase === 'publish';
+  const isNewFlow = phase === 'describe' || phase === 'budget' || phase === 'publish';
   const isInviteFlow = phase === 'inviteOffer' || phase === 'inviteDescribe' || phase === 'inviteDraft' || phase === 'invitePublish';
   const showProgress = phase !== 'chooseType';
-  const totalPhases = isNewFlow ? 2 : isInviteFlow ? 4 : (form.eventType === 'PAID_CAMPAIGN' ? 4 : 2);
+  // The AI Opportunity flow is 2 steps (describe → publish), or 3 when the
+  // prompt had no budget and the "What is your budget?" step was inserted.
+  const newFlowSteps = routedThroughBudget ? 3 : 2;
+  const totalPhases = isNewFlow ? newFlowSteps : isInviteFlow ? 4 : (form.eventType === 'PAID_CAMPAIGN' ? 4 : 2);
   const currentPhaseNum = phase === 'describe' ? 1
-    : phase === 'publish' ? 2
+    : phase === 'budget' ? 2
+    : phase === 'publish' ? newFlowSteps
     : phase === 'inviteOffer' ? 1
     : phase === 'inviteDescribe' ? 2
     : phase === 'inviteDraft' ? 3
@@ -1718,7 +1775,8 @@ export default function CreateCampaignScreen() {
         <BackButton
           icon="chevron-left"
           onPress={() => {
-            if (phase === 'publish') setPhase('describe');
+            if (phase === 'publish') setPhase(routedThroughBudget ? 'budget' : 'describe');
+            else if (phase === 'budget') { setRoutedThroughBudget(false); setPhase('describe'); }
             else if (phase === 'describe') setPhase('chooseType');
             else if (phase === 'invitePublish') setPhase('inviteDescribe');
             else if (phase === 'inviteDraft') setPhase('inviteDescribe');
@@ -1741,6 +1799,7 @@ export default function CreateCampaignScreen() {
           {phase !== 'setup' && phase !== 'describe' && phase !== 'chooseType' && phase !== 'inviteOffer' && (
             <Text style={[s.headerSub, { color: C.textSecondary }]}>
               {phase === 'publish' ? t('createOpportunity.headerSubPublish')
+                : phase === 'budget' ? t('createOpportunity.headerSubBudget')
                 : phase === 'inviteDescribe' ? t('createInvitation.headerSubDescribe')
                 : phase === 'inviteDraft' ? t('createInvitation.headerSubDraft')
                 : phase === 'invitePublish' ? t('createInvitation.headerSubPublish')
@@ -1966,6 +2025,54 @@ export default function CreateCampaignScreen() {
             </View>
           )}
 
+          {/* ── New flow, budget step — only inserted when the prompt gave no
+              usable budget (the AI never invents one). One focused question
+              before the publish screen: flat fee vs range, per creator vs
+              total, and the amount(s). ── */}
+          {phase === 'budget' && form.eventType === 'PAID_CAMPAIGN' && (
+            <View style={s.content}>
+              <View style={{ gap: 6 }}>
+                <Text style={[s.stepSectionHeading, { color: C.text, fontSize: 22 }]}>{t('createOpportunity.budgetHeadline')}</Text>
+                <Text style={[s.optionDesc, { color: C.textSecondary }]}>{t('createOpportunity.budgetSub')}</Text>
+              </View>
+
+              <SectionCard colors={C}>
+                <Text style={[rq.fieldLabel, { color: C.textSecondary, marginTop: 0 }]}>{t('createEvent.secCreatorsNeededTitle')}</Text>
+                <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
+                <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.secBudgetTitle')}</Text>
+                <PerCreatorBudgetPicker
+                  key={budgetPickerKey}
+                  rateType={form.budgetRateType}
+                  inputType={form.budgetInputType}
+                  budgetMin={form.aiBudgetMin}
+                  budgetMax={form.aiBudgetMax}
+                  creatorsNeeded={form.creatorsNeeded}
+                  onChange={updateBudget}
+                  ambiguousAmount={form.aiBudgetStatus === 'AMBIGUOUS' ? form.aiStatedAmount : null}
+                  onResolveAmbiguous={resolveAmbiguousBudget}
+                  colors={C}
+                  error={reviewErrors.budget}
+                />
+              </SectionCard>
+
+              <Pressable
+                style={[s.generateBtn, { backgroundColor: validatePaidBudget() ? C.border : C.brinjal1 }]}
+                onPress={handleContinueFromBudget}
+                disabled={!!validatePaidBudget()}>
+                <Text style={s.generateBtnText}>{t('createOpportunity.budgetContinueBtn')}</Text>
+                <FontAwesome5 name="arrow-right" solid size={18} color="#fff" />
+              </Pressable>
+
+              <Pressable
+                style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
+                onPress={handleSaveDraft}
+                disabled={loading}>
+                <FontAwesome5 name="save" size={16} color={C.textSecondary} />
+                <Text style={[s.draftBtnText, { color: C.textSecondary }]}>{t('createEvent.saveDraftBtn')}</Text>
+              </Pressable>
+            </View>
+          )}
+
           {/* ── New flow, Phase 2: Publish — the AI's draft goes straight here
               (no separate "here's what we understood" step); every field is
               directly editable in place, and the summary card's "Edit
@@ -2022,7 +2129,7 @@ export default function CreateCampaignScreen() {
                 <PreviewRow
                   icon="money-bill-alt"
                   label={t('createEvent.confirmSectionBudget')}
-                  value={[budgetPerCreatorText(), budgetTotalText()].filter(Boolean).join('\n')}
+                  value={budgetSummaryLines().join('\n')}
                   colors={C}
                   onPress={() => setEditingField('budget')}
                 />
@@ -3015,7 +3122,9 @@ export default function CreateCampaignScreen() {
                       {/* Budget */}
                       <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} icon="money-bill-alt" colors={C}>
                         <PerCreatorBudgetPicker
+                          key={budgetPickerKey}
                           rateType={form.budgetRateType}
+                          inputType={form.budgetInputType}
                           budgetMin={form.aiBudgetMin}
                           budgetMax={form.aiBudgetMax}
                           creatorsNeeded={form.creatorsNeeded}
@@ -3293,7 +3402,7 @@ export default function CreateCampaignScreen() {
                   colors={C}
                 />
                 <PreviewRow icon="film" label={t('createEvent.confirmSectionDeliverables')} value={summarizeDeliverables(form.deliverables, form.goals, t)} colors={C} />
-                <PreviewRow icon="money-bill-alt" label={t('createEvent.confirmSectionBudget')} value={[budgetPerCreatorText(), budgetTotalText()].filter(Boolean).join('\n')} colors={C} />
+                <PreviewRow icon="money-bill-alt" label={t('createEvent.confirmSectionBudget')} value={budgetSummaryLines().join('\n')} colors={C} />
                 <PreviewRow icon="calendar-alt" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} last />
               </View>
 
@@ -3563,7 +3672,9 @@ export default function CreateCampaignScreen() {
             <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
             <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.secBudgetTitle')}</Text>
             <PerCreatorBudgetPicker
+              key={budgetPickerKey}
               rateType={form.budgetRateType}
+              inputType={form.budgetInputType}
               budgetMin={form.aiBudgetMin}
               budgetMax={form.aiBudgetMax}
               creatorsNeeded={form.creatorsNeeded}
@@ -3636,7 +3747,9 @@ export default function CreateCampaignScreen() {
             <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
             <Text style={[rq.fieldLabel, { color: C.textSecondary }]}>{t('createEvent.secBudgetTitle')}</Text>
             <PerCreatorBudgetPicker
+              key={budgetPickerKey}
               rateType={form.budgetRateType}
+              inputType={form.budgetInputType}
               budgetMin={form.aiBudgetMin}
               budgetMax={form.aiBudgetMax}
               creatorsNeeded={form.creatorsNeeded}
