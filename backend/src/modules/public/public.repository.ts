@@ -15,9 +15,23 @@ export class PublicRepository {
     return { totalCreators, totalBusinesses, categories };
   }
 
-  async getComingSoon(): Promise<boolean> {
-    const row = await prisma.platformSetting.findUnique({ where: { key: 'platform.comingSoon' } });
-    if (!row) return false;
-    try { return JSON.parse(row.value) === true; } catch { return false; }
+  // Per-store "Coming Soon" state for the landing page. Each store falls back to
+  // the legacy single 'platform.comingSoon' flag when it has no explicit value,
+  // so an existing install that only ever set the old key keeps behaving the
+  // same until an admin touches the new toggles.
+  async getComingSoon(): Promise<{ ios: boolean; android: boolean }> {
+    const rows = await prisma.platformSetting.findMany({
+      where: { key: { in: ['platform.comingSoon', 'platform.comingSoon.ios', 'platform.comingSoon.android'] } },
+    });
+    const read = (key: string): boolean | undefined => {
+      const row = rows.find((r) => r.key === key);
+      if (!row) return undefined;
+      try { return JSON.parse(row.value) === true; } catch { return false; }
+    };
+    const legacy = read('platform.comingSoon') ?? false;
+    return {
+      ios:     read('platform.comingSoon.ios') ?? legacy,
+      android: read('platform.comingSoon.android') ?? legacy,
+    };
   }
 }

@@ -26,6 +26,7 @@ export class PublicService {
   // security/notification-admin keys are deliberately excluded here.
   async getPlatformFlags() {
     const s = await this.adminRepo.getSettings();
+    const comingSoon = await this.repo.getComingSoon();
     return {
       businessRegistrationEnabled: s['business.registrationEnabled'] as boolean,
       creatorRegistrationEnabled:  s['creator.registrationEnabled']  as boolean,
@@ -36,7 +37,9 @@ export class PublicService {
       platformCommission:          Number(s['platform.commission']) || 0,
       paymentFeePercent:           Number(s['platform.paymentFeePercent']) || 5,
       paymentTaxPercent:           Number(s['platform.paymentTaxPercent']) || 13,
-      comingSoon:                  s['platform.comingSoon'] as boolean,
+      comingSoonIos:               comingSoon.ios,
+      comingSoonAndroid:           comingSoon.android,
+      comingSoon:                  comingSoon.ios && comingSoon.android,
       minVersionIos:               (s['app.minVersion.ios'] as string) || '',
       minVersionAndroid:           (s['app.minVersion.android'] as string) || '',
     };

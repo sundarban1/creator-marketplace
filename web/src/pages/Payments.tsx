@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { PaymentTransactionsTab } from './payments/PaymentTransactionsTab';
 import { PaymentMethodsTab } from './payments/PaymentMethodsTab';
@@ -17,7 +17,13 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 
 export function Payments() {
-  const [tab, setTab] = useState<TabKey>('transactions');
+  // `?tab=` keeps the active tab in the URL so notification links (and shared
+  // links) can deep-link straight to Disputes / Withdrawal Requests.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paramTab = searchParams.get('tab');
+  const tab: TabKey = TABS.some((t) => t.key === paramTab) ? (paramTab as TabKey) : 'transactions';
+  const setTab = (key: TabKey) =>
+    setSearchParams(key === 'transactions' ? {} : { tab: key }, { replace: true });
 
   return (
     <div>

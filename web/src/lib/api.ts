@@ -708,6 +708,9 @@ export interface PlatformFlags {
   messagingEnabled:            boolean;
   supportEmail?:               string;
   platformCommission:          number;
+  comingSoonIos:               boolean;
+  comingSoonAndroid:           boolean;
+  /** Both stores at once — derived, kept for backwards compatibility. */
   comingSoon:                  boolean;
 }
 
@@ -1201,7 +1204,7 @@ export const api = {
     landingStats: () =>
       request<LandingStats>('GET', '/api/public/landing-stats'),
     comingSoon: () =>
-      request<{ comingSoon: boolean }>('GET', '/api/public/coming-soon'),
+      request<{ ios: boolean; android: boolean; comingSoon: boolean }>('GET', '/api/public/coming-soon'),
     platformFlags: () =>
       request<PlatformFlags>('GET', '/api/public/platform-flags'),
     siteInfo: () =>

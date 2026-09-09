@@ -4,8 +4,8 @@ import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
-import { AppStoreBadges, getDeviceStoreUrl } from '../components/AppStoreBadges';
-import { ComingSoonBadge } from '../components/ComingSoonBadge';
+import { AppStoreBadges } from '../components/AppStoreBadges';
+import { getDeviceStoreUrl, isDeviceComingSoon } from '../components/appStoreLinks';
 import { SectionWave } from '../components/SectionWave';
 import { useComingSoon } from '../hooks/useComingSoon';
 import { useLenisScroll } from '../hooks/useLenis';
@@ -41,6 +41,9 @@ export function FinalCTA() {
   const { theme } = useLandingTheme();
   const { scrollTo } = useLenisScroll();
   const comingSoon = useComingSoon();
+  // "Get Started" targets the visitor's own platform — only fall back to the
+  // badge list when *that* store isn't live yet.
+  const deviceComingSoon = isDeviceComingSoon(comingSoon);
 
   return (
     <section id={SECTION_IDS.finalCta} className="relative overflow-hidden bg-paper py-32 text-ink dark:bg-ink dark:text-white">
@@ -112,7 +115,7 @@ export function FinalCTA() {
           <motion.div variants={fadeUp} className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => {
-                if (comingSoon) {
+                if (deviceComingSoon) {
                   scrollTo('#final-cta-download');
                   return;
                 }
@@ -132,7 +135,7 @@ export function FinalCTA() {
           </motion.div>
 
           <motion.div id="final-cta-download" variants={fadeUp} className="mt-8">
-            {comingSoon ? <ComingSoonBadge /> : <AppStoreBadges />}
+            <AppStoreBadges />
           </motion.div>
         </motion.div>
       </div>

@@ -11,6 +11,8 @@ const DEFAULT_FLAGS: PlatformFlags = {
   platformCommission:          0,
   paymentFeePercent:           5,
   paymentTaxPercent:           13,
+  comingSoonIos:               false,
+  comingSoonAndroid:           false,
   comingSoon:                  false,
   minVersionIos:               '',
   minVersionAndroid:           '',

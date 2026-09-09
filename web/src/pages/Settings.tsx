@@ -166,7 +166,8 @@ function EmailListField({
 // ── Default settings ───────────────────────────────────────────────────────────
 
 const DEFAULTS: PlatformSettings = {
-  'platform.comingSoon':         false,
+  'platform.comingSoon.ios':     false,
+  'platform.comingSoon.android': false,
   'business.registrationEnabled': true,
   'creator.registrationEnabled':  true,
   'creator.onboarding':          true,
@@ -313,7 +314,8 @@ export function Settings() {
 
         {/* Platform */}
         <SectionCard title="Platform Settings" subtitle="Core controls for registration and onboarding">
-          <Toggle label="Coming Soon Mode"      description="Hide the App Store / Google Play download buttons on the public landing page and show a Coming Soon badge instead" value={bool('platform.comingSoon')} onChange={(v) => toggle('platform.comingSoon', v)} />
+          <Toggle label="Coming Soon — iOS"     description="On the public landing page, replace the App Store download button with a Coming Soon badge (Android is unaffected)"    value={bool('platform.comingSoon.ios')}     onChange={(v) => toggle('platform.comingSoon.ios', v)} />
+          <Toggle label="Coming Soon — Android" description="On the public landing page, replace the Google Play download button with a Coming Soon badge (iOS is unaffected)"     value={bool('platform.comingSoon.android')} onChange={(v) => toggle('platform.comingSoon.android', v)} />
           <Toggle label="Business Registration" description="Allow new businesses to sign up on the platform"                  value={bool('business.registrationEnabled')} onChange={(v) => toggle('business.registrationEnabled', v)} />
           <Toggle label="Creator Registration"  description="Allow new creators to sign up on the platform"                   value={bool('creator.registrationEnabled')}  onChange={(v) => toggle('creator.registrationEnabled', v)} />
           <Toggle label="Creator Onboarding"    description="Enable the creator onboarding flow for new users"                value={bool('creator.onboarding')}    onChange={(v) => toggle('creator.onboarding', v)} />

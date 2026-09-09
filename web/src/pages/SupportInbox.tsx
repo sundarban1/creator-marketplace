@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MessageSquare, AlertTriangle, Clock, CheckCircle, Search } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { Pagination } from '../components/Pagination';
@@ -131,7 +132,11 @@ function ReportCard({ item, onStatusChange }: { item: IssueReport; onStatusChang
 }
 
 export function SupportInbox() {
-  const [tab, setTab]                       = useState<'contacts' | 'reports'>('contacts');
+  // `?tab=reports` lets "Issue Reported" notifications deep-link to the right tab.
+  const [searchParams, setSearchParams]    = useSearchParams();
+  const tab: 'contacts' | 'reports'        = searchParams.get('tab') === 'reports' ? 'reports' : 'contacts';
+  const setTab = (key: 'contacts' | 'reports') =>
+    setSearchParams(key === 'contacts' ? {} : { tab: key }, { replace: true });
   const [contacts, setContacts]             = useState<SupportRequest[]>([]);
   const [reports, setReports]               = useState<IssueReport[]>([]);
   const [loading, setLoading]               = useState(true);

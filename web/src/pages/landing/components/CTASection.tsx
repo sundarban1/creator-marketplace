@@ -1,8 +1,6 @@
 import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { AppStoreBadges } from './AppStoreBadges';
-import { ComingSoonBadge } from './ComingSoonBadge';
-import { useComingSoon } from '../hooks/useComingSoon';
 
 interface CTASectionProps {
   heading: string;
@@ -15,8 +13,6 @@ interface CTASectionProps {
 // Kolab site partway through, then reuses the same real-vs-coming-soon
 // download-button logic every other CTA on the site already follows.
 export function CTASection({ heading, sub }: CTASectionProps) {
-  const comingSoon = useComingSoon();
-
   return (
     <section className="relative mt-20 overflow-hidden rounded-3xl bg-ink px-6 py-16 text-center text-white sm:px-10">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -31,7 +27,7 @@ export function CTASection({ heading, sub }: CTASectionProps) {
           {sub}
         </motion.p>
         <motion.div variants={fadeUp} className="mt-8 flex justify-center">
-          {comingSoon ? <ComingSoonBadge variant="light" /> : <AppStoreBadges variant="light" />}
+          <AppStoreBadges variant="light" />
         </motion.div>
       </motion.div>
     </section>

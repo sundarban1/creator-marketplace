@@ -16,8 +16,10 @@ export class PublicController {
 
   async comingSoon(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const comingSoon = await publicService.getComingSoon();
-      success(res, { comingSoon }, 'Coming soon status retrieved');
+      const flags = await publicService.getComingSoon();
+      // `comingSoon` (both stores) kept for any older client still reading the
+      // single boolean.
+      success(res, { ...flags, comingSoon: flags.ios && flags.android }, 'Coming soon status retrieved');
     } catch (err) {
       next(err);
     }

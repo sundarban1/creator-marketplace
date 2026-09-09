@@ -11,6 +11,9 @@ export type PlatformFlags = {
   // Fee/tax breakdown shown in the business's Complete Payment modal.
   paymentFeePercent: number;
   paymentTaxPercent: number;
+  // Landing-page download buttons, per store. `comingSoon` = both at once.
+  comingSoonIos: boolean;
+  comingSoonAndroid: boolean;
   comingSoon: boolean;
   // Empty string = no enforcement.
   minVersionIos: string;

@@ -4,7 +4,14 @@ import prisma from '../../prisma';
 // ── Default platform settings ──────────────────────────────────────────────────
 
 const DEFAULTS: Record<string, unknown> = {
-  'platform.comingSoon':           false,
+  // Landing-page download buttons, controlled per store. When a platform's flag
+  // is on, its App Store / Google Play button is replaced by a muted "Coming
+  // Soon" pill; the other platform is unaffected. The legacy single
+  // 'platform.comingSoon' key (both stores at once) is still read as a fallback
+  // for whichever of these two has no explicit value yet — see
+  // PublicRepository.getComingSoon.
+  'platform.comingSoon.ios':       false,
+  'platform.comingSoon.android':   false,
   'business.registrationEnabled':  true,
   'creator.registrationEnabled':   true,
   'creator.onboarding':            true,

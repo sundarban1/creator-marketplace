@@ -7,10 +7,8 @@ import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
 import { useSiteInfo } from '../hooks/useSiteInfo';
-import { useComingSoon } from '../hooks/useComingSoon';
 import { ContactForm } from '../components/ContactForm';
 import { AppStoreBadges } from '../components/AppStoreBadges';
-import { ComingSoonBadge } from '../components/ComingSoonBadge';
 import { useLenisScrollOptional } from '../hooks/useLenis';
 
 // Same brand colors as SocialRail — this is the compact inline counterpart
@@ -95,7 +93,6 @@ export function LandingFooter() {
   const { d } = useLandingLanguage();
   const { theme } = useLandingTheme();
   const siteInfo = useSiteInfo();
-  const comingSoon = useComingSoon();
   const activeSocials = SOCIAL_ICONS.filter(({ key }) => siteInfo?.social[key]);
 
   return (
@@ -226,7 +223,7 @@ export function LandingFooter() {
 
           <motion.div variants={fadeUp}>
             <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white">{d.footer.downloadApp}</p>
-            <div className="mt-4">{comingSoon ? <ComingSoonBadge /> : <AppStoreBadges />}</div>
+            <div className="mt-4"><AppStoreBadges /></div>
           </motion.div>
         </motion.div>
 
