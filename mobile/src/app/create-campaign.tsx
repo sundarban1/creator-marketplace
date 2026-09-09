@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import { setAudioModeAsync } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -257,10 +258,11 @@ function getPromptSamples(category: string | undefined): { text: string; lang: '
 const ERROR_RED = '#EF4444';
 const MIN_BUDGET_PER_CREATOR = 500;
 
-// "Need Help?" walkthrough scripts, read aloud via on-device TTS from the
-// help modal below. Nepali is read with a Hindi voice (see handlePlayHelp) —
-// Nepali TTS voices are rarely installed on-device, Hindi voices read the
-// shared Devanagari script far more reliably (see Quick Audio Samples above).
+// "Need Help?" walkthrough scripts. English is read aloud via on-device TTS
+// from the help modal below. Nepali plays a recorded voiceover instead
+// (NEED_HELP_NE_AUDIO_URL) — on-device Nepali TTS voices are rarely installed
+// and a Hindi voice mispronounces the script — and only falls back to this
+// Nepali text (via a Hindi voice) if that audio can't start at all.
 const NEED_HELP_SCRIPT_EN = `Welcome to Kolab!
 Create your event easily and connect with the right creators.
 
@@ -382,6 +384,39 @@ async function speakAloud(text: string, language: string, onEnd: () => void) {
       })
       .catch(() => {});
   }, 700);
+}
+
+// The Nepali "Need Help?" walkthrough is a real recorded voiceover (the
+// English one is still on-device TTS). It lives on Cloudinary — a versioned
+// delivery URL, which Cloudinary serves permanently and never signs/expires,
+// so it keeps working indefinitely. On top of that we copy the file into the
+// app's document directory on the first successful play: every later play
+// then reads the local copy, so it works with no connectivity and can't be
+// broken by a CDN hiccup days or weeks later.
+const NEED_HELP_NE_AUDIO_URL =
+  'https://res.cloudinary.com/drpuqrfyn/video/upload/v1788886374/final_nepali_help_f3wtha.wav';
+const NEED_HELP_NE_AUDIO_CACHE = `${FileSystem.documentDirectory ?? ''}kolab-need-help-ne.wav`;
+
+// Resolves to a locally cached, playable file URI. Throws if the audio can't
+// be obtained (no network on the first play, or the remote URL is 404/gone) so
+// the caller can fall back to reading the script via TTS.
+async function resolveNeedHelpNeAudioUri(): Promise<string> {
+  const info = await FileSystem.getInfoAsync(NEED_HELP_NE_AUDIO_CACHE).catch(() => null);
+  if (info?.exists && info.size > 0) return info.uri;
+
+  let dl: { status: number; uri: string } | null = null;
+  try {
+    dl = await FileSystem.downloadAsync(NEED_HELP_NE_AUDIO_URL, NEED_HELP_NE_AUDIO_CACHE);
+  } catch {
+    dl = null;
+  }
+  if (dl?.status === 200) return dl.uri;
+
+  // downloadAsync writes the body to disk even on a 4xx/5xx (or a partial file
+  // on a dropped connection) — drop it so a later call doesn't trust it as the
+  // cached audio, then signal failure.
+  await FileSystem.deleteAsync(NEED_HELP_NE_AUDIO_CACHE, { idempotent: true }).catch(() => {});
+  throw new Error(`need-help audio unavailable (status ${dl?.status ?? 'network error'})`);
 }
 
 // Used when generateWithAi() throws outright (network down, request timeout, backend
@@ -908,7 +943,16 @@ export default function CreateCampaignScreen() {
   // elsewhere on this screen. helpPlayingLang tracks which script (if any)
   // is currently being read aloud.
   const [needHelpVisible, setNeedHelpVisible] = useState(false);
-  const [helpPlayingLang, setHelpPlayingLang] = useState<'en' | 'ne' | null>(null);
+  // Which "Need Help?" script is being read aloud via on-device TTS (English
+  // always; Nepali only as a fallback when its recorded voiceover can't
+  // start). TTS has no status stream of its own, so we track it by hand.
+  const [helpTtsLang, setHelpTtsLang] = useState<'en' | 'ne' | null>(null);
+  // Nepali's recorded voiceover plays through this player — its playing/
+  // stopped state is read straight off helpAudioStatus, so reaching the end
+  // resets the button for free.
+  const helpAudioPlayer = useAudioPlayer(null);
+  const helpAudioStatus = useAudioPlayerStatus(helpAudioPlayer);
+  const helpNeAudioPlaying = helpAudioStatus.playing;
   const [aiPromptText, setAiPromptText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPlaceholder] = useState(() => getPromptExamples(businessCategories[0], language)[0]);
@@ -1404,23 +1448,50 @@ export default function CreateCampaignScreen() {
   // Quick Audio Samples above (Nepali read with a Hindi voice). While one
   // script is playing the other card is disabled rather than allowed to
   // interrupt it, since the two scripts would otherwise talk over each other.
-  function handlePlayHelp(lang: 'en' | 'ne') {
-    if (helpPlayingLang === lang) {
-      Speech.stop();
-      setHelpPlayingLang(null);
+  function stopHelpPlayback() {
+    Speech.stop();
+    setHelpTtsLang(null);
+    try { helpAudioPlayer.pause(); } catch { /* native object not ready */ }
+  }
+
+  async function handlePlayHelp(lang: 'en' | 'ne') {
+    const isThisPlaying =
+      lang === 'en' ? helpTtsLang === 'en' : helpNeAudioPlaying || helpTtsLang === 'ne';
+    // Tapping the card that's already playing stops it. Starting either script
+    // also always interrupts the other, so stop everything first regardless.
+    stopHelpPlayback();
+    if (isThisPlaying) return;
+
+    if (lang === 'en') {
+      setHelpTtsLang('en');
+      void speakAloud(NEED_HELP_SCRIPT_EN, 'en-US', () =>
+        setHelpTtsLang((cur) => (cur === 'en' ? null : cur)),
+      );
       return;
     }
-    setHelpPlayingLang(lang);
-    void speakAloud(
-      lang === 'ne' ? NEED_HELP_SCRIPT_NE : NEED_HELP_SCRIPT_EN,
-      lang === 'ne' ? 'hi-IN' : 'en-US',
-      () => setHelpPlayingLang((cur) => (cur === lang ? null : cur)),
-    );
+
+    // Nepali — recorded voiceover, cached locally after the first play. If the
+    // player can't start at all (no network on the very first play, native
+    // audio object not ready), fall back to reading the script via TTS so the
+    // button still does something.
+    try {
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      const uri = await resolveNeedHelpNeAudioUri();
+      // replace() always resets a fresh source to position 0 — no seekTo()
+      // here: seeking before the (first-play, ~10 MB) source finishes loading
+      // can leave iOS's player stalled instead of playing.
+      helpAudioPlayer.replace({ uri });
+      helpAudioPlayer.play();
+    } catch {
+      setHelpTtsLang('ne');
+      void speakAloud(NEED_HELP_SCRIPT_NE, 'hi-IN', () =>
+        setHelpTtsLang((cur) => (cur === 'ne' ? null : cur)),
+      );
+    }
   }
 
   function closeNeedHelp() {
-    Speech.stop();
-    setHelpPlayingLang(null);
+    stopHelpPlayback();
     setNeedHelpVisible(false);
   }
 
@@ -3541,7 +3612,8 @@ export default function CreateCampaignScreen() {
         </Pressable>
       </Modal>
 
-      {/* Need Help? walkthrough — centered card, tap a language to hear it via TTS */}
+      {/* Need Help? walkthrough — centered card, tap a language to hear it
+          (English via on-device TTS, Nepali as a recorded voiceover) */}
       <Modal visible={needHelpVisible} transparent animationType="fade" onRequestClose={closeNeedHelp}>
         <Pressable style={s.warnScrim} onPress={closeNeedHelp}>
           <Pressable style={[s.helpSheet, { backgroundColor: C.surface }]} onPress={(e) => e.stopPropagation()}>
@@ -3557,8 +3629,8 @@ export default function CreateCampaignScreen() {
                 (brand=English, info=Nepali) instead of ad-hoc colors. */}
             <View style={s.helpCardsRow}>
               {(['en', 'ne'] as const).map((lang) => {
-                const isPlaying = helpPlayingLang === lang;
-                const isLocked  = helpPlayingLang !== null && !isPlaying;
+                const isPlaying = lang === 'en' ? helpTtsLang === 'en' : helpNeAudioPlaying || helpTtsLang === 'ne';
+                const isLocked  = !isPlaying && (helpTtsLang !== null || helpNeAudioPlaying);
                 const tone = lang === 'en' ? TabColors.brand : TabColors.info;
                 return (
                   <Pressable
@@ -3568,7 +3640,7 @@ export default function CreateCampaignScreen() {
                       { backgroundColor: C.surface, borderColor: isPlaying ? tone.color : C.border, opacity: isLocked ? 0.4 : 1 },
                       SHADOW.card,
                     ]}
-                    onPress={() => handlePlayHelp(lang)}
+                    onPress={() => void handlePlayHelp(lang)}
                     disabled={isLocked}>
                     <View
                       style={[

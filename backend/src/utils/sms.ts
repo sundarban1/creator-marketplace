@@ -119,10 +119,10 @@ export async function sendSms(phone: string, message: string): Promise<void> {
 
 /** Signup / account-verification OTP. */
 export async function sendOtpSms(phone: string, code: string): Promise<void> {
-  await sendSms(phone, `Account verification code - ${code}`);
+  await sendSms(phone, `KOLAB - Account verification code - ${code}`);
 }
 
 /** Forgot-password OTP. */
 export async function sendPasswordResetOtpSms(phone: string, code: string): Promise<void> {
-  await sendSms(phone, `Forgot Password Code - ${code}`);
+  await sendSms(phone, `KOLAB - Forgot Password Code - ${code}`);
 }

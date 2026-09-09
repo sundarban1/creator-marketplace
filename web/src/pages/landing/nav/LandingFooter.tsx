@@ -245,7 +245,7 @@ export function LandingFooter() {
               ].filter(Boolean).join(' · ')}
             </p>
           )}
-          <p className="text-xs text-ink-soft dark:text-white">© {new Date().getFullYear()} Kolab Technologies Pvt. Ltd. {d.footer.rights}</p>
+          <p className="text-xs text-ink-soft dark:text-white">© {new Date().getFullYear()} Kolab Technologies Private Limited. {d.footer.rights}</p>
         </div>
       </div>
     </footer>
