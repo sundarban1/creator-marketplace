@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -70,6 +70,7 @@ export function BottomSheet({
   const C = useAppColors();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const keyboardOffset = useKeyboardOffset();
   const { dragY, panHandlers, onScroll } = useCloseOnScrollDown(onClose);
   const resolvedChildren = typeof children === 'function' ? children({ panHandlers }) : children;
@@ -82,7 +83,10 @@ export function BottomSheet({
           s.sheet,
           {
             backgroundColor: C.surface,
-            maxHeight: `${maxHeightPct * 100}%`,
+            // A concrete pixel cap, not a `%` string: a percentage maxHeight on an
+            // absolutely-positioned sheet isn't reliably clamped by Yoga, so the
+            // sheet could grow past it and push a sticky footer off-screen.
+            maxHeight: Math.round(windowHeight * maxHeightPct),
             transform: [{ translateY: Animated.add(keyboardOffset, dragY) }],
             ...(maxWidth != null ? { width: '100%' as const, maxWidth, alignSelf: 'center' as const } : null),
           },
@@ -112,6 +116,7 @@ export function BottomSheet({
 
         {scrollable ? (
           <ScrollView
+            style={s.scroll}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             onScroll={closeOnScrollDown ? onScroll : undefined}
@@ -143,7 +148,16 @@ const s = StyleSheet.create({
   textCenter: { textAlign: 'center' },
   title:      { fontSize: 17, fontFamily: F.extrabold },
   subtitle:   { fontSize: 12.5, fontFamily: F.regular, marginTop: 2 },
+  // flexShrink + minHeight:0 let a tall body give up space to the sticky
+  // footer inside the height-capped sheet instead of pushing it off-screen
+  // (Yoga won't shrink a flex child below its content height without the
+  // explicit minHeight:0); short content still sizes to itself (no flexGrow),
+  // so sheets don't balloon.
+  scroll:     { flexShrink: 1, minHeight: 0 },
   body:       { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.xl, paddingBottom: 36 },
-  bodyFlex:   { flex: 1 },
+  // Same reasoning for the non-scrollable body: it must be free to shrink so
+  // a footer stays on-screen when the inner content (e.g. a nested list plus
+  // a selection banner) would otherwise overflow the capped sheet height.
+  bodyFlex:   { flex: 1, minHeight: 0 },
   footer:     { padding: SCREEN_GUTTER, borderTopWidth: 1 },
 });

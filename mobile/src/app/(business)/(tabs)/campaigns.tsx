@@ -790,10 +790,10 @@ export default function CampaignsScreen() {
                   </Pressable>
                 </View>
               ) : (
-                <ScrollView contentContainerStyle={styles.modalList} showsVerticalScrollIndicator={false}>
+                <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalList} showsVerticalScrollIndicator={false}>
                   {(listMode === 'recommended'
-                    ? recommendedCreators.map((c) => ({ id: c.id, fullName: c.fullName, isVerified: c.isVerified, socialAccounts: c.socialAccounts, distanceKm: c.distanceKm }))
-                    : savedCreators.map(({ creator }) => ({ id: creator.id, fullName: creator.fullName, isVerified: creator.isVerified, socialAccounts: creator.socialAccounts, distanceKm: undefined as number | undefined }))
+                    ? recommendedCreators.map((c) => ({ id: c.id, fullName: c.fullName, avatarUrl: c.avatarUrl, isVerified: c.isVerified, socialAccounts: c.socialAccounts, distanceKm: c.distanceKm }))
+                    : savedCreators.map(({ creator }) => ({ id: creator.id, fullName: creator.fullName, avatarUrl: creator.avatarUrl, isVerified: creator.isVerified, socialAccounts: creator.socialAccounts, distanceKm: undefined as number | undefined }))
                   ).filter((creator) => !proposedCreators.has(creator.id)).map((creator) => {
                     const invited = invitedCreators.has(creator.id);
                     const sel = selectedCreators.has(creator.id);
@@ -809,9 +809,13 @@ export default function CampaignsScreen() {
                         ]}
                         disabled={invited}
                         onPress={() => toggleCreator(creator.id)}>
-                        <View style={[styles.pickAvatar, { backgroundColor: C.brinjal1 }]}>
-                          <Text style={styles.pickAvatarText}>{abbr}</Text>
-                        </View>
+                        {creator.avatarUrl ? (
+                          <Image source={{ uri: creator.avatarUrl }} style={styles.pickAvatar} contentFit="cover" />
+                        ) : (
+                          <View style={[styles.pickAvatar, { backgroundColor: C.brinjal1 }]}>
+                            <Text style={styles.pickAvatarText}>{abbr}</Text>
+                          </View>
+                        )}
                         <View style={styles.pickInfo}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Text style={[styles.pickName, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
@@ -936,6 +940,12 @@ const styles = StyleSheet.create({
   buttonSecondary: { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.md },
   buttonTextSecondary: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
+  // The sheet body is a height-capped flex column. This inner list must be free
+  // to shrink (flexShrink + minHeight:0) so the sticky "Send invite" footer keeps
+  // its slot as the list grows: the sheet height tracks the content until it hits
+  // the cap, then the list scrolls inside its remaining space. flexShrink (not
+  // flex:1) so a short list still sizes to its own content.
+  modalScroll: { flexShrink: 1, minHeight: 0 },
   modalList: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxxl },
 
   // Invite modal

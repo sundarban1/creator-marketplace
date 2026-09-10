@@ -2850,7 +2850,7 @@ const en = {
     // impossible to tell apart in a bug report.
     aiNetworkFallback:   "Couldn't reach the server in time — loaded a generic template you can edit before publishing.",
     aiServiceFallback:   "AI is unavailable right now — loaded a starter draft you can edit before publishing.",
-    aiOverlayTitle:      'Kolab is creating your event for you',
+    aiOverlayTitle:      'Kolab AI is creating your event for you',
     aiOverlayStep1:      'Reading your idea…',
     aiOverlayStep2:      'Picking the best platforms…',
     aiOverlayStep3:      'Writing a catchy caption…',
