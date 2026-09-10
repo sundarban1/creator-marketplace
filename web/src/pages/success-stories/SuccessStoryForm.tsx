@@ -225,7 +225,7 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
             </button>
             <button
               type="button"
-              onClick={() => navigate('/success-stories')}
+              onClick={() => navigate('/admin/success-stories')}
               className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-colors"
             >
               Cancel

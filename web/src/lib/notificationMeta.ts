@@ -23,34 +23,34 @@ export function timeAgo(iso: string): string {
 // somewhere useful.
 export function notificationRoute(n: ApiNotification): string | null {
   switch (n.type) {
-    case 'creator_joined':      return '/creators';
-    case 'business_joined':     return '/businesses';
+    case 'creator_joined':      return '/admin/creators';
+    case 'business_joined':     return '/admin/businesses';
     case 'campaign_created':
     case 'proposal_submitted':
     case 'campaign_expired':
     case 'payment_release_pending':
-      return n.refId ? `/campaigns/${n.refId}` : '/campaigns';
+      return n.refId ? `/admin/campaigns/${n.refId}` : '/admin/campaigns';
     case 'withdrawal_requested':
-    case 'money_withdrawn':     return '/payments?tab=withdrawals';
-    case 'dispute_opened':      return '/payments?tab=disputes';
-    case 'issue_reported':      return '/support-inbox?tab=reports';
-    case 'contact_message':     return '/support-inbox?tab=contacts';
+    case 'money_withdrawn':     return '/admin/payments?tab=withdrawals';
+    case 'dispute_opened':      return '/admin/payments?tab=disputes';
+    case 'issue_reported':      return '/admin/support-inbox?tab=reports';
+    case 'contact_message':     return '/admin/support-inbox?tab=contacts';
     case 'account_verified':
     case 'account_deactivated':
-    case 'account_deleted':     return '/users';
+    case 'account_deleted':     return '/admin/users';
   }
 
   // Fallback for any type not mapped above — route by what the notification
   // points at, so new admin notification types still land on a real page.
   switch (n.refType) {
-    case 'user':            return '/users';
+    case 'user':            return '/admin/users';
     case 'campaign':
-    case 'event':           return n.refId ? `/campaigns/${n.refId}` : '/campaigns';
-    case 'support_request': return '/support-inbox?tab=contacts';
-    case 'issue_report':    return '/support-inbox?tab=reports';
-    case 'dispute':         return '/payments?tab=disputes';
-    case 'withdrawal':      return '/payments?tab=withdrawals';
-    default:                return '/dashboard';
+    case 'event':           return n.refId ? `/admin/campaigns/${n.refId}` : '/admin/campaigns';
+    case 'support_request': return '/admin/support-inbox?tab=contacts';
+    case 'issue_report':    return '/admin/support-inbox?tab=reports';
+    case 'dispute':         return '/admin/payments?tab=disputes';
+    case 'withdrawal':      return '/admin/payments?tab=withdrawals';
+    default:                return '/admin/dashboard';
   }
 }
 

@@ -195,7 +195,7 @@ export function Businesses() {
             variant="primary"
             icon={BarChart3}
             title="Analytics"
-            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: displayBusinessName(row.businessName), email: row.user.email } })} />
+            onClick={() => navigate(`/admin/analytics/${row.user.id}`, { state: { name: displayBusinessName(row.businessName), email: row.user.email } })} />
           <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', business: row })} />
         </div>
       ),

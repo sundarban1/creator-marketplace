@@ -10,7 +10,7 @@ export function NewSuccessStoryPage() {
   async function handleSubmit(data: Omit<SuccessStory, 'id' | 'createdAt'>) {
     try {
       await addStory(data);
-      navigate('/success-stories');
+      navigate('/admin/success-stories');
     } catch (e) {
       window.alert((e as Error).message ?? 'Failed to create success story.');
     }
@@ -20,7 +20,7 @@ export function NewSuccessStoryPage() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate('/success-stories')}
+          onClick={() => navigate('/admin/success-stories')}
           className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
         >
           <ArrowLeft size={18} />

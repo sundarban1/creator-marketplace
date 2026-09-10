@@ -167,7 +167,7 @@ export function Users() {
               variant="primary"
               icon={BarChart3}
               title="Analytics"
-              onClick={() => navigate(`/analytics/${row.id}`, { state: { name: displayName(row), email: row.email } })}
+              onClick={() => navigate(`/admin/analytics/${row.id}`, { state: { name: displayName(row), email: row.email } })}
             />
           )}
           <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', user: row })} />

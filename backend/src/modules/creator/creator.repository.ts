@@ -121,12 +121,19 @@ export class CreatorRepository {
     page: number;
     limit: number;
     sort?: 'newest' | 'oldest' | 'followers';
+    /** Anonymous/public listing — honour the creator's "show public profile" opt-in. */
+    publicOnly?: boolean;
   }) {
     const PRICE_MAX = 1000;
     // A creator who never finished onboarding has no fullName/categories/bio yet —
     // showing them in Explore Creators is just a blank/broken card, so they're
     // excluded here rather than filtered client-side (keeps pagination totals correct).
     const where: Prisma.CreatorProfileWhereInput = { user: { isOnboarded: true } };
+
+    // On the public (unauthenticated) marketplace, only creators who've opted
+    // into a public profile are listed — authenticated brand discovery still
+    // sees every onboarded creator.
+    if (filters.publicOnly) where.showPublicProfile = true;
 
     if (filters.search) {
       // Matching the name alone meant a search for "coffee" found nobody,
@@ -200,7 +207,7 @@ export class CreatorRepository {
 
     const skip = (filters.page - 1) * filters.limit;
     const select = {
-      id: true, fullName: true, bio: true, avatarUrl: true,
+      id: true, username: true, fullName: true, bio: true, avatarUrl: true,
       providerType: true, teamSize: true, industries: true,
       location: true, categories: true, isVerified: true,
       citizenshipStatus: true, companyRegDocStatus: true,

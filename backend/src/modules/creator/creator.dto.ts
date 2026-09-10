@@ -145,6 +145,7 @@ export interface PrivateCreatorDto {
 
 export interface CreatorListItemDto {
   id: string;
+  username: string | null;
   fullName: string | null;
   providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
   teamSize: number | null;
@@ -381,6 +382,7 @@ export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
 
 type RawCreatorListItem = {
   id: string;
+  username?: string | null;
   fullName: string | null;
   providerType?: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
   teamSize?: number | null;
@@ -402,6 +404,7 @@ type RawCreatorListItem = {
 export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto {
   const dto: CreatorListItemDto = {
     id:            p.id,
+    username:      p.username ?? null,
     fullName:      p.fullName,
     providerType:  p.providerType ?? null,
     teamSize:      p.teamSize ?? null,

@@ -766,7 +766,7 @@ async function refreshAccessToken(): Promise<string> {
   const rt = getRefreshToken();
   if (!rt) {
     clearTokens();
-    window.location.href = '/login';
+    window.location.href = '/admin/login';
     throw new Error('Session expired');
   }
 
@@ -778,7 +778,7 @@ async function refreshAccessToken(): Promise<string> {
 
   if (!res.ok) {
     clearTokens();
-    window.location.href = '/login';
+    window.location.href = '/admin/login';
     throw new Error('Session expired');
   }
 

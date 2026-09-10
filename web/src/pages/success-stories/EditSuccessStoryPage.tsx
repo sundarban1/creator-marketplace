@@ -25,7 +25,7 @@ export function EditSuccessStoryPage() {
           <p className="text-sm text-gray-500 mt-1">The success story you're looking for doesn't exist.</p>
         </div>
         <button
-          onClick={() => navigate('/success-stories')}
+          onClick={() => navigate('/admin/success-stories')}
           className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
         >
           Back to Success Stories
@@ -37,7 +37,7 @@ export function EditSuccessStoryPage() {
   async function handleSubmit(data: Omit<SuccessStory, 'id' | 'createdAt'>) {
     try {
       await updateStory(story!.id, data);
-      navigate('/success-stories');
+      navigate('/admin/success-stories');
     } catch (e) {
       window.alert((e as Error).message ?? 'Failed to update success story.');
     }
@@ -47,7 +47,7 @@ export function EditSuccessStoryPage() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate('/success-stories')}
+          onClick={() => navigate('/admin/success-stories')}
           className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
         >
           <ArrowLeft size={18} />

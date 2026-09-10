@@ -404,7 +404,7 @@ export function CampaignDetail() {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <button
-            onClick={() => navigate('/campaigns')}
+            onClick={() => navigate('/admin/campaigns')}
             className="mt-0.5 p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0"
           >
             <ArrowLeft size={18} />

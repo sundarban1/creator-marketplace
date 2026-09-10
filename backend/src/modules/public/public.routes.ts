@@ -1,8 +1,14 @@
 import { Router } from 'express';
 import { PublicController } from './public.controller';
+import { CreatorController } from '../creator/creator.controller';
+import { CampaignController } from '../campaign/campaign.controller';
+import { validate } from '../../middleware/validate';
+import { campaignListQuerySchema } from '../campaign/campaign.schema';
 
 const router = Router();
 const ctrl = new PublicController();
+const creatorCtrl = new CreatorController();
+const campaignCtrl = new CampaignController();
 
 // Public — no auth. Aggregate counts for the marketing landing page.
 router.get('/landing-stats', ctrl.landingStats.bind(ctrl));
@@ -12,5 +18,19 @@ router.get('/coming-soon', ctrl.comingSoon.bind(ctrl));
 router.get('/platform-flags', ctrl.platformFlags.bind(ctrl));
 // Public — no auth. Contact details + social links for the landing page footer.
 router.get('/site-info', ctrl.siteInfo.bind(ctrl));
+
+// ── Public creator marketplace (ourkolab.com/creators) ─────────────────────────
+// Unauthenticated discovery of creators who opted into a public profile. The
+// authenticated brand-facing equivalents live at /api/business/creators.
+// `/filter-options` before `/:handle` so the literal segment wins.
+router.get('/creators/filter-options', creatorCtrl.getCreatorFilterOptions.bind(creatorCtrl));
+router.get('/creators', creatorCtrl.listPublicCreators.bind(creatorCtrl));
+router.get('/creators/:handle', creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
+
+// ── Public event marketplace (ourkolab.com/events) ────────────────────────────
+// `campaignService.list` already defaults to status=ACTIVE and needs no auth;
+// this is just the public-namespaced alias. Detail 404s non-public statuses.
+router.get('/events', validate(campaignListQuerySchema, 'query'), campaignCtrl.list.bind(campaignCtrl));
+router.get('/events/:id', campaignCtrl.getPublicById.bind(campaignCtrl));
 
 export default router;

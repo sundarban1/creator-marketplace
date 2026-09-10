@@ -8,6 +8,7 @@ import { SuccessStoriesProvider } from './context/SuccessStoriesContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RouteFallback } from './components/RouteFallback';
+import { marketplaceRoutes } from './app/AppRoutes';
 
 // The landing page is the LCP-critical, prerendered entry point — keep it in
 // the main chunk so first paint never waits on a second network round trip.
@@ -137,47 +138,55 @@ export default function App() {
           {CITY_PAGES.map((cfg) => (
             <Route key={cfg.slug} path={`/${cfg.slug}`} element={<NichePage config={cfg} />} />
           ))}
-          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/login" element={<Login />} />
+          {/* The admin dashboard lives under /admin/* so the marketplace web
+              app can own the clean top-level paths (/login, /creators, /events).
+              Admin components/logic/permissions are unchanged — only the route
+              paths and their internal links moved. */}
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AdminProviders />}>
               <Route element={<DashboardLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/users" element={<Users />} />
-                <Route path="/creators" element={<Creators />} />
-                <Route path="/businesses" element={<Businesses />} />
-                <Route path="/campaigns" element={<Campaigns />} />
-                <Route path="/campaigns/:id" element={<CampaignDetail />} />
-                <Route path="/analytics/:userId" element={<UserAnalytics />} />
-                <Route path="/categories" element={<CategoriesPage />} />
-                <Route path="/categories/new" element={<NewCategoryPage />} />
-                <Route path="/categories/edit/:id" element={<EditCategoryPage />} />
-                <Route path="/platforms" element={<PlatformsPage />} />
-                <Route path="/platforms/new" element={<NewPlatformPage />} />
-                <Route path="/platforms/edit/:id" element={<EditPlatformPage />} />
-                <Route path="/success-stories" element={<SuccessStoriesPage />} />
-                <Route path="/success-stories/new" element={<NewSuccessStoryPage />} />
-                <Route path="/success-stories/edit/:id" element={<EditSuccessStoryPage />} />
-                <Route path="/payments" element={<Payments />} />
-                <Route path="/referrals" element={<Referrals />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/help-center" element={<HelpCenter />} />
-                <Route path="/faqs" element={<FAQManager />} />
-                <Route path="/support-inbox" element={<SupportInbox />} />
-                <Route path="/get-in-touch" element={<GetInTouch />} />
-                <Route path="/legal"          element={<LegalEditor />} />
-                <Route path="/contracts"      element={<ContractTemplateEditor />} />
-                <Route path="/conversations" element={<Conversations />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/contact-info" element={<ContactInfo />} />
-                <Route path="/rate-limits" element={<RateLimits />} />
-                <Route path="/audit-logs" element={<AuditLogs />} />
-                <Route path="/verification" element={<VerificationDashboard />} />
-                <Route path="/activity-logs" element={<ActivityLogs />} />
+                <Route path="/admin/dashboard" element={<Dashboard />} />
+                <Route path="/admin/users" element={<Users />} />
+                <Route path="/admin/creators" element={<Creators />} />
+                <Route path="/admin/businesses" element={<Businesses />} />
+                <Route path="/admin/campaigns" element={<Campaigns />} />
+                <Route path="/admin/campaigns/:id" element={<CampaignDetail />} />
+                <Route path="/admin/analytics/:userId" element={<UserAnalytics />} />
+                <Route path="/admin/categories" element={<CategoriesPage />} />
+                <Route path="/admin/categories/new" element={<NewCategoryPage />} />
+                <Route path="/admin/categories/edit/:id" element={<EditCategoryPage />} />
+                <Route path="/admin/platforms" element={<PlatformsPage />} />
+                <Route path="/admin/platforms/new" element={<NewPlatformPage />} />
+                <Route path="/admin/platforms/edit/:id" element={<EditPlatformPage />} />
+                <Route path="/admin/success-stories" element={<SuccessStoriesPage />} />
+                <Route path="/admin/success-stories/new" element={<NewSuccessStoryPage />} />
+                <Route path="/admin/success-stories/edit/:id" element={<EditSuccessStoryPage />} />
+                <Route path="/admin/payments" element={<Payments />} />
+                <Route path="/admin/referrals" element={<Referrals />} />
+                <Route path="/admin/reports" element={<Reports />} />
+                <Route path="/admin/help-center" element={<HelpCenter />} />
+                <Route path="/admin/faqs" element={<FAQManager />} />
+                <Route path="/admin/support-inbox" element={<SupportInbox />} />
+                <Route path="/admin/get-in-touch" element={<GetInTouch />} />
+                <Route path="/admin/legal"          element={<LegalEditor />} />
+                <Route path="/admin/contracts"      element={<ContractTemplateEditor />} />
+                <Route path="/admin/conversations" element={<Conversations />} />
+                <Route path="/admin/notifications" element={<Notifications />} />
+                <Route path="/admin/settings" element={<Settings />} />
+                <Route path="/admin/contact-info" element={<ContactInfo />} />
+                <Route path="/admin/rate-limits" element={<RateLimits />} />
+                <Route path="/admin/audit-logs" element={<AuditLogs />} />
+                <Route path="/admin/verification" element={<VerificationDashboard />} />
+                <Route path="/admin/activity-logs" element={<ActivityLogs />} />
               </Route>
             </Route>
           </Route>
+
+          {/* Marketplace web app — /login, /signup, /creator/*, /business/* */}
+          {marketplaceRoutes()}
+
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
        </Suspense>

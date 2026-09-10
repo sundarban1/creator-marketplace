@@ -191,7 +191,7 @@ export function Creators() {
             variant="primary"
             icon={BarChart3}
             title="Analytics"
-            onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.fullName ?? row.user.email, email: row.user.email } })} />
+            onClick={() => navigate(`/admin/analytics/${row.user.id}`, { state: { name: row.fullName ?? row.user.email, email: row.user.email } })} />
           <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', creator: row })} />
         </div>
       ),

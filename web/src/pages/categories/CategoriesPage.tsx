@@ -51,7 +51,7 @@ export function CategoriesPage() {
         subtitle={`${categories.length} total · ${activeCount} active`}
         action={
           <button
-            onClick={() => navigate('/categories/new')}
+            onClick={() => navigate('/admin/categories/new')}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
           >
             <Plus size={16} />
@@ -170,7 +170,7 @@ export function CategoriesPage() {
 
                     {/* Edit */}
                     <button
-                      onClick={() => navigate(`/categories/edit/${cat.id}`)}
+                      onClick={() => navigate(`/admin/categories/edit/${cat.id}`)}
                       title="Edit"
                       className="p-1.5 rounded-lg border bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100 transition-colors"
                     >

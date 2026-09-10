@@ -25,7 +25,7 @@ export function EditPlatformPage() {
           <p className="text-sm text-gray-500 mt-1">The platform you're looking for doesn't exist.</p>
         </div>
         <button
-          onClick={() => navigate('/platforms')}
+          onClick={() => navigate('/admin/platforms')}
           className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
         >
           Back to Platforms
@@ -37,7 +37,7 @@ export function EditPlatformPage() {
   async function handleSubmit(data: Omit<Platform, 'id' | 'createdAt' | 'campaignCount'>) {
     try {
       await updatePlatform(platform!.id, data);
-      navigate('/platforms');
+      navigate('/admin/platforms');
     } catch (e) {
       window.alert((e as Error).message ?? 'Failed to update platform.');
     }
@@ -47,7 +47,7 @@ export function EditPlatformPage() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate('/platforms')}
+          onClick={() => navigate('/admin/platforms')}
           className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
         >
           <ArrowLeft size={18} />

@@ -25,7 +25,7 @@ export function EditCategoryPage() {
           <p className="text-sm text-gray-500 mt-1">The category you're looking for doesn't exist.</p>
         </div>
         <button
-          onClick={() => navigate('/categories')}
+          onClick={() => navigate('/admin/categories')}
           className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
         >
           Back to Categories
@@ -37,7 +37,7 @@ export function EditCategoryPage() {
   async function handleSubmit(data: Omit<Category, 'id' | 'createdAt' | 'itemCount'>) {
     try {
       await updateCategory(category!.id, data);
-      navigate('/categories');
+      navigate('/admin/categories');
     } catch (e) {
       window.alert((e as Error).message ?? 'Failed to update category.');
     }
@@ -47,7 +47,7 @@ export function EditCategoryPage() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate('/categories')}
+          onClick={() => navigate('/admin/categories')}
           className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
         >
           <ArrowLeft size={18} />

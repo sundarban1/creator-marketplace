@@ -51,7 +51,7 @@ export function PlatformsPage() {
         subtitle={`${platforms.length} total · ${activeCount} active`}
         action={
           <button
-            onClick={() => navigate('/platforms/new')}
+            onClick={() => navigate('/admin/platforms/new')}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
           >
             <Plus size={16} />
@@ -145,7 +145,7 @@ export function PlatformsPage() {
                       {plt.status === 'active' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
                     </button>
                     <button
-                      onClick={() => navigate(`/platforms/edit/${plt.id}`)}
+                      onClick={() => navigate(`/admin/platforms/edit/${plt.id}`)}
                       title="Edit"
                       className="p-1.5 rounded-lg border bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100 transition-colors"
                     >

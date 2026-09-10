@@ -47,7 +47,7 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
 
   function handleLogout() {
     logout();
-    navigate('/login', { replace: true });
+    navigate('/admin/login', { replace: true });
   }
 
   const userInitials = user ? initials(user.name) : 'SA';
@@ -131,7 +131,7 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
                 )}
               </div>
               <button
-                onClick={() => { setNotifOpen(false); navigate('/notifications'); }}
+                onClick={() => { setNotifOpen(false); navigate('/admin/notifications'); }}
                 className="flex-shrink-0 text-center text-xs font-medium text-indigo-600 hover:bg-gray-50 py-2.5 border-t border-gray-100 transition-colors"
               >
                 See all notifications
@@ -163,7 +163,7 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
                 <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
               </div>
               <button
-                onClick={() => { setMenuOpen(false); navigate('/settings'); }}
+                onClick={() => { setMenuOpen(false); navigate('/admin/settings'); }}
                 className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <User size={15} className="text-gray-400" />

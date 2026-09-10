@@ -10,7 +10,7 @@ export function NewPlatformPage() {
   async function handleSubmit(data: Omit<Platform, 'id' | 'createdAt' | 'campaignCount'>) {
     try {
       await addPlatform(data);
-      navigate('/platforms');
+      navigate('/admin/platforms');
     } catch (e) {
       window.alert((e as Error).message ?? 'Failed to create platform.');
     }
@@ -20,7 +20,7 @@ export function NewPlatformPage() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate('/platforms')}
+          onClick={() => navigate('/admin/platforms')}
           className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
         >
           <ArrowLeft size={18} />

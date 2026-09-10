@@ -26,10 +26,21 @@ export const SECTION_IDS = {
   contact: 'contact',
 } as const;
 
-export const NAV_LINKS: { key: 'discover' | 'services' | 'opportunities' | 'contact'; id: string; offset?: number }[] = [
+// `id` links scroll to a section on the landing page; `to` links navigate to a
+// standalone route (react-router) instead.
+export const NAV_LINKS: {
+  key: 'discover' | 'services' | 'opportunities' | 'contact' | 'creators' | 'business';
+  id?: string;
+  to?: string;
+  offset?: number;
+}[] = [
   { key: 'discover', id: SECTION_IDS.possibilities },
   { key: 'opportunities', id: SECTION_IDS.opportunities },
   { key: 'services', id: SECTION_IDS.categories },
+  { key: 'creators', to: '/creators' },
+  // Role-gated business app — anonymous visitors are bounced to /login, where
+  // they can sign up as a business and land in the business dashboard.
+  { key: 'business', to: '/business' },
   // The footer's hairline top border sits right at #contact's own top edge,
   // which otherwise scrolls to right under the fixed LandingNav header (its
   // ~65px scrolled height) and lands past it, directly on the "Get in touch"

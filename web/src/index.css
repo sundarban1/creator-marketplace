@@ -33,6 +33,23 @@
   --color-ink-elevated-2: #262120;
   --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Fraunces", ui-serif, Georgia, serif;
+
+  /* ── Marketplace web app (/creator/*, /business/*, /login, /creators, /events)
+     Additive tokens shared with the landing palette above so the whole site
+     reads as one Kolab. The admin dashboard uses Tailwind's gray-* scale and
+     never references these, so nothing here touches it. */
+  --color-line: #ECE7DE;            /* hairline on paper */
+  --color-line-strong: #DED7C9;
+  --color-surface: #FFFFFF;
+  --color-surface-dim: #F7F4EE;
+  --color-brand: #4F46E5;           /* = brand-indigo, the app's primary action */
+  --color-brand-hover: #4338CA;
+  --color-success: #15803D;
+  --color-success-soft: #DCFCE7;
+  --color-danger: #DC2626;
+  --color-danger-soft: #FEE2E2;
+  --color-warning: #B45309;
+  --color-warning-soft: #FEF3C7;
 }
 
 * {

@@ -10,7 +10,7 @@ export function NewCategoryPage() {
   async function handleSubmit(data: Omit<Category, 'id' | 'createdAt' | 'itemCount'>) {
     try {
       await addCategory(data);
-      navigate('/categories');
+      navigate('/admin/categories');
     } catch (e) {
       window.alert((e as Error).message ?? 'Failed to create category.');
     }
@@ -20,7 +20,7 @@ export function NewCategoryPage() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate('/categories')}
+          onClick={() => navigate('/admin/categories')}
           className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
         >
           <ArrowLeft size={18} />

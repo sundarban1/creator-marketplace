@@ -142,7 +142,7 @@ export function Campaigns() {
       header: 'Event',
       render: (row: ApiCampaign) => (
         <button
-          onClick={() => navigate(`/campaigns/${row.id}`)}
+          onClick={() => navigate(`/admin/campaigns/${row.id}`)}
           className="min-w-0 text-left group"
         >
           <p className="font-medium text-gray-900 truncate max-w-[220px] group-hover:text-indigo-600 group-hover:underline">{row.title}</p>
@@ -233,7 +233,7 @@ export function Campaigns() {
             >
               {row.status === 'ACTIVE' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
             </button>
-            <ActionButton variant="primary" icon={Eye} title="View" onClick={() => navigate(`/campaigns/${row.id}`)} />
+            <ActionButton variant="primary" icon={Eye} title="View" onClick={() => navigate(`/admin/campaigns/${row.id}`)} />
             <ActionButton
               variant="primary"
               icon={Pencil}

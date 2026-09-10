@@ -36,50 +36,50 @@ const navGroups: NavGroup[] = [
   {
     label: 'Platform',
     items: [
-      { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-      { to: '/users',      label: 'Users',      icon: Users           },
-      { to: '/creators',   label: 'Creators',   icon: Star            },
-      { to: '/businesses', label: 'Businesses', icon: Briefcase       },
-      { to: '/verification', label: 'Verification', icon: ShieldCheck },
-      { to: '/campaigns',  label: 'Events',     icon: Megaphone       },
-      { to: '/categories', label: 'Categories', icon: Tag             },
-      { to: '/platforms',  label: 'Platforms',  icon: Share2          },
+      { to: '/admin/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+      { to: '/admin/users',      label: 'Users',      icon: Users           },
+      { to: '/admin/creators',   label: 'Creators',   icon: Star            },
+      { to: '/admin/businesses', label: 'Businesses', icon: Briefcase       },
+      { to: '/admin/verification', label: 'Verification', icon: ShieldCheck },
+      { to: '/admin/campaigns',  label: 'Events',     icon: Megaphone       },
+      { to: '/admin/categories', label: 'Categories', icon: Tag             },
+      { to: '/admin/platforms',  label: 'Platforms',  icon: Share2          },
     ],
   },
   {
     label: 'Messaging',
     items: [
-      { to: '/conversations', label: 'Conversations', icon: MessageSquare },
+      { to: '/admin/conversations', label: 'Conversations', icon: MessageSquare },
     ],
   },
   {
     label: 'Finance',
     items: [
-      { to: '/payments',   label: 'Payments',   icon: CreditCard   },
-      { to: '/referrals',  label: 'Referrals',  icon: Gift         },
-      { to: '/reports',    label: 'Reports',    icon: FileBarChart },
+      { to: '/admin/payments',   label: 'Payments',   icon: CreditCard   },
+      { to: '/admin/referrals',  label: 'Referrals',  icon: Gift         },
+      { to: '/admin/reports',    label: 'Reports',    icon: FileBarChart },
     ],
   },
   {
     label: 'Support',
     items: [
-      { to: '/help-center',   label: 'Help Center',   icon: HelpCircle    },
-      { to: '/faqs',          label: 'FAQs',          icon: BookOpen      },
-      { to: '/success-stories', label: 'Success Stories', icon: Quote     },
-      { to: '/get-in-touch',  label: 'Get in Touch',  icon: Mail          },
-      { to: '/support-inbox', label: 'Support Inbox', icon: MessageCircle },
-      { to: '/legal',         label: 'Legal',         icon: Scale         },
-      { to: '/contracts',     label: 'Contracts',     icon: FileSignature },
+      { to: '/admin/help-center',   label: 'Help Center',   icon: HelpCircle    },
+      { to: '/admin/faqs',          label: 'FAQs',          icon: BookOpen      },
+      { to: '/admin/success-stories', label: 'Success Stories', icon: Quote     },
+      { to: '/admin/get-in-touch',  label: 'Get in Touch',  icon: Mail          },
+      { to: '/admin/support-inbox', label: 'Support Inbox', icon: MessageCircle },
+      { to: '/admin/legal',         label: 'Legal',         icon: Scale         },
+      { to: '/admin/contracts',     label: 'Contracts',     icon: FileSignature },
     ],
   },
   {
     label: 'System',
     items: [
-      { to: '/contact-info', label: 'Company',     icon: Building2 },
-      { to: '/settings',     label: 'Settings',    icon: Settings },
-      { to: '/rate-limits',  label: 'Rate Limits', icon: Gauge    },
-      { to: '/audit-logs',   label: 'Audit Logs',  icon: ScrollText },
-      { to: '/activity-logs', label: 'Activity Logs', icon: History },
+      { to: '/admin/contact-info', label: 'Company',     icon: Building2 },
+      { to: '/admin/settings',     label: 'Settings',    icon: Settings },
+      { to: '/admin/rate-limits',  label: 'Rate Limits', icon: Gauge    },
+      { to: '/admin/audit-logs',   label: 'Audit Logs',  icon: ScrollText },
+      { to: '/admin/activity-logs', label: 'Activity Logs', icon: History },
     ],
   },
 ];
@@ -100,7 +100,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   function handleLogout() {
     onClose();
     logout();
-    navigate('/login', { replace: true });
+    navigate('/admin/login', { replace: true });
   }
 
   return (

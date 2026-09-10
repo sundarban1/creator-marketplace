@@ -5,25 +5,25 @@ import { Topbar } from '../components/Topbar';
 import { AdminChatWidget } from '../components/AdminChatWidget';
 
 function resolveTitle(pathname: string): string {
-  if (pathname === '/categories/new') return 'New Category';
-  if (pathname.startsWith('/categories/edit/')) return 'Edit Category';
-  if (pathname === '/platforms/new') return 'New Platform';
-  if (pathname.startsWith('/platforms/edit/')) return 'Edit Platform';
+  if (pathname === '/admin/categories/new') return 'New Category';
+  if (pathname.startsWith('/admin/categories/edit/')) return 'Edit Category';
+  if (pathname === '/admin/platforms/new') return 'New Platform';
+  if (pathname.startsWith('/admin/platforms/edit/')) return 'Edit Platform';
   const exact: Record<string, string> = {
-    '/dashboard': 'Dashboard',
-    '/users': 'Users',
-    '/creators': 'Creators',
-    '/businesses': 'Businesses',
-    '/campaigns': 'Events',
-    '/categories': 'Categories',
-    '/platforms': 'Platforms',
-    '/payments':    'Payments',
-    '/reports':     'Reports',
-    '/help-center':   'Help Center',
-    '/faqs':          'FAQ Manager',
-    '/support-inbox': 'Support Inbox',
-    '/legal':         'Legal Editor',
-    '/settings':      'Settings',
+    '/admin/dashboard': 'Dashboard',
+    '/admin/users': 'Users',
+    '/admin/creators': 'Creators',
+    '/admin/businesses': 'Businesses',
+    '/admin/campaigns': 'Events',
+    '/admin/categories': 'Categories',
+    '/admin/platforms': 'Platforms',
+    '/admin/payments':    'Payments',
+    '/admin/reports':     'Reports',
+    '/admin/help-center':   'Help Center',
+    '/admin/faqs':          'FAQ Manager',
+    '/admin/support-inbox': 'Support Inbox',
+    '/admin/legal':         'Legal Editor',
+    '/admin/settings':      'Settings',
   };
   return exact[pathname] ?? 'Admin';
 }

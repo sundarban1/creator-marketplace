@@ -4,6 +4,8 @@ export const en = {
       discover: 'Discover',
       services: 'Services',
       opportunities: 'Opportunities',
+      creators: 'Creators',
+      business: 'Business',
       contact: 'Contact us',
       howItWorks: 'How it works',
     },

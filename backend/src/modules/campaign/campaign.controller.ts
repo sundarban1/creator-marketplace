@@ -106,6 +106,27 @@ export class CampaignController {
     }
   }
 
+  // Public event detail (unauthenticated, mounted under /api/public/events).
+  // Only surfaces campaigns in a publicly-visible state — a DRAFT or
+  // PENDING_APPROVAL campaign 404s here even if its id is known.
+  async getPublicById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const campaign = await campaignService.getById(req.params.id, req.language);
+      const PUBLIC_STATUSES: CampaignStatus[] = [
+        CampaignStatus.ACTIVE,
+        CampaignStatus.PAUSED,
+        CampaignStatus.CLOSED,
+        CampaignStatus.EXPIRED,
+      ];
+      if (!PUBLIC_STATUSES.includes(campaign.status as CampaignStatus)) {
+        throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+      }
+      success(res, campaign, 'Campaign retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.update(req.params.id, req.user!.id, req.body);

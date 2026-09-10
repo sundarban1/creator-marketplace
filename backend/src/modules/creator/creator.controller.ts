@@ -60,6 +60,46 @@ export class CreatorController {
     }
   }
 
+  // ── Public marketplace (unauthenticated — mounted under /api/public) ────────
+  // Same shape as listCreators, but restricted to creators who opted into a
+  // public profile (publicOnly). No viewer, no analytics.
+  async listPublicCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const page = parseInt(String(req.query.page ?? '1'), 10);
+      const limit = parseInt(String(req.query.limit ?? '12'), 10);
+      const search = req.query.search as string | undefined;
+      const location = req.query.location as string | undefined;
+      const categoriesRaw = req.query.categories as string | undefined;
+      const platformsRaw = req.query.platforms as string | undefined;
+      const categories = categoriesRaw ? categoriesRaw.split(',').filter(Boolean) : undefined;
+      const platforms = platformsRaw ? platformsRaw.split(',').filter(Boolean) : undefined;
+      const priceMin = req.query.priceMin ? parseFloat(String(req.query.priceMin)) : undefined;
+      const priceMax = req.query.priceMax ? parseFloat(String(req.query.priceMax)) : undefined;
+      const sortRaw = req.query.sort as string | undefined;
+      const sort = sortRaw === 'oldest' || sortRaw === 'followers' ? sortRaw : 'newest';
+      const result = await creatorService.listCreators({
+        page, limit, search, categories, location, platforms, priceMin, priceMax, sort,
+        publicOnly: true, lang: req.language,
+      });
+      success(res, result, getDict().creator.creatorsRetrieved);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Public creator profile by username-or-id. 404s when the handle doesn't
+  // resolve; the service still applies the showPublicProfile gate.
+  async getPublicCreatorByHandle(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = await creatorService.resolveHandleToId(req.params.handle);
+      if (!id) throw new AppError(getDict().creator.creatorNotFound, HttpStatus.NOT_FOUND);
+      const profile = await creatorService.getCreatorPublicProfile(id, req.language);
+      success(res, profile, getDict().creator.creatorProfileRetrieved);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // Creator browsing OTHER creators (not businesses) — mirrors listCreators/
   // getCreatorPublicProfile above but excludes the viewer's own profile, since
   // unlike the business use case, a creator's own profile can otherwise appear

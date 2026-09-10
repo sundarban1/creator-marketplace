@@ -6,6 +6,8 @@ export const ne: LandingDict = {
       discover: 'खोज',
       services: 'सेवाहरू',
       opportunities: 'अवसरहरू',
+      creators: 'क्रिएटरहरू',
+      business: 'व्यवसाय',
       contact: 'सम्पर्क गर्नुहोस्',
       howItWorks: 'यसरी काम गर्छ',
     },

@@ -55,7 +55,7 @@ export function SuccessStoriesPage() {
         subtitle={`${stories.length} total · ${activeCount} active`}
         action={
           <button
-            onClick={() => navigate('/success-stories/new')}
+            onClick={() => navigate('/admin/success-stories/new')}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
           >
             <Plus size={16} />
@@ -161,7 +161,7 @@ export function SuccessStoriesPage() {
 
                     {/* Edit */}
                     <button
-                      onClick={() => navigate(`/success-stories/edit/${story.id}`)}
+                      onClick={() => navigate(`/admin/success-stories/edit/${story.id}`)}
                       title="Edit"
                       className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 transition-colors"
                     >

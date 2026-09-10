@@ -39,17 +39,23 @@ function setAssetHeaders(res, filePath) {
   );
 }
 
-// Client-only routes behind ProtectedRoute in src/App.tsx — never
-// prerendered (auth-gated, disallowed in robots.txt), so any request under
-// these prefixes gets the bare SPA shell and React Router + AuthProvider
-// resolve it in the browser.
+// Client-only routes — never prerendered, so any request under these prefixes
+// gets the bare SPA shell and React Router resolves it in the browser.
+//   - /admin/*                    : the entire admin dashboard.
+//   - /login /signup /verify …    : marketplace auth screens.
+//   - /creator/* /business/*      : the authenticated marketplace app.
+// Public marketplace pages (/creators, /events, …) will be prerendered and are
+// intentionally NOT listed here.
 const SPA_PREFIXES = [
-  '/dashboard', '/login', '/admin', '/users', '/creators', '/businesses',
-  '/campaigns', '/analytics', '/categories', '/platforms', '/success-stories',
-  '/payments', '/referrals', '/reports', '/help-center', '/faqs',
-  '/support-inbox', '/get-in-touch', '/legal', '/contracts', '/conversations',
-  '/notifications', '/settings', '/rate-limits',
+  '/admin',
+  '/login', '/signup', '/verify', '/forgot-password',
+  '/creator', '/business',
 ];
+
+// Public, indexable SPA routes — client-rendered (React 19 hoists their SEO
+// tags), served with a 200 so crawlers index them. Distinct from SPA_PREFIXES
+// only in intent; both fall back to the same shell.
+const PUBLIC_SPA_PREFIXES = ['/creators', '/events'];
 
 const app = express();
 
@@ -79,7 +85,8 @@ app.use((req, res) => {
     return res.status(200).sendFile(prerendered);
   }
 
-  if (SPA_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+  const allSpa = [...SPA_PREFIXES, ...PUBLIC_SPA_PREFIXES];
+  if (allSpa.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
     return res.status(200).sendFile(join(DIST, 'index.html'));
   }
 

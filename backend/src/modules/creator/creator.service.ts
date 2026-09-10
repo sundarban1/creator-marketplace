@@ -343,12 +343,13 @@ export class CreatorService {
     priceMax?: number;
     excludeId?: string;
     sort?: 'newest' | 'oldest' | 'followers';
+    publicOnly?: boolean;
     lang?: string;
   }) {
-    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, sort, lang = 'en' } = params;
+    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, sort, publicOnly, lang = 'en' } = params;
     const { creators: raw, total } = await this.repo.findMany({
       page, limit: Math.min(limit, 20),
-      search, categories, location, platforms, priceMin, priceMax, excludeId, sort,
+      search, categories, location, platforms, priceMin, priceMax, excludeId, sort, publicOnly,
     });
     const dtos = raw.map(toCreatorListItemDto);
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
@@ -508,6 +509,15 @@ export class CreatorService {
   // browse list — returns null rather than throwing if no profile exists yet.
   async findByUserId(userId: string) {
     return this.repo.findByUserId(userId);
+  }
+
+  // Resolves a public-profile URL segment that may be either a username or a
+  // raw profile id → the profile id. Returns null when neither matches.
+  async resolveHandleToId(handle: string): Promise<string | null> {
+    const byUsername = await this.repo.findByUsername(handle);
+    if (byUsername) return byUsername.id;
+    const byId = await this.repo.findByIdPublic(handle);
+    return byId ? byId.id : null;
   }
 
   async updateProfile(userId: string, input: UpdateCreatorProfileInput) {

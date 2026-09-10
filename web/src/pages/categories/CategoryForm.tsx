@@ -343,7 +343,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
             </button>
             <button
               type="button"
-              onClick={() => navigate('/categories')}
+              onClick={() => navigate('/admin/categories')}
               className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-colors"
             >
               Cancel

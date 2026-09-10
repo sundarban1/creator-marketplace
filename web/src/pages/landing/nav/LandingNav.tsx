@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { NAV_LINKS } from '../constants';
@@ -131,19 +132,28 @@ export function LandingNav() {
           </button>
 
           <nav className="hidden items-center gap-9 lg:flex">
-            {NAV_LINKS.map((l) => (
-              <button
-                key={l.key}
-                onClick={() => go(l.id, l.offset)}
-                className="group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white"
-              >
-                {d.nav.links[l.key]}
-                <span
-                  aria-hidden
-                  className="absolute bottom-0 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
-                />
-              </button>
-            ))}
+            {NAV_LINKS.map((l) => {
+              const cls =
+                'group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white';
+              const inner = (
+                <>
+                  {d.nav.links[l.key]}
+                  <span
+                    aria-hidden
+                    className="absolute bottom-0 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                  />
+                </>
+              );
+              return l.to ? (
+                <Link key={l.key} to={l.to} onClick={() => setOpen(false)} className={cls}>
+                  {inner}
+                </Link>
+              ) : (
+                <button key={l.key} onClick={() => go(l.id!, l.offset)} className={cls}>
+                  {inner}
+                </button>
+              );
+            })}
           </nav>
 
           <div className="hidden items-center gap-4 lg:flex">
@@ -172,22 +182,35 @@ export function LandingNav() {
             className="fixed inset-0 z-40 flex flex-col justify-center bg-paper px-8 dark:bg-ink"
           >
             <div className="flex flex-col gap-1">
-              {NAV_LINKS.map((l, i) => (
-                <motion.button
-                  key={l.key}
-                  onClick={() => go(l.id, l.offset)}
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.08 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="group relative w-fit rounded py-2.5 text-left font-serif text-4xl font-bold italic text-ink/85 transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white"
-                >
-                  {d.nav.links[l.key]}
-                  <span
-                    aria-hidden
-                    className="absolute bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
-                  />
-                </motion.button>
-              ))}
+              {NAV_LINKS.map((l, i) => {
+                const cls =
+                  'group relative w-fit rounded py-2.5 text-left font-serif text-4xl font-bold italic text-ink/85 transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white';
+                const anim = {
+                  initial: { opacity: 0, x: -16 },
+                  animate: { opacity: 1, x: 0 },
+                  transition: { delay: 0.08 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+                };
+                const inner = (
+                  <>
+                    {d.nav.links[l.key]}
+                    <span
+                      aria-hidden
+                      className="absolute bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
+                    />
+                  </>
+                );
+                return l.to ? (
+                  <motion.div key={l.key} {...anim}>
+                    <Link to={l.to} onClick={() => setOpen(false)} className={cls}>
+                      {inner}
+                    </Link>
+                  </motion.div>
+                ) : (
+                  <motion.button key={l.key} onClick={() => go(l.id!, l.offset)} {...anim} className={cls}>
+                    {inner}
+                  </motion.button>
+                );
+              })}
               <motion.div
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
