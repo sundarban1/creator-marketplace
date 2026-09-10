@@ -66,8 +66,34 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   // workspace status notifications → activity timeline. project_completed is
   // the business-only "Project Complete" row sent when escrow payment is
   // released; it opens the same timeline the creator lands on for payment_released.
-  if (n.refType === 'campaign' && n.refId && ['work_approved', 'payment_released', 'campaign_closed', 'project_completed'].includes(n.type)) {
+  // dispute_opened / dispute_resolved / payment_refunded all carry refType
+  // 'campaign' + the campaign id and belong on the same timeline, where the
+  // dispute banner / refund status is shown for both parties.
+  if (
+    n.refType === 'campaign' && n.refId &&
+    ['work_approved', 'payment_released', 'campaign_closed', 'project_completed',
+     'dispute_opened', 'dispute_resolved', 'payment_refunded'].includes(n.type)
+  ) {
     return { pathname: '/(business)/activity-timeline', params: { campaignId: n.refId, ...(isCreator ? { role: 'CREATOR' } : {}) } };
+  }
+
+  // Admin approved / rejected a business's own event → open it so they see it
+  // is live (or cancelled). campaign-detail.tsx is shared by both roles.
+  if ((n.type === 'campaign_approved' || n.type === 'campaign_rejected') && n.refId) {
+    return { pathname: '/campaign-detail', params: { campaignId: n.refId } };
+  }
+
+  // Admin removed an event the creator had an accepted proposal / work on. The
+  // campaign row is soft-deleted, so send them to their proposals list rather
+  // than a detail screen that would come back empty.
+  if (n.type === 'campaign_deleted') {
+    return isCreator ? '/(creator)/(tabs)/proposals' : null;
+  }
+
+  // Verification was rejected → the Verification section of Settings, which
+  // shows the rejection reason and lets them re-submit documents.
+  if (n.type === 'verification_rejected') {
+    return isCreator ? '/(creator)/settings' : '/(business)/settings';
   }
 
   if (n.type === 'campaign_invitation') {

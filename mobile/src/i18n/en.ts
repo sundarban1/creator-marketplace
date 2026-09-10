@@ -928,6 +928,12 @@ const en = {
     typeWithdrawalRejected: 'Withdrawal Rejected',
     typeEventQuestionAsked: 'New Question',
     typeEventQuestionAnswered: 'Question Answered',
+    typeDisputeOpened: 'Dispute Opened',
+    typeDisputeResolved: 'Dispute Resolved',
+    typePaymentRefunded: 'Payment Refunded',
+    typeEventApproved: 'Event Approved',
+    typeEventRejected: 'Event Not Approved',
+    typeEventRemoved: 'Event Removed',
     typeNotification: 'Notification',
   },
 

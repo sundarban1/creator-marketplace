@@ -919,6 +919,12 @@ const ne = {
     typeWithdrawalRejected: 'पैसा झिक्ने अनुरोध रिजेक्ट',
     typeEventQuestionAsked: 'नयाँ प्रश्न',
     typeEventQuestionAnswered: 'प्रश्नको जवाफ आयो',
+    typeDisputeOpened: 'विवाद खोलियो',
+    typeDisputeResolved: 'विवाद समाधान भयो',
+    typePaymentRefunded: 'भुक्तानी फिर्ता',
+    typeEventApproved: 'इभेन्ट स्वीकृत',
+    typeEventRejected: 'इभेन्ट अस्वीकृत',
+    typeEventRemoved: 'इभेन्ट हटाइयो',
     typeNotification: 'नोटिफिकेसन',
   },
 

@@ -191,7 +191,13 @@ export type AppNotification = {
     | 'withdrawal_paid'
     | 'withdrawal_rejected'
     | 'event_question_asked'
-    | 'event_question_answered';
+    | 'event_question_answered'
+    | 'dispute_opened'
+    | 'dispute_resolved'
+    | 'payment_refunded'
+    | 'campaign_approved'
+    | 'campaign_rejected'
+    | 'campaign_deleted';
   title: string;
   body: string;
   timestamp: string;
