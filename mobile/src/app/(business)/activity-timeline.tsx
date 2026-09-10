@@ -1199,8 +1199,12 @@ export default function CampaignWorkspaceScreen() {
     fileUploads.dismiss(item.localId);
   }
 
-  async function load() {
-    setLoading(true);
+  // `silent` re-fetches in the background without swapping the screen for the
+  // full-page spinner — used after an escrow action (pay / start / submit /
+  // approve …) so the status banner and its countdowns pick up the new
+  // server-derived engagementState/deadlines without a visible flash.
+  async function load(opts?: { silent?: boolean }) {
+    if (!opts?.silent) setLoading(true);
     try {
       if (isCreator) {
         const [c, { proposals: myApps }] = await Promise.all([
@@ -1375,7 +1379,8 @@ export default function CampaignWorkspaceScreen() {
       if (result.type === 'success' && result.url) {
         const parsed = new URL(result.url);
         if (parsed.searchParams.get('success') === 'true') {
-          setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
+          setApp(a => a ? { ...a, paymentStatus: 'PAID', engagementState: 'ESCROW_FUNDED', paymentDueAt: null } : a);
+          void load({ silent: true });
           topToast.success(t('activityTimeline.toastPaySuccess'));
         } else {
           const error = parsed.searchParams.get('error') ?? t('activityTimeline.toastPayFailed');
@@ -1414,7 +1419,8 @@ export default function CampaignWorkspaceScreen() {
       if (result.type === 'success' && result.url) {
         const parsed = new URL(result.url);
         if (parsed.searchParams.get('success') === 'true') {
-          setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
+          setApp(a => a ? { ...a, paymentStatus: 'PAID', engagementState: 'ESCROW_FUNDED', paymentDueAt: null } : a);
+          void load({ silent: true });
           topToast.success(t('activityTimeline.toastPaySuccess'));
         } else {
           // eSewa bounced us back without completing — the raw reason
@@ -1437,7 +1443,12 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       await campaignService.payForApplication(app.id, payMethod);
-      setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
+      // Funding the escrow moves the engagement CREATOR_SELECTED -> ESCROW_FUNDED
+      // and opens the creator-confirmation window; reflect it locally and pull
+      // the server's confirmation deadline in so the status banner stops
+      // showing the "payment due" countdown.
+      setApp(a => a ? { ...a, paymentStatus: 'PAID', engagementState: 'ESCROW_FUNDED', paymentDueAt: null } : a);
+      void load({ silent: true });
       setShowPay(false);
       topToast.success(t('activityTimeline.toastPaySuccess'));
     } catch (e: any) {
@@ -1452,7 +1463,12 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       await campaignService.startWork(app.id);
-      setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS' } : a);
+      // Confirming closes the confirmation window and moves the engagement to
+      // IN_PROGRESS — reflect both so the status banner swaps from "confirm
+      // this campaign" to the content-deadline countdown right away. The
+      // silent reload then fills in the server's absolute contentDeadline.
+      setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS', engagementState: 'IN_PROGRESS', creatorConfirmationDueAt: null } : a);
+      void load({ silent: true });
       topToast.success(t('activityTimeline.toastWorkStarted'));
     } catch (e: any) {
       topToast.error(e?.message ?? t('activityTimeline.toastStartFailed'));
@@ -1471,7 +1487,8 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       await campaignService.submitWork(app.id, { note: uploadNotes, urls: uploadUrls });
-      setApp(a => a ? { ...a, workStatus: 'SUBMITTED', submittedAt: new Date().toISOString(), deliverableUrls: uploadUrls || a.deliverableUrls } : a);
+      setApp(a => a ? { ...a, workStatus: 'SUBMITTED', engagementState: 'BUSINESS_REVIEW', submittedAt: new Date().toISOString(), deliverableUrls: uploadUrls || a.deliverableUrls } : a);
+      void load({ silent: true });
       setUploadUrls(''); setUploadNotes('');
       setShowUpload(false);
       topToast.success(t('activityTimeline.toastWorkSubmitted'));
@@ -1490,7 +1507,8 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       await campaignService.submitWork(app.id, {});
-      setApp(a => a ? { ...a, workStatus: 'SUBMITTED', submittedAt: new Date().toISOString() } : a);
+      setApp(a => a ? { ...a, workStatus: 'SUBMITTED', engagementState: 'BUSINESS_REVIEW', submittedAt: new Date().toISOString() } : a);
+      void load({ silent: true });
       topToast.success(t('activityTimeline.toastServiceCompleted'));
     } catch (e: any) {
       topToast.error(e?.message ?? t('activityTimeline.toastSubmitFailed'));
@@ -1511,8 +1529,10 @@ export default function CampaignWorkspaceScreen() {
       setApp(a => a ? {
         ...a,
         workStatus: 'COMPLETED',
+        engagementState: campaign?.campaignType === 'OPEN_EVENT' ? 'COMPLETED' : 'PAYMENT_RELEASED',
         paymentStatus: campaign?.campaignType === 'OPEN_EVENT' ? a.paymentStatus : 'RELEASED',
       } : a);
+      void load({ silent: true });
       topToast.success(t('activityTimeline.toastWorkApproved'));
     } catch (e: any) {
       topToast.error(e?.message ?? t('activityTimeline.toastApproveFailed'));
@@ -1526,7 +1546,8 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       await campaignService.requestRevision(app.id, revisionNote);
-      setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS' } : a);
+      setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS', engagementState: 'REVISION_REQUESTED', revisionRequestedAt: new Date().toISOString() } : a);
+      void load({ silent: true });
       setRevisionNote(''); setShowRevision(false);
       topToast.success(t('activityTimeline.toastRevisionRequested'));
     } catch (e: any) {
@@ -1544,7 +1565,8 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       await campaignService.reportIssue(app.id, revisionNote);
-      setApp(a => a ? { ...a, workStatus: 'DISPUTED' } : a);
+      setApp(a => a ? { ...a, workStatus: 'DISPUTED', engagementState: 'DISPUTED' } : a);
+      void load({ silent: true });
       setRevisionNote(''); setShowRevision(false);
       topToast.success(t('activityTimeline.toastIssueReported'));
     } catch (e: any) {
@@ -1563,6 +1585,7 @@ export default function CampaignWorkspaceScreen() {
     try {
       await campaignService.raiseDispute(app.id, disputeNote.trim());
       setApp(a => a ? { ...a, workStatus: 'DISPUTED', escrowStatus: 'FROZEN', engagementState: 'DISPUTED' } : a);
+      void load({ silent: true });
       setDisputeNote(''); setShowDispute(false);
       topToast.success(t('activityTimeline.toastDisputeRaised'));
     } catch (e: any) {
@@ -1792,16 +1815,10 @@ export default function CampaignWorkspaceScreen() {
           <ProgressTracker current={pIdx} scrollRef={progressScrollRef} labels={progressLabels} />
         </View>
 
-        {/* ── Escrow status banner (countdowns / dispute) ── */}
-        {app && (
-          <EngagementStatusBanner
-            app={app}
-            isCreator={isCreator}
-            onRaiseDispute={() => setShowDispute(true)}
-          />
-        )}
-
-        {/* ── Current Action Card ── */}
+        {/* ── Current Action Card ──
+              The action card (what to do next) leads; the escrow status
+              banner (countdown for the current stage) sits directly below it
+              for both roles. ── */}
         <ActionCard
           ws={ws} paid={paid} paymentStatus={app?.paymentStatus ?? 'UNPAID'} isCreator={isCreator} isFree={isFreeEvent} isService={isService} submitting={submitting}
           deliverableVideos={allDeliverableVideos}
@@ -1824,6 +1841,16 @@ export default function CampaignWorkspaceScreen() {
             }
           }}
         />
+
+        {/* ── Escrow status banner (countdowns / dispute) — sits under the
+              action card so the "do this next" card always leads. ── */}
+        {app && (
+          <EngagementStatusBanner
+            app={app}
+            isCreator={isCreator}
+            onRaiseDispute={() => setShowDispute(true)}
+          />
+        )}
 
         {/* ── Free-event Q&A ("Ask Organizer") — a free event never opens a
               chat, so this shared page is how the organizer and accepted

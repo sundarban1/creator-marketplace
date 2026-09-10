@@ -1309,7 +1309,7 @@ const ne = {
     noProposalsYet: 'अहिलेसम्म कुनै प्रपोजल छैन',
     sending: 'पठाउँदैछ…',
     sendInvite: '{{n}} इन्भाइट पठाउनुहोस्',
-    selectCreatorsToInvite: 'क्रिएटरहरूलाई इन्भाइट गर्नुहोस्',
+    selectCreatorsToInvite: 'इन्भाइट गर्न क्रिएटर छान्नुहोस्',
     creatorsSelected: '{{n}} क्रिएटर छानियो',
     statusActive: 'एक्टिभ',
     statusDraft: 'ड्राफ्ट',
@@ -2727,7 +2727,7 @@ const ne = {
   campaignsExtra: {
     sendingInvites: 'इन्भाइट पठाउँदैछ…',
     sendInviteBtn: '{{n}} इन्भाइट पठाउनुहोस्',
-    selectCreatorsToInvite: 'क्रिएटरहरूलाई इन्भाइट गर्नुहोस्',
+    selectCreatorsToInvite: 'इन्भाइट गर्न क्रिएटर छान्नुहोस्',
     noProposalsYet: 'अहिलेसम्म कुनै प्रपोजल छैन',
   },
 

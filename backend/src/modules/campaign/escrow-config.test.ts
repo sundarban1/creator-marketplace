@@ -17,7 +17,7 @@ describe('getEscrowTimings', () => {
       creatorConfirmWindowHours: 24,
       minContentWindowHours: 24,
       contentGraceHours: 6,
-      businessReviewHours: 24,
+      businessReviewHours: 72,
       businessReviewReminderHours: 12,
       settlementHours: 24,
       maxIncludedRevisions: 2,

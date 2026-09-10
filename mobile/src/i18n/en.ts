@@ -1319,7 +1319,7 @@ const en = {
     noProposalsYet: 'No proposals yet',
     sending: 'Sending…',
     sendInvite: 'Send {{n}} Invite(s)',
-    selectCreatorsToInvite: 'Invite Creators',
+    selectCreatorsToInvite: 'Select creators to invite',
     creatorsSelected: '{{n}} creator(s) selected',
     statusActive: 'Active',
     statusDraft: 'Draft',
@@ -2738,7 +2738,7 @@ const en = {
   campaignsExtra: {
     sendingInvites:         'Sending…',
     sendInviteBtn:          'Send {{n}} Invite(s)',
-    selectCreatorsToInvite: 'Invite Creators',
+    selectCreatorsToInvite: 'Select creators to invite',
     noProposalsYet:         'No proposals yet',
   },
 

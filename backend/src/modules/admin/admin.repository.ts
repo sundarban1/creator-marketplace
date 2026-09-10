@@ -72,7 +72,7 @@ const DEFAULTS: Record<string, unknown> = {
   'escrow.creatorConfirmWindowHours':   24, // creator must confirm after escrow is funded
   'escrow.minContentWindowHours':       24, // floor for the content deadline snapshotted at confirmation
   'escrow.contentGraceHours':            6, // grace period after the content deadline
-  'escrow.businessReviewHours':         24, // review window after a submission
+  'escrow.businessReviewHours':         72, // review window after a submission (3 days)
   'escrow.businessReviewReminderHours': 12, // nudge partway through the review window
   'escrow.settlementHours':             24, // hold after approval before funds release (when the hold is on)
   'escrow.maxIncludedRevisions':         2, // revisions included before a change request
