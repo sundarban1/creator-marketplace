@@ -10,6 +10,7 @@ import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentM
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Linking,
   Pressable,
   ScrollView,
@@ -42,7 +43,7 @@ import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { NameVideoModal } from '@/components/NameVideoModal';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPACING } from '@/utilities/constants';
+import { F, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 import { useToast } from '@/components/Toast';
@@ -405,6 +406,66 @@ function ProgressTracker({ current, scrollRef, labels }: { current: number; scro
   );
 }
 
+// ─── Action button ───────────────────────────────────────────────────────────
+// The one primary CTA shared by every ActionCard stage, the dispute banner and
+// the bottom-sheet confirm buttons. Centralising it keeps the pill shape, the
+// colour-tinted shadow, the press feel (a quick spring scale-down + a lighter
+// shadow) and the loading state identical everywhere, instead of each call site
+// re-declaring a Pressable with its own inline shadow block. Loading keeps the
+// button's width (the label row stays laid out, just hidden) so it never jumps
+// as it resolves. `size="lg"` is the taller sheet-footer variant.
+function ActionBtn({ label, color, icon, onPress, loading = false, disabled = false, flex = false, mt, size = 'md' }: {
+  label: string;
+  color: string;
+  icon?: keyof typeof FontAwesome5.glyphMap;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  flex?: boolean;
+  /** Overrides the default 4px top margin for the few call sites that need more separation. */
+  mt?: number;
+  size?: 'md' | 'lg';
+}) {
+  const [scale] = useState(() => new Animated.Value(1));
+  const isDisabled = disabled || loading;
+  const springTo = (toValue: number) =>
+    Animated.spring(scale, { toValue, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+
+  return (
+    <Animated.View style={[flex && { flex: 1 }, { marginTop: mt ?? 4, transform: [{ scale }] }]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => springTo(0.96)}
+        onPressOut={() => springTo(1)}
+        disabled={isDisabled}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
+        style={({ pressed }) => [
+          ac.btn,
+          size === 'lg' && ac.btnLg,
+          {
+            backgroundColor: color,
+            shadowColor: color,
+            shadowOpacity: pressed ? 0.2 : 0.35,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 6,
+            opacity: isDisabled ? 0.6 : 1,
+          },
+        ]}>
+        {loading && (
+          <View style={ac.btnLoading}><ActivityIndicator size="small" color="#fff" /></View>
+        )}
+        <View style={[ac.btnInner, loading && ac.btnHidden]}>
+          {icon && <FontAwesome5 name={icon} solid size={size === 'lg' ? 16 : 15} color="#fff" />}
+          <Text style={[ac.btnTxt, size === 'lg' && ac.btnTxtLg]}>{label}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
 function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, submitting, deliverableVideos, deliverableFiles, submittedUrls, onPay, onStartWork, onUpload, onMarkComplete, onApprove, onRevision, onPlayVideo, onViewImage, onViewDoc, onOpenLink }: {
@@ -432,10 +493,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
         <Text style={ac.lockNoteTitle}>{t('activityTimeline.acPaymentRequiredChatLockTitle')}</Text>
         <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredChatLockBody')}</Text>
       </View>
-      <Pressable style={[ac.btn, { backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onPay}>
-        <FontAwesome5 name="credit-card" size={14} color="#fff" solid />
-        <Text style={ac.btnTxt}>{t('activityTimeline.acPayNowBtn')}</Text>
-      </Pressable>
+      <ActionBtn label={t('activityTimeline.acPayNowBtn')} color="#EF4444" icon="credit-card" onPress={onPay} />
     </View>
   );
 
@@ -469,11 +527,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
         <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acReadyFreeSub') : t('activityTimeline.acReadyPaidSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onStartWork} disabled={submitting}>
-        {submitting
-          ? <ActivityIndicator size="small" color="#fff" />
-          : <><FontAwesome5 name="rocket" size={14} color="#fff" solid /><Text style={ac.btnTxt}>{t('activityTimeline.acStartBtn')}</Text></>}
-      </Pressable>
+      <ActionBtn label={t('activityTimeline.acStartBtn')} color="#7C3AED" icon="rocket" onPress={onStartWork} loading={submitting} />
     </View>
   );
 
@@ -497,11 +551,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acServiceInProgressTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acServiceInProgressSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onMarkComplete} disabled={submitting}>
-        {submitting
-          ? <ActivityIndicator size="small" color="#fff" />
-          : <><FontAwesome5 name="check-circle" solid size={16} color="#fff" /><Text style={ac.btnTxt}>{t('activityTimeline.acMarkCompletedBtn')}</Text></>}
-      </Pressable>
+      <ActionBtn label={t('activityTimeline.acMarkCompletedBtn')} color="#7C3AED" icon="check-circle" onPress={onMarkComplete} loading={submitting} />
     </View>
   );
 
@@ -513,10 +563,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acUploadSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onUpload}>
-        <FontAwesome5 name="cloud-upload-alt" solid size={16} color="#fff" />
-        <Text style={ac.btnTxt}>{t('activityTimeline.acUploadBtn')}</Text>
-      </Pressable>
+      <ActionBtn label={t('activityTimeline.acUploadBtn')} color="#7C3AED" icon="cloud-upload-alt" onPress={onUpload} />
     </View>
   );
 
@@ -530,16 +577,8 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acServiceCompletedSub')}</Text>
       <View style={ac.btnRow}>
-        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onRevision}>
-          <FontAwesome5 name="exclamation-triangle" solid size={15} color="#fff" />
-          <Text style={ac.btnTxt}>{t('activityTimeline.acReportIssueBtn')}</Text>
-        </Pressable>
-        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onApprove} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
-            <FontAwesome5 name="check-double" solid size={15} color="#fff" />
-            <Text style={ac.btnTxt}>{t('activityTimeline.acConfirmCompletionBtn')}</Text>
-          </>}
-        </Pressable>
+        <ActionBtn flex mt={0} label={t('activityTimeline.acReportIssueBtn')} color="#EF4444" icon="exclamation-triangle" onPress={onRevision} />
+        <ActionBtn flex mt={0} label={t('activityTimeline.acConfirmCompletionBtn')} color="#16A34A" icon="check-double" onPress={onApprove} loading={submitting} />
       </View>
     </View>
   );
@@ -613,16 +652,8 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
       )}
 
       <View style={ac.btnRow}>
-        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onRevision}>
-          <FontAwesome5 name="edit" solid size={15} color="#fff" />
-          <Text style={ac.btnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
-        </Pressable>
-        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onApprove} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
-            <FontAwesome5 name="check-double" solid size={15} color="#fff" />
-            <Text style={ac.btnTxt}>{t('activityTimeline.acApproveBtn')}</Text>
-          </>}
-        </Pressable>
+        <ActionBtn flex mt={0} label={t('activityTimeline.acRevisionBtn')} color="#EF4444" icon="edit" onPress={onRevision} />
+        <ActionBtn flex mt={0} label={t('activityTimeline.acApproveBtn')} color="#16A34A" icon="check-double" onPress={onApprove} loading={submitting} />
       </View>
     </View>
     );
@@ -817,13 +848,7 @@ function EngagementStatusBanner({ app, isCreator, onRaiseDispute }: {
   }
 
   const disputeBtn = (
-    <Pressable
-      onPress={onRaiseDispute}
-      style={[ac.btn, { backgroundColor: '#EF4444', marginTop: 8 }]}
-    >
-      <FontAwesome5 name="flag" solid size={13} color="#fff" />
-      <Text style={ac.btnTxt}>{t('activityTimeline.disputeBtn')}</Text>
-    </Pressable>
+    <ActionBtn label={t('activityTimeline.disputeBtn')} color="#EF4444" icon="flag" onPress={onRaiseDispute} />
   );
 
   // ── Dispute takes precedence over any countdown ──
@@ -1948,20 +1973,10 @@ export default function CampaignWorkspaceScreen() {
               </Text>
             )}
             {ws === 'IN_PROGRESS' && isCreator && (
-              <Pressable
-                style={[ac.btn, { backgroundColor: '#7C3AED', marginTop: 14, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
-                onPress={() => setShowUpload(true)}>
-                <FontAwesome5 name="cloud-upload-alt" solid size={16} color="#fff" />
-                <Text style={ac.btnTxt}>{t('activityTimeline.acUploadBtn')}</Text>
-              </Pressable>
+              <ActionBtn mt={14} label={t('activityTimeline.acUploadBtn')} color="#7C3AED" icon="cloud-upload-alt" onPress={() => setShowUpload(true)} />
             )}
             {(ws === 'SUBMITTED' || ws === 'APPROVED' || ws === 'COMPLETED') && (
-              <Pressable
-                style={[ac.btn, { backgroundColor: '#0EA5E9', marginTop: 14, shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
-                onPress={() => setShowReview(true)}>
-                <FontAwesome5 name="eye" solid size={16} color="#fff" />
-                <Text style={ac.btnTxt}>{isCreator ? t('activityTimeline.acViewSubmissionBtn') : t('activityTimeline.acReviewBtn')}</Text>
-              </Pressable>
+              <ActionBtn mt={14} label={isCreator ? t('activityTimeline.acViewSubmissionBtn') : t('activityTimeline.acReviewBtn')} color="#0EA5E9" icon="eye" onPress={() => setShowReview(true)} />
             )}
           </View>
         )}
@@ -2093,9 +2108,7 @@ export default function CampaignWorkspaceScreen() {
             </Pressable>
           ))}
         </View>
-        <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handlePay} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalPayConfirmBtn', { amount: total.toLocaleString() })}</Text>}
-        </Pressable>
+        <ActionBtn size="lg" mt={0} label={t('activityTimeline.modalPayConfirmBtn', { amount: total.toLocaleString() })} color="#7C3AED" onPress={handlePay} loading={submitting} />
       </BottomSheet>
 
       {/* ── Upload Deliverables Modal ── */}
@@ -2331,9 +2344,14 @@ export default function CampaignWorkspaceScreen() {
           </View>
         </View>
         <View style={[sh.divider, { backgroundColor: '#E5E7EB', marginVertical: 12 }]} />
-        <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: (submitting || hasActiveUpload) ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleSubmitWork} disabled={submitting || hasActiveUpload}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><FontAwesome5 name="cloud-upload-alt" solid size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{hasActiveUpload ? t('activityTimeline.modalUploadUploadingBtn') : t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
-        </Pressable>
+        <ActionBtn
+          size="lg" mt={0}
+          label={hasActiveUpload ? t('activityTimeline.modalUploadUploadingBtn') : t('activityTimeline.modalUploadSubmitBtn')}
+          color="#7C3AED" icon="cloud-upload-alt"
+          onPress={handleSubmitWork}
+          loading={submitting}
+          disabled={hasActiveUpload}
+        />
       </BottomSheet>
 
       {/* ── Review Deliverables Modal ── */}
@@ -2458,20 +2476,17 @@ export default function CampaignWorkspaceScreen() {
             same sheet read-only via "View My Submission". */}
         {!isCreator && ws === 'SUBMITTED' && (
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
-            <Pressable
-              style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
-              onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
-              <FontAwesome5 name="edit" solid size={15} color="#fff" />
-              <Text style={sh.primaryBtnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
-            </Pressable>
-            <Pressable
-              style={[sh.primaryBtn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
-              disabled={submitting}
-              onPress={() => { setShowReview(false); handleApprove(); }}>
-              {submitting
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <><FontAwesome5 name="check-double" solid size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.acApproveBtn')}</Text></>}
-            </Pressable>
+            <ActionBtn
+              flex mt={0} size="lg"
+              label={t('activityTimeline.acRevisionBtn')} color="#D97706" icon="edit"
+              onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}
+            />
+            <ActionBtn
+              flex mt={0} size="lg"
+              label={t('activityTimeline.acApproveBtn')} color="#16A34A" icon="check-double"
+              onPress={() => { setShowReview(false); handleApprove(); }}
+              loading={submitting}
+            />
           </View>
         )}
       </BottomSheet>
@@ -2494,9 +2509,13 @@ export default function CampaignWorkspaceScreen() {
             multiline
           />
         </View>
-        <Pressable style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1, shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={isService ? handleReportIssue : handleRevision} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{isService ? t('activityTimeline.modalIssueSendBtn') : t('activityTimeline.modalRevisionSendBtn')}</Text>}
-        </Pressable>
+        <ActionBtn
+          size="lg" mt={0}
+          label={isService ? t('activityTimeline.modalIssueSendBtn') : t('activityTimeline.modalRevisionSendBtn')}
+          color="#D97706"
+          onPress={isService ? handleReportIssue : handleRevision}
+          loading={submitting}
+        />
 
         {/* Full history right in the composer, newest first — same rows as
             the standalone Feedback modal, so this needs no extra fetch. */}
@@ -2527,13 +2546,13 @@ export default function CampaignWorkspaceScreen() {
             multiline
           />
         </View>
-        <Pressable
-          style={[sh.primaryBtn, { backgroundColor: '#EF4444', opacity: (submitting || disputeNote.trim().length < 5) ? 0.6 : 1, shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
+        <ActionBtn
+          size="lg" mt={0}
+          label={t('activityTimeline.disputeSubmit')} color="#EF4444"
           onPress={handleRaiseDispute}
-          disabled={submitting || disputeNote.trim().length < 5}
-        >
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.disputeSubmit')}</Text>}
-        </Pressable>
+          loading={submitting}
+          disabled={disputeNote.trim().length < 5}
+        />
       </BottomSheet>
 
       {/* ── Feedback Modal — full revision-request history, newest first, either side ── */}
@@ -2569,15 +2588,13 @@ export default function CampaignWorkspaceScreen() {
           multiline
           numberOfLines={4}
         />
-        <Pressable
-          style={[sh.primaryBtn, { marginTop: 16, backgroundColor: '#7C3AED', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6, opacity: (ratingValue < 1 || submittingRating) ? 0.6 : 1 }]}
+        <ActionBtn
+          size="lg" mt={16}
+          label={t('activityTimeline.ratingSubmitBtn')} color="#7C3AED"
           onPress={handleSubmitRating}
-          disabled={ratingValue < 1 || submittingRating}
-        >
-          {submittingRating
-            ? <ActivityIndicator size="small" color="#fff" />
-            : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.ratingSubmitBtn')}</Text>}
-        </Pressable>
+          loading={submittingRating}
+          disabled={ratingValue < 1}
+        />
       </BottomSheet>
 
       <VideoPlayerModal
@@ -2718,8 +2735,13 @@ const ac = StyleSheet.create({
   lockNote:      { backgroundColor: '#FEF2F2', borderRadius: RADIUS.sm, padding: SPACING.md, gap: 4 },
   lockNoteTitle: { fontSize: 13, fontFamily: F.semibold, color: '#EF4444', lineHeight: 19 },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.full, paddingVertical: 13, marginTop: 4 },
+  btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.full, paddingVertical: 13, minHeight: MIN_TOUCH_TARGET },
+  btnLg:  { paddingVertical: 15 },
+  btnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  btnLoading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  btnHidden: { opacity: 0 },
   btnTxt: { fontSize: 14, fontFamily: F.bold, color: '#fff' },
+  btnTxtLg: { fontSize: 15 },
   deliverySection: { gap: 6, marginTop: 4 },
   deliveryLabel:   { fontSize: 12, fontFamily: F.bold, color: '#374151' },
   thumbRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -2780,8 +2802,6 @@ const sh = StyleSheet.create({
   methodLeft:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   methodTxt:    { fontSize: 14, fontFamily: F.semibold },
   inputLabel:   { fontSize: 12, fontFamily: F.semibold, color: '#374151', marginBottom: 6 },
-  primaryBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.full, paddingVertical: 15 },
-  primaryBtnTxt:{ fontSize: 15, fontFamily: F.bold, color: '#fff' },
   infoBox:      { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, padding: 10 },
   infoTxt:      { fontSize: 12, fontFamily: F.semibold, flex: 1 },
   warnBox:      { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1.5, borderRadius: RADIUS.md, padding: 14, marginVertical: 12 },
