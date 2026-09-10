@@ -8,7 +8,6 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -726,7 +725,7 @@ export default function CampaignsScreen() {
         title={t('campaigns.inviteModalTitle')}
         subtitle={inviteCampaign?.title}
         maxHeightPct={0.75}
-        scrollable={false}
+        contentContainerStyle={styles.inviteSheetBody}
         footer={!inviteSuccess && !savedLoading ? (
           <Pressable
             style={[
@@ -790,7 +789,7 @@ export default function CampaignsScreen() {
                   </Pressable>
                 </View>
               ) : (
-                <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalList} showsVerticalScrollIndicator={false}>
+                <View style={styles.modalList}>
                   {(listMode === 'recommended'
                     ? recommendedCreators.map((c) => ({ id: c.id, fullName: c.fullName, avatarUrl: c.avatarUrl, isVerified: c.isVerified, socialAccounts: c.socialAccounts, distanceKm: c.distanceKm }))
                     : savedCreators.map(({ creator }) => ({ id: creator.id, fullName: creator.fullName, avatarUrl: creator.avatarUrl, isVerified: creator.isVerified, socialAccounts: creator.socialAccounts, distanceKm: undefined as number | undefined }))
@@ -840,7 +839,7 @@ export default function CampaignsScreen() {
                       </Pressable>
                     );
                   })}
-                </ScrollView>
+                </View>
               )}
             </>
           )}
@@ -940,13 +939,14 @@ const styles = StyleSheet.create({
   buttonSecondary: { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.md },
   buttonTextSecondary: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
-  // The sheet body is a height-capped flex column. This inner list must be free
-  // to shrink (flexShrink + minHeight:0) so the sticky "Send invite" footer keeps
-  // its slot as the list grows: the sheet height tracks the content until it hits
-  // the cap, then the list scrolls inside its remaining space. flexShrink (not
-  // flex:1) so a short list still sizes to its own content.
-  modalScroll: { flexShrink: 1, minHeight: 0 },
-  modalList: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxxl },
+  // Invite sheet body: let BottomSheet own the scrolling (its ScrollView sits
+  // above the sticky footer), so the "Send invite" button stays pinned in every
+  // state instead of riding a nested, flex-shrinking inner ScrollView that could
+  // get pushed off-screen on Android. padding:0 cancels the shell's default body
+  // padding since the inner rows carry their own; flexGrow:1 lets the loading /
+  // empty states still center vertically.
+  inviteSheetBody: { paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0, flexGrow: 1 },
+  modalList: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.md },
 
   // Invite modal
   inviteSuccess: { alignItems: 'center', paddingVertical: 48, gap: SPACING.sm },
