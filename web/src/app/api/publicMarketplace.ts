@@ -150,6 +150,112 @@ export async function fetchCreatorByHandle(
   return res.data;
 }
 
+// ── Businesses ───────────────────────────────────────────────────────────────
+
+export interface BusinessCard {
+  id: string;
+  businessName: string | null;
+  description: string | null;
+  logoUrl: string | null;
+  website: string | null;
+  categories: string[];
+  isVerified: boolean;
+  fullyVerified: boolean;
+  city: string | null;
+  district: string | null;
+  _count: { campaigns: number };
+}
+
+export interface BusinessProfile {
+  /** true when the business turned off its public profile — only id/name/logo are present. */
+  isPrivate?: boolean;
+  id: string;
+  userId: string;
+  businessName: string | null;
+  description: string | null;
+  logoUrl: string | null;
+  website: string | null;
+  phone: string | null;
+  province: string | null;
+  district: string | null;
+  city: string | null;
+  socialLinks: Record<string, string>;
+  categories: string[];
+  isVerified: boolean;
+  fullyVerified: boolean;
+  allowDirectMessages: boolean;
+  createdAt: string;
+  campaigns: Array<{
+    id: string;
+    title: string;
+    platforms: string[];
+    category: string;
+    budgetMin: number;
+    budgetMax: number;
+    deadline: string;
+    contentType: string;
+    isFeatured: boolean;
+    location: string | null;
+    featureImageUrl: string | null;
+    campaignType: string;
+    _count: { applications: number };
+  }>;
+  _count: { campaigns: number };
+  favoritedByCount: number;
+  savedCreatorsCount: number;
+  stats?: Record<string, number> | null;
+  reviews?: Array<{
+    id: string;
+    rating: number;
+    comment: string | null;
+    createdAt: string;
+    from?: { name: string | null; avatarUrl: string | null } | null;
+  }>;
+}
+
+export interface BusinessQuery {
+  search?: string;
+  category?: string;
+  platform?: string;
+  locations?: string[];
+  page?: number;
+  limit?: number;
+}
+
+export async function fetchPublicBusinesses(
+  q: BusinessQuery,
+  signal?: AbortSignal,
+): Promise<{ businesses: BusinessCard[]; total: number }> {
+  const res = await apiRequest<{ businesses: BusinessCard[]; total: number }>(
+    'GET',
+    '/api/public/businesses',
+    undefined,
+    {
+      anonymous: true,
+      signal,
+      params: {
+        search: q.search,
+        category: q.category,
+        platform: q.platform,
+        locations: q.locations?.join(','),
+        page: q.page,
+        limit: q.limit,
+      },
+    },
+  );
+  return res.data;
+}
+
+export async function fetchPublicBusiness(id: string, signal?: AbortSignal): Promise<BusinessProfile> {
+  const res = await apiRequest<BusinessProfile>(
+    'GET',
+    `/api/public/businesses/${encodeURIComponent(id)}`,
+    undefined,
+    { anonymous: true, signal },
+  );
+  return res.data;
+}
+
 // ── Events ───────────────────────────────────────────────────────────────────
 
 export interface EventCard {
@@ -172,6 +278,8 @@ export interface EventCard {
   totalBudget?: number | null;
   creatorsNeeded?: number;
   campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+  /** For OPEN_EVENT (free events) — what the business offers creators in kind. */
+  benefits?: string[];
   status: string;
   isFeatured: boolean;
   minFollowers: number;

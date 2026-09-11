@@ -130,15 +130,15 @@ export function CreateEventPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title={t('biz.newEvent')} />
+      <PageHeader eyebrow={t('biz.eyebrowEvents')} title={t('biz.newEvent')} />
 
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
 
       {/* AI assist */}
-      <Card className="mb-6 border-brand/30 bg-brand/[0.03]">
+      <Card className="mb-6 border-violet/25 bg-violet/[0.05]">
         <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-brand" />
-          <h2 className="text-[14px] font-semibold text-ink">{t('biz.aiHeading')}</h2>
+          <Sparkles size={16} className="text-violet" />
+          <h2 className="font-serif text-[15px] font-medium tracking-tight text-ink">{t('biz.aiHeading')}</h2>
         </div>
         <Textarea
           label=""
@@ -187,7 +187,7 @@ export function CreateEventPage() {
                 onClick={() => togglePlatform(p)}
                 className={cn(
                   'rounded-lg border px-3 py-1.5 text-[13px] font-medium',
-                  selPlatforms.includes(p) ? 'border-brand bg-brand/[0.06] text-brand' : 'border-line-strong text-ink-soft',
+                  selPlatforms.includes(p) ? 'border-violet/40 bg-violet/[0.06] text-violet-dark' : 'border-line-strong text-ink-soft',
                 )}
               >
                 {p}

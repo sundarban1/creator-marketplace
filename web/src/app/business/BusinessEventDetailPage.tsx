@@ -86,7 +86,11 @@ export function BusinessEventDetailPage() {
         {t('biz.eventsTitle')}
       </Link>
 
-      <PageHeader title={c.title} description={`${c.category} · ${t('public.budgetPerCreator', { amount: budget.amount })}`} />
+      <PageHeader
+        eyebrow={t('biz.eyebrowEvents')}
+        title={c.title}
+        description={`${c.category} · ${t('public.budgetPerCreator', { amount: budget.amount })}`}
+      />
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
@@ -192,7 +196,7 @@ function ApplicantRow({
             {a.coverLetter}
           </p>
           {a.coverLetter.length > 140 && (
-            <button onClick={() => setExpanded((v) => !v)} className="mt-1 text-[12px] font-semibold text-brand hover:underline">
+            <button onClick={() => setExpanded((v) => !v)} className="mt-1 text-[12px] font-semibold text-violet-dark hover:underline">
               {expanded ? '−' : '+'} {t('biz.coverLetter')}
             </button>
           )}
@@ -206,7 +210,7 @@ function ApplicantRow({
           {t('biz.reject')}
         </Button>
         {a.creator?.id && (
-          <Link to={`/business/creators/${a.creator.id}`} className="ml-auto self-center text-[12px] font-semibold text-brand hover:underline">
+          <Link to={`/business/creators/${a.creator.id}`} className="ml-auto self-center text-[12px] font-semibold text-violet-dark hover:underline">
             {t('biz.reviewProfile')}
           </Link>
         )}

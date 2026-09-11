@@ -12,7 +12,7 @@ export function CreatorEventsPage() {
 
   return (
     <>
-      <PageHeader title={t('nav.discoverEvents')} description={t('public.eventsSubtitle')} />
+      <PageHeader eyebrow={t('creatorEvents.eyebrow')} title={t('nav.discoverEvents')} description={t('public.eventsSubtitle')} />
       <EventsBrowser hrefBase="/creator/events" appliedIds={appliedIds} />
     </>
   );

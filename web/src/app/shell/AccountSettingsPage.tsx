@@ -27,7 +27,7 @@ export function AccountSettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title={t('settings.title')} />
+      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} />
 
       {/* Language */}
       <Card>
@@ -40,7 +40,7 @@ export function AccountSettingsPage() {
               aria-pressed={language === l.value}
               className={cn(
                 'rounded-xl border px-4 py-2 text-[14px] font-semibold',
-                language === l.value ? 'border-brand bg-brand/[0.06] text-brand' : 'border-line-strong text-ink-soft',
+                language === l.value ? 'border-violet/40 bg-violet/[0.06] text-violet-dark' : 'border-line-strong text-ink-soft',
               )}
             >
               {l.label}
@@ -65,7 +65,7 @@ export function AccountSettingsPage() {
                 <ShieldCheck size={16} className={m?.hasPassword ? 'text-success' : 'text-ink-soft'} />
                 {m?.hasPassword ? t('settings.passwordSet') : t('settings.passwordNotSet')}
               </span>
-              <Link to={paths.forgotPassword} className="text-[13px] font-semibold text-brand hover:underline">
+              <Link to={paths.forgotPassword} className="text-[13px] font-semibold text-violet-dark hover:underline">
                 {t('settings.resetPassword')}
               </Link>
             </div>

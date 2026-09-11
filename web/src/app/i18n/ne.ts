@@ -61,6 +61,7 @@ export const ne: AppDict = {
   },
 
   dashboard: {
+    eyebrow: 'क्रिएटर कार्यक्षेत्र',
     welcome: 'फेरि स्वागत छ, {name}',
     previewNote: 'यो वेबमा Kolab को सुरुवाती झलक हो। तपाईंको पूर्ण ड्यासबोर्ड चाँडै आउँदैछ — तलका सबै कुरा मोबाइल एपसँग सिंकमा रहन्छन्।',
     activeWork: 'सक्रिय काम',
@@ -82,9 +83,29 @@ export const ne: AppDict = {
     deadlineIn: 'म्याद: {label}',
     viewAll: 'सबै हेर्नुहोस्',
     exploreEvents: 'इभेन्टहरू हेर्नुहोस्',
+    greetingMorning: 'शुभ प्रभात, {name}',
+    greetingAfternoon: 'नमस्कार, {name}',
+    greetingEvening: 'शुभ साँझ, {name}',
+    greetingGeneric: 'फेरि स्वागत छ',
+    ctaTitle: 'तपाईंको अर्को क्याम्पेनका लागि तयार हुनुहुन्छ?',
+    ctaSubtitle: 'तपाईं जस्ता क्रिएटर खोज्दै गरेका व्यवसायहरूका खुला इभेन्टहरू हेर्नुहोस्।',
+    ctaBtn: 'इभेन्टहरू हेर्नुहोस्',
+    completeProfileTitle: 'आफ्नो प्रोफाइल पूरा गर्नुहोस्',
+    completeProfileSubtitle: 'छिटो देखिनका लागि {fields} थप्नुहोस्।',
+    fieldPhoto: 'प्रोफाइल फोटो',
+    fieldSocial: 'सोसल लिंक',
+    fieldBio: 'बायो',
+    fieldLocation: 'तपाईंको स्थान',
+    fieldCategories: 'तपाईंका श्रेणीहरू',
+    actionNeeded: 'ध्यान दिनुपर्ने काम',
+    actionStartWork: '"{title}" मा काम सुरु गर्नुहोस् — व्यवसायले एस्क्रो फन्ड गरिसकेको छ।',
+    actionSubmitWork: '"{title}" का डेलिभरेबलहरू पेश गर्नुहोस्।',
+    actionMultiple: 'तपाईंका {n} क्याम्पेनहरू तपाईंको पालो कुरिरहेका छन्।',
+    recommendedHint: 'तपाईंले {categories} प्रदान गर्नुभएकाले',
   },
 
   applications: {
+    eyebrow: 'तपाईंका प्रस्तावहरू',
     title: 'आवेदनहरू',
     subtitle: 'तपाईंले पठाएका सबै प्रस्ताव र त्यसबाट बनेको काम।',
     tabAll: 'सबै',
@@ -102,6 +123,7 @@ export const ne: AppDict = {
   },
 
   work: {
+    eyebrow: 'सक्रिय संलग्नताहरू',
     title: 'मेरो काम',
     subtitle: 'स्वीकृत काम — सुरुदेखि भुक्तानीसम्म ट्र्याक गर्नुहोस्।',
     emptyTitle: 'कुनै सक्रिय काम छैन',
@@ -109,6 +131,7 @@ export const ne: AppDict = {
   },
 
   wallet: {
+    eyebrow: 'कमाइ',
     title: 'वालेट',
     subtitle: 'तपाईंको कमाइ, निकाल्न तयार।',
     availableBalance: 'निकाल्न उपलब्ध',
@@ -162,6 +185,15 @@ export const ne: AppDict = {
     setDefault: 'यसलाई मेरो डिफल्ट बनाउनुहोस्',
   },
 
+  deliv: {
+    next: 'अर्को',
+    previous: 'अघिल्लो',
+    download: 'डाउनलोड',
+    openFile: 'फाइल खोल्नुहोस्',
+    noPreview: 'यो फाइल प्रकारको पूर्वावलोकन उपलब्ध छैन।',
+    remove: 'हटाउनुहोस्',
+  },
+
   workDetail: {
     back: 'पछाडि',
     notFoundTitle: 'काम भेटिएन',
@@ -202,6 +234,7 @@ export const ne: AppDict = {
   },
 
   creatorEvents: {
+    eyebrow: 'खुला अवसरहरू',
     appliedTag: 'आवेदन दिइयो',
     apply: 'यस इभेन्टमा आवेदन दिनुहोस्',
     applyFree: 'अहिले आवेदन दिनुहोस्',
@@ -228,6 +261,7 @@ export const ne: AppDict = {
   },
 
   profile: {
+    eyebrow: 'तपाईंको प्रोफाइल',
     title: 'प्रोफाइल',
     subtitle: 'व्यवसायहरूले तपाईंलाई भेट्टाउँदा यही देख्छन्।',
     viewPublic: 'सार्वजनिक प्रोफाइल हेर्नुहोस्',
@@ -262,6 +296,7 @@ export const ne: AppDict = {
   },
 
   settings: {
+    eyebrow: 'खाता',
     title: 'सेटिङ',
     languageHeading: 'भाषा',
     languageHint: 'Kolab एप र वेब दुवैमा लागू हुन्छ।',
@@ -369,6 +404,14 @@ export const ne: AppDict = {
     industry: 'उद्योग',
     website: 'वेबसाइट',
     location: 'स्थान',
+    // page eyebrows
+    eyebrowDash: 'व्यवसाय कार्यक्षेत्र',
+    eyebrowEvents: 'तपाईंका क्याम्पेनहरू',
+    eyebrowApps: 'प्रस्तावहरू',
+    eyebrowDeliv: 'पेश गरिएको काम',
+    eyebrowPay: 'एस्क्रो र भुक्तानी',
+    eyebrowFind: 'क्रिएटर निर्देशिका',
+    eyebrowProfile: 'तपाईंको ब्रान्ड',
   },
 
   engagement: {
@@ -465,11 +508,17 @@ export const ne: AppDict = {
   },
 
   public: {
+    navDiscover: 'खोज',
+    navOpportunities: 'अवसरहरू',
+    navServices: 'सेवाहरू',
+    navContact: 'सम्पर्क गर्नुहोस्',
+    navBusiness: 'व्यवसाय',
     navHowItWorks: 'कसरी काम गर्छ',
     navForCreators: 'क्रिएटरहरूका लागि',
     navForBusinesses: 'व्यवसायहरूका लागि',
     navCreators: 'क्रिएटरहरू',
     navEvents: 'इभेन्टहरू',
+    menu: 'मेनु',
     logIn: 'लग इन',
     getStarted: 'सुरु गर्नुहोस्',
     footerTagline: 'नेपालको क्रिएटर मार्केटप्लेस — ब्रान्डहरूलाई कन्टेन्ट क्रिएटरहरूसँग जोड्दै।',
@@ -498,6 +547,8 @@ export const ne: AppDict = {
     verified: 'प्रमाणित',
     workWithCreator: 'यस क्रिएटरसँग काम गर्नुहोस्',
     viewProfile: 'प्रोफाइल हेर्नुहोस्',
+    creatorsEyebrow: 'ब्रान्ड र व्यवसायहरूका लागि',
+    businessesEyebrow: 'कन्टेन्ट क्रिएटरहरूका लागि',
 
     aboutHeading: 'परिचय',
     socialHeading: 'सोसल प्लेटफर्महरू',
@@ -515,11 +566,32 @@ export const ne: AppDict = {
     hoursShort: '{h} घण्टा',
     minsShort: '{m} मिनेट',
 
+    businessesTitle: 'व्यवसायहरू खोज्नुहोस्',
+    businessesSubtitle: 'कन्टेन्ट क्रिएटरहरू खोज्दै गरेका नेपालभरका ब्रान्ड र संस्थाहरू ब्राउज गर्नुहोस्।',
+    searchBusinessesPlaceholder: 'नाम, उद्योग वा स्थानले खोज्नुहोस्',
+    businessesResultsCount: '{count} व्यवसायहरू',
+    campaignsCount: '{count} क्याम्पेन',
+    noBusinessesTitle: 'कुनै व्यवसाय भेटिएन',
+    noBusinessesBody: 'आफ्नो खोज वा फिल्टर समायोजन गरी हेर्नुहोस्।',
+
+    joinToApply: 'आवेदन दिन Kolab मा सामेल हुनुहोस्',
+    campaignsPosted: 'पोस्ट गरिएका क्याम्पेन',
+    openCampaignsHeading: 'खुला क्याम्पेनहरू',
+    noBusinessBio: 'यस व्यवसायले अझै विवरण थपेको छैन।',
+    businessNotFoundTitle: 'व्यवसाय भेटिएन',
+    businessNotFoundBody: 'यो प्रोफाइल अवस्थित छैन वा अब सार्वजनिक छैन।',
+    backToBusinesses: 'व्यवसायहरूमा फर्कनुहोस्',
+
+    eventsEyebrow: 'खुला अवसरहरू',
     eventsTitle: 'खुला इभेन्ट र क्याम्पेनहरू',
     eventsSubtitle: 'नेपालभरका ब्रान्डहरूबाट लाइभ अवसरहरू। Kolab एपबाट आवेदन दिनुहोस्।',
     searchEventsPlaceholder: 'इभेन्ट खोज्नुहोस्',
     budgetPerCreator: 'प्रति क्रिएटर {amount}',
     budgetPerCreatorLabel: 'प्रति क्रिएटर बजेट',
+    badgePaid: 'सशुल्क',
+    badgeFree: 'निःशुल्क',
+    freeEventPerks: 'प्रस्ताव गरिएका सुविधाहरू',
+    whatsOfferedLabel: 'व्यवसायले के दिन्छ',
     creatorsNeeded: '{count} क्रिएटर आवश्यक',
     creatorNeeded: '१ क्रिएटर आवश्यक',
     applicationsCount: '{count} जनाले आवेदन दिए',

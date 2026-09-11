@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PublicController } from './public.controller';
 import { CreatorController } from '../creator/creator.controller';
+import { BusinessController } from '../business/business.controller';
 import { CampaignController } from '../campaign/campaign.controller';
 import { validate } from '../../middleware/validate';
 import { campaignListQuerySchema } from '../campaign/campaign.schema';
@@ -8,6 +9,7 @@ import { campaignListQuerySchema } from '../campaign/campaign.schema';
 const router = Router();
 const ctrl = new PublicController();
 const creatorCtrl = new CreatorController();
+const businessCtrl = new BusinessController();
 const campaignCtrl = new CampaignController();
 
 // Public — no auth. Aggregate counts for the marketing landing page.
@@ -26,6 +28,13 @@ router.get('/site-info', ctrl.siteInfo.bind(ctrl));
 router.get('/creators/filter-options', creatorCtrl.getCreatorFilterOptions.bind(creatorCtrl));
 router.get('/creators', creatorCtrl.listPublicCreators.bind(creatorCtrl));
 router.get('/creators/:handle', creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
+
+// ── Public business marketplace (ourkolab.com/businesses) ─────────────────────
+// Unauthenticated discovery of businesses who opted into a public profile. The
+// authenticated creator-facing equivalents live at /api/creator/businesses.
+// Reuses the creator filter-options endpoint for the shared category taxonomy.
+router.get('/businesses', businessCtrl.listBusinesses.bind(businessCtrl));
+router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl));
 
 // ── Public event marketplace (ourkolab.com/events) ────────────────────────────
 // `campaignService.list` already defaults to status=ACTIVE and needs no auth;

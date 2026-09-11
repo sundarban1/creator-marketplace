@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, Image as ImageIcon, Trash2, CalendarClock } from 'lucide-react';
+import { ArrowLeft, CalendarClock } from 'lucide-react';
 import { useT } from '../i18n';
 import { useApplications } from './useApplications';
 import { rupees } from '../lib/format';
@@ -12,7 +12,6 @@ import {
   removeDeliverableFile,
   reportIssue,
   type CreatorApplication,
-  type DeliverableFile,
 } from '../api/creator';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
@@ -23,6 +22,7 @@ import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { Modal } from '../ui/Modal';
 import { Textarea } from '../ui/Textarea';
 import { FileUpload } from '../ui/FileUpload';
+import { DeliverableStrip } from '../ui/DeliverableGallery';
 import { EngagementBadge } from './EngagementBadge';
 
 const CAN_UPLOAD = new Set(['IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE']);
@@ -77,6 +77,7 @@ export function CreatorWorkDetailPage() {
   const c = app.campaign;
   const state = app.engagementState;
   const files = app.deliverableFiles ?? [];
+  const videos = app.deliverableVideos ?? [];
   const deadline = app.contentDeadline ? fmtDeadline(app.contentDeadline) : null;
 
   const run = async (fn: () => Promise<CreatorApplication | void>, successMsg: string) => {
@@ -141,7 +142,7 @@ export function CreatorWorkDetailPage() {
           <Avatar name={c?.business?.businessName ?? 'Business'} src={c?.business?.logoUrl} size="lg" />
         )}
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-ink">{c?.title ?? 'Campaign'}</h1>
+          <h1 className="font-serif text-2xl font-medium tracking-tight text-ink">{c?.title ?? 'Campaign'}</h1>
           <p className="mt-0.5 text-[14px] text-ink-soft">{c?.business?.businessName}</p>
           <div className="mt-2">
             <EngagementBadge state={state} />
@@ -247,7 +248,14 @@ export function CreatorWorkDetailPage() {
           )}
 
           <CardHeader title={t('workDetail.deliverablesHeading')} />
-          <DeliverableList files={files} onRemove={handleRemove} removeLabel={t('workDetail.remove')} />
+          <div className="mb-3">
+            <DeliverableStrip
+              files={files}
+              videos={videos}
+              onRemove={handleRemove}
+              removeLabel={t('workDetail.remove')}
+            />
+          </div>
 
           <div className="mt-3">
             <FileUpload
@@ -295,7 +303,9 @@ export function CreatorWorkDetailPage() {
               })}`}
           </Alert>
           <CardHeader title={t('workDetail.deliverablesHeading')} />
-          <DeliverableList files={files} />
+          <div className="mb-3">
+            <DeliverableStrip files={files} videos={videos} />
+          </div>
         </Card>
       );
     }
@@ -313,53 +323,6 @@ export function CreatorWorkDetailPage() {
   }
 }
 
-function DeliverableList({
-  files,
-  onRemove,
-  removeLabel,
-}: {
-  files: DeliverableFile[];
-  onRemove?: (fileId: string) => void;
-  removeLabel?: string;
-}) {
-  if (files.length === 0) return null;
-  return (
-    <ul className="mb-3 space-y-2">
-      {files.map((f) => (
-        <li
-          key={f.id}
-          className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5"
-        >
-          {f.fileType === 'IMAGE' ? (
-            <ImageIcon size={16} className="flex-shrink-0 text-ink-soft" />
-          ) : (
-            <FileText size={16} className="flex-shrink-0 text-ink-soft" />
-          )}
-          <a
-            href={f.url}
-            target="_blank"
-            rel="noreferrer"
-            className="min-w-0 flex-1 truncate text-[13px] font-medium text-brand hover:underline"
-          >
-            {f.originalFileName}
-          </a>
-          <span className="flex-shrink-0 text-[12px] text-ink-soft">
-            {(f.sizeBytes / 1024 / 1024).toFixed(1)} MB
-          </span>
-          {onRemove && (
-            <button
-              onClick={() => onRemove(f.id)}
-              aria-label={removeLabel}
-              className="flex-shrink-0 rounded-lg p-1.5 text-ink-soft hover:bg-surface-dim hover:text-danger"
-            >
-              <Trash2 size={15} />
-            </button>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function ReportIssueModal({
   open,

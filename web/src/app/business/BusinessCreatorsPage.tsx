@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
+import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { fetchCreatorFilterOptions } from '../api/publicMarketplace';
 import {
   listBusinessCreators,
@@ -12,6 +13,7 @@ import {
   type BusinessCreatorCard,
 } from '../api/business';
 import { PageHeader } from '../ui/PageHeader';
+import { SearchInput } from '../ui/SearchInput';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
@@ -99,20 +101,14 @@ export function BusinessCreatorsPage() {
 
   return (
     <>
-      <PageHeader title={t('biz.findTitle')} description={t('biz.findSubtitle')} />
+      <PageHeader eyebrow={t('biz.eyebrowFind')} title={t('biz.findTitle')} description={t('biz.findSubtitle')} />
 
       <div className="space-y-3">
-        <div className="relative">
-          <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => patch('q', e.target.value)}
-            placeholder={t('public.searchCreatorsPlaceholder')}
-            aria-label={t('public.searchCreatorsPlaceholder')}
-            className="h-12 w-full rounded-xl border border-line-strong bg-surface pl-11 pr-4 text-[15px] text-ink placeholder:text-ink-soft/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/35"
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={(v) => patch('q', v)}
+          placeholder={t('public.searchCreatorsPlaceholder')}
+        />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Select
             aria-label={t('public.category')}
@@ -150,11 +146,18 @@ export function BusinessCreatorsPage() {
           <EmptyState variant="no-results" title={t('public.noCreatorsTitle')} description={t('public.noCreatorsBody')} />
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={stagger(0.05)}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            >
               {items.map((c) => (
-                <BizCreatorCard key={c.id} creator={c} saved={isSaved(c.id)} onToggleSave={() => onToggleSave(c.id)} />
+                <motion.div key={c.id} variants={fadeUp} className="min-w-0">
+                  <BizCreatorCard creator={c} saved={isSaved(c.id)} onToggleSave={() => onToggleSave(c.id)} />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
             {canLoadMore && (
               <div className="mt-8 flex justify-center">
                 <Button variant="secondary" loading={status === 'loadingMore'} onClick={() => load(page + 1, true)}>

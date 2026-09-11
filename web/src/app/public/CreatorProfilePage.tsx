@@ -1,19 +1,32 @@
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, MapPin, Star, ExternalLink } from 'lucide-react';
+import { useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { BadgeCheck, MapPin, Star, ExternalLink, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { compactNumber, totalFollowers } from '../lib/format';
 import { fetchCreatorByHandle } from '../api/publicMarketplace';
+import { fetchCategories } from '../api/catalog';
+import { makeCategoryLookup } from './categoryLookup';
+import { CategoryPill } from './CategoryPill';
 import { ApiError } from '../lib/apiClient';
 import { SEO } from '../../lib/seo/SEO';
 import { absoluteUrl } from '../../lib/seo/config';
 import { Avatar } from '../ui/Avatar';
-import { Button } from '../ui/Button';
-import { Card, CardHeader } from '../ui/Card';
+import { Card } from '../ui/Card';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { paths } from '../routes';
+import {
+  BottomCTA,
+  DetailBody,
+  DetailHero,
+  DetailSection,
+  HeroReveal,
+  LinkRow,
+  RingAvatar,
+  StatTile,
+} from './detailKit';
 
 export function CreatorProfilePage() {
   const t = useT();
@@ -23,6 +36,9 @@ export function CreatorProfilePage() {
     (signal) => fetchCreatorByHandle(handle, signal),
     [handle],
   );
+
+  const { data: categories } = useAsync((signal) => fetchCategories(signal), []);
+  const categoryMeta = useMemo(() => makeCategoryLookup(categories ?? []), [categories]);
 
   if (loading) return <ProfileSkeleton />;
 
@@ -43,6 +59,7 @@ export function CreatorProfilePage() {
   const name = creator.fullName ?? 'Creator';
   const followers = totalFollowers(creator.socialAccounts);
   const canonicalHandle = creator.username ?? creator.id;
+  const isTeam = creator.providerType === 'TEAM' || creator.providerType === 'AGENCY';
   const metaDesc =
     creator.bio?.slice(0, 155) ??
     `${name}${creator.location ? ` · ${creator.location}` : ''} — content creator on Kolab.`;
@@ -54,9 +71,10 @@ export function CreatorProfilePage() {
         ? t('public.hoursShort', { h: Math.round(stat.responseTimeAvgMins / 60) })
         : t('public.minsShort', { m: stat.responseTimeAvgMins })
       : null;
+  const hasStats = followers > 0 || Boolean(stat);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
+    <div>
       <SEO
         title={name}
         description={metaDesc}
@@ -75,250 +93,233 @@ export function CreatorProfilePage() {
         }}
       />
 
-      <Link
-        to="/creators"
-        className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
-      >
-        <ArrowLeft size={14} />
-        {t('public.backToCreators')}
-      </Link>
-
-      {/* Hero */}
-      <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start">
-        <Avatar name={name} src={creator.avatarUrl} size="xl" className="h-24 w-24" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{name}</h1>
-            {creator.fullyVerified && (
-              <BadgeCheck size={20} className="flex-shrink-0 text-brand" aria-label={t('public.verified')} />
+      <DetailHero backTo="/creators" backLabel={t('public.backToCreators')}>
+        <HeroReveal className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center">
+          <RingAvatar>
+            <Avatar name={name} src={creator.avatarUrl} size="xl" className="h-24 w-24" />
+          </RingAvatar>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="font-serif text-3xl font-medium leading-[1.1] tracking-tight text-ink sm:text-4xl">
+                {name}
+              </h1>
+              {creator.fullyVerified && (
+                <BadgeCheck size={22} className="flex-shrink-0 text-brand" aria-label={t('public.verified')} />
+              )}
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink-soft">
+              {creator.username && <span>@{creator.username}</span>}
+              {creator.location && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin size={13} />
+                  {creator.location}
+                </span>
+              )}
+              {isTeam && (
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <Users size={13} />
+                  {creator.providerType === 'AGENCY'
+                    ? 'Agency'
+                    : creator.teamSize
+                      ? `Team · ${creator.teamSize}`
+                      : 'Team'}
+                </span>
+              )}
+            </div>
+            {creator.categories.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {creator.categories.map((c) => (
+                  <CategoryPill key={c} label={c} meta={categoryMeta(c)} />
+                ))}
+              </div>
             )}
           </div>
-          {creator.username && <p className="text-[14px] text-ink-soft">@{creator.username}</p>}
-          {creator.location && (
-            <p className="mt-1 flex items-center gap-1 text-[14px] text-ink-soft">
-              <MapPin size={13} />
-              {creator.location}
-            </p>
-          )}
-          {creator.categories.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {creator.categories.map((c) => (
-                <span key={c} className="rounded-full bg-surface-dim px-2.5 py-1 text-[12px] font-medium text-ink-soft">
-                  {c}
-                </span>
+        </HeroReveal>
+
+        {hasStats && (
+          <HeroReveal className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {followers > 0 && (
+              <StatTile label={t('public.followers')} value={compactNumber(followers)} />
+            )}
+            {stat && stat.reviewCount > 0 && (
+              <StatTile
+                label={t('public.avgRating')}
+                value={
+                  <span className="inline-flex items-center gap-1">
+                    {stat.averageRating.toFixed(1)}
+                    <Star size={15} className="fill-warning text-warning" />
+                  </span>
+                }
+              />
+            )}
+            {stat && stat.completionRate > 0 && (
+              <StatTile label={t('public.completionRate')} value={`${stat.completionRate}%`} />
+            )}
+            {responseTime && <StatTile label={t('public.responseTime')} value={responseTime} />}
+          </HeroReveal>
+        )}
+      </DetailHero>
+
+      <DetailBody>
+        <DetailSection title={t('public.aboutHeading')} className="mt-0">
+          <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink-soft">
+            {creator.bio || t('public.noBio')}
+          </p>
+        </DetailSection>
+
+        {creator.socialAccounts.length > 0 && (
+          <DetailSection title={t('public.socialHeading')}>
+            <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {creator.socialAccounts.map((a) => (
+                <li key={a.platform}>
+                  <LinkRow href={a.profileUrl || undefined}>
+                    <span className="flex items-center gap-3">
+                      <PlatformIcon platform={a.platform} size={20} />
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-semibold text-ink">
+                          {platformMeta(a.platform).label}
+                        </span>
+                        {a.followers > 0 && (
+                          <span className="text-[13px] text-ink-soft">
+                            {compactNumber(a.followers)} {t('public.followers')}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                  </LinkRow>
+                </li>
               ))}
-            </div>
-          )}
-        </div>
-      </div>
+            </ul>
+          </DetailSection>
+        )}
 
-      {/* CTA */}
-      <div className="mt-6">
-        <Link to={paths.signup}>
-          <Button size="lg">{t('public.workWithCreator')}</Button>
-        </Link>
-      </div>
-
-      {/* Stats */}
-      {(followers > 0 || stat) && (
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {followers > 0 && (
-            <StatBox label={t('public.followers')} value={compactNumber(followers)} />
-          )}
-          {stat && stat.reviewCount > 0 && (
-            <StatBox
-              label={t('public.avgRating')}
-              value={
-                <span className="inline-flex items-center gap-1">
-                  {stat.averageRating.toFixed(1)}
-                  <Star size={14} className="fill-warning text-warning" />
-                </span>
-              }
-            />
-          )}
-          {stat && stat.completionRate > 0 && (
-            <StatBox label={t('public.completionRate')} value={`${stat.completionRate}%`} />
-          )}
-          {responseTime && <StatBox label={t('public.responseTime')} value={responseTime} />}
-        </div>
-      )}
-
-      {/* About */}
-      <Section title={t('public.aboutHeading')}>
-        <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink-soft">
-          {creator.bio || t('public.noBio')}
-        </p>
-      </Section>
-
-      {/* Social platforms */}
-      {creator.socialAccounts.length > 0 && (
-        <Section title={t('public.socialHeading')}>
-          <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {creator.socialAccounts.map((a) => (
-              <li key={a.platform}>
+        {(creator.portfolioItems.length > 0 || creator.portfolioLinks.length > 0) && (
+          <DetailSection title={t('public.portfolioHeading')}>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {creator.portfolioItems.map((p) => (
                 <a
-                  href={a.profileUrl || undefined}
+                  key={p.id}
+                  href={p.linkUrl || p.mediaUrl || undefined}
                   target="_blank"
                   rel="noreferrer nofollow"
-                  className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition-colors hover:border-line-strong"
+                  className="group overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-violet/30"
                 >
-                  <PlatformIcon platform={a.platform} size={20} />
-                  <span className="flex-1">
-                    <span className="block text-[14px] font-semibold text-ink">
-                      {platformMeta(a.platform).label}
-                    </span>
-                    {a.followers > 0 && (
-                      <span className="text-[13px] text-ink-soft">
-                        {compactNumber(a.followers)} {t('public.followers')}
-                      </span>
-                    )}
-                  </span>
-                  {a.profileUrl && <ExternalLink size={14} className="text-ink-soft" />}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {/* Portfolio */}
-      {(creator.portfolioItems.length > 0 || creator.portfolioLinks.length > 0) && (
-        <Section title={t('public.portfolioHeading')}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {creator.portfolioItems.map((p) => (
-              <a
-                key={p.id}
-                href={p.linkUrl || p.mediaUrl || undefined}
-                target="_blank"
-                rel="noreferrer nofollow"
-                className="group overflow-hidden rounded-xl border border-line bg-surface"
-              >
-                {(p.thumbnailUrl || p.mediaUrl) && (
-                  <img
-                    src={p.thumbnailUrl || p.mediaUrl || ''}
-                    alt={p.title ?? ''}
-                    className="aspect-square w-full object-cover transition-transform group-hover:scale-[1.03]"
-                    loading="lazy"
-                  />
-                )}
-                {p.title && <p className="truncate p-2 text-[12px] font-medium text-ink">{p.title}</p>}
-              </a>
-            ))}
-            {creator.portfolioLinks.map((l) => (
-              <a
-                key={l.id}
-                href={l.url}
-                target="_blank"
-                rel="noreferrer nofollow"
-                className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface p-3 text-[13px] font-medium text-ink hover:border-line-strong"
-              >
-                <span className="truncate">{l.label}</span>
-                <ExternalLink size={13} className="flex-shrink-0 text-ink-soft" />
-              </a>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Services */}
-      {creator.services.length > 0 && (
-        <Section title={t('public.servicesHeading')}>
-          <ul className="space-y-2.5">
-            {creator.services.map((s) => (
-              <li key={s.id} className="rounded-xl border border-line bg-surface px-4 py-3">
-                <p className="text-[14px] font-semibold text-ink">{s.name}</p>
-                {s.description && <p className="mt-0.5 text-[13px] text-ink-soft">{s.description}</p>}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {/* Team */}
-      {creator.teamMembers.length > 0 && (
-        <Section title={t('public.teamHeading')}>
-          <ul className="flex flex-wrap gap-3">
-            {creator.teamMembers.map((m) => (
-              <li key={m.id} className="flex items-center gap-2 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-3">
-                <Avatar name={m.fullName ?? '?'} src={m.avatarUrl} size="sm" />
-                <span className="text-[13px] font-medium text-ink">{m.fullName}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {/* Reviews */}
-      {creator.reviews.length > 0 && (
-        <Section title={t('public.reviewsHeading')}>
-          <ul className="space-y-3">
-            {creator.reviews.slice(0, 6).map((r) => (
-              <Card key={r.id} as="li" className="!p-4">
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      size={13}
-                      className={i < r.rating ? 'fill-warning text-warning' : 'text-line-strong'}
+                  {(p.thumbnailUrl || p.mediaUrl) && (
+                    <img
+                      src={p.thumbnailUrl || p.mediaUrl || ''}
+                      alt={p.title ?? ''}
+                      className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                      loading="lazy"
                     />
-                  ))}
-                </div>
-                {r.comment && <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{r.comment}</p>}
-                {r.reviewer?.name && (
-                  <p className="mt-2 text-[12px] font-medium text-ink-soft">— {r.reviewer.name}</p>
-                )}
-              </Card>
-            ))}
-          </ul>
-        </Section>
-      )}
+                  )}
+                  {p.title && <p className="truncate p-2 text-[12px] font-medium text-ink">{p.title}</p>}
+                </a>
+              ))}
+              {creator.portfolioLinks.map((l) => (
+                <a
+                  key={l.id}
+                  href={l.url}
+                  target="_blank"
+                  rel="noreferrer nofollow"
+                  className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface p-3 text-[13px] font-medium text-ink transition-colors hover:border-violet/30"
+                >
+                  <span className="truncate">{l.label}</span>
+                  <ExternalLink size={13} className="flex-shrink-0 text-ink-soft" />
+                </a>
+              ))}
+            </div>
+          </DetailSection>
+        )}
 
-      {/* Bottom CTA */}
-      <div className="mt-12 rounded-2xl bg-gradient-to-br from-brand-indigo to-violet-dark p-6 text-center text-white">
-        <p className="text-[17px] font-semibold">{t('public.workWithCreator')}</p>
-        <Link to={paths.signup} className="mt-3 inline-block">
-          <Button variant="secondary" size="md">
-            {t('public.getStarted')}
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
-}
+        {creator.services.length > 0 && (
+          <DetailSection title={t('public.servicesHeading')}>
+            <ul className="space-y-2.5">
+              {creator.services.map((s) => (
+                <li key={s.id} className="rounded-xl border border-line bg-surface px-4 py-3">
+                  <p className="text-[14px] font-semibold text-ink">{s.name}</p>
+                  {s.description && <p className="mt-0.5 text-[13px] text-ink-soft">{s.description}</p>}
+                </li>
+              ))}
+            </ul>
+          </DetailSection>
+        )}
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mt-9">
-      <CardHeader title={title} />
-      {children}
-    </section>
-  );
-}
+        {creator.teamMembers.length > 0 && (
+          <DetailSection title={t('public.teamHeading')}>
+            <ul className="flex flex-wrap gap-3">
+              {creator.teamMembers.map((m) => (
+                <li
+                  key={m.id}
+                  className="flex items-center gap-2 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-3.5"
+                >
+                  <Avatar name={m.fullName ?? '?'} src={m.avatarUrl} size="sm" />
+                  <span className="text-[13px] font-medium text-ink">{m.fullName}</span>
+                </li>
+              ))}
+            </ul>
+          </DetailSection>
+        )}
 
-function StatBox({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-line bg-surface p-3 text-center">
-      <p className="text-lg font-bold text-ink">{value}</p>
-      <p className="mt-0.5 text-[12px] text-ink-soft">{label}</p>
+        {creator.reviews.length > 0 && (
+          <DetailSection title={t('public.reviewsHeading')}>
+            <ul className="space-y-3">
+              {creator.reviews.slice(0, 6).map((r) => (
+                <Card key={r.id} as="li" className="!p-4">
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        size={13}
+                        className={i < r.rating ? 'fill-warning text-warning' : 'text-line-strong'}
+                      />
+                    ))}
+                  </div>
+                  {r.comment && <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{r.comment}</p>}
+                  {r.reviewer?.name && (
+                    <p className="mt-2 text-[12px] font-medium text-ink-soft">— {r.reviewer.name}</p>
+                  )}
+                </Card>
+              ))}
+            </ul>
+          </DetailSection>
+        )}
+
+        <BottomCTA
+          title={t('public.workWithCreator')}
+          ctaLabel={t('public.getStarted')}
+          to={paths.signup}
+        />
+      </DetailBody>
     </div>
   );
 }
 
 function ProfileSkeleton() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
-      <div className="flex gap-5">
-        <Skeleton className="h-24 w-24 rounded-full" />
-        <div className="flex-1 space-y-3 pt-2">
-          <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-4 w-40" />
+    <div>
+      <section className="border-b border-line bg-paper">
+        <div className="mx-auto max-w-4xl px-4 pb-9 pt-10 sm:px-6 lg:pb-11 lg:pt-14">
+          <Skeleton className="h-4 w-28" />
+          <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center">
+            <Skeleton className="h-24 w-24 rounded-full" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-6 w-64 rounded-full" />
+            </div>
+          </div>
+          <div className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-xl" />
+            ))}
+          </div>
         </div>
-      </div>
-      <Skeleton className="mt-6 h-11 w-48 rounded-xl" />
-      <div className="mt-8 space-y-3">
+      </section>
+      <div className="mx-auto max-w-4xl px-4 py-9 sm:px-6 lg:py-11">
         <Skeleton className="h-5 w-24" />
-        <SkeletonText lines={4} />
+        <div className="mt-4">
+          <SkeletonText lines={4} />
+        </div>
       </div>
     </div>
   );

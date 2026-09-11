@@ -87,10 +87,14 @@ export function BusinessCreatorDetailPage() {
       {flash && <Alert tone="success" className="mt-5">{flash}</Alert>}
 
       <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start">
-        <Avatar name={name} src={c.avatarUrl} size="xl" className="h-20 w-20" />
+        <span className="inline-flex flex-shrink-0 rounded-full bg-gradient-to-br from-violet/25 to-brand-orange/20 p-[3px]">
+          <span className="rounded-full bg-surface p-0.5">
+            <Avatar name={name} src={c.avatarUrl} size="xl" className="h-20 w-20" />
+          </span>
+        </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">{name}</h1>
+            <h1 className="font-serif text-3xl font-medium tracking-tight text-ink">{name}</h1>
             {c.fullyVerified && <BadgeCheck size={19} className="text-brand" />}
           </div>
           {c.location && (
@@ -154,7 +158,7 @@ export function BusinessCreatorDetailPage() {
                   href={a.profileUrl || undefined}
                   target="_blank"
                   rel="noreferrer nofollow"
-                  className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 hover:border-line-strong"
+                  className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition-colors hover:border-violet/30"
                 >
                   <PlatformIcon platform={a.platform} size={18} />
                   <span className="flex-1">
@@ -177,7 +181,7 @@ export function BusinessCreatorDetailPage() {
           <ul className="space-y-2">
             {c.portfolioLinks.map((l) => (
               <li key={l.id}>
-                <a href={l.url} target="_blank" rel="noreferrer nofollow" className="inline-flex items-center gap-1 text-[13px] font-medium text-brand hover:underline">
+                <a href={l.url} target="_blank" rel="noreferrer nofollow" className="inline-flex items-center gap-1 text-[13px] font-medium text-violet-dark hover:underline">
                   {l.label}
                   <ExternalLink size={11} />
                 </a>
@@ -203,9 +207,10 @@ export function BusinessCreatorDetailPage() {
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-line bg-surface p-3 text-center">
-      <p className="text-lg font-bold text-ink">{value}</p>
-      <p className="mt-0.5 text-[12px] text-ink-soft">{label}</p>
+    <div className="relative overflow-hidden rounded-xl border border-line bg-surface p-3.5 text-center">
+      <span aria-hidden className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet/60 to-brand-orange/50" />
+      <p className="font-serif text-[20px] font-medium leading-none text-ink">{value}</p>
+      <p className="mt-1.5 text-[12px] text-ink-soft">{label}</p>
     </div>
   );
 }

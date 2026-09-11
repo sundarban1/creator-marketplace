@@ -3,6 +3,7 @@ import { MotionConfig } from 'framer-motion';
 import { LenisProvider, useLenisScroll } from './hooks/useLenis';
 import { useLandingStats } from './hooks/useLandingStats';
 import { useSuccessStories } from './hooks/useSuccessStories';
+import { useMarketplacePreview } from './hooks/useMarketplacePreview';
 import { LandingLanguageProvider } from './context/LanguageContext';
 import { LandingThemeProvider } from './context/ThemeContext';
 import { CursorSparkles } from './components/CursorSparkles';
@@ -21,6 +22,7 @@ import { AIDiscovery } from './sections/AIDiscovery';
 import { OpportunityFeed } from './sections/OpportunityFeed';
 import { TrustStats } from './sections/TrustStats';
 import { Categories } from './sections/Categories';
+import { MarketplaceShowcase } from './sections/MarketplaceShowcase';
 import { Security } from './sections/Security';
 import { Stories } from './sections/Stories';
 import { FinalCTA } from './sections/FinalCTA';
@@ -37,8 +39,21 @@ function HashScrollHandler() {
   useEffect(() => {
     if (!window.location.hash) return;
     const hash = window.location.hash;
-    const t = setTimeout(() => scrollTo(hash), 400);
-    return () => clearTimeout(t);
+    // Sections below the fold (and their images) settle their height well
+    // after mount, which moves the target and can leave a single early
+    // scrollTo landing short or getting cancelled by a ScrollTrigger.refresh.
+    // Re-fire a few times over ~2s so the last attempt lands after layout
+    // settles; stop early once the target is at the top of the viewport.
+    const delays = [400, 800, 1300, 2000];
+    const timers = delays.map((d) =>
+      setTimeout(() => {
+        const el = document.querySelector<HTMLElement>(hash);
+        if (!el) return;
+        if (Math.abs(el.getBoundingClientRect().top) < 4) return;
+        scrollTo(hash);
+      }, d),
+    );
+    return () => timers.forEach(clearTimeout);
   }, [scrollTo]);
 
   return null;
@@ -47,6 +62,7 @@ function HashScrollHandler() {
 function LandingPageInner() {
   const stats = useLandingStats();
   const successStories = useSuccessStories();
+  const { creators, businesses, categoryMeta } = useMarketplacePreview();
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white font-display dark:bg-ink">
@@ -97,6 +113,8 @@ function LandingPageInner() {
       <OpportunityFeed />
       <TrustStats stats={stats} />
       <Categories stats={stats} />
+      <MarketplaceShowcase variant="creators" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
+      <MarketplaceShowcase variant="businesses" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
       <Stories stories={successStories} />
       <Security />
       <FinalCTA />

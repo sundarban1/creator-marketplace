@@ -27,8 +27,9 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
     <Link
       to={`/business/events/${event.id}`}
       className={cn(
-        'flex flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-colors hover:border-line-strong',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
+        'group flex flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30',
+        'hover:shadow-[0_1px_3px_rgba(20,17,16,0.06),0_18px_34px_-16px_rgba(123,92,245,0.28)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet/40',
       )}
     >
       {event.featureImageUrl && (

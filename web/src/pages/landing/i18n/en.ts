@@ -6,12 +6,14 @@ export const en = {
       opportunities: 'Opportunities',
       creators: 'Creators',
       business: 'Business',
+      events: 'Events',
       contact: 'Contact us',
       howItWorks: 'How it works',
     },
     toggleMenuAriaLabel: 'Toggle menu',
     languageLabel: 'Language',
     appearanceLabel: 'Appearance',
+    getStarted: 'Get Started',
   },
 
   hero: {
@@ -193,6 +195,36 @@ export const en = {
       'Fitness & Health', 'Beauty', 'Lifestyle', 'Music', 'Photography',
       'Education', 'Entertainment',
     ],
+  },
+
+  marketplace: {
+    creators: {
+      eyebrow: 'Creators on Kolab',
+      heading: 'Meet the creators bringing Nepali brands to life.',
+      sub: 'Verified content creators and influencers across every niche — explore profiles, portfolios and past work.',
+      cta: 'Browse all creators',
+      verified: 'Verified',
+      followers: 'followers',
+      fallback: [
+        { name: 'Content Creators', category: 'Fashion & Lifestyle' },
+        { name: 'Influencers', category: 'Food & Travel' },
+        { name: 'UGC Creators', category: 'Beauty & Tech' },
+        { name: 'Video Creators', category: 'Entertainment' },
+      ],
+    },
+    businesses: {
+      eyebrow: 'Businesses on Kolab',
+      heading: 'The brands hiring creators on Kolab.',
+      sub: 'From cafés to salons to startups — businesses across Nepal running campaigns and events with creators.',
+      cta: 'Browse all businesses',
+      verified: 'Verified',
+      fallback: [
+        { name: 'Restaurants & Cafés', category: 'Food & Beverage' },
+        { name: 'Salons & Spas', category: 'Beauty & Wellness' },
+        { name: 'Retail & Fashion', category: 'Shopping' },
+        { name: 'Startups', category: 'Technology' },
+      ],
+    },
   },
 
   howItWorks: {

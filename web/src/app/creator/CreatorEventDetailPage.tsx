@@ -62,7 +62,7 @@ export function CreatorEventDetailPage() {
         <EngagementBadge state={existing.engagementState} />
         <Link
           to={`/creator/applications`}
-          className="ml-auto text-[13px] font-semibold text-brand hover:underline"
+          className="ml-auto text-[13px] font-semibold text-violet-dark hover:underline"
         >
           {t('creatorEvents.viewApplication')}
         </Link>

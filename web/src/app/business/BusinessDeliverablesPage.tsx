@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, Image as ImageIcon } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { rupees } from '../lib/format';
@@ -15,6 +14,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { Modal } from '../ui/Modal';
 import { Textarea } from '../ui/Textarea';
+import { DeliverableStrip } from '../ui/DeliverableGallery';
 
 const TABS = ['review', 'approved'] as const;
 type Tab = (typeof TABS)[number];
@@ -58,7 +58,7 @@ export function BusinessDeliverablesPage() {
 
   return (
     <>
-      <PageHeader title={t('biz.delivTitle')} description={t('biz.delivSubtitle')} />
+      <PageHeader eyebrow={t('biz.eyebrowDeliv')} title={t('biz.delivTitle')} description={t('biz.delivSubtitle')} />
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
@@ -89,25 +89,15 @@ export function BusinessDeliverablesPage() {
                     {a.campaign?.title} · {rupees(a.proposedRate)}
                   </p>
                 </div>
-                <Link to={`/business/events/${a.campaignId}`} className="text-[12px] font-semibold text-brand hover:underline">
+                <Link to={`/business/events/${a.campaignId}`} className="text-[12px] font-semibold text-violet-dark hover:underline">
                   {a.campaign?.title ? t('biz.manageEvent') : ''}
                 </Link>
               </div>
 
-              {(a.deliverableFiles ?? []).length > 0 && (
+              {((a.deliverableFiles ?? []).length > 0 || (a.deliverableVideos ?? []).length > 0) && (
                 <div className="mt-3">
                   <p className="mb-1.5 text-[12px] font-semibold text-ink-soft">{t('biz.submittedFiles')}</p>
-                  <ul className="space-y-1.5">
-                    {a.deliverableFiles!.map((f) => (
-                      <li key={f.id} className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2">
-                        {f.fileType === 'IMAGE' ? <ImageIcon size={14} className="text-ink-soft" /> : <FileText size={14} className="text-ink-soft" />}
-                        <a href={f.url} target="_blank" rel="noreferrer" className="flex-1 truncate text-[13px] font-medium text-brand hover:underline">
-                          {f.originalFileName}
-                        </a>
-                        <span className="text-[11px] text-ink-soft">{(f.sizeBytes / 1024 / 1024).toFixed(1)} MB</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <DeliverableStrip files={a.deliverableFiles} videos={a.deliverableVideos} />
                 </div>
               )}
 

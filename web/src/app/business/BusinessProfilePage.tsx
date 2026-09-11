@@ -76,7 +76,7 @@ export function BusinessProfilePage() {
   if (profile.loading && !p) {
     return (
       <>
-        <PageHeader title={t('biz.profileTitle')} />
+        <PageHeader eyebrow={t('biz.eyebrowProfile')} title={t('biz.profileTitle')} />
         <Skeleton className="h-40 w-full rounded-2xl" />
       </>
     );
@@ -87,7 +87,7 @@ export function BusinessProfilePage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title={t('biz.profileTitle')} />
+      <PageHeader eyebrow={t('biz.eyebrowProfile')} title={t('biz.profileTitle')} />
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
@@ -95,7 +95,11 @@ export function BusinessProfilePage() {
       <Card>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="relative w-fit">
-            <Avatar name={p.businessName ?? 'Business'} src={p.logoUrl} size="xl" className="h-20 w-20 rounded-xl" />
+            <span className="inline-flex rounded-2xl bg-gradient-to-br from-violet/25 to-brand-orange/20 p-[3px]">
+              <span className="rounded-xl bg-surface p-0.5">
+                <Avatar name={p.businessName ?? 'Business'} src={p.logoUrl} size="xl" className="h-20 w-20 rounded-xl" />
+              </span>
+            </span>
             <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-sm hover:text-ink">
               <Camera size={14} />
               <input
@@ -111,14 +115,14 @@ export function BusinessProfilePage() {
             </label>
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-xl font-bold text-ink">{p.businessName ?? '—'}</h2>
+            <h2 className="font-serif text-2xl font-medium tracking-tight text-ink">{p.businessName ?? '—'}</h2>
             {p.industry && <p className="text-[13px] text-ink-soft">{p.industry}</p>}
             {p.location && <p className="mt-0.5 text-[13px] text-ink-soft">{p.location}</p>}
             <p className="mt-3 whitespace-pre-line text-[14px] leading-relaxed text-ink">
               {p.about || <span className="text-ink-soft">{t('profile.noBio')}</span>}
             </p>
             {p.website && (
-              <a href={p.website} target="_blank" rel="noreferrer nofollow" className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline">
+              <a href={p.website} target="_blank" rel="noreferrer nofollow" className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline">
                 {p.website.replace(/^https?:\/\//, '')}
                 <ExternalLink size={11} />
               </a>

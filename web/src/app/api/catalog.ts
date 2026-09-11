@@ -6,6 +6,10 @@ export interface Category {
   name: string;
   scope: 'BOTH' | 'CREATOR' | 'BUSINESS';
   status: string;
+  /** FontAwesome slug (see src/lib/iconOptions) — admin-set, shared with mobile. */
+  icon: string;
+  iconBg: string;
+  color: string;
 }
 
 export function fetchCategories(signal?: AbortSignal): Promise<Category[]> {

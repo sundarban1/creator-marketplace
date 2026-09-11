@@ -35,7 +35,7 @@ export function Tabs({
               className={cn(
                 'flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[14px] font-medium transition-colors',
                 active
-                  ? 'border-brand text-brand'
+                  ? 'border-violet text-violet-dark'
                   : 'border-transparent text-ink-soft hover:text-ink',
               )}
             >
@@ -44,7 +44,7 @@ export function Tabs({
                 <span
                   className={cn(
                     'rounded-full px-1.5 text-[11px] font-semibold tabular-nums',
-                    active ? 'bg-brand/12 text-brand' : 'bg-surface-dim text-ink-soft',
+                    active ? 'bg-violet/12 text-violet-dark' : 'bg-surface-dim text-ink-soft',
                   )}
                 >
                   {tab.count}

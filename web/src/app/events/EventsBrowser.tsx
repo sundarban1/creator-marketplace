@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useT } from '../i18n';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
@@ -10,6 +11,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { EventCard } from '../public/EventCard';
 import { cn } from '../ui/cn';
+import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 
 const PAGE_SIZE = 12;
 
@@ -21,10 +23,13 @@ const PAGE_SIZE = 12;
 export function EventsBrowser({
   hrefBase,
   appliedIds,
+  showSearch = true,
 }: {
   hrefBase: string;
   /** campaignIds the viewer has already applied to — shown with an "Applied" tag. */
   appliedIds?: Set<string>;
+  /** When false, the wrapping page owns the search input (e.g. the public hero). */
+  showSearch?: boolean;
 }) {
   const t = useT();
   const [params, setParams] = useSearchParams();
@@ -86,18 +91,20 @@ export function EventsBrowser({
   return (
     <div>
       <div className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
-          <div className="relative">
-            <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => patch('q', e.target.value)}
-              placeholder={t('public.searchEventsPlaceholder')}
-              aria-label={t('public.searchEventsPlaceholder')}
-              className="h-12 w-full rounded-xl border border-line-strong bg-surface pl-11 pr-4 text-[15px] text-ink placeholder:text-ink-soft/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/35"
-            />
-          </div>
+        <div className={cn('grid gap-3', showSearch ? 'sm:grid-cols-[1fr_220px]' : 'sm:grid-cols-2')}>
+          {showSearch && (
+            <div className="relative">
+              <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => patch('q', e.target.value)}
+                placeholder={t('public.searchEventsPlaceholder')}
+                aria-label={t('public.searchEventsPlaceholder')}
+                className="h-12 w-full rounded-xl border border-line-strong bg-surface pl-11 pr-4 text-[15px] text-ink placeholder:text-ink-soft/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/35"
+              />
+            </div>
+          )}
           <Select
             aria-label={t('public.allTypes')}
             value={type}
@@ -117,7 +124,7 @@ export function EventsBrowser({
           {hasFilters && (
             <button
               onClick={() => setParams({}, { replace: true })}
-              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand hover:underline"
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-violet hover:underline"
             >
               <SlidersHorizontal size={13} />
               {t('public.clearAll')}
@@ -155,18 +162,23 @@ export function EventsBrowser({
           />
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={stagger(0.05)}
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            >
               {items.map((e) => (
-                <div key={e.id} className="relative">
+                <motion.div key={e.id} variants={fadeUp} className="relative">
                   {appliedIds?.has(e.id) && (
-                    <span className="absolute right-3 top-3 z-10 rounded-full bg-success-soft px-2 py-0.5 text-[11px] font-semibold text-success">
+                    <span className="absolute right-3 top-3 z-20 rounded-full bg-success-soft px-2 py-0.5 text-[11px] font-semibold text-success">
                       {t('creatorEvents.appliedTag')}
                     </span>
                   )}
                   <EventCard event={e} hrefBase={hrefBase} />
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
             {canLoadMore && (
               <div className={cn('mt-8 flex justify-center')}>
                 <Button variant="secondary" loading={status === 'loadingMore'} onClick={() => load(page + 1, true)}>

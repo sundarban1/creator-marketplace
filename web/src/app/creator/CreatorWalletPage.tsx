@@ -50,6 +50,7 @@ export function CreatorWalletPage() {
   return (
     <>
       <PageHeader
+        eyebrow={t('wallet.eyebrow')}
         title={t('wallet.title')}
         description={t('wallet.subtitle')}
         actions={
@@ -168,7 +169,7 @@ function TransactionList({ data, loading }: { data: WalletTransaction[] | null; 
                   href={tx.proofUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-brand hover:underline"
+                  className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-violet-dark hover:underline"
                 >
                   {t('wallet.viewProof')}
                   <ExternalLink size={10} />
@@ -226,7 +227,7 @@ function WithdrawalList({ data, loading }: { data: Withdrawal[] | null; loading:
                 href={wd.screenshotUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-1 inline-flex items-center gap-0.5 text-[12px] font-semibold text-brand hover:underline"
+                className="mt-1 inline-flex items-center gap-0.5 text-[12px] font-semibold text-violet-dark hover:underline"
               >
                 {t('wallet.viewProof')}
                 <ExternalLink size={11} />

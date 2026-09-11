@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useT } from '../i18n';
+import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { useAsync } from '../lib/useAsync';
 import { fetchMyCampaigns } from '../api/business';
 import { PageHeader } from '../ui/PageHeader';
@@ -41,6 +43,7 @@ export function BusinessEventsPage() {
   return (
     <>
       <PageHeader
+        eyebrow={t('biz.eyebrowEvents')}
         title={t('biz.eventsTitle')}
         description={t('biz.eventsSubtitle')}
         actions={
@@ -80,11 +83,19 @@ export function BusinessEventsPage() {
             action={{ label: t('biz.newEvent'), href: '/business/events/create' }}
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            key={tab}
+            initial="hidden"
+            animate="show"
+            variants={stagger(0.05)}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {list.map((c) => (
-              <BizEventCard key={c.id} event={c} />
+              <motion.div key={c.id} variants={fadeUp} className="min-w-0">
+                <BizEventCard event={c} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </>

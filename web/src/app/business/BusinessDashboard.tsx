@@ -45,6 +45,7 @@ export function BusinessDashboard() {
   return (
     <>
       <PageHeader
+        eyebrow={t('biz.eyebrowDash')}
         title={t('biz.dashWelcome', { name: user?.name ?? '' })}
         actions={
           <Link to="/business/events/create">
@@ -68,7 +69,7 @@ export function BusinessDashboard() {
           <CardHeader
             title={t('biz.needsAction')}
             action={
-              <Link to="/business/applications" className="text-[13px] font-semibold text-brand hover:underline">
+              <Link to="/business/applications" className="text-[13px] font-semibold text-violet-dark hover:underline">
                 {t('dashboard.viewAll')}
               </Link>
             }
@@ -106,7 +107,7 @@ export function BusinessDashboard() {
             <ul className="divide-y divide-line">
               {activity.data.map((n) => (
                 <li key={n.id} className="flex gap-3 py-3">
-                  <span className={cn('mt-1.5 h-2 w-2 flex-shrink-0 rounded-full', n.isRead ? 'bg-line-strong' : 'bg-brand')} />
+                  <span className={cn('mt-1.5 h-2 w-2 flex-shrink-0 rounded-full', n.isRead ? 'bg-line-strong' : 'bg-violet')} />
                   <div className="min-w-0">
                     <p className="text-[13px] font-medium text-ink">{n.title}</p>
                     <p className="mt-0.5 line-clamp-2 text-[12px] text-ink-soft">{n.body}</p>

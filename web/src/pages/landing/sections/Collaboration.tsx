@@ -3,6 +3,7 @@ import { GoogleMap, Marker, OverlayView, OVERLAY_MOUSE_TARGET, Polyline, useJsAp
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { COLORS } from '../constants';
+import { GOOGLE_MAPS_LOADER } from '../../../lib/googleMaps';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
 import { TextReveal } from '../components/TextReveal';
@@ -42,7 +43,6 @@ const MAP_PAIRS: [MapCityKey, MapCityKey][] = [
 const MAP_PAIR_HOLD_MS = 3400;
 const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 const NEPAL_CENTER = { lat: 28.1, lng: 84.0 };
-const GOOGLE_MAPS_LIBRARIES: 'marker'[] = [];
 
 // Full country extent (with a little margin beyond the actual border) —
 // fitBounds() on load frames all of Nepal inside the card regardless of its
@@ -189,11 +189,7 @@ function NepalConnectionMap({ cities, callouts }: { cities: string[]; callouts: 
   const [pairIndex, setPairIndex] = useState(0);
   const [dashOffset, setDashOffset] = useState(0);
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'kolab-google-maps',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
-    libraries: GOOGLE_MAPS_LIBRARIES,
-  });
+  const { isLoaded } = useJsApiLoader(GOOGLE_MAPS_LOADER);
 
   function handleMapLoad(map: google.maps.Map) {
     mapInstanceRef.current = map;

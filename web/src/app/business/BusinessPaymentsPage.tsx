@@ -25,7 +25,7 @@ export function BusinessPaymentsPage() {
 
   return (
     <>
-      <PageHeader title={t('biz.payTitle')} description={t('biz.paySubtitle')} />
+      <PageHeader eyebrow={t('biz.eyebrowPay')} title={t('biz.payTitle')} description={t('biz.paySubtitle')} />
 
       <Card>
         {payments.loading ? (

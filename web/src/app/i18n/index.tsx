@@ -48,17 +48,35 @@ function interpolate(template: string, vars?: Vars): string {
   return template.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
 }
 
-export function AppLanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Lang>(readStoredLang);
+export function AppLanguageProvider({
+  children,
+  language: controlledLanguage,
+  onLanguageChange,
+}: {
+  children: ReactNode;
+  /** When provided, the language is driven from outside (e.g. the landing
+   *  header's own EN/ने toggle) and this provider just mirrors it. */
+  language?: Lang;
+  onLanguageChange?: (l: Lang) => void;
+}) {
+  const [internal, setInternal] = useState<Lang>(readStoredLang);
+  const language = controlledLanguage ?? internal;
 
-  const setLanguage = useCallback((l: Lang) => {
-    setLanguageState(l);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, l);
-    } catch {
-      /* private-mode storage denial — language just won't persist */
-    }
-  }, []);
+  const setLanguage = useCallback(
+    (l: Lang) => {
+      if (onLanguageChange) {
+        onLanguageChange(l);
+      } else {
+        setInternal(l);
+      }
+      try {
+        window.localStorage.setItem(STORAGE_KEY, l);
+      } catch {
+        /* private-mode storage denial — language just won't persist */
+      }
+    },
+    [onLanguageChange],
+  );
 
   const value = useMemo<AppLanguageValue>(() => {
     const dict = DICTS[language];

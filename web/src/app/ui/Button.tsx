@@ -52,7 +52,7 @@ export function Button({
       className={cn(
         'relative inline-flex items-center justify-center font-semibold whitespace-nowrap',
         'transition-[background-color,box-shadow,filter] duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/45 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
         'disabled:cursor-not-allowed disabled:opacity-55',
         VARIANTS[variant],
         SIZES[size],

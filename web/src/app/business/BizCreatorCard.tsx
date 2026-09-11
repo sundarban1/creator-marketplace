@@ -21,21 +21,27 @@ export function BizCreatorCard({
   const platforms = [...new Set(creator.socialAccounts.map((a) => a.platform))].slice(0, 4);
 
   return (
-    <div className="group relative flex flex-col rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-line-strong">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30 hover:shadow-[0_1px_3px_rgba(20,17,16,0.06),0_18px_34px_-16px_rgba(123,92,245,0.28)]">
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 group-hover:scale-x-100"
+      />
       <button
         onClick={onToggleSave}
         aria-pressed={saved}
         aria-label={saved ? t('biz.saved') : t('biz.save')}
         className={cn(
-          'absolute right-4 top-4 rounded-lg p-1.5 transition-colors',
-          saved ? 'text-brand' : 'text-ink-soft hover:text-ink',
+          'absolute right-4 top-4 z-10 rounded-lg p-1.5 transition-colors',
+          saved ? 'text-violet' : 'text-ink-soft hover:text-ink',
         )}
       >
         <Bookmark size={16} className={saved ? 'fill-current' : ''} />
       </button>
 
       <Link to={`/business/creators/${creator.id}`} className="flex items-start gap-3 pr-8">
-        <Avatar name={creator.fullName ?? 'Creator'} src={creator.avatarUrl} size="lg" />
+        <span className="flex-shrink-0 rounded-full p-0.5 ring-1 ring-violet/15">
+          <Avatar name={creator.fullName ?? 'Creator'} src={creator.avatarUrl} size="lg" />
+        </span>
         <div className="min-w-0 flex-1 pt-1">
           <div className="flex items-center gap-1.5">
             <h3 className="truncate text-[15px] font-semibold text-ink">{creator.fullName ?? 'Creator'}</h3>

@@ -180,21 +180,40 @@ export class BusinessService {
 
     const { applications, referrals } = await this.repo.getPaymentHistoryData(profile.id);
 
-    const debitRows = applications.map((a) => ({
-      id:          a.id,
-      date:        (a.paidAt ?? new Date()).toISOString(),
-      description: `Payment for "${a.campaign.title}" - ${a.creator.fullName ?? 'Creator'}`,
-      amount:      a.proposedRate,
-      type:        'debit' as const,
-    }));
+    const debitRows = applications.map((a) => {
+      const when = (a.paidAt ?? new Date()).toISOString();
+      return {
+        id:          a.id,
+        date:        when,
+        // Web (v1-website) reads these richer fields; mobile still reads date/description/amount/type.
+        createdAt:   when,
+        paidAt:      a.paidAt ? a.paidAt.toISOString() : null,
+        status:      a.paymentStatus,
+        method:      a.paymentMethod ?? null,
+        campaign:    { id: a.campaignId, title: a.campaign.title },
+        creator:     { fullName: a.creator.fullName, avatarUrl: a.creator.avatarUrl ?? null },
+        description: `Payment for "${a.campaign.title}" - ${a.creator.fullName ?? 'Creator'}`,
+        amount:      a.proposedRate,
+        type:        'debit' as const,
+      };
+    });
 
-    const creditRows = referrals.map((r) => ({
-      id:          r.id,
-      date:        (r.completedAt ?? new Date()).toISOString(),
-      description: `Referral bonus - ${r.referred.businessName ?? 'Business'}`,
-      amount:      Number(r.rewardAmount),
-      type:        'credit' as const,
-    }));
+    const creditRows = referrals.map((r) => {
+      const when = (r.completedAt ?? new Date()).toISOString();
+      return {
+        id:          r.id,
+        date:        when,
+        createdAt:   when,
+        paidAt:      r.completedAt ? r.completedAt.toISOString() : null,
+        status:      'RELEASED' as const,
+        method:      null,
+        campaign:    null,
+        creator:     null,
+        description: `Referral bonus - ${r.referred.businessName ?? 'Business'}`,
+        amount:      Number(r.rewardAmount),
+        type:        'credit' as const,
+      };
+    });
 
     return [...debitRows, ...creditRows].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),

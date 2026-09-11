@@ -1,5 +1,7 @@
 import { useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useT } from '../i18n';
+import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { PageHeader } from '../ui/PageHeader';
 import { Tabs } from '../ui/Tabs';
 import { EmptyState } from '../ui/EmptyState';
@@ -21,7 +23,7 @@ export function CreatorWorkPage() {
 
   return (
     <>
-      <PageHeader title={t('work.title')} description={t('work.subtitle')} />
+      <PageHeader eyebrow={t('work.eyebrow')} title={t('work.title')} description={t('work.subtitle')} />
 
       <Tabs
         value={tab}
@@ -50,11 +52,19 @@ export function CreatorWorkPage() {
             action={{ label: t('applications.browseEvents'), href: '/creator/events' }}
           />
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
+          <motion.div
+            key={tab}
+            initial="hidden"
+            animate="show"
+            variants={stagger(0.04)}
+            className="grid gap-3 lg:grid-cols-2"
+          >
             {list.map((a) => (
-              <ApplicationCard key={a.id} application={a} />
+              <motion.div key={a.id} variants={fadeUp} className="min-w-0">
+                <ApplicationCard application={a} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </>

@@ -67,6 +67,7 @@ export const en = {
   },
 
   dashboard: {
+    eyebrow: 'Creator workspace',
     welcome: 'Welcome back, {name}',
     previewNote: 'This is an early preview of Kolab on the web. Your full dashboard is on the way — everything below stays in sync with the mobile app.',
     // Creator stats
@@ -90,9 +91,34 @@ export const en = {
     deadlineIn: 'Due {label}',
     viewAll: 'View all',
     exploreEvents: 'Explore events',
+    // Greeting header (time-of-day, mirrors the mobile home screen)
+    greetingMorning: 'Good morning, {name}',
+    greetingAfternoon: 'Good afternoon, {name}',
+    greetingEvening: 'Good evening, {name}',
+    greetingGeneric: 'Welcome back',
+    // Primary CTA banner
+    ctaTitle: 'Ready for your next campaign?',
+    ctaSubtitle: 'Browse open events from businesses looking for creators like you.',
+    ctaBtn: 'Browse events',
+    // Attention banner — profile nudge
+    completeProfileTitle: 'Finish setting up your profile',
+    completeProfileSubtitle: 'Add {fields} to get discovered faster.',
+    fieldPhoto: 'a profile photo',
+    fieldSocial: 'a social link',
+    fieldBio: 'a bio',
+    fieldLocation: 'your location',
+    fieldCategories: 'your categories',
+    // Attention banner — pending work
+    actionNeeded: 'Action needed',
+    actionStartWork: 'Start work on "{title}" — the business has funded escrow.',
+    actionSubmitWork: 'Submit your deliverables for "{title}".',
+    actionMultiple: 'You have {n} campaigns waiting on your next step.',
+    // Recommended events hint
+    recommendedHint: 'Because you offer {categories}',
   },
 
   applications: {
+    eyebrow: 'Your proposals',
     title: 'Applications',
     subtitle: 'Every proposal you’ve sent and the work it turned into.',
     tabAll: 'All',
@@ -110,6 +136,7 @@ export const en = {
   },
 
   work: {
+    eyebrow: 'Active engagements',
     title: 'My Work',
     subtitle: 'Accepted work — track it from start to payment.',
     emptyTitle: 'No active work',
@@ -117,6 +144,7 @@ export const en = {
   },
 
   wallet: {
+    eyebrow: 'Earnings',
     title: 'Wallet',
     subtitle: 'Your earnings, ready to withdraw.',
     availableBalance: 'Available to withdraw',
@@ -174,6 +202,15 @@ export const en = {
     setDefault: 'Make this my default',
   },
 
+  deliv: {
+    next: 'Next',
+    previous: 'Previous',
+    download: 'Download',
+    openFile: 'Open file',
+    noPreview: 'No preview available for this file type.',
+    remove: 'Remove',
+  },
+
   workDetail: {
     back: 'Back',
     notFoundTitle: 'Work not found',
@@ -215,6 +252,7 @@ export const en = {
   },
 
   creatorEvents: {
+    eyebrow: 'Open opportunities',
     appliedTag: 'Applied',
     apply: 'Apply to this event',
     applyFree: 'Apply now',
@@ -242,6 +280,7 @@ export const en = {
   },
 
   profile: {
+    eyebrow: 'Your profile',
     title: 'Profile',
     subtitle: 'This is what businesses see when they find you.',
     viewPublic: 'View public profile',
@@ -276,6 +315,7 @@ export const en = {
   },
 
   settings: {
+    eyebrow: 'Account',
     title: 'Settings',
     languageHeading: 'Language',
     languageHint: 'Applies across the Kolab app and web.',
@@ -391,6 +431,14 @@ export const en = {
     industry: 'Industry',
     website: 'Website',
     location: 'Location',
+    // page eyebrows
+    eyebrowDash: 'Business workspace',
+    eyebrowEvents: 'Your campaigns',
+    eyebrowApps: 'Proposals',
+    eyebrowDeliv: 'Submitted work',
+    eyebrowPay: 'Escrow & payouts',
+    eyebrowFind: 'Creator directory',
+    eyebrowProfile: 'Your brand',
   },
 
   engagement: {
@@ -494,18 +542,25 @@ export const en = {
   },
 
   public: {
-    // header / footer
+    // header — mirrors the landing nav
+    navDiscover: 'Discover',
+    navOpportunities: 'Opportunities',
+    navServices: 'Services',
+    navContact: 'Contact us',
+    navBusiness: 'Business',
     navHowItWorks: 'How it works',
     navForCreators: 'For creators',
     navForBusinesses: 'For businesses',
     navCreators: 'Creators',
     navEvents: 'Events',
+    menu: 'Menu',
     logIn: 'Log in',
     getStarted: 'Get started',
     footerTagline: 'Nepal’s creator marketplace — connecting brands with content creators.',
     footerRights: '© {year} Kolab. All rights reserved.',
 
     // /creators
+    creatorsEyebrow: 'For brands & businesses',
     creatorsTitle: 'Discover creators',
     creatorsSubtitle: 'Browse content creators across Nepal and find the right fit for your campaign.',
     searchCreatorsPlaceholder: 'Search by name, niche or location',
@@ -547,12 +602,36 @@ export const en = {
     hoursShort: '{h}h',
     minsShort: '{m}m',
 
+    // /businesses
+    businessesEyebrow: 'For content creators',
+    businessesTitle: 'Discover businesses',
+    businessesSubtitle: 'Browse brands and organisations across Nepal hiring content creators.',
+    searchBusinessesPlaceholder: 'Search by name, industry or location',
+    businessesResultsCount: '{count} businesses',
+    campaignsCount: '{count} campaigns',
+    noBusinessesTitle: 'No businesses found',
+    noBusinessesBody: 'Try adjusting your search or filters.',
+
+    // /businesses/[id]
+    joinToApply: 'Join Kolab to apply',
+    campaignsPosted: 'Campaigns posted',
+    openCampaignsHeading: 'Open campaigns',
+    noBusinessBio: 'This business hasn’t added a description yet.',
+    businessNotFoundTitle: 'Business not found',
+    businessNotFoundBody: 'This profile doesn’t exist or is no longer public.',
+    backToBusinesses: 'Back to businesses',
+
     // /events
+    eventsEyebrow: 'Open opportunities',
     eventsTitle: 'Open events & campaigns',
     eventsSubtitle: 'Live opportunities from brands across Nepal. Apply from the Kolab app.',
     searchEventsPlaceholder: 'Search events',
     budgetPerCreator: '{amount} per creator',
     budgetPerCreatorLabel: 'Budget per creator',
+    badgePaid: 'Paid',
+    badgeFree: 'Free',
+    freeEventPerks: 'Perks on offer',
+    whatsOfferedLabel: 'What the business offers',
     creatorsNeeded: '{count} creators needed',
     creatorNeeded: '1 creator needed',
     applicationsCount: '{count} applied',

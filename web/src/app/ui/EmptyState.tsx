@@ -39,11 +39,11 @@ interface EmptyAction {
 }
 
 const VARIANTS: Record<EmptyVariant, { Icon: ComponentType<LucideProps>; tint: string }> = {
-  empty: { Icon: Inbox, tint: 'text-brand bg-brand/10' },
+  empty: { Icon: Inbox, tint: 'text-violet bg-violet/10' },
   'no-results': { Icon: SearchX, tint: 'text-ink-soft bg-surface-dim' },
   offline: { Icon: WifiOff, tint: 'text-warning bg-warning-soft' },
   error: { Icon: AlertTriangle, tint: 'text-danger bg-danger-soft' },
-  'no-events': { Icon: CalendarX, tint: 'text-brand bg-brand/10' },
+  'no-events': { Icon: CalendarX, tint: 'text-violet bg-violet/10' },
   'not-found': { Icon: FileQuestion, tint: 'text-ink-soft bg-surface-dim' },
 };
 

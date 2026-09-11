@@ -110,7 +110,7 @@ export function WithdrawModal({
           <button
             type="button"
             onClick={() => setAddingExplicit(true)}
-            className="text-[13px] font-semibold text-brand hover:underline"
+            className="text-[13px] font-semibold text-violet-dark hover:underline"
           >
             + {t('wallet.addPayoutMethod')}
           </button>

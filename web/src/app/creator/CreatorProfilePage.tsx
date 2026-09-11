@@ -102,7 +102,7 @@ export function CreatorProfilePage() {
   if (profile.loading && !p) {
     return (
       <>
-        <PageHeader title={t('profile.title')} />
+        <PageHeader eyebrow={t('profile.eyebrow')} title={t('profile.title')} />
         <Skeleton className="h-40 w-full rounded-2xl" />
       </>
     );
@@ -121,6 +121,7 @@ export function CreatorProfilePage() {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
+        eyebrow={t('profile.eyebrow')}
         title={t('profile.title')}
         description={t('profile.subtitle')}
         actions={
@@ -141,7 +142,11 @@ export function CreatorProfilePage() {
       <Card>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="relative w-fit">
-            <Avatar name={p.fullName ?? 'Creator'} src={p.avatarUrl} size="xl" className="h-20 w-20" />
+            <span className="inline-flex rounded-full bg-gradient-to-br from-violet/25 to-brand-orange/20 p-[3px]">
+              <span className="rounded-full bg-surface p-0.5">
+                <Avatar name={p.fullName ?? 'Creator'} src={p.avatarUrl} size="xl" className="h-20 w-20" />
+              </span>
+            </span>
             <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-sm hover:text-ink">
               <Camera size={14} />
               <input
@@ -159,7 +164,7 @@ export function CreatorProfilePage() {
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-ink">{p.fullName ?? '—'}</h2>
+              <h2 className="font-serif text-2xl font-medium tracking-tight text-ink">{p.fullName ?? '—'}</h2>
               {p.fullyVerified && <BadgeCheck size={17} className="text-brand" />}
             </div>
             {p.username && <p className="text-[13px] text-ink-soft">@{p.username}</p>}
@@ -172,7 +177,7 @@ export function CreatorProfilePage() {
                 href={p.website}
                 target="_blank"
                 rel="noreferrer nofollow"
-                className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline"
+                className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline"
               >
                 {p.website.replace(/^https?:\/\//, '')}
                 <ExternalLink size={11} />
@@ -202,7 +207,7 @@ export function CreatorProfilePage() {
           action={
             <button
               onClick={() => setSocialModal(true)}
-              className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline"
+              className="inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline"
             >
               <Plus size={13} />
               {t('profile.addSocial')}
@@ -248,7 +253,7 @@ export function CreatorProfilePage() {
           action={
             <button
               onClick={() => setPortfolioModal(true)}
-              className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline"
+              className="inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline"
             >
               <Plus size={13} />
               {t('profile.addPortfolio')}
@@ -261,7 +266,7 @@ export function CreatorProfilePage() {
           <ul className="space-y-2">
             {p.portfolioLinks.map((l) => (
               <li key={l.id} className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
-                <a href={l.url} target="_blank" rel="noreferrer nofollow" className="min-w-0 flex-1 truncate text-[13px] font-medium text-brand hover:underline">
+                <a href={l.url} target="_blank" rel="noreferrer nofollow" className="min-w-0 flex-1 truncate text-[13px] font-medium text-violet-dark hover:underline">
                   {l.label}
                 </a>
                 <button
@@ -374,7 +379,7 @@ function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-10 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-brand' : 'bg-line-strong'}`}
+        className={`relative h-6 w-10 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-violet' : 'bg-line-strong'}`}
       >
         <span
           className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'left-[18px]' : 'left-0.5'}`}
@@ -420,7 +425,7 @@ function AddSocialModal({ open, onClose, onDone }: { open: boolean; onClose: () 
                 type="button"
                 onClick={() => setPlatform(pl)}
                 className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-medium ${
-                  platform === pl ? 'border-brand bg-brand/[0.06] text-brand' : 'border-line-strong text-ink-soft'
+                  platform === pl ? 'border-violet/40 bg-violet/[0.06] text-violet-dark' : 'border-line-strong text-ink-soft'
                 }`}
               >
                 <PlatformIcon platform={pl} size={14} />

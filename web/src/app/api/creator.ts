@@ -124,6 +124,18 @@ export interface DeliverableFile {
   uploadedAt: string;
 }
 
+export interface DeliverableVideo {
+  publicId: string;
+  url: string;
+  thumbnailUrl?: string;
+  durationSec: number;
+  format: string;
+  sizeBytes: number;
+  label: string;
+  uploadedAt: string;
+  status?: 'PROCESSING' | 'READY' | 'FAILED';
+}
+
 export interface CreatorApplication {
   id: string;
   campaignId: string;
@@ -147,6 +159,7 @@ export interface CreatorApplication {
   createdAt: string;
   paidAt: string | null;
   deliverableFiles?: DeliverableFile[];
+  deliverableVideos?: DeliverableVideo[];
   dispute?: { status: string; reason: string; raisedByRole: string; createdAt: string } | null;
   campaign?: {
     id?: string;

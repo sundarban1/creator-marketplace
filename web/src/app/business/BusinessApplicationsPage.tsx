@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useT } from '../i18n';
+import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { useAsync } from '../lib/useAsync';
 import { fetchBusinessApplications } from '../api/business';
 import { byDateAsc } from '../lib/format';
@@ -36,7 +38,7 @@ export function BusinessApplicationsPage() {
 
   return (
     <>
-      <PageHeader title={t('biz.appsTitle')} description={t('biz.appsSubtitle')} />
+      <PageHeader eyebrow={t('biz.eyebrowApps')} title={t('biz.appsTitle')} description={t('biz.appsSubtitle')} />
 
       <Tabs
         value={tab}
@@ -60,11 +62,19 @@ export function BusinessApplicationsPage() {
         ) : list.length === 0 ? (
           <EmptyState variant="empty" title={t('biz.nothingToReview')} />
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
+          <motion.div
+            key={tab}
+            initial="hidden"
+            animate="show"
+            variants={stagger(0.04)}
+            className="grid gap-3 lg:grid-cols-2"
+          >
             {list.map((a) => (
-              <BizApplicationCard key={a.id} application={a} />
+              <motion.div key={a.id} variants={fadeUp} className="min-w-0">
+                <BizApplicationCard application={a} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </>

@@ -30,6 +30,8 @@ const BusinessDashboard = screen(() => import('./business/BusinessDashboard'), '
 const PublicLayout = screen(() => import('./public/PublicLayout'), 'PublicLayout');
 const CreatorsPage = screen(() => import('./public/CreatorsPage'), 'CreatorsPage');
 const CreatorProfilePage = screen(() => import('./public/CreatorProfilePage'), 'CreatorProfilePage');
+const PublicBusinessesPage = screen(() => import('./public/BusinessesPage'), 'BusinessesPage');
+const PublicBusinessProfilePage = screen(() => import('./public/BusinessProfilePage'), 'BusinessProfilePage');
 const EventsPage = screen(() => import('./public/EventsPage'), 'EventsPage');
 const EventDetailPage = screen(() => import('./public/EventDetailPage'), 'EventDetailPage');
 const CreatorEventsPage = screen(() => import('./creator/CreatorEventsPage'), 'CreatorEventsPage');
@@ -58,6 +60,8 @@ export function marketplaceRoutes() {
     <Route element={<PublicLayout />}>
       <Route path="/creators" element={<CreatorsPage />} />
       <Route path="/creators/:handle" element={<CreatorProfilePage />} />
+      <Route path="/businesses" element={<PublicBusinessesPage />} />
+      <Route path="/businesses/:id" element={<PublicBusinessProfilePage />} />
       <Route path="/events" element={<EventsPage />} />
       <Route path="/events/:id" element={<EventDetailPage />} />
     </Route>

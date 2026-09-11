@@ -154,6 +154,13 @@ export function LandingNav() {
                 </button>
               );
             })}
+            <Link
+              to="/login"
+              onClick={() => setOpen(false)}
+              className="inline-flex items-center rounded-full bg-gradient-to-r from-violet to-brand-orange px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition-transform duration-300 hover:scale-[1.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet"
+            >
+              {d.nav.getStarted}
+            </Link>
           </nav>
 
           <div className="hidden items-center gap-4 lg:flex">
@@ -215,6 +222,19 @@ export function LandingNav() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.08 + NAV_LINKS.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <Link
+                  to="/login"
+                  onClick={() => setOpen(false)}
+                  className="mt-4 inline-flex items-center rounded-full bg-gradient-to-r from-violet to-brand-orange px-6 py-3 font-serif text-xl font-bold italic text-white shadow-sm"
+                >
+                  {d.nav.getStarted}
+                </Link>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.08 + (NAV_LINKS.length + 1) * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 className="mt-10 w-full max-w-xs border-t border-ink/10 pt-6 dark:border-white/10"
               >
                 <p className="flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white">

@@ -5,11 +5,8 @@ import { SlidersHorizontal } from 'lucide-react';
 import { useT } from '../i18n';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
 import {
-  fetchCreatorFilterOptions,
-  fetchPublicCreators,
-  type CreatorCard as CreatorCardData,
-  type CreatorFilterOptions,
-  type CreatorSort,
+  fetchPublicBusinesses,
+  type BusinessCard as BusinessCardData,
 } from '../api/publicMarketplace';
 import { fetchCategories, type Category } from '../api/catalog';
 import { SEO } from '../../lib/seo/SEO';
@@ -19,31 +16,26 @@ import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
-import { CreatorCard } from './CreatorCard';
+import { BusinessCard } from './BusinessCard';
 import { BrowseHero } from './BrowseHero';
 import { LocationAutocomplete } from './LocationAutocomplete';
 import { makeCategoryLookup } from './categoryLookup';
 
 const PAGE_SIZE = 12;
-const PLATFORMS = ['instagram', 'tiktok', 'youtube', 'facebook'];
 
-export function CreatorsPage() {
+export function BusinessesPage() {
   const t = useT();
   const [params, setParams] = useSearchParams();
 
   const search = params.get('q') ?? '';
   const category = params.get('category') ?? '';
-  const platform = params.get('platform') ?? '';
   const location = params.get('location') ?? '';
-  const sort = (params.get('sort') as CreatorSort) || 'newest';
   const debouncedSearch = useDebouncedValue(search, 350);
   const debouncedLocation = useDebouncedValue(location, 350);
 
-  const [filterOptions, setFilterOptions] = useState<CreatorFilterOptions | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   useEffect(() => {
     const c = new AbortController();
-    fetchCreatorFilterOptions(c.signal).then(setFilterOptions).catch(() => {});
     fetchCategories(c.signal).then(setCategories).catch(() => {});
     return () => c.abort();
   }, []);
@@ -55,7 +47,7 @@ export function CreatorsPage() {
     [categories],
   );
 
-  const [items, setItems] = useState<CreatorCardData[]>([]);
+  const [items, setItems] = useState<BusinessCardData[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<'loading' | 'loadingMore' | 'ready' | 'error'>('loading');
@@ -64,12 +56,10 @@ export function CreatorsPage() {
   const query = useMemo(
     () => ({
       search: debouncedSearch || undefined,
-      categories: category ? [category] : undefined,
-      platforms: platform ? [platform] : undefined,
-      location: debouncedLocation || undefined,
-      sort,
+      category: category || undefined,
+      locations: debouncedLocation ? [debouncedLocation] : undefined,
     }),
-    [debouncedSearch, category, platform, debouncedLocation, sort],
+    [debouncedSearch, category, debouncedLocation],
   );
 
   const load = useCallback(
@@ -77,9 +67,9 @@ export function CreatorsPage() {
       const id = ++reqId.current;
       setStatus(append ? 'loadingMore' : 'loading');
       try {
-        const res = await fetchPublicCreators({ ...query, page: nextPage, limit: PAGE_SIZE });
+        const res = await fetchPublicBusinesses({ ...query, page: nextPage, limit: PAGE_SIZE });
         if (id !== reqId.current) return;
-        setItems((prev) => (append ? [...prev, ...res.creators] : res.creators));
+        setItems((prev) => (append ? [...prev, ...res.businesses] : res.businesses));
         setTotal(res.total);
         setPage(nextPage);
         setStatus('ready');
@@ -108,34 +98,34 @@ export function CreatorsPage() {
     );
   };
 
-  const hasFilters = Boolean(search || category || platform || location || sort !== 'newest');
+  const hasFilters = Boolean(search || category || location);
   const canLoadMore = items.length < total;
 
   return (
     <>
       <SEO
-        title={t('public.creatorsTitle')}
-        description={t('public.creatorsSubtitle')}
-        path="/creators"
+        title={t('public.businessesTitle')}
+        description={t('public.businessesSubtitle')}
+        path="/businesses"
         jsonLd={webPageSchema({
-          path: '/creators',
-          title: t('public.creatorsTitle'),
-          description: t('public.creatorsSubtitle'),
+          path: '/businesses',
+          title: t('public.businessesTitle'),
+          description: t('public.businessesSubtitle'),
         })}
       />
 
       <BrowseHero
-        eyebrow={t('public.creatorsEyebrow')}
-        title={t('public.creatorsTitle')}
-        subtitle={t('public.creatorsSubtitle')}
+        eyebrow={t('public.businessesEyebrow')}
+        title={t('public.businessesTitle')}
+        subtitle={t('public.businessesSubtitle')}
         search={search}
         onSearch={(v) => patch('q', v)}
-        searchPlaceholder={t('public.searchCreatorsPlaceholder')}
+        searchPlaceholder={t('public.searchBusinessesPlaceholder')}
       />
 
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
         {/* Filters */}
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <Select
             aria-label={t('public.category')}
             value={category}
@@ -143,36 +133,16 @@ export function CreatorsPage() {
             placeholder={t('public.allCategories')}
             options={categoryOptions}
           />
-          <Select
-            aria-label={t('public.platform')}
-            value={platform}
-            onChange={(e) => patch('platform', e.target.value)}
-            placeholder={t('public.allPlatforms')}
-            options={(filterOptions?.platforms ?? PLATFORMS).map((p) => ({
-              value: p.toLowerCase(),
-              label: p[0].toUpperCase() + p.slice(1),
-            }))}
-          />
           <LocationAutocomplete
             value={location}
             onChange={(v) => patch('location', v)}
             placeholder={t('public.location')}
           />
-          <Select
-            aria-label="Sort"
-            value={sort}
-            onChange={(e) => patch('sort', e.target.value === 'newest' ? '' : e.target.value)}
-            options={[
-              { value: 'newest', label: t('public.sortNewest') },
-              { value: 'oldest', label: t('public.sortOldest') },
-              { value: 'followers', label: t('public.sortFollowers') },
-            ]}
-          />
         </div>
 
         <div className="mt-3 flex items-center justify-between">
           <p className="text-[13px] text-ink-soft">
-            {status === 'loading' ? ' ' : t('public.resultsCount', { count: total })}
+            {status === 'loading' ? ' ' : t('public.businessesResultsCount', { count: total })}
           </p>
           {hasFilters && (
             <button
@@ -212,8 +182,8 @@ export function CreatorsPage() {
           ) : items.length === 0 ? (
             <EmptyState
               variant="no-results"
-              title={t('public.noCreatorsTitle')}
-              description={t('public.noCreatorsBody')}
+              title={t('public.noBusinessesTitle')}
+              description={t('public.noBusinessesBody')}
               action={hasFilters ? { label: t('public.clearAll'), onClick: () => setParams({}, { replace: true }) } : undefined}
             />
           ) : (
@@ -224,9 +194,9 @@ export function CreatorsPage() {
                 variants={stagger(0.05)}
                 className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
               >
-                {items.map((c) => (
-                  <motion.div key={c.id} variants={fadeUp} className="h-full">
-                    <CreatorCard creator={c} categoryMeta={categoryMeta} />
+                {items.map((b) => (
+                  <motion.div key={b.id} variants={fadeUp}>
+                    <BusinessCard business={b} categoryMeta={categoryMeta} />
                   </motion.div>
                 ))}
               </motion.div>

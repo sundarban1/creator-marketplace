@@ -875,6 +875,27 @@ async function uploadForm<T>(path: string, form: FormData): Promise<ApiResponse<
 
 // ── API surface ────────────────────────────────────────────────────────────────
 
+/** Trimmed shapes for the landing-page marketplace preview sections — the
+ *  public endpoints return more, these are only the fields the cards use. */
+export interface PublicCreatorLite {
+  id: string;
+  username: string | null;
+  fullName: string | null;
+  avatarUrl: string | null;
+  categories: string[];
+  isVerified: boolean;
+  socialAccounts: { platform: string; followers: number }[];
+}
+export interface PublicBusinessLite {
+  id: string;
+  businessName: string | null;
+  logoUrl: string | null;
+  categories: string[];
+  city: string | null;
+  district: string | null;
+  isVerified: boolean;
+}
+
 export const api = {
   auth: {
     login: (email: string, password: string) =>
@@ -1215,6 +1236,14 @@ export const api = {
       request<HelpArticle[]>('GET', '/api/faq'),
     successStories: () =>
       request<Pick<ApiSuccessStory, 'id' | 'name' | 'role' | 'quote' | 'photoUrl'>[]>('GET', '/api/success-stories'),
+    creators: (limit = 12) =>
+      request<{ creators: PublicCreatorLite[]; total: number }>(
+        'GET', '/api/public/creators', undefined, { limit, sort: 'followers' },
+      ),
+    businesses: (limit = 12) =>
+      request<{ businesses: PublicBusinessLite[]; total: number }>(
+        'GET', '/api/public/businesses', undefined, { limit },
+      ),
   },
 
   visitorChat: {

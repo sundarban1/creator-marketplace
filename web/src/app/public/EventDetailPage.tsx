@@ -5,9 +5,9 @@ import { fetchPublicEvent } from '../api/publicMarketplace';
 import { ApiError } from '../lib/apiClient';
 import { SEO } from '../../lib/seo/SEO';
 import { absoluteUrl } from '../../lib/seo/config';
-import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { EventDetailBody, EventDetailSkeleton } from '../events/EventDetailBody';
+import { BottomCTA } from './detailKit';
 
 export function EventDetailPage() {
   const t = useT();
@@ -67,25 +67,9 @@ export function EventDetailPage() {
         }}
       />
 
-      <EventDetailBody
-        event={event}
-        backTo="/events"
-        backLabel={t('public.backToEvents')}
-        cta={
-          <a href="/" className="inline-block">
-            <Button size="lg">{t('public.applyInApp')}</Button>
-          </a>
-        }
-      />
+      <EventDetailBody event={event} backTo="/events" backLabel={t('public.backToEvents')} />
 
-      <div className="mt-12 rounded-2xl bg-gradient-to-br from-brand-indigo to-violet-dark p-6 text-center text-white">
-        <p className="text-[17px] font-semibold">{t('public.applyInApp')}</p>
-        <a href="/" className="mt-3 inline-block">
-          <Button variant="secondary" size="md">
-            {t('public.getStarted')}
-          </Button>
-        </a>
-      </div>
+      <BottomCTA title={t('public.applyInApp')} ctaLabel={t('public.getStarted')} href="/" />
     </div>
   );
 }

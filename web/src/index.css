@@ -52,6 +52,54 @@
   --color-warning-soft: #FEF3C7;
 }
 
+/* The landing footer (rendered on the public marketplace pages) has its own
+   `dark:` handling and expects `--color-ink` etc. at their light-theme values,
+   so reset every token to its @theme default inside its subtree — the market
+   dark overrides below then don't reach it, and its own `dark:` classes work. */
+.market-scope .footer-landing-scope {
+  --color-ink: #141110;
+  --color-ink-soft: #6B6560;
+  --color-paper: #FBF9F5;
+  --color-paper-dim: #F3F0EA;
+  --color-line: #ECE7DE;
+  --color-line-strong: #DED7C9;
+  --color-surface: #FFFFFF;
+  --color-surface-dim: #F7F4EE;
+  --color-brand: #4F46E5;
+  --color-brand-hover: #4338CA;
+  --color-success: #15803D;
+  --color-success-soft: #DCFCE7;
+  --color-danger: #DC2626;
+  --color-danger-soft: #FEE2E2;
+  --color-warning: #B45309;
+  --color-warning-soft: #FEF3C7;
+}
+
+/* Dark mode for the public marketplace pages (/creators, /events, …).
+   Scoped to `.market-scope` (PublicLayout's root) so redefining these tokens
+   only flips those pages when the landing ThemeProvider puts `.dark` on
+   <html> — the admin dashboard and the landing page's own dark handling are
+   untouched. Every marketplace component uses these token utilities, so this
+   one block is the whole dark theme. */
+.dark .market-scope {
+  --color-paper: #131110;
+  --color-paper-dim: #1B1917;
+  --color-ink: #F3F1EE;
+  --color-ink-soft: #9C978F;
+  --color-surface: #1C1A18;
+  --color-surface-dim: #262220;
+  --color-line: color-mix(in srgb, #ffffff 8%, transparent);
+  --color-line-strong: color-mix(in srgb, #ffffff 17%, transparent);
+  --color-brand: #7C74F0;
+  --color-brand-hover: #9089F3;
+  --color-success: #4ADE80;
+  --color-success-soft: color-mix(in srgb, #4ADE80 16%, transparent);
+  --color-danger: #F87171;
+  --color-danger-soft: color-mix(in srgb, #F87171 16%, transparent);
+  --color-warning: #FBBF24;
+  --color-warning-soft: color-mix(in srgb, #FBBF24 16%, transparent);
+}
+
 * {
   box-sizing: border-box;
 }

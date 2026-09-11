@@ -76,6 +76,6 @@ export async function requestGoogleAccessToken(): Promise<string> {
       },
       error_callback: (err) => reject(new Error(err.type ?? 'Google Sign-In was cancelled.')),
     });
-    client.requestAccessToken({ prompt: '' });
+    client.requestAccessToken({ prompt: 'select_account' });
   });
 }

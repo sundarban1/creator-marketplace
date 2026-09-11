@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
-import { FaApple } from 'react-icons/fa6';
 import { useAppAuth } from './AppAuthContext';
 import { useT } from '../i18n';
 import { roleHome } from '../routes';
@@ -66,21 +65,10 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
 
   return (
     <>
-      <div className="space-y-2.5">
-        <Button variant="secondary" fullWidth size="lg" loading={busy} onClick={handleGoogle}>
-          <FcGoogle size={18} />
-          {t('auth.continueGoogle')}
-        </Button>
-        <Button
-          variant="secondary"
-          fullWidth
-          size="lg"
-          onClick={() => onError(t('auth.appleUseApp'))}
-        >
-          <FaApple size={17} />
-          {t('auth.continueApple')}
-        </Button>
-      </div>
+      <Button variant="secondary" fullWidth size="lg" loading={busy} onClick={handleGoogle}>
+        <FcGoogle size={18} />
+        {t('auth.continueGoogle')}
+      </Button>
 
       <div className="my-5 flex items-center gap-3">
         <span className="h-px flex-1 bg-line" />
