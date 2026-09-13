@@ -51,7 +51,7 @@ export function CreatorProfilePage() {
           variant={notFound || creator?.isPrivate ? 'not-found' : 'error'}
           title={t('public.profileNotFoundTitle')}
           description={t('public.profileNotFoundBody')}
-          action={{ label: t('public.backToCreators'), href: '/creators' }}
+          action={{ label: t('public.backToHome'), href: paths.home }}
         />
       </div>
     );
@@ -94,7 +94,7 @@ export function CreatorProfilePage() {
         }}
       />
 
-      <DetailHero backTo="/creators" backLabel={t('public.backToCreators')}>
+      <DetailHero backTo={paths.home} backLabel={t('public.backToHome')}>
         <HeroReveal className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center">
           <RingAvatar>
             <Avatar name={name} src={creator.avatarUrl} size="xl" className="h-24 w-24" />

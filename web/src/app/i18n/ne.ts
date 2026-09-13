@@ -1016,7 +1016,7 @@ export const ne: AppDict = {
     noBio: 'यस क्रिएटरले अझै परिचय थपेका छैनन्।',
     profileNotFoundTitle: 'क्रिएटर भेटिएन',
     profileNotFoundBody: 'यो प्रोफाइल अवस्थित छैन वा अब सार्वजनिक छैन।',
-    backToCreators: 'क्रिएटरहरूमा फर्कनुहोस्',
+    backToHome: 'Kolab मा फर्कनुहोस्',
     completionRate: 'सम्पन्नता दर',
     avgRating: 'औसत रेटिङ',
     responseTime: 'प्रतिक्रिया समय',
@@ -1037,7 +1037,6 @@ export const ne: AppDict = {
     noBusinessBio: 'यस व्यवसायले अझै विवरण थपेको छैन।',
     businessNotFoundTitle: 'व्यवसाय भेटिएन',
     businessNotFoundBody: 'यो प्रोफाइल अवस्थित छैन वा अब सार्वजनिक छैन।',
-    backToBusinesses: 'व्यवसायहरूमा फर्कनुहोस्',
 
     eventsEyebrow: 'खुला अवसरहरू',
     eventsTitle: 'खुला इभेन्ट र क्याम्पेनहरू',

@@ -1059,7 +1059,7 @@ export const en = {
     noBio: 'This creator hasn’t added a bio yet.',
     profileNotFoundTitle: 'Creator not found',
     profileNotFoundBody: 'This profile doesn’t exist or is no longer public.',
-    backToCreators: 'Back to creators',
+    backToHome: 'Back to Kolab',
     completionRate: 'Completion rate',
     avgRating: 'Avg. rating',
     responseTime: 'Response time',
@@ -1083,7 +1083,6 @@ export const en = {
     noBusinessBio: 'This business hasn’t added a description yet.',
     businessNotFoundTitle: 'Business not found',
     businessNotFoundBody: 'This profile doesn’t exist or is no longer public.',
-    backToBusinesses: 'Back to businesses',
 
     // /events
     eventsEyebrow: 'Open opportunities',

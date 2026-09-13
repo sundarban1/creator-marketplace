@@ -145,7 +145,7 @@ export async function fetchCreatorByHandle(
     'GET',
     `/api/public/creators/${encodeURIComponent(handle)}`,
     undefined,
-    { anonymous: true, signal },
+    { signal },
   );
   return res.data;
 }
@@ -251,7 +251,7 @@ export async function fetchPublicBusiness(id: string, signal?: AbortSignal): Pro
     'GET',
     `/api/public/businesses/${encodeURIComponent(id)}`,
     undefined,
-    { anonymous: true, signal },
+    { signal },
   );
   return res.data;
 }

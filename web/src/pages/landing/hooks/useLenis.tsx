@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
 import Lenis from 'lenis';
 import { gsap, ScrollTrigger, ensureGsapRegistered } from '../lib/gsap';
 import { useReducedMotion } from './useReducedMotion';
@@ -17,7 +17,6 @@ const LenisContext = createContext<LenisContextValue | null>(null);
 export function LenisProvider({ children }: { children: ReactNode }) {
   const reducedMotion = useReducedMotion();
   const lenisRef = useRef<Lenis | null>(null);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     ensureGsapRegistered();
@@ -25,7 +24,6 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     if (reducedMotion) {
       // Native scrolling only — no smoothing, no scroll-jacking.
       lenisRef.current = null;
-      setReady(true);
       return;
     }
 
@@ -65,8 +63,6 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     });
     heightObserver.observe(document.documentElement);
 
-    setReady(true);
-
     return () => {
       heightObserver.disconnect();
       cancelAnimationFrame(resizeRaf);
@@ -99,8 +95,6 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     }
     el?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
   }
-
-  if (!ready) return null;
 
   return <LenisContext.Provider value={{ scrollTo }}>{children}</LenisContext.Provider>;
 }

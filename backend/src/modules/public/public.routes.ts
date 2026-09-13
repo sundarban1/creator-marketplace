@@ -5,6 +5,7 @@ import { BusinessController } from '../business/business.controller';
 import { CampaignController } from '../campaign/campaign.controller';
 import { validate } from '../../middleware/validate';
 import { campaignListQuerySchema } from '../campaign/campaign.schema';
+import { authenticate } from '../../middleware/auth';
 
 const router = Router();
 const ctrl = new PublicController();
@@ -22,19 +23,19 @@ router.get('/platform-flags', ctrl.platformFlags.bind(ctrl));
 router.get('/site-info', ctrl.siteInfo.bind(ctrl));
 
 // ── Public creator marketplace (ourkolab.com/creators) ─────────────────────────
-// Unauthenticated discovery of creators who opted into a public profile. The
-// authenticated brand-facing equivalents live at /api/business/creators.
+// The list stays unauthenticated — the landing page's marketplace preview
+// widget fetches it logged-out. The full profile now requires a signed-in
+// session; the web app gates the /creators/:handle route behind login too.
 // `/filter-options` before `/:handle` so the literal segment wins.
 router.get('/creators/filter-options', creatorCtrl.getCreatorFilterOptions.bind(creatorCtrl));
 router.get('/creators', creatorCtrl.listPublicCreators.bind(creatorCtrl));
-router.get('/creators/:handle', creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
+router.get('/creators/:handle', authenticate, creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
 
 // ── Public business marketplace (ourkolab.com/businesses) ─────────────────────
-// Unauthenticated discovery of businesses who opted into a public profile. The
-// authenticated creator-facing equivalents live at /api/creator/businesses.
-// Reuses the creator filter-options endpoint for the shared category taxonomy.
+// Same split as creators above: list stays open for the landing preview
+// widget, full profile requires a signed-in session.
 router.get('/businesses', businessCtrl.listBusinesses.bind(businessCtrl));
-router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl));
+router.get('/businesses/:id', authenticate, businessCtrl.getBusinessPublic.bind(businessCtrl));
 
 // ── Public event marketplace (ourkolab.com/events) ────────────────────────────
 // `campaignService.list` already defaults to status=ACTIVE and needs no auth;

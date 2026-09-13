@@ -74,15 +74,23 @@ export function marketplaceRoutes() {
     <>
     {/* Public marketplace — no auth, indexable, own marketing chrome */}
     <Route element={<PublicLayout />}>
-      <Route path="/creators" element={<CreatorsPage />} />
-      <Route path="/creators/:handle" element={<CreatorProfilePage />} />
-      <Route path="/businesses" element={<PublicBusinessesPage />} />
-      <Route path="/businesses/:id" element={<PublicBusinessProfilePage />} />
       <Route path="/events" element={<EventsPage />} />
       <Route path="/events/:id" element={<EventDetailPage />} />
     </Route>
 
     <Route element={<AppProviders />}>
+      {/* Creator/business directory — same marketing chrome as the public
+          routes above, but requires a signed-in session (redirects to
+          /login). Needs AppProviders for the auth context RequireAuth reads. */}
+      <Route element={<RequireAuth />}>
+        <Route element={<PublicLayout />}>
+          <Route path="/creators" element={<CreatorsPage />} />
+          <Route path="/creators/:handle" element={<CreatorProfilePage />} />
+          <Route path="/businesses" element={<PublicBusinessesPage />} />
+          <Route path="/businesses/:id" element={<PublicBusinessProfilePage />} />
+        </Route>
+      </Route>
+
       {/* Auth — redirect away if already signed in */}
       <Route element={<RequireGuest />}>
         <Route path="/login" element={<LoginScreen />} />

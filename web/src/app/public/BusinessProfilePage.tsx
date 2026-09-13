@@ -48,7 +48,7 @@ export function BusinessProfilePage() {
           variant={notFound || business?.isPrivate ? 'not-found' : 'error'}
           title={t('public.businessNotFoundTitle')}
           description={t('public.businessNotFoundBody')}
-          action={{ label: t('public.backToBusinesses'), href: '/businesses' }}
+          action={{ label: t('public.backToHome'), href: paths.home }}
         />
       </div>
     );
@@ -85,7 +85,7 @@ export function BusinessProfilePage() {
         }}
       />
 
-      <DetailHero backTo="/businesses" backLabel={t('public.backToBusinesses')}>
+      <DetailHero backTo={paths.home} backLabel={t('public.backToHome')}>
         <HeroReveal className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center">
           <RingAvatar>
             <Avatar name={name} src={business.logoUrl} size="xl" className="h-24 w-24" />
