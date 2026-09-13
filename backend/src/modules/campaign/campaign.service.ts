@@ -468,6 +468,25 @@ export class CampaignService {
     return { campaigns, total, page, limit: validatedLimit };
   }
 
+  // Landing page's events preview row: a fixed mix of paid + open events in one
+  // round trip, so a slow/failing fetch of one type can't blank out the other
+  // (they used to be two independent public /events calls on the client).
+  async showcase(paidLimit: number, openLimit: number, lang = 'en') {
+    const [paidRaw, openRaw] = await Promise.all([
+      this.repo.findMany({ campaignType: 'PAID_CAMPAIGN', page: 1, limit: paidLimit }),
+      this.repo.findMany({ campaignType: 'OPEN_EVENT', page: 1, limit: openLimit }),
+    ]);
+
+    const [paid, open] = await Promise.all([
+      this.withRecentApplicationCounts(paidRaw.campaigns)
+        .then((c) => translateMany(c.map(toCampaignDto), [...CAMPAIGN_FIELDS], lang)),
+      this.withRecentApplicationCounts(openRaw.campaigns)
+        .then((c) => translateMany(c.map(toCampaignDto), [...CAMPAIGN_FIELDS], lang)),
+    ]);
+
+    return { paid, open };
+  }
+
   async nearby(query: {
     lat: number; lng: number; radiusKm: number; page?: number; limit?: number;
     search?: string; category?: string[]; platform?: string[];

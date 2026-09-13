@@ -39,6 +39,9 @@ router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl))
 // ── Public event marketplace (ourkolab.com/events) ────────────────────────────
 // `campaignService.list` already defaults to status=ACTIVE and needs no auth;
 // this is just the public-namespaced alias. Detail 404s non-public statuses.
+// Before `/events/:id` so the literal segment wins (same reasoning as
+// `/creators/filter-options` above `/creators/:handle`).
+router.get('/events/showcase', campaignCtrl.showcase.bind(campaignCtrl));
 router.get('/events', validate(campaignListQuerySchema, 'query'), campaignCtrl.list.bind(campaignCtrl));
 router.get('/events/:id', campaignCtrl.getPublicById.bind(campaignCtrl));
 

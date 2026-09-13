@@ -337,6 +337,19 @@ export async function fetchPublicEvents(
   return { items: res.data, pagination: res.pagination };
 }
 
+export async function fetchEventsShowcase(
+  opts: { paidLimit?: number; openLimit?: number } = {},
+  signal?: AbortSignal,
+): Promise<{ paid: EventCard[]; open: EventCard[] }> {
+  const res = await apiRequest<{ paid: EventCard[]; open: EventCard[] }>(
+    'GET',
+    '/api/public/events/showcase',
+    undefined,
+    { anonymous: true, signal, params: { paidLimit: opts.paidLimit, openLimit: opts.openLimit } },
+  );
+  return res.data;
+}
+
 export async function fetchPublicEvent(id: string, signal?: AbortSignal): Promise<EventCard> {
   const res = await apiRequest<EventCard>(
     'GET',

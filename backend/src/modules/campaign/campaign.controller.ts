@@ -78,6 +78,18 @@ export class CampaignController {
     }
   }
 
+  // Public — landing page's events preview row (see CampaignService.showcase).
+  async showcase(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const paidLimit = Math.min(parseInt(req.query.paidLimit as string) || 3, 50);
+      const openLimit = Math.min(parseInt(req.query.openLimit as string) || 1, 50);
+      const result = await campaignService.showcase(paidLimit, openLimit, req.language);
+      success(res, result, 'Events retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async nearby(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { campaigns, total, page, limit } = await campaignService.nearby(req.query as any, req.language);
