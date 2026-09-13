@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import { useAppAuth } from './AppAuthContext';
+import { postAuthPath } from './postAuthNav';
 import { useT } from '../i18n';
-import { roleHome } from '../routes';
+import { useAsync } from '../lib/useAsync';
+import { getPlatformFlags } from '../api/platformFlags';
 import { requestGoogleAccessToken } from '../lib/googleAuth';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+import { Alert } from '../ui/Alert';
 import { SegmentedControl } from '../ui/SegmentedControl';
 
 type Role = 'CREATOR' | 'BUSINESS';
@@ -14,19 +17,34 @@ type Role = 'CREATOR' | 'BUSINESS';
 /**
  * Google (+ Apple) sign-in for the auth screens. On a brand-new Google account
  * the backend asks for a role first — we collect it in a small dialog and
- * retry.
+ * retry. Same registration kill-switches as SignupScreen gate which role(s)
+ * can be picked here (see platformFlags.ts) — a brand-new Google account is
+ * just as much a "signup" as the email/password form.
  */
 export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
   const t = useT();
   const navigate = useNavigate();
   const { googleAuth } = useAppAuth();
 
+  const flags = useAsync(() => getPlatformFlags(), []);
+  const creatorEnabled = flags.data?.creatorRegistrationEnabled ?? true;
+  const businessEnabled = flags.data?.businessRegistrationEnabled ?? true;
+
   const [busy, setBusy] = useState(false);
   const [pendingToken, setPendingToken] = useState<string | null>(null);
-  const [role, setRole] = useState<Role>('CREATOR');
+  const [selectedRole, setSelectedRole] = useState<Role>('CREATOR');
 
-  const finish = (r: { needsRole: false; user: { role: 'CREATOR' | 'BUSINESS' | 'ADMIN' } }) => {
-    navigate(roleHome(r.user.role), { replace: true });
+  // Derived, not synced via an effect: falls back off whichever side is
+  // closed once flags load, without a render round-trip.
+  const role: Role =
+    selectedRole === 'CREATOR' && !creatorEnabled && businessEnabled
+      ? 'BUSINESS'
+      : selectedRole === 'BUSINESS' && !businessEnabled && creatorEnabled
+        ? 'CREATOR'
+        : selectedRole;
+
+  const finish = async (r: { needsRole: false; user: Parameters<typeof postAuthPath>[0] }) => {
+    navigate(await postAuthPath(r.user), { replace: true });
   };
 
   const handleGoogle = async () => {
@@ -38,7 +56,7 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
       if (res.needsRole) {
         setPendingToken(token);
       } else {
-        finish(res);
+        await finish(res);
       }
     } catch (err) {
       onError(err instanceof Error ? err.message : t('common.somethingWrong'));
@@ -54,7 +72,7 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
       const res = await googleAuth(pendingToken, role);
       if (!res.needsRole) {
         setPendingToken(null);
-        finish(res);
+        await finish(res);
       }
     } catch (err) {
       onError(err instanceof Error ? err.message : t('common.somethingWrong'));
@@ -83,19 +101,31 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
         onClose={() => setPendingToken(null)}
         title={t('auth.chooseRoleTitle')}
       >
-        <SegmentedControl<Role>
-          ariaLabel={t('auth.chooseRoleTitle')}
-          variant="cards"
-          value={role}
-          onChange={setRole}
-          options={[
-            { value: 'CREATOR', label: t('roles.creator'), description: t('auth.creatorRoleBlurb') },
-            { value: 'BUSINESS', label: t('roles.business'), description: t('auth.businessRoleBlurb') },
-          ]}
-        />
-        <Button className="mt-4" fullWidth loading={busy} onClick={confirmRole}>
-          {t('common.continue')}
-        </Button>
+        {!creatorEnabled && !businessEnabled ? (
+          <Alert tone="warning">{t('auth.registrationClosedBoth')}</Alert>
+        ) : creatorEnabled && businessEnabled ? (
+          <SegmentedControl<Role>
+            ariaLabel={t('auth.chooseRoleTitle')}
+            variant="cards"
+            value={role}
+            onChange={setSelectedRole}
+            options={[
+              { value: 'CREATOR', label: t('roles.creator'), description: t('auth.creatorRoleBlurb') },
+              { value: 'BUSINESS', label: t('roles.business'), description: t('auth.businessRoleBlurb') },
+            ]}
+          />
+        ) : (
+          <Alert tone="neutral">
+            {t('auth.registrationOnlyRole', {
+              role: role === 'CREATOR' ? t('roles.creator') : t('roles.business'),
+            })}
+          </Alert>
+        )}
+        {(creatorEnabled || businessEnabled) && (
+          <Button className="mt-4" fullWidth loading={busy} onClick={confirmRole}>
+            {t('common.continue')}
+          </Button>
+        )}
       </Modal>
     </>
   );

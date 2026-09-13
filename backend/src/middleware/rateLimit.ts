@@ -23,6 +23,16 @@ async function settingEnabled(key: string): Promise<boolean> {
   return settings[key] !== false;
 }
 
+// The admin-configurable rateLimit.* settings are seeded into every
+// environment's DB at the same production-appropriate values, so a limiter's
+// `isProd ? prodValue : devValue` fallback almost never actually applies once
+// the settings table has been seeded — dev silently inherits prod's budget.
+// This enforces the intended dev floor explicitly instead of relying on the
+// DB row being absent; production is unaffected (still just `configured`).
+function devFloor(configured: number, floor: number): number {
+  return isProd ? configured : Math.max(configured, floor);
+}
+
 // express-rate-limit's default store keeps counters in the process's own
 // memory, so with the backend running on multiple instances (see render.yaml)
 // each instance enforces its own separate budget — a client effectively gets
@@ -67,7 +77,7 @@ void getRedis().then((c) => {
 // Strict limiter for authentication endpoints (brute-force protection)
 export const authLimiter = limiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: () => settingNumber('rateLimit.login.max', isProd ? 20 : 200),
+  limit: async () => devFloor(await settingNumber('rateLimit.login.max', isProd ? 20 : 200), 200),
   skip: () => settingEnabled('rateLimit.login.enabled').then((enabled) => !enabled),
   message: { success: false, message: 'Too many attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
@@ -78,7 +88,7 @@ export const authLimiter = limiter({
 // Tighter OTP limiter
 export const otpLimiter = limiter({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  limit: () => settingNumber('rateLimit.otp.max', isProd ? 5 : 50),
+  limit: async () => devFloor(await settingNumber('rateLimit.otp.max', isProd ? 5 : 50), 50),
   skip: () => settingEnabled('rateLimit.otp.enabled').then((enabled) => !enabled),
   message: { success: false, message: 'Too many OTP requests. Please wait 10 minutes.' },
   standardHeaders: true,
@@ -88,7 +98,7 @@ export const otpLimiter = limiter({
 // General API limiter (prevents abuse but allows normal traffic)
 export const apiLimiter = limiter({
   windowMs: 60 * 1000, // 1 minute
-  limit: () => settingNumber('rateLimit.apiRequests.max', isProd ? 120 : 1000),
+  limit: async () => devFloor(await settingNumber('rateLimit.apiRequests.max', isProd ? 120 : 1000), 1000),
   message: { success: false, message: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,

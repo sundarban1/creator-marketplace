@@ -1,15 +1,17 @@
 import { Link } from 'react-router-dom';
 import { cn } from './cn';
 
-/** Kolab wordmark. Links home unless `asLink={false}`. */
+/** Kolab wordmark. Links to `to` (default home) unless `asLink={false}`. */
 export function Logo({
   className,
   asLink = true,
   invert = false,
+  to = '/',
 }: {
   className?: string;
   asLink?: boolean;
   invert?: boolean;
+  to?: string;
 }) {
   const inner = (
     <img
@@ -19,7 +21,7 @@ export function Logo({
     />
   );
   return asLink ? (
-    <Link to="/" aria-label="Kolab home" className="inline-flex">
+    <Link to={to} aria-label="Kolab home" className="inline-flex">
       {inner}
     </Link>
   ) : (

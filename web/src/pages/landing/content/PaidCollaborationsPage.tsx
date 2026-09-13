@@ -46,7 +46,7 @@ const COPY = {
     ],
     related: [
       { label: 'For Content Creators', path: '/content-creators', description: 'Build your creator profile on Kolab.' },
-      { label: 'Find Campaigns', path: '/find-campaigns', description: 'Browse open paid campaigns and free events right now.' },
+      { label: 'Find Campaigns', path: '/find-campaigns', description: 'Browse open paid campaigns and open events right now.' },
       { label: 'TikTok Creators', path: '/tiktok-creators', description: 'TikTok-specific creator opportunities.' },
       { label: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal', description: "Kolab's full creator marketplace overview." },
       { label: 'UGC Creators', path: '/ugc-creators-nepal', description: 'Paid UGC work — reviews, unboxings, and testimonials.' },
@@ -74,7 +74,7 @@ const COPY = {
         items: [
           'Download Kolab and create a creator profile with your niche and connected platforms (TikTok, Instagram, YouTube, Facebook, and more).',
           "Complete identity verification so brands can trust who they're working with.",
-          'Browse open paid campaigns and free events, filtered by category, platform, and location.',
+          'Browse open paid campaigns and open events, filtered by category, platform, and location.',
           "Apply with a proposal to campaigns that fit your content — budgets are visible before you commit.",
           'Message the brand directly once matched, and deliver the agreed content.',
           'Get paid through escrow once the brand approves your work, and build a public review history for future deals.',

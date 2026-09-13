@@ -14,4 +14,9 @@ router.get('/checkout/:appId', ctrl.esewaCheckoutPage.bind(ctrl));
 router.get('/success/:appId', ctrl.esewaSuccessCallback.bind(ctrl));
 router.get('/failure/:appId', ctrl.esewaFailureCallback.bind(ctrl));
 
+// Web-initiated payment variants — same confirmation logic, but redirect back
+// to a page on the web app instead of the mobile app's native deep link.
+router.get('/success/:appId/web', ctrl.esewaSuccessCallbackWeb.bind(ctrl));
+router.get('/failure/:appId/web', ctrl.esewaFailureCallbackWeb.bind(ctrl));
+
 export default router;

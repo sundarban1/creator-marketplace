@@ -23,10 +23,15 @@ export function Modal({
   size?: 'md' | 'lg';
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCloseRef.current();
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     panelRef.current?.focus();
@@ -34,7 +39,10 @@ export function Modal({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [open, onClose]);
+    // `onClose` is read via ref so an inline `() => ...` passed by callers
+    // doesn't re-run this effect (and re-steal focus from form inputs) on
+    // every parent re-render — only an actual open/close transition should.
+  }, [open]);
 
   if (!open) return null;
 

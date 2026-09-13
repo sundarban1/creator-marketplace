@@ -286,7 +286,7 @@ export interface EventCard {
   targetAudience?: string[];
   hashtags?: string[];
   createdAt: string;
-  business: { businessName: string; logoUrl: string | null; website?: string | null; description?: string | null };
+  business: { id?: string; businessName: string; logoUrl: string | null; website?: string | null; description?: string | null };
   _count: { applications: number };
   requirements?: Array<{
     id: string;
@@ -301,6 +301,8 @@ export interface EventCard {
   }>;
 }
 
+export type EventSort = 'newest' | 'oldest' | 'budget_high';
+
 export interface EventQuery {
   search?: string;
   category?: string[];
@@ -308,6 +310,7 @@ export interface EventQuery {
   minBudget?: number;
   maxBudget?: number;
   campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+  sort?: EventSort;
   page?: number;
   limit?: number;
 }
@@ -326,6 +329,7 @@ export async function fetchPublicEvents(
       minBudget: q.minBudget,
       maxBudget: q.maxBudget,
       campaignType: q.campaignType,
+      sort: q.sort,
       page: q.page,
       limit: q.limit,
     },

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Wallet, Clock, ExternalLink } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Clock, ExternalLink } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { rupees } from '../lib/format';
@@ -12,9 +12,10 @@ import {
   type Withdrawal,
   type WalletSummary,
 } from '../api/creator';
-import { PageHeader } from '../ui/PageHeader';
-import { StatCard } from '../ui/StatCard';
-import { Card, CardHeader } from '../ui/Card';
+import { DashPageHeader } from './dash-ui/DashPageHeader';
+import { DashCard, DashCardHeader } from './dash-ui/DashCard';
+import { DashStatCard } from './dash-ui/DashStatCard';
+import { DashListRow } from './dash-ui/DashListRow';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/Alert';
 import { EmptyState } from '../ui/EmptyState';
@@ -49,55 +50,69 @@ export function CreatorWalletPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow={t('wallet.eyebrow')}
-        title={t('wallet.title')}
-        description={t('wallet.subtitle')}
-        actions={
-          <Button onClick={() => setModalOpen(true)} disabled={!canWithdraw}>
-            {t('wallet.withdraw')}
-          </Button>
-        }
-      />
+      <DashPageHeader title={t('wallet.title')} description={t('wallet.subtitle')} />
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
       {!canWithdraw && disabledReason && <Alert tone="neutral" className="mb-5">{disabledReason}</Alert>}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          label={t('wallet.availableBalance')}
-          value={summary.loading ? undefined : rupees(w?.withdrawableBalance ?? 0)}
-          icon={Wallet}
-        />
-        <StatCard
+      {/* Balance hero — purple→pink dashboard gradient (scoped to this page). */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark p-6 text-white shadow-[0_20px_50px_-24px_rgba(91,46,214,0.5)] sm:p-7">
+        <span aria-hidden className="pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full bg-dash-pink/40 blur-3xl" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center justify-between gap-4 sm:justify-start sm:gap-8">
+              <div>
+                <p className="text-[13px] text-white/70">{t('wallet.availableBalance')}</p>
+                <p className="mt-1 text-[32px] font-bold leading-none tracking-tight">
+                  {summary.loading ? '—' : rupees(w?.withdrawableBalance ?? 0)}
+                </p>
+              </div>
+              <div className="text-right sm:text-left">
+                <p className="text-[12px] text-white/70">{t('wallet.totalEarned')}</p>
+                <p className="mt-1 text-[16px] font-semibold">
+                  {summary.loading ? '—' : rupees(w?.totalEarned ?? 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+          <Button
+            size="lg"
+            onClick={() => setModalOpen(true)}
+            disabled={!canWithdraw}
+            className="self-start sm:self-auto"
+          >
+            {t('wallet.withdraw')}
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <DashStatCard
           label={t('wallet.pendingEarnings')}
           value={summary.loading ? undefined : rupees(w?.pendingEarnings ?? 0)}
           icon={Clock}
+          tone="amber"
         />
-        <StatCard
+        <DashStatCard
           label={t('wallet.inWithdrawal')}
           value={summary.loading ? undefined : rupees(w?.pendingWithdrawals ?? 0)}
           icon={ArrowUpRight}
-        />
-        <StatCard
-          label={t('wallet.totalEarned')}
-          value={summary.loading ? undefined : rupees(w?.totalEarned ?? 0)}
-          icon={ArrowDownLeft}
+          tone="blue"
         />
       </div>
 
       <p className="mt-3 text-[12px] text-ink-soft">{t('wallet.processingNote')}</p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
-        <Card>
-          <CardHeader title={t('wallet.transactionsHeading')} />
+        <DashCard>
+          <DashCardHeader title={t('wallet.transactionsHeading')} />
           <TransactionList data={txns.data} loading={txns.loading} />
-        </Card>
+        </DashCard>
 
-        <Card>
-          <CardHeader title={t('wallet.withdrawalsHeading')} />
+        <DashCard>
+          <DashCardHeader title={t('wallet.withdrawalsHeading')} />
           <WithdrawalList data={withdrawals.data} loading={withdrawals.loading} />
-        </Card>
+        </DashCard>
       </div>
 
       {w && !payoutMethods.loading && (
@@ -136,46 +151,44 @@ function TransactionList({ data, loading }: { data: WalletTransaction[] | null; 
   }
 
   return (
-    <ul className="divide-y divide-line">
+    <ul className="divide-y divide-black/[0.05]">
       {data.map((tx) => {
         const credit = tx.direction === 'CREDIT';
         return (
-          <li key={tx.id} className="flex items-center gap-3 py-3">
-            <span
-              className={cn(
-                'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full',
-                credit ? 'bg-success-soft text-success' : 'bg-surface-dim text-ink-soft',
-              )}
-            >
-              {credit ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-medium text-ink">
-                {tx.kind === 'CAMPAIGN_PAYOUT' && tx.campaignTitle
+          <li key={tx.id}>
+            <DashListRow
+              icon={credit ? ArrowDownLeft : ArrowUpRight}
+              tone={credit ? 'green' : 'neutral'}
+              title={
+                tx.kind === 'CAMPAIGN_PAYOUT' && tx.campaignTitle
                   ? t('wallet.kindCampaignPayout', { campaign: tx.campaignTitle })
-                  : tx.title}
-              </p>
-              <p className="text-[12px] text-ink-soft">
-                {new Date(tx.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                {tx.reference && ` · ${t('wallet.ref', { code: tx.reference })}`}
-              </p>
-            </div>
-            <div className="flex-shrink-0 text-right">
-              <p className={cn('text-[13px] font-semibold', credit ? 'text-success' : 'text-ink')}>
-                {credit ? '+' : '−'} {rupees(tx.amount)}
-              </p>
-              {tx.proofUrl && (
-                <a
-                  href={tx.proofUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-violet-dark hover:underline"
-                >
-                  {t('wallet.viewProof')}
-                  <ExternalLink size={10} />
-                </a>
-              )}
-            </div>
+                  : tx.title
+              }
+              subtitle={
+                <>
+                  {new Date(tx.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {tx.reference && ` · ${t('wallet.ref', { code: tx.reference })}`}
+                </>
+              }
+              trailing={
+                <>
+                  <p className={cn('text-[13px] font-semibold', credit ? 'text-success' : 'text-ink')}>
+                    {credit ? '+' : '−'} {rupees(tx.amount)}
+                  </p>
+                  {tx.proofUrl && (
+                    <a
+                      href={tx.proofUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-violet-dark hover:underline"
+                    >
+                      {t('wallet.viewProof')}
+                      <ExternalLink size={10} />
+                    </a>
+                  )}
+                </>
+              }
+            />
           </li>
         );
       })}
@@ -195,11 +208,18 @@ function WithdrawalList({ data, loading }: { data: Withdrawal[] | null; loading:
   const t = useT();
   if (loading) return <ListSkeleton />;
   if (!data || data.length === 0) {
-    return <EmptyState size="sm" variant="empty" title={t('wallet.noWithdrawals')} />;
+    return (
+      <EmptyState
+        size="sm"
+        variant="empty"
+        title={t('wallet.noWithdrawals')}
+        description={t('wallet.noWithdrawalsBody')}
+      />
+    );
   }
 
   return (
-    <ul className="divide-y divide-line">
+    <ul className="divide-y divide-black/[0.05]">
       {data.map((wd) => {
         const s = W_STATUS[wd.status];
         return (

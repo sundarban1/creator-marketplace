@@ -447,7 +447,8 @@ export class CampaignController {
 
   async initiateEsewaPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await campaignService.initiateEsewaPayment(req.params.appId, req.user!.id);
+      const platform = req.query.platform === 'web' ? 'web' : undefined;
+      const result = await campaignService.initiateEsewaPayment(req.params.appId, req.user!.id, platform);
       success(res, result, 'eSewa payment initiated');
     } catch (err) {
       next(err);
@@ -465,7 +466,8 @@ export class CampaignController {
     // eSewa, both of which the default policy blocks (leaving a blank page).
     res.setHeader('Content-Security-Policy', esewaCheckoutCsp());
     try {
-      const fields = await campaignService.getEsewaCheckoutForm(req.params.appId);
+      const platform = req.query.platform === 'web' ? 'web' : undefined;
+      const fields = await campaignService.getEsewaCheckoutForm(req.params.appId, platform);
       logger.info(
         {
           appId:            req.params.appId,
@@ -491,36 +493,55 @@ export class CampaignController {
   // Public — eSewa redirects the user's browser here directly after payment,
   // with no Authorization header (same pattern as khaltiCallback above). The
   // appId travels in the URL path (not the query string) since eSewa appends
-  // its own `data` query param to whatever success_url we gave it.
+  // its own `data` query param to whatever success_url we gave it. Split into
+  // mobile (native deep link) / web (a real page on the web app) variants —
+  // buildEsewaSignedFields picks which success_url/failure_url eSewa gets
+  // based on the `platform` the checkout page was opened with.
   async esewaSuccessCallback(req: Request, res: Response): Promise<void> {
+    await this.handleEsewaSuccess(req, res, 'mobile');
+  }
+
+  async esewaSuccessCallbackWeb(req: Request, res: Response): Promise<void> {
+    await this.handleEsewaSuccess(req, res, 'web');
+  }
+
+  private async handleEsewaSuccess(req: Request, res: Response, platform: 'web' | 'mobile'): Promise<void> {
     const { appId } = req.params;
     const { data } = req.query as { data?: string };
-    const redirectBase = `${env.APP_SCHEME}://esewa-callback`;
 
-    logger.info({ appId, hasData: !!data }, 'eSewa success callback hit');
+    logger.info({ appId, hasData: !!data, platform }, 'eSewa success callback hit');
 
     if (!data) {
-      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent('missing_payment_reference')}`);
+      this.redirectEsewaResult(res, platform, { success: false, error: 'missing_payment_reference' });
       return;
     }
     try {
-      await campaignService.confirmEsewaPayment(appId, data);
-      res.redirect(`${redirectBase}?success=true`);
+      const { campaignId } = await campaignService.confirmEsewaPayment(appId, data);
+      this.redirectEsewaResult(res, platform, { success: true, campaignId });
     } catch (err) {
       const message = err instanceof AppError ? err.message : 'Could not confirm the eSewa payment';
       logger.warn({ appId, err }, 'eSewa success callback: confirmation failed');
-      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
+      this.redirectEsewaResult(res, platform, { success: false, error: message });
     }
   }
 
   // Public — eSewa's failure redirect. The payment didn't complete, so there's
   // nothing to finalize — decode eSewa's `data` payload (when present) into the
-  // logs for diagnosis, then bounce straight back into the app, which shows a
+  // logs for diagnosis, then bounce straight back to the app/web, which shows a
   // generic "eSewa is having issues" toast (the raw reason isn't user-facing).
   async esewaFailureCallback(req: Request, res: Response): Promise<void> {
+    this.logEsewaFailure(req);
+    this.redirectEsewaResult(res, 'mobile', { success: false, error: 'payment_failed' });
+  }
+
+  async esewaFailureCallbackWeb(req: Request, res: Response): Promise<void> {
+    this.logEsewaFailure(req);
+    this.redirectEsewaResult(res, 'web', { success: false, error: 'payment_failed' });
+  }
+
+  private logEsewaFailure(req: Request): void {
     const { appId } = req.params;
     const { data } = req.query as { data?: string };
-
     if (data) {
       try {
         const decoded = decodeEsewaResponse(data);
@@ -531,8 +552,28 @@ export class CampaignController {
     } else {
       logger.warn({ appId, query: req.query }, 'eSewa failure callback with no data payload');
     }
+  }
 
-    res.redirect(`${env.APP_SCHEME}://esewa-callback?success=false&error=${encodeURIComponent('payment_failed')}`);
+  // Mobile lands back on the app via its custom URL scheme; web lands on a
+  // real page of the marketplace app (the specific event when we know which
+  // one, else the events list) with a `payment` query param it reads to show
+  // a flash message and refresh the applications list.
+  private redirectEsewaResult(
+    res: Response,
+    platform: 'web' | 'mobile',
+    result: { success: boolean; error?: string; campaignId?: string },
+  ): void {
+    if (platform === 'web') {
+      const base = env.FRONTEND_URL.split(',')[0].trim();
+      const path = result.campaignId ? `/business/events/${result.campaignId}` : '/business/events';
+      const qs = new URLSearchParams({ payment: result.success ? 'success' : 'failed' });
+      if (result.error) qs.set('paymentError', result.error);
+      res.redirect(`${base}${path}?${qs.toString()}`);
+      return;
+    }
+    const qs = new URLSearchParams({ success: String(result.success) });
+    if (result.error) qs.set('error', result.error);
+    res.redirect(`${env.APP_SCHEME}://esewa-callback?${qs.toString()}`);
   }
 
   async getApplicationActivity(req: Request, res: Response, next: NextFunction): Promise<void> {

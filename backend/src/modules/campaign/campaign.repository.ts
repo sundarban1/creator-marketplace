@@ -123,6 +123,7 @@ export class CampaignRepository {
     deadlineFrom?: Date;
     deadlineTo?: Date;
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    sort?: 'newest' | 'oldest' | 'budget_high';
     page: number;
     limit: number;
   }) {
@@ -168,13 +169,17 @@ export class CampaignRepository {
     }
 
     const skip = (filters.page - 1) * filters.limit;
+    const orderBy: Prisma.CampaignOrderByWithRelationInput =
+      filters.sort === 'oldest' ? { createdAt: 'asc' } :
+      filters.sort === 'budget_high' ? { budgetMax: 'desc' } :
+      { createdAt: 'desc' };
 
     const [campaigns, total] = await Promise.all([
       prisma.campaign.findMany({
         where,
         skip,
         take: filters.limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           business: { select: { businessName: true, logoUrl: true } },
           _count: { select: { applications: true } },
@@ -475,7 +480,7 @@ export class CampaignRepository {
       where: { id, deletedAt: null },
       include: {
         business: {
-          select: { businessName: true, logoUrl: true, website: true, description: true },
+          select: { id: true, businessName: true, logoUrl: true, website: true, description: true },
         },
         _count: { select: { applications: true } },
         requirements: {
@@ -791,7 +796,13 @@ export class CampaignRepository {
           paidAt: true,
           createdAt: true,
           creator: {
-            select: { id: true, fullName: true, avatarUrl: true, location: true },
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+              location: true,
+              socialAccounts: { select: { followers: true } },
+            },
           },
           campaign: {
             select: { id: true, title: true, platforms: true, campaignType: true, paymentStatus: true, featureImageUrl: true, commissionRate: true },

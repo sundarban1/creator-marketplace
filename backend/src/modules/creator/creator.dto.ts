@@ -134,14 +134,6 @@ export interface PublicCreatorDto {
   }>;
 }
 
-// Mirrors business.dto.ts's toPrivateBusinessDto — returned in place of the
-// full public DTO when the profile owner has turned showPublicProfile off.
-export interface PrivateCreatorDto {
-  id: string;
-  fullName: string | null;
-  avatarUrl: string | null;
-  isPrivate: true;
-}
 
 export interface CreatorListItemDto {
   id: string;
@@ -347,9 +339,6 @@ type RawPublicCreator = {
   user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
-export function toPrivateCreatorDto(p: { id: string; fullName: string | null; avatarUrl: string | null }): PrivateCreatorDto {
-  return { id: p.id, fullName: p.fullName, avatarUrl: p.avatarUrl, isPrivate: true };
-}
 
 export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
   const loc = maskLocationByVisibility(p, p.locationVisibility);

@@ -195,7 +195,7 @@ export function BusinessesPage() {
                 className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
               >
                 {items.map((b) => (
-                  <motion.div key={b.id} variants={fadeUp}>
+                  <motion.div key={b.id} variants={fadeUp} className="h-full">
                     <BusinessCard business={b} categoryMeta={categoryMeta} />
                   </motion.div>
                 ))}

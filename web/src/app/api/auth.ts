@@ -112,6 +112,19 @@ export async function resendOtp(identifier: Identifier): Promise<void> {
   await api('POST', '/api/auth/resend-otp', identifier);
 }
 
+/** Onboarding's email step (phone-signup accounts) — same check mobile debounces. */
+export function isEmailAvailable(email: string, signal?: AbortSignal): Promise<boolean> {
+  return apiRequest<{ available: boolean }>('GET', '/api/auth/email-available', undefined, {
+    params: { email },
+    signal,
+  }).then((r) => r.data.available);
+}
+
+/** Flips `isOnboarded` once onboarding's final step completes. */
+export async function completeOnboarding(): Promise<void> {
+  await api('POST', '/api/auth/complete-onboarding');
+}
+
 // ── Forgot / reset password ──────────────────────────────────────────────────
 
 export async function forgotPassword(identifier: Identifier): Promise<void> {

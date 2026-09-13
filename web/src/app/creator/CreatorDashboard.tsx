@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Briefcase, FileText, Wallet, CalendarClock, ArrowRight, UserRound, AlertCircle } from 'lucide-react';
+import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useWelcomeToast } from '../lib/useWelcomeToast';
 import { rupees, isFuture, byDateAsc } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
 import { isActiveWork } from '../lib/engagement';
@@ -11,13 +14,13 @@ import { fetchWalletSummary, fetchMyApplications, fetchNotifications, fetchCreat
 import { fetchPublicEvents } from '../api/publicMarketplace';
 import { cn } from '../ui/cn';
 import { PageHeader } from '../ui/PageHeader';
-import { StatCard } from '../ui/StatCard';
-import { Card, CardHeader } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { AttentionBanner } from '../ui/AttentionBanner';
-import { ApplicationCard } from './ApplicationCard';
-import { EventCard } from '../public/EventCard';
+import { DashCard, DashCardHeader } from './dash-ui/DashCard';
+import { DashStatCard } from './dash-ui/DashStatCard';
+import { DashApplicationCard } from './dash-ui/DashApplicationCard';
+import { DashEventCard } from './dash-ui/DashEventCard';
 
 // States where an already-accepted, paid engagement is waiting on the
 // creator's next move — mirrors the mobile home screen's `pendingActions`
@@ -29,6 +32,7 @@ export function CreatorDashboard() {
   const { user } = useAppAuth();
   const t = useT();
   const fmtDeadline = useDeadlineLabel();
+  useWelcomeToast();
 
   const [profileBannerDismissed, setProfileBannerDismissed] = useState(false);
 
@@ -80,8 +84,7 @@ export function CreatorDashboard() {
   return (
     <>
       <PageHeader
-        eyebrow={t('dashboard.eyebrow')}
-        title={firstName ? t(greetingKey, { name: firstName }) : t('dashboard.greetingGeneric')}
+        title={`${firstName ? t(greetingKey, { name: firstName }) : t('dashboard.greetingGeneric')}${firstName ? ' 👋' : ''}`}
       />
 
       {/* Attention banner — at most one, then the primary CTA below it. */}
@@ -112,9 +115,8 @@ export function CreatorDashboard() {
           )
         )}
 
-        {/* Primary CTA — same violet→orange editorial gradient the rest of
-            the app uses for its accent, not a literal copy of the mobile
-            app's flat brand-purple card. */}
+        {/* Primary CTA — same violet→orange editorial gradient used across
+            the app's accent, mirroring the business dashboard's hero. */}
         <Link
           to="/creator/events"
           className="group relative isolate block overflow-hidden rounded-3xl bg-gradient-to-br from-violet to-violet-dark p-6 text-white shadow-[0_20px_50px_-24px_rgba(91,46,214,0.6)] sm:p-7"
@@ -135,30 +137,34 @@ export function CreatorDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
+        <DashStatCard
           label={t('dashboard.activeWork')}
           value={apps.loading ? undefined : activeWork.length}
           icon={Briefcase}
+          tone="violet"
         />
-        <StatCard
+        <DashStatCard
           label={t('dashboard.pendingApplications')}
           value={apps.loading ? undefined : pending.length}
           icon={FileText}
+          tone="pink"
         />
-        <StatCard
+        <DashStatCard
           label={t('dashboard.walletBalance')}
           value={wallet.loading ? undefined : rupees(wallet.data?.withdrawableBalance ?? 0)}
           icon={Wallet}
+          tone="green"
           hint={
             wallet.data && wallet.data.pendingEarnings > 0
               ? `+ ${rupees(wallet.data.pendingEarnings)} pending`
               : undefined
           }
         />
-        <StatCard
+        <DashStatCard
           label={t('dashboard.upcomingDeadlines')}
           value={apps.loading ? undefined : upcoming.length}
           icon={CalendarClock}
+          tone="blue"
           hint={
             upcoming[0]?.contentDeadline
               ? fmtDeadline(upcoming[0].contentDeadline).label
@@ -169,8 +175,8 @@ export function CreatorDashboard() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         {/* Active work */}
-        <Card>
-          <CardHeader
+        <DashCard>
+          <DashCardHeader
             title={t('dashboard.activeWorkHeading')}
             action={
               <Link to="/creator/work" className="text-[13px] font-semibold text-violet-dark hover:underline">
@@ -194,17 +200,19 @@ export function CreatorDashboard() {
               action={{ label: t('dashboard.exploreEvents'), href: '/creator/events' }}
             />
           ) : (
-            <div className="space-y-3">
+            <motion.div initial="hidden" animate="show" variants={stagger(0.05)} className="space-y-3">
               {activeWork.slice(0, 4).map((a) => (
-                <ApplicationCard key={a.id} application={a} />
+                <motion.div key={a.id} variants={fadeUp}>
+                  <DashApplicationCard application={a} />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
-        </Card>
+        </DashCard>
 
         {/* Recent activity */}
-        <Card>
-          <CardHeader
+        <DashCard>
+          <DashCardHeader
             title={t('dashboard.recentActivity')}
             action={
               <Link to="/creator/settings" className="text-[13px] font-semibold text-violet-dark hover:underline">
@@ -233,7 +241,7 @@ export function CreatorDashboard() {
               ))}
             </ul>
           )}
-        </Card>
+        </DashCard>
       </div>
 
       {/* Recommended events */}
@@ -262,11 +270,18 @@ export function CreatorDashboard() {
         ) : !recommended.data || recommended.data.items.length === 0 ? (
           <EmptyState size="sm" variant="no-events" title={t('public.noEventsTitle')} />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={stagger(0.05)}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {recommended.data.items.map((e) => (
-              <EventCard key={e.id} event={e} />
+              <motion.div key={e.id} variants={fadeUp}>
+                <DashEventCard event={e} hrefBase="/creator/events" />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </section>
     </>

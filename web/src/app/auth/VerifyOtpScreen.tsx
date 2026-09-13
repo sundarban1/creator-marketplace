@@ -2,8 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAppAuth } from './AppAuthContext';
 import { identifierTarget } from './identifier';
+import { postAuthPath } from './postAuthNav';
 import { useT } from '../i18n';
-import { paths, roleHome } from '../routes';
+import { paths } from '../routes';
 import { useCountdown } from '../lib/useCountdown';
 import { AuthShell } from './AuthShell';
 import { Button } from '../ui/Button';
@@ -44,7 +45,7 @@ export function VerifyOtpScreen() {
     setSubmitting(true);
     try {
       const user = await verifyOtp(identifier!, code);
-      navigate(roleHome(user.role), { replace: true });
+      navigate(await postAuthPath(user), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.somethingWrong'));
     } finally {
@@ -76,6 +77,10 @@ export function VerifyOtpScreen() {
         {notice && !error && <Alert tone="success">{notice}</Alert>}
 
         <OtpInput value={code} onChange={setCode} invalid={Boolean(error)} />
+
+        {isEmail && (
+          <p className="text-center text-[13px] text-ink-soft">{t('auth.checkSpamEmail')}</p>
+        )}
 
         <Button type="submit" size="lg" fullWidth loading={submitting}>
           {t('auth.verifyCta')}

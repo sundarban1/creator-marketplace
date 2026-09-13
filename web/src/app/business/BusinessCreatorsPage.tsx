@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { SlidersHorizontal } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
 import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { fetchCreatorFilterOptions } from '../api/publicMarketplace';
+import { fetchCategories } from '../api/catalog';
 import {
   listBusinessCreators,
   fetchSavedCreatorIds,
@@ -18,6 +20,8 @@ import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
+import { makeCategoryLookup } from '../public/categoryLookup';
+import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { BizCreatorCard } from './BizCreatorCard';
 
 export function BusinessCreatorsPage() {
@@ -25,10 +29,15 @@ export function BusinessCreatorsPage() {
   const [params, setParams] = useSearchParams();
   const search = params.get('q') ?? '';
   const category = params.get('category') ?? '';
+  const platform = params.get('platform') ?? '';
+  const location = params.get('location') ?? '';
   const sort = params.get('sort') ?? 'newest';
   const debouncedSearch = useDebouncedValue(search, 350);
+  const debouncedLocation = useDebouncedValue(location, 350);
 
   const filterOptions = useAsync((s) => fetchCreatorFilterOptions(s), []);
+  const categories = useAsync((s) => fetchCategories(s), []);
+  const categoryMeta = useMemo(() => makeCategoryLookup(categories.data ?? []), [categories.data]);
   const savedIds = useAsync((s) => fetchSavedCreatorIds(s), []);
   // Locally toggled ids overlay the fetched set (so the heart flips instantly).
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
@@ -49,6 +58,8 @@ export function BusinessCreatorsPage() {
           {
             search: debouncedSearch || undefined,
             categories: category ? [category] : undefined,
+            platforms: platform ? [platform] : undefined,
+            location: debouncedLocation || undefined,
             sort: sort === 'newest' ? undefined : sort,
             page: nextPage,
           },
@@ -63,7 +74,7 @@ export function BusinessCreatorsPage() {
         setStatus('error');
       }
     },
-    [debouncedSearch, category, sort],
+    [debouncedSearch, category, platform, debouncedLocation, sort],
   );
 
   useEffect(() => {
@@ -98,10 +109,11 @@ export function BusinessCreatorsPage() {
   };
 
   const canLoadMore = items.length < total;
+  const hasFilters = Boolean(search || category || platform || location || sort !== 'newest');
 
   return (
     <>
-      <PageHeader eyebrow={t('biz.eyebrowFind')} title={t('biz.findTitle')} description={t('biz.findSubtitle')} />
+      <PageHeader title={t('biz.findTitle')} description={t('biz.findSubtitle')} />
 
       <div className="space-y-3">
         <SearchInput
@@ -109,13 +121,28 @@ export function BusinessCreatorsPage() {
           onChange={(v) => patch('q', v)}
           placeholder={t('public.searchCreatorsPlaceholder')}
         />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           <Select
             aria-label={t('public.category')}
             value={category}
             onChange={(e) => patch('category', e.target.value)}
             placeholder={t('public.allCategories')}
             options={(filterOptions.data?.categories ?? []).map((c) => ({ value: c, label: c }))}
+          />
+          <Select
+            aria-label={t('public.platform')}
+            value={platform}
+            onChange={(e) => patch('platform', e.target.value)}
+            placeholder={t('public.allPlatforms')}
+            options={(filterOptions.data?.platforms ?? []).map((p) => ({
+              value: p.toLowerCase(),
+              label: p[0].toUpperCase() + p.slice(1),
+            }))}
+          />
+          <LocationAutocomplete
+            value={location}
+            onChange={(v) => patch('location', v)}
+            placeholder={t('public.location')}
           />
           <Select
             aria-label="Sort"
@@ -128,9 +155,20 @@ export function BusinessCreatorsPage() {
             ]}
           />
         </div>
-        <p className="text-[13px] text-ink-soft">
-          {status === 'loading' ? ' ' : t('public.resultsCount', { count: total })}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] text-ink-soft">
+            {status === 'loading' ? ' ' : t('public.resultsCount', { count: total })}
+          </p>
+          {hasFilters && (
+            <button
+              onClick={() => setParams({}, { replace: true })}
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-violet-dark hover:underline"
+            >
+              <SlidersHorizontal size={13} />
+              {t('public.clearAll')}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mt-6">
@@ -143,7 +181,12 @@ export function BusinessCreatorsPage() {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <EmptyState variant="no-results" title={t('public.noCreatorsTitle')} description={t('public.noCreatorsBody')} />
+          <EmptyState
+            variant="no-results"
+            title={t('public.noCreatorsTitle')}
+            description={t('public.noCreatorsBody')}
+            action={hasFilters ? { label: t('public.clearAll'), onClick: () => setParams({}, { replace: true }) } : undefined}
+          />
         ) : (
           <>
             <motion.div
@@ -153,8 +196,13 @@ export function BusinessCreatorsPage() {
               className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
             >
               {items.map((c) => (
-                <motion.div key={c.id} variants={fadeUp} className="min-w-0">
-                  <BizCreatorCard creator={c} saved={isSaved(c.id)} onToggleSave={() => onToggleSave(c.id)} />
+                <motion.div key={c.id} variants={fadeUp} className="h-full min-w-0">
+                  <BizCreatorCard
+                    creator={c}
+                    categoryMeta={categoryMeta}
+                    saved={isSaved(c.id)}
+                    onToggleSave={() => onToggleSave(c.id)}
+                  />
                 </motion.div>
               ))}
             </motion.div>

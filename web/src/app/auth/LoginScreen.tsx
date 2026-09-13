@@ -97,6 +97,7 @@ export function LoginScreen() {
         <TextField
           label={t('auth.emailOrPhone')}
           icon={<AtSign />}
+          placeholder={t('auth.emailOrPhonePlaceholder')}
           autoComplete="username"
           inputMode="email"
           value={identifier}
@@ -107,6 +108,7 @@ export function LoginScreen() {
           label={t('auth.password')}
           type="password"
           icon={<Lock />}
+          placeholder={t('auth.passwordPlaceholder')}
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

@@ -1,7 +1,7 @@
 import { lazy, type ComponentType } from 'react';
 import { Route } from 'react-router-dom';
 import { AppProviders } from './AppProviders';
-import { RequireAuth, RequireGuest, RequireRole } from './auth/guards';
+import { RequireAuth, RequireGuest, RequireRole, RequireOnboarding, RequireNotOnboarded } from './auth/guards';
 
 /**
  * The marketplace web app's route subtree. Rendered inside <Routes> in
@@ -23,7 +23,9 @@ const LoginScreen = screen(() => import('./auth/LoginScreen'), 'LoginScreen');
 const SignupScreen = screen(() => import('./auth/SignupScreen'), 'SignupScreen');
 const VerifyOtpScreen = screen(() => import('./auth/VerifyOtpScreen'), 'VerifyOtpScreen');
 const ForgotPasswordScreen = screen(() => import('./auth/ForgotPasswordScreen'), 'ForgotPasswordScreen');
+const OnboardingScreen = screen(() => import('./onboarding/OnboardingScreen'), 'OnboardingScreen');
 const AppShell = screen(() => import('./shell/AppShell'), 'AppShell');
+const DashShell = screen(() => import('./creator/dash-ui/DashShell'), 'DashShell');
 const CreatorDashboard = screen(() => import('./creator/CreatorDashboard'), 'CreatorDashboard');
 const BusinessDashboard = screen(() => import('./business/BusinessDashboard'), 'BusinessDashboard');
 
@@ -36,22 +38,33 @@ const EventsPage = screen(() => import('./public/EventsPage'), 'EventsPage');
 const EventDetailPage = screen(() => import('./public/EventDetailPage'), 'EventDetailPage');
 const CreatorEventsPage = screen(() => import('./creator/CreatorEventsPage'), 'CreatorEventsPage');
 const CreatorEventDetailPage = screen(() => import('./creator/CreatorEventDetailPage'), 'CreatorEventDetailPage');
+const CreatorDiscoverCreatorsPage = screen(() => import('./creator/CreatorDiscoverCreatorsPage'), 'CreatorDiscoverCreatorsPage');
+const CreatorDiscoverBusinessesPage = screen(() => import('./creator/CreatorDiscoverBusinessesPage'), 'CreatorDiscoverBusinessesPage');
 const CreatorApplicationsPage = screen(() => import('./creator/CreatorApplicationsPage'), 'CreatorApplicationsPage');
 const CreatorWorkPage = screen(() => import('./creator/CreatorWorkPage'), 'CreatorWorkPage');
 const CreatorWorkDetailPage = screen(() => import('./creator/CreatorWorkDetailPage'), 'CreatorWorkDetailPage');
 const CreatorWalletPage = screen(() => import('./creator/CreatorWalletPage'), 'CreatorWalletPage');
 const CreatorProfileEditPage = screen(() => import('./creator/CreatorProfilePage'), 'CreatorProfilePage');
+const CreatorSettingsPage = screen(() => import('./creator/CreatorSettingsPage'), 'CreatorSettingsPage');
+const CreatorReferralsPage = screen(() => import('./creator/CreatorReferralsPage'), 'CreatorReferralsPage');
 const AccountSettingsPage = screen(() => import('./shell/AccountSettingsPage'), 'AccountSettingsPage');
+const HelpSupportPage = screen(() => import('./shell/HelpSupportPage'), 'HelpSupportPage');
+const AboutKolabPage = screen(() => import('./shell/AboutKolabPage'), 'AboutKolabPage');
 
 const BusinessCreatorsPage = screen(() => import('./business/BusinessCreatorsPage'), 'BusinessCreatorsPage');
 const BusinessCreatorDetailPage = screen(() => import('./business/BusinessCreatorDetailPage'), 'BusinessCreatorDetailPage');
 const BusinessEventsPage = screen(() => import('./business/BusinessEventsPage'), 'BusinessEventsPage');
 const BusinessEventDetailPage = screen(() => import('./business/BusinessEventDetailPage'), 'BusinessEventDetailPage');
 const CreateEventPage = screen(() => import('./business/CreateEventPage'), 'CreateEventPage');
+const EditEventPage = screen(() => import('./business/EditEventPage'), 'EditEventPage');
+const ChatListPage = screen(() => import('./chat/ChatListPage'), 'ChatListPage');
+const ChatThreadPage = screen(() => import('./chat/ChatThreadPage'), 'ChatThreadPage');
 const BusinessApplicationsPage = screen(() => import('./business/BusinessApplicationsPage'), 'BusinessApplicationsPage');
 const BusinessDeliverablesPage = screen(() => import('./business/BusinessDeliverablesPage'), 'BusinessDeliverablesPage');
 const BusinessPaymentsPage = screen(() => import('./business/BusinessPaymentsPage'), 'BusinessPaymentsPage');
 const BusinessProfilePage = screen(() => import('./business/BusinessProfilePage'), 'BusinessProfilePage');
+const BusinessReferralsPage = screen(() => import('./business/BusinessReferralsPage'), 'BusinessReferralsPage');
+const BusinessVerificationPage = screen(() => import('./business/BusinessVerificationPage'), 'BusinessVerificationPage');
 
 export function marketplaceRoutes() {
   return (
@@ -75,37 +88,63 @@ export function marketplaceRoutes() {
         <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
       </Route>
 
+      {/* First-login onboarding — role-branches internally, so it needs an
+          authed user but not a specific `RequireRole`. */}
+      <Route element={<RequireAuth />}>
+        <Route element={<RequireNotOnboarded />}>
+          <Route path="/onboarding" element={<OnboardingScreen />} />
+        </Route>
+      </Route>
+
       {/* Creator app */}
       <Route element={<RequireAuth />}>
         <Route element={<RequireRole role="CREATOR" />}>
-          <Route path="/creator" element={<AppShell />}>
-            <Route index element={<CreatorDashboard />} />
-            <Route path="events" element={<CreatorEventsPage />} />
-            <Route path="events/:id" element={<CreatorEventDetailPage />} />
-            <Route path="applications" element={<CreatorApplicationsPage />} />
-            <Route path="applications/:id" element={<CreatorWorkDetailPage />} />
-            <Route path="work" element={<CreatorWorkPage />} />
-            <Route path="work/:id" element={<CreatorWorkDetailPage />} />
-            <Route path="wallet" element={<CreatorWalletPage />} />
-            <Route path="profile" element={<CreatorProfileEditPage />} />
-            <Route path="settings" element={<AccountSettingsPage />} />
+          <Route element={<RequireOnboarding />}>
+            <Route path="/creator" element={<DashShell />}>
+              <Route index element={<CreatorDashboard />} />
+              <Route path="events" element={<CreatorEventsPage />} />
+              <Route path="events/:id" element={<CreatorEventDetailPage />} />
+              <Route path="creators" element={<CreatorDiscoverCreatorsPage />} />
+              <Route path="businesses" element={<CreatorDiscoverBusinessesPage />} />
+              <Route path="applications" element={<CreatorApplicationsPage />} />
+              <Route path="applications/:id" element={<CreatorWorkDetailPage />} />
+              <Route path="work" element={<CreatorWorkPage />} />
+              <Route path="work/:id" element={<CreatorWorkDetailPage />} />
+              <Route path="messages" element={<ChatListPage />} />
+              <Route path="messages/:id" element={<ChatThreadPage />} />
+              <Route path="wallet" element={<CreatorWalletPage />} />
+              <Route path="profile" element={<CreatorProfileEditPage />} />
+              <Route path="settings" element={<CreatorSettingsPage />} />
+              <Route path="referrals" element={<CreatorReferralsPage />} />
+              <Route path="support" element={<HelpSupportPage />} />
+              <Route path="about" element={<AboutKolabPage />} />
+            </Route>
           </Route>
         </Route>
 
         {/* Business app */}
         <Route element={<RequireRole role="BUSINESS" />}>
-          <Route path="/business" element={<AppShell />}>
-            <Route index element={<BusinessDashboard />} />
-            <Route path="creators" element={<BusinessCreatorsPage />} />
-            <Route path="creators/:id" element={<BusinessCreatorDetailPage />} />
-            <Route path="events" element={<BusinessEventsPage />} />
-            <Route path="events/create" element={<CreateEventPage />} />
-            <Route path="events/:id" element={<BusinessEventDetailPage />} />
-            <Route path="applications" element={<BusinessApplicationsPage />} />
-            <Route path="deliverables" element={<BusinessDeliverablesPage />} />
-            <Route path="payments" element={<BusinessPaymentsPage />} />
-            <Route path="profile" element={<BusinessProfilePage />} />
-            <Route path="settings" element={<AccountSettingsPage />} />
+          <Route element={<RequireOnboarding />}>
+            <Route path="/business" element={<AppShell />}>
+              <Route index element={<BusinessDashboard />} />
+              <Route path="creators" element={<BusinessCreatorsPage />} />
+              <Route path="creators/:id" element={<BusinessCreatorDetailPage />} />
+              <Route path="events" element={<BusinessEventsPage />} />
+              <Route path="events/create" element={<CreateEventPage />} />
+              <Route path="events/:id" element={<BusinessEventDetailPage />} />
+              <Route path="events/:id/edit" element={<EditEventPage />} />
+              <Route path="applications" element={<BusinessApplicationsPage />} />
+              <Route path="messages" element={<ChatListPage />} />
+              <Route path="messages/:id" element={<ChatThreadPage />} />
+              <Route path="deliverables" element={<BusinessDeliverablesPage />} />
+              <Route path="payments" element={<BusinessPaymentsPage />} />
+              <Route path="profile" element={<BusinessProfilePage />} />
+              <Route path="settings" element={<AccountSettingsPage />} />
+              <Route path="referrals" element={<BusinessReferralsPage />} />
+              <Route path="verification" element={<BusinessVerificationPage />} />
+              <Route path="support" element={<HelpSupportPage />} />
+              <Route path="about" element={<AboutKolabPage />} />
+            </Route>
           </Route>
         </Route>
       </Route>

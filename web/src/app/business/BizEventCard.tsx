@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Users, CalendarClock } from 'lucide-react';
+import { Users, CalendarClock, Gift } from 'lucide-react';
 import { useT } from '../i18n';
 import { perCreatorBudget } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
@@ -22,6 +22,8 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
   const fmtDeadline = useDeadlineLabel();
   const budget = perCreatorBudget(event);
   const deadline = fmtDeadline(event.deadline);
+  const isOpenEvent = event.campaignType === 'OPEN_EVENT';
+  const perks = (event.benefits ?? []).filter(Boolean);
 
   return (
     <Link
@@ -45,9 +47,20 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
           <StatusBadge label={event.status} tone={STATUS_TONE[event.status] ?? 'neutral'} dot={false} />
         </div>
         <h3 className="mt-2.5 line-clamp-2 text-[16px] font-semibold leading-snug text-ink">{event.title}</h3>
-        <p className="mt-2 text-[14px] font-bold text-ink">
-          {t('public.budgetPerCreator', { amount: budget.amount })}
-        </p>
+        {/* Paid events show the per-creator budget; free events show what the
+            business offers in kind instead of "Rs. 0". */}
+        {isOpenEvent ? (
+          <p className="mt-2 flex items-start gap-1.5 text-[14px] font-semibold text-ink">
+            <Gift size={14} className="mt-0.5 shrink-0 text-success" />
+            <span className="line-clamp-2">
+              {perks.length > 0 ? perks.join(' · ') : t('public.freeEventPerks')}
+            </span>
+          </p>
+        ) : (
+          <p className="mt-2 text-[14px] font-bold text-ink">
+            {t('public.budgetPerCreator', { amount: budget.amount })}
+          </p>
+        )}
         <div className="mt-auto flex items-center gap-4 border-t border-line pt-3 text-[12px] text-ink-soft">
           <span className="inline-flex items-center gap-1">
             <Users size={13} />

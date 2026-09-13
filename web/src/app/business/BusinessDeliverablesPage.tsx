@@ -23,6 +23,9 @@ export function BusinessDeliverablesPage() {
   const t = useT();
   const [params, setParams] = useSearchParams();
   const tab = (TABS.includes(params.get('tab') as Tab) ? params.get('tab') : 'review') as Tab;
+  // Deep-link from an event's "View Content" — scopes the list to just that
+  // campaign's application(s) instead of every pending review across events.
+  const campaignFilter = params.get('campaign');
 
   const apps = useAsync((s) => fetchBusinessApplications({ limit: 200 }, s), []);
   const [flash, setFlash] = useState('');
@@ -31,14 +34,14 @@ export function BusinessDeliverablesPage() {
   const [revisionFor, setRevisionFor] = useState<BusinessApplication | null>(null);
 
   const buckets = useMemo(() => {
-    const list = apps.data?.items ?? [];
+    const list = (apps.data?.items ?? []).filter((a) => !campaignFilter || a.campaignId === campaignFilter);
     return {
       review: list.filter((a) => a.engagementState === 'BUSINESS_REVIEW'),
       approved: list.filter(
         (a) => a.engagementState === 'PAYMENT_RELEASE_PENDING' || a.engagementState === 'PAYMENT_RELEASED' || a.engagementState === 'COMPLETED',
       ),
     };
-  }, [apps.data]);
+  }, [apps.data, campaignFilter]);
 
   const list = buckets[tab];
 
@@ -58,14 +61,32 @@ export function BusinessDeliverablesPage() {
 
   return (
     <>
-      <PageHeader eyebrow={t('biz.eyebrowDeliv')} title={t('biz.delivTitle')} description={t('biz.delivSubtitle')} />
+      <PageHeader title={t('biz.delivTitle')} description={t('biz.delivSubtitle')} />
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
 
+      {campaignFilter && (
+        <Alert tone="info" className="mb-5">
+          {t('biz.delivFilteredNote', { title: list[0]?.campaign?.title ?? apps.data?.items.find((a) => a.campaignId === campaignFilter)?.campaign?.title ?? '' })}{' '}
+          <button
+            type="button"
+            onClick={() => setParams(tab === 'review' ? {} : { tab }, { replace: true })}
+            className="font-semibold underline"
+          >
+            {t('biz.delivClearFilter')}
+          </button>
+        </Alert>
+      )}
+
       <Tabs
         value={tab}
-        onChange={(v) => setParams(v === 'review' ? {} : { tab: v }, { replace: true })}
+        onChange={(v) => {
+          const next: Record<string, string> = {};
+          if (v !== 'review') next.tab = v;
+          if (campaignFilter) next.campaign = campaignFilter;
+          setParams(next, { replace: true });
+        }}
         tabs={TABS.map((v) => ({
           value: v,
           label: t(`biz.delivTab${v[0].toUpperCase()}${v.slice(1)}`),

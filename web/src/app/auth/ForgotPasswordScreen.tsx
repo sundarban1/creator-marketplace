@@ -84,6 +84,7 @@ export function ForgotPasswordScreen() {
           <TextField
             label={t('auth.emailOrPhone')}
             icon={<AtSign />}
+            placeholder={t('auth.emailOrPhonePlaceholder')}
             autoComplete="username"
             inputMode="email"
             value={identifier}

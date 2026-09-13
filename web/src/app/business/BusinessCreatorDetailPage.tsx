@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BadgeCheck, MapPin, Star, ExternalLink, Bookmark } from 'lucide-react';
 import { useT } from '../i18n';
@@ -11,6 +11,7 @@ import {
   fetchMyCampaigns,
   inviteCreators,
 } from '../api/business';
+import { fetchCategories } from '../api/catalog';
 import { ApiError } from '../lib/apiClient';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
@@ -21,12 +22,16 @@ import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { Modal } from '../ui/Modal';
 import { Select } from '../ui/Select';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
+import { CategoryPill } from '../public/CategoryPill';
+import { makeCategoryLookup } from '../public/categoryLookup';
 
 export function BusinessCreatorDetailPage() {
   const t = useT();
   const { id = '' } = useParams();
   const creator = useAsync((s) => getBusinessCreator(id, s), [id]);
   const savedIds = useAsync((s) => fetchSavedCreatorIds(s), []);
+  const categories = useAsync((s) => fetchCategories(s), []);
+  const categoryMeta = useMemo(() => makeCategoryLookup(categories.data ?? []), [categories.data]);
 
   const [saved, setSaved] = useState<boolean | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -106,9 +111,7 @@ export function BusinessCreatorDetailPage() {
           {c.categories.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {c.categories.map((cat) => (
-                <span key={cat} className="rounded-full bg-surface-dim px-2.5 py-1 text-[12px] font-medium text-ink-soft">
-                  {cat}
-                </span>
+                <CategoryPill key={cat} label={cat} meta={categoryMeta(cat)} />
               ))}
             </div>
           )}
@@ -178,14 +181,58 @@ export function BusinessCreatorDetailPage() {
       {(c.portfolioItems.length > 0 || c.portfolioLinks.length > 0) && (
         <Card className="mt-6">
           <CardHeader title={t('public.portfolioHeading')} />
-          <ul className="space-y-2">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {c.portfolioItems.map((p) => (
+              <a
+                key={p.id}
+                href={p.linkUrl || p.mediaUrl || undefined}
+                target="_blank"
+                rel="noreferrer nofollow"
+                className="group overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-violet/30"
+              >
+                {(p.thumbnailUrl || p.mediaUrl) && (
+                  <img
+                    src={p.thumbnailUrl || p.mediaUrl || ''}
+                    alt={p.title ?? ''}
+                    className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                    loading="lazy"
+                  />
+                )}
+                {p.title && <p className="truncate p-2 text-[12px] font-medium text-ink">{p.title}</p>}
+              </a>
+            ))}
             {c.portfolioLinks.map((l) => (
-              <li key={l.id}>
-                <a href={l.url} target="_blank" rel="noreferrer nofollow" className="inline-flex items-center gap-1 text-[13px] font-medium text-violet-dark hover:underline">
-                  {l.label}
-                  <ExternalLink size={11} />
-                </a>
-              </li>
+              <a
+                key={l.id}
+                href={l.url}
+                target="_blank"
+                rel="noreferrer nofollow"
+                className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface p-3 text-[13px] font-medium text-ink transition-colors hover:border-violet/30"
+              >
+                <span className="truncate">{l.label}</span>
+                <ExternalLink size={13} className="flex-shrink-0 text-ink-soft" />
+              </a>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {c.reviews.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader title={t('public.reviewsHeading')} />
+          <ul className="space-y-3">
+            {c.reviews.slice(0, 6).map((r) => (
+              <Card key={r.id} as="li" className="!p-4">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={13} className={i < r.rating ? 'fill-warning text-warning' : 'text-line-strong'} />
+                  ))}
+                </div>
+                {r.comment && <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{r.comment}</p>}
+                {r.reviewer?.name && (
+                  <p className="mt-2 text-[12px] font-medium text-ink-soft">— {r.reviewer.name}</p>
+                )}
+              </Card>
             ))}
           </ul>
         </Card>

@@ -12,14 +12,35 @@ export interface Category {
   color: string;
 }
 
-export function fetchCategories(signal?: AbortSignal): Promise<Category[]> {
-  return apiRequest<Category[]>('GET', '/api/categories', undefined, { anonymous: true, signal }).then(
-    (r) => r.data.filter((c) => c.status === 'ACTIVE'),
-  );
+export function fetchCategories(
+  signal?: AbortSignal,
+  scope?: 'BOTH' | 'CREATOR' | 'BUSINESS',
+): Promise<Category[]> {
+  return apiRequest<Category[]>('GET', '/api/categories', undefined, {
+    anonymous: true,
+    signal,
+    params: { scope },
+  }).then((r) => r.data.filter((c) => c.status === 'ACTIVE'));
 }
 
 export function fetchCampaignPlatforms(signal?: AbortSignal): Promise<string[]> {
   return apiRequest<string[]>('GET', '/api/campaigns/platforms', undefined, {
+    anonymous: true,
+    signal,
+  }).then((r) => r.data);
+}
+
+export interface PaymentMethod {
+  id: string;
+  key: string;
+  name: string;
+  iconUrl: string | null;
+  color: string;
+  order: number;
+}
+
+export function fetchPaymentMethods(signal?: AbortSignal): Promise<PaymentMethod[]> {
+  return apiRequest<PaymentMethod[]>('GET', '/api/payment-methods', undefined, {
     anonymous: true,
     signal,
   }).then((r) => r.data);

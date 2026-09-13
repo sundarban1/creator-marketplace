@@ -48,7 +48,7 @@ const COPY = {
     ],
     related: [
       { label: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal', description: 'How Kolab connects Nepali brands and creators.' },
-      { label: 'Find Campaigns', path: '/find-campaigns', description: 'Browse open paid campaigns and free events to apply to.' },
+      { label: 'Find Campaigns', path: '/find-campaigns', description: 'Browse open paid campaigns and open events to apply to.' },
       { label: 'TikTok Creators', path: '/tiktok-creators', description: 'TikTok creator opportunities on Kolab.' },
       { label: 'For Brands', path: '/brands', description: 'See how brands discover and hire creators like you.' },
     ],

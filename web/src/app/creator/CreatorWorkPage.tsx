@@ -2,11 +2,11 @@ import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useT } from '../i18n';
 import { fadeUp, stagger } from '../../pages/landing/lib/motion';
-import { PageHeader } from '../ui/PageHeader';
-import { Tabs } from '../ui/Tabs';
+import { DashPageHeader } from './dash-ui/DashPageHeader';
+import { DashTabs } from './dash-ui/DashTabs';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
-import { ApplicationCard } from './ApplicationCard';
+import { DashApplicationCard } from './dash-ui/DashApplicationCard';
 import { useApplications } from './useApplications';
 
 const TABS = ['active', 'completed'] as const;
@@ -23,9 +23,9 @@ export function CreatorWorkPage() {
 
   return (
     <>
-      <PageHeader eyebrow={t('work.eyebrow')} title={t('work.title')} description={t('work.subtitle')} />
+      <DashPageHeader title={t('work.title')} description={t('work.subtitle')} />
 
-      <Tabs
+      <DashTabs
         value={tab}
         onChange={(v) => setParams(v === 'active' ? {} : { tab: v }, { replace: true })}
         tabs={TABS.map((v) => ({
@@ -61,7 +61,7 @@ export function CreatorWorkPage() {
           >
             {list.map((a) => (
               <motion.div key={a.id} variants={fadeUp} className="min-w-0">
-                <ApplicationCard application={a} />
+                <DashApplicationCard application={a} />
               </motion.div>
             ))}
           </motion.div>

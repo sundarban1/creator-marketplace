@@ -168,6 +168,7 @@ export const campaignListQuerySchema = z.object({
   deadlineFrom: z.string().optional().transform((v) => (v ? new Date(v) : undefined)),
   deadlineTo:   z.string().optional().transform((v) => (v ? new Date(v) : undefined)),
   campaignType: z.enum(['PAID_CAMPAIGN', 'OPEN_EVENT']).optional(),
+  sort:         z.enum(['newest', 'oldest', 'budget_high']).optional(),
   page:         z.string().optional().transform((v) => (v ? parseInt(v) : 1)),
   limit:        z.string().optional().transform((v) => (v ? parseInt(v) : 10)),
 });

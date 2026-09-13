@@ -19,7 +19,7 @@ import { Hero } from './sections/Hero';
 import { Possibilities } from './sections/Possibilities';
 import { Audience } from './sections/Audience';
 import { AIDiscovery } from './sections/AIDiscovery';
-import { OpportunityFeed } from './sections/OpportunityFeed';
+import { EventsShowcase } from './sections/EventsShowcase';
 import { TrustStats } from './sections/TrustStats';
 import { Categories } from './sections/Categories';
 import { MarketplaceShowcase } from './sections/MarketplaceShowcase';
@@ -110,9 +110,9 @@ function LandingPageInner() {
       <Possibilities />
       <Audience />
       <AIDiscovery />
-      <OpportunityFeed />
       <TrustStats stats={stats} />
       <Categories stats={stats} />
+      <EventsShowcase />
       <MarketplaceShowcase variant="creators" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
       <MarketplaceShowcase variant="businesses" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
       <Stories stories={successStories} />

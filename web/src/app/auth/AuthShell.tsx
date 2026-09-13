@@ -37,12 +37,20 @@ export function AuthShell({
         />
         <div className="relative">
           <Logo invert className="h-8" />
+
+          <div className="mt-20 inline-flex flex-col gap-1.5 rounded-2xl bg-white/15 px-4 py-3">
+            <span className="text-[12px] font-semibold uppercase tracking-wide text-white">
+              {t('auth.recommendedBadge')}
+            </span>
+            <p className="font-serif text-[16px] italic leading-snug text-white">{t('auth.mobileAppBetter')}</p>
+          </div>
         </div>
 
         <div className="relative max-w-md">
           <h2 className="font-serif text-[2.4rem] leading-[1.15] text-balance">
             {t('auth.brandHeadline')}
           </h2>
+
           <ul className="mt-8 space-y-4 text-[15px] text-white/90">
             <ValueRow icon={<Sparkles size={18} />}>{t('auth.brandPoint1')}</ValueRow>
             <ValueRow icon={<Wallet size={18} />}>{t('auth.brandPoint2')}</ValueRow>

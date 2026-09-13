@@ -301,6 +301,7 @@ export const en: BackendDict = {
     profileUpdated:                      'Profile updated successfully',
     portfolioLinkAdded:                  'Portfolio link added',
     portfolioLinkRemoved:                'Portfolio link removed',
+    bioGenerated:                        'Bio generated',
     socialLinksUpdated:                  'Social links updated',
     socialAccountsRetrieved:             'Social accounts retrieved',
     socialAccountAdded:                  'Social account added',

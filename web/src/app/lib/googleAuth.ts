@@ -60,22 +60,46 @@ function loadGis(): Promise<void> {
   return scriptPromise;
 }
 
-/** Opens Google's account picker and resolves with an OAuth2 access token. */
-export async function requestGoogleAccessToken(): Promise<string> {
-  await loadGis();
-  const oauth2 = window.google?.accounts.oauth2;
-  if (!oauth2) throw new Error('Google Sign-In is unavailable.');
+function requestAccessToken(scope: string, prompt: string, cancelledMessage: string): Promise<string> {
+  return loadGis().then(
+    () =>
+      new Promise<string>((resolve, reject) => {
+        const oauth2 = window.google?.accounts.oauth2;
+        if (!oauth2) {
+          reject(new Error('Google Sign-In is unavailable.'));
+          return;
+        }
+        const client = oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope,
+          callback: (resp) => {
+            if (resp.access_token) resolve(resp.access_token);
+            else reject(new Error(resp.error ?? cancelledMessage));
+          },
+          error_callback: (err) => reject(new Error(err.type ?? cancelledMessage)),
+        });
+        client.requestAccessToken({ prompt });
+      }),
+  );
+}
 
-  return new Promise<string>((resolve, reject) => {
-    const client = oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: 'openid email profile',
-      callback: (resp) => {
-        if (resp.access_token) resolve(resp.access_token);
-        else reject(new Error(resp.error ?? 'Google Sign-In was cancelled.'));
-      },
-      error_callback: (err) => reject(new Error(err.type ?? 'Google Sign-In was cancelled.')),
-    });
-    client.requestAccessToken({ prompt: 'select_account' });
-  });
+/** Opens Google's account picker and resolves with an OAuth2 access token. */
+export function requestGoogleAccessToken(): Promise<string> {
+  return requestAccessToken('openid email profile', 'select_account', 'Google Sign-In was cancelled.');
+}
+
+/**
+ * Requests a YouTube Data API read scope for pulling a connected creator's
+ * subscriber count (see api/creator.ts's connectYoutubeAccount). Google's
+ * implicit token-client flow (used here, same as sign-in above) never returns
+ * a refresh token — an OAuth spec limitation, not a bug — so unlike mobile's
+ * native flow, a web-connected YouTube account won't self-refresh once this
+ * access token expires; the creator reconnects to refresh it.
+ */
+export function requestYoutubeAccessToken(): Promise<string> {
+  return requestAccessToken(
+    'https://www.googleapis.com/auth/youtube.readonly',
+    'consent',
+    'YouTube connection was cancelled.',
+  );
 }

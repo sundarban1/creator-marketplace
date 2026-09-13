@@ -7,6 +7,7 @@ export const paths = {
   signup: '/signup',
   verify: '/verify',
   forgotPassword: '/forgot-password',
+  onboarding: '/onboarding',
 
   creatorHome: '/creator',
   businessHome: '/business',

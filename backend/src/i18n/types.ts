@@ -301,6 +301,7 @@ export interface BackendDict {
     profileRetrieved: string;
     profileUpdated: string;
     portfolioLinkAdded: string;
+    bioGenerated: string;
     portfolioLinkRemoved: string;
     socialLinksUpdated: string;
     socialAccountsRetrieved: string;

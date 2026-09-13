@@ -5,6 +5,8 @@ import { cn } from './cn';
 interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label: string;
   hint?: string;
+  /** 'success' turns the hint text green (e.g. "Email is available"). */
+  hintTone?: 'default' | 'success';
   error?: string;
   /** Right-aligned adornment (e.g. a "Forgot password?" link). */
   labelAccessory?: ReactNode;
@@ -17,7 +19,7 @@ interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'si
  * aria-invalid / aria-describedby, and (for type="password") a show/hide toggle.
  */
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
-  { label, hint, error, labelAccessory, icon, type = 'text', className, id, ...rest },
+  { label, hint, hintTone = 'default', error, labelAccessory, icon, type = 'text', className, id, ...rest },
   ref,
 ) {
   const autoId = useId();
@@ -79,7 +81,10 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="mt-1.5 text-[13px] text-ink-soft">
+        <p
+          id={hintId}
+          className={cn('mt-1.5 text-[13px]', hintTone === 'success' ? 'font-medium text-success' : 'text-ink-soft')}
+        >
           {hint}
         </p>
       ) : null}

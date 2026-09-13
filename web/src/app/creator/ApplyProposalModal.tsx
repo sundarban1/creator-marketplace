@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
+import { Sparkles } from 'lucide-react';
 import { useT } from '../i18n';
 import { rupees } from '../lib/format';
 import { applyToCampaign, type CreatorApplication } from '../api/creator';
 import { ApiError } from '../lib/apiClient';
+import { generateCoverLetterTemplate } from '../lib/coverLetterTemplates';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
@@ -11,6 +13,9 @@ import { Alert } from '../ui/Alert';
 import type { EventCard as EventData } from '../api/publicMarketplace';
 
 const MIN_COVER = 50;
+// Sent to the backend (timeline is a required field there) without asking the
+// creator to fill it in — same default the mobile app's proposal form uses.
+const DEFAULT_TIMELINE = '2 weeks';
 
 export function ApplyProposalModal({
   event,
@@ -27,13 +32,18 @@ export function ApplyProposalModal({
   const isFree = event.campaignType === 'OPEN_EVENT';
   const isFixed = event.budgetMin === event.budgetMax;
 
-  const [coverLetter, setCoverLetter] = useState('');
+  const [coverLetter, setCoverLetter] = useState(() =>
+    generateCoverLetterTemplate(event.category, event.title, event.business?.businessName ?? ''),
+  );
   const [rate, setRate] = useState('');
-  const [timeline, setTimeline] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
   const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{ cover?: string; rate?: string; timeline?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ cover?: string; rate?: string }>({});
   const [submitting, setSubmitting] = useState(false);
+
+  const regenerateCoverLetter = () => {
+    setCoverLetter(generateCoverLetterTemplate(event.category, event.title, event.business?.businessName ?? ''));
+  };
 
   const rateHint = isFree
     ? t('creatorEvents.proposedRateHintFree')
@@ -50,7 +60,6 @@ export function ApplyProposalModal({
 
     const fe: typeof fieldErrors = {};
     if (coverLetter.trim().length < MIN_COVER) fe.cover = t('creatorEvents.coverLetterTooShort');
-    if (!timeline.trim()) fe.timeline = t('creatorEvents.timelineRequired');
 
     const numRate = isFree ? 0 : Number(rate);
     if (!isFree) {
@@ -76,7 +85,7 @@ export function ApplyProposalModal({
       const application = await applyToCampaign(event.id, {
         coverLetter: coverLetter.trim(),
         proposedRate: numRate,
-        timeline: timeline.trim(),
+        timeline: DEFAULT_TIMELINE,
         portfolioUrl: portfolioUrl.trim() || undefined,
       });
       onApplied(application);
@@ -113,12 +122,22 @@ export function ApplyProposalModal({
 
         <Textarea
           label={t('creatorEvents.coverLetter')}
-          hint={t('creatorEvents.coverLetterHint')}
+          hint={t('creatorEvents.coverLetterAutoHint')}
           error={fieldErrors.cover}
           showCount
           rows={5}
           value={coverLetter}
           onChange={(e) => setCoverLetter(e.target.value)}
+          labelAccessory={
+            <button
+              type="button"
+              onClick={regenerateCoverLetter}
+              className="inline-flex flex-shrink-0 items-center gap-1 text-[12.5px] font-semibold text-violet-dark hover:underline"
+            >
+              <Sparkles size={12} />
+              {t('profile.regenerate')}
+            </button>
+          }
         />
 
         {!isFree && (
@@ -134,14 +153,6 @@ export function ApplyProposalModal({
           />
         )}
         {isFree && <Alert tone="info">{rateHint}</Alert>}
-
-        <TextField
-          label={t('creatorEvents.timeline')}
-          placeholder={t('creatorEvents.timelinePlaceholder')}
-          error={fieldErrors.timeline}
-          value={timeline}
-          onChange={(e) => setTimeline(e.target.value)}
-        />
 
         <TextField
           label={`${t('creatorEvents.portfolioUrl')} (${t('common.optional')})`}

@@ -79,6 +79,12 @@ export interface OAuthStatePayload {
   // Which profile this connect belongs to — defaults to CREATOR when omitted
   // (every state signed before this field existed was creator-only).
   role?: Role;
+  // Which client kicked off the flow — the callback route reads this (via an
+  // unverified jwt.decode, since it just picks a redirect target and isn't
+  // security-sensitive) to know whether to 302 into the app's custom URL
+  // scheme or back to the web app. Defaults to 'mobile' when omitted (every
+  // state signed before this field existed came from the mobile app).
+  clientPlatform?: 'web' | 'mobile';
   // Set when the PKCE verifier was parked in Redis instead of the JWT — the
   // callback swaps it back in and deletes the key, making the state single-use.
   nonce?: string;
@@ -109,13 +115,30 @@ export async function signOAuthState(payload: OAuthStatePayload): Promise<string
       // flows without one (Instagram) so the nonce is still single-use.
       const stored = JSON.stringify(payload.codeVerifier ? { codeVerifier: payload.codeVerifier } : { ok: true });
       await client.set(oauthStateKey(nonce), stored, { EX: OAUTH_STATE_TTL_SEC });
-      jwtPayload = { userId: payload.userId, role: payload.role, nonce };
+      jwtPayload = { userId: payload.userId, role: payload.role, clientPlatform: payload.clientPlatform, nonce };
     } catch (err) {
       logger.warn({ err: err instanceof Error ? err.message : err }, 'oauth-state: Redis park failed — verifier stays in the JWT');
     }
   }
 
   return jwt.sign(jwtPayload, OAUTH_STATE_SECRET, { expiresIn: '30m' });
+}
+
+/**
+ * Best-effort, UNVERIFIED peek at `clientPlatform` — used only to pick which
+ * URL a public OAuth callback route 302s to (app scheme vs. web app) before
+ * the real, signature-checked `verifyOAuthState` runs inside the service. A
+ * forged/garbled state can only ever misroute that redirect, never affect
+ * which account gets connected, so skipping verification here is safe and
+ * lets the (single-use) real verify happen exactly once.
+ */
+export function peekOAuthStatePlatform(token: string): 'web' | 'mobile' {
+  try {
+    const decoded = jwt.decode(token) as OAuthStatePayload | null;
+    return decoded?.clientPlatform === 'web' ? 'web' : 'mobile';
+  } catch {
+    return 'mobile';
+  }
 }
 
 export async function verifyOAuthState(token: string): Promise<OAuthStatePayload & JwtPayload> {

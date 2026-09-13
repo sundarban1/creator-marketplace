@@ -36,12 +36,61 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
+const QUOTE_WORD_LIMIT = 63;
+
+function TestimonialQuote({
+  quote,
+  showMoreLabel,
+  showLessLabel,
+}: {
+  quote: string;
+  showMoreLabel: string;
+  showLessLabel: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const words = quote.split(' ');
+  const isLong = words.length > QUOTE_WORD_LIMIT;
+  const displayWords = expanded || !isLong ? words : words.slice(0, QUOTE_WORD_LIMIT);
+
+  return (
+    <>
+      <motion.p className="mt-3 font-serif text-lg italic leading-relaxed text-ink-soft dark:text-white">
+        {displayWords.map((word, index) => (
+          <motion.span
+            key={index}
+            initial={{ filter: 'blur(10px)', opacity: 0, y: 5 }}
+            animate={{ filter: 'blur(0px)', opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: 'easeInOut', delay: 0.02 * index }}
+            className="inline-block"
+          >
+            {word}&nbsp;
+          </motion.span>
+        ))}
+        {isLong && !expanded && '…'}
+      </motion.p>
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="mt-1 text-sm font-semibold text-brand-orange transition-opacity hover:opacity-75"
+        >
+          {expanded ? showLessLabel : showMoreLabel}
+        </button>
+      )}
+    </>
+  );
+}
+
 export function AnimatedTestimonials({
   testimonials,
   autoplay = false,
+  showMoreLabel = 'Show more',
+  showLessLabel = 'Show less',
 }: {
   testimonials: Testimonial[];
   autoplay?: boolean;
+  showMoreLabel?: string;
+  showLessLabel?: string;
 }) {
   const [active, setActive] = useState(0);
 
@@ -129,19 +178,7 @@ export function AnimatedTestimonials({
           >
             <h3 className="text-2xl font-bold text-ink dark:text-white">{current.name}</h3>
             <p className="text-sm text-ink-soft dark:text-white">{current.designation}</p>
-            <motion.p className="mt-3 font-serif text-lg italic leading-relaxed text-ink-soft dark:text-white">
-              {current.quote.split(' ').map((word, index) => (
-                <motion.span
-                  key={index}
-                  initial={{ filter: 'blur(10px)', opacity: 0, y: 5 }}
-                  animate={{ filter: 'blur(0px)', opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeInOut', delay: 0.02 * index }}
-                  className="inline-block"
-                >
-                  {word}&nbsp;
-                </motion.span>
-              ))}
-            </motion.p>
+            <TestimonialQuote quote={current.quote} showMoreLabel={showMoreLabel} showLessLabel={showLessLabel} />
           </motion.div>
           <div className="flex gap-4 pt-12 md:pt-0">
             <button

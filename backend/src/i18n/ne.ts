@@ -300,6 +300,7 @@ export const ne: BackendDict = {
     profileRetrieved:                    'प्रोफाइल सफलतापूर्वक प्राप्त भयो',
     profileUpdated:                      'प्रोफाइल सफलतापूर्वक अपडेट गरियो',
     portfolioLinkAdded:                  'पोर्टफोलियो लिंक थपियो',
+    bioGenerated:                        'बायो सिर्जना गरियो',
     portfolioLinkRemoved:                'पोर्टफोलियो लिंक हटाइयो',
     socialLinksUpdated:                  'सोशल लिंकहरू अपडेट गरियो',
     socialAccountsRetrieved:             'सोशल मिडिया खाताहरू प्राप्त भयो',

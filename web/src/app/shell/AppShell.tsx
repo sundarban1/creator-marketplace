@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, UserRound } from 'lucide-react';
+import { Menu, X, LogOut, UserRound, Search, MessageCircle, ChevronDown } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
-import { navFor, type NavItem } from './nav';
+import { navFor, bottomNavFor, type NavItem } from './nav';
+import { BottomNav } from './BottomNav';
 import { cn } from '../ui/cn';
 import { Logo } from '../ui/Logo';
 import { Avatar } from '../ui/Avatar';
@@ -20,7 +21,9 @@ import type { AppRole } from '../api/auth';
 export function AppShell() {
   const { user, logout } = useAppAuth();
   const t = useT();
+  const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const closeDrawer = () => setDrawerOpen(false);
 
   // Lock body scroll while the drawer is open.
@@ -33,6 +36,15 @@ export function AppShell() {
 
   if (!user) return null;
   const items = navFor(user.role);
+  const messagesPath = user.role === 'BUSINESS' ? '/business/messages' : '/creator/messages';
+  const searchTarget = user.role === 'BUSINESS' ? '/business/creators' : '/creator/events';
+  const dashboardPath = user.role === 'BUSINESS' ? '/business' : '/creator';
+
+  const submitSearch = (e: FormEvent) => {
+    e.preventDefault();
+    const q = search.trim();
+    navigate(q ? `${searchTarget}?q=${encodeURIComponent(q)}` : searchTarget);
+  };
 
   return (
     <NotificationsProvider>
@@ -40,14 +52,10 @@ export function AppShell() {
       {/* ── Sidebar (desktop) ── */}
       <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-line bg-surface lg:flex">
         <div className="flex h-16 items-center px-5">
-          <Logo className="h-7" />
+          <Logo className="h-7" to={dashboardPath} />
         </div>
         <SidebarNav items={items} />
-        <UserFooter
-          name={user.name}
-          sub={user.role === 'BUSINESS' ? t('roles.business') : t('roles.creator')}
-          avatar={user.avatar}
-        />
+        <SidebarCopyright />
       </aside>
 
       {/* ── Mobile drawer ── */}
@@ -60,7 +68,7 @@ export function AppShell() {
           />
           <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[82%] flex-col bg-surface shadow-xl">
             <div className="flex h-16 items-center justify-between px-5">
-              <Logo className="h-7" />
+              <Logo className="h-7" to={dashboardPath} />
               <button
                 onClick={() => setDrawerOpen(false)}
                 aria-label={t('nav.closeMenu')}
@@ -70,11 +78,7 @@ export function AppShell() {
               </button>
             </div>
             <SidebarNav items={items} onNavigate={closeDrawer} />
-            <UserFooter
-              name={user.name}
-              sub={user.role === 'BUSINESS' ? t('roles.business') : t('roles.creator')}
-              avatar={user.avatar}
-            />
+            <SidebarCopyright />
           </aside>
         </div>
       )}
@@ -89,16 +93,42 @@ export function AppShell() {
           >
             <Menu size={20} />
           </button>
-          <Logo className="h-6 lg:hidden" />
+          <Logo className="h-6 lg:hidden" to={dashboardPath} />
+
+          <form onSubmit={submitSearch} className="hidden max-w-md flex-1 lg:block">
+            <div className="relative">
+              <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft" />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('dashboard.searchPlaceholder')}
+                aria-label={t('dashboard.searchPlaceholder')}
+                className="h-10 w-full rounded-full border border-line bg-surface-dim/60 pl-9 pr-4 text-[13.5px] text-ink placeholder:text-ink-soft/70 focus:border-violet/40 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-violet/20"
+              />
+            </div>
+          </form>
 
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
+            <NavLink
+              to={messagesPath}
+              aria-label={t('nav.messages')}
+              className={({ isActive }) =>
+                cn(
+                  'flex h-9 w-9 items-center justify-center rounded-full text-ink-soft hover:bg-surface-dim hover:text-ink',
+                  isActive && 'bg-violet/10 text-violet-dark',
+                )
+              }
+            >
+              <MessageCircle size={18} strokeWidth={2} />
+            </NavLink>
             <NotificationsBell />
             <UserMenu name={user.name} avatar={user.avatar} role={user.role} onSignOut={logout} />
           </div>
         </header>
 
-        <main className="relative flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="relative flex-1 px-4 pb-20 pt-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-8">
           {/* Ambient editorial glow — same violet/orange mesh the public
               browse + detail pages carry, so the canvas reads as one site. */}
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[380px] overflow-hidden">
@@ -116,6 +146,8 @@ export function AppShell() {
           </div>
         </main>
       </div>
+
+      <BottomNav items={bottomNavFor(user.role)} />
     </div>
     </NotificationsProvider>
   );
@@ -151,24 +183,13 @@ function SidebarNav({ items, onNavigate }: { items: NavItem[]; onNavigate?: () =
   );
 }
 
-function UserFooter({
-  name,
-  sub,
-  avatar,
-}: {
-  name: string;
-  sub: string;
-  avatar: string | null;
-}) {
+function SidebarCopyright() {
+  const t = useT();
   return (
-    <div className="border-t border-line p-3">
-      <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-        <Avatar name={name} src={avatar} size="md" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold text-ink">{name}</p>
-          <p className="truncate text-[12px] text-ink-soft">{sub}</p>
-        </div>
-      </div>
+    <div className="border-t border-line px-4 py-3">
+      <p className="text-[11.5px] leading-relaxed text-ink-soft">
+        {t('common.copyright', { year: String(new Date().getFullYear()) })}
+      </p>
     </div>
   );
 }
@@ -204,10 +225,15 @@ function UserMenu({
     <div ref={ref} className="relative ml-1">
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label={name}
-        className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        aria-expanded={open}
+        className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 hover:bg-surface-dim focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       >
         <Avatar name={name} src={avatar} size="sm" />
+        <span className="max-w-[120px] truncate text-[13px] font-semibold text-ink">{name}</span>
+        <ChevronDown
+          size={15}
+          className={cn('flex-shrink-0 text-ink-soft transition-transform duration-150', open && 'rotate-180')}
+        />
       </button>
 
       {open && (

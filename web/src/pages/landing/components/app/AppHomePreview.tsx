@@ -186,7 +186,7 @@ export function AppHomePreview() {
                   category={c.category}
                   photo={CARD_PHOTOS[i]!}
                   isNew={i === 0}
-                  applyLabel={d.opportunityFeed.applyNow}
+                  applyLabel={p.applyLabel}
                 />
               ))}
             </div>

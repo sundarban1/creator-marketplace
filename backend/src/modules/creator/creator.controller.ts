@@ -6,6 +6,7 @@ import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
 import { env } from '../../config/env';
+import { peekOAuthStatePlatform } from '../../utils/jwt';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -61,8 +62,7 @@ export class CreatorController {
   }
 
   // ── Public marketplace (unauthenticated — mounted under /api/public) ────────
-  // Same shape as listCreators, but restricted to creators who opted into a
-  // public profile (publicOnly). No viewer, no analytics.
+  // Same shape as listCreators. No viewer, no analytics.
   async listPublicCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const page = parseInt(String(req.query.page ?? '1'), 10);
@@ -79,7 +79,7 @@ export class CreatorController {
       const sort = sortRaw === 'oldest' || sortRaw === 'followers' ? sortRaw : 'newest';
       const result = await creatorService.listCreators({
         page, limit, search, categories, location, platforms, priceMin, priceMax, sort,
-        publicOnly: true, lang: req.language,
+        lang: req.language,
       });
       success(res, result, getDict().creator.creatorsRetrieved);
     } catch (err) {
@@ -178,6 +178,15 @@ export class CreatorController {
     }
   }
 
+  async generateBio(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const bio = await creatorService.generateBio(req.user!.id);
+      success(res, { bio }, getDict().creator.bioGenerated);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async addPortfolioLink(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.addPortfolioLink(req.user!.id, req.body);
@@ -254,7 +263,8 @@ export class CreatorController {
 
   async getTiktokAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const url = await creatorService.getTiktokAuthorizeUrl(req.user!.id);
+      const clientPlatform = req.query.platform === 'web' ? 'web' : 'mobile';
+      const url = await creatorService.getTiktokAuthorizeUrl(req.user!.id, 'CREATOR', clientPlatform);
       success(res, { url }, getDict().creator.tiktokAuthorizeUrlGenerated);
     } catch (err) {
       next(err);
@@ -262,11 +272,15 @@ export class CreatorController {
   }
 
   // Public — TikTok's browser redirect lands here (no auth header), so unlike every
-  // other handler in this file, failures are reported back as a 302 to the app's
-  // custom URL scheme instead of a JSON error response.
+  // other handler in this file, failures are reported back as a 302 instead of a
+  // JSON error response — to the app's custom URL scheme for the mobile app, or to
+  // the web app's own callback page (opened in a popup, closes itself) for web.
   async tiktokCallback(req: Request, res: Response): Promise<void> {
     const { code, state, error } = req.query as { code?: string; state?: string; error?: string };
-    const redirectBase = `${env.APP_SCHEME}://tiktok-callback`;
+    const redirectBase =
+      state && peekOAuthStatePlatform(state) === 'web'
+        ? `${env.FRONTEND_URL.split(',')[0].trim()}/oauth/callback/tiktok`
+        : `${env.APP_SCHEME}://tiktok-callback`;
 
     if (error || !code || !state) {
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(error ?? 'missing_code')}`);

@@ -152,37 +152,30 @@ export const en = {
     quickActions: ['Applied Works', 'Work Requests', 'Discover', 'Businesses', 'Find Creators'],
     recommended: 'Recommended',
     seeAll: 'See all',
+    applyLabel: 'Apply Now',
     cards: [
       { title: 'Food Creator Needed', budget: 'NPR 20,000', brand: 'Momo Bar · Kathmandu', category: 'Food' },
       { title: 'Travel Creator Collab', budget: 'NPR 15,000', brand: 'Hotel Mustang · Pokhara', category: 'Travel' },
     ],
   },
 
-  opportunityFeed: {
-    eyebrow: 'Never miss a fit',
-    heading: 'Your next opportunity could be one click away.',
-    opportunitiesLabel: 'Opportunities',
-    viewAllOpportunities: 'View all opportunities',
-    applyNow: 'Apply Now',
-    opportunities: [
-      { badge: 'Paid', title: 'Food Creator Needed', location: 'Kathmandu', meta: 'NPR 20,000', sub: '3 Creators' },
-      { badge: 'Event', title: 'Grand Opening Collab', location: 'Pokhara', meta: 'Free food + experience', sub: 'Networking' },
-      { badge: 'Free', title: 'Free Creator Event', location: 'Kathmandu', meta: 'Free food · Experience', sub: 'Networking' },
-    ],
-    moreOpportunities: [
-      { title: 'Fashion Reel Creators', date: 'Deadline Sep 18', location: 'Kathmandu' },
-      { title: 'Cafe Menu Launch', date: 'Deadline Sep 22', location: 'Lalitpur' },
-      { title: 'Travel Vlog Partner', date: 'Deadline Sep 30', location: 'Pokhara' },
-    ],
-    eventsLabel: 'Find Creators for Your Event',
-    viewAllEvents: 'View all events',
-    featuredEvent: { dateDay: '12', dateMonth: 'Sep', title: 'Grand Opening Event Promotion', location: 'Kathmandu', sub: 'Content Creators & Influencers' },
-    // Positionally paired with MORE_EVENT_PHOTOS in OpportunityFeed.tsx —
-    // reorder one and the other has to follow.
-    moreEvents: [
-      { title: 'Restaurant Opening', date: 'Sep 20', location: 'Pokhara' },
-      { title: 'Salon Promotion', date: 'Sep 25', location: 'Kathmandu' },
-      { title: 'Opening Clothing Store', date: 'Oct 05', location: 'Lalitpur' },
+  events: {
+    eyebrow: 'Opportunities on Kolab',
+    heading: 'Paid collaborations and open events looking for creators.',
+    sub: 'Real campaigns and events posted by businesses across Nepal — from paid brand deals to open creator meetups.',
+    cta: 'Browse all events',
+    paidBadge: 'Paid',
+    freeBadge: 'Open',
+    modalTitle: 'Ready to explore more opportunities? ✨',
+    modalBody: 'Create an account to browse paid collaborations and open events on Kolab, and start applying to the ones that fit you.',
+    modalCta: 'Create an account',
+    modalLoginPrompt: 'Already have an account?',
+    modalLogin: 'Log in',
+    fallback: [
+      { badge: 'Paid', title: 'Food Creator Needed', business: 'Everest Cafe', location: 'Kathmandu', meta: 'NPR 20,000' },
+      { badge: 'Paid', title: 'Fashion Reel Creators', business: 'Urban Threads', location: 'Lalitpur', meta: 'NPR 15,000' },
+      { badge: 'Open', title: 'Grand Opening Collab', business: 'The Beauty Bar', location: 'Pokhara', meta: 'Free food + experience' },
+      { badge: 'Paid', title: 'Travel Vlog Partner', business: 'Himalaya Treks', location: 'Pokhara', meta: 'NPR 25,000' },
     ],
   },
 
@@ -205,6 +198,11 @@ export const en = {
       cta: 'Browse all creators',
       verified: 'Verified',
       followers: 'followers',
+      modalTitle: 'Ready to discover more creators? ✨',
+      modalBody: 'Create an account to explore talented creators on Kolab and find the perfect match for your next project.',
+      modalCta: 'Create an account',
+      modalLoginPrompt: 'Already have an account?',
+      modalLogin: 'Log in',
       fallback: [
         { name: 'Content Creators', category: 'Fashion & Lifestyle' },
         { name: 'Influencers', category: 'Food & Travel' },
@@ -218,6 +216,11 @@ export const en = {
       sub: 'From cafés to salons to startups — businesses across Nepal running campaigns and events with creators.',
       cta: 'Browse all businesses',
       verified: 'Verified',
+      modalTitle: 'Ready to discover more businesses? ✨',
+      modalBody: 'Create an account to explore businesses hiring creators on Kolab and find the perfect match for your next collaboration.',
+      modalCta: 'Create an account',
+      modalLoginPrompt: 'Already have an account?',
+      modalLogin: 'Log in',
       fallback: [
         { name: 'Restaurants & Cafés', category: 'Food & Beverage' },
         { name: 'Salons & Spas', category: 'Beauty & Wellness' },
@@ -283,6 +286,8 @@ export const en = {
   stories: {
     eyebrow: 'Success stories',
     heading: 'Success stories from our community.',
+    showMore: 'Show more',
+    showLess: 'Show less',
     items: [
       { quote: 'My first paid campaign came within two weeks of joining Kolab.', name: 'Priya Sharma', role: 'Fashion Creator, Kathmandu' },
       { quote: 'We hired three creators for our launch in a single afternoon.', name: 'Himalaya Brew', role: 'Brand' },
@@ -360,6 +365,24 @@ export const en = {
     faqEmpty: "No FAQs published yet — reach out below and we'll help directly.",
     contactHeading: 'Still need help?',
     contactSub: "Send us a message and we'll get back to you.",
+  },
+
+  aboutPage: {
+    title: 'About Kolab',
+    tagline: 'Bringing creators and businesses together.',
+    intro: 'Kolab is a platform built to make it easier for creators and businesses to discover opportunities, collaborate, and grow together.',
+    creatorsHeading: 'For Creators',
+    creatorsBody: 'Discover new opportunities, showcase your content, collaborate with businesses, and build your professional journey.',
+    businessesHeading: 'For Businesses',
+    businessesBody: 'Find the right creators, create opportunities, manage collaborations, and connect with new audiences.',
+    missionHeading: 'Our Mission',
+    missionBody: 'To make creator-business collaboration simpler, more accessible, and more meaningful across Nepal.',
+    nepalHeading: 'Built for Nepal 🇳🇵',
+    nepalBody: "We're building a community where creators and businesses can connect, collaborate, and create opportunities together.",
+    company: 'Kolab Technologies',
+    terms: 'Terms of Service',
+    privacy: 'Privacy Policy',
+    copyright: '© {year} Kolab',
   },
 
   appStoreBadges: {

@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AtSign, Lock, User } from 'lucide-react';
+import { AtSign, Building2, Lock, User } from 'lucide-react';
 import { useAppAuth } from './AppAuthContext';
 import { toIdentifier } from './identifier';
 import { useT } from '../i18n';
 import { paths } from '../routes';
+import { useAsync } from '../lib/useAsync';
+import { getPlatformFlags } from '../api/platformFlags';
 import { AuthShell } from './AuthShell';
 import { SocialAuth } from './SocialAuth';
 import { Button } from '../ui/Button';
@@ -19,19 +21,33 @@ export function SignupScreen() {
   const navigate = useNavigate();
   const { register } = useAppAuth();
 
-  const [role, setRole] = useState<Role>('CREATOR');
-  const [name, setName] = useState('');
+  // Fails open (both true) while loading/on a fetch error — the backend is
+  // the real gate (assertRegistrationEnabled); this is only proactive UX so a
+  // closed role isn't offered in the first place. See platformFlags.ts.
+  const flags = useAsync(() => getPlatformFlags(), []);
+  const creatorEnabled = flags.data?.creatorRegistrationEnabled ?? true;
+  const businessEnabled = flags.data?.businessRegistrationEnabled ?? true;
+  const bothClosed = !creatorEnabled && !businessEnabled;
+
+  const [selectedRole, setSelectedRole] = useState<Role>('CREATOR');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [referralCode, setReferralCode] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Derived, not synced via an effect: falls back off whichever side is
+  // closed once flags load, without a render round-trip.
+  const role: Role =
+    selectedRole === 'CREATOR' && !creatorEnabled && businessEnabled
+      ? 'BUSINESS'
+      : selectedRole === 'BUSINESS' && !businessEnabled && creatorEnabled
+        ? 'CREATOR'
+        : selectedRole;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
 
-    if (!name.trim()) return setError(t('auth.nameRequired'));
     const id = toIdentifier(identifier);
     if (!id) return setError(t('auth.identifierRequired'));
     if (!password) return setError(t('auth.passwordRequired'));
@@ -41,9 +57,6 @@ export function SignupScreen() {
       await register(id, {
         role,
         password,
-        fullName: role === 'CREATOR' ? name.trim() : undefined,
-        businessName: role === 'BUSINESS' ? name.trim() : undefined,
-        referralCode: referralCode.trim() || undefined,
       });
       navigate(paths.verify, { state: { identifier: id } });
     } catch (err) {
@@ -66,64 +79,86 @@ export function SignupScreen() {
         </>
       }
     >
-      <SocialAuth onError={setError} />
+      {bothClosed ? (
+        <Alert tone="warning">{t('auth.registrationClosedBoth')}</Alert>
+      ) : (
+        <>
+          <SocialAuth onError={setError} />
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        {error && <Alert tone="error">{error}</Alert>}
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            {error && <Alert tone="error">{error}</Alert>}
 
-        <div>
-          <p className="mb-2 text-[13px] font-semibold text-ink">{t('auth.chooseRoleTitle')}</p>
-          <SegmentedControl<Role>
-            ariaLabel={t('auth.chooseRoleTitle')}
-            variant="cards"
-            value={role}
-            onChange={setRole}
-            options={[
-              { value: 'CREATOR', label: t('roles.creator'), description: t('auth.creatorRoleBlurb') },
-              { value: 'BUSINESS', label: t('roles.business'), description: t('auth.businessRoleBlurb') },
-            ]}
-          />
-        </div>
+            {creatorEnabled && businessEnabled ? (
+              <div>
+                <p className="mb-2 text-[13px] font-semibold text-ink">{t('auth.chooseRoleTitle')}</p>
+                <SegmentedControl<Role>
+                  ariaLabel={t('auth.chooseRoleTitle')}
+                  variant="cards"
+                  value={role}
+                  onChange={setSelectedRole}
+                  options={[
+                    {
+                      value: 'CREATOR',
+                      label: t('roles.creator'),
+                      description: t('auth.creatorRoleBlurb'),
+                      icon: <User size={16} />,
+                    },
+                    {
+                      value: 'BUSINESS',
+                      label: t('roles.business'),
+                      description: t('auth.businessRoleBlurb'),
+                      icon: <Building2 size={16} />,
+                    },
+                  ]}
+                />
+              </div>
+            ) : (
+              <Alert tone="neutral">
+                {t('auth.registrationOnlyRole', {
+                  role: role === 'CREATOR' ? t('roles.creator') : t('roles.business'),
+                })}
+              </Alert>
+            )}
 
-        <TextField
-          label={role === 'BUSINESS' ? t('auth.businessName') : t('auth.fullName')}
-          icon={<User />}
-          autoComplete={role === 'BUSINESS' ? 'organization' : 'name'}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+            <TextField
+              label={t('auth.emailOrPhone')}
+              icon={<AtSign />}
+              placeholder={t('auth.emailOrPhonePlaceholder')}
+              autoComplete="username"
+              inputMode="email"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+            />
 
-        <TextField
-          label={t('auth.emailOrPhone')}
-          icon={<AtSign />}
-          autoComplete="username"
-          inputMode="email"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-        />
+            <TextField
+              label={t('auth.password')}
+              type="password"
+              icon={<Lock />}
+              placeholder={t('auth.passwordPlaceholder')}
+              autoComplete="new-password"
+              hint={t('auth.passwordHint')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-        <TextField
-          label={t('auth.password')}
-          type="password"
-          icon={<Lock />}
-          autoComplete="new-password"
-          hint={t('auth.passwordHint')}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+            <Button type="submit" size="lg" fullWidth loading={submitting}>
+              {t('auth.signUpCta')}
+            </Button>
 
-        <TextField
-          label={`${t('auth.referralCode')} (${t('common.optional')})`}
-          value={referralCode}
-          onChange={(e) => setReferralCode(e.target.value)}
-        />
-
-        <Button type="submit" size="lg" fullWidth loading={submitting}>
-          {t('auth.signUpCta')}
-        </Button>
-
-        <p className="text-center text-[12px] leading-relaxed text-ink-soft">{t('auth.termsNotice')}</p>
-      </form>
+            <p className="text-center text-[12px] leading-relaxed text-ink-soft">
+              {t('auth.termsNoticePrefix')}
+              <Link to="/terms" className="font-semibold text-brand hover:underline">
+                {t('auth.termsLinkLabel')}
+              </Link>
+              {t('auth.termsNoticeMiddle')}
+              <Link to="/privacy" className="font-semibold text-brand hover:underline">
+                {t('auth.privacyLinkLabel')}
+              </Link>
+              {t('auth.termsNoticeSuffix')}
+            </p>
+          </form>
+        </>
+      )}
     </AuthShell>
   );
 }

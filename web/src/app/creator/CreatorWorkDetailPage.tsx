@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarClock } from 'lucide-react';
+import { ArrowLeft, CalendarClock, MessageCircle } from 'lucide-react';
 import { useT } from '../i18n';
 import { useApplications } from './useApplications';
 import { rupees } from '../lib/format';
@@ -24,6 +24,9 @@ import { Textarea } from '../ui/Textarea';
 import { FileUpload } from '../ui/FileUpload';
 import { DeliverableStrip } from '../ui/DeliverableGallery';
 import { EngagementBadge } from './EngagementBadge';
+import { DisputeStatusCard } from './DisputeStatus';
+import { ReviewSection } from './ReviewSection';
+import { WorkStepper } from './WorkStepper';
 
 const CAN_UPLOAD = new Set(['IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE']);
 const CAN_REPORT = new Set([
@@ -141,13 +144,23 @@ export function CreatorWorkDetailPage() {
         ) : (
           <Avatar name={c?.business?.businessName ?? 'Business'} src={c?.business?.logoUrl} size="lg" />
         )}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="font-serif text-2xl font-medium tracking-tight text-ink">{c?.title ?? 'Campaign'}</h1>
           <p className="mt-0.5 text-[14px] text-ink-soft">{c?.business?.businessName}</p>
           <div className="mt-2">
             <EngagementBadge state={state} />
           </div>
         </div>
+        {/* Chat unlocks once escrow is funded — mirrors mobile's chatLocked condition. */}
+        {state !== 'PROPOSAL_PENDING' && state !== 'CREATOR_SELECTED' && (
+          <Link
+            to={`/creator/messages?campaign=${app.campaignId}`}
+            aria-label={t('chat.title')}
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-line-strong text-ink-soft hover:text-ink"
+          >
+            <MessageCircle size={17} />
+          </Link>
+        )}
       </div>
 
       {flash && (
@@ -160,6 +173,10 @@ export function CreatorWorkDetailPage() {
           {actionError}
         </Alert>
       )}
+
+      <div className="mt-6">
+        <WorkStepper state={state} />
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.7fr_1fr] lg:items-start">
         {/* Main column — deadline + status-driven action */}
@@ -310,12 +327,19 @@ export function CreatorWorkDetailPage() {
       );
     }
 
+    if (state === 'DISPUTED' && app!.dispute) {
+      return <DisputeStatusCard dispute={app!.dispute} viewerRole="CREATOR" />;
+    }
+
     if (state === 'PAYMENT_RELEASE_PENDING') return <Alert tone="progress">{t('workDetail.paymentOnTheWay')}</Alert>;
     if (state === 'PAYMENT_RELEASED' || state === 'COMPLETED') {
       return (
-        <Alert tone="success">
-          {t('workDetail.paid', { amount: app!.proposedRate.toLocaleString('en-IN') })}
-        </Alert>
+        <>
+          <Alert tone="success">
+            {t('workDetail.paid', { amount: app!.proposedRate.toLocaleString('en-IN') })}
+          </Alert>
+          <ReviewSection appId={app!.id} revieweeName={c?.business?.businessName ?? 'the business'} />
+        </>
       );
     }
 

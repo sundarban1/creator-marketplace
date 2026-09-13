@@ -1,4 +1,4 @@
-import { forwardRef, useId, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useId, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { cn } from './cn';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -7,10 +7,12 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   error?: string;
   /** Show a live character count against `maxLength` / a min. */
   showCount?: boolean;
+  /** Right-aligned adornment next to the label (e.g. an "AI regenerate" button). */
+  labelAccessory?: ReactNode;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { label, hint, error, showCount, className, id, value, maxLength, rows = 4, ...rest },
+  { label, hint, error, showCount, labelAccessory, className, id, value, maxLength, rows = 4, ...rest },
   ref,
 ) {
   const autoId = useId();
@@ -19,9 +21,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
 
   return (
     <div className="w-full">
-      <label htmlFor={fieldId} className="mb-1.5 block text-[13px] font-semibold text-ink">
-        {label}
-      </label>
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <label htmlFor={fieldId} className="text-[13px] font-semibold text-ink">
+          {label}
+        </label>
+        {labelAccessory}
+      </div>
       <textarea
         ref={ref}
         id={fieldId}

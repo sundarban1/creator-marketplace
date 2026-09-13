@@ -48,6 +48,10 @@ interface AppAuthValue {
 
   /** Adopt a freshly-authenticated user (e.g. after social role-completion). */
   adoptSession: (user: AuthUser) => void;
+  /** Flips `isOnboarded` locally once onboarding's final step completes. */
+  markOnboarded: () => void;
+  /** Patches fields on the in-memory user (e.g. `name` right after onboarding sets it). */
+  updateUser: (patch: Partial<AuthUser>) => void;
 }
 
 const AppAuthContext = createContext<AppAuthValue | null>(null);
@@ -132,6 +136,17 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
     [adoptSession],
   );
 
+  const updateUser = useCallback((patch: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      writeStoredUser(next);
+      return next;
+    });
+  }, []);
+
+  const markOnboarded = useCallback(() => updateUser({ isOnboarded: true }), [updateUser]);
+
   const logout = useCallback(async () => {
     await authApi.logout();
     clearSession();
@@ -156,8 +171,10 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
       appleAuth,
       logout,
       adoptSession,
+      markOnboarded,
+      updateUser,
     }),
-    [user, status, loginWithPassword, verifyOtp, googleAuth, appleAuth, logout, adoptSession],
+    [user, status, loginWithPassword, verifyOtp, googleAuth, appleAuth, logout, adoptSession, markOnboarded, updateUser],
   );
 
   return <AppAuthContext.Provider value={value}>{children}</AppAuthContext.Provider>;

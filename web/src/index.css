@@ -50,6 +50,17 @@
   --color-danger-soft: #FEE2E2;
   --color-warning: #B45309;
   --color-warning-soft: #FEF3C7;
+
+  /* Creator dashboard only (web/src/app/creator/dash-ui/*) — a purple→pink
+     SaaS-dashboard accent distinct from the site's violet→orange editorial
+     gradient, used for the dashboard hero/wallet-balance gradients and stat
+     icon tiles. Not referenced anywhere outside dash-ui + the creator pages
+     that use it, so the rest of the site (business app, public marketing
+     pages) is unaffected. */
+  --color-dash-pink: #EC4899;
+  --color-dash-pink-dark: #DB2777;
+  --color-dash-pink-soft: #FCE7F3;
+  --color-dash-bg: #F7F7FB;
 }
 
 /* The landing footer (rendered on the public marketplace pages) has its own
@@ -170,6 +181,14 @@ body {
   50% { transform: translateY(-10px); }
 }
 .float-slow { animation: float-slow 5s ease-in-out infinite; }
+
+/* AI "generating an event" overlay — each rotating status line fades/rises in
+   as it swaps, keyed by index so React remounts it and restarts the animation. */
+@keyframes step-fade-in {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.step-fade { animation: step-fade-in 0.3s ease-out; }
 
 .scrollbar-hide {
   scrollbar-width: none;

@@ -6,17 +6,17 @@ import { perCreatorBudget, rupees } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
 import { Avatar } from '../ui/Avatar';
 import { cn } from '../ui/cn';
-import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import type { EventCard as EventData } from '../api/publicMarketplace';
 
 /**
  * Shared visual layout for an event's detail page — a hero card (image, title,
- * budget, key facts) followed by the About / Goals / Platforms / Requirements /
+ * budget, key facts) followed by the About / Requirements /
  * Deliverables / About-the-business sections. Carries the marketplace's
  * editorial language (Fraunces serif headings, violet/orange accents). The
- * `cta` slot sits right under the hero; each page (public vs creator) supplies
- * its own action there and wraps this with its own SEO + back link.
+ * `cta` slot renders centered at the very end, after every section; each page
+ * (public vs creator) supplies its own action there and wraps this with its
+ * own SEO + back link.
  */
 export function EventDetailBody({
   event,
@@ -34,7 +34,6 @@ export function EventDetailBody({
   const budget = perCreatorBudget(event);
   const count = event.creatorsNeeded ?? 1;
   const deadline = fmtDeadline(event.deadline);
-  const platforms = [...new Set(event.platforms)];
   const totalUpTo = event.budgetInputType === 'TOTAL' ? event.budgetMax : event.budgetMax * count;
   const isOpenEvent = event.campaignType === 'OPEN_EVENT';
   const perks = (event.benefits ?? []).filter(Boolean);
@@ -164,42 +163,9 @@ export function EventDetailBody({
         </div>
       </div>
 
-      {cta && <div className="mt-6">{cta}</div>}
-
       <Section title={t('public.eventAboutHeading')}>
         <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink-soft">{event.description}</p>
       </Section>
-
-      {event.goals && event.goals.length > 0 && (
-        <Section title={t('public.goalsHeading')}>
-          <ul className="flex flex-wrap gap-2">
-            {event.goals.map((g) => (
-              <li
-                key={g}
-                className="rounded-full border border-line bg-surface-dim px-3 py-1 text-[13px] text-ink-soft"
-              >
-                {g}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {platforms.length > 0 && (
-        <Section title={t('public.platformsLabel')}>
-          <ul className="flex flex-wrap gap-2">
-            {platforms.map((p) => (
-              <li
-                key={p}
-                className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink"
-              >
-                <PlatformIcon platform={p} size={15} />
-                {platformMeta(p).label}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
 
       {event.requirements && event.requirements.length > 0 && (
         <Section title={t('public.requirementsHeading')}>
@@ -232,27 +198,54 @@ export function EventDetailBody({
       )}
 
       <Section title={t('public.aboutBusinessHeading')}>
-        <div className="flex items-start gap-3 rounded-xl border border-line bg-surface p-4">
-          <Avatar name={event.business.businessName} src={event.business.logoUrl} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-semibold text-ink">{event.business.businessName}</p>
-            {event.business.description && (
-              <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{event.business.description}</p>
+        {event.business.id ? (
+          <Link
+            to={`/businesses/${encodeURIComponent(event.business.id)}`}
+            className={cn(
+              'flex items-start gap-3 rounded-xl border border-line bg-surface p-4',
+              'transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-violet/30 hover:shadow-[0_10px_28px_-16px_rgba(123,92,245,0.4)]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet/40',
             )}
-            {event.business.website && (
-              <a
-                href={event.business.website}
-                target="_blank"
-                rel="noreferrer nofollow"
-                className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-violet hover:underline"
-              >
-                {event.business.website.replace(/^https?:\/\//, '')}
-                <ExternalLink size={12} />
-              </a>
-            )}
+          >
+            <Avatar name={event.business.businessName} src={event.business.logoUrl} size="md" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold text-ink">{event.business.businessName}</p>
+              {event.business.description && (
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{event.business.description}</p>
+              )}
+              {event.business.website && (
+                <span className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-violet">
+                  {event.business.website.replace(/^https?:\/\//, '')}
+                  <ExternalLink size={12} />
+                </span>
+              )}
+            </div>
+          </Link>
+        ) : (
+          <div className="flex items-start gap-3 rounded-xl border border-line bg-surface p-4">
+            <Avatar name={event.business.businessName} src={event.business.logoUrl} size="md" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold text-ink">{event.business.businessName}</p>
+              {event.business.description && (
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{event.business.description}</p>
+              )}
+              {event.business.website && (
+                <a
+                  href={event.business.website}
+                  target="_blank"
+                  rel="noreferrer nofollow"
+                  className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-violet hover:underline"
+                >
+                  {event.business.website.replace(/^https?:\/\//, '')}
+                  <ExternalLink size={12} />
+                </a>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </Section>
+
+      {cta && <div className="mt-10 flex justify-center">{cta}</div>}
     </>
   );
 }

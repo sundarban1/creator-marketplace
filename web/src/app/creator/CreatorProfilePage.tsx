@@ -1,22 +1,37 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { BadgeCheck, ExternalLink, Camera, Plus, Trash2 } from 'lucide-react';
+import { BadgeCheck, ExternalLink, Camera, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { compactNumber } from '../lib/format';
+import { requestYoutubeAccessToken } from '../lib/googleAuth';
+import { requestFacebookAccessToken } from '../lib/facebookAuth';
+import { openOAuthPopup } from '../lib/oauthPopup';
 import {
   fetchCreatorFullProfile,
   updateCreatorProfile,
   uploadAvatar,
   fetchSocialAccounts,
-  addSocialAccount,
   deleteSocialAccount,
-  addPortfolioLink,
-  deletePortfolioLink,
+  connectYoutubeAccount,
+  getTiktokAuthorizeUrl,
+  getFacebookPages,
+  connectFacebookPage,
+  connectInstagramAccount,
+  generateBio,
+  fetchPortfolioItems,
+  uploadPortfolioMedia,
+  createPortfolioItem,
+  deletePortfolioItem,
   type CreatorFullProfile,
+  type CreatorSocialAccount,
+  type FacebookPageOption,
 } from '../api/creator';
-import { PageHeader } from '../ui/PageHeader';
-import { Card, CardHeader } from '../ui/Card';
+import { fetchCategories, type Category } from '../api/catalog';
+import { makeCategoryLookup } from '../public/categoryLookup';
+import { CategoryPill } from '../public/CategoryPill';
+import { DashPageHeader } from './dash-ui/DashPageHeader';
+import { DashCard, DashCardHeader } from './dash-ui/DashCard';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/Alert';
 import { Avatar } from '../ui/Avatar';
@@ -26,13 +41,18 @@ import { Skeleton } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { Modal } from '../ui/Modal';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
+import { LocationAutocomplete } from '../public/LocationAutocomplete';
+import { cn } from '../ui/cn';
 
-const PLATFORMS = ['instagram', 'tiktok', 'youtube', 'facebook'];
+const CONNECTABLE_PLATFORMS = ['tiktok', 'youtube', 'instagram', 'facebook'] as const;
+const MAX_NICHE = 5;
 
 export function CreatorProfilePage() {
   const t = useT();
   const profile = useAsync((s) => fetchCreatorFullProfile(s), []);
   const socials = useAsync((s) => fetchSocialAccounts(s), []);
+  const portfolioItems = useAsync((s) => fetchPortfolioItems(s), []);
+  const niches = useAsync((s) => fetchCategories(s, 'BOTH'), []);
 
   const [editing, setEditing] = useState(false);
   const [flash, setFlash] = useState('');
@@ -40,14 +60,29 @@ export function CreatorProfilePage() {
   const [error, setError] = useState('');
   const [socialModal, setSocialModal] = useState(false);
   const [portfolioModal, setPortfolioModal] = useState(false);
+  const [nicheModal, setNicheModal] = useState(false);
+  const [bioGenerating, setBioGenerating] = useState(false);
 
   const p = profile.data;
+  const categoryMeta = useMemo(() => makeCategoryLookup(niches.data ?? []), [niches.data]);
 
   // edit form
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
   const [website, setWebsite] = useState('');
+
+  const regenerateBio = async () => {
+    setBioGenerating(true);
+    setError('');
+    try {
+      setBio(await generateBio());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('profile.bioGenerateFailed'));
+    } finally {
+      setBioGenerating(false);
+    }
+  };
 
   const openEdit = () => {
     if (!p) return;
@@ -90,19 +125,10 @@ export function CreatorProfilePage() {
     }
   };
 
-  const togglePrivacy = async (key: 'showPublicProfile' | 'hideSocialLinks', value: boolean) => {
-    try {
-      await updateCreatorProfile({ [key]: value });
-      profile.reload();
-    } catch {
-      /* revert visually on reload */
-    }
-  };
-
   if (profile.loading && !p) {
     return (
       <>
-        <PageHeader eyebrow={t('profile.eyebrow')} title={t('profile.title')} />
+        <DashPageHeader title={t('profile.title')} />
         <Skeleton className="h-40 w-full rounded-2xl" />
       </>
     );
@@ -120,89 +146,102 @@ export function CreatorProfilePage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow={t('profile.eyebrow')}
-        title={t('profile.title')}
-        description={t('profile.subtitle')}
-        actions={
-          p.username || p.id ? (
-            <Link to={`/creators/${p.username ?? p.id}`}>
-              <Button variant="secondary" size="sm">
-                {t('profile.viewPublic')}
-              </Button>
-            </Link>
-          ) : undefined
-        }
-      />
-
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
 
-      {/* Identity card */}
-      <Card>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="relative w-fit">
-            <span className="inline-flex rounded-full bg-gradient-to-br from-violet/25 to-brand-orange/20 p-[3px]">
-              <span className="rounded-full bg-surface p-0.5">
-                <Avatar name={p.fullName ?? 'Creator'} src={p.avatarUrl} size="xl" className="h-20 w-20" />
-              </span>
-            </span>
-            <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-sm hover:text-ink">
-              <Camera size={14} />
-              <input
-                type="file"
-                accept="image/jpeg,image/png"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onAvatar(f);
-                  e.target.value = '';
-                }}
-              />
-            </label>
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h2 className="font-serif text-2xl font-medium tracking-tight text-ink">{p.fullName ?? '—'}</h2>
-              {p.fullyVerified && <BadgeCheck size={17} className="text-brand" />}
-            </div>
-            {p.username && <p className="text-[13px] text-ink-soft">@{p.username}</p>}
-            {p.location && <p className="mt-0.5 text-[13px] text-ink-soft">{p.location}</p>}
-            <p className="mt-3 whitespace-pre-line text-[14px] leading-relaxed text-ink">
-              {p.bio || <span className="text-ink-soft">{t('profile.noBio')}</span>}
-            </p>
-            {p.website && (
-              <a
-                href={p.website}
-                target="_blank"
-                rel="noreferrer nofollow"
-                className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline"
-              >
-                {p.website.replace(/^https?:\/\//, '')}
-                <ExternalLink size={11} />
-              </a>
-            )}
-            {p.categories.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {p.categories.map((c) => (
-                  <span key={c} className="rounded-full bg-surface-dim px-2 py-0.5 text-[11px] font-medium text-ink-soft">
-                    {c}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <Button variant="secondary" size="sm" onClick={openEdit}>
-            {t('profile.edit')}
-          </Button>
+      {/* Identity — gradient cover band + overlapping avatar */}
+      <div className="overflow-hidden rounded-3xl bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] ring-1 ring-black/[0.04]">
+        <div className="relative h-28 bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark sm:h-32">
+          <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-dash-pink/30 blur-3xl" />
+          {(p.username || p.id) && (
+            <Link to={`/creators/${p.username ?? p.id}`} className="absolute right-4 top-4">
+              <Button variant="secondary" size="sm" className="border-0 bg-white/90 text-ink hover:bg-white">
+                {t('profile.viewPublic')}
+              </Button>
+            </Link>
+          )}
         </div>
-      </Card>
+        <div className="px-5 pb-5 sm:px-7 sm:pb-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="-mt-10 flex flex-col gap-3 sm:-mt-5 sm:flex-row sm:items-end">
+              <div className="relative w-fit">
+                <span className="inline-flex rounded-full bg-white p-1 shadow-sm">
+                  <Avatar name={p.fullName ?? 'Creator'} src={p.avatarUrl} size="xl" className="h-20 w-20 sm:h-24 sm:w-24" />
+                </span>
+                <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-ink-soft shadow-sm ring-1 ring-black/[0.06] hover:text-ink">
+                  <Camera size={14} />
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onAvatar(f);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div className="min-w-0 pb-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[20px] font-bold tracking-tight text-ink">{p.fullName ?? '—'}</h2>
+                  {p.fullyVerified && <BadgeCheck size={17} className="text-brand" />}
+                </div>
+                {p.username && <p className="text-[13px] text-ink-soft">@{p.username}</p>}
+                {p.location && <p className="mt-0.5 text-[13px] text-ink-soft">{p.location}</p>}
+              </div>
+            </div>
+
+            <Button variant="secondary" size="sm" onClick={openEdit} className="flex-shrink-0">
+              {t('profile.edit')}
+            </Button>
+          </div>
+
+          <p className="mt-4 whitespace-pre-line text-[14px] leading-relaxed text-ink">
+            {p.bio || <span className="text-ink-soft">{t('profile.noBio')}</span>}
+          </p>
+          {p.website && (
+            <a
+              href={p.website}
+              target="_blank"
+              rel="noreferrer nofollow"
+              className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline"
+            >
+              {p.website.replace(/^https?:\/\//, '')}
+              <ExternalLink size={11} />
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* My niche */}
+      <DashCard className="mt-6">
+        <DashCardHeader
+          title={t('profile.nicheHeading')}
+          action={
+            <button
+              onClick={() => setNicheModal(true)}
+              className="text-[13px] font-semibold text-violet-dark hover:underline"
+            >
+              {t('profile.change')}
+            </button>
+          }
+        />
+        {p.categories.length === 0 ? (
+          <p className="text-[13px] text-ink-soft">{t('profile.noNiche')}</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {p.categories.map((c) => (
+              <CategoryPill key={c} label={c} meta={categoryMeta(c)} />
+            ))}
+          </div>
+        )}
+      </DashCard>
 
       {/* Social accounts */}
-      <Card className="mt-6">
-        <CardHeader
+      <DashCard className="mt-6">
+        <DashCardHeader
           title={t('profile.socialHeading')}
           action={
             <button
@@ -221,34 +260,32 @@ export function CreatorProfilePage() {
         ) : (
           <ul className="space-y-2">
             {socials.data!.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
+              <li key={s.id} className="flex items-center gap-3 rounded-xl bg-black/[0.02] px-3 py-2.5">
                 <PlatformIcon platform={s.platform} size={18} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-semibold text-ink">{platformMeta(s.platform).label}</p>
                   <p className="truncate text-[12px] text-ink-soft">{compactNumber(s.followers)} {t('profile.followers')}</p>
                 </div>
-                {!s.connectedViaOAuth && (
-                  <button
-                    onClick={async () => {
-                      if (!window.confirm(t('profile.confirmRemove'))) return;
-                      await deleteSocialAccount(s.id);
-                      socials.reload();
-                    }}
-                    className="rounded-lg p-1.5 text-ink-soft hover:text-danger"
-                    aria-label={t('profile.remove')}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(t('profile.confirmRemove'))) return;
+                    await deleteSocialAccount(s.id);
+                    socials.reload();
+                  }}
+                  className="rounded-lg p-1.5 text-ink-soft hover:text-danger"
+                  aria-label={t('profile.remove')}
+                >
+                  <Trash2 size={14} />
+                </button>
               </li>
             ))}
           </ul>
         )}
-      </Card>
+      </DashCard>
 
       {/* Portfolio */}
-      <Card className="mt-6">
-        <CardHeader
+      <DashCard className="mt-6">
+        <DashCardHeader
           title={t('profile.portfolioHeading')}
           action={
             <button
@@ -260,20 +297,42 @@ export function CreatorProfilePage() {
             </button>
           }
         />
-        {p.portfolioLinks.length === 0 ? (
+        {portfolioItems.loading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : (portfolioItems.data ?? []).length === 0 ? (
           <p className="text-[13px] text-ink-soft">—</p>
         ) : (
           <ul className="space-y-2">
-            {p.portfolioLinks.map((l) => (
-              <li key={l.id} className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
-                <a href={l.url} target="_blank" rel="noreferrer nofollow" className="min-w-0 flex-1 truncate text-[13px] font-medium text-violet-dark hover:underline">
-                  {l.label}
-                </a>
+            {portfolioItems.data!.map((item) => (
+              <li key={item.id} className="flex items-center gap-3 rounded-xl bg-black/[0.02] px-3 py-2.5">
+                {item.mediaUrl ? (
+                  <img src={item.mediaUrl} alt="" className="h-11 w-11 flex-shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-black/[0.04] text-ink-soft">
+                    <Link2 size={16} />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  {item.description && (
+                    <p className="line-clamp-2 text-[13px] text-ink">{item.description}</p>
+                  )}
+                  {item.externalUrl && (
+                    <a
+                      href={item.externalUrl}
+                      target="_blank"
+                      rel="noreferrer nofollow"
+                      className="inline-flex max-w-full items-center gap-1 truncate text-[12.5px] font-medium text-violet-dark hover:underline"
+                    >
+                      {item.externalUrl.replace(/^https?:\/\//, '')}
+                      <ExternalLink size={10} className="flex-shrink-0" />
+                    </a>
+                  )}
+                </div>
                 <button
                   onClick={async () => {
                     if (!window.confirm(t('profile.confirmRemove'))) return;
-                    await deletePortfolioLink(l.id);
-                    profile.reload();
+                    await deletePortfolioItem(item.id);
+                    portfolioItems.reload();
                   }}
                   className="rounded-lg p-1.5 text-ink-soft hover:text-danger"
                   aria-label={t('profile.remove')}
@@ -284,25 +343,7 @@ export function CreatorProfilePage() {
             ))}
           </ul>
         )}
-      </Card>
-
-      {/* Privacy */}
-      <Card className="mt-6">
-        <CardHeader title={t('profile.privacyHeading')} />
-        <Toggle
-          label={t('profile.showPublic')}
-          hint={t('profile.showPublicHint')}
-          checked={p.showPublicProfile}
-          onChange={(v) => togglePrivacy('showPublicProfile', v)}
-        />
-        <div className="mt-3 border-t border-line pt-3">
-          <Toggle
-            label={t('profile.hideSocials')}
-            checked={p.hideSocialLinks}
-            onChange={(v) => togglePrivacy('hideSocialLinks', v)}
-          />
-        </div>
-      </Card>
+      </DashCard>
 
       {/* Edit modal */}
       <Modal open={editing} onClose={() => setEditing(false)} title={t('profile.edit')} size="lg">
@@ -317,8 +358,22 @@ export function CreatorProfilePage() {
             placeholder={t('profile.bioPlaceholder')}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
+            labelAccessory={
+              <button
+                type="button"
+                onClick={regenerateBio}
+                disabled={bioGenerating}
+                className="inline-flex flex-shrink-0 items-center gap-1 text-[12.5px] font-semibold text-violet-dark hover:underline disabled:opacity-50"
+              >
+                <Sparkles size={12} />
+                {bioGenerating ? t('profile.regenerating') : t('profile.regenerate')}
+              </button>
+            }
           />
-          <TextField label={t('profile.location')} value={location} onChange={(e) => setLocation(e.target.value)} />
+          <div className="w-full">
+            <label className="mb-1.5 block text-[13px] font-semibold text-ink">{t('profile.location')}</label>
+            <LocationAutocomplete value={location} onChange={setLocation} placeholder={t('profile.location')} />
+          </div>
           <TextField
             label={t('profile.website')}
             type="url"
@@ -337,19 +392,28 @@ export function CreatorProfilePage() {
         </form>
       </Modal>
 
-      <AddSocialModal
+      <ConnectSocialModal
         open={socialModal}
+        accounts={socials.data ?? []}
         onClose={() => setSocialModal(false)}
-        onDone={() => {
-          setSocialModal(false);
-          socials.reload();
-        }}
+        onChange={() => socials.reload()}
       />
       <AddPortfolioModal
         open={portfolioModal}
         onClose={() => setPortfolioModal(false)}
         onDone={() => {
           setPortfolioModal(false);
+          portfolioItems.reload();
+        }}
+      />
+      <NicheModal
+        open={nicheModal}
+        current={p.categories}
+        categories={niches.data ?? []}
+        loading={niches.loading}
+        onClose={() => setNicheModal(false)}
+        onDone={() => {
+          setNicheModal(false);
           profile.reload();
         }}
       />
@@ -357,91 +421,379 @@ export function CreatorProfilePage() {
   );
 }
 
-function Toggle({
-  label,
-  hint,
-  checked,
+type ConnectablePlatform = (typeof CONNECTABLE_PLATFORMS)[number];
+type PagePickerMode = 'facebook' | 'instagram';
+
+/**
+ * Mirrors mobile's settings.tsx renderSocialAccounts() — one row per platform
+ * (icon + name + follower count/hint on the left, Connect/disconnect on the
+ * right) instead of the old manual URL+followers entry form. Connecting pulls
+ * the profile link and live follower/subscriber count straight from each
+ * platform via OAuth; see lib/googleAuth.ts, lib/facebookAuth.ts and
+ * lib/oauthPopup.ts for the three underlying flows (Google token client,
+ * Facebook JS SDK, and a backend-mediated popup redirect for TikTok).
+ */
+function ConnectSocialModal({
+  open,
+  accounts,
+  onClose,
   onChange,
 }: {
-  label: string;
-  hint?: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
+  open: boolean;
+  accounts: CreatorSocialAccount[];
+  onClose: () => void;
+  onChange: () => void;
 }) {
+  const t = useT();
+  const [connecting, setConnecting] = useState<ConnectablePlatform | null>(null);
+  const [error, setError] = useState('');
+  const [pagePicker, setPagePicker] = useState<{
+    mode: PagePickerMode;
+    accessToken: string;
+    pages: FacebookPageOption[];
+  } | null>(null);
+
+  const byPlatform = new Map(accounts.map((a) => [a.platform, a]));
+
+  const finishFacebook = async (accessToken: string, pageId: string) => {
+    setConnecting('facebook');
+    setError('');
+    try {
+      await connectFacebookPage(accessToken, pageId);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setConnecting(null);
+      setPagePicker(null);
+    }
+  };
+
+  const finishInstagram = async (accessToken: string, pageId: string) => {
+    setConnecting('instagram');
+    setError('');
+    try {
+      await connectInstagramAccount(accessToken, pageId);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setConnecting(null);
+      setPagePicker(null);
+    }
+  };
+
+  const connectYoutube = async () => {
+    setConnecting('youtube');
+    setError('');
+    try {
+      const accessToken = await requestYoutubeAccessToken();
+      await connectYoutubeAccount(accessToken);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  const connectTiktok = async () => {
+    setConnecting('tiktok');
+    setError('');
+    try {
+      const url = await getTiktokAuthorizeUrl();
+      const result = await openOAuthPopup(url, 'tiktok');
+      if (result.success) onChange();
+      else setError(result.error ?? t('common.somethingWrong'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  // Facebook only exposes follower counts for Pages (never personal profiles), and an
+  // Instagram Business account's stats are only reachable via the Facebook Page it's
+  // linked to — so both buttons share this one Facebook login + Page-listing step, and
+  // just differ in which pages qualify and which fields get saved.
+  const connectViaFacebook = async (mode: PagePickerMode) => {
+    setConnecting(mode);
+    setError('');
+    try {
+      const accessToken = await requestFacebookAccessToken(['pages_show_list', 'pages_read_engagement', 'instagram_basic']);
+      const pages = await getFacebookPages(accessToken);
+      const qualifying = mode === 'instagram' ? pages.filter((p) => p.hasInstagram) : pages;
+      if (qualifying.length === 0) {
+        setError(mode === 'instagram' ? t('profile.noInstagramPages') : t('profile.noFacebookPages'));
+        setConnecting(null);
+        return;
+      }
+      if (qualifying.length === 1) {
+        if (mode === 'facebook') await finishFacebook(accessToken, qualifying[0].id);
+        else await finishInstagram(accessToken, qualifying[0].id);
+        return;
+      }
+      setPagePicker({ mode, accessToken, pages: qualifying });
+      setConnecting(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+      setConnecting(null);
+    }
+  };
+
+  const disconnect = async (id: string) => {
+    if (!window.confirm(t('profile.confirmRemove'))) return;
+    await deleteSocialAccount(id);
+    onChange();
+  };
+
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-[14px] font-medium text-ink">{label}</p>
-        {hint && <p className="mt-0.5 text-[12px] text-ink-soft">{hint}</p>}
+    <Modal open={open} onClose={onClose} title={t('profile.connectAccounts')}>
+      <div className="space-y-4">
+        {error && <Alert tone="error">{error}</Alert>}
+        <ul className="space-y-2">
+          {CONNECTABLE_PLATFORMS.map((id) => {
+            const acct = byPlatform.get(id);
+            const meta = platformMeta(id);
+            const isConnecting = connecting === id;
+            return (
+              <li key={id} className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
+                <span
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: `${meta.color}18` }}
+                >
+                  <PlatformIcon platform={id} size={17} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-ink">{meta.label}</p>
+                  {acct ? (
+                    <p className="truncate text-[12px] text-ink-soft">
+                      {compactNumber(acct.followers)} {t('profile.followers')}
+                    </p>
+                  ) : (
+                    <p className="truncate text-[12px] text-ink-soft">{t('profile.connectHint')}</p>
+                  )}
+                </div>
+                {acct ? (
+                  <button
+                    onClick={() => disconnect(acct.id)}
+                    className="flex-shrink-0 rounded-lg p-1.5 text-ink-soft hover:text-danger"
+                    aria-label={t('profile.remove')}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="flex-shrink-0"
+                    loading={isConnecting}
+                    disabled={connecting !== null && !isConnecting}
+                    onClick={() => {
+                      if (id === 'youtube') void connectYoutube();
+                      else if (id === 'tiktok') void connectTiktok();
+                      else void connectViaFacebook(id);
+                    }}
+                  >
+                    {t('profile.connectBtn')}
+                  </Button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <div className="flex justify-end">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+        </div>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative h-6 w-10 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-violet' : 'bg-line-strong'}`}
+
+      <Modal
+        open={!!pagePicker}
+        onClose={() => setPagePicker(null)}
+        title={pagePicker?.mode === 'instagram' ? t('profile.pickInstagramPage') : t('profile.pickFacebookPage')}
       >
-        <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'left-[18px]' : 'left-0.5'}`}
-        />
-      </button>
-    </div>
+        <ul className="divide-y divide-line">
+          {pagePicker?.pages.map((page) => (
+            <li key={page.id}>
+              <button
+                type="button"
+                disabled={connecting !== null}
+                onClick={() => {
+                  if (!pagePicker) return;
+                  if (pagePicker.mode === 'facebook') void finishFacebook(pagePicker.accessToken, page.id);
+                  else void finishInstagram(pagePicker.accessToken, page.id);
+                }}
+                className="flex w-full items-center justify-between py-3 text-left disabled:opacity-50"
+              >
+                <span className="text-[13px] font-semibold text-ink">
+                  {pagePicker.mode === 'instagram' ? `@${page.instagramUsername ?? page.name}` : page.name}
+                </span>
+                {pagePicker.mode === 'facebook' && (
+                  <span className="text-[12px] text-ink-soft">
+                    {compactNumber(page.fanCount)} {t('profile.followers')}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Modal>
+    </Modal>
   );
 }
 
-function AddSocialModal({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+type PortfolioTab = 'photo' | 'link';
+
+/** Photo OR link + description — same shape as the mobile portfolio-item form. */
+function AddPortfolioModal({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
   const t = useT();
-  const [platform, setPlatform] = useState('instagram');
-  const [url, setUrl] = useState('');
-  const [followers, setFollowers] = useState('');
+  const [tab, setTab] = useState<PortfolioTab>('photo');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [externalUrl, setExternalUrl] = useState('');
+  const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Reset the form each time the modal is (re)opened for a fresh add — this
+  // component stays mounted across opens, so the reset happens during render
+  // (React's documented pattern for "adjust state on prop change") rather
+  // than in an effect, which would cause an extra render pass.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setTab('photo');
+      setMediaUrl('');
+      setExternalUrl('');
+      setDescription('');
+      setError('');
+    }
+  }
+
+  const onPickFile = async (file: File) => {
+    setUploading(true);
+    setError('');
+    try {
+      const { imageUrl } = await uploadPortfolioMedia(file);
+      setMediaUrl(imageUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!mediaUrl && !externalUrl.trim()) {
+      setError(t('profile.portfolioPhotoOrLinkRequired'));
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await createPortfolioItem({
+        mediaUrl: mediaUrl || undefined,
+        mediaType: mediaUrl ? 'IMAGE' : undefined,
+        externalUrl: externalUrl.trim() || undefined,
+        description: description.trim() || undefined,
+      });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <Modal open={open} onClose={onClose} title={t('profile.addSocial')}>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError('');
-          try {
-            await addSocialAccount({ platform, profileUrl: url.trim(), followers: Number(followers) || 0 });
-            onDone();
-          } catch (err) {
-            setError(err instanceof Error ? err.message : t('common.somethingWrong'));
-          } finally {
-            setBusy(false);
-          }
-        }}
-        className="space-y-4"
-      >
+    <Modal open={open} onClose={onClose} title={t('profile.addPortfolio')}>
+      <form onSubmit={submit} className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
-        <div>
-          <p className="mb-1.5 text-[13px] font-semibold text-ink">{t('profile.platform')}</p>
-          <div className="flex flex-wrap gap-2">
-            {PLATFORMS.map((pl) => (
-              <button
-                key={pl}
-                type="button"
-                onClick={() => setPlatform(pl)}
-                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-medium ${
-                  platform === pl ? 'border-violet/40 bg-violet/[0.06] text-violet-dark' : 'border-line-strong text-ink-soft'
-                }`}
-              >
-                <PlatformIcon platform={pl} size={14} />
-                {platformMeta(pl).label}
-              </button>
-            ))}
-          </div>
+
+        <div className="flex gap-2">
+          {(['photo', 'link'] as const).map((tb) => (
+            <button
+              key={tb}
+              type="button"
+              onClick={() => setTab(tb)}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-medium',
+                tab === tb ? 'border-violet/40 bg-violet/[0.06] text-violet-dark' : 'border-line-strong text-ink-soft',
+              )}
+            >
+              {tb === 'photo' ? <ImageIcon size={14} /> : <Link2 size={14} />}
+              {tb === 'photo' ? t('profile.portfolioPhoto') : t('profile.portfolioLink')}
+            </button>
+          ))}
         </div>
-        <TextField label={t('profile.profileUrl')} type="url" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} />
-        <TextField label={t('profile.followers')} type="number" inputMode="numeric" value={followers} onChange={(e) => setFollowers(e.target.value)} />
+
+        {tab === 'photo' ? (
+          <div>
+            {mediaUrl ? (
+              <div className="relative w-fit">
+                <img src={mediaUrl} alt="" className="h-32 w-32 rounded-xl object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setMediaUrl('')}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-sm hover:text-danger"
+                  aria-label={t('profile.remove')}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ) : (
+              <label className="flex h-32 w-32 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong text-ink-soft hover:border-violet/40 hover:text-violet-dark">
+                {uploading ? (
+                  <span className="text-[12px]">{t('profile.uploading')}</span>
+                ) : (
+                  <>
+                    <ImageIcon size={20} />
+                    <span className="text-[12px]">{t('profile.portfolioMediaHint')}</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) onPickFile(f);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            )}
+          </div>
+        ) : (
+          <TextField
+            label={t('profile.portfolioLink')}
+            type="url"
+            placeholder={t('profile.portfolioLinkPlaceholder')}
+            value={externalUrl}
+            onChange={(e) => setExternalUrl(e.target.value)}
+          />
+        )}
+
+        <Textarea
+          label={t('profile.portfolioDescription')}
+          rows={3}
+          maxLength={1000}
+          placeholder={t('profile.portfolioDescriptionPlaceholder')}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" loading={busy}>
-            {t('profile.addSocial')}
+          <Button type="submit" loading={busy} disabled={uploading}>
+            {t('profile.addPortfolio')}
           </Button>
         </div>
       </form>
@@ -449,43 +801,108 @@ function AddSocialModal({ open, onClose, onDone }: { open: boolean; onClose: () 
   );
 }
 
-function AddPortfolioModal({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+function NicheModal({
+  open,
+  current,
+  categories,
+  loading,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  current: string[];
+  categories: Category[];
+  loading: boolean;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const t = useT();
-  const [label, setLabel] = useState('');
-  const [url, setUrl] = useState('');
+  const [selected, setSelected] = useState<string[]>(current);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const categoryMeta = useMemo(() => makeCategoryLookup(categories), [categories]);
+
+  // Same render-time reset pattern as AddPortfolioModal above.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setSelected(current);
+      setError('');
+    }
+  }
+
+  const toggle = (name: string) => {
+    setSelected((prev) =>
+      prev.includes(name) ? prev.filter((c) => c !== name) : prev.length >= MAX_NICHE ? prev : [...prev, name],
+    );
+  };
+
+  const save = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await updateCreatorProfile({ categories: selected });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // "Other" is a catch-all — keep it pinned last in the picker like everywhere else.
+  const sorted = [...categories].sort((a, b) =>
+    a.name === 'Other' ? 1 : b.name === 'Other' ? -1 : 0,
+  );
 
   return (
-    <Modal open={open} onClose={onClose} title={t('profile.addPortfolio')}>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError('');
-          try {
-            await addPortfolioLink({ label: label.trim(), url: url.trim() });
-            onDone();
-          } catch (err) {
-            setError(err instanceof Error ? err.message : t('common.somethingWrong'));
-          } finally {
-            setBusy(false);
-          }
-        }}
-        className="space-y-4"
-      >
+    <Modal open={open} onClose={onClose} title={t('profile.selectNiche')}>
+      <div className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
-        <TextField label={t('profile.linkLabel')} value={label} onChange={(e) => setLabel(e.target.value)} />
-        <TextField label={t('profile.linkUrl')} type="url" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} />
-        <div className="flex justify-end gap-2">
+        <p className="text-[13px] text-ink-soft">
+          {t('profile.selectUpTo', { max: MAX_NICHE })} · {selected.length}/{MAX_NICHE}
+        </p>
+        {loading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {sorted.map((c) => {
+              const isSelected = selected.includes(c.name);
+              const disabled = !isSelected && selected.length >= MAX_NICHE;
+              const { Icon, color } = categoryMeta(c.name);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => toggle(c.name)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-colors',
+                    disabled && !isSelected ? 'cursor-not-allowed opacity-40' : '',
+                  )}
+                  style={
+                    isSelected
+                      ? { backgroundColor: `${color}14`, borderColor: `${color}55`, color }
+                      : { borderColor: 'var(--color-line-strong)' }
+                  }
+                >
+                  <Icon size={13} style={{ color: isSelected ? color : undefined }} className={isSelected ? '' : 'text-ink-soft'} />
+                  <span className={isSelected ? '' : 'text-ink-soft'}>{c.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" loading={busy}>
-            {t('profile.addPortfolio')}
+          <Button type="button" onClick={save} loading={busy}>
+            {t('profile.save')}
           </Button>
         </div>
-      </form>
+      </div>
     </Modal>
   );
 }

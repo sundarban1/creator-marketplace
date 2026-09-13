@@ -105,6 +105,7 @@ export interface CampaignDto {
   completionReason: string | null;
   createdAt: string;
   business?: {
+    id?: string;
     businessName: string | null;
     logoUrl: string | null;
     website?: string | null;
@@ -237,6 +238,7 @@ export interface ApplicationDto {
     location?: string | null;
     categories?: string[];
     socialLinks?: unknown;
+    followers?: number;
   } | null;
 }
 
@@ -287,7 +289,7 @@ type RawCampaign = {
   completionType: string | null;
   completionReason: string | null;
   createdAt: Date;
-  business?: { businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
+  business?: { id?: string; businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
   _count?: { applications: number };
   // Applications received inside the trending window (see
   // CampaignRepository.countRecentApplications) — attached by the list
@@ -466,6 +468,7 @@ type RawApplication = {
     location?: string | null;
     categories?: string[];
     socialLinks?: Prisma.JsonValue;
+    socialAccounts?: { followers: number }[];
   } | null;
 };
 
@@ -566,7 +569,13 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
         : (a.campaign.paidAt ?? null),
     };
   }
-  if (a.creator != null) dto.creator = a.creator;
+  if (a.creator != null) {
+    const { socialAccounts, ...creator } = a.creator;
+    dto.creator = {
+      ...creator,
+      ...(socialAccounts ? { followers: socialAccounts.reduce((sum, s) => sum + s.followers, 0) } : {}),
+    };
+  }
   return dto;
 }
 

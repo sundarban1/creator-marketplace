@@ -1,10 +1,11 @@
 import { randomUUID, randomBytes, createHash } from 'crypto';
+import OpenAI from 'openai';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
 import { logger } from '../../config/logger';
 import { env } from '../../config/env';
 import { signOAuthState, verifyOAuthState } from '../../utils/jwt';
-import { toCreatorProfileDto, toPublicCreatorDto, toPrivateCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
+import { toCreatorProfileDto, toPublicCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
 import { getCachedSettings } from '../../utils/settingsCache';
@@ -313,6 +314,63 @@ function cityTier(candidateCity: string | null | undefined, priorityCity: string
   return candidateCity ? 1 : 2;
 }
 
+const BIO_MODEL = 'gpt-5-mini';
+const BIO_REQUEST_TIMEOUT_MS = 12_000;
+
+interface CreatorBioFacts {
+  fullName: string | null;
+  categories: string[];
+  location: string | null;
+  platforms: string[];
+}
+
+// Template fallback — used when OPENAI_API_KEY isn't configured (local/dev)
+// or the API call fails, so the "regenerate" button always returns something
+// usable instead of an error.
+function fallbackCreatorBio(facts: CreatorBioFacts): string {
+  const name = facts.fullName?.trim() || 'I';
+  const niche = facts.categories.length ? facts.categories.slice(0, 3).join(', ').toLowerCase() : 'content creation';
+  const where = facts.location ? ` based in ${facts.location}` : '';
+  const platforms = facts.platforms.length ? ` on ${facts.platforms.join(' and ')}` : '';
+  return `${name}${where}, creating ${niche} content${platforms}. Open to collaborating with brands that fit my style.`;
+}
+
+async function generateCreatorBio(facts: CreatorBioFacts): Promise<string> {
+  if (!env.OPENAI_API_KEY) return fallbackCreatorBio(facts);
+
+  const lines: string[] = [];
+  if (facts.fullName) lines.push(`Name: ${facts.fullName}`);
+  if (facts.categories.length) lines.push(`Content niches: ${facts.categories.join(', ')}`);
+  if (facts.location) lines.push(`Based in: ${facts.location}`);
+  if (facts.platforms.length) lines.push(`Active on: ${facts.platforms.join(', ')}`);
+
+  try {
+    const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: BIO_REQUEST_TIMEOUT_MS, maxRetries: 1 });
+    const response = await client.chat.completions.create({
+      model: BIO_MODEL,
+      max_completion_tokens: 220,
+      reasoning_effort: 'minimal',
+      verbosity: 'low',
+      messages: [
+        {
+          role: 'system',
+          content: 'You write short, first-person creator bios for a Nepal-based content-creator marketplace profile. Write 2-3 sentences, under 500 characters total, warm and confident but not cheesy, in plain English, no hashtags, no emoji, no surrounding quotation marks. Use only the facts given — never invent follower counts, brand names or achievements that were not stated.',
+        },
+        {
+          role: 'user',
+          content: lines.length ? lines.join('\n') : 'No profile details are available yet — write a short, generic, friendly content-creator bio.',
+        },
+      ],
+    });
+    const text = response.choices[0]?.message?.content?.trim().replace(/^["']|["']$/g, '') ?? '';
+    if (text.length < 10) throw new Error('AI bio was too short');
+    return text.slice(0, 500);
+  } catch (err) {
+    logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to templated bio');
+    return fallbackCreatorBio(facts);
+  }
+}
+
 export class CreatorService {
   private repo: CreatorRepository;
   private businessRepo: BusinessRepository;
@@ -343,13 +401,12 @@ export class CreatorService {
     priceMax?: number;
     excludeId?: string;
     sort?: 'newest' | 'oldest' | 'followers';
-    publicOnly?: boolean;
     lang?: string;
   }) {
-    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, sort, publicOnly, lang = 'en' } = params;
+    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, sort, lang = 'en' } = params;
     const { creators: raw, total } = await this.repo.findMany({
       page, limit: Math.min(limit, 20),
-      search, categories, location, platforms, priceMin, priceMax, excludeId, sort, publicOnly,
+      search, categories, location, platforms, priceMin, priceMax, excludeId, sort,
     });
     const dtos = raw.map(toCreatorListItemDto);
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
@@ -422,10 +479,7 @@ export class CreatorService {
   async getCreatorPublicProfile(creatorId: string, lang = 'en', viewerUserId?: string) {
     const profile = await this.repo.findByIdPublic(creatorId);
     if (!profile) throw new AppError(getDict().creator.creatorNotFound, HttpStatus.NOT_FOUND);
-    // showPublicProfile only hides the profile from other viewers — a creator
-    // who reaches their own id here (e.g. via search) should still see it in full.
     const isOwnProfile = viewerUserId != null && profile.userId === viewerUserId;
-    if (!profile.showPublicProfile && !isOwnProfile) return toPrivateCreatorDto(profile);
 
     // Fire-and-forget — only authenticated brands reach this route at all
     // (business.routes.ts gates the whole file on authorize('BUSINESS')), so
@@ -573,6 +627,22 @@ export class CreatorService {
     return toCreatorProfileDto(updated);
   }
 
+  // "Regenerate" button on the web/mobile profile editor — writes a short bio
+  // from facts already on the profile (name, niches, location, connected
+  // platforms) rather than the freeform prompt campaign-ai.service.ts's
+  // generateDraft takes, since there's no brief to parse here.
+  async generateBio(userId: string): Promise<string> {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
+    const dto = toCreatorProfileDto(profile);
+    return generateCreatorBio({
+      fullName: dto.fullName,
+      categories: dto.categories,
+      location: dto.location,
+      platforms: Object.keys(dto.socialLinks ?? {}),
+    });
+  }
+
   async uploadCitizenship(userId: string, docUrl: string) {
     return toCreatorProfileDto(await this.repo.updateCitizenship(userId, docUrl));
   }
@@ -708,7 +778,11 @@ export class CreatorService {
   // happen here on the backend rather than on-device. The mobile app opens this URL in
   // a browser; TikTok redirects back to our /callback route (below), which then 302s
   // into the app via the custom scheme once the exchange + save is done.
-  async getTiktokAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): Promise<string> {
+  async getTiktokAuthorizeUrl(
+    userId: string,
+    role: 'CREATOR' | 'BUSINESS' = 'CREATOR',
+    clientPlatform: 'web' | 'mobile' = 'mobile',
+  ): Promise<string> {
     if (!env.TIKTOK_CLIENT_KEY || !env.TIKTOK_REDIRECT_URI) {
       throw new AppError(getDict().creator.tiktokLoginNotConfigured, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -717,7 +791,7 @@ export class CreatorService {
     // redirect_uri below always points at this same backend route regardless of
     // role — TikTok's Developer Portal only has one registered redirect URI, so the
     // business flow reuses it and the callback below tells the two apart via `role`.
-    const state = await signOAuthState({ userId, codeVerifier, role });
+    const state = await signOAuthState({ userId, codeVerifier, role, clientPlatform });
 
     const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
     url.searchParams.set('client_key', env.TIKTOK_CLIENT_KEY);

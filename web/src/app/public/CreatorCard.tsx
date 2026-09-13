@@ -80,17 +80,12 @@ export function CreatorCard({ creator, categoryMeta }: Props) {
       )}
 
       {creator.categories.length > 0 && (
-        <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-hidden">
+        <div className="mt-3 flex flex-wrap gap-1.5">
           <CategoryPill
             label={creator.categories[0]}
             meta={categoryMeta(creator.categories[0])}
-            className="min-w-0"
+            moreCount={creator.categories.length - 1}
           />
-          {creator.categories.length > 1 && (
-            <span className="inline-flex flex-shrink-0 items-center rounded-full border border-line px-2.5 py-1 text-[11px] font-semibold text-ink-soft">
-              +{creator.categories.length - 1}
-            </span>
-          )}
         </div>
       )}
 

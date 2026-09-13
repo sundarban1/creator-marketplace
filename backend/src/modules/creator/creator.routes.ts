@@ -116,6 +116,20 @@ router.get('/peers/:id', ctrl.getPeerCreatorProfile.bind(ctrl));
  *                   $ref: '#/components/schemas/CreatorProfile'
  */
 router.put('/profile', validate(updateCreatorProfileSchema), ctrl.updateProfile.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/creator/generate-bio:
+ *   post:
+ *     tags: [Creator]
+ *     summary: AI-generate a short bio from the creator's existing profile facts (name, categories, location, connected platforms)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Generated bio text
+ */
+router.post('/generate-bio', ctrl.generateBio.bind(ctrl));
 router.post('/avatar', uploadImage.single('avatar'), ctrl.uploadAvatar.bind(ctrl));
 router.post('/cover', uploadImage.single('cover'), ctrl.uploadCoverImage.bind(ctrl));
 router.post('/citizenship', uploadImage.single('document'), ctrl.uploadCitizenship.bind(ctrl));

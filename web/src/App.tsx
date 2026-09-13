@@ -33,7 +33,9 @@ function named(
 const PrivacyPage = named(() => import('./pages/landing/LegalDocPage'), 'PrivacyPage');
 const TermsPage = named(() => import('./pages/landing/LegalDocPage'), 'TermsPage');
 const SupportPage = named(() => import('./pages/landing/SupportPage'), 'SupportPage');
+const AboutPage = named(() => import('./pages/landing/AboutPage'), 'AboutPage');
 const NotFoundPage = named(() => import('./pages/landing/NotFoundPage'), 'NotFoundPage');
+const OAuthCallbackPage = named(() => import('./app/oauth/OAuthCallbackPage'), 'OAuthCallbackPage');
 const CreatorMarketplaceNepalPage = named(() => import('./pages/landing/content/CreatorMarketplaceNepalPage'), 'CreatorMarketplaceNepalPage');
 const ContentCreatorsPage = named(() => import('./pages/landing/content/ContentCreatorsPage'), 'ContentCreatorsPage');
 const BrandsPage = named(() => import('./pages/landing/content/BrandsPage'), 'BrandsPage');
@@ -117,6 +119,7 @@ export default function App() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/support" element={<SupportPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/creator-marketplace-nepal" element={<CreatorMarketplaceNepalPage />} />
           <Route path="/content-creators" element={<ContentCreatorsPage />} />
           <Route path="/brands" element={<BrandsPage />} />
@@ -138,6 +141,10 @@ export default function App() {
           {CITY_PAGES.map((cfg) => (
             <Route key={cfg.slug} path={`/${cfg.slug}`} element={<NichePage config={cfg} />} />
           ))}
+          {/* Transient popup page for OAuth providers that redirect through our
+              backend (TikTok) — see lib/oauthPopup.ts. No auth/i18n needed. */}
+          <Route path="/oauth/callback/:platform" element={<OAuthCallbackPage />} />
+
           {/* The admin dashboard lives under /admin/* so the marketplace web
               app can own the clean top-level paths (/login, /creators, /events).
               Admin components/logic/permissions are unchanged — only the route

@@ -31,19 +31,18 @@ export const SECTION_IDS = {
 // `id` links scroll to a section on the landing page; `to` links navigate to a
 // standalone route (react-router) instead.
 export const NAV_LINKS: {
-  key: 'discover' | 'services' | 'opportunities' | 'contact' | 'creators' | 'business' | 'events';
+  key: 'discover' | 'services' | 'opportunities' | 'contact' | 'creators' | 'business';
   id?: string;
   to?: string;
   offset?: number;
 }[] = [
   { key: 'discover', id: SECTION_IDS.possibilities },
-  { key: 'opportunities', id: SECTION_IDS.opportunities },
   { key: 'services', id: SECTION_IDS.categories },
+  { key: 'opportunities', id: SECTION_IDS.opportunities },
   // Creators / Business scroll to a preview section on the landing page (like
   // Discover/Services); each section links out to its full "browse all" page.
   { key: 'creators', id: SECTION_IDS.creators },
   { key: 'business', id: SECTION_IDS.businesses },
-  { key: 'events', to: '/events' },
   // The footer's hairline top border sits right at #contact's own top edge,
   // which otherwise scrolls to right under the fixed LandingNav header (its
   // ~65px scrolled height) and lands past it, directly on the "Get in touch"

@@ -43,7 +43,12 @@ export function Stories({ stories }: StoriesProps) {
         </motion.div>
 
         <div className="mt-14">
-          <AnimatedTestimonials testimonials={testimonials} autoplay />
+          <AnimatedTestimonials
+            testimonials={testimonials}
+            autoplay
+            showMoreLabel={d.stories.showMore}
+            showLessLabel={d.stories.showLess}
+          />
         </div>
       </div>
     </section>

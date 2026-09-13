@@ -1590,7 +1590,7 @@ export class CampaignService {
   // directly to it, so this just records a fresh transaction_uuid and points
   // the client at our own checkout page (getEsewaCheckoutForm), which renders
   // that form. Nothing is marked paid here — see confirmEsewaPayment.
-  async initiateEsewaPayment(appId: string, userId: string): Promise<{ paymentUrl: string }> {
+  async initiateEsewaPayment(appId: string, userId: string, platform?: 'web' | 'mobile'): Promise<{ paymentUrl: string }> {
     if (!env.ESEWA_RETURN_BASE_URL) throw new AppError(getDict().esewa.notConfigured, HttpStatus.SERVICE_UNAVAILABLE);
 
     await this.validatePendingPayment(appId, userId);
@@ -1598,13 +1598,17 @@ export class CampaignService {
     const transactionUuid = randomUUID();
     await this.repo.setEsewaTransactionUuid(appId, transactionUuid);
 
-    return { paymentUrl: `${env.ESEWA_RETURN_BASE_URL}/api/payments/esewa/checkout/${appId}` };
+    // Carried through to the checkout page below (a separate request, with no
+    // other memory of who initiated) so it can build success/failure_url that
+    // redirect back to the right place for web vs. the mobile app's deep link.
+    const platformQuery = platform === 'web' ? '?platform=web' : '';
+    return { paymentUrl: `${env.ESEWA_RETURN_BASE_URL}/api/payments/esewa/checkout/${appId}${platformQuery}` };
   }
 
   // Renders the auto-submitting form the checkout page opens — re-validates
   // the application is still pending so a stale/replayed checkout link can't
   // resurrect a transaction_uuid after payment already completed elsewhere.
-  async getEsewaCheckoutForm(appId: string): Promise<EsewaFormFields> {
+  async getEsewaCheckoutForm(appId: string, platform?: 'web' | 'mobile'): Promise<EsewaFormFields> {
     const application = await this.repo.findApplicationById(appId);
     if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
@@ -1618,6 +1622,7 @@ export class CampaignService {
       appId,
       transactionUuid: application.esewaTransactionUuid,
       totalAmountNpr: await applicationTotalNpr(this.adminRepo, application.proposedRate),
+      platform,
     });
   }
 
@@ -1625,13 +1630,13 @@ export class CampaignService {
   // verifies the signature, matches it to our stored transaction_uuid, then
   // re-checks with eSewa's own status API (never trusting the redirect alone,
   // same principle as confirmKhaltiPayment's lookup call) before finalizing.
-  async confirmEsewaPayment(appId: string, rawDataParam: string): Promise<void> {
+  async confirmEsewaPayment(appId: string, rawDataParam: string): Promise<{ campaignId: string }> {
     const application = await this.repo.findApplicationById(appId);
     if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
       logger.info({ event: LogEvent.PAYMENT_CALLBACK_ALREADY_PROCESSED, appId, method: 'esewa' }, 'eSewa callback: payment already processed');
-      return;
+      return { campaignId: application.campaignId };
     }
 
     const decoded = decodeEsewaResponse(rawDataParam);
@@ -1665,6 +1670,8 @@ export class CampaignService {
       proposedRate:   application.proposedRate,
       method:         'esewa',
     });
+
+    return { campaignId: application.campaignId };
   }
 
   // Job/Application Activity tab — either participant (the applying creator

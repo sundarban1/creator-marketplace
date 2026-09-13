@@ -43,7 +43,6 @@ export function BusinessEventsPage() {
   return (
     <>
       <PageHeader
-        eyebrow={t('biz.eyebrowEvents')}
         title={t('biz.eventsTitle')}
         description={t('biz.eventsSubtitle')}
         actions={

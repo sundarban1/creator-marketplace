@@ -1,14 +1,16 @@
+import type { ReactNode } from 'react';
 import { cn } from './cn';
 
 interface Option<T extends string> {
   value: T;
   label: string;
   description?: string;
+  icon?: ReactNode;
 }
 
 /**
  * Accessible segmented control. Two layouts: `pill` (compact inline toggle) and
- * `cards` (stacked options with a description — used for role selection).
+ * `cards` (side-by-side options with a description — used for role selection).
  */
 export function SegmentedControl<T extends string>({
   options,
@@ -25,7 +27,7 @@ export function SegmentedControl<T extends string>({
 }) {
   if (variant === 'cards') {
     return (
-      <div role="radiogroup" aria-label={ariaLabel} className="grid gap-2.5">
+      <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-2 gap-6">
         {options.map((opt) => {
           const active = opt.value === value;
           return (
@@ -36,23 +38,32 @@ export function SegmentedControl<T extends string>({
               aria-checked={active}
               onClick={() => onChange(opt.value)}
               className={cn(
-                'rounded-xl border p-3.5 text-left transition-colors',
+                'relative rounded-xl border p-3.5 text-left transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
                 active ? 'border-brand bg-brand/[0.05]' : 'border-line-strong hover:border-line-strong hover:bg-surface-dim',
               )}
             >
-              <span className="flex items-center justify-between">
-                <span className="text-[15px] font-semibold text-ink">{opt.label}</span>
+              <span
+                className={cn(
+                  'absolute right-3 top-3 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border',
+                  active ? 'border-brand' : 'border-line-strong',
+                )}
+                aria-hidden
+              >
+                {active && <span className="h-2 w-2 rounded-full bg-brand" />}
+              </span>
+              {opt.icon && (
                 <span
                   className={cn(
-                    'flex h-4 w-4 items-center justify-center rounded-full border',
-                    active ? 'border-brand' : 'border-line-strong',
+                    'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full',
+                    active ? 'bg-brand text-white' : 'bg-surface-dim text-ink-soft',
                   )}
                   aria-hidden
                 >
-                  {active && <span className="h-2 w-2 rounded-full bg-brand" />}
+                  {opt.icon}
                 </span>
-              </span>
+              )}
+              <span className="mt-2 block pr-4 text-[15px] font-semibold text-ink">{opt.label}</span>
               {opt.description && (
                 <span className="mt-0.5 block text-[13px] text-ink-soft">{opt.description}</span>
               )}

@@ -21,7 +21,7 @@ export function BusinessCard({ business, categoryMeta }: Props) {
     <Link
       to={`/businesses/${encodeURIComponent(business.id)}`}
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface p-5',
+        'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface p-5',
         'transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30',
         'hover:shadow-[0_1px_3px_rgba(20,17,16,0.06),0_18px_34px_-16px_rgba(123,92,245,0.28)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet/40',
@@ -71,7 +71,7 @@ export function BusinessCard({ business, categoryMeta }: Props) {
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between gap-2 pt-3">
+      <div className="mt-auto flex items-center justify-between gap-2 pt-3">
         <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-soft">
           <Megaphone size={14} className="flex-shrink-0" />
           {t('public.campaignsCount', { count: business._count.campaigns })}
