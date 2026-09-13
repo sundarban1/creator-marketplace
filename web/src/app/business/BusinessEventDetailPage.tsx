@@ -288,7 +288,7 @@ export function BusinessEventDetailPage() {
         )}
       </Card>
 
-      <Card className="mt-6">
+      <Card accent className="mt-6">
         <CardHeader
           title={t('public.eventAboutHeading')}
           action={
@@ -300,12 +300,18 @@ export function BusinessEventDetailPage() {
         />
 
         {c.featureImageUrl && (
-          <img src={c.featureImageUrl} alt="" className="mb-4 h-48 w-full rounded-xl object-cover" />
+          <img
+            src={c.featureImageUrl}
+            alt=""
+            className="mb-5 h-56 w-full rounded-xl object-cover shadow-[0_16px_32px_-20px_rgba(23,20,33,0.35)]"
+          />
         )}
 
-        <p className="whitespace-pre-line text-[14px] leading-relaxed text-ink-soft">{c.description}</p>
+        <p className="whitespace-pre-line font-serif text-[15px] leading-[1.75] text-ink-soft first-letter:mr-0.5 first-letter:font-serif first-letter:text-[28px] first-letter:font-medium first-letter:text-ink">
+          {c.description}
+        </p>
 
-        <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-4 sm:grid-cols-3">
+        <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-line/70 pt-5 sm:grid-cols-3">
           <DetailField label={t('public.category')} value={c.category} />
           <DetailField label={t('biz.statusLabel')} value={c.status} />
           {isPaid ? (
@@ -485,8 +491,8 @@ function ReportIssueModal({
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[11px] font-medium uppercase tracking-wide text-ink-soft">{label}</dt>
-      <dd className="mt-0.5 text-[14px] text-ink">{value}</dd>
+      <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-soft/80">{label}</dt>
+      <dd className="mt-1 text-[14px] font-medium text-ink">{value}</dd>
     </div>
   );
 }
