@@ -80,6 +80,13 @@ export const createCampaignSchema = z.object({
   paymentType:    z.string().default('Fixed Fee'),
   creatorsNeeded: z.number().int().positive().default(1),
   isFeatured:     z.boolean().optional().default(false),
+  // Kolab Rewards — Business Credits earmarked toward this campaign's budget
+  // at creation time. Purely a bookkeeping figure (see Campaign.creditsApplied
+  // comment in schema.prisma): it does not reduce what's actually charged per
+  // accepted creator, since payment happens per-Application via Khalti/eSewa/
+  // manual, not as one campaign-wide charge. Re-validated server-side against
+  // the business's live BusinessCreditsAccount balance regardless of what's sent here.
+  creditsToApply: z.number().min(0).optional(),
   campaignType: z.enum(['PAID_CAMPAIGN', 'OPEN_EVENT']).default('PAID_CAMPAIGN'),
   capacity:     z.number().int().positive().optional(),
   eventDate:    z.string().datetime().optional(),

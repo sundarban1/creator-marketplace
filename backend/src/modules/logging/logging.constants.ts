@@ -49,6 +49,7 @@ export const AuditAction = {
   WITHDRAWAL_PROCESSING:    'withdrawal.processing',
   WITHDRAWAL_PAID:          'withdrawal.paid',
   WITHDRAWAL_REJECTED:      'withdrawal.rejected',
+  WITHDRAWAL_CANCELLED:     'withdrawal.cancelled',
   DISPUTE_RESOLVED:         'dispute.resolved',
 } as const;
 

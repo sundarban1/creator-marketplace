@@ -111,6 +111,13 @@ export function createWithdrawal(
   ).then((r) => r.data);
 }
 
+export function cancelWithdrawal(id: string): Promise<WalletSummary> {
+  return apiRequest<{ withdrawal: Withdrawal } & WalletSummary>(
+    'POST',
+    `/api/creator/wallet/withdrawals/${encodeURIComponent(id)}/cancel`,
+  ).then((r) => r.data);
+}
+
 // ── Applications / work ──────────────────────────────────────────────────────
 
 export interface DeliverableFile {
@@ -360,6 +367,23 @@ export function fetchNotifications(limit = 10, signal?: AbortSignal): Promise<Ap
     signal,
     params: { limit },
   }).then((r) => r.data);
+}
+
+export interface NotificationsPageResult {
+  items: AppNotification[];
+  total: number;
+}
+
+/** Newest-first, server-paginated — backs the "View all" notifications screen. */
+export function fetchNotificationsPage(
+  page: number,
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<NotificationsPageResult> {
+  return apiRequest<AppNotification[]>('GET', '/api/notifications', undefined, {
+    signal,
+    params: { page, limit },
+  }).then((r) => ({ items: r.data, total: r.pagination?.total ?? r.data.length }));
 }
 
 export function markNotificationRead(id: string): Promise<void> {

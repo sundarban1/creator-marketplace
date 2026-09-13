@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -17,11 +17,15 @@ import {
   type ApiPayoutMethod,
   type TransactionKind,
 } from '@/services/wallet';
+import { pointsService, type ApiPointsLedgerRow, type PointsTransactionType } from '@/services/rewards';
 import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { Skeleton } from '@/components/Skeleton';
+import { TabSlider } from '@/components/TabSlider';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+
+type WalletTab = 'withdraw' | 'deals';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -44,8 +48,14 @@ const STATUS_COLOR: Record<string, string> = {
   PAID:       '#059669',
 };
 
+const POINTS_TYPE_META: Record<PointsTransactionType, { icon: keyof typeof FontAwesome5.glyphMap; labelKey: string }> = {
+  PROMO_REDEMPTION_DEBIT: { icon: 'tag',       labelKey: 'rewards.txPromoRedemption' },
+  ADJUSTMENT:             { icon: 'sliders-h', labelKey: 'rewards.txAdjustment' },
+};
+
 const EMPTY_TRANSACTIONS: ApiWalletTransaction[] = [];
 const EMPTY_PAYOUT_METHODS: ApiPayoutMethod[] = [];
+const EMPTY_POINTS_HISTORY: ApiPointsLedgerRow[] = [];
 
 export default function WalletScreen() {
   const C = useAppColors();
@@ -56,6 +66,8 @@ export default function WalletScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [detailTx, setDetailTx] = useState<ApiWalletTransaction | null>(null);
   const [proofPreviewUrl, setProofPreviewUrl] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<WalletTab>('withdraw');
 
   // ── Wallet is financial data: cached only to render instantly and dedupe
   // requests, never trusted stale. staleTime 0 + refetchOnMount 'always' means
@@ -107,10 +119,38 @@ export default function WalletScreen() {
     }));
   }
 
+  function handleCancelWithdrawal(id: string) {
+    Alert.alert(
+      t('wallet.cancelWithdrawalConfirmTitle'),
+      t('wallet.cancelWithdrawalConfirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('wallet.cancelWithdrawalConfirmButton'),
+          style: 'destructive',
+          onPress: async () => {
+            setCancellingId(id);
+            try {
+              const { withdrawal, ...nextSummary } = await walletService.cancelWithdrawal(id);
+              queryClient.setQueryData(['wallet', 'summary'], nextSummary);
+              await queryClient.invalidateQueries({ queryKey: ['wallet', 'transactions'] });
+              toast.success(t('wallet.withdrawalCancelled'));
+              void withdrawal;
+            } catch {
+              toast.error(t('wallet.cancelWithdrawalFailed'));
+            } finally {
+              setCancellingId(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
-        <PageHeader title={t('wallet.headerTitle')} backFallback="/(creator)/" />
+        <PageHeader title={t('rewards.headerTitle')} backFallback="/(creator)/" />
 
         {loading || !summary ? (
           <View style={styles.content}>
@@ -135,58 +175,72 @@ export default function WalletScreen() {
             {/* Balance card */}
             <View style={[styles.balanceCard, { backgroundColor: C.brinjal1 }]}>
               <Text style={styles.balanceLabel}>{t('wallet.availableBalance')}</Text>
-              <Text style={styles.balanceValue}>Rs. {summary.availableBalance.toLocaleString()}</Text>
-              <View style={styles.balanceStatsRow}>
-                <View style={styles.balanceStat}>
-                  <Text style={styles.balanceStatLabel}>{t('wallet.pendingWithdrawals')}</Text>
-                  <Text style={styles.balanceStatValue}>Rs. {summary.pendingWithdrawals.toLocaleString()}</Text>
-                </View>
-                <View style={styles.balanceStatDivider} />
-                <View style={styles.balanceStat}>
-                  <Text style={styles.balanceStatLabel}>{t('wallet.withdrawableBalance')}</Text>
-                  <Text style={styles.balanceStatValue}>Rs. {summary.withdrawableBalance.toLocaleString()}</Text>
-                </View>
+              <Text style={styles.balanceValue}>{summary.availableBalance.toLocaleString()}</Text>
+              <View style={styles.equivalenceNote}>
+                <FontAwesome5 name="info-circle" solid size={10} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.equivalenceNoteText}>{t('wallet.pointsEquivalence')}</Text>
               </View>
             </View>
 
-            {/* Withdraw button */}
-            <Pressable
-              style={[styles.withdrawBtn, { backgroundColor: C.surface, borderColor: C.brinjal1 }]}
-              onPress={() => setModalVisible(true)}>
-              <FontAwesome5 name="arrow-alt-circle-down" size={20} color={C.brinjal1} />
-              <Text style={[styles.withdrawBtnText, { color: C.brinjal1 }]}>{t('wallet.withdrawMoney')}</Text>
-            </Pressable>
+            {/* Withdraw / Deals */}
+            <View style={styles.tabsWrap}>
+              <TabSlider
+                tabs={[
+                  { key: 'withdraw', label: t('wallet.tabWithdraw') },
+                  { key: 'deals', label: t('wallet.tabDeals') },
+                ]}
+                active={activeTab}
+                onChange={(key) => setActiveTab(key as WalletTab)}
+                justify
+              />
+            </View>
 
-            {payoutMethods.length === 0 && (
-              <Text style={[styles.noMethodsHint, { color: C.textSecondary }]}>{t('wallet.noPayoutMethodsHint')}</Text>
-            )}
+            {activeTab === 'withdraw' ? (
+              <>
+                {/* Withdraw button */}
+                <Pressable
+                  style={[styles.withdrawBtn, { backgroundColor: C.surface, borderColor: C.brinjal1 }]}
+                  onPress={() => setModalVisible(true)}>
+                  <FontAwesome5 name="arrow-alt-circle-down" size={20} color={C.brinjal1} />
+                  <Text style={[styles.withdrawBtnText, { color: C.brinjal1 }]}>{t('wallet.withdrawMoney')}</Text>
+                </Pressable>
 
-            <Pressable
-              style={[styles.manageBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push('/(creator)/payout-methods')}>
-              <FontAwesome5 name="credit-card" size={18} color={C.text} />
-              <Text style={[styles.manageBtnText, { color: C.text }]}>{t('payoutMethods.addFromWallet')}</Text>
-            </Pressable>
+                {payoutMethods.length === 0 && (
+                  <Text style={[styles.noMethodsHint, { color: C.textSecondary }]}>{t('wallet.noPayoutMethodsHint')}</Text>
+                )}
 
-            {/* Statement */}
-            <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('wallet.statementTitle')}</Text>
-            {transactions.length === 0 ? (
-              <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <FontAwesome5 name="receipt" solid size={32} color={C.textSecondary} />
-                <Text style={[styles.emptyTitle, { color: C.text }]}>{t('wallet.noTransactionsYet')}</Text>
-                <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('wallet.noTransactionsHint')}</Text>
-              </View>
+                <Pressable
+                  style={[styles.manageBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() => router.push('/(creator)/payout-methods')}>
+                  <FontAwesome5 name="credit-card" size={18} color={C.text} />
+                  <Text style={[styles.manageBtnText, { color: C.text }]}>{t('payoutMethods.addFromWallet')}</Text>
+                </Pressable>
+
+                {/* Statement */}
+                <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('wallet.statementTitle')}</Text>
+                {transactions.length === 0 ? (
+                  <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+                    <FontAwesome5 name="receipt" solid size={32} color={C.textSecondary} />
+                    <Text style={[styles.emptyTitle, { color: C.text }]}>{t('wallet.noTransactionsYet')}</Text>
+                    <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('wallet.noTransactionsHint')}</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                    {transactions.map((tx, i) => (
+                      <TransactionRow
+                        key={tx.id}
+                        tx={tx}
+                        isFirst={i === 0}
+                        onViewDetails={() => setDetailTx(tx)}
+                        onCancel={() => handleCancelWithdrawal(tx.id)}
+                        cancelling={cancellingId === tx.id}
+                      />
+                    ))}
+                  </View>
+                )}
+              </>
             ) : (
-              <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-                {transactions.map((tx, i) => (
-                  <TransactionRow
-                    key={tx.id}
-                    tx={tx}
-                    isFirst={i === 0}
-                    onViewDetails={() => setDetailTx(tx)}
-                  />
-                ))}
-              </View>
+              <DealsTab />
             )}
           </ScrollView>
         )}
@@ -229,10 +283,14 @@ function TransactionRow({
   tx,
   isFirst,
   onViewDetails,
+  onCancel,
+  cancelling,
 }: {
   tx: ApiWalletTransaction;
   isFirst: boolean;
   onViewDetails: () => void;
+  onCancel: () => void;
+  cancelling: boolean;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -264,6 +322,24 @@ function TransactionRow({
         {tx.kind === 'WITHDRAWAL' && !!tx.reference && (
           <Text style={[styles.txRef, { color: C.textSecondary }]} numberOfLines={1}>{tx.reference}</Text>
         )}
+        {tx.kind === 'WITHDRAWAL' && tx.status === 'PENDING' && (
+          <Pressable
+            onPress={onCancel}
+            disabled={cancelling}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={t('wallet.cancelWithdrawalAction')}
+            style={styles.detailsLinkRow}>
+            {cancelling ? (
+              <ActivityIndicator size="small" color="#DC2626" />
+            ) : (
+              <>
+                <FontAwesome5 name="times-circle" solid size={11} color="#DC2626" />
+                <Text style={[styles.detailsLinkText, { color: '#DC2626' }]}>{t('wallet.cancelWithdrawalAction')}</Text>
+              </>
+            )}
+          </Pressable>
+        )}
         {!!tx.proofUrl && (
           <Pressable
             onPress={onViewDetails}
@@ -276,6 +352,84 @@ function TransactionRow({
           </Pressable>
         )}
       </View>
+    </View>
+  );
+}
+
+function DealsTab() {
+  const C = useAppColors();
+  const { t } = useLanguage();
+
+  const historyQuery = useQuery({
+    queryKey: ['points', 'history'],
+    queryFn: () => pointsService.getHistory(),
+    staleTime: STALE.realtime,
+    refetchOnMount: 'always',
+  });
+  useRefetchOnFocusIfStale(historyQuery);
+
+  const history = historyQuery.data ?? EMPTY_POINTS_HISTORY;
+
+  return (
+    <>
+      <View style={styles.actionsRow}>
+        <Pressable
+          style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.brinjal1 }]}
+          onPress={() => router.push('/(creator)/deals')}>
+          <FontAwesome5 name="tags" solid size={16} color={C.brinjal1} />
+          <Text style={[styles.actionBtnText, { color: C.brinjal1 }]}>{t('rewards.findDealsButton')}</Text>
+        </Pressable>
+      </View>
+
+      <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('rewards.recentActivityTitle')}</Text>
+      {historyQuery.isPending ? (
+        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={[styles.txRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.border }]}>
+              <Skeleton width={36} height={36} radius={RADIUS.full} />
+              <View style={styles.txInfo}>
+                <Skeleton width="50%" height={13} />
+                <Skeleton width="35%" height={11} style={{ marginTop: 6 }} />
+              </View>
+              <Skeleton width={70} height={14} />
+            </View>
+          ))}
+        </View>
+      ) : history.length === 0 ? (
+        <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <FontAwesome5 name="star" solid size={32} color={C.textSecondary} />
+          <Text style={[styles.emptyTitle, { color: C.text }]}>{t('rewards.noActivityYet')}</Text>
+          <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('rewards.noActivityHint')}</Text>
+        </View>
+      ) : (
+        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {history.map((tx, i) => (
+            <PointsRow key={tx.id} tx={tx} isFirst={i === 0} />
+          ))}
+        </View>
+      )}
+    </>
+  );
+}
+
+function PointsRow({ tx, isFirst }: { tx: ApiPointsLedgerRow; isFirst: boolean }) {
+  const C = useAppColors();
+  const { t } = useLanguage();
+  const meta = POINTS_TYPE_META[tx.type];
+  const credit = tx.direction === 'CREDIT';
+  const sign = credit ? '+' : '−';
+  const amountColor = credit ? '#059669' : '#EF4444';
+
+  return (
+    <View style={[styles.txRow, !isFirst && { borderTopWidth: 1, borderTopColor: C.border }]}>
+      <View style={[styles.txIcon, { backgroundColor: `${credit ? '#059669' : C.brinjal1}1A` }]}>
+        <FontAwesome5 name={meta.icon} solid size={13} color={credit ? '#059669' : C.brinjal1} />
+      </View>
+      <View style={styles.txInfo}>
+        <Text style={[styles.txTitle, { color: C.text }]} numberOfLines={1}>{t(meta.labelKey)}</Text>
+        <Text style={[styles.txDate, { color: C.textSecondary }]}>{formatDate(tx.createdAt)}</Text>
+      </View>
+      <Text style={[styles.txAmount, { color: amountColor }]}>{sign} {tx.amount.toLocaleString()}</Text>
     </View>
   );
 }
@@ -366,18 +520,24 @@ const styles = StyleSheet.create({
 
   balanceCard: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 4, ...SHADOW.raised },
   balanceLabel: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.medium },
-  balanceValue: { fontSize: 32, color: '#fff', fontFamily: F.bold, marginBottom: 12 },
-  balanceStatsRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' },
-  balanceStat: { flex: 1, gap: 2 },
-  balanceStatDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.2)' },
-  balanceStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.medium },
-  balanceStatValue: { fontSize: 15, color: '#fff', fontFamily: F.bold },
+  balanceValue: { fontSize: 32, color: '#fff', fontFamily: F.bold },
+  equivalenceNote: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', marginTop: 6,
+    backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5,
+  },
+  equivalenceNoteText: { fontSize: 11, color: '#fff', fontFamily: F.semibold },
+
+  tabsWrap: { marginTop: 2 },
 
   withdrawBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 14 },
   withdrawBtnText: { fontSize: 14, fontFamily: F.bold },
   noMethodsHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular, marginTop: -4 },
   manageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 12 },
   manageBtnText: { fontSize: 13, fontFamily: F.semibold },
+
+  actionsRow: { flexDirection: 'row', gap: SPACING.sm },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 14 },
+  actionBtnText: { fontSize: 14, fontFamily: F.bold },
 
   sectionHeader: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: F.bold, marginTop: 8 },
   card: { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', ...SHADOW.card },

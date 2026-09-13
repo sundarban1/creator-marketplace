@@ -39,6 +39,11 @@ export function NotificationsBell() {
     if (user) navigate(notificationRoute(n, user.role));
   };
 
+  const viewAll = () => {
+    setOpen(false);
+    navigate(user?.role === 'BUSINESS' ? '/business/notifications' : '/creator/notifications');
+  };
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -96,6 +101,13 @@ export function NotificationsBell() {
               </ul>
             )}
           </div>
+
+          <button
+            onClick={viewAll}
+            className="block w-full border-t border-line px-4 py-3 text-center text-[13px] font-semibold text-brand hover:bg-surface-dim"
+          >
+            {t('notifications.viewAll')}
+          </button>
         </div>
       )}
     </div>

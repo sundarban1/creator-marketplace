@@ -14,6 +14,7 @@ router.get('/', ctrl.getSummary.bind(ctrl));
 router.get('/transactions', ctrl.listTransactions.bind(ctrl));
 router.get('/withdrawals', ctrl.listWithdrawals.bind(ctrl));
 router.post('/withdrawals', validate(createWithdrawalSchema), ctrl.createWithdrawal.bind(ctrl));
+router.post('/withdrawals/:id/cancel', ctrl.cancelWithdrawal.bind(ctrl));
 router.use('/payout-methods', payoutMethodRoutes);
 
 export default router;

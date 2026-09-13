@@ -82,9 +82,10 @@ export class CampaignRepository {
       completionType?: 'SERVICE' | 'DELIVERABLE';
       completionReason?: string;
     }[];
-  }) {
+    creditsApplied?: number;
+  }, client: Prisma.TransactionClient | typeof prisma = prisma) {
     const { requirements, ...campaignData } = data;
-    return prisma.campaign.create({
+    return client.campaign.create({
       data: {
         ...campaignData,
         campaignType: data.campaignType ?? 'PAID_CAMPAIGN',

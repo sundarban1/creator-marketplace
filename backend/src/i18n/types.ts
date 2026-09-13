@@ -111,6 +111,7 @@ export interface BackendDict {
     categoryNotFoundForRequirement: string;
     categoryNotActive: (categoryName: string) => string;
     categoryNotUsableAsRequirement: (categoryName: string) => string;
+    insufficientCredits: string;
     newAccountCooldown: (cooldownHours: number, hoursLeft: number) => string;
     dailyEventCreationLimitReached: (maxPerDay: number) => string;
     dailyProposalLimitReached: (maxPerDay: number) => string;
@@ -461,6 +462,46 @@ export interface BackendDict {
     amountExceedsAvailableBalance: (balance: string) => string;
     dailyLimitReachedToday: (daily: string) => string;
     wouldExceedDailyLimit: (daily: string, left: string) => string;
+    withdrawalNotFound: string;
+    onlyPendingWithdrawalCanBeCancelled: string;
+  };
+  // modules/promotion/promotion.service.ts — every AppError message.
+  promotion: {
+    businessProfileNotFound: string;
+    promotionNotFound: string;
+    notYourPromotion: string;
+    invalidDateRange: string;
+    percentageOutOfRange: string;
+    discountValueMustBePositive: string;
+    cannotEditPromotionInStatus: (status: string) => string;
+    cannotDeletePromotionInStatus: (status: string) => string;
+    cannotDeletePromotionWithRedemptions: string;
+    promotionDeletedSuccessfully: string;
+    cannotPublishInPast: string;
+  };
+  // modules/redemption/redemption.service.ts — every AppError message.
+  redemption: {
+    creatorProfileNotFound: string;
+    businessProfileNotFound: string;
+    promotionNotFound: string;
+    promotionNotActive: string;
+    alreadyRedeemedPromotion: string;
+    dailyRedemptionLimitReached: string;
+    totalRedemptionLimitReached: string;
+    sessionNotFound: string;
+    sessionExpired: string;
+    sessionNotInExpectedState: (status: string) => string;
+    notYourSession: string;
+    billBelowMinimumSpend: (min: string) => string;
+    insufficientPoints: string;
+  };
+  // modules/points/points.service.ts
+  points: {
+    creatorProfileNotFound: string;
+  };
+  // modules/credits/credits.service.ts
+  credits: {
+    businessProfileNotFound: string;
   };
   // modules/portfolio/portfolio.service.ts and portfolio.controller.ts —
   // every AppError message plus the success `message` strings passed to

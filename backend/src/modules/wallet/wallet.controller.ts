@@ -23,6 +23,15 @@ export class WalletController {
     }
   }
 
+  async cancelWithdrawal(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await walletService.cancelWithdrawal(req.user!.id, req.params.id);
+      success(res, result, 'Withdrawal request cancelled');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async listWithdrawals(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const withdrawals = await walletService.listWithdrawals(req.user!.id);

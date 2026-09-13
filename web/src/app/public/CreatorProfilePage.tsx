@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { BadgeCheck, MapPin, Star, ExternalLink, Users } from 'lucide-react';
+import { BadgeCheck, MapPin, Star, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { compactNumber, totalFollowers } from '../lib/format';
@@ -8,6 +8,7 @@ import { fetchCreatorByHandle } from '../api/publicMarketplace';
 import { fetchCategories } from '../api/catalog';
 import { makeCategoryLookup } from './categoryLookup';
 import { CategoryPill } from './CategoryPill';
+import { PortfolioGrid } from './PortfolioGrid';
 import { ApiError } from '../lib/apiClient';
 import { SEO } from '../../lib/seo/SEO';
 import { absoluteUrl } from '../../lib/seo/config';
@@ -195,39 +196,7 @@ export function CreatorProfilePage() {
 
         {(creator.portfolioItems.length > 0 || creator.portfolioLinks.length > 0) && (
           <DetailSection title={t('public.portfolioHeading')}>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {creator.portfolioItems.map((p) => (
-                <a
-                  key={p.id}
-                  href={p.linkUrl || p.mediaUrl || undefined}
-                  target="_blank"
-                  rel="noreferrer nofollow"
-                  className="group overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-violet/30"
-                >
-                  {(p.thumbnailUrl || p.mediaUrl) && (
-                    <img
-                      src={p.thumbnailUrl || p.mediaUrl || ''}
-                      alt={p.title ?? ''}
-                      className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                      loading="lazy"
-                    />
-                  )}
-                  {p.title && <p className="truncate p-2 text-[12px] font-medium text-ink">{p.title}</p>}
-                </a>
-              ))}
-              {creator.portfolioLinks.map((l) => (
-                <a
-                  key={l.id}
-                  href={l.url}
-                  target="_blank"
-                  rel="noreferrer nofollow"
-                  className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface p-3 text-[13px] font-medium text-ink transition-colors hover:border-violet/30"
-                >
-                  <span className="truncate">{l.label}</span>
-                  <ExternalLink size={13} className="flex-shrink-0 text-ink-soft" />
-                </a>
-              ))}
-            </div>
+            <PortfolioGrid items={creator.portfolioItems} links={creator.portfolioLinks} />
           </DetailSection>
         )}
 

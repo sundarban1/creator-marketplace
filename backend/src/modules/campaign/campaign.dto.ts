@@ -81,6 +81,9 @@ export interface CampaignDto {
   budgetRateType: string | null;
   budgetInputType: string | null;
   totalBudget: number | null;
+  // Kolab Rewards — Business Credits earmarked toward this campaign at
+  // creation time. Display only; see Campaign.creditsApplied in schema.prisma.
+  creditsApplied: number;
   status: string;
   isFeatured: boolean;
   creatorsNeeded: number;
@@ -268,6 +271,9 @@ type RawCampaign = {
   budgetRateType: string | null;
   budgetInputType: string | null;
   totalBudget: number | null;
+  // Kolab Rewards — Business Credits earmarked toward this campaign at
+  // creation time. Display only; see Campaign.creditsApplied in schema.prisma.
+  creditsApplied: number;
   status: string;
   isFeatured: boolean;
   creatorsNeeded: number;
@@ -342,6 +348,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     budgetRateType:  c.budgetRateType ?? null,
     budgetInputType: c.budgetInputType ?? null,
     totalBudget:     c.totalBudget ?? null,
+    creditsApplied: c.creditsApplied,
     status:         c.status,
     isFeatured:     c.isFeatured,
     creatorsNeeded: c.creatorsNeeded,

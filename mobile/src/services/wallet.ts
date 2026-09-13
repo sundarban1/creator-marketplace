@@ -119,6 +119,13 @@ export const walletService = {
     return res.data;
   },
 
+  async cancelWithdrawal(id: string): Promise<{ withdrawal: ApiWithdrawal } & ApiWalletSummary> {
+    const res = await request<{ withdrawal: ApiWithdrawal } & ApiWalletSummary>(
+      'POST', `/api/creator/wallet/withdrawals/${id}/cancel`,
+    );
+    return res.data;
+  },
+
   async getTransactions(): Promise<ApiWalletTransaction[]> {
     const res = await request<ApiWalletTransaction[]>('GET', '/api/creator/wallet/transactions');
     return res.data;

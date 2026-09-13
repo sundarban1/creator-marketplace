@@ -49,6 +49,7 @@ import {
   SectionCard, ChipGroup, ChipMultiGroup, PerCreatorBudgetPicker, budgetPickerResetKey, Stepper,
   DeliverablesCounterList, HashtagEditor, FeaturedToggle, sc,
 } from '@/features/business/components/CampaignFormControls';
+import { CreditsApplyCard } from '@/features/business/components/CreditsApplyCard';
 import type { FormData } from '@/features/business/types/campaignForm.types';
 import {
   dayStart, sameDay, fmtDate, getDaysInMonth, getFirstWeekday,
@@ -849,6 +850,7 @@ export default function CreateCampaignScreen() {
     featureImageUrl: null,
     deadline: dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
     isFeatured: false,
+    creditsToApply: 0,
     // Open Event / Free Invitation fields
     eventType:    'PAID_CAMPAIGN',
     eventDate:    dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
@@ -1096,6 +1098,7 @@ export default function CreateCampaignScreen() {
       featureImageUrl: null,
       deadline:       newType === 'OPEN_EVENT' ? regDeadline : dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
       isFeatured:     false,
+      creditsToApply: 0,
       eventType:      newType,
       eventDate,
       eventTime:      prev.eventTime,
@@ -1545,6 +1548,7 @@ export default function CreateCampaignScreen() {
       paymentType:    budget.payment,
       creatorsNeeded: isMultiRole ? form.requirements.reduce((sum, r) => sum + r.quantity, 0) : form.creatorsNeeded,
       isFeatured:     form.isFeatured,
+      creditsToApply: form.creditsToApply > 0 ? form.creditsToApply : undefined,
       campaignType:   'PAID_CAMPAIGN' as const,
       hashtags:             form.hashtags,
       aiGenerated:           form.aiGenerated,
@@ -1612,7 +1616,10 @@ export default function CreateCampaignScreen() {
     setLoading(true);
     try {
       const payload = form.eventType === 'PAID_CAMPAIGN' ? buildPaidCampaignPayload() : buildOpenEventPayload();
-      await campaignService.create({ ...payload, status: 'DRAFT' });
+      // Credits are earmarked on PUBLISH only (handlePublish), never on a
+      // draft save — a draft may never be published, and there's no
+      // "cancel campaign, refund credits" flow to recover them if it isn't.
+      await campaignService.create({ ...payload, creditsToApply: undefined, status: 'DRAFT' });
       showToast(t('createEvent.toastDraftSaved'));
       setTimeout(() => router.replace('/(business)/'), 500);
     } catch (err) {
@@ -3505,6 +3512,23 @@ export default function CreateCampaignScreen() {
                 quota={featuredQuotaDisplay}
                 colors={C}
                 t={t}
+              />
+
+              {/* Kolab Rewards — apply Business Credits toward this campaign's
+                  budget. Renders nothing when the business has no credits, so
+                  campaigns without this feature look exactly as before. */}
+              <CreditsApplyCard
+                totalBudget={
+                  requirementMode === 'multiple' && form.requirements.length > 0
+                    ? form.requirements.reduce((sum, r) => sum + r.quantity * (
+                        r.budgetType === 'FIXED' ? (r.budgetFixed ?? 0)
+                        : r.budgetType === 'RANGE' ? (r.budgetMax ?? 0)
+                        : 0
+                      ), 0)
+                    : form.creatorsNeeded * form.aiBudgetMax
+                }
+                value={form.creditsToApply}
+                onChange={(v) => update('creditsToApply', v)}
               />
 
               {/* Save as Draft */}

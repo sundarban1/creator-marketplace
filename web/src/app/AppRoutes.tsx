@@ -57,7 +57,10 @@ const BusinessEventsPage = screen(() => import('./business/BusinessEventsPage'),
 const BusinessEventDetailPage = screen(() => import('./business/BusinessEventDetailPage'), 'BusinessEventDetailPage');
 const CreateEventPage = screen(() => import('./business/CreateEventPage'), 'CreateEventPage');
 const EditEventPage = screen(() => import('./business/EditEventPage'), 'EditEventPage');
+const BusinessPromotionsPage = screen(() => import('./business/BusinessPromotionsPage'), 'BusinessPromotionsPage');
+const BusinessPromotionFormPage = screen(() => import('./business/BusinessPromotionFormPage'), 'BusinessPromotionFormPage');
 const ChatListPage = screen(() => import('./chat/ChatListPage'), 'ChatListPage');
+const NotificationsPage = screen(() => import('./notifications/NotificationsPage'), 'NotificationsPage');
 const ChatThreadPage = screen(() => import('./chat/ChatThreadPage'), 'ChatThreadPage');
 const BusinessApplicationsPage = screen(() => import('./business/BusinessApplicationsPage'), 'BusinessApplicationsPage');
 const BusinessDeliverablesPage = screen(() => import('./business/BusinessDeliverablesPage'), 'BusinessDeliverablesPage');
@@ -112,6 +115,7 @@ export function marketplaceRoutes() {
               <Route path="work/:id" element={<CreatorWorkDetailPage />} />
               <Route path="messages" element={<ChatListPage />} />
               <Route path="messages/:id" element={<ChatThreadPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               <Route path="wallet" element={<CreatorWalletPage />} />
               <Route path="profile" element={<CreatorProfileEditPage />} />
               <Route path="settings" element={<CreatorSettingsPage />} />
@@ -133,9 +137,13 @@ export function marketplaceRoutes() {
               <Route path="events/create" element={<CreateEventPage />} />
               <Route path="events/:id" element={<BusinessEventDetailPage />} />
               <Route path="events/:id/edit" element={<EditEventPage />} />
+              <Route path="promotions" element={<BusinessPromotionsPage />} />
+              <Route path="promotions/create" element={<BusinessPromotionFormPage />} />
+              <Route path="promotions/:id/edit" element={<BusinessPromotionFormPage />} />
               <Route path="applications" element={<BusinessApplicationsPage />} />
               <Route path="messages" element={<ChatListPage />} />
               <Route path="messages/:id" element={<ChatThreadPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               <Route path="deliverables" element={<BusinessDeliverablesPage />} />
               <Route path="payments" element={<BusinessPaymentsPage />} />
               <Route path="profile" element={<BusinessProfilePage />} />

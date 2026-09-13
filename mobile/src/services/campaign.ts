@@ -460,6 +460,10 @@ export const campaignService = {
     paymentType: string;
     creatorsNeeded?: number;
     isFeatured?: boolean;
+    // Kolab Rewards — Business Credits to earmark toward this campaign's
+    // budget. Re-validated server-side against the live balance regardless
+    // of what's sent here; see Campaign.creditsApplied in the backend schema.
+    creditsToApply?: number;
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     capacity?:     number;
     eventDate?:    string;

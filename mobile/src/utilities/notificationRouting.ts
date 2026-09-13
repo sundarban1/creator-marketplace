@@ -180,5 +180,21 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (n.refType === 'withdrawal' || n.type.startsWith('withdrawal_')) {
     return isCreator ? '/(creator)/wallet' : null;
   }
+
+  // Kolab Rewards (creator side) — a campaign reward or a redemption's points
+  // debit both land on the creator's own Rewards screen, where the balance
+  // and ledger row now show the change.
+  if ((n.type === 'points_added' || n.type === 'redemption_success') && isCreator) {
+    return '/(creator)/rewards';
+  }
+  // "<Business you follow> published a new deal" — only ever sent to a
+  // creator, refId is the promotion id.
+  if (n.type === 'favorite_business_new_promotion') {
+    return isCreator && n.refId ? { pathname: '/(creator)/deal-detail', params: { id: n.refId } } : null;
+  }
+  // Business-only: a redemption just credited their Kolab Credits balance.
+  // Acknowledge-only until the business Credits screen ships (Phase 4).
+  if (n.type === 'credits_received') return null;
+
   return null;
 }

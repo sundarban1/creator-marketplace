@@ -18,6 +18,10 @@ export type FormData = {
   featureImageUrl: string | null;
   deadline: Date | null;
   isFeatured: boolean;
+  // Kolab Rewards — Business Credits the business chose to earmark toward
+  // this campaign's budget (PAID_CAMPAIGN only). Display/bookkeeping figure,
+  // re-validated server-side against the live BusinessCreditsAccount balance.
+  creditsToApply: number;
   // Open Event / Free Invitation fields
   eventType:    'PAID_CAMPAIGN' | 'OPEN_EVENT';
   eventDate:    Date | null;

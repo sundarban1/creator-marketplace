@@ -52,8 +52,8 @@ export interface CreatorProfile extends Omit<CreatorCard, 'socialAccounts'> {
     title: string | null;
     description: string | null;
     mediaUrl?: string | null;
-    thumbnailUrl?: string | null;
-    linkUrl?: string | null;
+    mediaType?: 'IMAGE' | 'VIDEO' | null;
+    externalUrl?: string | null;
   }>;
   services: Array<{ id: string; name: string; description: string | null }>;
   teamMembers: Array<{

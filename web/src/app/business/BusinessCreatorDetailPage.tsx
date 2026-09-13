@@ -24,6 +24,7 @@ import { Select } from '../ui/Select';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { CategoryPill } from '../public/CategoryPill';
 import { makeCategoryLookup } from '../public/categoryLookup';
+import { PortfolioGrid } from '../public/PortfolioGrid';
 
 export function BusinessCreatorDetailPage() {
   const t = useT();
@@ -181,39 +182,7 @@ export function BusinessCreatorDetailPage() {
       {(c.portfolioItems.length > 0 || c.portfolioLinks.length > 0) && (
         <Card className="mt-6">
           <CardHeader title={t('public.portfolioHeading')} />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {c.portfolioItems.map((p) => (
-              <a
-                key={p.id}
-                href={p.linkUrl || p.mediaUrl || undefined}
-                target="_blank"
-                rel="noreferrer nofollow"
-                className="group overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-violet/30"
-              >
-                {(p.thumbnailUrl || p.mediaUrl) && (
-                  <img
-                    src={p.thumbnailUrl || p.mediaUrl || ''}
-                    alt={p.title ?? ''}
-                    className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                    loading="lazy"
-                  />
-                )}
-                {p.title && <p className="truncate p-2 text-[12px] font-medium text-ink">{p.title}</p>}
-              </a>
-            ))}
-            {c.portfolioLinks.map((l) => (
-              <a
-                key={l.id}
-                href={l.url}
-                target="_blank"
-                rel="noreferrer nofollow"
-                className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface p-3 text-[13px] font-medium text-ink transition-colors hover:border-violet/30"
-              >
-                <span className="truncate">{l.label}</span>
-                <ExternalLink size={13} className="flex-shrink-0 text-ink-soft" />
-              </a>
-            ))}
-          </div>
+          <PortfolioGrid items={c.portfolioItems} links={c.portfolioLinks} />
         </Card>
       )}
 

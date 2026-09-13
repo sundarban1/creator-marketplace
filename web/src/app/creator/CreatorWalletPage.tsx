@@ -8,6 +8,7 @@ import {
   fetchWalletTransactions,
   fetchWithdrawals,
   fetchPayoutMethods,
+  cancelWithdrawal,
   type WalletTransaction,
   type Withdrawal,
   type WalletSummary,
@@ -33,6 +34,24 @@ export function CreatorWalletPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [flash, setFlash] = useState('');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState('');
+
+  const handleCancelWithdrawal = async (id: string) => {
+    if (!window.confirm(t('wallet.confirmCancelWithdrawal'))) return;
+    setCancelError('');
+    setCancellingId(id);
+    try {
+      await cancelWithdrawal(id);
+      setFlash(t('wallet.withdrawalCancelled'));
+      summary.reload();
+      withdrawals.reload();
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const w = summary.data;
   const canWithdraw =
@@ -53,6 +72,7 @@ export function CreatorWalletPage() {
       <DashPageHeader title={t('wallet.title')} description={t('wallet.subtitle')} />
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
+      {cancelError && <Alert tone="error" className="mb-5">{cancelError}</Alert>}
       {!canWithdraw && disabledReason && <Alert tone="neutral" className="mb-5">{disabledReason}</Alert>}
 
       {/* Balance hero — purple→pink dashboard gradient (scoped to this page). */}
@@ -111,7 +131,12 @@ export function CreatorWalletPage() {
 
         <DashCard>
           <DashCardHeader title={t('wallet.withdrawalsHeading')} />
-          <WithdrawalList data={withdrawals.data} loading={withdrawals.loading} />
+          <WithdrawalList
+            data={withdrawals.data}
+            loading={withdrawals.loading}
+            cancellingId={cancellingId}
+            onCancel={handleCancelWithdrawal}
+          />
         </DashCard>
       </div>
 
@@ -204,7 +229,17 @@ const W_STATUS: Record<Withdrawal['status'], { key: string; tone: BadgeTone }> =
   CANCELLED: { key: 'wStatusCancelled', tone: 'neutral' },
 };
 
-function WithdrawalList({ data, loading }: { data: Withdrawal[] | null; loading: boolean }) {
+function WithdrawalList({
+  data,
+  loading,
+  cancellingId,
+  onCancel,
+}: {
+  data: Withdrawal[] | null;
+  loading: boolean;
+  cancellingId: string | null;
+  onCancel: (id: string) => void;
+}) {
   const t = useT();
   if (loading) return <ListSkeleton />;
   if (!data || data.length === 0) {
@@ -252,6 +287,19 @@ function WithdrawalList({ data, loading }: { data: Withdrawal[] | null; loading:
                 {t('wallet.viewProof')}
                 <ExternalLink size={11} />
               </a>
+            )}
+            {wd.status === 'PENDING' && (
+              <div className="mt-2">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  loading={cancellingId === wd.id}
+                  onClick={() => onCancel(wd.id)}
+                  className="h-8 px-3 text-[12px]"
+                >
+                  {t('wallet.cancelWithdrawal')}
+                </Button>
+              </div>
             )}
           </li>
         );

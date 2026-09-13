@@ -280,6 +280,9 @@ model CreatorProfile {
   memberOf                 ProviderMember[]        @relation("ProviderMemberships")
   eventQuestions           EventQuestion[]
   reliability              CreatorReliability?
+  pointsAccount            CreatorPointsAccount?
+  pointsLedger             CreatorPointsLedger[]
+  redemptionSessions       RedemptionSession[]
 
   @@index([isVerified])
   // Explore Creators' default ordering is `createdAt DESC, id ASC` (see
@@ -675,8 +678,8 @@ model ProfileView {
 }
 
 model BusinessProfile {
-  id                       String               @id @default(cuid())
-  userId                   String               @unique
+  id                       String                  @id @default(cuid())
+  userId                   String                  @unique
   businessName             String?
   description              String?
   logoUrl                  String?
@@ -688,28 +691,28 @@ model BusinessProfile {
   locationLat              Float?
   locationLng              Float?
   phone                    String?
-  isVerified               Boolean              @default(false)
-  createdAt                DateTime             @default(now())
-  updatedAt                DateTime             @updatedAt
-  allowDirectMessages      Boolean              @default(true)
-  hideContactDetails       Boolean              @default(false)
-  showPublicProfile        Boolean              @default(true)
+  isVerified               Boolean                 @default(false)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  allowDirectMessages      Boolean                 @default(true)
+  hideContactDetails       Boolean                 @default(false)
+  showPublicProfile        Boolean                 @default(true)
   // §61 — social links are shown on the public profile by default; hiding
   // them doesn't remove them from the account, just from what businesses/
   // providers browsing each other's profiles can see.
-  hideSocialLinks          Boolean              @default(false)
-  paymentMethods           String[]             @default([])
-  referralCode             String?              @unique
-  socialLinks              Json                 @default("{}")
-  presenceServices         String[]             @default([])
-  defaultPlatforms         String[]             @default([])
-  defaultCreatorCategories String[]             @default([])
+  hideSocialLinks          Boolean                 @default(false)
+  paymentMethods           String[]                @default([])
+  referralCode             String?                 @unique
+  socialLinks              Json                    @default("{}")
+  presenceServices         String[]                @default([])
+  defaultPlatforms         String[]                @default([])
+  defaultCreatorCategories String[]                @default([])
   defaultBudgetRange       String?
   panDocUrl                String?
-  panDocStatus             DocumentStatus       @default(NONE)
+  panDocStatus             DocumentStatus          @default(NONE)
   panDocUploadedAt         DateTime?
   companyRegDocUrl         String?
-  companyRegDocStatus      DocumentStatus       @default(NONE)
+  companyRegDocStatus      DocumentStatus          @default(NONE)
   companyRegDocUploadedAt  DateTime?
   // INDIVIDUAL service takers verify with a personal identity document
   // (citizenship, national ID or personal PAN) — they have no company
@@ -717,7 +720,7 @@ model BusinessProfile {
   // does would leave them permanently unverifiable. ORGANIZATION profiles
   // leave this null and use the two fields above instead.
   identityDocUrl           String?
-  identityDocStatus        DocumentStatus       @default(NONE)
+  identityDocStatus        DocumentStatus          @default(NONE)
   identityDocUploadedAt    DateTime?
   verificationRejectReason String?
   verificationRejectedAt   DateTime?
@@ -726,7 +729,7 @@ model BusinessProfile {
   city                     String?
   area                     String?
   address                  String?
-  locationVisibility       LocationVisibility   @default(CITY)
+  locationVisibility       LocationVisibility      @default(CITY)
   businessSize             BusinessSize?
   // Collected as the first step of business onboarding, right after signup.
   representingType         RepresentingType?
@@ -741,20 +744,24 @@ model BusinessProfile {
   // Collected on the last step of business onboarding, alongside
   // defaultCreatorCategories — see BusinessPurpose for what drives what.
   purpose                  BusinessPurpose?
-  user                     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaigns                Campaign[]
-  conversations            Conversation[]       @relation("BusinessConversations")
+  conversations            Conversation[]          @relation("BusinessConversations")
   favoritedBy              FavoriteBusiness[]
   savedCreators            SavedCreator[]
   sentInvitations          CampaignInvitation[]
-  referralsMade            BusinessReferral[]   @relation("BizReferralsMade")
-  referralsReceived        BusinessReferral?    @relation("BizReferralsReceived")
+  referralsMade            BusinessReferral[]      @relation("BizReferralsMade")
+  referralsReceived        BusinessReferral?       @relation("BizReferralsReceived")
   profileViews             ProfileView[]
   socialAccounts           SocialAccount[]
   paymentTransactions      PaymentTransaction[]
   contracts                Contract[]
   aiConversations          AiConversation[]
   serviceRequests          ServiceRequest[]
+  promotions               Promotion[]
+  creditsAccount           BusinessCreditsAccount?
+  creditsLedger            BusinessCreditsLedger[]
+  redemptionSessions       RedemptionSession[]
 
   @@index([isVerified])
   // Business discovery filters `categories` with array `has` and orders by
@@ -822,6 +829,12 @@ model Campaign {
   // server-side on create/update so the campaign-wide figure is never
   // re-derived from the natural-language prompt. Null on older rows.
   totalBudget           Float?
+  // Kolab Rewards — Business Credits the business earmarked toward this
+  // campaign's budget at creation time (BusinessCreditsLedger CAMPAIGN_BUDGET_SPEND,
+  // referenceType 'campaign', referenceId = this row's id). Display/bookkeeping
+  // only: payment still happens per-Application (Khalti/eSewa/manual), so this
+  // never reduces what's actually charged to fund an accepted creator.
+  creditsApplied        Float                 @default(0)
   paymentType           String
   status                CampaignStatus        @default(ACTIVE)
   // Admin soft-delete (see AdminRepository.softDeleteCampaignCascade) — the
@@ -909,14 +922,14 @@ model Campaign {
 // client anonymizes it for creators). See CampaignService.listEventQuestions /
 // askEventQuestion / answerEventQuestion.
 model EventQuestion {
-  id         String    @id @default(cuid())
+  id         String         @id @default(cuid())
   campaignId String
   creatorId  String
   question   String
   answer     String?
   answeredAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
   campaign   Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   creator    CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
@@ -925,7 +938,7 @@ model EventQuestion {
 }
 
 model Application {
-  id                   String                  @id @default(cuid())
+  id                   String            @id @default(cuid())
   campaignId           String
   // Set only for campaigns using CampaignRequirement (multi-role campaigns) —
   // null for the simple single-category campaigns that predate it and remain
@@ -935,10 +948,10 @@ model Application {
   coverLetter          String
   proposedRate         Float
   timeline             String
-  socialHandles        Json                    @default("{}")
+  socialHandles        Json              @default("{}")
   portfolioUrl         String?
-  status               ApplicationStatus       @default(PENDING)
-  workStatus           WorkStatus              @default(NONE)
+  status               ApplicationStatus @default(PENDING)
+  workStatus           WorkStatus        @default(NONE)
   workNote             String?
   revisionRequestedAt  DateTime?
   submittedAt          DateTime?
@@ -948,21 +961,21 @@ model Application {
   // rather than a plain read-modify-write, since two uploads completing near-simultaneously would
   // otherwise race and silently drop one. Cleared (with the underlying Cloudinary assets deleted) on
   // requestRevision — see CampaignService.requestRevision.
-  deliverableVideos    Json                    @default("[]")
+  deliverableVideos    Json              @default("[]")
   // Up to 10 entries: { id, publicId, url, fileType, originalFileName, mimeType, sizeBytes, uploadedAt }.
   // Images/PDF/DOCX are <=5MB and proxied through this server (multer), unlike
   // deliverableVideos' direct-to-Cloudinary signed flow. Cleared alongside
   // deliverableVideos on requestRevision.
-  deliverableFiles     Json                    @default("[]")
+  deliverableFiles     Json              @default("[]")
   // Legacy coarse payment flag (UNPAID/PAID/RELEASED/REFUNDED) — still written
   // alongside escrowStatus for backward compatibility with existing reads
   // (analytics, messaging, admin). escrowStatus below is the authoritative,
   // finer-grained escrow state going forward.
-  paymentStatus        PaymentStatus           @default(UNPAID)
+  paymentStatus        PaymentStatus     @default(UNPAID)
   // Authoritative escrow state for this engagement (see EscrowStatus enum).
   // Backfilled from paymentStatus + workStatus. Kept in sync at every existing
   // money-movement site; automatic transitions/jobs are layered on top of it.
-  escrowStatus         EscrowStatus            @default(NOT_FUNDED)
+  escrowStatus         EscrowStatus      @default(NOT_FUNDED)
   paidAt               DateTime?
   // esewa | khalti | fonepay — set once payForApplication (mock) or a real
   // gateway (Khalti) actually completes the payment.
@@ -970,11 +983,11 @@ model Application {
   // Khalti's payment identifier for the most recent initiate call — overwritten
   // on every retry so only the latest attempt's callback can complete the
   // payment (an older, abandoned pidx can never be replayed to mark this paid).
-  khaltiPidx           String?                 @unique
+  khaltiPidx           String?           @unique
   // eSewa's transaction_uuid for the most recent initiate call — same
   // overwrite-on-retry role as khaltiPidx above, verified against eSewa's
   // signed redirect + status-check API in confirmEsewaPayment.
-  esewaTransactionUuid String?                 @unique
+  esewaTransactionUuid String?           @unique
   // Set only when an admin manually releases the held escrow payment —
   // brand approval no longer releases funds automatically, see approveWork().
   releasedAt           DateTime?
@@ -1001,7 +1014,7 @@ model Application {
   contentGraceDeadline         DateTime?
   // True when the submission arrived after contentDeadline (during grace or
   // just late) — retained for creator reliability scoring, never blocks payout.
-  submittedLate                Boolean   @default(false)
+  submittedLate                Boolean                     @default(false)
   // Business review window — set on each submission (now + businessReviewHours).
   businessReviewDueAt          DateTime?
   // Guards the one-time "please review" reminder so the job doesn't re-notify.
@@ -1016,24 +1029,24 @@ model Application {
   // events/{campaignId}/participants/{applicationId}/invitation-v{n}.png.
   // See modules/campaign/invitation/. invitationImageKey is kept so the
   // previous object can be deleted when a new version is written.
-  invitationImageUrl    String?
-  invitationImageKey    String?
-  invitationTemplateId  String?                @default("elegant")
-  invitationVersion     Int                    @default(0)
-  invitationGeneratedAt DateTime?
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
-  campaign             Campaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  requirement          CampaignRequirement?    @relation(fields: [requirementId], references: [id], onDelete: Cascade)
-  creator              CreatorProfile          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  reviews              Review[]
-  paymentTransactions  PaymentTransaction[]
-  revisionNotes        RevisionNote[]
-  assignments          ApplicationAssignment[]
-  contract             Contract?
-  events               CampaignEvent[]
-  submissionVersions   CampaignSubmissionVersion[]
-  dispute              Dispute?
+  invitationImageUrl           String?
+  invitationImageKey           String?
+  invitationTemplateId         String?                     @default("elegant")
+  invitationVersion            Int                         @default(0)
+  invitationGeneratedAt        DateTime?
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
+  campaign                     Campaign                    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  requirement                  CampaignRequirement?        @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  creator                      CreatorProfile              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  reviews                      Review[]
+  paymentTransactions          PaymentTransaction[]
+  revisionNotes                RevisionNote[]
+  assignments                  ApplicationAssignment[]
+  contract                     Contract?
+  events                       CampaignEvent[]
+  submissionVersions           CampaignSubmissionVersion[]
+  dispute                      Dispute?
 
   // True uniqueness is enforced by two hand-written partial indexes, not a
   // plain @@unique — Prisma can't express "unique except when null" and a
@@ -1179,7 +1192,7 @@ model CampaignSubmissionVersion {
 // current state. Append-only — no service method ever updates or deletes a row
 // (same rule as audit_logs / wallet_transactions).
 model CampaignEvent {
-  id            String            @id @default(cuid())
+  id            String             @id @default(cuid())
   campaignId    String
   // The engagement this transition belongs to. Null only for whole-campaign
   // events (publish, expire, cancel) that precede or outlive any one creator.
@@ -1215,24 +1228,24 @@ enum CampaignEventActor {
 // OPEN/UNDER_REVIEW the engagement's escrow is FROZEN and every automatic
 // release/refund is blocked; only an admin resolution moves the money.
 model Dispute {
-  id            String        @id @default(cuid())
-  applicationId String        @unique
-  campaignId    String
+  id                String             @id @default(cuid())
+  applicationId     String             @unique
+  campaignId        String
   // Who raised it (User.id) and in what capacity.
-  raisedById    String
-  raisedByRole  CampaignEventActor
-  reason        String
-  status        DisputeStatus @default(OPEN)
+  raisedById        String
+  raisedByRole      CampaignEventActor
+  reason            String
+  status            DisputeStatus      @default(OPEN)
   // Admin resolution: CREATOR_WON | BUSINESS_WON | PARTIAL | DISMISSED.
   resolution        String?
   resolutionNote    String?
   // Split amounts for a PARTIAL resolution (must sum to the escrowed amount).
   creatorAmount     Float?
-  businessAmount     Float?
+  businessAmount    Float?
   resolvedByAdminId String?
   resolvedAt        DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   campaign    Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -1253,14 +1266,14 @@ enum DisputeStatus {
 // reliabilityScore is derived (see EscrowService.bumpReliability) and floored
 // at 0; a single missed deadline is a warning, not a ban.
 model CreatorReliability {
-  creatorId                 String   @id
-  completedCampaigns        Int      @default(0)
-  lateCampaigns             Int      @default(0)
-  failedCampaigns           Int      @default(0)
-  missedConfirmations       Int      @default(0)
-  cancelledAfterConfirmation Int     @default(0)
-  reliabilityScore          Float    @default(100)
-  updatedAt                 DateTime @updatedAt
+  creatorId                  String   @id
+  completedCampaigns         Int      @default(0)
+  lateCampaigns              Int      @default(0)
+  failedCampaigns            Int      @default(0)
+  missedConfirmations        Int      @default(0)
+  cancelledAfterConfirmation Int      @default(0)
+  reliabilityScore           Float    @default(100)
+  updatedAt                  DateTime @updatedAt
 
   creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
@@ -2297,4 +2310,219 @@ model AuditLog {
   @@index([createdAt])
   @@index([campaignId])
   @@map("audit_logs")
+}
+
+// ============================================================================
+// Kolab Rewards — Promotions, Creator Points & Business Credits (V1, mobile-only)
+// ============================================================================
+// Business creates a Promotion -> a creator redeems it via a short-lived QR
+// handshake (RedemptionSession) -> the creator spends Kolab Points and the
+// business earns Kolab Credits, both tracked as append-only ledgers mirroring
+// WalletTransaction's pattern above. 1 Point = Rs. 1, 1 Credit = Rs. 1; neither
+// is cash-withdrawable in V1.
+
+model Promotion {
+  id                   String                @id @default(cuid())
+  businessId           String
+  title                String
+  description          String?
+  imageUrl             String?
+  discountType         PromotionDiscountType
+  discountValue        Float
+  minSpend             Float                 @default(0)
+  // Only meaningful for PERCENTAGE; null = uncapped.
+  maxDiscountCap       Float?
+  // Across all creators combined; null = unlimited. Enforced by counting
+  // CONFIRMED RedemptionSession rows at redemption time, not a denormalized
+  // counter — same "derive, don't cache" rule as WalletTransaction's balance.
+  // A creator may redeem a given promotion at most once — hard rule, not a
+  // configurable field (enforced at the service layer in Phase 2).
+  dailyRedemptionLimit Int?
+  totalRedemptionLimit Int?
+  validFrom            DateTime
+  validUntil           DateTime
+  status               PromotionStatus       @default(DRAFT)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  business           BusinessProfile     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  redemptionSessions RedemptionSession[]
+
+  @@index([businessId, status])
+  @@index([status, validFrom, validUntil])
+  @@map("promotions")
+}
+
+// The QR redemption handshake: ISSUED (QR shown) -> SCANNED (business opened
+// it) -> BILL_ENTERED (business typed the bill amount, server computed the
+// discount/points/credits) -> CONFIRMED (creator explicitly accepted on their
+// device — this is what settles both ledgers). EXPIRED/CANCELLED are the two
+// other terminal outcomes. Every transition is a locked `$transaction` (same
+// SELECT ... FOR UPDATE + status-guard shape as withdrawal.admin.service.ts),
+// and CONFIRMED writes both ledgers keyed by `referenceId = this row's id`, so
+// the @@unique([referenceId, type]) on each ledger is a hard backstop against
+// ever double-settling one session.
+model RedemptionSession {
+  id                String                  @id @default(cuid())
+  promotionId       String
+  creatorId         String
+  // Denormalized from promotion.businessId to avoid a join on the hot scan path.
+  businessId        String
+  // Opaque, single-use — this is what's encoded in the QR. Never the row id,
+  // never a JWT: matches this codebase's existing convention of DB-row-backed
+  // tokens (Referral.code, OtpVerification) over signed payloads.
+  token             String                  @unique
+  status            RedemptionSessionStatus @default(ISSUED)
+  // Frozen at ISSUED so a business editing the promo mid-session can't change
+  // terms already shown to the creator.
+  promotionSnapshot Json
+  billAmount        Float?
+  // discountAmount/pointsCost/creditsEarned are computed server-side once
+  // billAmount is known. pointsCost/creditsEarned are whole numbers (rounded
+  // once here); the exact fractional discountAmount is kept for audit/display.
+  discountAmount    Float?
+  pointsCost        Int?
+  creditsEarned     Int?
+  issuedAt          DateTime                @default(now())
+  // = issuedAt + 5 minutes, fixed at issue and never extended. Checked lazily
+  // on every read of a non-terminal session (mirrors Referral's
+  // materializeExpiry pattern) rather than via a cron.
+  expiresAt         DateTime
+  scannedAt         DateTime?
+  // The business user who scanned — there's no separate staff/POS-operator
+  // account model yet, so this is always the BusinessProfile's own userId.
+  scannedByUserId   String?
+  billEnteredAt     DateTime?
+  confirmedAt       DateTime?
+  cancelledAt       DateTime?
+  cancelReason      String?
+
+  promotion Promotion       @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  creator   CreatorProfile  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  business  BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId, status, issuedAt])
+  @@index([creatorId, status])
+  @@index([status, expiresAt])
+  @@map("redemption_sessions")
+}
+
+// Cached creator Points balance — deliberately NOT the sole source of truth
+// (that's Σ COMPLETED CreatorPointsLedger rows, exactly like WalletTransaction
+// above); this exists only because the balance renders on nearly every creator
+// screen and a live groupBy on each render would be wasteful. Every write to
+// `balance` happens inside the same transaction as a CreatorPointsLedger row.
+model CreatorPointsAccount {
+  id             String   @id @default(cuid())
+  creatorId      String   @unique
+  balance        Int      @default(0)
+  lifetimeEarned Int      @default(0)
+  lifetimeSpent  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("creator_points_accounts")
+}
+
+// Immutable creator Points ledger. 1 Point = Rs. 1, never cash-withdrawable in
+// V1. Same append-only / idempotent-by-reference shape as WalletTransaction.
+model CreatorPointsLedger {
+  id               String                       @id @default(cuid())
+  creatorId        String
+  type             CreatorPointsTransactionType
+  direction        WalletDirection
+  // Always positive; the sign is carried by `direction`.
+  amount           Int
+  status           WalletTransactionStatus      @default(COMPLETED)
+  description      String
+  // e.g. 'application' | 'redemption_session' + the source row id. The unique
+  // index below is the idempotency backstop, same role as on WalletTransaction.
+  referenceType    String?
+  referenceId      String?
+  createdByAdminId String?
+  createdAt        DateTime                     @default(now())
+
+  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([referenceId, type])
+  @@index([creatorId, createdAt(sort: Desc)])
+  @@map("creator_points_ledger")
+}
+
+// Business-side mirror of CreatorPointsAccount. 1 Credit = Rs. 1, never
+// cash-withdrawable in V1.
+model BusinessCreditsAccount {
+  id             String   @id @default(cuid())
+  businessId     String   @unique
+  balance        Int      @default(0)
+  lifetimeEarned Int      @default(0)
+  lifetimeSpent  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_credits_accounts")
+}
+
+// Business-side mirror of CreatorPointsLedger.
+model BusinessCreditsLedger {
+  id               String                         @id @default(cuid())
+  businessId       String
+  type             BusinessCreditsTransactionType
+  direction        WalletDirection
+  amount           Int
+  status           WalletTransactionStatus        @default(COMPLETED)
+  description      String
+  // e.g. 'redemption_session' | 'campaign' (Phase 5 campaign-credit spend).
+  referenceType    String?
+  referenceId      String?
+  createdByAdminId String?
+  createdAt        DateTime                       @default(now())
+
+  business BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([referenceId, type])
+  @@index([businessId, createdAt(sort: Desc)])
+  @@map("business_credits_ledger")
+}
+
+enum PromotionDiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum PromotionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum RedemptionSessionStatus {
+  ISSUED
+  SCANNED
+  BILL_ENTERED
+  CONFIRMED
+  EXPIRED
+  CANCELLED
+}
+
+enum CreatorPointsTransactionType {
+  // Credited when a paid campaign completes — added alongside the existing
+  // WalletTransaction{CAMPAIGN_PAYOUT} write in escrow.service.ts (Phase 2).
+  CAMPAIGN_REWARD
+  // Debited when a RedemptionSession reaches CONFIRMED.
+  PROMO_REDEMPTION_DEBIT
+  ADJUSTMENT
+}
+
+enum BusinessCreditsTransactionType {
+  // Credited when a RedemptionSession reaches CONFIRMED.
+  PROMO_REDEMPTION_CREDIT
+  // Debited when credits are applied to a campaign budget (Phase 5).
+  CAMPAIGN_BUDGET_SPEND
+  ADJUSTMENT
 }

@@ -7,6 +7,7 @@ import { BackButton } from '@/components/BackButton';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
+import { creditsService } from '@/services/rewards';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -1015,6 +1016,15 @@ export default function CampaignWorkspaceScreen() {
       if (methods.length && !methods.some((m) => m.key === payMethod)) setPayMethod(methods[0].key);
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Kolab Rewards — Business Credits as an exclusive pay method alongside the
+  // gateway catalog above (never combined with eSewa/Khalti: payMethod is a
+  // single choice, so picking "credits" already excludes every other option
+  // structurally). Fetched the same plain useState+useEffect way as the
+  // catalog above, for consistency within this file.
+  const [creditsAvailable, setCreditsAvailable] = useState(0);
+  useEffect(() => {
+    creditsService.getBalance().then((b) => setCreditsAvailable(b.balance)).catch(() => {});
   }, []);
   const [uploadUrls, setUploadUrls]     = useState('');
   const [uploadNotes, setUploadNotes]   = useState('');
@@ -2107,8 +2117,48 @@ export default function CampaignWorkspaceScreen() {
               {payMethod === m.key && <FontAwesome5 name="check-circle" solid size={18} color="#7C3AED" />}
             </Pressable>
           ))}
+          {/* Kolab Rewards — Business Credits, an exclusive alternative to the
+              gateway catalog above (never combined: payMethod only ever holds
+              one value). Always shown; disabled with an "insufficient" message
+              when the balance can't cover the creator fee. */}
+          {(() => {
+            const affordable = creditsAvailable >= crFee;
+            const selected = payMethod === 'credits';
+            return (
+              <Pressable
+                disabled={!affordable}
+                style={[
+                  sh.methodBtn,
+                  { borderColor: selected ? '#EC4899' : '#E5E7EB', backgroundColor: selected ? '#FDF2F8' : '#fff' },
+                  !affordable && { opacity: 0.5 },
+                ]}
+                onPress={() => setPayMethod('credits')}>
+                <View style={sh.methodLeft}>
+                  <View style={[sh.creditsIcon, { backgroundColor: '#EC489918' }]}>
+                    <FontAwesome5 name="gift" solid size={13} color="#EC4899" />
+                  </View>
+                  <View>
+                    <Text style={[sh.methodTxt, { color: selected ? '#EC4899' : '#374151' }]}>{t('activityTimeline.payWithCredits')}</Text>
+                    <Text style={sh.creditsSub}>
+                      {affordable
+                        ? t('activityTimeline.creditsAvailable', { n: creditsAvailable.toLocaleString() })
+                        : t('activityTimeline.creditsInsufficientForFee')}
+                    </Text>
+                  </View>
+                </View>
+                {selected && <FontAwesome5 name="check-circle" solid size={18} color="#EC4899" />}
+              </Pressable>
+            );
+          })()}
         </View>
-        <ActionBtn size="lg" mt={0} label={t('activityTimeline.modalPayConfirmBtn', { amount: total.toLocaleString() })} color="#7C3AED" onPress={handlePay} loading={submitting} />
+        <ActionBtn
+          size="lg" mt={0}
+          label={t('activityTimeline.modalPayConfirmBtn', { amount: (payMethod === 'credits' ? crFee : total).toLocaleString() })}
+          color="#7C3AED"
+          onPress={handlePay}
+          loading={submitting}
+          disabled={payMethod === 'credits' && creditsAvailable < crFee}
+        />
       </BottomSheet>
 
       {/* ── Upload Deliverables Modal ── */}
@@ -2801,6 +2851,8 @@ const sh = StyleSheet.create({
   methodBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12 },
   methodLeft:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   methodTxt:    { fontSize: 14, fontFamily: F.semibold },
+  creditsIcon:  { width: 22, height: 22, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  creditsSub:   { fontSize: 11, fontFamily: F.regular, color: '#6B7280', marginTop: 1 },
   inputLabel:   { fontSize: 12, fontFamily: F.semibold, color: '#374151', marginBottom: 6 },
   infoBox:      { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, padding: 10 },
   infoTxt:      { fontSize: 12, fontFamily: F.semibold, flex: 1 },

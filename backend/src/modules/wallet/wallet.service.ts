@@ -7,6 +7,8 @@ import { buildUnifiedStatement, toWithdrawalDto } from './wallet.dto';
 import { REFERRED_FIRST_EVENT_BONUS } from '../referral/referral.service';
 import { notificationService } from '../notifications/notification.service';
 import { getCachedSettings } from '../../utils/settingsCache';
+import { logAudit } from '../logging/audit.service';
+import { AuditAction } from '../logging/logging.constants';
 import type { PayoutMethod, Prisma } from '@prisma/client';
 import type { CreateWithdrawalInput } from './wallet.schema';
 
@@ -212,6 +214,36 @@ export class WalletService {
     // Return the full wallet-summary shape so the mobile client can refresh its
     // state (balances, limits, pending flag) straight from the response.
     return { withdrawal: toWithdrawalDto(withdrawal), ...(await this.buildSummary(profile.id)) };
+  }
+
+  async cancelWithdrawal(userId: string, withdrawalId: string) {
+    const profile = await this.resolveCreatorId(userId);
+
+    const withdrawal = await this.repo.findWithdrawalById(withdrawalId);
+    if (!withdrawal || withdrawal.creatorId !== profile.id) {
+      throw new AppError(getDict().wallet.withdrawalNotFound, HttpStatus.NOT_FOUND);
+    }
+    if (withdrawal.status !== 'PENDING') {
+      throw new AppError(getDict().wallet.onlyPendingWithdrawalCanBeCancelled, HttpStatus.BAD_REQUEST);
+    }
+
+    const updated = await prisma.withdrawal.update({
+      where: { id: withdrawalId },
+      data:  { status: 'CANCELLED', processedAt: new Date() },
+    });
+    // The reservation releases automatically — a CANCELLED withdrawal is no
+    // longer counted in pendingWithdrawals, so withdrawableBalance recovers.
+
+    logAudit({ userId, action: AuditAction.WITHDRAWAL_CANCELLED, performedBy: userId, entityId: withdrawalId });
+    notificationService.createForAdmins({
+      type:    'withdrawal_cancelled',
+      title:   'Withdrawal Cancelled',
+      body:    `${profile.fullName ?? 'A creator'} cancelled their withdrawal request ${withdrawal.referenceCode} for Rs. ${withdrawal.amount.toLocaleString()}.`,
+      refId:   withdrawalId,
+      refType: 'withdrawal',
+    }).catch(() => {});
+
+    return { withdrawal: toWithdrawalDto(updated), ...(await this.buildSummary(profile.id)) };
   }
 
   async listWithdrawals(userId: string) {

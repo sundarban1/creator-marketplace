@@ -98,6 +98,12 @@
           "cameraPermission": "Allow Kolab to use your camera to take a profile photo."
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Kolab to use your camera to scan a creator's redemption QR code."
+        }
+      ],
       "expo-video",
       "expo-sharing",
       [

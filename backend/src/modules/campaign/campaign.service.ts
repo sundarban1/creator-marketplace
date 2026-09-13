@@ -1,6 +1,9 @@
 import { CampaignStatus, ApplicationStatus, CampaignType, WorkStatus } from '@prisma/client';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
+import prisma from '../../prisma';
+import { CreditsRepository } from '../credits/credits.repository';
+import { recordCreditsTransaction } from '../credits/credits.ledger';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
 import { toCampaignDto, toApplicationDto, toActivityLogDto, toEventQuestionDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
@@ -212,6 +215,7 @@ export class CampaignService {
   private favoriteRepo: FavoriteRepository;
   private adminRepo:    AdminRepository;
   private categoryRepo: CategoryRepository;
+  private creditsRepo:  CreditsRepository;
 
   constructor() {
     this.repo         = new CampaignRepository();
@@ -220,6 +224,7 @@ export class CampaignService {
     this.favoriteRepo = new FavoriteRepository();
     this.adminRepo    = new AdminRepository();
     this.categoryRepo = new CategoryRepository();
+    this.creditsRepo  = new CreditsRepository();
   }
 
   // A requested 'ACTIVE' publish is downgraded to 'PENDING_APPROVAL' when the
@@ -359,9 +364,14 @@ export class CampaignService {
       input.isFeatured ? this.getFeaturedQuota(userId).then((q) => q.remaining > 0) : Promise.resolve(true),
     ]);
 
-    const raw = await this.repo.create({
+    // creditsToApply is a Kolab Rewards input, not a Campaign column — pulled
+    // out here so it's never accidentally spread into the Prisma create data
+    // below (that field is `creditsApplied`, written separately).
+    const { creditsToApply, ...campaignInput } = input;
+
+    const campaignData = {
       businessId: business.id,
-      ...input,
+      ...campaignInput,
       isFeatured: input.isFeatured && featuredAllowed,
       status:     resolvedStatus,
       commissionRate,
@@ -383,7 +393,37 @@ export class CampaignService {
       locationLat:  locationType === 'REMOTE' ? null : input.locationLat,
       locationLng:  locationType === 'REMOTE' ? null : input.locationLng,
       locationType,
-    });
+    };
+
+    let raw;
+    if (creditsToApply && creditsToApply > 0) {
+      // Kolab Rewards — earmark Business Credits toward this campaign at
+      // creation time. Atomic: lock the account, verify the live balance,
+      // create the campaign, and debit the ledger all in one transaction —
+      // same lock-then-mutate-then-ledger-write shape as
+      // withdrawal.admin.service.ts. This is a display/bookkeeping figure
+      // only (see Campaign.creditsApplied comment) — it never touches the
+      // per-Application escrow/payment flow.
+      raw = await prisma.$transaction(async (tx) => {
+        const account = await this.creditsRepo.lockAccount(tx, business.id);
+        if ((account?.balance ?? 0) < creditsToApply) {
+          throw new AppError(getDict().campaign.insufficientCredits, HttpStatus.BAD_REQUEST);
+        }
+        const created = await this.repo.create({ ...campaignData, creditsApplied: creditsToApply }, tx);
+        await recordCreditsTransaction(tx, {
+          businessId:    business.id,
+          type:          'CAMPAIGN_BUDGET_SPEND',
+          direction:     'DEBIT',
+          amount:        creditsToApply,
+          description:   `Applied to "${created.title}"`,
+          referenceType: 'campaign',
+          referenceId:   created.id,
+        });
+        return created;
+      }, { isolationLevel: 'Serializable' });
+    } else {
+      raw = await this.repo.create(campaignData);
+    }
     const campaign = toCampaignDto(raw);
 
     logActivity({ userId, action: ActivityAction.CAMPAIGN_CREATED, entityType: EntityType.CAMPAIGN, entityId: raw.id, metadata: { campaignType: raw.campaignType, status: raw.status } });
@@ -1447,6 +1487,32 @@ export class CampaignService {
       .catch(() => {});
   }
 
+  // Kolab Rewards — pay for an accepted application entirely with Business
+  // Credits, exclusive of any money gateway (never a combination with
+  // eSewa/Khalti for one application — the business picks one method).
+  // Debits the ledger atomically (lock the account, verify the live balance,
+  // debit) BEFORE finalizeApplicationPayment flips the application's own
+  // status, so two concurrent attempts can't both spend the same credits —
+  // the second one's ledger insert collides on the same idempotency key
+  // (referenceType 'application', referenceId appId) and is rejected.
+  private async debitCreditsForApplication(businessId: string, appId: string, amount: number) {
+    await prisma.$transaction(async (tx) => {
+      const account = await this.creditsRepo.lockAccount(tx, businessId);
+      if ((account?.balance ?? 0) < amount) {
+        throw new AppError(getDict().campaign.insufficientCredits, HttpStatus.BAD_REQUEST);
+      }
+      await recordCreditsTransaction(tx, {
+        businessId,
+        type:          'CAMPAIGN_BUDGET_SPEND',
+        direction:     'DEBIT',
+        amount,
+        description:   'Applied to fund a creator payment',
+        referenceType: 'application',
+        referenceId:   appId,
+      });
+    }, { isolationLevel: 'Serializable' });
+  }
+
   async payForApplication(appId: string, userId: string, method = 'esewa') {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
@@ -1460,6 +1526,10 @@ export class CampaignService {
     if (application.status !== 'ACCEPTED') throw new AppError(getDict().campaign.creatorMustBeAcceptedFirst, HttpStatus.BAD_REQUEST);
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
       throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
+    }
+
+    if (method === 'credits') {
+      await this.debitCreditsForApplication(business.id, appId, application.proposedRate);
     }
 
     await this.finalizeApplicationPayment({

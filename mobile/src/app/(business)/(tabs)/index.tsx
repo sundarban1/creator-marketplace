@@ -31,6 +31,7 @@ import { prefetchCampaign, prefetchCreatorPublic } from '@/lib/prefetch';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EntityCard } from '@/components/EntityCard';
+import { CreditsCard } from '@/features/business/components/CreditsCard';
 import { TabColors } from '@/utilities/tabColors';
 
 const STATUS_STYLE = {
@@ -335,6 +336,14 @@ export default function BusinessHomeScreen() {
             </View>
           ) : null}
 
+        </View>
+
+        {/* Kolab Rewards (business side) — its own step below the action zone
+            (xxl), same rhythm as findPeopleSection below it. Not folded into
+            heroGroup: that cluster is "things demanding attention right now"
+            (search/banner/CTA); Credits balance is a standing stat. */}
+        <View style={{ marginTop: SPACING.xxl }}>
+          <CreditsCard />
         </View>
 
         {/* ── Find People by Category — horizontal slider over the full

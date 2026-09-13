@@ -13,6 +13,7 @@ import {
   CreditCard,
   MessageCircle,
   HelpCircle,
+  Tag,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from '../api/auth';
@@ -44,6 +45,7 @@ const BUSINESS_NAV: NavItem[] = [
   { key: 'dashboard', to: '/business', icon: LayoutDashboard, end: true },
   { key: 'findCreators', to: '/business/creators', icon: Users },
   { key: 'events', to: '/business/events', icon: CalendarDays },
+  { key: 'promotions', to: '/business/promotions', icon: Tag },
   { key: 'applications', to: '/business/applications', icon: FileText },
   { key: 'messages', to: '/business/messages', icon: MessageCircle },
   { key: 'deliverables', to: '/business/deliverables', icon: PackageCheck },

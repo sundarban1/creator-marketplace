@@ -104,6 +104,10 @@ export class WalletRepository {
     });
   }
 
+  async findWithdrawalById(id: string) {
+    return prisma.withdrawal.findUnique({ where: { id } });
+  }
+
   async listLedger(creatorId: string) {
     return prisma.walletTransaction.findMany({
       where:   { creatorId },

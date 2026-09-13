@@ -41,6 +41,10 @@ import serviceRequestRoutes from '../modules/service-request/service-request.rou
 import reportRoutes         from '../modules/report/report.routes';
 import reportAdminRoutes    from '../modules/report/report.admin.routes';
 import withdrawalAdminRoutes from '../modules/withdrawal/withdrawal.admin.routes';
+import promotionRoutes from '../modules/promotion/promotion.routes';
+import redemptionRoutes from '../modules/redemption/redemption.routes';
+import pointsRoutes from '../modules/points/points.routes';
+import creditsRoutes from '../modules/credits/credits.routes';
 
 export function registerApiRoutes(app: Express): void {
   app.use('/api/auth', authRoutes);
@@ -52,10 +56,12 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/creator', creatorRoutes);
   app.use('/api/creator/referral', referralRoutes);
   app.use('/api/creator/wallet', walletRoutes);
+  app.use('/api/creator/points', pointsRoutes);
   app.use('/api/creator/services', serviceRoutes);
   app.use('/api/creator/portfolio-items', portfolioRoutes);
   app.use('/api/creator/team', providerMemberRoutes);
   app.use('/api/business/referral', businessReferralRoutes);
+  app.use('/api/business/credits', creditsRoutes);
   app.use('/api/business', businessRoutes);
   // Public — Khalti's browser redirect lands here directly with no auth header,
   // same reasoning as the TikTok/Instagram callbacks above.
@@ -65,6 +71,8 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/campaigns/ai', campaignAiRoutes);
   app.use('/api/ai-assistant', aiAssistantRoutes);
   app.use('/api/campaigns', campaignRoutes);
+  app.use('/api/promotions', promotionRoutes);
+  app.use('/api/redemptions', redemptionRoutes);
   app.use('/api/messaging', messagingRoutes);
   app.use('/api/admin/categories', categoryAdminRoutes);
   app.use('/api/admin/platforms', platformAdminRoutes);
