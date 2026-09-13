@@ -17,7 +17,10 @@ interface StoredSession {
 function loadSession(): StoredSession | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as StoredSession) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredSession>;
+    if (!parsed.chatId || !parsed.token) return null;
+    return parsed as StoredSession;
   } catch {
     return null;
   }
@@ -25,6 +28,10 @@ function loadSession(): StoredSession | null {
 
 function saveSession(session: StoredSession) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+}
+
+function clearSession() {
+  localStorage.removeItem(STORAGE_KEY);
 }
 
 function addMessage(prev: VisitorMessage[], message: VisitorMessage): VisitorMessage[] {
@@ -52,7 +59,12 @@ export function ChatWidget() {
     if (!session) return;
     visitorChatApi.getMessages(session.chatId, session.token)
       .then(setMessages)
-      .catch(() => {});
+      .catch(() => {
+        // Stale/invalid session (e.g. expired token) — drop it so the widget
+        // doesn't keep retrying a dead session on every future page load.
+        clearSession();
+        setSession(null);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.chatId]);
 
