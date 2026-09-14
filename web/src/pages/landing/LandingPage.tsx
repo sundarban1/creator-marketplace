@@ -4,12 +4,12 @@ import { LenisProvider, useLenisScroll } from './hooks/useLenis';
 import { useLandingStats } from './hooks/useLandingStats';
 import { useSuccessStories } from './hooks/useSuccessStories';
 import { useLandingShowcase } from './hooks/useLandingShowcase';
-import { useScrollRestoration } from './hooks/useScrollRestoration';
+import { useScrollToTop } from './hooks/useScrollToTop';
 
-// The browser only restores scroll on its own schedule (see
-// useScrollRestoration.ts for why that's visibly late on this page) — taking
-// it over here, as early as this module evaluates on every load, beats that
-// default before it has a chance to run.
+// A hard reload should always land at the top (see useScrollToTop.ts) rather
+// than the browser's native scroll restoration jumping back to wherever the
+// user last was — taking it over here, as early as this module evaluates on
+// every load, beats that default before it has a chance to run.
 if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual';
 }
@@ -69,7 +69,7 @@ function HashScrollHandler() {
 }
 
 function LandingPageInner() {
-  useScrollRestoration();
+  useScrollToTop();
   const stats = useLandingStats();
   const successStories = useSuccessStories();
   const { events, creators, businesses, categoryMeta } = useLandingShowcase();
