@@ -1131,7 +1131,6 @@ export const en = {
     eventNotFoundTitle: 'Event not found',
     eventNotFoundBody: 'This event may have closed or been removed.',
     backToEvents: 'Back to events',
-    backToHome: 'Back to home',
   },
 
   // First-login onboarding — same copy/steps as the mobile app's onboarding.tsx.
