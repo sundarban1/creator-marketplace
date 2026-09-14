@@ -36,7 +36,7 @@ export function AttentionBanner({
           <span className="block text-[13.5px] font-semibold text-ink">{title}</span>
           <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-soft">{subtitle}</span>
         </span>
-        <ChevronRight size={18} className="mt-1 flex-shrink-0 text-warning/70" />
+        <ChevronRight size={18} className="flex-shrink-0 self-center text-warning/70" />
       </Link>
       {onDismiss && (
         <button

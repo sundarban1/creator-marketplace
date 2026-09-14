@@ -14,6 +14,7 @@ import {
   MessageCircle,
   HelpCircle,
   Tag,
+  Gift,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from '../api/auth';
@@ -29,20 +30,22 @@ export interface NavItem {
 
 const CREATOR_NAV: NavItem[] = [
   { key: 'dashboard', to: '/creator', icon: LayoutDashboard, end: true },
+  { key: 'profile', to: '/creator/profile', icon: UserRound },
   { key: 'discoverEvents', to: '/creator/events', icon: Compass },
   { key: 'discoverCreators', to: '/creator/creators', icon: Users },
   { key: 'discoverBusinesses', to: '/creator/businesses', icon: Building2 },
-  { key: 'applications', to: '/creator/applications', icon: FileText },
+  { key: 'myApplications', to: '/creator/applications', icon: FileText },
   { key: 'myWork', to: '/creator/work', icon: Briefcase },
   { key: 'messages', to: '/creator/messages', icon: MessageCircle },
   { key: 'wallet', to: '/creator/wallet', icon: Wallet },
-  { key: 'profile', to: '/creator/profile', icon: UserRound },
+  { key: 'referFriend', to: '/creator/referrals', icon: Gift },
   { key: 'settings', to: '/creator/settings', icon: Settings },
   { key: 'help', to: '/creator/support', icon: HelpCircle },
 ];
 
 const BUSINESS_NAV: NavItem[] = [
   { key: 'dashboard', to: '/business', icon: LayoutDashboard, end: true },
+  { key: 'profile', to: '/business/profile', icon: UserRound },
   { key: 'findCreators', to: '/business/creators', icon: Users },
   { key: 'events', to: '/business/events', icon: CalendarDays },
   { key: 'promotions', to: '/business/promotions', icon: Tag },
@@ -50,7 +53,7 @@ const BUSINESS_NAV: NavItem[] = [
   { key: 'messages', to: '/business/messages', icon: MessageCircle },
   { key: 'deliverables', to: '/business/deliverables', icon: PackageCheck },
   { key: 'payments', to: '/business/payments', icon: CreditCard },
-  { key: 'profile', to: '/business/profile', icon: UserRound },
+  { key: 'referBusiness', to: '/business/referrals', icon: Gift },
   { key: 'settings', to: '/business/settings', icon: Settings },
   { key: 'help', to: '/business/support', icon: HelpCircle },
 ];

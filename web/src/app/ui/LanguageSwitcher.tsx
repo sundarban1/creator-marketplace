@@ -1,35 +1,29 @@
 import { useAppLanguage, type Lang } from '../i18n';
 import { cn } from './cn';
 
-const LABELS: Record<Lang, string> = { en: 'EN', ne: 'नेपाली' };
+const TARGET_LABELS: Record<Lang, string> = { en: 'EN', ne: 'ने' };
+const TARGET_NAMES: Record<Lang, string> = { en: 'English', ne: 'नेपाली' };
 
-/** Compact EN / नेपाली toggle. Persists via AppLanguageProvider (spec §44–45). */
+/**
+ * Single-button language toggle, matching the landing page's compact
+ * LanguageSwitch (a pill showing only the language you'll *switch to*, not a
+ * two-option segmented control) so the header stays out of the way on mobile.
+ */
 export function LanguageSwitcher({ className }: { className?: string }) {
   const { language, setLanguage } = useAppLanguage();
+  const target = language === 'en' ? 'ne' : 'en';
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => setLanguage(target)}
+      aria-label={`Switch to ${TARGET_NAMES[target]}`}
       className={cn(
-        'inline-flex items-center rounded-full border border-line-strong bg-surface p-0.5',
+        'flex h-8 min-w-8 items-center justify-center rounded-full border border-line-strong bg-surface px-2 text-[12px] font-semibold uppercase tracking-wide text-ink-soft transition-colors hover:text-ink',
         className,
       )}
-      role="group"
-      aria-label="Language"
     >
-      {(Object.keys(LABELS) as Lang[]).map((lang) => (
-        <button
-          key={lang}
-          type="button"
-          onClick={() => setLanguage(lang)}
-          aria-pressed={language === lang}
-          className={cn(
-            'rounded-full px-3 py-1 text-[13px] font-semibold transition-colors',
-            language === lang ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink',
-          )}
-        >
-          {LABELS[lang]}
-        </button>
-      ))}
-    </div>
+      {TARGET_LABELS[target]}
+    </button>
   );
 }

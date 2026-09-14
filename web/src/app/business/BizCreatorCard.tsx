@@ -50,9 +50,7 @@ export function BizCreatorCard({
         />
 
         <div className="flex items-start gap-3 pr-8">
-          <span className="inline-flex flex-shrink-0 rounded-full p-0.5 ring-1 ring-violet/15">
-            <Avatar name={name} src={creator.avatarUrl} size="lg" />
-          </span>
+          <Avatar name={name} src={creator.avatarUrl} size="lg" className="flex-shrink-0" />
           <div className="min-w-0 flex-1 pt-0.5">
             <div className="flex items-center gap-1.5">
               <h3 className="truncate text-[15px] font-semibold text-ink">{name}</h3>

@@ -60,7 +60,7 @@ export function NotificationsBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(92vw,360px)] overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
+        <div className="fixed inset-x-3 top-[4.5rem] z-50 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[360px]">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <span className="text-[14px] font-semibold text-ink">{t('nav.notifications')}</span>
             {unread > 0 && (

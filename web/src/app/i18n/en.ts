@@ -44,13 +44,15 @@ export const en = {
   nav: {
     // Creator
     dashboard: 'Dashboard',
-    discoverEvents: 'Discover Events',
-    discoverCreators: 'Discover Creators',
-    discoverBusinesses: 'Discover Business',
+    discoverEvents: 'Events',
+    discoverCreators: 'Creators',
+    discoverBusinesses: 'Brand/Business',
+    myApplications: 'My Applications',
     applications: 'Applications',
     myWork: 'My Work',
     messages: 'Messages',
     wallet: 'Earnings',
+    referFriend: 'Refer a friend',
     profile: 'Profile',
     settings: 'Settings',
     // Business
@@ -59,6 +61,7 @@ export const en = {
     promotions: 'Promotions',
     deliverables: 'Deliverables',
     payments: 'Payments',
+    referBusiness: 'Refer a business',
     help: 'Help',
     // Shell chrome
     notifications: 'Notifications',
