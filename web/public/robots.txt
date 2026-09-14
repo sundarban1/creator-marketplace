@@ -7,7 +7,5 @@ Disallow: /verify
 Disallow: /forgot-password
 Disallow: /creator/
 Disallow: /business/
-Disallow: /creators
-Disallow: /businesses
 
 Sitemap: https://www.ourkolab.com/sitemap.xml

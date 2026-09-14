@@ -55,7 +55,14 @@ const SPA_PREFIXES = [
 // Public, indexable SPA routes — client-rendered (React 19 hoists their SEO
 // tags), served with a 200 so crawlers index them. Distinct from SPA_PREFIXES
 // only in intent; both fall back to the same shell.
-const PUBLIC_SPA_PREFIXES = ['/creators', '/events'];
+//
+// '/businesses' must be listed explicitly here — it does NOT fall through to
+// the '/business' entry in SPA_PREFIXES above, because that check requires a
+// '/' right after the prefix (`path.startsWith(prefix + '/')`) and
+// '/businesses' has no such boundary. Before this was added, every request
+// to /businesses or /businesses/:id missed both prefix lists and fell to the
+// real-404 branch below, in production.
+const PUBLIC_SPA_PREFIXES = ['/creators', '/businesses', '/events'];
 
 const app = express();
 
