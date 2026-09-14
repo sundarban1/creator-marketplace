@@ -9,19 +9,20 @@ import { PhoneShowcase } from '../components/PhoneShowcase';
 import { useCountUp } from '../hooks/useCountUp';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import type { LandingStats } from '../../../lib/api';
+import type { LandingStats, PublicCreatorLite } from '../../../lib/api';
 
-// Decorative avatar-stack photos — no real "recently joined" feed exists yet,
-// same convention as the Pexels-hosted stock imagery used elsewhere on the
-// page (Showcase, PhoneShowcase) rather than a local asset.
-const AVATAR_PHOTOS = [
+// Stock-photo fallback for the avatar stack — used whenever a real creator
+// avatar isn't available yet (showcase fetch failed/still loading, or fewer
+// than 4 creators have an avatarUrl), same convention as the Pexels-hosted
+// stock imagery used elsewhere on the page (Showcase, PhoneShowcase).
+const AVATAR_FALLBACK_PHOTOS = [
   'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
   'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
   'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
   'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
 ];
 
-export function Hero({ stats }: { stats: LandingStats | null }) {
+export function Hero({ stats, creators }: { stats: LandingStats | null; creators: PublicCreatorLite[] | null }) {
   const { d } = useLandingLanguage();
   const { scrollTo } = useLenisScroll();
   const reducedMotion = useReducedMotion();
@@ -30,6 +31,11 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
 
   const socialProofTarget = stats ? stats.totalCreators + stats.totalBusinesses : d.hero.socialProofFallback;
   const { ref: countRef, display } = useCountUp(socialProofTarget);
+
+  // Real creator avatars where we have them, stock photos filling any
+  // remaining slots (showcase still loading/failed, or too few avatarUrls).
+  const realAvatarUrls = (creators ?? []).map((c) => c.avatarUrl).filter((url): url is string => Boolean(url));
+  const avatarPhotos = AVATAR_FALLBACK_PHOTOS.map((fallback, i) => realAvatarUrls[i] ?? fallback);
 
   // Cursor-driven parallax on the background glow + a matching subtle 3D tilt
   // on the phone mockup — same recipe as the previous hero, kept because it's
@@ -151,12 +157,16 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
 
             <motion.div variants={fadeUp} className="mt-8 flex items-center gap-3">
               <div className="flex -space-x-3">
-                {AVATAR_PHOTOS.map((src, i) => (
+                {avatarPhotos.map((src, i) => (
                   <motion.img
-                    key={src}
+                    key={i}
                     src={src}
                     alt=""
                     loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = AVATAR_FALLBACK_PHOTOS[i];
+                    }}
                     initial={{ opacity: 0, scale: 0.6, x: -8 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     transition={{ delay: 1.1 + i * 0.08, type: 'spring', stiffness: 260, damping: 18 }}

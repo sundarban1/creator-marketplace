@@ -116,7 +116,7 @@ function LandingPageInner() {
       <CornerChrome />
       <SocialRail />
       <LandingNav />
-      <Hero stats={stats} />
+      <Hero stats={stats} creators={creators} />
       <Possibilities />
       <Audience />
       <AIDiscovery />
