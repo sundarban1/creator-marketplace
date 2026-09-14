@@ -5,8 +5,12 @@ import { Link } from 'react-router-dom';
 import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
-import { useEventsPreview } from '../hooks/useEventsPreview';
 import { perCreatorBudget } from '../../../app/lib/format';
+import type { EventCard as EventCardData } from '../../../app/api/publicMarketplace';
+
+interface Props {
+  events: EventCardData[] | null;
+}
 
 type Card = {
   key: string;
@@ -16,12 +20,12 @@ type Card = {
   isPaid: boolean;
   meta: string;
   imageUrl: string | null;
+  to: string;
 };
 
-export function EventsShowcase() {
+export function EventsShowcase({ events }: Props) {
   const { d } = useLandingLanguage();
   const copy = d.events;
-  const { events } = useEventsPreview();
   const [showModal, setShowModal] = useState(false);
 
   let cards: Card[];
@@ -37,6 +41,7 @@ export function EventsShowcase() {
         isPaid,
         meta: isPaid ? perCreatorBudget(e).amount : (perks[0] ?? copy.freeBadge),
         imageUrl: e.featureImageUrl ?? e.business?.logoUrl ?? null,
+        to: `/events/${e.id}`,
       };
     });
   } else {
@@ -48,6 +53,7 @@ export function EventsShowcase() {
       isPaid: f.badge !== copy.freeBadge,
       meta: f.meta,
       imageUrl: null,
+      to: '/events',
     }));
   }
 
@@ -80,45 +86,43 @@ export function EventsShowcase() {
           className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-4"
         >
           {cards.map((card) => (
-            <motion.button
-              key={card.key}
-              type="button"
-              onClick={() => setShowModal(true)}
-              variants={fadeUp}
-              whileHover={CARD_HOVER}
-              className="group flex h-full flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white text-left shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] transition-colors hover:border-ink/20 dark:border-white/10 dark:bg-ink-elevated dark:hover:border-white/20"
-            >
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-violet/15 to-brand-orange/15">
-                {card.imageUrl ? (
-                  <img src={card.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-sm font-bold text-ink dark:text-white">
-                    {initials(card.business ?? card.title)}
-                  </div>
-                )}
-                <span
-                  className={`absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white ${
-                    card.isPaid ? 'bg-violet' : 'bg-emerald-500'
-                  }`}
-                >
-                  {card.isPaid ? copy.paidBadge : copy.freeBadge}
-                </span>
-              </div>
+            <motion.div key={card.key} variants={fadeUp} whileHover={CARD_HOVER}>
+              <Link
+                to={card.to}
+                className="group flex h-full flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white text-left shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] transition-colors hover:border-ink/20 dark:border-white/10 dark:bg-ink-elevated dark:hover:border-white/20"
+              >
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-violet/15 to-brand-orange/15">
+                  {card.imageUrl ? (
+                    <img src={card.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm font-bold text-ink dark:text-white">
+                      {initials(card.business ?? card.title)}
+                    </div>
+                  )}
+                  <span
+                    className={`absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white ${
+                      card.isPaid ? 'bg-violet' : 'bg-emerald-500'
+                    }`}
+                  >
+                    {card.isPaid ? copy.paidBadge : copy.freeBadge}
+                  </span>
+                </div>
 
-              <div className="flex flex-1 flex-col p-4">
-                <p className="line-clamp-2 text-sm font-bold leading-snug text-ink dark:text-white">{card.title}</p>
-                {card.business && (
-                  <p className="mt-1 line-clamp-1 text-xs text-ink-soft dark:text-white">{card.business}</p>
-                )}
-                <p className="mt-2 text-xs font-semibold text-ink dark:text-white">{card.meta}</p>
-                {card.location && (
-                  <p className="mt-auto flex items-center gap-1 pt-2 text-[11px] text-ink-soft dark:text-white">
-                    <MapPin size={11} />
-                    {card.location}
-                  </p>
-                )}
-              </div>
-            </motion.button>
+                <div className="flex flex-1 flex-col p-4">
+                  <p className="line-clamp-2 text-sm font-bold leading-snug text-ink dark:text-white">{card.title}</p>
+                  {card.business && (
+                    <p className="mt-1 line-clamp-1 text-xs text-ink-soft dark:text-white">{card.business}</p>
+                  )}
+                  <p className="mt-2 text-xs font-semibold text-ink dark:text-white">{card.meta}</p>
+                  {card.location && (
+                    <p className="mt-auto flex items-center gap-1 pt-2 text-[11px] text-ink-soft dark:text-white">
+                      <MapPin size={11} />
+                      {card.location}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            </motion.div>
           ))}
         </motion.div>
 

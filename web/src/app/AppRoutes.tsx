@@ -72,23 +72,19 @@ const BusinessVerificationPage = screen(() => import('./business/BusinessVerific
 export function marketplaceRoutes() {
   return (
     <>
-    {/* Public marketplace — no auth, indexable, own marketing chrome */}
-    <Route element={<PublicLayout />}>
-      <Route path="/events" element={<EventsPage />} />
-      <Route path="/events/:id" element={<EventDetailPage />} />
-    </Route>
-
     <Route element={<AppProviders />}>
-      {/* Creator/business directory — same marketing chrome as the public
-          routes above, but requires a signed-in session (redirects to
-          /login). Needs AppProviders for the auth context RequireAuth reads. */}
-      <Route element={<RequireAuth />}>
-        <Route element={<PublicLayout />}>
-          <Route path="/creators" element={<CreatorsPage />} />
-          <Route path="/creators/:handle" element={<CreatorProfilePage />} />
-          <Route path="/businesses" element={<PublicBusinessesPage />} />
-          <Route path="/businesses/:id" element={<PublicBusinessProfilePage />} />
-        </Route>
+      {/* Public marketplace — no auth, indexable, own marketing chrome.
+          Nested under AppProviders (not RequireAuth) so the auth context is
+          available to gate specific actions (apply, message, hire) behind a
+          signup/login prompt without blocking the page itself for signed-out
+          visitors. */}
+      <Route element={<PublicLayout />}>
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/:id" element={<EventDetailPage />} />
+        <Route path="/creators" element={<CreatorsPage />} />
+        <Route path="/creators/:handle" element={<CreatorProfilePage />} />
+        <Route path="/businesses" element={<PublicBusinessesPage />} />
+        <Route path="/businesses/:id" element={<PublicBusinessProfilePage />} />
       </Route>
 
       {/* Auth — redirect away if already signed in */}

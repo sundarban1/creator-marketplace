@@ -1,18 +1,23 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { useT } from '../i18n';
+import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
 import { fetchPublicEvent } from '../api/publicMarketplace';
 import { ApiError } from '../lib/apiClient';
 import { SEO } from '../../lib/seo/SEO';
 import { absoluteUrl } from '../../lib/seo/config';
+import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { EventDetailBody, EventDetailSkeleton } from '../events/EventDetailBody';
-import { BottomCTA } from './detailKit';
+import { SignupGateModal } from './SignupGateModal';
 
 export function EventDetailPage() {
   const t = useT();
+  const { user } = useAppAuth();
   const { id = '' } = useParams();
   const { data: event, loading, error } = useAsync((s) => fetchPublicEvent(id, s), [id]);
+  const [gateOpen, setGateOpen] = useState(false);
 
   if (loading) {
     return (
@@ -33,6 +38,22 @@ export function EventDetailPage() {
           action={{ label: t('public.backToEvents'), href: '/events' }}
         />
       </div>
+    );
+  }
+
+  const isOpen = event.status === 'ACTIVE';
+  let cta: React.ReactNode = null;
+  if (user?.role === 'CREATOR') {
+    cta = (
+      <Link to={`/creator/events/${event.id}`}>
+        <Button size="lg">{t('public.applyNow')}</Button>
+      </Link>
+    );
+  } else if (!user && isOpen) {
+    cta = (
+      <Button size="lg" onClick={() => setGateOpen(true)}>
+        {t('public.applyNow')}
+      </Button>
     );
   }
 
@@ -67,9 +88,14 @@ export function EventDetailPage() {
         }}
       />
 
-      <EventDetailBody event={event} backTo="/events" backLabel={t('public.backToEvents')} />
+      <EventDetailBody event={event} backTo="/events" backLabel={t('public.backToEvents')} cta={cta} />
 
-      <BottomCTA title={t('public.applyInApp')} ctaLabel={t('public.getStarted')} href="/" />
+      <SignupGateModal
+        open={gateOpen}
+        onClose={() => setGateOpen(false)}
+        title={t('public.eventGateTitle')}
+        body={t('public.eventGateBody')}
+      />
     </div>
   );
 }

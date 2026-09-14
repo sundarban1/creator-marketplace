@@ -1,14 +1,23 @@
 import { PublicRepository } from './public.repository';
 import { AdminRepository } from '../admin/admin.repository';
+import { CampaignService } from '../campaign/campaign.service';
+import { CreatorService } from '../creator/creator.service';
+import { BusinessService } from '../business/business.service';
 import { cached } from '../../utils/cache';
 
 export class PublicService {
   private repo: PublicRepository;
   private adminRepo: AdminRepository;
+  private campaignService: CampaignService;
+  private creatorService: CreatorService;
+  private businessService: BusinessService;
 
   constructor() {
     this.repo = new PublicRepository();
     this.adminRepo = new AdminRepository();
+    this.campaignService = new CampaignService();
+    this.creatorService = new CreatorService();
+    this.businessService = new BusinessService();
   }
 
   async getLandingStats() {
@@ -62,6 +71,25 @@ export class PublicService {
         tiktok:    (s['platform.social.tiktok'] as string) || '',
         youtube:   (s['platform.social.youtube'] as string) || '',
       },
+    };
+  }
+
+  // Landing page's three preview rows (events/creators/businesses) in one
+  // round trip — each section only ever shows 4 cards, so this fetches
+  // exactly that instead of the old three separate public-marketplace calls
+  // that over-fetched (events: 3 paid + 1 open; creators/businesses: 4 each,
+  // sorted the same way their full browse pages default to).
+  async getShowcase(lang = 'en') {
+    const [events, creatorsResult, businessesResult] = await Promise.all([
+      this.campaignService.showcase(3, 1, lang),
+      this.creatorService.listCreators({ page: 1, limit: 4, sort: 'followers', lang }),
+      this.businessService.listBusinesses({ page: 1, limit: 4, lang }),
+    ]);
+
+    return {
+      events: [...events.paid, ...events.open],
+      creators: creatorsResult.creators,
+      businesses: businessesResult.businesses,
     };
   }
 }

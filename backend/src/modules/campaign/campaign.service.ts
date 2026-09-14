@@ -469,8 +469,9 @@ export class CampaignService {
   }
 
   // Landing page's events preview row: a fixed mix of paid + open events in one
-  // round trip, so a slow/failing fetch of one type can't blank out the other
-  // (they used to be two independent public /events calls on the client).
+  // round trip, so a slow/failing fetch of one type can't blank out the other.
+  // Called from PublicService.getShowcase, which merges it with the
+  // creators/businesses preview into the single /api/public/showcase response.
   async showcase(paidLimit: number, openLimit: number, lang = 'en') {
     const [paidRaw, openRaw] = await Promise.all([
       this.repo.findMany({ campaignType: 'PAID_CAMPAIGN', page: 1, limit: paidLimit }),

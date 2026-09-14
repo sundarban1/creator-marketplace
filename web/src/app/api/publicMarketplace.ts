@@ -5,6 +5,7 @@
  */
 
 import { apiRequest, type ApiPagination } from '../lib/apiClient';
+import type { PublicCreatorLite, PublicBusinessLite } from '../../lib/api';
 
 // ── Creators ─────────────────────────────────────────────────────────────────
 
@@ -337,15 +338,24 @@ export async function fetchPublicEvents(
   return { items: res.data, pagination: res.pagination };
 }
 
-export async function fetchEventsShowcase(
-  opts: { paidLimit?: number; openLimit?: number } = {},
-  signal?: AbortSignal,
-): Promise<{ paid: EventCard[]; open: EventCard[] }> {
-  const res = await apiRequest<{ paid: EventCard[]; open: EventCard[] }>(
+// ── Landing showcase (consolidated) ─────────────────────────────────────────
+// Single round trip for the landing page's three preview rows — events (3
+// paid + 1 open), creators, and businesses (4 each) — so a slow/failing
+// section can't blank out the others, and the client never over-fetches past
+// the 4 cards each section actually renders.
+
+export interface LandingShowcase {
+  events: EventCard[];
+  creators: PublicCreatorLite[];
+  businesses: PublicBusinessLite[];
+}
+
+export async function fetchLandingShowcase(signal?: AbortSignal): Promise<LandingShowcase> {
+  const res = await apiRequest<LandingShowcase>(
     'GET',
-    '/api/public/events/showcase',
+    '/api/public/showcase',
     undefined,
-    { anonymous: true, signal, params: { paidLimit: opts.paidLimit, openLimit: opts.openLimit } },
+    { anonymous: true, signal },
   );
   return res.data;
 }

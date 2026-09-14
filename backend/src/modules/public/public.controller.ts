@@ -42,4 +42,15 @@ export class PublicController {
       next(err);
     }
   }
+
+  // Public — no auth. Landing page's events/creators/businesses preview rows
+  // in one round trip (see PublicService.getShowcase).
+  async showcase(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await publicService.getShowcase(req.language);
+      success(res, result, 'Showcase retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

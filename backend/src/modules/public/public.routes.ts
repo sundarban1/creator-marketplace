@@ -5,7 +5,6 @@ import { BusinessController } from '../business/business.controller';
 import { CampaignController } from '../campaign/campaign.controller';
 import { validate } from '../../middleware/validate';
 import { campaignListQuerySchema } from '../campaign/campaign.schema';
-import { authenticate } from '../../middleware/auth';
 
 const router = Router();
 const ctrl = new PublicController();
@@ -21,28 +20,28 @@ router.get('/coming-soon', ctrl.comingSoon.bind(ctrl));
 router.get('/platform-flags', ctrl.platformFlags.bind(ctrl));
 // Public — no auth. Contact details + social links for the landing page footer.
 router.get('/site-info', ctrl.siteInfo.bind(ctrl));
+// Public — no auth. Landing page's events/creators/businesses preview rows in one call.
+router.get('/showcase', ctrl.showcase.bind(ctrl));
 
 // ── Public creator marketplace (ourkolab.com/creators) ─────────────────────────
-// The list stays unauthenticated — the landing page's marketplace preview
-// widget fetches it logged-out. The full profile now requires a signed-in
-// session; the web app gates the /creators/:handle route behind login too.
+// Fully public, like the event detail route below — a signed-out visitor can
+// browse a creator's profile; the web app gates the *actions* on it (messaging,
+// hiring) behind a signup/login prompt instead of the route itself.
 // `/filter-options` before `/:handle` so the literal segment wins.
 router.get('/creators/filter-options', creatorCtrl.getCreatorFilterOptions.bind(creatorCtrl));
 router.get('/creators', creatorCtrl.listPublicCreators.bind(creatorCtrl));
-router.get('/creators/:handle', authenticate, creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
+router.get('/creators/:handle', creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
 
 // ── Public business marketplace (ourkolab.com/businesses) ─────────────────────
-// Same split as creators above: list stays open for the landing preview
-// widget, full profile requires a signed-in session.
+// Same as creators above: fully public, actions gated in the UI instead.
 router.get('/businesses', businessCtrl.listBusinesses.bind(businessCtrl));
-router.get('/businesses/:id', authenticate, businessCtrl.getBusinessPublic.bind(businessCtrl));
+router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl));
 
 // ── Public event marketplace (ourkolab.com/events) ────────────────────────────
 // `campaignService.list` already defaults to status=ACTIVE and needs no auth;
 // this is just the public-namespaced alias. Detail 404s non-public statuses.
-// Before `/events/:id` so the literal segment wins (same reasoning as
-// `/creators/filter-options` above `/creators/:handle`).
-router.get('/events/showcase', campaignCtrl.showcase.bind(campaignCtrl));
+// (The landing page's events preview used to have its own `/events/showcase`
+// route here — folded into `/showcase` above, alongside creators/businesses.)
 router.get('/events', validate(campaignListQuerySchema, 'query'), campaignCtrl.list.bind(campaignCtrl));
 router.get('/events/:id', campaignCtrl.getPublicById.bind(campaignCtrl));
 

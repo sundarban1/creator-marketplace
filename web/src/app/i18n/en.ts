@@ -1048,6 +1048,8 @@ export const en = {
     verified: 'Verified',
     workWithCreator: 'Work with this creator',
     viewProfile: 'View profile',
+    creatorGateTitle: 'Looking for creators to promote your brand or business?',
+    creatorGateBody: 'Create a business account on Kolab to connect with verified creators and get your campaign started.',
 
     // /creators/[handle]
     aboutHeading: 'About',
@@ -1078,11 +1080,15 @@ export const en = {
 
     // /businesses/[id]
     joinToApply: 'Join Kolab to apply',
+    browseBusinessJobs: 'Browse business jobs',
+    browseEvents: 'Browse events',
     campaignsPosted: 'Campaigns posted',
     openCampaignsHeading: 'Open campaigns',
     noBusinessBio: 'This business hasn’t added a description yet.',
     businessNotFoundTitle: 'Business not found',
     businessNotFoundBody: 'This profile doesn’t exist or is no longer public.',
+    businessGateTitle: 'Browse business jobs on Kolab',
+    businessGateBody: 'Create a creator account to browse paid campaigns and jobs from businesses like this one.',
 
     // /events
     eventsEyebrow: 'Open opportunities',
@@ -1119,6 +1125,9 @@ export const en = {
     minFollowersLabel: 'Min. {count} followers',
     deadlineLabel: 'Application deadline',
     applyInApp: 'Apply in the Kolab app',
+    applyNow: 'Apply now',
+    eventGateTitle: 'Opportunities on Kolab',
+    eventGateBody: 'Create an account to apply to this opportunity and start browsing paid collaborations and events on Kolab.',
     eventNotFoundTitle: 'Event not found',
     eventNotFoundBody: 'This event may have closed or been removed.',
     backToEvents: 'Back to events',

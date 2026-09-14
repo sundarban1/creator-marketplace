@@ -3,7 +3,16 @@ import { MotionConfig } from 'framer-motion';
 import { LenisProvider, useLenisScroll } from './hooks/useLenis';
 import { useLandingStats } from './hooks/useLandingStats';
 import { useSuccessStories } from './hooks/useSuccessStories';
-import { useMarketplacePreview } from './hooks/useMarketplacePreview';
+import { useLandingShowcase } from './hooks/useLandingShowcase';
+import { useScrollRestoration } from './hooks/useScrollRestoration';
+
+// The browser only restores scroll on its own schedule (see
+// useScrollRestoration.ts for why that's visibly late on this page) — taking
+// it over here, as early as this module evaluates on every load, beats that
+// default before it has a chance to run.
+if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual';
+}
 import { LandingLanguageProvider } from './context/LanguageContext';
 import { LandingThemeProvider } from './context/ThemeContext';
 import { CursorSparkles } from './components/CursorSparkles';
@@ -60,9 +69,10 @@ function HashScrollHandler() {
 }
 
 function LandingPageInner() {
+  useScrollRestoration();
   const stats = useLandingStats();
   const successStories = useSuccessStories();
-  const { creators, businesses, categoryMeta } = useMarketplacePreview();
+  const { events, creators, businesses, categoryMeta } = useLandingShowcase();
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white font-display dark:bg-ink">
@@ -112,7 +122,7 @@ function LandingPageInner() {
       <AIDiscovery />
       <TrustStats stats={stats} />
       <Categories stats={stats} />
-      <EventsShowcase />
+      <EventsShowcase events={events} />
       <MarketplaceShowcase variant="creators" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
       <MarketplaceShowcase variant="businesses" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
       <Stories stories={successStories} />

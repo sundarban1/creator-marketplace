@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { BadgeCheck, MapPin, Star, Users } from 'lucide-react';
 import { useT } from '../i18n';
+import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
 import { compactNumber, totalFollowers } from '../lib/format';
 import { fetchCreatorByHandle } from '../api/publicMarketplace';
@@ -28,9 +29,11 @@ import {
   RingAvatar,
   StatTile,
 } from './detailKit';
+import { SignupGateModal } from './SignupGateModal';
 
 export function CreatorProfilePage() {
   const t = useT();
+  const { status } = useAppAuth();
   const { handle = '' } = useParams();
 
   const { data: creator, loading, error } = useAsync(
@@ -40,6 +43,9 @@ export function CreatorProfilePage() {
 
   const { data: categories } = useAsync((signal) => fetchCategories(signal), []);
   const categoryMeta = useMemo(() => makeCategoryLookup(categories ?? []), [categories]);
+
+  const [gateDismissed, setGateDismissed] = useState(false);
+  const gateOpen = status === 'anonymous' && !gateDismissed;
 
   if (loading) return <ProfileSkeleton />;
 
@@ -253,12 +259,21 @@ export function CreatorProfilePage() {
           </DetailSection>
         )}
 
-        <BottomCTA
-          title={t('public.workWithCreator')}
-          ctaLabel={t('public.getStarted')}
-          to={paths.signup}
-        />
+        {status !== 'authenticated' && (
+          <BottomCTA
+            title={t('public.workWithCreator')}
+            ctaLabel={t('public.getStarted')}
+            onClick={() => setGateDismissed(false)}
+          />
+        )}
       </DetailBody>
+
+      <SignupGateModal
+        open={gateOpen}
+        onClose={() => setGateDismissed(true)}
+        title={t('public.creatorGateTitle')}
+        body={t('public.creatorGateBody')}
+      />
     </div>
   );
 }

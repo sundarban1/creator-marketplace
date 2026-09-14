@@ -187,11 +187,13 @@ export function BottomCTA({
   ctaLabel,
   to,
   href,
+  onClick,
 }: {
   title: string;
   ctaLabel: string;
   to?: string;
   href?: string;
+  onClick?: () => void;
 }) {
   return (
     <div className="relative mt-14 overflow-hidden rounded-2xl border border-violet/20 bg-gradient-to-br from-violet to-violet-dark p-7 text-center text-white">
@@ -209,7 +211,7 @@ export function BottomCTA({
             {ctaLabel}
             <ArrowUpRight size={15} />
           </Link>
-        ) : (
+        ) : href ? (
           <a
             href={href}
             className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-[14px] font-semibold text-violet-dark transition-transform hover:-translate-y-0.5"
@@ -217,6 +219,15 @@ export function BottomCTA({
             {ctaLabel}
             <ArrowUpRight size={15} />
           </a>
+        ) : (
+          <button
+            type="button"
+            onClick={onClick}
+            className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-[14px] font-semibold text-violet-dark transition-transform hover:-translate-y-0.5"
+          >
+            {ctaLabel}
+            <ArrowUpRight size={15} />
+          </button>
         )}
       </div>
     </div>

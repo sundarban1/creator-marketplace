@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { BadgeCheck, MapPin, Star, Globe } from 'lucide-react';
 import { useT } from '../i18n';
+import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
 import { fetchPublicBusiness } from '../api/publicMarketplace';
 import { fetchCategories } from '../api/catalog';
@@ -25,10 +26,13 @@ import {
   RingAvatar,
   StatTile,
 } from './detailKit';
+import { SignupGateModal } from './SignupGateModal';
 
 export function BusinessProfilePage() {
   const t = useT();
+  const { status } = useAppAuth();
   const { id = '' } = useParams();
+  const [gateOpen, setGateOpen] = useState(false);
 
   const { data: business, loading, error } = useAsync(
     (signal) => fetchPublicBusiness(id, signal),
@@ -206,12 +210,27 @@ export function BusinessProfilePage() {
           </DetailSection>
         )}
 
-        <BottomCTA
-          title={t('public.joinToApply')}
-          ctaLabel={t('public.getStarted')}
-          to={paths.signup}
-        />
+        {status === 'authenticated' ? (
+          <BottomCTA
+            title={t('public.browseBusinessJobs')}
+            ctaLabel={t('public.browseEvents')}
+            to="/events"
+          />
+        ) : (
+          <BottomCTA
+            title={t('public.browseBusinessJobs')}
+            ctaLabel={t('public.getStarted')}
+            onClick={() => setGateOpen(true)}
+          />
+        )}
       </DetailBody>
+
+      <SignupGateModal
+        open={gateOpen}
+        onClose={() => setGateOpen(false)}
+        title={t('public.businessGateTitle')}
+        body={t('public.businessGateBody')}
+      />
     </div>
   );
 }
