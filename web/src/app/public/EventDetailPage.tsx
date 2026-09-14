@@ -35,7 +35,7 @@ export function EventDetailPage() {
           variant={notFound ? 'not-found' : 'error'}
           title={t('public.eventNotFoundTitle')}
           description={t('public.eventNotFoundBody')}
-          action={{ label: t('public.backToEvents'), href: '/events' }}
+          action={{ label: t('public.backToHome'), href: '/' }}
         />
       </div>
     );
@@ -88,7 +88,7 @@ export function EventDetailPage() {
         }}
       />
 
-      <EventDetailBody event={event} backTo="/events" backLabel={t('public.backToEvents')} cta={cta} />
+      <EventDetailBody event={event} backTo="/" backLabel={t('public.backToHome')} cta={cta} />
 
       <SignupGateModal
         open={gateOpen}

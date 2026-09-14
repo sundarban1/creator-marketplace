@@ -18,7 +18,8 @@ interface Props {
 type Card = {
   key: string;
   name: string;
-  category: string | null;
+  categories: string[];
+  location: string | null;
   imageUrl: string | null;
   meta: string | null;
   verified: boolean;
@@ -47,7 +48,8 @@ export function MarketplaceShowcase({ variant, creators, businesses, categoryMet
       return {
         key: c.id,
         name: c.fullName || c.username || '—',
-        category: c.categories[0] ?? null,
+        categories: c.categories,
+        location: c.location,
         imageUrl: c.avatarUrl,
         // Seed / freshly-connected accounts report a handful of followers —
         // only show the count once it's worth showing.
@@ -60,7 +62,8 @@ export function MarketplaceShowcase({ variant, creators, businesses, categoryMet
     cards = businesses.slice(0, 4).map((b) => ({
       key: b.id,
       name: b.businessName || '—',
-      category: b.categories[0] ?? null,
+      categories: b.categories,
+      location: null,
       imageUrl: b.logoUrl,
       meta: b.city || b.district || null,
       verified: b.isVerified,
@@ -71,7 +74,8 @@ export function MarketplaceShowcase({ variant, creators, businesses, categoryMet
     cards = copy.fallback.map((f, i) => ({
       key: `fallback-${i}`,
       name: f.name,
-      category: f.category,
+      categories: f.category ? [f.category] : [],
+      location: null,
       imageUrl: null,
       meta: null,
       verified: false,
@@ -134,18 +138,27 @@ export function MarketplaceShowcase({ variant, creators, businesses, categoryMet
                   {card.verified && <BadgeCheck size={13} className={`shrink-0 ${accent}`} />}
                 </p>
 
-                {card.category && (() => {
-                  const { Icon, color } = categoryMeta(card.category);
+                {card.categories.length > 0 && (() => {
+                  const { Icon, color } = categoryMeta(card.categories[0]);
+                  const extra = card.categories.length - 1;
                   return (
                     <span
                       className="mt-2 inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-ink dark:text-white"
                       style={{ backgroundColor: `${color}1f`, boxShadow: `inset 0 0 0 1px ${color}3d` }}
                     >
                       <Icon size={10} style={{ color }} className="shrink-0" />
-                      <span className="line-clamp-1">{card.category}</span>
+                      <span className="line-clamp-1">{card.categories[0]}</span>
+                      {extra > 0 && <span className="shrink-0">+{extra}</span>}
                     </span>
                   );
                 })()}
+
+                {card.location && (
+                  <span className="mt-2 flex items-center gap-1 text-[11px] text-ink-soft dark:text-white">
+                    <MapPin size={11} className="shrink-0" />
+                    <span className="line-clamp-1">{card.location}</span>
+                  </span>
+                )}
 
                 {card.meta && (
                   <span className="mt-2 flex items-center gap-1 text-[11px] text-ink-soft dark:text-white">

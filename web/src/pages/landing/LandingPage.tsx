@@ -127,7 +127,7 @@ function LandingPageInner() {
       <MarketplaceShowcase variant="businesses" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
       <Stories stories={successStories} />
       <Security />
-      <FinalCTA />
+      <FinalCTA creators={creators} businesses={businesses} />
       <LandingFooter />
       <ChatWidget />
     </div>

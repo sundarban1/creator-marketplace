@@ -79,7 +79,11 @@ export function marketplaceRoutes() {
           signup/login prompt without blocking the page itself for signed-out
           visitors. */}
       <Route element={<PublicLayout />}>
-        <Route path="/events" element={<EventsPage />} />
+        {/* Events list requires sign-in (unlike its detail pages, which stay
+            open so landing-page event links work for signed-out visitors). */}
+        <Route element={<RequireAuth />}>
+          <Route path="/events" element={<EventsPage />} />
+        </Route>
         <Route path="/events/:id" element={<EventDetailPage />} />
         <Route path="/creators" element={<CreatorsPage />} />
         <Route path="/creators/:handle" element={<CreatorProfilePage />} />

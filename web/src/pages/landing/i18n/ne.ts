@@ -300,7 +300,7 @@ export const ne: LandingDict = {
     sub: 'आफ्नो क्याम्पेन वा जबका लागि सीप फेला पार्नुहोस्। आफ्नो सीप प्रस्ताव गर्नुहोस्। केही न केही घटाउनुहोस्।',
     ctaGetStarted: 'सुरु गर्नुहोस्',
     ctaExplore: 'Kolab हेर्नुहोस्',
-    roles: { designer: 'डिजाइनर', business: 'व्यवसाय', creator: 'क्रिएटर' },
+    roles: { business: 'व्यवसाय', creator: 'क्रिएटर' },
   },
 
   footer: {

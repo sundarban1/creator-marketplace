@@ -1083,6 +1083,7 @@ export const ne: AppDict = {
     eventNotFoundTitle: 'इभेन्ट भेटिएन',
     eventNotFoundBody: 'यो इभेन्ट बन्द भइसकेको वा हटाइएको हुन सक्छ।',
     backToEvents: 'इभेन्टहरूमा फर्कनुहोस्',
+    backToHome: 'गृहपृष्ठमा फर्कनुहोस्',
   },
 
   providerType: {

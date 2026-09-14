@@ -9,34 +9,43 @@ import { getDeviceStoreUrl, isDeviceComingSoon } from '../components/appStoreLin
 import { SectionWave } from '../components/SectionWave';
 import { useComingSoon } from '../hooks/useComingSoon';
 import { useLenisScroll } from '../hooks/useLenis';
+import type { PublicCreatorLite, PublicBusinessLite } from '../../../lib/api';
 
-type RoleKey = 'designer' | 'business' | 'creator';
+type RoleKey = 'business' | 'creator';
 
-const ROLE_AVATARS: { key: RoleKey; photo: string; badgeClass: string; wrapClassName: string; delay: number }[] = [
+// Stock-photo fallback for each avatar slot — used whenever real creator/
+// business data isn't available yet (showcase fetch failed/still loading),
+// same convention as the Hero's avatar stack.
+const ROLE_SLOTS: { key: RoleKey; fallbackPhoto: string; badgeClass: string; wrapClassName: string; delay: number }[] = [
   {
-    key: 'designer',
-    photo: 'https://images.pexels.com/photos/1587009/pexels-photo-1587009.jpeg?auto=compress&cs=tinysrgb&w=160&h=160&fit=crop',
-    badgeClass: 'bg-blue-500',
+    key: 'creator',
+    fallbackPhoto: 'https://images.pexels.com/photos/1587009/pexels-photo-1587009.jpeg?auto=compress&cs=tinysrgb&w=160&h=160&fit=crop',
+    badgeClass: 'bg-violet',
     wrapClassName: '-translate-y-2',
     delay: 0.5,
   },
   {
-    key: 'business',
-    photo: 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=160&h=160&fit=crop',
-    badgeClass: 'bg-brand-orange',
+    key: 'creator',
+    fallbackPhoto: 'https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=160&h=160&fit=crop',
+    badgeClass: 'bg-violet',
     wrapClassName: 'translate-y-3',
     delay: 0.62,
   },
   {
-    key: 'creator',
-    photo: 'https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=160&h=160&fit=crop',
-    badgeClass: 'bg-violet',
+    key: 'business',
+    fallbackPhoto: 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=160&h=160&fit=crop',
+    badgeClass: 'bg-brand-orange',
     wrapClassName: '-translate-y-1',
     delay: 0.74,
   },
 ];
 
-export function FinalCTA() {
+interface Props {
+  creators: PublicCreatorLite[] | null;
+  businesses: PublicBusinessLite[] | null;
+}
+
+export function FinalCTA({ creators, businesses }: Props) {
   const { d } = useLandingLanguage();
   const { theme } = useLandingTheme();
   const { scrollTo } = useLenisScroll();
@@ -44,6 +53,14 @@ export function FinalCTA() {
   // "Get Started" targets the visitor's own platform — only fall back to the
   // badge list when *that* store isn't live yet.
   const deviceComingSoon = isDeviceComingSoon(comingSoon);
+
+  const realCreatorPhotos = (creators ?? []).map((c) => c.avatarUrl).filter((url): url is string => Boolean(url));
+  const realBusinessPhotos = (businesses ?? []).map((b) => b.logoUrl).filter((url): url is string => Boolean(url));
+  let creatorIdx = 0;
+  const roleAvatars = ROLE_SLOTS.map((slot) => ({
+    ...slot,
+    photo: slot.key === 'business' ? (realBusinessPhotos[0] ?? slot.fallbackPhoto) : (realCreatorPhotos[creatorIdx++] ?? slot.fallbackPhoto),
+  }));
 
   return (
     <section id={SECTION_IDS.finalCta} className="relative overflow-hidden bg-paper py-32 text-ink dark:bg-ink dark:text-white">
@@ -69,20 +86,24 @@ export function FinalCTA() {
           </motion.p>
 
           <motion.div variants={fadeUp} className="mx-auto mt-10 flex items-center justify-center">
-            {ROLE_AVATARS.map(({ key, photo, badgeClass, wrapClassName, delay }, i) => (
+            {roleAvatars.map(({ key, photo, fallbackPhoto, badgeClass, wrapClassName, delay }, i) => (
               <motion.div
-                key={key}
+                key={i}
                 initial={{ opacity: 0, scale: 0.6 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={VP}
                 transition={{ delay, type: 'spring', stiffness: 240, damping: 18 }}
-                style={{ zIndex: ROLE_AVATARS.length - i }}
+                style={{ zIndex: roleAvatars.length - i }}
                 className={`relative ${i > 0 ? '-ml-2' : ''} ${wrapClassName}`}
               >
                 <img
                   src={photo}
                   alt=""
                   loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = fallbackPhoto;
+                  }}
                   className="h-16 w-16 flex-shrink-0 rounded-full border-4 border-paper object-cover shadow-lg dark:border-ink"
                 />
                 <span

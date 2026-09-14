@@ -307,7 +307,7 @@ export const en = {
     sub: 'Find the skills for your campaign or job. Offer your own. Make something happen.',
     ctaGetStarted: 'Get Started',
     ctaExplore: 'Explore Kolab',
-    roles: { designer: 'Designer', business: 'Business', creator: 'Creator' },
+    roles: { business: 'Business', creator: 'Creator' },
   },
 
   footer: {

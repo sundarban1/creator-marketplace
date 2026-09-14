@@ -882,6 +882,7 @@ export interface PublicCreatorLite {
   username: string | null;
   fullName: string | null;
   avatarUrl: string | null;
+  location: string | null;
   categories: string[];
   isVerified: boolean;
   socialAccounts: { platform: string; followers: number }[];
