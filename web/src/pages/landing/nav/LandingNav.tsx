@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Menu, X, Sun, Moon } from 'lucide-react';
 import { NAV_LINKS } from '../constants';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -87,6 +87,7 @@ export function LandingNav() {
   const { theme } = useLandingTheme();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [showGetStarted, setShowGetStarted] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -154,13 +155,13 @@ export function LandingNav() {
                 </button>
               );
             })}
-            <Link
-              to="/login"
-              onClick={() => setOpen(false)}
+            <button
+              type="button"
+              onClick={() => setShowGetStarted(true)}
               className="inline-flex items-center rounded-full bg-gradient-to-r from-violet to-brand-orange px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition-transform duration-300 hover:scale-[1.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet"
             >
               {d.nav.getStarted}
-            </Link>
+            </button>
           </nav>
 
           <div className="hidden items-center gap-4 lg:flex">
@@ -223,13 +224,16 @@ export function LandingNav() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.08 + NAV_LINKS.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               >
-                <Link
-                  to="/login"
-                  onClick={() => setOpen(false)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    setShowGetStarted(true);
+                  }}
                   className="mt-4 inline-flex items-center rounded-full bg-gradient-to-r from-violet to-brand-orange px-6 py-3 font-serif text-xl font-bold italic text-white shadow-sm"
                 >
                   {d.nav.getStarted}
-                </Link>
+                </button>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, x: -16 }}
@@ -253,6 +257,62 @@ export function LandingNav() {
                 </div>
               </motion.div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showGetStarted && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm"
+            onClick={() => setShowGetStarted(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.96 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-sm rounded-3xl border border-ink/10 bg-white p-7 text-center shadow-2xl dark:border-white/10 dark:bg-ink-elevated"
+            >
+              <button
+                type="button"
+                onClick={() => setShowGetStarted(false)}
+                aria-label={d.chatWidget.closeAriaLabel}
+                className="absolute right-4 top-4 text-ink-soft/60 hover:text-ink dark:text-white/60 dark:hover:text-white"
+              >
+                <X size={18} />
+              </button>
+
+              <h3 className="text-balance font-serif text-xl font-medium text-ink dark:text-white">
+                {d.nav.getStartedModalTitle}
+              </h3>
+              <p className="mt-3 text-sm text-ink-soft dark:text-white">{d.nav.getStartedModalBody}</p>
+
+              <Link
+                to="/signup"
+                onClick={() => setShowGetStarted(false)}
+                className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-violet to-brand-orange px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(123,92,245,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+              >
+                {d.nav.getStartedModalCta}
+                <ArrowRight size={14} />
+              </Link>
+
+              <p className="mt-4 text-xs text-ink-soft dark:text-white">
+                {d.nav.getStartedModalLoginPrompt}{' '}
+                <Link
+                  to="/login"
+                  onClick={() => setShowGetStarted(false)}
+                  className="font-semibold text-violet underline-offset-2 hover:underline dark:text-white"
+                >
+                  {d.nav.getStartedModalLogin}
+                </Link>
+              </p>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

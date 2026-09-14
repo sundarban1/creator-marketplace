@@ -14,6 +14,11 @@ export const en = {
     languageLabel: 'Language',
     appearanceLabel: 'Appearance',
     getStarted: 'Get Started',
+    getStartedModalTitle: 'Ready to get started? ✨',
+    getStartedModalBody: 'Create a free account to find creators, discover opportunities, and start collaborating on Kolab.',
+    getStartedModalCta: 'Create an account',
+    getStartedModalLoginPrompt: 'Already have an account?',
+    getStartedModalLogin: 'Log in',
   },
 
   hero: {

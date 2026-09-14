@@ -44,8 +44,7 @@ export function CreatorProfilePage() {
   const { data: categories } = useAsync((signal) => fetchCategories(signal), []);
   const categoryMeta = useMemo(() => makeCategoryLookup(categories ?? []), [categories]);
 
-  const [gateDismissed, setGateDismissed] = useState(false);
-  const gateOpen = status === 'anonymous' && !gateDismissed;
+  const [gateOpen, setGateOpen] = useState(false);
 
   if (loading) return <ProfileSkeleton />;
 
@@ -263,14 +262,14 @@ export function CreatorProfilePage() {
           <BottomCTA
             title={t('public.workWithCreator')}
             ctaLabel={t('public.getStarted')}
-            onClick={() => setGateDismissed(false)}
+            onClick={() => setGateOpen(true)}
           />
         )}
       </DetailBody>
 
       <SignupGateModal
         open={gateOpen}
-        onClose={() => setGateDismissed(true)}
+        onClose={() => setGateOpen(false)}
         title={t('public.creatorGateTitle')}
         body={t('public.creatorGateBody')}
       />

@@ -16,6 +16,11 @@ export const ne: LandingDict = {
     languageLabel: 'भाषा',
     appearanceLabel: 'रूप',
     getStarted: 'सुरु गर्नुहोस्',
+    getStartedModalTitle: 'सुरु गर्न तयार हुनुहुन्छ? ✨',
+    getStartedModalBody: 'क्रिएटरहरू फेला पार्न, अवसरहरू पत्ता लगाउन र Kolab मा सहकार्य सुरु गर्न निःशुल्क खाता बनाउनुहोस्।',
+    getStartedModalCta: 'खाता बनाउनुहोस्',
+    getStartedModalLoginPrompt: 'पहिले नै खाता छ?',
+    getStartedModalLogin: 'लग इन गर्नुहोस्',
   },
 
   hero: {

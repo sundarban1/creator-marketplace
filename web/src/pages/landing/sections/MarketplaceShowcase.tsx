@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, BadgeCheck, MapPin, Users, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, BadgeCheck, MapPin, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
@@ -31,7 +30,6 @@ const fmtCount = (n: number) =>
 
 export function MarketplaceShowcase({ variant, creators, businesses, categoryMeta }: Props) {
   const { d } = useLandingLanguage();
-  const [showModal, setShowModal] = useState(false);
   const isCreators = variant === 'creators';
   const copy = isCreators ? d.marketplace.creators : d.marketplace.businesses;
   const sectionId = isCreators ? SECTION_IDS.creators : SECTION_IDS.businesses;
@@ -55,7 +53,10 @@ export function MarketplaceShowcase({ variant, creators, businesses, categoryMet
         // only show the count once it's worth showing.
         meta: followers >= 500 ? `${fmtCount(followers)} ${(copy as typeof d.marketplace.creators).followers}` : null,
         verified: c.isVerified,
-        to: c.username ? `/creators/${c.username}` : '/creators',
+        // The public creator route resolves either a username or a raw
+        // profile id, so seeded/dev creators without a username still
+        // deep-link to their own page instead of falling back to the list.
+        to: `/creators/${c.username || c.id}`,
       };
     });
   } else if (!isCreators && businesses && businesses.length) {
@@ -178,76 +179,17 @@ export function MarketplaceShowcase({ variant, creators, businesses, categoryMet
           variants={fadeUp}
           className="mt-12 flex justify-center"
         >
-          <button
-            type="button"
-            onClick={() => setShowModal(true)}
+          <Link
+            to={browseTo}
             className={`inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(123,92,245,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 ${
               isCreators ? 'bg-violet' : 'bg-brand-orange'
             }`}
           >
             {copy.cta}
             <ArrowRight size={14} />
-          </button>
+          </Link>
         </motion.div>
       </div>
-
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 16, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 16, scale: 0.96 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-sm rounded-3xl border border-ink/10 bg-white p-7 text-center shadow-2xl dark:border-white/10 dark:bg-ink-elevated"
-            >
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                aria-label={d.chatWidget.closeAriaLabel}
-                className="absolute right-4 top-4 text-ink-soft/60 hover:text-ink dark:text-white/60 dark:hover:text-white"
-              >
-                <X size={18} />
-              </button>
-
-              <h3 className="text-balance font-serif text-xl font-medium text-ink dark:text-white">
-                {copy.modalTitle}
-              </h3>
-              <p className="mt-3 text-sm text-ink-soft dark:text-white">{copy.modalBody}</p>
-
-              <Link
-                to="/signup"
-                onClick={() => setShowModal(false)}
-                className={`mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(123,92,245,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 ${
-                  isCreators ? 'bg-violet' : 'bg-brand-orange'
-                }`}
-              >
-                {copy.modalCta}
-                <ArrowRight size={14} />
-              </Link>
-
-              <p className="mt-4 text-xs text-ink-soft dark:text-white">
-                {copy.modalLoginPrompt}{' '}
-                <Link
-                  to="/login"
-                  onClick={() => setShowModal(false)}
-                  className={`font-semibold underline-offset-2 hover:underline ${accent} dark:text-white`}
-                >
-                  {copy.modalLogin}
-                </Link>
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </section>
   );
 }
