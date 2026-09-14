@@ -151,7 +151,7 @@ export function CreatorDiscoverBusinessesPage() {
             >
               {items.map((b) => (
                 <motion.div key={b.id} variants={fadeUp} className="h-full min-w-0">
-                  <BusinessCard business={b} categoryMeta={categoryMeta} />
+                  <BusinessCard business={b} categoryMeta={categoryMeta} hrefBase="/creator/businesses" />
                 </motion.div>
               ))}
             </motion.div>

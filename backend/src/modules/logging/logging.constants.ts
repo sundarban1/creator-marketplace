@@ -36,6 +36,7 @@ export const ActivityAction = {
 
 export const AuditAction = {
   PASSWORD_RESET:           'password.reset',
+  PASSWORD_CHANGED:         'password.changed',
   PHONE_CHANGED:            'phone.changed',
   EMAIL_CHANGED:            'email.changed',
   APPLE_ACCOUNT_LINKED:     'apple.account_linked',

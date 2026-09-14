@@ -12,9 +12,14 @@ import { CategoryPill } from './CategoryPill';
 interface Props {
   creator: CreatorCardData;
   categoryMeta: (name: string) => CategoryMeta;
+  /** Base path the card links into — defaults to the public profile. Pass
+   *  `/creator/creators` from the signed-in creator dashboard so the link
+   *  stays inside the authed shell instead of escaping to the public,
+   *  landing-nav-wrapped route. */
+  hrefBase?: string;
 }
 
-export function CreatorCard({ creator, categoryMeta }: Props) {
+export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators' }: Props) {
   const t = useT();
   const handle = creator.username ?? creator.id;
   const followers = totalFollowers(creator.socialAccounts);
@@ -24,7 +29,7 @@ export function CreatorCard({ creator, categoryMeta }: Props) {
 
   return (
     <Link
-      to={`/creators/${encodeURIComponent(handle)}`}
+      to={`${hrefBase}/${encodeURIComponent(handle)}`}
       className={cn(
         'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface p-5',
         'transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30',

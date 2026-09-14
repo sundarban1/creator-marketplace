@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Globe, ShieldCheck, LogOut, UserX, Trash2, Link2, User, Mail, Gift, LifeBuoy, Info } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
+import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { fetchAuthMethods, deactivateAccount, deleteAccount } from '../api/auth';
@@ -13,6 +14,7 @@ import { DashListRow } from './dash-ui/DashListRow';
 import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
 import { Switch } from '../ui/Switch';
+import { useToast } from '../ui/Toast';
 import { cn } from '../ui/cn';
 
 const LANGS: { value: Lang; label: string }[] = [
@@ -28,11 +30,13 @@ const LANGS: { value: Lang; label: string }[] = [
 export function CreatorSettingsPage() {
   const t = useT();
   const navigate = useNavigate();
+  const toast = useToast();
   const { user, logout } = useAppAuth();
   const { language, setLanguage } = useAppLanguage();
   const methods = useAsync((s) => fetchAuthMethods(s), []);
   const notifSettings = useAsync((s) => fetchNotificationSettings(s), []);
   const [emailNotifOverride, setEmailNotifOverride] = useState<boolean | null>(null);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const emailNotif = emailNotifOverride ?? notifSettings.data?.emailNotificationsEnabled ?? null;
 
   function toggleEmailNotif(next: boolean) {
@@ -61,9 +65,13 @@ export function CreatorSettingsPage() {
             tone={m?.hasPassword ? 'green' : 'neutral'}
             title={m?.hasPassword ? t('settings.passwordSet') : t('settings.passwordNotSet')}
             trailing={
-              <Link to={paths.forgotPassword} className="text-[13px] font-semibold text-violet-dark hover:underline">
+              <button
+                type="button"
+                onClick={() => setChangePasswordOpen(true)}
+                className="text-[13px] font-semibold text-violet-dark hover:underline"
+              >
                 {t('settings.resetPassword')}
-              </Link>
+              </button>
             }
           />
           <div className="py-3">
@@ -192,6 +200,15 @@ export function CreatorSettingsPage() {
         <LogOut size={15} />
         {t('settings.signOut')}
       </Button>
+
+      <ChangePasswordModal
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+        onDone={() => {
+          toast.success(t('settings.passwordUpdated'));
+          methods.reload();
+        }}
+      />
     </div>
   );
 }

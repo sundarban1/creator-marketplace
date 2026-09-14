@@ -176,7 +176,7 @@ export function CreatorDiscoverCreatorsPage() {
             >
               {items.map((c) => (
                 <motion.div key={c.id} variants={fadeUp} className="h-full min-w-0">
-                  <CreatorCard creator={c} categoryMeta={categoryMeta} />
+                  <CreatorCard creator={c} categoryMeta={categoryMeta} hrefBase="/creator/creators" />
                 </motion.div>
               ))}
             </motion.div>

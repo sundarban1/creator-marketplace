@@ -8,6 +8,7 @@ import {
   refreshTokenSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
   verifyOtpSchema,
   resendOtpSchema,
   verifyResetOtpSchema,
@@ -314,6 +315,41 @@ router.post('/forgot-password', validate(forgotPasswordSchema), ctrl.forgotPassw
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/reset-password', validate(resetPasswordSchema), ctrl.resetPassword.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Change password for the logged-in user (Settings)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newPassword
+ *               - confirmPassword
+ *             properties:
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: NewSecurePass456
+ *               confirmPassword:
+ *                 type: string
+ *                 example: NewSecurePass456
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       401:
+ *         description: Not authenticated
+ *       422:
+ *         description: Validation error (weak password or mismatch)
+ */
+router.post('/change-password', authenticate, validate(changePasswordSchema), ctrl.changePassword.bind(ctrl));
 
 router.post('/verify-otp', validate(verifyOtpSchema), ctrl.verifyOtp.bind(ctrl));
 router.post('/resend-otp', validate(resendOtpSchema), ctrl.resendOtp.bind(ctrl));

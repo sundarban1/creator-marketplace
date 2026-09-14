@@ -72,6 +72,7 @@ export interface BackendDict {
     lastLoginMethod: string;
     invalidResetToken: string;
     passwordResetSuccess: string;
+    passwordChangedSuccess: string;
     // Controller-level success labels
     accountCreated: string;
     loginSuccessful: string;

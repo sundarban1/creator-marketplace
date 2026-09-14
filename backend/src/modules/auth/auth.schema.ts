@@ -61,6 +61,20 @@ export const resetPasswordSchema = z.object({
     .regex(/[0-9]/, 'Password must contain at least one number'),
 });
 
+// Change password for the already-authenticated user (Settings) — no reset
+// token involved, ownership is proven by the auth middleware on the route.
+export const changePasswordSchema = z.object({
+  newPassword: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
 export const verifyOtpSchema = z.object({
   email: emailField.optional(),
   phone: phoneField.optional(),
@@ -166,6 +180,7 @@ export type LoginInput            = z.infer<typeof loginSchema>;
 export type RefreshTokenInput     = z.infer<typeof refreshTokenSchema>;
 export type ForgotPasswordInput   = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput    = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput   = z.infer<typeof changePasswordSchema>;
 export type VerifyOtpInput        = z.infer<typeof verifyOtpSchema>;
 export type ResendOtpInput        = z.infer<typeof resendOtpSchema>;
 export type VerifyResetOtpInput   = z.infer<typeof verifyResetOtpSchema>;

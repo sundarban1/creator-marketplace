@@ -10,16 +10,21 @@ import { CategoryPill } from './CategoryPill';
 interface Props {
   business: BusinessCardData;
   categoryMeta: (name: string) => CategoryMeta;
+  /** Base path the card links into — defaults to the public profile. Pass
+   *  `/creator/businesses` from the signed-in creator dashboard so the link
+   *  stays inside the authed shell instead of escaping to the public,
+   *  landing-nav-wrapped route. */
+  hrefBase?: string;
 }
 
-export function BusinessCard({ business, categoryMeta }: Props) {
+export function BusinessCard({ business, categoryMeta, hrefBase = '/businesses' }: Props) {
   const t = useT();
   const name = business.businessName ?? 'Business';
   const location = [business.city, business.district].filter(Boolean).join(', ');
 
   return (
     <Link
-      to={`/businesses/${encodeURIComponent(business.id)}`}
+      to={`${hrefBase}/${encodeURIComponent(business.id)}`}
       className={cn(
         'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface p-5',
         'transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30',

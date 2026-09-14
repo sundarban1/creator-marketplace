@@ -36,6 +36,7 @@ import type {
   RefreshTokenInput,
   ForgotPasswordInput,
   ResetPasswordInput,
+  ChangePasswordInput,
   VerifyOtpInput,
   ResendOtpInput,
   VerifyResetOtpInput,
@@ -911,5 +912,22 @@ export class AuthService {
     logAudit({ userId: user.id, action: AuditAction.PASSWORD_RESET, performedBy: user.id });
 
     return { message: getDict().auth.passwordResetSuccess };
+  }
+
+  // Change password for the already-authenticated user (Settings → Login &
+  // security). Unlike resetPassword, ownership is proven by the auth
+  // middleware rather than a reset token, and the current session stays
+  // alive — this is an in-place account update, not a recovery flow.
+  async changePassword(userId: string, input: ChangePasswordInput) {
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.NOT_FOUND);
+
+    const hashedPassword = await hashPassword(input.newPassword);
+    await this.repo.updatePassword(user.id, hashedPassword);
+    if (!user.hasPassword) await this.repo.setHasPassword(user.id, true);
+
+    logAudit({ userId: user.id, action: AuditAction.PASSWORD_CHANGED, performedBy: user.id });
+
+    return { message: getDict().auth.passwordChangedSuccess };
   }
 }

@@ -95,6 +95,7 @@ export const en: BackendDict = {
     lastLoginMethod:                   'Add a password or another login method before disconnecting this one.',
     invalidResetToken:                 'Invalid or expired reset token',
     passwordResetSuccess:              'Password reset successfully. Please login with your new password.',
+    passwordChangedSuccess:            'Password updated successfully',
     accountCreated:                    'Account created successfully',
     loginSuccessful:                   'Login successful',
     tokenRefreshed:                    'Token refreshed',

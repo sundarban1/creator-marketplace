@@ -236,6 +236,10 @@ export function fetchAuthMethods(signal?: AbortSignal): Promise<AuthMethods> {
   return apiRequest<AuthMethods>('GET', '/api/auth/methods', undefined, { signal }).then((r) => r.data);
 }
 
+export async function changePassword(newPassword: string, confirmPassword: string): Promise<void> {
+  await api('POST', '/api/auth/change-password', { newPassword, confirmPassword });
+}
+
 export async function deactivateAccount(): Promise<void> {
   await api('PATCH', '/api/auth/deactivate');
 }

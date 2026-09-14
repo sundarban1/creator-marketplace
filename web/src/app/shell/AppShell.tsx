@@ -229,7 +229,6 @@ function UserMenu({
         className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 hover:bg-surface-dim focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       >
         <Avatar name={name} src={avatar} size="sm" />
-        <span className="max-w-[120px] truncate text-[13px] font-semibold text-ink">{name}</span>
         <ChevronDown
           size={15}
           className={cn('flex-shrink-0 text-ink-soft transition-transform duration-150', open && 'rotate-180')}

@@ -95,6 +95,7 @@ export const ne: BackendDict = {
     lastLoginMethod:                   'यो विच्छेद गर्नुअघि पासवर्ड वा अर्को लगइन विधि थप्नुहोस्।',
     invalidResetToken:                 'अमान्य वा म्याद सकिएको रिसेट टोकन',
     passwordResetSuccess:              'पासवर्ड सफलतापूर्वक रिसेट भयो। कृपया आफ्नो नयाँ पासवर्डले लगइन गर्नुहोस्।',
+    passwordChangedSuccess:            'पासवर्ड सफलतापूर्वक अपडेट गरियो',
     accountCreated:                    'खाता सफलतापूर्वक सिर्जना गरियो',
     loginSuccessful:                   'लगइन सफल भयो',
     tokenRefreshed:                    'टोकन रिफ्रेस गरियो',

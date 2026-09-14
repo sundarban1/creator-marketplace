@@ -39,7 +39,9 @@ const EventDetailPage = screen(() => import('./public/EventDetailPage'), 'EventD
 const CreatorEventsPage = screen(() => import('./creator/CreatorEventsPage'), 'CreatorEventsPage');
 const CreatorEventDetailPage = screen(() => import('./creator/CreatorEventDetailPage'), 'CreatorEventDetailPage');
 const CreatorDiscoverCreatorsPage = screen(() => import('./creator/CreatorDiscoverCreatorsPage'), 'CreatorDiscoverCreatorsPage');
+const CreatorDiscoverCreatorDetailPage = screen(() => import('./creator/CreatorDiscoverCreatorDetailPage'), 'CreatorDiscoverCreatorDetailPage');
 const CreatorDiscoverBusinessesPage = screen(() => import('./creator/CreatorDiscoverBusinessesPage'), 'CreatorDiscoverBusinessesPage');
+const CreatorDiscoverBusinessDetailPage = screen(() => import('./creator/CreatorDiscoverBusinessDetailPage'), 'CreatorDiscoverBusinessDetailPage');
 const CreatorApplicationsPage = screen(() => import('./creator/CreatorApplicationsPage'), 'CreatorApplicationsPage');
 const CreatorWorkPage = screen(() => import('./creator/CreatorWorkPage'), 'CreatorWorkPage');
 const CreatorWorkDetailPage = screen(() => import('./creator/CreatorWorkDetailPage'), 'CreatorWorkDetailPage');
@@ -117,7 +119,9 @@ export function marketplaceRoutes() {
               <Route path="events" element={<CreatorEventsPage />} />
               <Route path="events/:id" element={<CreatorEventDetailPage />} />
               <Route path="creators" element={<CreatorDiscoverCreatorsPage />} />
+              <Route path="creators/:handle" element={<CreatorDiscoverCreatorDetailPage />} />
               <Route path="businesses" element={<CreatorDiscoverBusinessesPage />} />
+              <Route path="businesses/:id" element={<CreatorDiscoverBusinessDetailPage />} />
               <Route path="applications" element={<CreatorApplicationsPage />} />
               <Route path="applications/:id" element={<CreatorWorkDetailPage />} />
               <Route path="work" element={<CreatorWorkPage />} />

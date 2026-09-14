@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Globe, ShieldCheck, LogOut, UserX, Trash2, Mail, Gift, LifeBuoy, Info, ChevronRight, BadgeCheck, Eye, Phone, Share2, Check } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
+import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { fetchAuthMethods, deactivateAccount, deleteAccount } from '../api/auth';
@@ -15,6 +16,7 @@ import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
 import { Switch } from '../ui/Switch';
 import { StatusBadge } from '../ui/StatusBadge';
+import { useToast } from '../ui/Toast';
 import { cn } from '../ui/cn';
 
 const LANGS: { value: Lang; label: string }[] = [
@@ -25,6 +27,7 @@ const LANGS: { value: Lang; label: string }[] = [
 export function AccountSettingsPage() {
   const t = useT();
   const navigate = useNavigate();
+  const toast = useToast();
   const { user, logout } = useAppAuth();
   const { language, setLanguage } = useAppLanguage();
   const methods = useAsync((s) => fetchAuthMethods(s), []);
@@ -34,6 +37,7 @@ export function AccountSettingsPage() {
   const [emailNotifOverride, setEmailNotifOverride] = useState<boolean | null>(null);
   const [privacyOverride, setPrivacyOverride] = useState<Partial<Record<'showPublicProfile' | 'hideContactDetails' | 'hideSocialLinks', boolean>>>({});
   const [paymentMethodsOverride, setPaymentMethodsOverride] = useState<string[] | null>(null);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const emailNotif = emailNotifOverride ?? notifSettings.data?.emailNotificationsEnabled ?? null;
   const privacy = bizProfile.data
@@ -106,9 +110,13 @@ export function AccountSettingsPage() {
                 <ShieldCheck size={16} className={m?.hasPassword ? 'text-success' : 'text-ink-soft'} />
                 {m?.hasPassword ? t('settings.passwordSet') : t('settings.passwordNotSet')}
               </span>
-              <Link to={paths.forgotPassword} className="text-[13px] font-semibold text-violet-dark hover:underline">
+              <button
+                type="button"
+                onClick={() => setChangePasswordOpen(true)}
+                className="text-[13px] font-semibold text-violet-dark hover:underline"
+              >
                 {t('settings.resetPassword')}
-              </Link>
+              </button>
             </div>
 
             {m && m.providers.length > 0 && (
@@ -341,6 +349,15 @@ export function AccountSettingsPage() {
           <p className="text-[12px] text-ink-soft">{t('settings.deleteHint')}</p>
         </div>
       </Card>
+
+      <ChangePasswordModal
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+        onDone={() => {
+          toast.success(t('settings.passwordUpdated'));
+          methods.reload();
+        }}
+      />
     </div>
   );
 }
