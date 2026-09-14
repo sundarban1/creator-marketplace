@@ -38,6 +38,10 @@ export function Avatar({
       className={cn(
         'inline-flex flex-shrink-0 select-none items-center justify-center overflow-hidden rounded-full',
         'bg-brand/12 font-semibold text-brand',
+        // Safari clips border-radius on raster images without anti-aliasing
+        // (visible stair-stepping on the circle edge); routing the clip
+        // through a mask instead forces the smooth path.
+        '[-webkit-mask-image:radial-gradient(white,black)] [mask-image:radial-gradient(white,black)]',
         SIZES[size],
         className,
       )}
