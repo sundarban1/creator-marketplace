@@ -64,11 +64,15 @@
 }
 
 /* Authenticated app (/creator/*, /business/*) — reskinned to match the admin
-   dashboard's plain SaaS look (slate sidebar, gray-50 canvas, indigo accent,
-   sans-serif everywhere) instead of the public site's warm-paper/violet/
-   serif editorial palette. Scoped to `.app-scope` (AppShell's root) the same
-   way `.market-scope` scopes the public marketplace dark theme below, so the
-   landing page and public browse/detail pages are untouched. */
+   dashboard's plain SaaS look (slate sidebar, gray-50 canvas, sans-serif
+   everywhere) instead of the public site's warm-paper/violet/serif editorial
+   palette. Scoped to `.app-scope` (AppShell's root) the same way
+   `.market-scope` scopes the public marketplace dark theme below, so the
+   landing page and public browse/detail pages are untouched. Accent color
+   (brand/violet/dash-pink) is NOT set here — it comes from `.creator-scope`
+   or `.business-scope` below, applied alongside `.app-scope` based on
+   `user.role`, so the two apps get distinct accents the same way the mobile
+   app does (see mobile/src/utilities/constants.ts COLORS vs BUSINESS_COLORS). */
 .app-scope {
   --color-paper: #F9FAFB;
   --color-paper-dim: #F3F4F6;
@@ -78,6 +82,12 @@
   --color-surface-dim: #F3F4F6;
   --color-line: #E5E7EB;
   --color-line-strong: #D1D5DB;
+  --font-serif: var(--font-display);
+}
+
+/* Creator app accent — indigo, matching the mobile app's creator/default
+   palette (COLORS.brinjal1/2 in mobile/src/utilities/constants.ts). */
+.creator-scope {
   --color-violet: #4F46E5;
   --color-violet-dark: #4338CA;
   --color-brand: #4F46E5;
@@ -86,7 +96,19 @@
   --color-dash-pink-dark: #4338CA;
   --color-dash-pink-soft: #EEF2FF;
   --color-dash-bg: #F9FAFB;
-  --font-serif: var(--font-display);
+}
+
+/* Business app accent — green, matching the mobile app's BUSINESS_COLORS
+   palette (brinjal1/2 in mobile/src/utilities/constants.ts). */
+.business-scope {
+  --color-violet: #15803D;
+  --color-violet-dark: #14532D;
+  --color-brand: #15803D;
+  --color-brand-hover: #14532D;
+  --color-dash-pink: #15803D;
+  --color-dash-pink-dark: #14532D;
+  --color-dash-pink-soft: #F0FDF4;
+  --color-dash-bg: #F9FAFB;
 }
 
 /* The landing footer (rendered on the public marketplace pages) has its own

@@ -6,6 +6,11 @@ interface Option<T extends string> {
   label: string;
   description?: string;
   icon?: ReactNode;
+  /** `cards` variant only — overrides the active-state accent from the default
+   * brand indigo to green, for role pickers where a role (e.g. BUSINESS) has
+   * its own brand color elsewhere in the app (see mobile's green business
+   * theme in mobile/src/utilities/constants.ts BUSINESS_COLORS). */
+  accent?: 'brand' | 'success';
 }
 
 /**
@@ -30,6 +35,7 @@ export function SegmentedControl<T extends string>({
       <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-2 gap-6">
         {options.map((opt) => {
           const active = opt.value === value;
+          const isSuccess = opt.accent === 'success';
           return (
             <button
               key={opt.value}
@@ -39,24 +45,35 @@ export function SegmentedControl<T extends string>({
               onClick={() => onChange(opt.value)}
               className={cn(
                 'relative rounded-xl border p-3.5 text-left transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
-                active ? 'border-brand bg-brand/[0.05]' : 'border-line-strong hover:border-line-strong hover:bg-surface-dim',
+                'focus-visible:outline-none focus-visible:ring-2',
+                isSuccess ? 'focus-visible:ring-success/40' : 'focus-visible:ring-brand/40',
+                active
+                  ? isSuccess
+                    ? 'border-success bg-success/[0.05]'
+                    : 'border-brand bg-brand/[0.05]'
+                  : 'border-line-strong hover:border-line-strong hover:bg-surface-dim',
               )}
             >
               <span
                 className={cn(
                   'absolute right-3 top-3 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border',
-                  active ? 'border-brand' : 'border-line-strong',
+                  active ? (isSuccess ? 'border-success' : 'border-brand') : 'border-line-strong',
                 )}
                 aria-hidden
               >
-                {active && <span className="h-2 w-2 rounded-full bg-brand" />}
+                {active && (
+                  <span className={cn('h-2 w-2 rounded-full', isSuccess ? 'bg-success' : 'bg-brand')} />
+                )}
               </span>
               {opt.icon && (
                 <span
                   className={cn(
                     'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full',
-                    active ? 'bg-brand text-white' : 'bg-surface-dim text-ink-soft',
+                    active
+                      ? isSuccess
+                        ? 'bg-success text-white'
+                        : 'bg-brand text-white'
+                      : 'bg-surface-dim text-ink-soft',
                   )}
                   aria-hidden
                 >

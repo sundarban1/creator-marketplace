@@ -108,6 +108,7 @@ export function SignupScreen() {
                       label: t('roles.business'),
                       description: t('auth.businessRoleBlurb'),
                       icon: <Building2 size={16} />,
+                      accent: 'success',
                     },
                   ]}
                 />

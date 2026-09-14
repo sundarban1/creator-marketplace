@@ -59,7 +59,12 @@ export function AppShell() {
 
   return (
     <NotificationsProvider>
-    <div className="app-scope min-h-screen bg-paper text-ink lg:flex">
+    <div
+      className={cn(
+        'app-scope min-h-screen bg-paper text-ink lg:flex',
+        user.role === 'BUSINESS' ? 'business-scope' : 'creator-scope',
+      )}
+    >
       {/* ── Sidebar (desktop) ── */}
       <aside className="hidden w-64 flex-shrink-0 flex-col bg-slate-900 lg:flex">
         <div className="flex items-center justify-between px-5 py-5 border-b border-slate-800">
