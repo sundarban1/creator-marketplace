@@ -28,38 +28,100 @@ export interface NavItem {
   end?: boolean;
 }
 
-const CREATOR_NAV: NavItem[] = [
-  { key: 'dashboard', to: '/creator', icon: LayoutDashboard, end: true },
-  { key: 'profile', to: '/creator/profile', icon: UserRound },
-  { key: 'discoverEvents', to: '/creator/events', icon: Compass },
-  { key: 'discoverCreators', to: '/creator/creators', icon: Users },
-  { key: 'discoverBusinesses', to: '/creator/businesses', icon: Building2 },
-  { key: 'myApplications', to: '/creator/applications', icon: FileText },
-  { key: 'myWork', to: '/creator/work', icon: Briefcase },
-  { key: 'messages', to: '/creator/messages', icon: MessageCircle },
-  { key: 'wallet', to: '/creator/wallet', icon: Wallet },
-  { key: 'referFriend', to: '/creator/referrals', icon: Gift },
-  { key: 'settings', to: '/creator/settings', icon: Settings },
-  { key: 'help', to: '/creator/support', icon: HelpCircle },
+/** A labeled section of the sidebar — mirrors the admin dashboard's grouped
+ *  nav (Platform / Messaging / Finance / Support / System). */
+export interface NavGroup {
+  /** i18n key under `nav.group*` */
+  labelKey: string;
+  items: NavItem[];
+}
+
+const CREATOR_NAV_GROUPS: NavGroup[] = [
+  {
+    labelKey: 'groupMain',
+    items: [
+      { key: 'dashboard', to: '/creator', icon: LayoutDashboard, end: true },
+      { key: 'profile', to: '/creator/profile', icon: UserRound },
+    ],
+  },
+  {
+    labelKey: 'groupDiscover',
+    items: [
+      { key: 'discoverEvents', to: '/creator/events', icon: Compass },
+      { key: 'discoverCreators', to: '/creator/creators', icon: Users },
+      { key: 'discoverBusinesses', to: '/creator/businesses', icon: Building2 },
+    ],
+  },
+  {
+    labelKey: 'groupWork',
+    items: [
+      { key: 'myApplications', to: '/creator/applications', icon: FileText },
+      { key: 'myWork', to: '/creator/work', icon: Briefcase },
+      { key: 'messages', to: '/creator/messages', icon: MessageCircle },
+    ],
+  },
+  {
+    labelKey: 'groupFinance',
+    items: [
+      { key: 'wallet', to: '/creator/wallet', icon: Wallet },
+      { key: 'referFriend', to: '/creator/referrals', icon: Gift },
+    ],
+  },
+  {
+    labelKey: 'groupAccount',
+    items: [
+      { key: 'settings', to: '/creator/settings', icon: Settings },
+      { key: 'help', to: '/creator/support', icon: HelpCircle },
+    ],
+  },
 ];
 
-const BUSINESS_NAV: NavItem[] = [
-  { key: 'dashboard', to: '/business', icon: LayoutDashboard, end: true },
-  { key: 'profile', to: '/business/profile', icon: UserRound },
-  { key: 'findCreators', to: '/business/creators', icon: Users },
-  { key: 'events', to: '/business/events', icon: CalendarDays },
-  { key: 'promotions', to: '/business/promotions', icon: Tag },
-  { key: 'applications', to: '/business/applications', icon: FileText },
-  { key: 'messages', to: '/business/messages', icon: MessageCircle },
-  { key: 'deliverables', to: '/business/deliverables', icon: PackageCheck },
-  { key: 'payments', to: '/business/payments', icon: CreditCard },
-  { key: 'referBusiness', to: '/business/referrals', icon: Gift },
-  { key: 'settings', to: '/business/settings', icon: Settings },
-  { key: 'help', to: '/business/support', icon: HelpCircle },
+const BUSINESS_NAV_GROUPS: NavGroup[] = [
+  {
+    labelKey: 'groupMain',
+    items: [
+      { key: 'dashboard', to: '/business', icon: LayoutDashboard, end: true },
+      { key: 'profile', to: '/business/profile', icon: UserRound },
+    ],
+  },
+  {
+    labelKey: 'groupMarketplace',
+    items: [
+      { key: 'findCreators', to: '/business/creators', icon: Users },
+      { key: 'events', to: '/business/events', icon: CalendarDays },
+      { key: 'promotions', to: '/business/promotions', icon: Tag },
+    ],
+  },
+  {
+    labelKey: 'groupWork',
+    items: [
+      { key: 'applications', to: '/business/applications', icon: FileText },
+      { key: 'messages', to: '/business/messages', icon: MessageCircle },
+      { key: 'deliverables', to: '/business/deliverables', icon: PackageCheck },
+    ],
+  },
+  {
+    labelKey: 'groupFinance',
+    items: [
+      { key: 'payments', to: '/business/payments', icon: CreditCard },
+      { key: 'referBusiness', to: '/business/referrals', icon: Gift },
+    ],
+  },
+  {
+    labelKey: 'groupAccount',
+    items: [
+      { key: 'settings', to: '/business/settings', icon: Settings },
+      { key: 'help', to: '/business/support', icon: HelpCircle },
+    ],
+  },
 ];
+
+export function navGroupsFor(role: AppRole): NavGroup[] {
+  return role === 'BUSINESS' ? BUSINESS_NAV_GROUPS : CREATOR_NAV_GROUPS;
+}
 
 export function navFor(role: AppRole): NavItem[] {
-  return role === 'BUSINESS' ? BUSINESS_NAV : CREATOR_NAV;
+  return navGroupsFor(role).flatMap((g) => g.items);
 }
 
 // Curated subset for the mobile bottom tab bar — five slots max, so this picks

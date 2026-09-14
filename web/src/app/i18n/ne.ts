@@ -64,6 +64,13 @@ export const ne: AppDict = {
     closeMenu: 'मेनु बन्द गर्नुहोस्',
     account: 'खाता',
     switchToApp: 'एप लिनुहोस्',
+    groupMain: 'मुख्य',
+    groupDiscover: 'खोज्नुहोस्',
+    groupMarketplace: 'बजार',
+    groupWork: 'काम',
+    groupFinance: 'वित्त',
+    groupAccount: 'खाता',
+    profileSettings: 'प्रोफाइल र सेटिङ',
   },
 
   comingSoon: {

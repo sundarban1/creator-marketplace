@@ -70,6 +70,14 @@ export const en = {
     closeMenu: 'Close menu',
     account: 'Account',
     switchToApp: 'Get the app',
+    // Sidebar group labels
+    groupMain: 'Main',
+    groupDiscover: 'Discover',
+    groupMarketplace: 'Marketplace',
+    groupWork: 'Work',
+    groupFinance: 'Finance',
+    groupAccount: 'Account',
+    profileSettings: 'Profile & Settings',
   },
 
   comingSoon: {

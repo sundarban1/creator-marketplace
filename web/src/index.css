@@ -63,6 +63,32 @@
   --color-dash-bg: #F7F7FB;
 }
 
+/* Authenticated app (/creator/*, /business/*) — reskinned to match the admin
+   dashboard's plain SaaS look (slate sidebar, gray-50 canvas, indigo accent,
+   sans-serif everywhere) instead of the public site's warm-paper/violet/
+   serif editorial palette. Scoped to `.app-scope` (AppShell's root) the same
+   way `.market-scope` scopes the public marketplace dark theme below, so the
+   landing page and public browse/detail pages are untouched. */
+.app-scope {
+  --color-paper: #F9FAFB;
+  --color-paper-dim: #F3F4F6;
+  --color-ink: #111827;
+  --color-ink-soft: #6B7280;
+  --color-surface: #FFFFFF;
+  --color-surface-dim: #F3F4F6;
+  --color-line: #E5E7EB;
+  --color-line-strong: #D1D5DB;
+  --color-violet: #4F46E5;
+  --color-violet-dark: #4338CA;
+  --color-brand: #4F46E5;
+  --color-brand-hover: #4338CA;
+  --color-dash-pink: #4F46E5;
+  --color-dash-pink-dark: #4338CA;
+  --color-dash-pink-soft: #EEF2FF;
+  --color-dash-bg: #F9FAFB;
+  --font-serif: var(--font-display);
+}
+
 /* The landing footer (rendered on the public marketplace pages) has its own
    `dark:` handling and expects `--color-ink` etc. at their light-theme values,
    so reset every token to its @theme default inside its subtree — the market

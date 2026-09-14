@@ -25,7 +25,6 @@ const VerifyOtpScreen = screen(() => import('./auth/VerifyOtpScreen'), 'VerifyOt
 const ForgotPasswordScreen = screen(() => import('./auth/ForgotPasswordScreen'), 'ForgotPasswordScreen');
 const OnboardingScreen = screen(() => import('./onboarding/OnboardingScreen'), 'OnboardingScreen');
 const AppShell = screen(() => import('./shell/AppShell'), 'AppShell');
-const DashShell = screen(() => import('./creator/dash-ui/DashShell'), 'DashShell');
 const CreatorDashboard = screen(() => import('./creator/CreatorDashboard'), 'CreatorDashboard');
 const BusinessDashboard = screen(() => import('./business/BusinessDashboard'), 'BusinessDashboard');
 
@@ -114,7 +113,7 @@ export function marketplaceRoutes() {
       <Route element={<RequireAuth />}>
         <Route element={<RequireRole role="CREATOR" />}>
           <Route element={<RequireOnboarding />}>
-            <Route path="/creator" element={<DashShell />}>
+            <Route path="/creator" element={<AppShell />}>
               <Route index element={<CreatorDashboard />} />
               <Route path="events" element={<CreatorEventsPage />} />
               <Route path="events/:id" element={<CreatorEventDetailPage />} />

@@ -115,23 +115,20 @@ export function CreatorDashboard() {
           )
         )}
 
-        {/* Primary CTA — same violet→orange editorial gradient used across
-            the app's accent, mirroring the business dashboard's hero. */}
+        {/* Primary CTA — flat bordered card with a solid brand button,
+            matching the admin dashboard's plain card language. */}
         <Link
           to="/creator/events"
-          className="group relative isolate block overflow-hidden rounded-3xl bg-gradient-to-br from-violet to-violet-dark p-6 text-white shadow-[0_20px_50px_-24px_rgba(91,46,214,0.6)] sm:p-7"
+          className="group flex flex-col gap-4 rounded-xl border border-line bg-surface p-6 transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-7"
         >
-          <span aria-hidden className="pointer-events-none absolute -right-8 -top-12 h-40 w-40 rounded-full bg-brand-orange/30 blur-3xl" />
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="font-serif text-[19px] font-medium leading-snug sm:text-[21px]">{t('dashboard.ctaTitle')}</p>
-              <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-white/75">{t('dashboard.ctaSubtitle')}</p>
-            </div>
-            <span className="inline-flex flex-shrink-0 items-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-[13.5px] font-semibold text-violet-dark shadow-sm transition-transform duration-200 group-hover:translate-x-0.5">
-              {t('dashboard.ctaBtn')}
-              <ArrowRight size={15} />
-            </span>
+          <div className="min-w-0">
+            <p className="text-[16px] font-semibold leading-snug text-ink">{t('dashboard.ctaTitle')}</p>
+            <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-ink-soft">{t('dashboard.ctaSubtitle')}</p>
           </div>
+          <span className="inline-flex flex-shrink-0 items-center gap-2 self-start rounded-lg bg-brand px-5 py-2.5 text-[13.5px] font-semibold text-white shadow-sm transition-transform duration-200 group-hover:translate-x-0.5">
+            {t('dashboard.ctaBtn')}
+            <ArrowRight size={15} />
+          </span>
         </Link>
       </div>
 
@@ -141,19 +138,19 @@ export function CreatorDashboard() {
           label={t('dashboard.activeWork')}
           value={apps.loading ? undefined : activeWork.length}
           icon={Briefcase}
-          tone="violet"
+          tone="brand"
         />
         <DashStatCard
           label={t('dashboard.pendingApplications')}
           value={apps.loading ? undefined : pending.length}
           icon={FileText}
-          tone="pink"
+          tone="orange"
         />
         <DashStatCard
           label={t('dashboard.walletBalance')}
           value={wallet.loading ? undefined : rupees(wallet.data?.withdrawableBalance ?? 0)}
           icon={Wallet}
-          tone="green"
+          tone="emerald"
           hint={
             wallet.data && wallet.data.pendingEarnings > 0
               ? `+ ${rupees(wallet.data.pendingEarnings)} pending`
@@ -179,7 +176,7 @@ export function CreatorDashboard() {
           <DashCardHeader
             title={t('dashboard.activeWorkHeading')}
             action={
-              <Link to="/creator/work" className="text-[13px] font-semibold text-violet-dark hover:underline">
+              <Link to="/creator/work" className="text-[13px] font-semibold text-brand hover:underline">
                 {t('dashboard.viewAll')}
               </Link>
             }
@@ -215,7 +212,7 @@ export function CreatorDashboard() {
           <DashCardHeader
             title={t('dashboard.recentActivity')}
             action={
-              <Link to="/creator/settings" className="text-[13px] font-semibold text-violet-dark hover:underline">
+              <Link to="/creator/settings" className="text-[13px] font-semibold text-brand hover:underline">
                 {t('dashboard.seeAll')}
               </Link>
             }
@@ -232,7 +229,7 @@ export function CreatorDashboard() {
             <ul className="divide-y divide-line">
               {activity.data.map((n) => (
                 <li key={n.id} className="flex gap-3 py-3">
-                  <span className={cn('mt-1.5 h-2 w-2 flex-shrink-0 rounded-full', n.isRead ? 'bg-line-strong' : 'bg-violet')} />
+                  <span className={cn('mt-1.5 h-2 w-2 flex-shrink-0 rounded-full', n.isRead ? 'bg-line-strong' : 'bg-brand')} />
                   <div className="min-w-0">
                     <p className="text-[13px] font-medium text-ink">{n.title}</p>
                     <p className="mt-0.5 line-clamp-2 text-[12px] text-ink-soft">{n.body}</p>
@@ -247,11 +244,8 @@ export function CreatorDashboard() {
       {/* Recommended events */}
       <section className="mt-8">
         <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="font-serif text-[16px] font-medium tracking-tight text-ink">{t('dashboard.recommendedHeading')}</h2>
-            <span className="mt-2 block h-0.5 w-9 rounded-full bg-gradient-to-r from-violet to-brand-orange" />
-          </div>
-          <Link to="/creator/events" className="inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline">
+          <h2 className="text-base font-semibold text-ink">{t('dashboard.recommendedHeading')}</h2>
+          <Link to="/creator/events" className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline">
             {t('dashboard.seeAll')}
             <ArrowRight size={13} />
           </Link>

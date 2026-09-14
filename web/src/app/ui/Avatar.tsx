@@ -37,7 +37,7 @@ export function Avatar({
     <span
       className={cn(
         'inline-flex flex-shrink-0 select-none items-center justify-center overflow-hidden rounded-full',
-        'bg-brand/12 font-semibold text-brand',
+        'bg-brand font-semibold text-white',
         // Safari clips border-radius on raster images without anti-aliasing
         // (visible stair-stepping on the circle edge); routing the clip
         // through a mask instead forces the smooth path.

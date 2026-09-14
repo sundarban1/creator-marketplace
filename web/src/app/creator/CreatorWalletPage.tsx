@@ -75,10 +75,9 @@ export function CreatorWalletPage() {
       {cancelError && <Alert tone="error" className="mb-5">{cancelError}</Alert>}
       {!canWithdraw && disabledReason && <Alert tone="neutral" className="mb-5">{disabledReason}</Alert>}
 
-      {/* Balance hero — purple→pink dashboard gradient (scoped to this page). */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark p-6 text-white shadow-[0_20px_50px_-24px_rgba(91,46,214,0.5)] sm:p-7">
-        <span aria-hidden className="pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full bg-dash-pink/40 blur-3xl" />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      {/* Balance hero — solid brand card, matching the admin dashboard's flat card language. */}
+      <div className="rounded-xl bg-brand p-6 text-white sm:p-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center justify-between gap-4 sm:justify-start sm:gap-8">
               <div>

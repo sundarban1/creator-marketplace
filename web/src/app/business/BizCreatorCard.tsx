@@ -38,16 +38,11 @@ export function BizCreatorCard({
       <Link
         to={`/business/creators/${creator.id}`}
         className={cn(
-          'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface p-5',
-          'transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30',
-          'hover:shadow-[0_1px_3px_rgba(20,17,16,0.06),0_18px_34px_-16px_rgba(123,92,245,0.28)]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet/40',
+          'group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface p-5',
+          'transition-shadow duration-200 hover:shadow-md',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
         )}
       >
-        <span
-          aria-hidden
-          className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 group-hover:scale-x-100"
-        />
 
         <div className="flex items-start gap-3 pr-8">
           <Avatar name={name} src={creator.avatarUrl} size="lg" className="flex-shrink-0" />
