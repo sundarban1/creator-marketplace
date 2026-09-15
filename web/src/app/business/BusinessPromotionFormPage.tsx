@@ -61,8 +61,6 @@ function PromotionForm({ id, initial }: { id?: string; initial: ManagedPromotion
   const [discountValue, setDiscountValue] = useState(initial ? String(initial.discountValue) : '');
   const [minSpend, setMinSpend] = useState(initial?.minSpend ? String(initial.minSpend) : '');
   const [maxDiscountCap, setMaxDiscountCap] = useState(initial?.maxDiscountCap ? String(initial.maxDiscountCap) : '');
-  const [dailyLimit, setDailyLimit] = useState(initial?.dailyRedemptionLimit ? String(initial.dailyRedemptionLimit) : '');
-  const [totalLimit, setTotalLimit] = useState(initial?.totalRedemptionLimit ? String(initial.totalRedemptionLimit) : '');
   const [validFrom, setValidFrom] = useState(initial?.validFrom ? initial.validFrom.slice(0, 10) : '');
   const [validUntil, setValidUntil] = useState(initial?.validUntil ? initial.validUntil.slice(0, 10) : '');
 
@@ -94,8 +92,6 @@ function PromotionForm({ id, initial }: { id?: string; initial: ManagedPromotion
         discountValue: discountNum,
         minSpend: minSpend ? Number(minSpend) : undefined,
         maxDiscountCap: maxDiscountCap ? Number(maxDiscountCap) : undefined,
-        dailyRedemptionLimit: dailyLimit ? Number(dailyLimit) : undefined,
-        totalRedemptionLimit: totalLimit ? Number(totalLimit) : undefined,
         validFrom: new Date(validFrom).toISOString(),
         validUntil: new Date(validUntil).toISOString(),
       };
@@ -165,21 +161,6 @@ function PromotionForm({ id, initial }: { id?: string; initial: ManagedPromotion
         <Card className="grid grid-cols-2 gap-3">
           <TextField label={t('biz.validFromLabel')} type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
           <TextField label={t('biz.validUntilLabel')} type="date" value={validUntil} min={validFrom || undefined} onChange={(e) => setValidUntil(e.target.value)} />
-        </Card>
-
-        <Card className="grid grid-cols-2 gap-3">
-          <TextField
-            label={`${t('biz.dailyLimitLabel')} (${t('biz.optionalHint')})`}
-            type="number"
-            value={dailyLimit}
-            onChange={(e) => setDailyLimit(e.target.value)}
-          />
-          <TextField
-            label={`${t('biz.totalLimitLabel')} (${t('biz.optionalHint')})`}
-            type="number"
-            value={totalLimit}
-            onChange={(e) => setTotalLimit(e.target.value)}
-          />
         </Card>
 
         <div>

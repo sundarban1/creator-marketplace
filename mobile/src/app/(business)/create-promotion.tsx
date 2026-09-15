@@ -39,8 +39,6 @@ export default function CreatePromotionScreen() {
   const [discountValue, setDiscountValue] = useState('');
   const [minSpend, setMinSpend] = useState('');
   const [maxDiscountCap, setMaxDiscountCap] = useState('');
-  const [dailyLimit, setDailyLimit] = useState('');
-  const [totalLimit, setTotalLimit] = useState('');
   const [validFrom, setValidFrom] = useState<Date | null>(null);
   const [validUntil, setValidUntil] = useState<Date | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -55,8 +53,6 @@ export default function CreatePromotionScreen() {
     setDiscountValue(String(p.discountValue));
     setMinSpend(p.minSpend ? String(p.minSpend) : '');
     setMaxDiscountCap(p.maxDiscountCap ? String(p.maxDiscountCap) : '');
-    setDailyLimit(p.dailyRedemptionLimit ? String(p.dailyRedemptionLimit) : '');
-    setTotalLimit(p.totalRedemptionLimit ? String(p.totalRedemptionLimit) : '');
     setValidFrom(new Date(p.validFrom));
     setValidUntil(new Date(p.validUntil));
   }, [promotionQuery.data]);
@@ -90,8 +86,6 @@ export default function CreatePromotionScreen() {
         discountValue: discountNum,
         minSpend: minSpend ? Number(minSpend) : undefined,
         maxDiscountCap: maxDiscountCap ? Number(maxDiscountCap) : undefined,
-        dailyRedemptionLimit: dailyLimit ? Number(dailyLimit) : undefined,
-        totalRedemptionLimit: totalLimit ? Number(totalLimit) : undefined,
         validFrom: validFrom!.toISOString(),
         validUntil: validUntil!.toISOString(),
       };
@@ -194,23 +188,6 @@ export default function CreatePromotionScreen() {
                 </View>
               </View>
               {!!errors.dates && <Text style={styles.errorText}>{errors.dates}</Text>}
-            </SectionCard>
-
-            <SectionCard title={t('promotions.dailyLimitLabel')} icon="stopwatch" colors={C}>
-              <TextInputWithLabel
-                label={`${t('promotions.dailyLimitLabel')} (${t('promotions.optionalHint')})`}
-                placeholder="50"
-                value={dailyLimit}
-                onChangeText={setDailyLimit}
-                keyboardType="number-pad"
-              />
-              <TextInputWithLabel
-                label={`${t('promotions.totalLimitLabel')} (${t('promotions.optionalHint')})`}
-                placeholder="100"
-                value={totalLimit}
-                onChangeText={setTotalLimit}
-                keyboardType="number-pad"
-              />
             </SectionCard>
 
             {/* Preview */}
