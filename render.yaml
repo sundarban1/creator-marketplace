@@ -387,10 +387,24 @@ services:
       - key: ESEWA_RETURN_BASE_URL
         value: https://kolab-api.onrender.com
 
-      # ── Sparrow SMS (Nepal) — signup + forgot-password OTP only ────────────
-      # Optional: when SPARROW_SMS_TOKEN is unset, sendSms() logs and no-ops and
-      # those OTP flows still work (email path). SPARROW_SMS_FROM defaults to
-      # "Kolab".
+      # ── SMS — Nepal, signup + forgot-password OTP only ─────────────────────
+      # Two gateways (backend/src/utils/sms.ts): SMS Pasal is tried first when
+      # SMSPASAL_API_KEY is set; on failure (or if unset) it falls back to
+      # Sparrow when SPARROW_SMS_TOKEN is set. When neither is configured,
+      # sendSms() logs and no-ops — phone OTP flows silently get no code
+      # delivered in production (no email fallback for phone signups).
+      - key: SMSPASAL_API_KEY
+        sync: false
+
+      - key: SMSPASAL_SENDER_ID
+        sync: false
+
+      - key: SMSPASAL_CAMPAIGN_ID
+        sync: false
+
+      - key: SMSPASAL_ROUTE_ID
+        sync: false
+
       - key: SPARROW_SMS_TOKEN
         sync: false
 
