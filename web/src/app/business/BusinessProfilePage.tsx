@@ -12,6 +12,7 @@ import {
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useAppAuth } from '../auth/AppAuthContext';
+import { isPhonePlaceholderEmail } from '../lib/identity';
 import { useToast } from '../ui/Toast';
 import {
   fetchBusinessProfile,
@@ -36,6 +37,7 @@ import { Textarea } from '../ui/Textarea';
 import { Skeleton } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { Modal } from '../ui/Modal';
+import { ImageCropModal } from '../ui/ImageCropModal';
 
 const MAX_INDUSTRIES = 5;
 
@@ -66,6 +68,8 @@ export function BusinessProfilePage() {
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [logoCropSrc, setLogoCropSrc] = useState<string | null>(null);
+  const [coverCropSrc, setCoverCropSrc] = useState<string | null>(null);
 
   const [businessName, setBusinessName] = useState('');
   const [about, setAbout] = useState('');
@@ -101,29 +105,41 @@ export function BusinessProfilePage() {
     }
   };
 
-  const onLogo = async (file: File) => {
+  const pickLogo = (file: File) => setLogoCropSrc(URL.createObjectURL(file));
+  const closeLogoCrop = () => {
+    if (logoCropSrc) URL.revokeObjectURL(logoCropSrc);
+    setLogoCropSrc(null);
+  };
+  const onLogoCropped = async (blob: Blob) => {
     setLogoUploading(true);
     try {
-      await uploadBusinessLogo(file);
+      await uploadBusinessLogo(new File([blob], 'logo.jpg', { type: 'image/jpeg' }));
       profile.reload();
       toast.success(t('profile.saved'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('profile.uploadFailed'));
     } finally {
       setLogoUploading(false);
+      closeLogoCrop();
     }
   };
 
-  const onCover = async (file: File) => {
+  const pickCover = (file: File) => setCoverCropSrc(URL.createObjectURL(file));
+  const closeCoverCrop = () => {
+    if (coverCropSrc) URL.revokeObjectURL(coverCropSrc);
+    setCoverCropSrc(null);
+  };
+  const onCoverCropped = async (blob: Blob) => {
     setCoverUploading(true);
     try {
-      await uploadBusinessCover(file);
+      await uploadBusinessCover(new File([blob], 'cover.jpg', { type: 'image/jpeg' }));
       profile.reload();
       toast.success(t('profile.saved'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('profile.uploadFailed'));
     } finally {
       setCoverUploading(false);
+      closeCoverCrop();
     }
   };
 
@@ -179,7 +195,7 @@ export function BusinessProfilePage() {
               disabled={coverUploading}
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) onCover(f);
+                if (f) pickCover(f);
                 e.target.value = '';
               }}
             />
@@ -209,7 +225,7 @@ export function BusinessProfilePage() {
                     disabled={logoUploading}
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) onLogo(f);
+                      if (f) pickLogo(f);
                       e.target.value = '';
                     }}
                   />
@@ -263,7 +279,7 @@ export function BusinessProfilePage() {
         <Card accent>
           <CardHeader title={t('biz.contactHeading')} />
           <div className="space-y-2">
-            {user?.email && <InfoRow icon={Mail}>{user.email}</InfoRow>}
+            {user?.email && !isPhonePlaceholderEmail(user.email) && <InfoRow icon={Mail}>{user.email}</InfoRow>}
             {(p.phone ?? user?.phone) && <InfoRow icon={Phone}>{p.phone ?? user?.phone}</InfoRow>}
           </div>
         </Card>
@@ -361,6 +377,24 @@ export function BusinessProfilePage() {
           setIndustriesOpen(false);
           profile.reload();
         }}
+      />
+      <ImageCropModal
+        open={!!logoCropSrc}
+        imageSrc={logoCropSrc}
+        aspect={1}
+        cropShape="round"
+        title={t('profile.cropTitle')}
+        onCancel={closeLogoCrop}
+        onConfirm={onLogoCropped}
+      />
+      <ImageCropModal
+        open={!!coverCropSrc}
+        imageSrc={coverCropSrc}
+        aspect={3}
+        cropShape="rect"
+        title={t('biz.cropCoverTitle')}
+        onCancel={closeCoverCrop}
+        onConfirm={onCoverCropped}
       />
     </div>
   );

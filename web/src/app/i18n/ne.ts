@@ -435,6 +435,9 @@ export const ne: AppDict = {
     verified: 'प्रमाणित',
     verificationPending: 'प्रमाणीकरण विचाराधीन',
     uploadFailed: 'अपलोड असफल भयो — फेरि प्रयास गर्नुहोस्।',
+    cropTitle: 'फोटो क्रप गर्नुहोस्',
+    cropSave: 'फोटो सुरक्षित गर्नुहोस्',
+    cropZoom: 'जुम',
   },
 
   settings: {
@@ -763,6 +766,7 @@ export const ne: AppDict = {
     location: 'स्थान',
     changeCoverPhoto: 'कभर फोटो बदल्नुहोस्',
     changeLogo: 'लोगो बदल्नुहोस्',
+    cropCoverTitle: 'कभर फोटो क्रप गर्नुहोस्',
     contactHeading: 'सम्पर्क',
     industriesHeading: 'उद्योगहरू',
     statSavedCreators: 'बचत गरिएका क्रिएटर',

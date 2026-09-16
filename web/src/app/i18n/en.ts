@@ -457,6 +457,9 @@ export const en = {
     verified: 'Verified',
     verificationPending: 'Verification pending',
     uploadFailed: 'Upload failed — try again.',
+    cropTitle: 'Crop photo',
+    cropSave: 'Save photo',
+    cropZoom: 'Zoom',
   },
 
   settings: {
@@ -798,6 +801,7 @@ export const en = {
     location: 'Location',
     changeCoverPhoto: 'Change cover photo',
     changeLogo: 'Change logo',
+    cropCoverTitle: 'Crop cover photo',
     contactHeading: 'Contact',
     industriesHeading: 'Industries',
     statSavedCreators: 'Saved creators',

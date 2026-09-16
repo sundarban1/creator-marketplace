@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, Search, MessageCircle, ChevronDown, User as UserIcon } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
+import { displayIdentifier } from '../lib/identity';
 import { navGroupsFor, bottomNavFor, type NavGroup } from './nav';
 import { BottomNav } from './BottomNav';
 import { cn } from '../ui/cn';
@@ -43,7 +44,7 @@ export function AppShell() {
   const searchTarget = user.role === 'BUSINESS' ? '/business/creators' : '/creator/events';
   const dashboardPath = user.role === 'BUSINESS' ? '/business' : '/creator';
   const settingsPath = user.role === 'BUSINESS' ? '/business/settings' : '/creator/settings';
-  const identifier = user.emailIsPlaceholder ? (user.phone ?? '') : user.email;
+  const identifier = displayIdentifier(user);
 
   const submitSearch = (e: FormEvent) => {
     e.preventDefault();

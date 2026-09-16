@@ -42,6 +42,7 @@ import { Textarea } from '../ui/Textarea';
 import { Skeleton } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { Modal } from '../ui/Modal';
+import { ImageCropModal } from '../ui/ImageCropModal';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { cn } from '../ui/cn';
@@ -69,6 +70,7 @@ export function CreatorProfilePage() {
   const [portfolioModal, setPortfolioModal] = useState(false);
   const [nicheModal, setNicheModal] = useState(false);
   const [bioGenerating, setBioGenerating] = useState(false);
+  const [avatarCropSrc, setAvatarCropSrc] = useState<string | null>(null);
 
   const p = profile.data;
   const categoryMeta = useMemo(() => makeCategoryLookup(niches.data ?? []), [niches.data]);
@@ -122,13 +124,24 @@ export function CreatorProfilePage() {
     }
   };
 
-  const onAvatar = async (file: File) => {
+  const pickAvatar = (file: File) => {
+    setAvatarCropSrc(URL.createObjectURL(file));
+  };
+
+  const closeAvatarCrop = () => {
+    if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc);
+    setAvatarCropSrc(null);
+  };
+
+  const onAvatarCropped = async (blob: Blob) => {
     try {
-      await uploadAvatar(file);
+      await uploadAvatar(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
       profile.reload();
       setFlash(t('profile.saved'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      closeAvatarCrop();
     }
   };
 
@@ -176,7 +189,7 @@ export function CreatorProfilePage() {
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) onAvatar(f);
+                      if (f) pickAvatar(f);
                       e.target.value = '';
                     }}
                   />
@@ -423,6 +436,15 @@ export function CreatorProfilePage() {
           setNicheModal(false);
           profile.reload();
         }}
+      />
+      <ImageCropModal
+        open={!!avatarCropSrc}
+        imageSrc={avatarCropSrc}
+        aspect={1}
+        cropShape="round"
+        title={t('profile.cropTitle')}
+        onCancel={closeAvatarCrop}
+        onConfirm={onAvatarCropped}
       />
     </div>
   );

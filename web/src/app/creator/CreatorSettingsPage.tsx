@@ -5,6 +5,7 @@ import { useAppAuth } from '../auth/AppAuthContext';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { isPhonePlaceholderEmail } from '../lib/identity';
 import { fetchAuthMethods, deactivateAccount, deleteAccount } from '../api/auth';
 import { fetchNotificationSettings, updateNotificationSettings } from '../api/creator';
 import { paths } from '../routes';
@@ -57,8 +58,8 @@ export function CreatorSettingsPage() {
           <DashListRow
             icon={User}
             tone="violet"
-            title={user?.email}
-            subtitle={user?.phone ?? undefined}
+            title={user && isPhonePlaceholderEmail(user.email) ? (user.phone ?? undefined) : user?.email}
+            subtitle={user && !isPhonePlaceholderEmail(user.email) ? (user.phone ?? undefined) : undefined}
           />
           <DashListRow
             icon={ShieldCheck}

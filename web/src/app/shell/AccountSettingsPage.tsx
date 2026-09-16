@@ -5,6 +5,7 @@ import { useAppAuth } from '../auth/AppAuthContext';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { isPhonePlaceholderEmail } from '../lib/identity';
 import { fetchAuthMethods, deactivateAccount, deleteAccount } from '../api/auth';
 import { fetchNotificationSettings, updateNotificationSettings } from '../api/creator';
 import { fetchBusinessProfile, updateBusinessProfile } from '../api/business';
@@ -302,10 +303,12 @@ export function AccountSettingsPage() {
       <Card className="mt-6">
         <CardHeader title={t('settings.accountHeading')} />
         <dl className="space-y-2 text-[14px]">
-          <div className="flex justify-between">
-            <dt className="text-ink-soft">{t('settings.email')}</dt>
-            <dd className="font-medium text-ink">{user?.email}</dd>
-          </div>
+          {user?.email && !isPhonePlaceholderEmail(user.email) && (
+            <div className="flex justify-between">
+              <dt className="text-ink-soft">{t('settings.email')}</dt>
+              <dd className="font-medium text-ink">{user.email}</dd>
+            </div>
+          )}
           {user?.phone && (
             <div className="flex justify-between">
               <dt className="text-ink-soft">{t('settings.phone')}</dt>
