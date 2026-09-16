@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Tag,
   Gift,
+  BadgeCheck,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from '../api/auth';
@@ -71,6 +72,7 @@ const CREATOR_NAV_GROUPS: NavGroup[] = [
     labelKey: 'groupAccount',
     items: [
       { key: 'settings', to: '/creator/settings', icon: Settings },
+      { key: 'verification', to: '/creator/verification', icon: BadgeCheck },
       { key: 'help', to: '/creator/support', icon: HelpCircle },
     ],
   },
@@ -111,6 +113,7 @@ const BUSINESS_NAV_GROUPS: NavGroup[] = [
     labelKey: 'groupAccount',
     items: [
       { key: 'settings', to: '/business/settings', icon: Settings },
+      { key: 'verification', to: '/business/verification', icon: BadgeCheck },
       { key: 'help', to: '/business/support', icon: HelpCircle },
     ],
   },

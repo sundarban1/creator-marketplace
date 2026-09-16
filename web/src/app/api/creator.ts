@@ -441,6 +441,14 @@ export interface CreatorFullProfile {
   isVerified: boolean;
   fullyVerified: boolean;
   verificationStatus: string;
+  verificationRejectReason: string | null;
+  citizenshipDocUrl: string | null;
+  citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  panDocUrl: string | null;
+  panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUrl: string | null;
+  companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegNo: string | null;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
   hideSocialLinks: boolean;
@@ -610,4 +618,25 @@ export function createPortfolioItem(input: CreatePortfolioItemInput): Promise<Po
 
 export function deletePortfolioItem(id: string): Promise<void> {
   return apiRequest('DELETE', `/api/creator/portfolio-items/${id}`).then(() => undefined);
+}
+
+// ── Verification documents ───────────────────────────────────────────────────
+
+export interface CreatorDocUploadResult {
+  docUrl: string;
+  citizenshipStatus?: string;
+  panDocStatus?: string;
+  companyRegDocStatus?: string;
+}
+
+export function uploadCitizenshipDoc(file: File): Promise<CreatorDocUploadResult> {
+  const form = new FormData();
+  form.append('document', file);
+  return apiUpload<CreatorDocUploadResult>('/api/creator/citizenship', form);
+}
+
+export function uploadCreatorPanDoc(file: File): Promise<CreatorDocUploadResult> {
+  const form = new FormData();
+  form.append('document', file);
+  return apiUpload<CreatorDocUploadResult>('/api/creator/pan', form);
 }

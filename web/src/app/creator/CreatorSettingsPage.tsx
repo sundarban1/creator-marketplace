@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Globe, ShieldCheck, LogOut, UserX, Trash2, Link2, User, Mail, Gift, LifeBuoy, Info } from 'lucide-react';
+import { Globe, ShieldCheck, BadgeCheck, LogOut, UserX, Trash2, Link2, User, Mail, Gift, LifeBuoy, Info } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { isPhonePlaceholderEmail } from '../lib/identity';
 import { fetchAuthMethods, deactivateAccount, deleteAccount } from '../api/auth';
-import { fetchNotificationSettings, updateNotificationSettings } from '../api/creator';
+import { fetchNotificationSettings, updateNotificationSettings, fetchCreatorFullProfile } from '../api/creator';
 import { paths } from '../routes';
 import { DashPageHeader } from './dash-ui/DashPageHeader';
 import { DashCard, DashCardHeader } from './dash-ui/DashCard';
@@ -15,6 +15,7 @@ import { DashListRow } from './dash-ui/DashListRow';
 import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
 import { Switch } from '../ui/Switch';
+import { StatusBadge } from '../ui/StatusBadge';
 import { useToast } from '../ui/Toast';
 import { cn } from '../ui/cn';
 
@@ -36,6 +37,7 @@ export function CreatorSettingsPage() {
   const { language, setLanguage } = useAppLanguage();
   const methods = useAsync((s) => fetchAuthMethods(s), []);
   const notifSettings = useAsync((s) => fetchNotificationSettings(s), []);
+  const creatorProfile = useAsync((s) => fetchCreatorFullProfile(s), []);
   const [emailNotifOverride, setEmailNotifOverride] = useState<boolean | null>(null);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const emailNotif = emailNotifOverride ?? notifSettings.data?.emailNotificationsEnabled ?? null;
@@ -46,6 +48,12 @@ export function CreatorSettingsPage() {
   }
 
   const m = methods.data;
+  const verificationTone =
+    creatorProfile.data?.verificationStatus === 'VERIFIED'
+      ? 'success'
+      : creatorProfile.data?.verificationStatus === 'PENDING'
+        ? 'warning'
+        : 'neutral';
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -180,6 +188,29 @@ export function CreatorSettingsPage() {
       <DashCard className="mt-6">
         <DashCardHeader title={t('settings.moreHeading')} />
         <div className="divide-y divide-black/[0.05]">
+          <Link to="/creator/verification">
+            <DashListRow
+              icon={BadgeCheck}
+              tone="green"
+              title={t('settings.verification')}
+              subtitle={t('settings.verificationHint')}
+              trailing={
+                creatorProfile.data && (
+                  <StatusBadge
+                    label={t(
+                      creatorProfile.data.verificationStatus === 'VERIFIED'
+                        ? 'settings.verificationStatusVerified'
+                        : creatorProfile.data.verificationStatus === 'PENDING'
+                          ? 'settings.verificationStatusPending'
+                          : 'settings.verificationStatusNotVerified',
+                    )}
+                    tone={verificationTone}
+                  />
+                )
+              }
+              chevron
+            />
+          </Link>
           <Link to="/creator/referrals">
             <DashListRow icon={Gift} tone="pink" title={t('settings.referAFriend')} subtitle={t('settings.referAFriendHint')} chevron />
           </Link>

@@ -47,6 +47,7 @@ const CreatorWorkDetailPage = screen(() => import('./creator/CreatorWorkDetailPa
 const CreatorWalletPage = screen(() => import('./creator/CreatorWalletPage'), 'CreatorWalletPage');
 const CreatorProfileEditPage = screen(() => import('./creator/CreatorProfilePage'), 'CreatorProfilePage');
 const CreatorSettingsPage = screen(() => import('./creator/CreatorSettingsPage'), 'CreatorSettingsPage');
+const CreatorVerificationPage = screen(() => import('./creator/CreatorVerificationPage'), 'CreatorVerificationPage');
 const CreatorReferralsPage = screen(() => import('./creator/CreatorReferralsPage'), 'CreatorReferralsPage');
 const AccountSettingsPage = screen(() => import('./shell/AccountSettingsPage'), 'AccountSettingsPage');
 const HelpSupportPage = screen(() => import('./shell/HelpSupportPage'), 'HelpSupportPage');
@@ -131,6 +132,7 @@ export function marketplaceRoutes() {
               <Route path="wallet" element={<CreatorWalletPage />} />
               <Route path="profile" element={<CreatorProfileEditPage />} />
               <Route path="settings" element={<CreatorSettingsPage />} />
+              <Route path="verification" element={<CreatorVerificationPage />} />
               <Route path="referrals" element={<CreatorReferralsPage />} />
               <Route path="support" element={<HelpSupportPage />} />
               <Route path="about" element={<AboutKolabPage />} />

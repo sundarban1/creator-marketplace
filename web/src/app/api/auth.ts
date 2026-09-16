@@ -247,3 +247,24 @@ export async function deactivateAccount(): Promise<void> {
 export async function deleteAccount(): Promise<void> {
   await api('DELETE', '/api/auth/account');
 }
+
+// ── Contact verification (authenticated — Settings/Verification pages) ──────
+// Distinct from the signup-time verifyOtp/resendOtp above: these operate on an
+// already-logged-in account's phone/email, same backend contract the mobile
+// app's `authService.request/verifyPhoneOtp` and `.../EmailOtp` already use.
+
+export async function requestPhoneOtp(phone: string): Promise<void> {
+  await api('POST', '/api/auth/request-phone-otp', { phone });
+}
+
+export async function verifyPhoneOtp(phone: string, code: string): Promise<void> {
+  await api('POST', '/api/auth/verify-phone-otp', { phone, code });
+}
+
+export async function requestEmailOtp(email: string): Promise<void> {
+  await api('POST', '/api/auth/request-email-otp', { email });
+}
+
+export async function verifyEmailOtp(email: string, code: string): Promise<void> {
+  await api('POST', '/api/auth/verify-email-otp', { email, code });
+}
