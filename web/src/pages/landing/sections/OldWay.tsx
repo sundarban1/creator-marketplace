@@ -35,7 +35,7 @@ const MESSAGE_LAYOUT = [
   { top: '2%', left: '72%', rotate: -2 },
   { top: '52%', left: '2%', rotate: 2 },
   { top: '76%', left: '39%', rotate: -3 },
-  { top: '44%', left: '37%', rotate: 4 },
+  { top: '38%', left: '37%', rotate: 4 },
 ] as const;
 
 function ClutterCard({

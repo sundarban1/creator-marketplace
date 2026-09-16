@@ -284,7 +284,6 @@ export function KolabWay() {
               );
             })}
           </div>
-          <div aria-hidden className="relative -mt-8 mb-6 h-px bg-ink/10 dark:bg-white/10" />
 
           <motion.p
             key={`title-${activeKey}`}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, ChevronRight, Gift, PartyPopper, Sparkles, Ticket, TicketPercent, Wallet } from 'lucide-react';
+import { ArrowRight, ChevronRight, Gift, PartyPopper, Sparkles, Ticket, TicketPercent, Video, Wallet } from 'lucide-react';
 import { FaApple, FaGooglePlay } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { useLandingLanguage, type LandingLang } from '../context/LanguageContext';
@@ -47,6 +47,8 @@ function renderWithPlatformLinks(text: string, social: SiteInfo['social'] | unde
   });
 }
 
+type Track = 'draw' | 'contest';
+
 export function LaunchAnnouncementModal() {
   const { lang, setLang, d } = useLandingLanguage();
   const copy = d.launchAnnouncement;
@@ -54,6 +56,7 @@ export function LaunchAnnouncementModal() {
   const comingSoon = useComingSoon();
   const reducedMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
+  const [track, setTrack] = useState<Track>('draw');
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Shows on every landing page load (no dismissal persistence) — it's a
@@ -77,6 +80,35 @@ export function LaunchAnnouncementModal() {
 
   function dismiss() {
     setOpen(false);
+  }
+
+  // Shared step-card grid for both tracks — same numbered-card visual
+  // language for Lucky Draw and Video Contest so neither reads as the
+  // "lesser" option. `linkifyIndex` is the one step (if any) whose
+  // description should get Facebook/Instagram/TikTok turned into links.
+  function renderStepGrid(steps: { title: string; description: string }[], linkifyIndex?: number) {
+    return (
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch sm:gap-1.5">
+        {steps.map((step, i) => (
+          <div key={step.title} className="contents">
+            <div className="flex flex-col items-center rounded-2xl border border-ink/10 bg-paper-dim/50 px-3.5 py-3 text-center transition-colors hover:border-violet/30 dark:border-white/10 dark:bg-white/[0.04]">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet to-brand-orange text-[11px] font-bold text-white">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <p className="mt-2 text-[13px] font-bold text-ink dark:text-white">{step.title}</p>
+              <p className="mt-0.5 text-xs leading-snug text-ink-soft dark:text-white/70">
+                {i === linkifyIndex ? renderWithPlatformLinks(step.description, siteInfo?.social) : step.description}
+              </p>
+            </div>
+            {i < steps.length - 1 && (
+              <div className="hidden shrink-0 items-center justify-center sm:flex">
+                <ArrowRight size={16} className="text-ink dark:text-white" aria-hidden />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -189,68 +221,114 @@ export function LaunchAnnouncementModal() {
                 </p>
               </div>
 
-              {/* Steps */}
-              <div className="mt-5">
-                <p className="text-center text-sm font-bold text-ink dark:text-white">{copy.stepsHeading}</p>
-                <p className="mt-1 text-center text-xs text-ink-soft dark:text-white/70">{copy.stepsSubheading}</p>
+              {/* Track switcher — Lucky Draw and Video Contest are both
+                  first-class ways to win, so they get equal visual weight
+                  via a sliding segmented control rather than a primary
+                  section + a "bonus" afterthought. */}
+              <div className="relative mx-auto mt-5 flex w-full max-w-[280px] items-center rounded-full border border-ink/10 bg-paper-dim/60 p-1 dark:border-white/10 dark:bg-white/5">
+                {(
+                  [
+                    { key: 'draw' as const, label: copy.tabDraw, Icon: Ticket },
+                    { key: 'contest' as const, label: copy.tabContest, Icon: Video },
+                  ]
+                ).map(({ key, label, Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setTrack(key)}
+                    aria-pressed={track === key}
+                    className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-colors ${
+                      track === key ? 'text-white' : 'text-ink-soft hover:text-ink dark:text-white/60 dark:hover:text-white'
+                    }`}
+                  >
+                    {track === key && (
+                      <motion.span
+                        layoutId="launch-track-pill"
+                        className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-violet to-brand-orange"
+                        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <Icon size={13} aria-hidden />
+                    {label}
+                  </button>
+                ))}
+              </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch sm:gap-1.5">
-                  {copy.steps.map((step, i) => (
-                    <div key={step.title} className="contents">
-                      <div className="flex flex-col items-center rounded-2xl border border-ink/10 bg-paper-dim/50 px-3.5 py-3 text-center transition-colors hover:border-violet/30 dark:border-white/10 dark:bg-white/[0.04]">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet to-brand-orange text-[11px] font-bold text-white">
-                          {String(i + 1).padStart(2, '0')}
-                        </span>
-                        <p className="mt-2 text-[13px] font-bold text-ink dark:text-white">{step.title}</p>
-                        <p className="mt-0.5 text-xs leading-snug text-ink-soft dark:text-white/70">
-                          {i === 1 ? renderWithPlatformLinks(step.description, siteInfo?.social) : step.description}
-                        </p>
-                      </div>
-                      {i < copy.steps.length - 1 && (
-                        <div className="hidden shrink-0 items-center justify-center sm:flex">
-                          <ArrowRight size={16} className="text-ink dark:text-white" aria-hidden />
-                        </div>
-                      )}
+              <AnimatePresence mode="wait" initial={false}>
+                {track === 'draw' ? (
+                  <motion.div
+                    key="draw"
+                    initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {/* Lucky Draw steps */}
+                    <div className="mt-4">
+                      <p className="text-center text-sm font-bold text-ink dark:text-white">{copy.stepsHeading}</p>
+                      <p className="mt-1 text-center text-xs text-ink-soft dark:text-white/70">{copy.stepsSubheading}</p>
+                      {renderStepGrid(copy.steps, 1)}
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Eligibility confirmation */}
-              <div className="mt-2.5 flex items-start gap-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-4 py-3 dark:border-emerald-400/20 dark:bg-emerald-400/[0.08]">
-                <PartyPopper size={17} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                <p className="text-sm leading-snug text-ink dark:text-white">
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400">{copy.eligibleTitle}</span>{' '}
-                  {copy.eligibleBody}
-                </p>
-              </div>
+                    {/* Eligibility confirmation */}
+                    <div className="mt-2.5 flex items-start gap-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-4 py-3 dark:border-emerald-400/20 dark:bg-emerald-400/[0.08]">
+                      <PartyPopper size={17} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      <p className="text-sm leading-snug text-ink dark:text-white">
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400">{copy.eligibleTitle}</span>{' '}
+                        {copy.eligibleBody}
+                      </p>
+                    </div>
 
-              {/* Attendance note */}
-              <div className="mt-2.5 rounded-2xl border border-violet/20 bg-violet/5 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                <p className="text-sm font-bold text-ink dark:text-white">{copy.attendanceTitle}</p>
-                <p className="mt-0.5 text-xs leading-snug text-ink-soft dark:text-white/70">
-                  {copy.attendanceBody} {copy.attendanceNote}
-                </p>
-              </div>
+                    {/* Attendance note */}
+                    <div className="mt-2.5 rounded-2xl border border-violet/20 bg-violet/5 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                      <p className="text-sm font-bold text-ink dark:text-white">{copy.attendanceTitle}</p>
+                      <p className="mt-0.5 text-xs leading-snug text-ink-soft dark:text-white/70">
+                        {copy.attendanceBody} {copy.attendanceNote}
+                      </p>
+                    </div>
 
-              {/* Prizes */}
-              <div className="mt-3.5 text-center">
-                <p className="text-xs font-bold text-ink dark:text-white">{copy.prizesHeading}</p>
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-                  {copy.prizes.map((prize, i) => {
-                    const Icon = PRIZE_ICONS[i % PRIZE_ICONS.length];
-                    return (
-                      <span
-                        key={prize}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-paper-dim/60 px-3 py-1.5 text-xs font-semibold text-ink dark:border-white/10 dark:bg-white/5 dark:text-white"
-                      >
-                        <Icon size={13} className="shrink-0 text-violet dark:text-brand-orange" />
-                        {prize}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
+                    {/* Prizes */}
+                    <div className="mt-3.5 text-center">
+                      <p className="text-xs font-bold text-ink dark:text-white">{copy.prizesHeading}</p>
+                      <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                        {copy.prizes.map((prize, i) => {
+                          const Icon = PRIZE_ICONS[i % PRIZE_ICONS.length];
+                          return (
+                            <span
+                              key={prize}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-paper-dim/60 px-3 py-1.5 text-xs font-semibold text-ink dark:border-white/10 dark:bg-white/5 dark:text-white"
+                            >
+                              <Icon size={13} className="shrink-0 text-violet dark:text-brand-orange" />
+                              {prize}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="contest"
+                    initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {/* Video Contest steps */}
+                    <div className="mt-4">
+                      <p className="text-center text-sm font-bold text-ink dark:text-white">{copy.contestStepsHeading}</p>
+                      <p className="mt-1 text-center text-xs text-ink-soft dark:text-white/70">{copy.contestStepsSubheading}</p>
+                      {renderStepGrid(copy.contestSteps)}
+                    </div>
+
+                    {/* Creativity note */}
+                    <div className="mt-2.5 rounded-2xl border border-brand-orange/25 bg-brand-orange/[0.06] px-4 py-3 dark:border-brand-orange/20 dark:bg-brand-orange/[0.08]">
+                      <p className="text-sm font-bold text-ink dark:text-white">{copy.contestNoteTitle}</p>
+                      <p className="mt-0.5 text-xs leading-snug text-ink-soft dark:text-white/70">{copy.contestNoteBody}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Footer CTA */}

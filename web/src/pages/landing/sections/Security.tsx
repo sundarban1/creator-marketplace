@@ -37,7 +37,7 @@ export function Security() {
     return (
       <div
         key={point.title}
-        className={`flex flex-col overflow-hidden rounded-[2rem] border border-ink/10 bg-paper-dim/80 shadow-[0_20px_60px_-30px_rgba(20,17,16,0.35)] sm:flex-row dark:border-white/10 dark:bg-ink-elevated ${
+        className={`flex flex-col overflow-hidden rounded-[2rem] border border-ink/10 bg-paper-dim/80 shadow-[0_20px_60px_-30px_rgba(20,17,16,0.35)] sm:flex-row sm:min-h-[60vh] dark:border-white/10 dark:bg-ink-elevated ${
           reversed ? 'sm:flex-row-reverse' : ''
         }`}
       >

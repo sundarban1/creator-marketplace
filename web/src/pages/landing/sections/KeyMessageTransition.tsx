@@ -31,7 +31,7 @@ export function KeyMessageTransition() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={VP}
           transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="text-balance bg-gradient-to-br from-violet to-brand-orange bg-clip-text font-serif text-4xl font-medium text-transparent sm:text-6xl md:text-7xl"
+          className="text-balance bg-gradient-to-br from-violet to-brand-orange bg-clip-text pb-2 font-serif text-4xl font-medium leading-[1.15] text-transparent sm:text-6xl md:text-7xl"
         >
           “{d.keyMessage.to}”
         </motion.p>
