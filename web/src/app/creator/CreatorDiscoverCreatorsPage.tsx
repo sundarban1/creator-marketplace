@@ -26,6 +26,8 @@ import { DashPageHeader } from './dash-ui/DashPageHeader';
 
 export function CreatorDiscoverCreatorsPage() {
   const t = useT();
+  const { user } = useAppAuth();
+  const selfCreatorId = user?.creatorProfile?.id;
   const [params, setParams] = useSearchParams();
   const search = params.get('q') ?? '';
   const category = params.get('category') ?? '';
@@ -59,8 +61,9 @@ export function CreatorDiscoverCreatorsPage() {
           page: nextPage,
         });
         if (id !== reqId.current) return;
-        setItems((prev) => (append ? [...prev, ...res.creators] : res.creators));
-        setTotal(res.total);
+        const creators = selfCreatorId ? res.creators.filter((c) => c.id !== selfCreatorId) : res.creators;
+        setItems((prev) => (append ? [...prev, ...creators] : creators));
+        setTotal(res.total - (res.creators.length - creators.length));
         setPage(nextPage);
         setStatus('ready');
       } catch {
@@ -68,7 +71,7 @@ export function CreatorDiscoverCreatorsPage() {
         setStatus('error');
       }
     },
-    [debouncedSearch, category, platform, debouncedLocation, sort],
+    [debouncedSearch, category, platform, debouncedLocation, sort, selfCreatorId],
   );
 
   useEffect(() => {

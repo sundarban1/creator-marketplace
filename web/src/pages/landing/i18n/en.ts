@@ -586,7 +586,7 @@ export const en = {
     titleTop: 'Join Kolab Early',
     titleBottomPre: '& Start ',
     titleHighlight: 'Winning',
-    description: 'Two exciting ways to win at launch — join the Lucky Draw or enter the Video Contest below.',
+    description: 'Two exciting ways to win at launch — join the Lucky Draw or/and enter the Video Contest below.',
     tabDraw: 'Lucky Draw',
     tabContest: 'Video Contest',
     stepsHeading: '🎟️ How to Enter',
