@@ -612,7 +612,9 @@ function ConnectSocialModal({
                   <p className="text-[13px] font-semibold text-ink">{meta.label}</p>
                   {acct ? (
                     <p className="truncate text-[12px] text-ink-soft">
-                      {compactNumber(acct.followers)} {t('profile.followers')}
+                      {id === 'tiktok' && acct.followers === 0
+                        ? t('profile.connected')
+                        : `${compactNumber(acct.followers)} ${t('profile.followers')}`}
                     </p>
                   ) : (
                     <p className="truncate text-[12px] text-ink-soft">{t('profile.connectHint')}</p>

@@ -434,6 +434,7 @@ export const en = {
     followers: 'Followers',
     connectAccounts: 'Connect accounts',
     connectHint: 'Connect to pull your profile link and follower count automatically',
+    connected: 'Connected',
     connectBtn: 'Connect',
     pickFacebookPage: 'Choose a Facebook Page',
     pickInstagramPage: 'Choose an Instagram account',

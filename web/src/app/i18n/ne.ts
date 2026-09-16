@@ -412,6 +412,7 @@ export const ne: AppDict = {
     followers: 'फलोअर',
     connectAccounts: 'खाताहरू जोड्नुहोस्',
     connectHint: 'तपाईंको प्रोफाइल लिङ्क र फलोअर संख्या स्वतः तान्न जोड्नुहोस्',
+    connected: 'जोडिएको',
     connectBtn: 'जोड्नुहोस्',
     pickFacebookPage: 'Facebook पेज छान्नुहोस्',
     pickInstagramPage: 'Instagram खाता छान्नुहोस्',
