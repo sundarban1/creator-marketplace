@@ -1,0 +1,1 @@
+import"./Tabs-rj9Yp65x.js";

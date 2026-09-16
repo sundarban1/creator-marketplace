@@ -548,6 +548,15 @@ function ConnectSocialModal({
     }
   };
 
+  // Instagram business stats are only reachable via a linked Facebook Page
+  // (see comment on connectViaFacebook above), so it shares that flow too.
+  const CONNECT_HANDLERS: Record<ConnectablePlatform, () => void> = {
+    tiktok: () => void connectTiktok(),
+    youtube: () => void connectYoutube(),
+    instagram: () => void connectViaFacebook('instagram'),
+    facebook: () => void connectViaFacebook('facebook'),
+  };
+
   const disconnect = async (id: string) => {
     if (!window.confirm(t('profile.confirmRemove'))) return;
     await deleteSocialAccount(id);
@@ -602,6 +611,7 @@ function ConnectSocialModal({
                     size="sm"
                     variant="secondary"
                     className="flex-shrink-0"
+                    onClick={CONNECT_HANDLERS[id]}
                     disabled
                   >
                     {t('profile.connectBtn')}
