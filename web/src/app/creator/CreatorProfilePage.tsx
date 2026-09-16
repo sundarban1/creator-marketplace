@@ -593,11 +593,6 @@ function ConnectSocialModal({
       open={open}
       onClose={onClose}
       title={t('profile.connectAccounts')}
-      badge={
-        <span className="rounded-full bg-surface-dim px-2 py-0.5 text-[11px] font-medium text-ink-soft">
-          {t('profile.connectComingSoon')}
-        </span>
-      }
     >
       <div className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
@@ -637,7 +632,7 @@ function ConnectSocialModal({
                     variant="secondary"
                     className="flex-shrink-0"
                     onClick={CONNECT_HANDLERS[id]}
-                    disabled
+                    disabled={id !== 'youtube' && id !== 'tiktok'}
                   >
                     {t('profile.connectBtn')}
                   </Button>

@@ -50,6 +50,7 @@ const SPA_PREFIXES = [
   '/admin',
   '/login', '/signup', '/verify', '/forgot-password',
   '/creator', '/business',
+  '/oauth',
 ];
 
 // Public, indexable SPA routes — client-rendered (React 19 hoists their SEO
