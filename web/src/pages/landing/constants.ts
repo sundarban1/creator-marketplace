@@ -18,31 +18,32 @@ export const SECTION_IDS = {
   possibilities: 'possibilities',
   audience: 'audience',
   aiDiscovery: 'ai-discovery',
-  opportunities: 'opportunities',
   categories: 'categories',
-  creators: 'creators',
-  businesses: 'businesses',
   stories: 'stories',
   security: 'security',
   finalCta: 'get-started',
   contact: 'contact',
+  oldWay: 'old-way',
+  problems: 'problems',
+  kolabWay: 'kolab-way',
+  keyMessage: 'key-message',
+  creatorStages: 'creator-stages',
+  liveOnKolab: 'live-on-kolab',
 } as const;
 
 // `id` links scroll to a section on the landing page; `to` links navigate to a
 // standalone route (react-router) instead.
 export const NAV_LINKS: {
-  key: 'discover' | 'services' | 'opportunities' | 'contact' | 'creators' | 'business';
+  key: 'discover' | 'services' | 'marketplace' | 'contact';
   id?: string;
   to?: string;
   offset?: number;
 }[] = [
-  { key: 'discover', id: SECTION_IDS.possibilities },
+  { key: 'discover', id: SECTION_IDS.kolabWay },
   { key: 'services', id: SECTION_IDS.categories },
-  { key: 'opportunities', id: SECTION_IDS.opportunities },
-  // Creators / Business scroll to a preview section on the landing page (like
-  // Discover/Services); each section links out to its full "browse all" page.
-  { key: 'creators', id: SECTION_IDS.creators },
-  { key: 'business', id: SECTION_IDS.businesses },
+  // Opportunities/Creators/Businesses all live in one tabbed section now —
+  // one nav entry for it rather than three links landing on the same spot.
+  { key: 'marketplace', id: SECTION_IDS.liveOnKolab },
   // The footer's hairline top border sits right at #contact's own top edge,
   // which otherwise scrolls to right under the fixed LandingNav header (its
   // ~65px scrolled height) and lands past it, directly on the "Get in touch"

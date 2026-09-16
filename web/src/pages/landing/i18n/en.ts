@@ -3,12 +3,8 @@ export const en = {
     links: {
       discover: 'Discover',
       services: 'Services',
-      opportunities: 'Opportunities',
-      creators: 'Creators',
-      business: 'Business',
-      events: 'Events',
+      marketplace: 'Marketplace',
       contact: 'Contact us',
-      howItWorks: 'How it works',
     },
     toggleMenuAriaLabel: 'Toggle menu',
     languageLabel: 'Language',
@@ -40,8 +36,8 @@ export const en = {
       opportunities: { label: 'Opportunities', sub: 'Find your next opportunity' },
       events: { label: 'Events', sub: "Discover what's happening" },
     },
-    ctaCreator: 'Offer Your Skills',
-    ctaBusiness: 'Find Skills',
+    ctaCreator: 'Find Opportunities',
+    ctaBusiness: 'Find Creators',
     scrollAriaLabel: 'Scroll to explore',
     scrollLabel: 'Scroll',
   },
@@ -83,42 +79,21 @@ export const en = {
   },
 
   audience: {
-    eyebrow: 'Built for both sides',
-    heading: 'Built for both sides of collaboration.',
-    headingAccent: 'collaboration.',
+    eyebrow: 'One platform, two sides',
+    heading: 'One platform. Two sides of every collaboration.',
+    headingAccent: 'every collaboration.',
     sub: "Whether you're offering your skills or hiring them for a campaign, event or job, Kolab brings both sides together.",
-    matchFound: 'Match found',
-    giver: {
-      label: 'For service givers',
-      title: 'Turn what you do into opportunity.',
-      sub: 'Showcase your skills, discover projects and connect with creators and businesses looking for what you do.',
-      notifications: ['Food Creator Needed', 'UGC Content Collab', 'Brand Collaboration'],
-      badge: 'Top Creator',
-      name: 'Sundar Nepal',
-      role: 'Content Creator',
-      rating: '4.9 (128)',
-      location: 'Kathmandu',
-      tags: ['Reels', 'UGC', 'Food & Travel'],
-      tagsMore: '+3',
-      opportunities: '24 Opportunities',
-      avatarsMore: '+19',
-      cta: 'Find Opportunities',
+    centerWord: 'Collaborate',
+    creatorJourney: {
+      label: 'For Creators',
+      title: 'Discover work, deliver great content, get paid.',
+      steps: ['Showcase your skills', 'Land real work', 'Grow your reputation'],
       ctaCaption: 'Create your professional profile',
     },
-    taker: {
-      label: 'For service takers',
-      title: 'Find the creators who can make it happen.',
-      sub: 'Find the skills you need for your campaign, event or job — and the creators behind them.',
-      opportunityBadge: 'New opportunity',
-      opportunityTitle: 'Content Creators Needed',
-      location: 'Kathmandu',
-      budget: 'NPR 20,000',
-      creators: '3 Creators',
-      project: 'Restaurant Launch',
-      projectTag: 'Project',
-      opportunityCta: 'Find Creators',
-      talent: ['Content Creator', 'Influencer', 'UGC Creator'],
-      cta: 'Find Skills',
+    businessJourney: {
+      label: 'For Businesses',
+      title: 'Post a campaign, find the right creators, grow.',
+      steps: ['Post what you need', 'Meet the right creators', 'Build lasting partnerships'],
       ctaCaption: 'Post your project or requirement',
     },
   },
@@ -137,6 +112,142 @@ export const en = {
       { text: 'I need UGC creators for a product review campaign.', checklist: ['UGC Creator', 'Product Review', 'Campaign', '2 creators'], matches: 27 },
       { text: 'I need food and lifestyle creators for my café launch.', checklist: ['Food & Beverage', 'Lifestyle Creator', 'Reels', 'Café Launch'], matches: 22 },
     ],
+  },
+
+  oldWay: {
+    eyebrow: 'The way it usually works',
+    heading: 'Do you know any good creators?',
+    sub: 'For many businesses, creator collaboration still starts with asking around, searching social media and sending messages one by one.',
+    messages: [
+      'Hey, are you available?',
+      'Can you send your rates?',
+      'How many followers do you have?',
+      'Did you upload the content?',
+      'Can you send the screenshot?',
+      'Which creators are confirmed?',
+    ],
+    noteLabel: 'Reminder',
+    noteText: 'Follow up with 3 creators before Friday',
+    calendarLabel: 'Fri, 10:00 AM',
+    calendarText: 'Call with creator #4',
+    spreadsheetLabel: 'Creator tracker.xlsx',
+    spreadsheetText: '12 rows · 4 unconfirmed',
+    paymentLabel: 'Payment sent',
+    paymentText: 'NPR 15,000 · manual transfer',
+    closingLine1: { pre: 'Too many ', highlight: 'conversations', post: '.' },
+    closingLine2: { pre: 'Too much ', highlight: 'manual', post: ' work.' },
+    closingLine3: { pre: 'Too much ', highlight: 'uncertainty', post: '.' },
+  },
+
+  problems: {
+    eyebrow: "Why it feels this way",
+    heading: "The problem isn't finding a creator.",
+    headingAccent: "It's managing the collaboration.",
+    items: [
+      { title: 'Finding the right creator', desc: "Follower count doesn't always tell you who fits the campaign." },
+      { title: 'Scattered communication', desc: 'Conversations can live across DMs, calls, messages and different apps.' },
+      { title: 'Unclear expectations', desc: 'Deliverables, deadlines, budgets and requirements can easily become unclear.' },
+      { title: 'Payment uncertainty', desc: "There's often no clear reference for pricing, and sending or receiving payment before work is confirmed can feel risky for both sides." },
+      { title: 'Manual coordination', desc: 'Managing multiple creators means more follow-ups, deadlines, files and payment tracking.' },
+      { title: 'Starting over every time', desc: 'After one collaboration, the next campaign can still begin from scratch.' },
+    ],
+  },
+
+  kolabWay: {
+    eyebrow: 'The Kolab way',
+    heading: 'From scattered collaboration',
+    headingAccent: 'to one clear workflow.',
+    steps: {
+      discover: {
+        label: 'Discover',
+        title: 'Find the right fit, not just the biggest following.',
+        sampleQuery: 'I need 2 food creators in Kathmandu for my restaurant launch.',
+        checklist: ['Food & Beverage', 'Content Creator', 'Kathmandu', '2 creators'],
+        matches: 24,
+        matchesLabel: 'matches found',
+        creatorName: 'Maya Sharma',
+        creatorRole: 'Food · Lifestyle',
+        creatorLocation: 'Itahari',
+        verified: 'Verified',
+        platforms: [
+          { name: 'Instagram', value: '24.8K' },
+          { name: 'TikTok', value: '18.2K' },
+        ],
+        viewProfile: 'View Profile',
+      },
+      connect: {
+        label: 'Connect',
+        title: 'Communication stays connected to the collaboration.',
+        campaignLabel: 'Campaign',
+        campaignName: 'Restaurant Launch',
+        messages: [
+          { from: 'business' as const, text: "Hi Maya, we'd love to collaborate on our new restaurant launch." },
+          { from: 'creator' as const, text: 'Sounds great! What are the deliverables and timeline?' },
+        ],
+      },
+      collaborate: {
+        label: 'Collaborate',
+        title: 'Requirements, budget and timeline — all in one place.',
+        campaignName: 'Restaurant Launch',
+        fields: [
+          { label: 'Creators', value: '3 Creators' },
+          { label: 'Budget', value: 'NPR 24,000' },
+          { label: 'Deliverables', value: '3 Reels' },
+          { label: 'Platform', value: 'Instagram' },
+          { label: 'Location', value: 'Itahari' },
+          { label: 'Deadline', value: 'Sep 30' },
+        ],
+      },
+      deliver: {
+        label: 'Deliver',
+        title: 'From upload to review, without the back-and-forth.',
+        fileName: 'restaurant-launch.mp4',
+        fileType: 'Instagram Reel',
+        submittedLabel: 'Submitted',
+        submittedDate: 'Sep 28',
+        stages: ['Upload', 'Processing', 'Submitted', 'Review'],
+      },
+      complete: {
+        label: 'Complete',
+        title: 'A clear finish, every time.',
+        heading: 'Collaboration Completed',
+        checklist: ['Deliverables approved', 'Payment processed', 'Creator relationship saved'],
+      },
+      grow: {
+        label: 'Grow',
+        title: 'One collaboration can become a relationship.',
+        creatorName: 'Maya Sharma',
+        collaborationsCount: '5 Collaborations',
+        rating: '5.0',
+        history: ['Restaurant Launch', 'Fashion Campaign', 'Product Launch', 'Event Promotion', 'Food Campaign'],
+        closingLine: 'One collaboration can become a relationship.',
+      },
+    },
+  },
+
+  keyMessage: {
+    label: 'A better way to collaborate',
+    from: 'Who do you know?',
+    to: 'Who fits your campaign?',
+  },
+
+  creatorStages: {
+    eyebrow: 'Every creator has a starting point',
+    heading: 'For Creators at Every Stage',
+    sub: "Whether you're just getting started or already building an audience, Kolab gives you a place to showcase your skills, discover opportunities and grow through real collaborations.",
+    stages: [
+      { title: 'Just Starting', desc: 'Build your profile and discover your first opportunities.' },
+      { title: 'Growing', desc: 'Find campaigns that match your skills, interests and audience.' },
+      { title: 'Experienced', desc: 'Choose collaborations that fit your content and goals.' },
+      { title: 'Established', desc: 'Build long-term relationships with businesses.' },
+    ],
+  },
+
+  liveOnKolab: {
+    eyebrow: 'Live on Kolab',
+    heading: "See what's already happening.",
+    sub: 'Real campaigns, creators and businesses — right now on the platform.',
+    tabs: { opportunities: 'Opportunities', creators: 'Creators', businesses: 'Businesses' },
   },
 
   // The creator-home replica in AppHomePreview. Strings are the app's own
@@ -186,7 +297,7 @@ export const en = {
 
   categories: {
     eyebrow: 'Every category, covered',
-    heading: 'Whatever skill your campaign or job needs, someone on Kolab has it.',
+    heading: 'Find creators across Nepal.',
     more: 'More',
     list: [
       'Fashion', 'Travel', 'Food & Beverage', 'Technology', 'Gaming',
@@ -277,20 +388,45 @@ export const en = {
 
   security: {
     eyebrow: 'Built on trust',
-    heading: 'Built for meaningful collaborations.',
+    heading: 'Built for better collaboration.',
     sub: 'Every profile, request, and conversation is designed to keep collaboration safe and clear.',
     points: [
-      { title: 'Verified Profiles', desc: 'Identity checks keep the creators and businesses you meet real.' },
-      { title: 'Reviews & Ratings', desc: 'Honest feedback from real collaborations, every time.' },
-      { title: 'Clear Requirements', desc: 'Scope, budget, and deliverables spelled out upfront.' },
-      { title: 'Secure Communication', desc: 'Keep every conversation and file in one protected place.' },
-      { title: 'Report & Safety', desc: 'Flag an issue anytime — our team responds fast.' },
+      {
+        title: 'Verified Profiles',
+        desc: 'Identity checks keep the creators and businesses you meet real.',
+        detail: 'Every account is checked before it can publish a profile, apply to a campaign, or message another user.',
+      },
+      {
+        title: 'Reviews & Ratings',
+        desc: 'Honest feedback from real collaborations, every time.',
+        detail: "Ratings are only left after a real collaboration closes, so a profile's history reflects actual work, not empty praise.",
+      },
+      {
+        title: 'Agreed Terms, Both Sides',
+        desc: 'Scope, budget and deliverables are agreed by both sides before work begins.',
+        detail: "Nothing starts until both the creator and the business confirm the same terms, so there's no room for a mid-project surprise.",
+      },
+      {
+        title: 'Secure Escrow Payments',
+        desc: 'Payment is held in escrow and released to the creator only once work is approved — never sent directly, so neither side is exposed to a scam.',
+        detail: 'The business funds it up front, the creator delivers, and only then does the payment move — automatically, the moment the work is approved.',
+      },
+      {
+        title: 'Secure Communication',
+        desc: 'Keep every conversation and file in one protected place.',
+        detail: 'No handing out personal numbers or juggling five different apps — the whole conversation stays with the campaign.',
+      },
+      {
+        title: 'Report & Safety',
+        desc: 'Flag an issue anytime — our team responds fast.',
+        detail: 'A dedicated safety team reviews every report and can step in on a payment or a conversation if something looks wrong.',
+      },
     ],
   },
 
   stories: {
     eyebrow: 'Success stories',
-    heading: 'Success stories from our community.',
+    heading: 'Real people. Real collaborations.',
     showMore: 'Show more',
     showLess: 'Show less',
     items: [
@@ -308,10 +444,8 @@ export const en = {
   },
 
   finalCta: {
-    heading: 'Ready to collaborate?',
-    sub: 'Find the skills for your campaign or job. Offer your own. Make something happen.',
-    ctaGetStarted: 'Get Started',
-    ctaExplore: 'Explore Kolab',
+    heading: "Your next collaboration shouldn't depend on who you know.",
+    sub: 'Find the right people. Create better collaborations. Grow together with Kolab.',
     roles: { business: 'Business', creator: 'Creator' },
   },
 
@@ -444,30 +578,32 @@ export const en = {
   },
 
   launchAnnouncement: {
-    // Rendered word-by-word so `gradient` segments (Kolab / Enter / Lucky
-    // Draw) can each get their own gradient text color in the hero band —
-    // see the `TITLE_GRADIENTS` map in LaunchAnnouncementModal.tsx.
-    title: [
-      { text: 'Join ' },
-      { text: 'Kolab', gradient: 'gold' as const },
-      { text: ' Early & ' },
-      { text: 'Enter', gradient: 'cyan' as const },
-      { text: ' the ' },
-      { text: 'Lucky Draw', gradient: 'pink' as const },
-    ],
-    stepsHeading: '🎟️ How to Become Eligible',
+    badge: '🎉 Kolab Launch',
+    appsComingSoonIos: 'iOS',
+    appsComingSoonMid: '&',
+    appsComingSoonAndroid: 'Android',
+    appsComingSoonSuffix: 'launching soon',
+    titleTop: 'Join Kolab Early',
+    titleBottomPre: '& Enter the ',
+    titleHighlight: 'Lucky Draw',
+    description: 'Create your Kolab account, complete 3 simple steps, and get entered into our launch lucky draw.',
+    stepsHeading: '🎟️ How to Enter',
+    stepsSubheading: 'Complete these 3 simple steps to join the draw.',
+    // Step 1's description renders as plain text; step 2's is scanned for
+    // Facebook/Instagram/TikTok and those words turned into real links to
+    // the admin-managed social URLs (see renderWithPlatformLinks below).
     steps: [
-      { label: 'Register', rest: 'your account with Kolab' },
-      { label: 'Verify', rest: 'your Kolab account' },
-      { label: 'Like & Follow', rest: 'Kolab on Facebook, Instagram & TikTok' },
+      { title: 'Register & Verify', description: 'Create your Kolab account and complete verification.' },
+      { title: 'Follow Kolab', description: 'Like & follow Kolab on Facebook, Instagram & TikTok.' },
+      { title: 'Tag 5 Friends', description: 'Tag five friends in the official Kolab Lucky Draw post.' },
     ],
-    eligibilityNote: 'Once you complete all the requirements above, you become eligible for the Kolab Lucky Draw, happening live during our official launch event.',
-    prizesNote: 'Win exciting prizes including gift hampers, cash prizes, coupons & more!',
-    earlyAccessNote: 'Experience Kolab early and get ready to explore new opportunities as businesses start joining the platform.',
-    appNoteEyebrow: 'Mobile app',
-    appNoteTitle: 'Kolab on Android & iOS is coming soon!',
-    appNoteBody: 'The Kolab app will soon be available on the Google Play Store and Apple App Store.',
-    launchDateNote: 'Launch event date, time & location will be announced soon.',
+    eligibleTitle: "🎉 You're in!",
+    eligibleBody: "Complete all three requirements and you're eligible for the Kolab Lucky Draw.",
+    attendanceTitle: "🎉 You don't need to attend the launch!",
+    attendanceBody: "Complete all the requirements and you're still eligible for the Kolab Lucky Draw, even if you can't attend the launch event.",
+    attendanceNote: 'The lucky draw will take place live during the official Kolab launch event.',
+    prizesHeading: '🎁 Exciting prizes await',
+    prizes: ['Gift Hampers', 'Cash Prizes', 'Coupons', 'More Surprises'],
     cta: 'Join Kolab',
     loginPrompt: 'Already have an account?',
     login: 'Log in',

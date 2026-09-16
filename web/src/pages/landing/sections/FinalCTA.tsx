@@ -1,14 +1,12 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Heart, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Heart, Sparkles, Star } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
 import { AppStoreBadges } from '../components/AppStoreBadges';
-import { getDeviceStoreUrl, isDeviceComingSoon } from '../components/appStoreLinks';
 import { SectionWave } from '../components/SectionWave';
-import { useComingSoon } from '../hooks/useComingSoon';
-import { useLenisScroll } from '../hooks/useLenis';
 import type { PublicCreatorLite, PublicBusinessLite } from '../../../lib/api';
 
 type RoleKey = 'business' | 'creator';
@@ -48,11 +46,6 @@ interface Props {
 export function FinalCTA({ creators, businesses }: Props) {
   const { d } = useLandingLanguage();
   const { theme } = useLandingTheme();
-  const { scrollTo } = useLenisScroll();
-  const comingSoon = useComingSoon();
-  // "Get Started" targets the visitor's own platform — only fall back to the
-  // badge list when *that* store isn't live yet.
-  const deviceComingSoon = isDeviceComingSoon(comingSoon);
 
   const realCreatorPhotos = (creators ?? []).map((c) => c.avatarUrl).filter((url): url is string => Boolean(url));
   const realBusinessPhotos = (businesses ?? []).map((b) => b.logoUrl).filter((url): url is string => Boolean(url));
@@ -69,7 +62,7 @@ export function FinalCTA({ creators, businesses }: Props) {
         <div className="mesh-blob absolute left-1/4 top-0 h-[380px] w-[380px] rounded-full bg-violet/[0.18] blur-[110px]" />
         <div className="mesh-blob absolute bottom-0 right-1/4 h-[340px] w-[340px] rounded-full bg-brand-orange/[0.15] blur-[110px]" style={{ animationDelay: '2.5s' }} />
       </div>
-      <div className="mx-auto max-w-2xl px-6 text-center">
+      <div className="mx-auto max-w-3xl px-6 text-center">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
           <motion.span
             variants={fadeUp}
@@ -77,11 +70,11 @@ export function FinalCTA({ creators, businesses }: Props) {
           />
           <motion.h2
             variants={fadeUp}
-            className="text-balance mt-7 bg-gradient-to-br from-ink to-violet-dark bg-clip-text font-serif text-4xl font-medium text-transparent sm:text-5xl md:text-6xl dark:from-white dark:to-white/70"
+            className="text-balance mt-7 bg-gradient-to-br from-ink to-violet-dark bg-clip-text font-serif text-3xl font-medium leading-tight text-transparent sm:text-4xl md:text-5xl dark:from-white dark:to-white/70"
           >
             {d.finalCta.heading}
           </motion.h2>
-          <motion.p variants={fadeUp} className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-ink-soft dark:text-white">
+          <motion.p variants={fadeUp} className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-ink-soft dark:text-white">
             {d.finalCta.sub}
           </motion.p>
 
@@ -134,29 +127,27 @@ export function FinalCTA({ creators, businesses }: Props) {
           </motion.div>
 
           <motion.div variants={fadeUp} className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => {
-                if (deviceComingSoon) {
-                  scrollTo('#final-cta-download');
-                  return;
-                }
-                window.open(getDeviceStoreUrl(), '_blank', 'noopener,noreferrer');
-              }}
+            <Link
+              to="/creators"
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
             >
-              {d.finalCta.ctaGetStarted}
-              <ArrowRight size={14} />
-            </button>
-            <button
-              onClick={() => document.getElementById(SECTION_IDS.possibilities)?.scrollIntoView({ behavior: 'smooth' })}
+              <Sparkles size={14} />
+              {d.hero.ctaBusiness}
+            </Link>
+            <Link
+              to="/events"
               className="inline-flex items-center gap-1.5 rounded-full border border-ink/20 px-7 py-3.5 text-sm font-semibold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-ink/40 dark:border-white/20 dark:text-white dark:hover:border-white/40"
             >
-              {d.finalCta.ctaExplore}
-            </button>
+              {d.hero.ctaCreator}
+              <ArrowRight size={14} />
+            </Link>
           </motion.div>
 
-          <motion.div id="final-cta-download" variants={fadeUp} className="mt-8">
-            <AppStoreBadges />
+          <motion.div variants={fadeUp} className="mt-10 border-t border-ink/10 pt-8 dark:border-white/10">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white">{d.footer.downloadApp}</p>
+            <div className="mt-4 flex justify-center">
+              <AppStoreBadges />
+            </div>
           </motion.div>
         </motion.div>
       </div>

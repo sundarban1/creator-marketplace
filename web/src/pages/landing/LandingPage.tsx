@@ -26,16 +26,18 @@ import { LandingFooter } from './nav/LandingFooter';
 import { SEO } from '../../lib/seo/SEO';
 import { organizationSchema, websiteSchema } from '../../lib/seo/schema';
 import { Hero } from './sections/Hero';
-import { Possibilities } from './sections/Possibilities';
 import { Audience } from './sections/Audience';
-import { AIDiscovery } from './sections/AIDiscovery';
-import { EventsShowcase } from './sections/EventsShowcase';
 import { TrustStats } from './sections/TrustStats';
 import { Categories } from './sections/Categories';
-import { MarketplaceShowcase } from './sections/MarketplaceShowcase';
+import { LiveOnKolab } from './sections/LiveOnKolab';
 import { Security } from './sections/Security';
 import { Stories } from './sections/Stories';
 import { FinalCTA } from './sections/FinalCTA';
+import { OldWay } from './sections/OldWay';
+import { Problems } from './sections/Problems';
+import { KolabWay } from './sections/KolabWay';
+import { KeyMessageTransition } from './sections/KeyMessageTransition';
+import { CreatorStages } from './sections/CreatorStages';
 
 // FooterAnchorLink falls back to a real `/#id` navigation when it renders
 // outside this page's LenisProvider (any other route) — this is what makes
@@ -119,16 +121,17 @@ function LandingPageInner() {
       <LaunchAnnouncementModal />
       <LandingNav />
       <Hero stats={stats} creators={creators} />
-      <Possibilities />
-      <Audience />
-      <AIDiscovery />
       <TrustStats stats={stats} />
-      <Categories stats={stats} />
-      <EventsShowcase events={events} />
-      <MarketplaceShowcase variant="creators" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
-      <MarketplaceShowcase variant="businesses" creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
-      <Stories stories={successStories} />
+      <OldWay />
+      <Problems />
+      <KolabWay />
+      <KeyMessageTransition />
+      <CreatorStages />
+      <Audience />
       <Security />
+      <Categories stats={stats} />
+      <LiveOnKolab events={events} creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
+      <Stories stories={successStories} />
       <FinalCTA creators={creators} businesses={businesses} />
       <LandingFooter />
       <ChatWidget />

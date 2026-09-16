@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { ArrowRight, Search, Sparkles } from 'lucide-react';
 import { fadeUp, scaleIn, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -69,7 +70,7 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
       id={SECTION_IDS.hero}
       onMouseMove={handlePointerMove}
       onMouseLeave={resetPointer}
-      className="relative overflow-hidden bg-paper pt-40 pb-10 dark:bg-ink"
+      className="relative overflow-hidden bg-paper pt-40 pb-20 dark:bg-ink"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <motion.div style={{ x: glowSpringX, y: glowSpringY }} className="absolute inset-0">
@@ -153,6 +154,23 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
                   {term}
                 </button>
               ))}
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="mt-5 flex flex-wrap items-center gap-3">
+              <Link
+                to="/creators"
+                className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-white dark:text-ink"
+              >
+                <Sparkles size={14} />
+                {d.hero.ctaBusiness}
+              </Link>
+              <Link
+                to="/events"
+                className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-5 py-2.5 text-sm font-semibold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-violet/40 hover:text-violet dark:border-white/15 dark:text-white dark:hover:border-white/40"
+              >
+                {d.hero.ctaCreator}
+                <ArrowRight size={14} />
+              </Link>
             </motion.div>
 
             <motion.div variants={fadeUp} className="mt-8 flex items-center gap-3">
