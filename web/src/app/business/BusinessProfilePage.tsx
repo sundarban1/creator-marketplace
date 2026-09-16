@@ -55,7 +55,7 @@ function generateBusinessDescription(name: string, cats: string[]): string {
 export function BusinessProfilePage() {
   const t = useT();
   const toast = useToast();
-  const { user } = useAppAuth();
+  const { user, updateUser } = useAppAuth();
   const profile = useAsync((s) => fetchBusinessProfile(s), []);
   const categories = useAsync((s) => fetchCategories(s, 'BUSINESS'), []);
   const campaigns = useAsync((s) => fetchMyCampaigns({ limit: 100 }, s), []);
@@ -113,7 +113,8 @@ export function BusinessProfilePage() {
   const onLogoCropped = async (blob: Blob) => {
     setLogoUploading(true);
     try {
-      await uploadBusinessLogo(new File([blob], 'logo.jpg', { type: 'image/jpeg' }));
+      const { logoUrl } = await uploadBusinessLogo(new File([blob], 'logo.jpg', { type: 'image/jpeg' }));
+      updateUser({ avatar: logoUrl });
       profile.reload();
       toast.success(t('profile.saved'));
     } catch (err) {

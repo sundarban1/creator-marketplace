@@ -42,6 +42,21 @@ declare global {
 
 let scriptPromise: Promise<void> | null = null;
 
+/**
+ * Kicks off the GIS script load ahead of time (e.g. on mount of the sign-in
+ * screen) so that by the time the user actually clicks "Continue with
+ * Google", `requestAccessToken()` runs synchronously instead of waiting on a
+ * network fetch first. Popups opened outside a click's synchronous call
+ * stack get blocked by browsers/GIS itself with a `popup_failed_to_open`
+ * error, which is what happens if this script is still loading on click.
+ */
+export function preloadGoogleSignIn(): void {
+  loadGis().catch(() => {
+    // Ignored here — requestGoogleAccessToken() surfaces load failures when
+    // the user actually clicks.
+  });
+}
+
 function loadGis(): Promise<void> {
   if (window.google?.accounts?.oauth2) return Promise.resolve();
   if (scriptPromise) return scriptPromise;
@@ -60,6 +75,18 @@ function loadGis(): Promise<void> {
   return scriptPromise;
 }
 
+/** Turns GIS's internal error codes into a message worth showing a user. */
+function describeGisError(type: string | undefined): string | undefined {
+  switch (type) {
+    case 'popup_failed_to_open':
+      return "Couldn't open the Google sign-in popup. Please allow popups for this site and try again.";
+    case 'popup_closed':
+      return undefined; // Falls back to cancelledMessage — the user closed it themselves.
+    default:
+      return type;
+  }
+}
+
 function requestAccessToken(scope: string, prompt: string, cancelledMessage: string): Promise<string> {
   return loadGis().then(
     () =>
@@ -76,7 +103,7 @@ function requestAccessToken(scope: string, prompt: string, cancelledMessage: str
             if (resp.access_token) resolve(resp.access_token);
             else reject(new Error(resp.error ?? cancelledMessage));
           },
-          error_callback: (err) => reject(new Error(err.type ?? cancelledMessage)),
+          error_callback: (err) => reject(new Error(describeGisError(err.type) ?? cancelledMessage)),
         });
         client.requestAccessToken({ prompt });
       }),

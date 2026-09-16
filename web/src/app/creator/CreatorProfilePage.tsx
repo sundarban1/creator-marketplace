@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useAppAuth } from '../auth/AppAuthContext';
 import { compactNumber } from '../lib/format';
 import { requestYoutubeAccessToken } from '../lib/googleAuth';
 import { requestFacebookAccessToken } from '../lib/facebookAuth';
@@ -52,6 +53,7 @@ const MAX_NICHE = 5;
 
 export function CreatorProfilePage() {
   const t = useT();
+  const { updateUser } = useAppAuth();
   const profile = useAsync((s) => fetchCreatorFullProfile(s), []);
   const socials = useAsync((s) => fetchSocialAccounts(s), []);
   const portfolioItems = useAsync((s) => fetchPortfolioItems(s), []);
@@ -135,7 +137,8 @@ export function CreatorProfilePage() {
 
   const onAvatarCropped = async (blob: Blob) => {
     try {
-      await uploadAvatar(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+      const { avatarUrl } = await uploadAvatar(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+      updateUser({ avatar: avatarUrl });
       profile.reload();
       setFlash(t('profile.saved'));
     } catch (err) {

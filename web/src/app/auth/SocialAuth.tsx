@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import { useAppAuth } from './AppAuthContext';
@@ -6,7 +6,7 @@ import { postAuthPath } from './postAuthNav';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { getPlatformFlags } from '../api/platformFlags';
-import { requestGoogleAccessToken } from '../lib/googleAuth';
+import { preloadGoogleSignIn, requestGoogleAccessToken } from '../lib/googleAuth';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Alert } from '../ui/Alert';
@@ -33,6 +33,13 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<Role>('CREATOR');
+
+  // Warm up the GIS script as soon as this screen mounts, rather than on
+  // click — starting the popup outside a click's synchronous call stack
+  // gets it blocked with a "popup_failed_to_open" error.
+  useEffect(() => {
+    preloadGoogleSignIn();
+  }, []);
 
   // Derived, not synced via an effect: falls back off whichever side is
   // closed once flags load, without a render round-trip.

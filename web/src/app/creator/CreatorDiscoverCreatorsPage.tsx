@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SlidersHorizontal } from 'lucide-react';
 import { useT } from '../i18n';
+import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
 import { fadeUp, stagger } from '../../pages/landing/lib/motion';
