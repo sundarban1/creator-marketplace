@@ -634,7 +634,7 @@ function ConnectSocialModal({
                     variant="secondary"
                     className="flex-shrink-0"
                     onClick={CONNECT_HANDLERS[id]}
-                    disabled={id !== 'youtube' && id !== 'tiktok'}
+                    disabled={id !== 'youtube'}
                   >
                     {t('profile.connectBtn')}
                   </Button>
