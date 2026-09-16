@@ -442,6 +442,37 @@ export const en = {
     howItWorks: 'How it works',
     verifiedSafe: 'Verified, safe collaborations',
   },
+
+  launchAnnouncement: {
+    // Rendered word-by-word so `gradient` segments (Kolab / Enter / Lucky
+    // Draw) can each get their own gradient text color in the hero band —
+    // see the `TITLE_GRADIENTS` map in LaunchAnnouncementModal.tsx.
+    title: [
+      { text: 'Join ' },
+      { text: 'Kolab', gradient: 'gold' as const },
+      { text: ' Early & ' },
+      { text: 'Enter', gradient: 'cyan' as const },
+      { text: ' the ' },
+      { text: 'Lucky Draw', gradient: 'pink' as const },
+    ],
+    stepsHeading: '🎟️ How to Become Eligible',
+    steps: [
+      { label: 'Register', rest: 'your account with Kolab' },
+      { label: 'Verify', rest: 'your Kolab account' },
+      { label: 'Like & Follow', rest: 'Kolab on Facebook, Instagram & TikTok' },
+    ],
+    eligibilityNote: 'Once you complete all the requirements above, you become eligible for the Kolab Lucky Draw, happening live during our official launch event.',
+    prizesNote: 'Win exciting prizes including gift hampers, cash prizes, coupons & more!',
+    earlyAccessNote: 'Experience Kolab early and get ready to explore new opportunities as businesses start joining the platform.',
+    appNoteEyebrow: 'Mobile app',
+    appNoteTitle: 'Kolab on Android & iOS is coming soon!',
+    appNoteBody: 'The Kolab app will soon be available on the Google Play Store and Apple App Store.',
+    launchDateNote: 'Launch event date, time & location will be announced soon.',
+    cta: 'Join Kolab',
+    loginPrompt: 'Already have an account?',
+    login: 'Log in',
+    closeAriaLabel: 'Close',
+  },
 };
 
 export type LandingDict = typeof en;

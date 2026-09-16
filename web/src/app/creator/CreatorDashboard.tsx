@@ -14,6 +14,7 @@ import { fetchWalletSummary, fetchMyApplications, fetchNotifications, fetchCreat
 import { fetchPublicEvents } from '../api/publicMarketplace';
 import { cn } from '../ui/cn';
 import { PageHeader } from '../ui/PageHeader';
+import { DashboardHero } from '../ui/DashboardHero';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { AttentionBanner } from '../ui/AttentionBanner';
@@ -115,21 +116,12 @@ export function CreatorDashboard() {
           )
         )}
 
-        {/* Primary CTA — flat bordered card with a solid brand button,
-            matching the admin dashboard's plain card language. */}
-        <Link
+        <DashboardHero
+          title={t('dashboard.ctaTitle')}
+          subtitle={t('dashboard.ctaSubtitle')}
+          ctaLabel={t('dashboard.ctaBtn')}
           to="/creator/events"
-          className="group flex flex-col gap-4 rounded-xl border border-line bg-surface p-6 transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-7"
-        >
-          <div className="min-w-0">
-            <p className="text-[16px] font-semibold leading-snug text-ink">{t('dashboard.ctaTitle')}</p>
-            <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-ink-soft">{t('dashboard.ctaSubtitle')}</p>
-          </div>
-          <span className="inline-flex flex-shrink-0 items-center gap-2 self-start rounded-lg bg-brand px-5 py-2.5 text-[13.5px] font-semibold text-white shadow-sm transition-transform duration-200 group-hover:translate-x-0.5">
-            {t('dashboard.ctaBtn')}
-            <ArrowRight size={15} />
-          </span>
-        </Link>
+        />
       </div>
 
       {/* Stats */}

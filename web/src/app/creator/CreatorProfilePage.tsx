@@ -555,14 +555,22 @@ function ConnectSocialModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={t('profile.connectAccounts')}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('profile.connectAccounts')}
+      badge={
+        <span className="rounded-full bg-surface-dim px-2 py-0.5 text-[11px] font-medium text-ink-soft">
+          {t('profile.connectComingSoon')}
+        </span>
+      }
+    >
       <div className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
         <ul className="space-y-2">
           {CONNECTABLE_PLATFORMS.map((id) => {
             const acct = byPlatform.get(id);
             const meta = platformMeta(id);
-            const isConnecting = connecting === id;
             return (
               <li key={id} className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
                 <span
@@ -594,13 +602,7 @@ function ConnectSocialModal({
                     size="sm"
                     variant="secondary"
                     className="flex-shrink-0"
-                    loading={isConnecting}
-                    disabled={connecting !== null && !isConnecting}
-                    onClick={() => {
-                      if (id === 'youtube') void connectYoutube();
-                      else if (id === 'tiktok') void connectTiktok();
-                      else void connectViaFacebook(id);
-                    }}
+                    disabled
                   >
                     {t('profile.connectBtn')}
                   </Button>

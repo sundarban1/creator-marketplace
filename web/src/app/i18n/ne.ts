@@ -411,6 +411,7 @@ export const ne: AppDict = {
     profileUrl: 'प्रोफाइल URL',
     followers: 'फलोअर',
     connectAccounts: 'खाताहरू जोड्नुहोस्',
+    connectComingSoon: 'सुविधा चाँडै आउँदैछ',
     connectHint: 'तपाईंको प्रोफाइल लिङ्क र फलोअर संख्या स्वतः तान्न जोड्नुहोस्',
     connectBtn: 'जोड्नुहोस्',
     pickFacebookPage: 'Facebook पेज छान्नुहोस्',

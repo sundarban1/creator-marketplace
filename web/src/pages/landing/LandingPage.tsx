@@ -20,6 +20,7 @@ import { ScrollProgress } from './components/ScrollProgress';
 import { CornerChrome } from './components/CornerChrome';
 import { ChatWidget } from './components/ChatWidget';
 import { SocialRail } from './components/SocialRail';
+import { LaunchAnnouncementModal } from './components/LaunchAnnouncementModal';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
 import { SEO } from '../../lib/seo/SEO';
@@ -115,6 +116,7 @@ function LandingPageInner() {
       <ScrollProgress />
       <CornerChrome />
       <SocialRail />
+      <LaunchAnnouncementModal />
       <LandingNav />
       <Hero stats={stats} creators={creators} />
       <Possibilities />

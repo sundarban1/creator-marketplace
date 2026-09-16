@@ -435,4 +435,32 @@ export const ne: LandingDict = {
     howItWorks: 'यसले कसरी काम गर्छ',
     verifiedSafe: 'प्रमाणित, सुरक्षित सहकार्य',
   },
+
+  launchAnnouncement: {
+    title: [
+      { text: 'चाँडै ' },
+      { text: 'Kolab', gradient: 'gold' },
+      { text: ' जोडिनुहोस् र ' },
+      { text: 'लकी ड्रमा', gradient: 'pink' },
+      { text: ' ' },
+      { text: 'सहभागी हुनुहोस्', gradient: 'cyan' },
+    ],
+    stepsHeading: '🎟️ योग्य कसरी हुने',
+    steps: [
+      { label: 'दर्ता गर्नुहोस्', rest: 'Kolab मा आफ्नो खाता' },
+      { label: 'प्रमाणित गर्नुहोस्', rest: 'आफ्नो Kolab खाता' },
+      { label: 'लाइक र फलो गर्नुहोस्', rest: 'Facebook, Instagram र TikTok मा Kolab लाई' },
+    ],
+    eligibilityNote: 'माथिका सबै आवश्यकता पूरा गरेपछि, तपाईं हाम्रो आधिकारिक लन्च इभेन्टको बेला प्रत्यक्ष हुने Kolab लकी ड्रका लागि योग्य हुनुहुन्छ।',
+    prizesNote: 'उपहार ह्याम्पर, नगद पुरस्कार, कुपन र थप रोमाञ्चक पुरस्कार जित्नुहोस्!',
+    earlyAccessNote: 'Kolab लाई सुरुमै अनुभव गर्नुहोस् र व्यवसायहरू प्लेटफर्ममा जोडिन थाल्दा नयाँ अवसरहरू पत्ता लगाउन तयार हुनुहोस्।',
+    appNoteEyebrow: 'मोबाइल एप',
+    appNoteTitle: 'Android र iOS मा Kolab चाँडै आउँदैछ!',
+    appNoteBody: 'Kolab एप चाँडै Google Play Store र Apple App Store मा उपलब्ध हुनेछ।',
+    launchDateNote: 'लन्च इभेन्टको मिति, समय र स्थान चाँडै घोषणा गरिनेछ।',
+    cta: 'Kolab जोडिनुहोस्',
+    loginPrompt: 'पहिले नै खाता छ?',
+    login: 'लग इन गर्नुहोस्',
+    closeAriaLabel: 'बन्द गर्नुहोस्',
+  },
 };

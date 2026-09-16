@@ -32,13 +32,14 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'flex items-start gap-4 rounded-xl border border-line bg-surface p-5 transition-shadow hover:shadow-md',
+        'flex items-start gap-4 rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]',
+        'transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_8px_24px_rgba(16,24,40,0.08)]',
         compact && 'flex-col items-center gap-1.5 p-3 text-center sm:flex-row sm:items-start sm:gap-4 sm:p-5 sm:text-left',
         className,
       )}
     >
       {Icon && (
-        <span className={cn('flex-shrink-0 rounded-lg p-3', compact && 'p-2 sm:p-3', TONE_BG[tone])}>
+        <span className={cn('flex-shrink-0 rounded-xl bg-gradient-to-br p-3', compact && 'p-2 sm:p-3', TONE_BG[tone])}>
           <Icon className={cn('h-5 w-5', compact && 'h-4 w-4 sm:h-5 sm:w-5', TONE_ICON[tone])} />
         </span>
       )}
@@ -63,11 +64,11 @@ export function StatCard({
 }
 
 const TONE_BG: Record<string, string> = {
-  brand: 'bg-brand/10',
-  blue: 'bg-blue-50',
-  amber: 'bg-amber-50',
-  emerald: 'bg-emerald-50',
-  orange: 'bg-orange-50',
+  brand: 'from-brand/15 to-brand/5',
+  blue: 'from-blue-100 to-blue-50',
+  amber: 'from-amber-100 to-amber-50',
+  emerald: 'from-emerald-100 to-emerald-50',
+  orange: 'from-orange-100 to-orange-50',
 };
 
 const TONE_ICON: Record<string, string> = {

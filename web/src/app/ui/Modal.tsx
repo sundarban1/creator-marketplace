@@ -11,6 +11,7 @@ export function Modal({
   open,
   onClose,
   title,
+  badge,
   children,
   footer,
   size = 'md',
@@ -18,6 +19,7 @@ export function Modal({
   open: boolean;
   onClose: () => void;
   title: string;
+  badge?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   size?: 'md' | 'lg';
@@ -61,7 +63,10 @@ export function Modal({
         )}
       >
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
-          <h2 className="text-[16px] font-semibold text-ink">{title}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-[16px] font-semibold text-ink">{title}</h2>
+            {badge}
+          </div>
           <button
             onClick={onClose}
             aria-label="Close"

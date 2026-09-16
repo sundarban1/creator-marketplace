@@ -23,14 +23,21 @@ export function BottomNav({ items }: { items: NavItem[] }) {
           end={end}
           className={({ isActive }) =>
             cn(
-              'flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium',
+              'flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors duration-150',
               isActive ? 'text-violet-dark' : 'text-ink-soft',
             )
           }
         >
           {({ isActive }) => (
             <>
-              <Icon size={20} strokeWidth={isActive ? 2.3 : 2} />
+              <span
+                className={cn(
+                  'flex h-7 w-11 items-center justify-center rounded-full transition-colors duration-150',
+                  isActive && 'bg-brand/10',
+                )}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.3 : 2} />
+              </span>
               {t(`nav.${key}`)}
             </>
           )}

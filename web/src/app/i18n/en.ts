@@ -433,6 +433,7 @@ export const en = {
     profileUrl: 'Profile URL',
     followers: 'Followers',
     connectAccounts: 'Connect accounts',
+    connectComingSoon: 'Feature coming soon',
     connectHint: 'Connect to pull your profile link and follower count automatically',
     connectBtn: 'Connect',
     pickFacebookPage: 'Choose a Facebook Page',

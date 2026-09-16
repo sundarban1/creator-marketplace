@@ -124,7 +124,7 @@ export function AppShell() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('dashboard.searchPlaceholder')}
                 aria-label={t('dashboard.searchPlaceholder')}
-                className="h-10 w-full rounded-lg border border-line bg-paper pl-9 pr-4 text-[13.5px] text-ink placeholder:text-ink-soft/70 focus:border-transparent focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
+                className="h-10 w-full rounded-full border border-line bg-paper pl-9 pr-4 text-[13.5px] text-ink transition-colors duration-150 placeholder:text-ink-soft/70 focus:border-transparent focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
               />
             </div>
           </form>
