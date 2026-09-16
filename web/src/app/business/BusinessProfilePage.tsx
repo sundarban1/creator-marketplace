@@ -1,5 +1,4 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import {
   BadgeCheck,
   Bookmark,
@@ -227,11 +226,6 @@ export function BusinessProfilePage() {
             </div>
 
             <div className="flex flex-shrink-0 items-center gap-2">
-              {p.id && (
-                <Link to={`/businesses/${p.id}`}>
-                  <Button variant="secondary" size="sm">{t('profile.viewPublic')}</Button>
-                </Link>
-              )}
               <Button variant="secondary" size="sm" onClick={openEdit}>{t('profile.edit')}</Button>
             </div>
           </div>
@@ -240,9 +234,9 @@ export function BusinessProfilePage() {
 
       {/* Stats */}
       <div className="mt-5 grid grid-cols-3 gap-2.5">
-        <StatCard label={t('biz.activeEvents')} value={campaigns.loading ? undefined : activeEvents} icon={CalendarDays} />
-        <StatCard label={t('biz.statSavedCreators')} value={savedCreators.loading ? undefined : (savedCreators.data ?? []).length} icon={Bookmark} />
-        <StatCard label={t('biz.statFavoritedBy')} value={p.favoritedByCount} icon={Heart} />
+        <StatCard label={t('biz.activeEvents')} compact value={campaigns.loading ? undefined : activeEvents} icon={CalendarDays} />
+        <StatCard label={t('biz.statSavedCreators')} compact value={savedCreators.loading ? undefined : (savedCreators.data ?? []).length} icon={Bookmark} />
+        <StatCard label={t('biz.statFavoritedBy')} compact value={p.favoritedByCount} icon={Heart} />
       </div>
 
       {/* Details — a 2-column grid once there's room (matches the Dashboard /

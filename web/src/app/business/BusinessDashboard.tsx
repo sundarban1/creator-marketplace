@@ -175,10 +175,10 @@ export function BusinessDashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label={t('biz.activeEvents')} value={campaigns.loading ? undefined : activeEvents} icon={CalendarDays} tone="brand" />
-        <StatCard label={t('biz.toReview')} value={apps.loading ? undefined : toReview.length} icon={FileText} tone="orange" />
-        <StatCard label={t('biz.inProgress')} value={apps.loading ? undefined : inProgress.length} icon={Briefcase} tone="blue" />
-        <StatCard label={t('biz.toApprove')} value={apps.loading ? undefined : toApprove.length} icon={PackageCheck} tone="emerald" />
+        <StatCard label={t('biz.activeEvents')} compact value={campaigns.loading ? undefined : activeEvents} icon={CalendarDays} tone="brand" />
+        <StatCard label={t('biz.toReview')} compact value={apps.loading ? undefined : toReview.length} icon={FileText} tone="orange" />
+        <StatCard label={t('biz.inProgress')} compact value={apps.loading ? undefined : inProgress.length} icon={Briefcase} tone="blue" />
+        <StatCard label={t('biz.toApprove')} compact value={apps.loading ? undefined : toApprove.length} icon={PackageCheck} tone="emerald" />
       </div>
 
       <Card className="mt-6">

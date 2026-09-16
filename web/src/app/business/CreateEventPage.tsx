@@ -16,6 +16,7 @@ import { Select } from '../ui/Select';
 import { Alert } from '../ui/Alert';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { FeaturedEventToggle } from './FeaturedEventToggle';
+import { NeedHelpButton } from './NeedHelpModal';
 import { cn } from '../ui/cn';
 import { OFFERING_OPTIONS, MIN_BUDGET_PER_CREATOR, isoInDays } from './eventFormConstants';
 import { ChipGroup } from './eventFormShared';
@@ -307,7 +308,7 @@ export function CreateEventPage() {
   return (
     <div className="mx-auto max-w-3xl">
       {aiBusy && <AiGeneratingOverlay />}
-      <PageHeader title={t('biz.newEvent')} />
+      <PageHeader title={t('biz.newEvent')} actions={<NeedHelpButton />} />
 
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
 

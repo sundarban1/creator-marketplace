@@ -1,6 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { BadgeCheck, ExternalLink, Camera, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X } from 'lucide-react';
+import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { compactNumber } from '../lib/format';
@@ -19,6 +18,8 @@ import {
   connectFacebookPage,
   connectInstagramAccount,
   generateBio,
+  fetchFavoriteBusinessIds,
+  fetchMyApplications,
   fetchPortfolioItems,
   uploadPortfolioMedia,
   createPortfolioItem,
@@ -35,6 +36,7 @@ import { DashCard, DashCardHeader } from './dash-ui/DashCard';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/Alert';
 import { Avatar } from '../ui/Avatar';
+import { StatCard } from '../ui/StatCard';
 import { TextField } from '../ui/TextField';
 import { Textarea } from '../ui/Textarea';
 import { Skeleton } from '../ui/Skeleton';
@@ -53,6 +55,11 @@ export function CreatorProfilePage() {
   const socials = useAsync((s) => fetchSocialAccounts(s), []);
   const portfolioItems = useAsync((s) => fetchPortfolioItems(s), []);
   const niches = useAsync((s) => fetchCategories(s, 'BOTH'), []);
+  const applications = useAsync((s) => fetchMyApplications({ status: 'ACCEPTED', limit: 50 }, s), []);
+  const favoriteBusinesses = useAsync((s) => fetchFavoriteBusinessIds(s), []);
+  const completedEvents = (applications.data?.items ?? []).filter(
+    (a) => a.workStatus === 'COMPLETED' && a.paymentStatus === 'RELEASED',
+  ).length;
 
   const [editing, setEditing] = useState(false);
   const [flash, setFlash] = useState('');
@@ -153,13 +160,6 @@ export function CreatorProfilePage() {
       <div className="overflow-hidden rounded-3xl bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] ring-1 ring-black/[0.04]">
         <div className="relative h-28 bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark sm:h-32">
           <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-dash-pink/30 blur-3xl" />
-          {(p.username || p.id) && (
-            <Link to={`/creators/${p.username ?? p.id}`} className="absolute right-4 top-4">
-              <Button variant="secondary" size="sm" className="border-0 bg-white/90 text-ink hover:bg-white">
-                {t('profile.viewPublic')}
-              </Button>
-            </Link>
-          )}
         </div>
         <div className="px-5 pb-5 sm:px-7 sm:pb-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -213,6 +213,13 @@ export function CreatorProfilePage() {
             </a>
           )}
         </div>
+      </div>
+
+      {/* Stats */}
+      <div className="mt-5 grid grid-cols-3 gap-2.5">
+        <StatCard label={t('profile.statCompleted')} compact value={applications.loading ? undefined : completedEvents} icon={CheckCircle2} />
+        <StatCard label={t('profile.statFavoriteBusinesses')} compact value={favoriteBusinesses.loading ? undefined : favoriteBusinesses.data?.length ?? 0} icon={Heart} />
+        <StatCard label={t('profile.statSavedByBusinesses')} compact value={p.savedByBusinessCount} icon={Bookmark} />
       </div>
 
       {/* My niche */}

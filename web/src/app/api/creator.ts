@@ -156,6 +156,7 @@ export interface CreatorApplication {
   portfolioUrl?: string | null;
   status: string;
   workStatus: string;
+  paymentStatus: string;
   escrowStatus: string;
   engagementState: EngagementState | string;
   workNote?: string | null;
@@ -447,6 +448,7 @@ export interface CreatorFullProfile {
   portfolioLinks: Array<{ id: string; label: string; url: string }>;
   socialLinks: Record<string, string>;
   reviewSummary?: { averageRating: number; reviewCount: number };
+  savedByBusinessCount: number;
 }
 
 export function fetchCreatorFullProfile(signal?: AbortSignal): Promise<CreatorFullProfile> {
@@ -487,6 +489,13 @@ export function isUsernameAvailable(username: string, signal?: AbortSignal): Pro
 /** AI-drafts a bio from the creator's existing name/categories/location/platforms. */
 export function generateBio(): Promise<string> {
   return apiRequest<{ bio: string }>('POST', '/api/creator/generate-bio').then((r) => r.data.bio);
+}
+
+/** Ids of businesses this creator has favorited — count feeds the profile's "Favorite Business" stat. */
+export function fetchFavoriteBusinessIds(signal?: AbortSignal): Promise<string[]> {
+  return apiRequest<{ ids: string[] }>('GET', '/api/creator/businesses/favorites', undefined, { signal }).then(
+    (r) => r.data.ids,
+  );
 }
 
 export function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {

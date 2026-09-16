@@ -136,18 +136,21 @@ export function CreatorDashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <DashStatCard
           label={t('dashboard.activeWork')}
+          compact
           value={apps.loading ? undefined : activeWork.length}
           icon={Briefcase}
           tone="brand"
         />
         <DashStatCard
           label={t('dashboard.pendingApplications')}
+          compact
           value={apps.loading ? undefined : pending.length}
           icon={FileText}
           tone="orange"
         />
         <DashStatCard
           label={t('dashboard.walletBalance')}
+          compact
           value={wallet.loading ? undefined : rupees(wallet.data?.withdrawableBalance ?? 0)}
           icon={Wallet}
           tone="emerald"
@@ -159,6 +162,7 @@ export function CreatorDashboard() {
         />
         <DashStatCard
           label={t('dashboard.upcomingDeadlines')}
+          compact
           value={apps.loading ? undefined : upcoming.length}
           icon={CalendarClock}
           tone="blue"
