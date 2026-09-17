@@ -189,9 +189,10 @@ export function LandingFooter() {
           className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 border-t border-ink/10 pt-10 dark:border-white/10 sm:grid-cols-3 lg:grid-cols-5"
         >
           <FooterColumn title={d.footer.columns.discover}>
-            <FooterAnchorLink id={SECTION_IDS.audience}>{d.possibilities.cards.people.title}</FooterAnchorLink>
+            <FooterAnchorLink id={SECTION_IDS.creatorStory}>{d.nav.links.forCreators}</FooterAnchorLink>
+            <FooterAnchorLink id={SECTION_IDS.businessStory}>{d.nav.links.forBusinesses}</FooterAnchorLink>
             <FooterAnchorLink id={SECTION_IDS.categories}>{d.possibilities.cards.services.title}</FooterAnchorLink>
-            <FooterAnchorLink id={SECTION_IDS.liveOnKolab}>{d.nav.links.marketplace}</FooterAnchorLink>
+            <FooterAnchorLink id={SECTION_IDS.liveOnKolab}>{d.nav.links.discover}</FooterAnchorLink>
           </FooterColumn>
 
           <FooterColumn title={d.footer.columns.forCreators}>

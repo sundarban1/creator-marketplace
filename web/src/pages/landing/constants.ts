@@ -16,7 +16,8 @@ export const EASE = {
 export const SECTION_IDS = {
   hero: 'hero',
   possibilities: 'possibilities',
-  audience: 'audience',
+  creatorStory: 'creator-story',
+  businessStory: 'business-story',
   aiDiscovery: 'ai-discovery',
   categories: 'categories',
   stories: 'stories',
@@ -27,27 +28,19 @@ export const SECTION_IDS = {
   problems: 'problems',
   kolabWay: 'kolab-way',
   keyMessage: 'key-message',
-  creatorStages: 'creator-stages',
   liveOnKolab: 'live-on-kolab',
 } as const;
 
 // `id` links scroll to a section on the landing page; `to` links navigate to a
 // standalone route (react-router) instead.
 export const NAV_LINKS: {
-  key: 'discover' | 'services' | 'marketplace' | 'contact';
+  key: 'discover' | 'forCreators' | 'forBusinesses' | 'about';
   id?: string;
   to?: string;
   offset?: number;
 }[] = [
-  { key: 'discover', id: SECTION_IDS.kolabWay },
-  { key: 'services', id: SECTION_IDS.categories },
-  // Opportunities/Creators/Businesses all live in one tabbed section now —
-  // one nav entry for it rather than three links landing on the same spot.
-  { key: 'marketplace', id: SECTION_IDS.liveOnKolab },
-  // The footer's hairline top border sits right at #contact's own top edge,
-  // which otherwise scrolls to right under the fixed LandingNav header (its
-  // ~65px scrolled height) and lands past it, directly on the "Get in touch"
-  // heading/form — a negative offset stops short so that hairline clears the
-  // header and is visible before the form.
-  { key: 'contact', id: SECTION_IDS.contact, offset: -80 },
+  { key: 'discover', id: SECTION_IDS.liveOnKolab },
+  { key: 'forCreators', id: SECTION_IDS.creatorStory },
+  { key: 'forBusinesses', id: SECTION_IDS.businessStory },
+  { key: 'about', id: SECTION_IDS.kolabWay },
 ];

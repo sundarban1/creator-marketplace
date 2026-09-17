@@ -12,6 +12,7 @@ import { Avatar } from '../ui/Avatar';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { NotificationsProvider } from '../notifications/NotificationsContext';
 import { NotificationsBell } from '../notifications/NotificationsBell';
+import { TestPhaseBanner } from '../public/TestPhaseBanner';
 
 /**
  * Authenticated shell for /creator/* and /business/*, reskinned to match the
@@ -163,6 +164,7 @@ export function AppShell() {
 
         <main className="relative flex-1 bg-paper px-4 pb-20 pt-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-8">
           <div className="mx-auto w-full max-w-7xl">
+            <TestPhaseBanner className="mb-6" />
             <Outlet />
           </div>
         </main>

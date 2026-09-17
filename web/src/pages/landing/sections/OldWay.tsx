@@ -82,7 +82,8 @@ export function OldWay() {
       </div>
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="font-serif text-base italic text-ink-soft dark:text-white">{o.eyebrow}</p>
+          <p className="text-balance text-lg font-semibold text-ink dark:text-white">{o.problemIntro}</p>
+          <p className="mt-3 font-serif text-base italic text-ink-soft dark:text-white">{o.eyebrow}</p>
           <TextReveal
             as="h2"
             text={o.heading}

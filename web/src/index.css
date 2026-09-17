@@ -31,6 +31,35 @@
      card does off `paper` in light mode. */
   --color-ink-elevated: #1E1A18;
   --color-ink-elevated-2: #262120;
+
+  /* ── App-UI replica tokens (web/src/pages/landing/components/app/*) ──────
+     Used by the landing page's pixel-accurate ports of the real mobile app
+     screens (AppHomePreview, OpportunityCard, AppUI's shared primitives).
+     Values are sourced 1:1 from mobile/src/utilities/constants.ts (COLORS /
+     RADIUS / SHADOW, creator-role values) so these read as the actual app,
+     not an approximation. Night/dark values aren't from the mobile app
+     (which doesn't ship a dark theme for these screens) — they're picked to
+     match this site's own existing dark palette (ink-elevated / ink) so a
+     mounted OpportunityCard blends in when the landing page's dark mode is on. */
+  --color-app-primary: #4F46E5;
+  --color-app-primary-dark: #3730A3;
+  --color-app-primary-tint: #EEF2FF;
+  --color-app-text: #0F172A;
+  --color-app-muted: #1E293B;
+  --color-app-border: #DBDBDB;
+  --color-app-canvas: #F8F9FB;
+  --color-app-night: #1E1A18;
+  --color-app-night-surface: #141110;
+  --color-app-night-border: rgba(255, 255, 255, 0.1);
+  --color-app-night-raised: #262120;
+  --radius-app-sm: 10px;
+  --radius-app-md: 14px;
+  --radius-app-lg: 18px;
+  --radius-app-xl: 24px;
+  --shadow-app-card: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-app-raised: 0 6px 14px rgba(15, 23, 42, 0.1);
+  --shadow-app-floating: 0 10px 24px rgba(15, 23, 42, 0.16);
+
   --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Fraunces", ui-serif, Georgia, serif;
 

@@ -158,17 +158,17 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
 
             <motion.div variants={fadeUp} className="mt-5 flex flex-wrap items-center gap-3">
               <Link
-                to="/creators"
+                to="/events"
                 className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-white dark:text-ink"
               >
                 <Sparkles size={14} />
-                {d.hero.ctaBusiness}
+                {d.hero.ctaCreator}
               </Link>
               <Link
-                to="/events"
+                to="/creators"
                 className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-5 py-2.5 text-sm font-semibold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-violet/40 hover:text-violet dark:border-white/15 dark:text-white dark:hover:border-white/40"
               >
-                {d.hero.ctaCreator}
+                {d.hero.ctaBusiness}
                 <ArrowRight size={14} />
               </Link>
             </motion.div>

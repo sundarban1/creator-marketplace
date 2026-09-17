@@ -26,7 +26,8 @@ import { LandingFooter } from './nav/LandingFooter';
 import { SEO } from '../../lib/seo/SEO';
 import { organizationSchema, websiteSchema } from '../../lib/seo/schema';
 import { Hero } from './sections/Hero';
-import { Audience } from './sections/Audience';
+import { CreatorStory } from './sections/CreatorStory';
+import { BusinessStory } from './sections/BusinessStory';
 import { TrustStats } from './sections/TrustStats';
 import { Categories } from './sections/Categories';
 import { LiveOnKolab } from './sections/LiveOnKolab';
@@ -37,7 +38,6 @@ import { OldWay } from './sections/OldWay';
 import { Problems } from './sections/Problems';
 import { KolabWay } from './sections/KolabWay';
 import { KeyMessageTransition } from './sections/KeyMessageTransition';
-import { CreatorStages } from './sections/CreatorStages';
 
 // FooterAnchorLink falls back to a real `/#id` navigation when it renders
 // outside this page's LenisProvider (any other route) — this is what makes
@@ -121,13 +121,13 @@ function LandingPageInner() {
       <LaunchAnnouncementModal />
       <LandingNav />
       <Hero stats={stats} creators={creators} />
-      <TrustStats stats={stats} />
       <OldWay />
       <Problems />
       <KolabWay />
       <KeyMessageTransition />
-      <CreatorStages />
-      <Audience />
+      <CreatorStory />
+      <BusinessStory />
+      <TrustStats stats={stats} />
       <Security />
       <Categories stats={stats} />
       <LiveOnKolab events={events} creators={creators} businesses={businesses} categoryMeta={categoryMeta} />

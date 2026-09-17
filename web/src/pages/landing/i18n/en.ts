@@ -2,27 +2,28 @@ export const en = {
   nav: {
     links: {
       discover: 'Discover',
-      services: 'Services',
-      marketplace: 'Marketplace',
-      contact: 'Contact us',
+      forCreators: 'For Creators',
+      forBusinesses: 'For Businesses',
+      about: 'How It Works',
     },
+    login: 'Log in',
     toggleMenuAriaLabel: 'Toggle menu',
     languageLabel: 'Language',
     appearanceLabel: 'Appearance',
     getStarted: 'Get Started',
     getStartedModalTitle: 'Ready to get started? ✨',
-    getStartedModalBody: 'Create a free account to find creators, discover opportunities, and start collaborating on Kolab.',
+    getStartedModalBody: 'Create a free account to find creators, discover opportunities, and start working together on Kolab.',
     getStartedModalCta: 'Create an account',
     getStartedModalLoginPrompt: 'Already have an account?',
     getStartedModalLogin: 'Log in',
   },
 
   hero: {
-    eyebrow: 'AI-powered — find the right skilled creators for your campaign or job',
-    headlineLine1: 'Find the right creators.',
-    headlineLine2: 'Create opportunities.',
-    headlineLine3: 'Collaborate.',
-    sub: 'Kolab helps you find the skills your campaign, event or job needs — and connects you with the creators who can deliver them.',
+    eyebrow: "🇳🇵 Built for Nepal's growing creator & business community",
+    headlineLine1: 'The right collaboration',
+    headlineLine2: 'starts here.',
+    headlineLine3: 'For creators and businesses.',
+    sub: 'Kolab connects creators with businesses looking for real skills, fresh content, and new opportunities.',
     searchPlaceholder: "Try 'I need 3 content creators for my restaurant launch'",
     searchAriaLabel: 'Search Kolab',
     searchCta: 'Search',
@@ -59,11 +60,11 @@ export const en = {
   showcase: {
     eyebrow: 'Why Kolab',
     panels: [
-      { heading: 'Find the Right Skills', sub: 'Discover the creators and skills that actually fit your campaign, job, budget, and timeline.' },
-      { heading: 'Everything in One Place', sub: 'Discover opportunities, send proposals, communicate, manage campaigns, submit deliverables, and track payments without jumping between platforms.' },
-      { heading: 'Real Work, Less Hassle', sub: 'Skip endless DMs and cold outreach. Find real campaigns and jobs — or the skills to deliver them — and connect directly.' },
-      { heading: 'Collaborate with Confidence', sub: 'Keep campaign requirements, communication, deliverables, deadlines, and agreements organized so everyone knows what to expect.' },
-      { heading: 'Get Paid Securely', sub: 'Make payments and receive earnings through a transparent process, reducing the stress of chasing payments, scams, or unclear deals.' },
+      { heading: 'Find the Right Skills', sub: 'Find creators and skills that fit your campaign, job, budget, and time.' },
+      { heading: 'Everything in One Place', sub: 'Find opportunities, send proposals, chat, manage campaigns, submit your work, and track payments — all in one place.' },
+      { heading: 'Real Work, Less Hassle', sub: 'Skip the endless messaging and searching. Find real campaigns and jobs — or the right people for them — and connect directly.' },
+      { heading: 'Collaborate with Confidence', sub: 'Keep requirements, messages, work, deadlines, and agreements organized so everyone knows what to expect.' },
+      { heading: 'Get Paid Securely', sub: 'Send and receive payments through a clear, safe process — no more worrying about late payments, scams, or unclear deals.' },
     ],
   },
 
@@ -78,24 +79,41 @@ export const en = {
     ],
   },
 
-  audience: {
-    eyebrow: 'One platform, two sides',
-    heading: 'One platform. Two sides of every collaboration.',
-    headingAccent: 'every collaboration.',
-    sub: "Whether you're offering your skills or hiring them for a campaign, event or job, Kolab brings both sides together.",
-    centerWord: 'Collaborate',
-    creatorJourney: {
-      label: 'For Creators',
-      title: 'Discover work, deliver great content, get paid.',
-      steps: ['Showcase your skills', 'Land real work', 'Grow your reputation'],
-      ctaCaption: 'Create your professional profile',
-    },
-    businessJourney: {
-      label: 'For Businesses',
-      title: 'Post a campaign, find the right creators, grow.',
-      steps: ['Post what you need', 'Meet the right creators', 'Build lasting partnerships'],
-      ctaCaption: 'Post your project or requirement',
-    },
+  creatorStory: {
+    eyebrow: 'For Creators',
+    label: 'For Creators',
+    heading: 'Your skills deserve opportunities.',
+    sub: 'Create your profile, show what you do, and find real work — then get paid for it.',
+    title: 'Discover work, deliver great content, get paid.',
+    steps: [
+      { title: 'Create your account', desc: 'Create your profile and verify your account.' },
+      { title: 'Show what you do', desc: 'Add your skills, platforms, location and portfolio.' },
+      { title: 'Find opportunities', desc: 'Discover campaigns, jobs and collaborations.' },
+      { title: 'Apply', desc: 'Apply to opportunities that match your skills.' },
+      { title: 'Collaborate', desc: 'Work with the business and complete the agreed work.' },
+      { title: 'Get paid', desc: 'Receive payment once the collaboration is complete.' },
+      { title: 'Grow', desc: 'Build your profile, experience and relationships.' },
+    ],
+    ctaCaption: 'Create your professional profile',
+    liveOnWeb: 'Live on Web',
+    comingSoonBoth: 'Coming soon on iOS & Android',
+  },
+  businessStory: {
+    eyebrow: 'For Businesses',
+    label: 'For Businesses',
+    heading: 'Stop searching. Start finding.',
+    sub: 'Tell Kolab what you need and discover creators who fit your campaign, content, event or project.',
+    title: 'Post a campaign, find the right creators, grow.',
+    steps: [
+      { title: 'Create your business account', desc: 'Set up your business profile.' },
+      { title: 'Tell us what you need', desc: 'Post a campaign, job or creator requirement.' },
+      { title: 'Discover creators', desc: 'Search and filter to find people who fit your requirement.' },
+      { title: 'Explore profiles', desc: 'Look at their work, platforms and past collaborations.' },
+      { title: 'Collaborate', desc: 'Work with the creators you choose.' },
+      { title: 'Complete the work', desc: 'Manage the agreed deliverables and deadlines.' },
+      { title: 'Build relationships', desc: 'Work with creators again for future campaigns.' },
+    ],
+    ctaCaption: 'Post your project or requirement',
   },
 
   aiDiscovery: {
@@ -115,9 +133,10 @@ export const en = {
   },
 
   oldWay: {
+    problemIntro: "Finding the right creator shouldn't be this hard.",
     eyebrow: 'The way it usually works',
     heading: 'Do you know any good creators?',
-    sub: 'For many businesses, creator collaboration still starts with asking around, searching social media and sending messages one by one.',
+    sub: 'For many businesses, working with creators still means asking around, searching social media, and messaging people one by one.',
     messages: [
       'Hey, are you available?',
       'Can you send your rates?',
@@ -141,22 +160,21 @@ export const en = {
 
   problems: {
     eyebrow: "Why it feels this way",
-    heading: "The problem isn't finding a creator.",
-    headingAccent: "It's managing the collaboration.",
+    heading: "The challenge isn't just finding a creator.",
+    headingAccent: "It's finding the right one — and making collaboration easier.",
     items: [
       { title: 'Finding the right creator', desc: "Follower count doesn't always tell you who fits the campaign." },
-      { title: 'Scattered communication', desc: 'Conversations can live across DMs, calls, messages and different apps.' },
-      { title: 'Unclear expectations', desc: 'Deliverables, deadlines, budgets and requirements can easily become unclear.' },
-      { title: 'Payment uncertainty', desc: "There's often no clear reference for pricing, and sending or receiving payment before work is confirmed can feel risky for both sides." },
-      { title: 'Manual coordination', desc: 'Managing multiple creators means more follow-ups, deadlines, files and payment tracking.' },
-      { title: 'Starting over every time', desc: 'After one collaboration, the next campaign can still begin from scratch.' },
+      { title: 'Scattered communication', desc: 'Conversations happen across direct messages, calls, texts, and different apps.' },
+      { title: 'Unclear expectations', desc: 'What needs to be delivered, deadlines, budgets, and requirements can easily become unclear.' },
+      { title: 'Payment uncertainty', desc: 'Both sides need a clearer process for pricing and getting paid.' },
+      { title: 'Manual coordination', desc: 'Managing many creators means more follow-up messages, deadlines, files, and payments to track.' },
     ],
   },
 
   kolabWay: {
     eyebrow: 'The Kolab way',
-    heading: 'From scattered collaboration',
-    headingAccent: 'to one clear workflow.',
+    heading: "There's a better way to collaborate.",
+    headingAccent: 'One clear workflow, start to finish.',
     steps: {
       discover: {
         label: 'Discover',
@@ -231,16 +249,17 @@ export const en = {
     to: 'Who fits your campaign?',
   },
 
-  creatorStages: {
-    eyebrow: 'Every creator has a starting point',
-    heading: 'For Creators at Every Stage',
-    sub: "Whether you're just getting started or already building an audience, Kolab gives you a place to showcase your skills, discover opportunities and grow through real collaborations.",
-    stages: [
-      { title: 'Just Starting', desc: 'Build your profile and discover your first opportunities.' },
-      { title: 'Growing', desc: 'Find campaigns that match your skills, interests and audience.' },
-      { title: 'Experienced', desc: 'Choose collaborations that fit your content and goals.' },
-      { title: 'Established', desc: 'Build long-term relationships with businesses.' },
-    ],
+  // A single fake listing reused wherever the page needs a realistic
+  // opportunity-card mockup (BusinessStory) so it's translated and typed
+  // once instead of duplicated per call site.
+  sampleOpportunity: {
+    title: 'Fashion Reel Creators',
+    budget: 'NPR 15,000',
+    brand: 'Urban Threads',
+    postedAgo: '2 days ago',
+    category: 'Fashion',
+    location: 'Lalitpur',
+    deadlineLabel: '5 days left',
   },
 
   liveOnKolab: {
@@ -399,27 +418,27 @@ export const en = {
       {
         title: 'Reviews & Ratings',
         desc: 'Honest feedback from real collaborations, every time.',
-        detail: "Ratings are only left after a real collaboration closes, so a profile's history reflects actual work, not empty praise.",
+        detail: "Ratings are only left after a real collaboration closes, so a profile's history shows real work, not fake praise.",
       },
       {
         title: 'Agreed Terms, Both Sides',
         desc: 'Scope, budget and deliverables are agreed by both sides before work begins.',
-        detail: "Nothing starts until both the creator and the business confirm the same terms, so there's no room for a mid-project surprise.",
+        detail: "Nothing starts until both the creator and the business agree on the same terms, so there are no surprises in the middle of a project.",
       },
       {
         title: 'Secure Escrow Payments',
         desc: 'Payment is held in escrow and released to the creator only once work is approved — never sent directly, so neither side is exposed to a scam.',
-        detail: 'The business funds it up front, the creator delivers, and only then does the payment move — automatically, the moment the work is approved.',
+        detail: 'The business pays first, the creator delivers the work, and the payment moves automatically the moment the work is approved.',
       },
       {
         title: 'Secure Communication',
         desc: 'Keep every conversation and file in one protected place.',
-        detail: 'No handing out personal numbers or juggling five different apps — the whole conversation stays with the campaign.',
+        detail: 'No need to share personal phone numbers or use many different apps — every conversation stays in one place, with the campaign.',
       },
       {
         title: 'Report & Safety',
         desc: 'Flag an issue anytime — our team responds fast.',
-        detail: 'A dedicated safety team reviews every report and can step in on a payment or a conversation if something looks wrong.',
+        detail: 'A dedicated safety team reviews every report and can take action on a payment or a conversation if something looks wrong.',
       },
     ],
   },
@@ -445,8 +464,18 @@ export const en = {
 
   finalCta: {
     heading: "Your next collaboration shouldn't depend on who you know.",
-    sub: 'Find the right people. Create better collaborations. Grow together with Kolab.',
+    supportingLine: 'It should start with what you can create.',
     roles: { business: 'Business', creator: 'Creator' },
+    creatorCard: {
+      heading: 'Find opportunities. Build your profile. Get hired.',
+      sub: 'Create your account and start discovering real work.',
+      cta: 'Create your account',
+    },
+    businessCard: {
+      heading: 'Find creators who fit your next campaign.',
+      sub: 'Post what you need and discover the right people.',
+      cta: 'Find Creators',
+    },
   },
 
   footer: {
@@ -586,7 +615,7 @@ export const en = {
     titleTop: 'Join Kolab Early',
     titleBottomPre: '& Start ',
     titleHighlight: 'Winning',
-    description: 'Two exciting ways to win at launch — join the Lucky Draw or/and enter the Video Contest below.',
+    description: 'Two exciting ways to win at launch — join the Lucky Draw, enter the Video Contest below, or do both.',
     tabDraw: 'Lucky Draw',
     tabContest: 'Video Contest',
     stepsHeading: '🎟️ How to Enter',

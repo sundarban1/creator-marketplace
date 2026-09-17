@@ -34,9 +34,9 @@ const QUICK_ACTIONS: { icon: LucideIcon; color: QuickActionColor }[] = [
   { icon: Users, color: 'pink' },
 ];
 
-const CARD_PHOTOS = ['/landing/opportunitites.jpeg', '/landing/photographer.jpeg'];
+export const CARD_PHOTOS = ['/landing/opportunitites.jpeg', '/landing/photographer.jpeg'];
 
-function MiniCard({
+export function MiniCard({
   title,
   budget,
   brand,

@@ -37,11 +37,11 @@ const DEADLINE_COLORS = {
 export function OpportunityCard({
   data,
   applyLabel,
-  onApply,
+  onApply = () => {},
 }: {
   data: OpportunityCardData;
   applyLabel: string;
-  onApply: () => void;
+  onApply?: () => void;
 }) {
   const deadlineColor = DEADLINE_COLORS[data.deadline.tone];
   const LocationIcon = data.remote ? Globe : MapPin;

@@ -18,6 +18,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { BusinessCard } from './BusinessCard';
 import { BrowseHero } from './BrowseHero';
+import { TestPhaseBanner } from './TestPhaseBanner';
 import { LocationAutocomplete } from './LocationAutocomplete';
 import { makeCategoryLookup } from './categoryLookup';
 
@@ -122,6 +123,10 @@ export function BusinessesPage() {
         onSearch={(v) => patch('q', v)}
         searchPlaceholder={t('public.searchBusinessesPlaceholder')}
       />
+
+      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+        <TestPhaseBanner />
+      </div>
 
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
         {/* Filters */}

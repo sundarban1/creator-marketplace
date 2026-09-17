@@ -9,6 +9,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RouteFallback } from './components/RouteFallback';
 import { marketplaceRoutes } from './app/AppRoutes';
+import { withChunkRetry } from './lib/chunkRetry';
 
 // The landing page is the LCP-critical, prerendered entry point — keep it in
 // the main chunk so first paint never waits on a second network round trip.
@@ -26,7 +27,7 @@ function named(
   key: string,
 ) {
   return lazy(() =>
-    loader().then((m) => ({ default: m[key] as ComponentType<Record<string, unknown>> })),
+    withChunkRetry(loader, key).then((m) => ({ default: m[key] as ComponentType<Record<string, unknown>> })),
   );
 }
 

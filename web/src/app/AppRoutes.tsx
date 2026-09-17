@@ -2,6 +2,7 @@ import { lazy, type ComponentType } from 'react';
 import { Route } from 'react-router-dom';
 import { AppProviders } from './AppProviders';
 import { RequireAuth, RequireGuest, RequireRole, RequireOnboarding, RequireNotOnboarded } from './auth/guards';
+import { withChunkRetry } from '../lib/chunkRetry';
 
 /**
  * The marketplace web app's route subtree. Rendered inside <Routes> in
@@ -16,7 +17,7 @@ import { RequireAuth, RequireGuest, RequireRole, RequireOnboarding, RequireNotOn
  * nav, guards and dashboards are final.
  */
 function screen(loader: () => Promise<Record<string, unknown>>, key: string) {
-  return lazy(() => loader().then((m) => ({ default: m[key] as ComponentType })));
+  return lazy(() => withChunkRetry(loader, key).then((m) => ({ default: m[key] as ComponentType })));
 }
 
 const LoginScreen = screen(() => import('./auth/LoginScreen'), 'LoginScreen');

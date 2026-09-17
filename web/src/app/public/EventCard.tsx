@@ -60,8 +60,8 @@ export function EventCard({
         )}
         <span
           className={cn(
-            'absolute right-3 top-3 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold backdrop-blur',
-            isOpenEvent ? 'bg-success-soft text-success' : 'bg-violet/15 text-violet',
+            'absolute right-3 top-3 inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold shadow-sm',
+            isOpenEvent ? 'text-success' : 'text-violet',
           )}
         >
           {isOpenEvent ? t('public.badgeFree') : t('public.badgePaid')}
