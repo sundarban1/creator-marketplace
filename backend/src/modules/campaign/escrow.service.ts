@@ -165,6 +165,17 @@ class EscrowService {
       }
     }
 
+    // Same as a payment release: a fully refunded engagement is over, so the
+    // conversation closes and leaves both inboxes (closeAfterCompletion is a
+    // no-op if there's no ACCEPTED conversation). Fired even when `silent`
+    // suppresses notifications (e.g. a dispute resolved in the business's
+    // favor) — the chat should close either way, not just on the notified path.
+    if (!partial && app.creator?.userId) {
+      messagingService
+        .closeConversationAfterCompletion(app.creator.userId, app.campaign.business.userId, app.creatorId, app.campaign.business.id)
+        .catch(() => {});
+    }
+
     return { refunded: true, amount, partial };
   }
 

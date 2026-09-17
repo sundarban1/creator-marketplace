@@ -139,7 +139,7 @@ export function AppShell() {
               className={({ isActive }) =>
                 cn(
                   'flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft hover:bg-surface-dim hover:text-ink transition-colors',
-                  isActive && 'bg-brand/10 text-brand',
+                  isActive && 'bg-surface-dim text-ink',
                 )
               }
             >

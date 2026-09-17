@@ -104,6 +104,7 @@ export function ChatThreadPage() {
   }
 
   const name = conversation.otherParty?.fullName ?? '—';
+  const isClosed = conversation.status === 'CLOSED';
 
   return (
     <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-2xl flex-col">
@@ -114,7 +115,11 @@ export function ChatThreadPage() {
         <Avatar name={name} src={conversation.otherParty?.avatarUrl} size="md" />
         <div className="min-w-0">
           <p className="truncate text-[15px] font-semibold text-ink">{name}</p>
-          {conversation.campaign?.title && <p className="truncate text-[12px] text-ink-soft">{conversation.campaign.title}</p>}
+          {isClosed ? (
+            <p className="truncate text-[12px] text-ink-soft">{t('chat.collaborationClosed')}</p>
+          ) : (
+            conversation.campaign?.title && <p className="truncate text-[12px] text-ink-soft">{conversation.campaign.title}</p>
+          )}
         </div>
       </div>
 
@@ -155,23 +160,29 @@ export function ChatThreadPage() {
 
       {error && <Alert tone="error" className="mb-2">{error}</Alert>}
 
-      <form onSubmit={onSend} className="flex items-center gap-2 border-t border-line pt-3">
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={t('chat.placeholder')}
-          className="h-11 flex-1 rounded-xl border border-line-strong bg-surface px-3.5 text-[14px] text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-brand/35"
-        />
-        <button
-          type="submit"
-          disabled={sending || !text.trim()}
-          aria-label={t('chat.send')}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-brand text-white disabled:opacity-50"
-        >
-          <Send size={17} />
-        </button>
-      </form>
+      {!isClosed ? (
+        <form onSubmit={onSend} className="flex items-center gap-2 border-t border-line pt-3">
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={t('chat.placeholder')}
+            className="h-11 flex-1 rounded-xl border border-line-strong bg-surface px-3.5 text-[14px] text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-brand/35"
+          />
+          <button
+            type="submit"
+            disabled={sending || !text.trim()}
+            aria-label={t('chat.send')}
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-brand text-white disabled:opacity-50"
+          >
+            <Send size={17} />
+          </button>
+        </form>
+      ) : (
+        <p className="border-t border-line pt-3 text-center text-[13px] text-ink-soft">
+          {t('chat.collaborationClosed')}
+        </p>
+      )}
     </div>
   );
 }

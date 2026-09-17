@@ -328,6 +328,7 @@ export const ne: AppDict = {
     noMessagesYet: 'अझै कुनै सन्देश छैन — नमस्ते भन्नुहोस्!',
     placeholder: 'सन्देश टाइप गर्नुहोस्…',
     send: 'पठाउनुहोस्',
+    collaborationClosed: 'सहकार्य पूरा भयो — च्याट बन्द',
   },
 
   notifications: {

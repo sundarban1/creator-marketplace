@@ -349,6 +349,7 @@ export const en = {
     noMessagesYet: 'No messages yet — say hello!',
     placeholder: 'Type a message…',
     send: 'Send',
+    collaborationClosed: 'Collaboration complete — chat closed',
   },
 
   notifications: {

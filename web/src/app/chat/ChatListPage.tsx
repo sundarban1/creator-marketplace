@@ -69,7 +69,11 @@ export function ChatListPage() {
     );
   }
 
-  const items = conversations.data?.items ?? [];
+  // A conversation CLOSEs once its payment is released or refunded — the
+  // collaboration is over, so (mirroring mobile) it drops out of the inbox
+  // entirely rather than lingering as a dead thread. It reopens on the next
+  // proposal-accept or fresh message request.
+  const items = (conversations.data?.items ?? []).filter((c) => c.status !== 'CLOSED');
 
   return (
     <div className="mx-auto max-w-2xl">
