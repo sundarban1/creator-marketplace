@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Users, AtSign, Mail } from 'lucide-react';
+import { User, Users, AtSign, Mail, Sparkles, Handshake, Wallet } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
 import { roleHome } from '../routes';
@@ -250,6 +250,14 @@ export function CreatorOnboarding() {
       title={title}
       subtitle={subtitle}
       onBack={() => setStep((s) => s - 1)}
+      panelImage="/landing/photographer.jpeg"
+      panelImageAlt=""
+      panelHeadline={t('onboarding.panelHeadline')}
+      panelPoints={[
+        { icon: <Sparkles size={16} />, title: t('onboarding.panelPoint1Title'), desc: t('onboarding.panelPoint1Desc') },
+        { icon: <Handshake size={16} />, title: t('onboarding.panelPoint2Title'), desc: t('onboarding.panelPoint2Desc') },
+        { icon: <Wallet size={16} />, title: t('onboarding.panelPoint3Title'), desc: t('onboarding.panelPoint3Desc') },
+      ]}
     >
       {step === 1 && (
         <div className="space-y-5">

@@ -1,0 +1,1 @@
+var e=`@phone.kolab.internal`;function t(t){return!!t&&t.endsWith(e)}function n(e){return e.emailIsPlaceholder||t(e.email)?e.phone??``:e.email}export{t as n,n as t};

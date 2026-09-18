@@ -1,0 +1,1 @@
+var e=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;function t(t){return e.test(t.trim())}function n(e){let t=e.replace(/[^\d]/g,``).replace(/^977/,``);return/^9[78]\d{8}$/.test(t)}function r(e){let r=e.trim();return t(r)?{email:r.toLowerCase()}:n(r)?{phone:r.replace(/[^\d+]/g,``)}:null}function i(e){return`email`in e&&e.email?e.email:e.phone}export{n,r,i as t};

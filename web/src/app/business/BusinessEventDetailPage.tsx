@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Pencil, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Pencil, MessageCircle, Check, Gift } from 'lucide-react';
 import { useT, type TFn } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { rupees, perCreatorBudget } from '../lib/format';
@@ -10,9 +10,13 @@ import {
   acceptApplication,
   rejectApplication,
   initiateEsewaPayment,
+  payForApplication,
+  getBusinessCredits,
   reportIssue,
   type BusinessApplication,
 } from '../api/business';
+import { fetchPaymentMethods, type PublicPaymentMethod } from '../api/paymentMethods';
+import { getPlatformFlags } from '../api/platformFlags';
 import { ApiError } from '../lib/apiClient';
 import { PageHeader } from '../ui/PageHeader';
 import { Card, CardHeader } from '../ui/Card';
@@ -26,6 +30,7 @@ import { Textarea } from '../ui/Textarea';
 import { EngagementBadge } from '../creator/EngagementBadge';
 import { DisputeStatusCard } from '../creator/DisputeStatus';
 import { ReviewSection } from '../creator/ReviewSection';
+import { cn } from '../ui/cn';
 
 // Mirrors CreatorWorkDetailPage.tsx's CAN_REPORT — same shared engagement
 // states, just viewed from the business side.
@@ -79,9 +84,27 @@ export function BusinessEventDetailPage() {
   );
   const [busyId, setBusyId] = useState('');
   const [payTarget, setPayTarget] = useState<BusinessApplication | null>(null);
+  const [payMethodChoice, setPayMethodChoice] = useState('');
   const [payBusy, setPayBusy] = useState(false);
   const [payError, setPayError] = useState('');
   const [reportTarget, setReportTarget] = useState<BusinessApplication | null>(null);
+
+  // Admin-enabled payment methods + Kolab Rewards credits balance — mirrors
+  // mobile's activity-timeline.tsx pay modal (methodCatalog + creditsAvailable).
+  const [methodCatalog, setMethodCatalog] = useState<PublicPaymentMethod[]>([]);
+  const [creditsBalance, setCreditsBalance] = useState(0);
+  const [feePercents, setFeePercents] = useState({ paymentFeePercent: 5, paymentTaxPercent: 13 });
+
+  useEffect(() => {
+    fetchPaymentMethods().then(setMethodCatalog).catch(() => {});
+    getBusinessCredits().then((b) => setCreditsBalance(b.balance)).catch(() => {});
+    getPlatformFlags().then((f) => setFeePercents({ paymentFeePercent: f.paymentFeePercent, paymentTaxPercent: f.paymentTaxPercent })).catch(() => {});
+  }, []);
+
+  // Defaults to the first admin-enabled method until the business picks one
+  // explicitly — derived at render time rather than synced via an effect,
+  // since the catalog can load after the picker is already showing.
+  const payMethod = payMethodChoice || methodCatalog[0]?.key || 'esewa';
 
   useEffect(() => {
     const payment = searchParams.get('payment');
@@ -123,8 +146,21 @@ export function BusinessEventDetailPage() {
     setPayBusy(true);
     setPayError('');
     try {
-      const { paymentUrl } = await initiateEsewaPayment(payTarget.id);
-      window.location.href = paymentUrl;
+      if (payMethod === 'esewa') {
+        const { paymentUrl } = await initiateEsewaPayment(payTarget.id);
+        // Leave payBusy true — the button stays in its loading state until
+        // the browser actually navigates away to eSewa's checkout.
+        window.location.href = paymentUrl;
+        return;
+      }
+      // Credits (and any other admin-enabled method with no dedicated gateway
+      // flow) settle immediately through the generic pay endpoint — mirrors
+      // mobile's handlePay fallthrough for every method besides esewa/khalti.
+      await payForApplication(payTarget.id, payMethod);
+      setPayTarget(null);
+      setFlash(t('biz.paymentSuccessFlash'));
+      apps.reload();
+      setPayBusy(false);
     } catch (err) {
       setPayError(err instanceof Error ? err.message : t('common.somethingWrong'));
       setPayBusy(false);
@@ -156,6 +192,18 @@ export function BusinessEventDetailPage() {
   const budget = perCreatorBudget(c);
   const isPaid = c.campaignType !== 'OPEN_EVENT';
   const fmtDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+
+  // Fee breakdown for the pay modal — same formula as the backend's
+  // applicationTotalNpr (the amount actually charged through eSewa) and
+  // mobile's activity-timeline.tsx crFee/pfFee/tax/total, rather than the
+  // application's own platformFee/businessTotal fields (a different,
+  // campaign-commissionRate-based figure used elsewhere, not for escrow funding).
+  const crFee = payTarget?.proposedRate ?? 0;
+  const pfFee = Math.round(crFee * (feePercents.paymentFeePercent / 100));
+  const tax = Math.round(pfFee * (feePercents.paymentTaxPercent / 100));
+  const payTotal = crFee + pfFee + tax;
+  const creditsAffordable = creditsBalance >= crFee;
+  const payAmountDue = payMethod === 'credits' ? crFee : payTotal;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -240,7 +288,7 @@ export function BusinessEventDetailPage() {
                       </Link>
                     )}
                     {needsPay && (
-                      <Button size="sm" onClick={() => { setPayError(''); setPayTarget(a); }}>
+                      <Button size="sm" onClick={() => { setPayError(''); setPayMethodChoice(''); setPayTarget(a); }}>
                         {t('biz.payNow')}
                       </Button>
                     )}
@@ -382,6 +430,13 @@ export function BusinessEventDetailPage() {
       <Modal open={!!payTarget} onClose={() => (payBusy ? null : setPayTarget(null))} title={t('biz.payModalTitle')}>
         {payTarget && (
           <div className="space-y-4">
+            <div className="w-full space-y-1 border border-[#4A235A]/20 bg-white px-3.5 py-2.5 text-left text-[11.5px] font-bold leading-snug text-[#4A235A]">
+              <p className="text-[14px]">{t('biz.payModalTestCredsLabel')}</p>
+              <p>{t('biz.payModalTestCredsId', { value: '9711111111' })}</p>
+              <p>{t('biz.payModalTestCredsPassword', { value: 'Test@123' })}</p>
+              <p>{t('biz.payModalTestCredsOtp', { value: '123456' })}</p>
+            </div>
+
             <div className="flex items-center gap-3">
               <Avatar name={payTarget.creator?.fullName ?? 'Creator'} src={payTarget.creator?.avatarUrl} size="md" />
               <p className="text-[14px] font-semibold text-ink">{payTarget.creator?.fullName ?? 'Creator'}</p>
@@ -390,25 +445,72 @@ export function BusinessEventDetailPage() {
             <dl className="space-y-2 rounded-xl border border-line bg-surface-dim p-4">
               <div className="flex items-center justify-between text-[14px]">
                 <dt className="text-ink-soft">{t('biz.payModalCreatorRate')}</dt>
-                <dd className="text-ink">{rupees(payTarget.proposedRate)}</dd>
+                <dd className="text-ink">{rupees(crFee)}</dd>
               </div>
               <div className="flex items-center justify-between text-[14px]">
-                <dt className="text-ink-soft">{t('biz.payModalPlatformFee')}</dt>
-                <dd className="text-ink">{rupees(payTarget.platformFee ?? 0)}</dd>
+                <dt className="text-ink-soft">{t('biz.payModalPlatformFee', { pct: feePercents.paymentFeePercent })}</dt>
+                <dd className="text-ink">{rupees(pfFee)}</dd>
+              </div>
+              <div className="flex items-center justify-between text-[14px]">
+                <dt className="text-ink-soft">{t('biz.payModalTax', { pct: feePercents.paymentTaxPercent })}</dt>
+                <dd className="text-ink">{rupees(tax)}</dd>
               </div>
               <div className="flex items-center justify-between border-t border-line pt-2 text-[15px] font-semibold">
                 <dt className="text-ink">{t('biz.payModalTotal')}</dt>
-                <dd className="text-ink">{rupees(payTarget.businessTotal ?? payTarget.proposedRate)}</dd>
+                <dd className="text-ink">{rupees(payTotal)}</dd>
               </div>
             </dl>
 
-            <p className="text-[12px] text-ink-soft">{t('biz.payModalEsewaNote')}</p>
+            <div>
+              <p className="mb-2 text-[13px] font-semibold text-ink">{t('biz.payModalPayWith')}</p>
+              <div className="space-y-2">
+                {methodCatalog.map((m) => (
+                  <PayMethodRow
+                    key={m.key}
+                    active={payMethod === m.key}
+                    onSelect={() => setPayMethodChoice(m.key)}
+                    icon={
+                      m.iconUrl ? (
+                        <img src={m.iconUrl} alt="" className="h-8 w-8 rounded-lg object-contain" />
+                      ) : (
+                        <span
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[13px] font-semibold text-white"
+                          style={{ backgroundColor: m.color }}
+                        >
+                          {m.name.charAt(0).toUpperCase()}
+                        </span>
+                      )
+                    }
+                    label={m.name}
+                  />
+                ))}
+                <PayMethodRow
+                  active={payMethod === 'credits'}
+                  disabled={!creditsAffordable}
+                  onSelect={() => setPayMethodChoice('credits')}
+                  icon={
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EC4899]/10 text-[#EC4899]">
+                      <Gift size={15} />
+                    </span>
+                  }
+                  label={t('biz.payWithCredits')}
+                  sublabel={creditsAffordable ? t('biz.creditsAvailable', { amount: rupees(creditsBalance) }) : t('biz.creditsInsufficientForFee')}
+                />
+              </div>
+            </div>
+
+            {payMethod === 'esewa' && <p className="text-[12px] text-ink-soft">{t('biz.payModalEsewaNote')}</p>}
 
             {payError && <Alert tone="error">{payError}</Alert>}
 
             <div className="flex gap-2 pt-1">
-              <Button className="flex-1" loading={payBusy} onClick={confirmPay}>
-                {t('biz.confirmPayment')}
+              <Button
+                className="flex-1"
+                loading={payBusy}
+                disabled={payMethod === 'credits' && !creditsAffordable}
+                onClick={confirmPay}
+              >
+                {t('biz.payModalConfirmBtn', { amount: rupees(payAmountDue) })}
               </Button>
               <Button variant="secondary" disabled={payBusy} onClick={() => setPayTarget(null)}>
                 {t('common.cancel')}
@@ -429,6 +531,46 @@ export function BusinessEventDetailPage() {
         }}
       />
     </div>
+  );
+}
+
+/** A selectable row in the pay modal's method picker — one gateway from the
+ * admin catalog, or the exclusive "pay with Kolab Credits" option. */
+function PayMethodRow({
+  active,
+  disabled,
+  onSelect,
+  icon,
+  label,
+  sublabel,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  onSelect: () => void;
+  icon: ReactNode;
+  label: string;
+  sublabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      disabled={disabled}
+      onClick={onSelect}
+      className={cn(
+        'flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors',
+        disabled && 'cursor-not-allowed opacity-50',
+        active ? 'border-violet/40 bg-violet/[0.06]' : 'border-line hover:bg-surface-dim',
+      )}
+    >
+      {icon}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-semibold text-ink">{label}</span>
+        {sublabel && <span className="block text-[11.5px] text-ink-soft">{sublabel}</span>}
+      </span>
+      {active && <Check size={16} className="flex-shrink-0 text-violet-dark" />}
+    </button>
   );
 }
 

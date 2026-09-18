@@ -239,8 +239,14 @@ export function rejectApplication(
   ).then((r) => r.data);
 }
 
-export function payForApplication(appId: string): Promise<unknown> {
-  return apiRequest('PUT', `/api/campaigns/applications/${appId}/pay`).then((r) => r.data);
+/** Pays with any non-eSewa method (Kolab Credits, or another admin-enabled method with no dedicated gateway flow) — mirrors mobile's campaignService.payForApplication. */
+export function payForApplication(appId: string, method: string): Promise<unknown> {
+  return apiRequest('PUT', `/api/campaigns/applications/${appId}/pay`, { method }).then((r) => r.data);
+}
+
+/** Kolab Rewards business credits balance — same endpoint mobile's creditsService.getBalance hits. */
+export function getBusinessCredits(): Promise<{ balance: number }> {
+  return apiRequest<{ balance: number }>('GET', '/api/business/credits').then((r) => r.data);
 }
 
 /** Starts an eSewa escrow-funding payment; returns a checkout-page URL to redirect the browser to. */

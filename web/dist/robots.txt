@@ -8,4 +8,4 @@ Disallow: /forgot-password
 Disallow: /creator/
 Disallow: /business/
 
-Sitemap: https://www.ourkolab.com/sitemap.xml
+Sitemap: https://kolab.com.np/sitemap.xml

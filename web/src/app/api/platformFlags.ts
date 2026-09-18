@@ -11,6 +11,9 @@ export interface PlatformFlags {
   businessRegistrationEnabled: boolean;
   creatorOnboardingEnabled: boolean;
   businessOnboardingEnabled: boolean;
+  /** Escrow-funding fee breakdown — mirrors mobile's PlatformSettingsContext, same source endpoint. */
+  paymentFeePercent: number;
+  paymentTaxPercent: number;
 }
 
 export function fetchPlatformFlags(signal?: AbortSignal): Promise<PlatformFlags> {
@@ -40,6 +43,8 @@ export function getPlatformFlags(): Promise<PlatformFlags> {
       businessRegistrationEnabled: true,
       creatorOnboardingEnabled: false,
       businessOnboardingEnabled: false,
+      paymentFeePercent: 5,
+      paymentTaxPercent: 13,
     }));
   }
   return cached;

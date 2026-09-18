@@ -552,7 +552,9 @@ export function CreateEventPage() {
               <Textarea label={t('public.deliverablesHeading')} rows={2} value={deliverables} onChange={(e) => setDeliverables(e.target.value)} />
 
               <div className="grid grid-cols-2 gap-3">
-                <TextField label={t('biz.minFollowersField')} type="number" value={minFollowers} onChange={(e) => setMinFollowers(e.target.value)} />
+                {!aiUsed && (
+                  <TextField label={t('biz.minFollowersField')} type="number" value={minFollowers} onChange={(e) => setMinFollowers(e.target.value)} />
+                )}
                 <Select
                   label={t('public.location')}
                   value={locationType}
@@ -561,6 +563,7 @@ export function CreateEventPage() {
                     { value: 'REMOTE', label: t('public.remote') },
                     { value: 'ONSITE', label: t('public.onsite') },
                   ]}
+                  className={aiUsed ? 'col-span-2' : undefined}
                 />
               </div>
               {locationType === 'ONSITE' && (

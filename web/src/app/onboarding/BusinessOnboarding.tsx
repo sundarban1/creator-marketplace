@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Building2, Mail } from 'lucide-react';
+import { User, Building2, Mail, Search, MessageSquareText, ShieldCheck } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
 import { roleHome } from '../routes';
@@ -251,6 +251,14 @@ export function BusinessOnboarding() {
       title={title}
       subtitle={subtitle}
       onBack={() => setStep((s) => s - 1)}
+      panelImage="/landing/people.jpg"
+      panelImageAlt=""
+      panelHeadline={t('businessOnboarding.panelHeadline')}
+      panelPoints={[
+        { icon: <Search size={16} />, title: t('businessOnboarding.panelPoint1Title'), desc: t('businessOnboarding.panelPoint1Desc') },
+        { icon: <MessageSquareText size={16} />, title: t('businessOnboarding.panelPoint2Title'), desc: t('businessOnboarding.panelPoint2Desc') },
+        { icon: <ShieldCheck size={16} />, title: t('businessOnboarding.panelPoint3Title'), desc: t('businessOnboarding.panelPoint3Desc') },
+      ]}
     >
       {stepKey === 'HIRING_TYPE' && (
         <div className="space-y-5">

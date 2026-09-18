@@ -1,0 +1,1 @@
+import{n as e,s as t}from"./jsx-runtime-BseJUIpC.js";var n=t(e(),1);function r(e=0){let[t,r]=(0,n.useState)(e),i=(0,n.useRef)(null),a=()=>{i.current&&=(clearInterval(i.current),null)},o=(0,n.useCallback)(e=>{a(),r(e),i.current=setInterval(()=>{r(e=>e<=1?(a(),0):e-1)},1e3)},[]);return(0,n.useEffect)(()=>a,[]),{remaining:t,start:o}}export{r as t};
