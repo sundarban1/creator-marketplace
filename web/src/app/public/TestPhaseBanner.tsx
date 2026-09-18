@@ -11,7 +11,10 @@ export function TestPhaseBanner({ className = '' }: { className?: string }) {
         <span className="font-semibold">🧪 Kolab Website in Test Phase</span>
         <br />
         Welcome to Kolab! 🎉 Feel free to explore the platform, create your account, and try out the
-        features, workflows, and payment experience.
+        features, workflows, and payment experience. You&rsquo;ll be able to go through the complete
+        process using dummy payments, giving you a realistic feel for how Kolab will work when you
+        start working on real projects. Please note that no real money will be involved during this
+        testing phase.
       </p>
       <p className="mt-2 text-[13px] leading-relaxed text-brand-indigo">
         Our <span className="font-bold">iOS</span> and <span className="font-bold">Android</span> apps

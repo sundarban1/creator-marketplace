@@ -66,11 +66,7 @@ export function CreatorDiscoverCreatorDetailPage() {
       </Link>
 
       <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start">
-        <span className="inline-flex flex-shrink-0 rounded-full bg-gradient-to-br from-violet/25 to-brand-orange/20 p-[3px]">
-          <span className="rounded-full bg-surface p-0.5">
-            <Avatar name={name} src={c.avatarUrl} size="xl" className="h-20 w-20" />
-          </span>
-        </span>
+        <Avatar name={name} src={c.avatarUrl} size="xl" className="h-20 w-20 flex-shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h1 className="font-serif text-3xl font-medium tracking-tight text-ink">{name}</h1>
