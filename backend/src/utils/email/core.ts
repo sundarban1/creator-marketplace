@@ -9,7 +9,9 @@ export const adminRepo = new AdminRepository();
 export const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
 
 const FROM_NAME    = 'Kolab';
-const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'noreply@ourkolab.com';
+// Deliberately NOT env.EMAIL_USERNAME — that's the SMTP auth identity, which for
+// providers like AWS SES is an opaque access-key-style string, not a mailbox.
+const FROM_ADDRESS = env.EMAIL_FROM ?? 'noreply@ourkolab.com';
 const FROM         = `${FROM_NAME} <${FROM_ADDRESS}>`;
 
 // Resend requires the from-address to be on a domain verified with Resend, so
@@ -28,6 +30,23 @@ function smtpHostInUse(): string | undefined {
 
 export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+}
+
+// Plain-text alternative for HTML-only templates — some spam filters (Yahoo
+// included) score HTML-only transactional mail worse than mail with both parts.
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n\n')
+    .trim();
 }
 
 function createTransporter() {
@@ -79,9 +98,11 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   // Resend is also HTTPS-based, so it's unaffected by hosts that block outbound
   // SMTP ports. Note its free tier only delivers to the account owner's own inbox
   // until ourkolab.com is verified at resend.com/domains.
+  const text = htmlToText(html);
+
   if (env.RESEND_API_KEY) {
     const resend = new Resend(env.RESEND_API_KEY);
-    const { error } = await resend.emails.send({ from: RESEND_FROM, to, subject, html });
+    const { error } = await resend.emails.send({ from: RESEND_FROM, to, subject, html, text });
     if (!error) {
       logger.info({ to, subject }, 'Email sent (Resend)');
       return;
@@ -92,7 +113,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   const transporter = createTransporter();
   if (transporter) {
     try {
-      await transporter.sendMail({ from: FROM, to, subject, html });
+      await transporter.sendMail({ from: FROM, to, subject, html, text });
       logger.info({ to, subject, host: smtpHostInUse() }, 'Email sent (SMTP)');
     } catch (err) {
       // Don't let a mail-provider outage bubble out as an unhandled 500 on the

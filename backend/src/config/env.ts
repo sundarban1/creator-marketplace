@@ -29,6 +29,11 @@ const envSchema = z.object({
   EMAIL_SECURE:   z.string().optional(),
   EMAIL_USERNAME: z.string().optional(),
   EMAIL_PASSWORD: z.string().optional(),
+  // "From" address for the SMTP path — separate from EMAIL_USERNAME because the
+  // SMTP auth username isn't always a real mailbox (e.g. AWS SES's SMTP
+  // credentials are an opaque access-key-style string, not an email address).
+  // Falls back to noreply@ourkolab.com when unset.
+  EMAIL_FROM: z.string().optional(),
   // Resend (HTTP API) — preferred in production, since it isn't blocked by
   // Render's free-tier restriction on outbound SMTP ports.
   RESEND_API_KEY: z.string().optional(),
