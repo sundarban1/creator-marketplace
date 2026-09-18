@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npx playwright install --with-deps chromium
-RUN npm run build:no-prerender && npm run prerender
+RUN npm run build:no-prerender && npm run prerender && npm run sitemap
 
 # Runner only serves the prebuilt dist/ via server.mjs — no browser/native
 # deps needed here, so alpine is fine and keeps the final image small.
