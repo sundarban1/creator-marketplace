@@ -55,6 +55,7 @@ export type DeliverableFile = z.infer<typeof deliverableFileSchema>;
 
 export interface CampaignDto {
   id: string;
+  slug: string | null;
   title: string;
   description: string;
   template: string | null;
@@ -109,6 +110,7 @@ export interface CampaignDto {
   createdAt: string;
   business?: {
     id?: string;
+    slug?: string | null;
     businessName: string | null;
     logoUrl: string | null;
     website?: string | null;
@@ -248,6 +250,7 @@ export interface ApplicationDto {
 type RawCampaign = {
   id: string;
   businessId: string;
+  slug?: string | null;
   title: string;
   description: string;
   template: string | null;
@@ -295,7 +298,7 @@ type RawCampaign = {
   completionType: string | null;
   completionReason: string | null;
   createdAt: Date;
-  business?: { id?: string; businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
+  business?: { id?: string; slug?: string | null; businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
   _count?: { applications: number };
   // Applications received inside the trending window (see
   // CampaignRepository.countRecentApplications) — attached by the list
@@ -324,6 +327,7 @@ type RawCampaign = {
 export function toCampaignDto(c: RawCampaign): CampaignDto {
   const dto: CampaignDto = {
     id:             c.id,
+    slug:           c.slug ?? null,
     title:          c.title,
     description:    c.description,
     template:       c.template,

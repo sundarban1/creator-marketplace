@@ -26,7 +26,10 @@ export function websiteSchema() {
     '@type': 'WebSite',
     name: SITE_NAME,
     url: SITE_URL,
-    inLanguage: ['en', 'ne'],
+    // Nepali is a client-side localStorage toggle on the same URL, not a
+    // separate crawlable page — claiming ['en', 'ne'] here overclaims to
+    // crawlers. Revisit once real hreflang/URL-prefixed Nepali pages exist.
+    inLanguage: 'en',
   };
 }
 

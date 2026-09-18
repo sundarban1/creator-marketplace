@@ -31,7 +31,7 @@ import { useAppColors, useIsDark, BUSINESS_DARK_COLORS } from '@/context/ThemeCo
 import { authService } from '@/services/auth';
 import { ApiError } from '@/lib/api';
 
-const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
+const DEFAULT_SUPPORT_EMAIL = 'info@kolab.com.np';
 import type { Lang } from '@/i18n';
 import { COLORS, BUSINESS_COLORS, F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
 import { withAlpha } from '@/utilities/color';

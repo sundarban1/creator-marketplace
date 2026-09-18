@@ -889,6 +889,7 @@ export interface PublicCreatorLite {
 }
 export interface PublicBusinessLite {
   id: string;
+  slug: string | null;
   businessName: string | null;
   logoUrl: string | null;
   categories: string[];

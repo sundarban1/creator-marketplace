@@ -1,19 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Hand-maintained: this SPA has no build-time route registry to generate this
-  from, so any new public page added to src/App.tsx must be added here too.
-  Keep in sync with robots.txt (allowed paths) and src/App.tsx (route list).
--->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://kolab.com.np/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://kolab.com.np/events</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/creator-marketplace-nepal</loc>
@@ -39,6 +29,11 @@
     <loc>https://kolab.com.np/find-campaigns</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/ugc-creators-nepal</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/influencer-marketing-nepal</loc>
@@ -74,11 +69,6 @@
     <loc>https://kolab.com.np/paid-collaborations-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://kolab.com.np/ugc-creators-nepal</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/industries-nepal</loc>
@@ -173,46 +163,151 @@
   <url>
     <loc>https://kolab.com.np/influencers-lalitpur</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/influencers-bhaktapur</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/influencers-chitwan</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/influencers-butwal</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/influencers-biratnagar</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/influencers-dharan</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/support</loc>
-    <changefreq>monthly</changefreq>
+    <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/privacy</loc>
-    <changefreq>monthly</changefreq>
+    <changefreq>weekly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://kolab.com.np/terms</loc>
-    <changefreq>monthly</changefreq>
+    <changefreq>weekly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/pesal</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/prabesh_ban</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/_foodhuntwithgiri</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/pradishna_basnet</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/utsavdulal</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/dghimire</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/tanuja_khatiwada</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/bikasban</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/Sitaladhikari</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/creators/Prashasti</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/businesses/cmttjkrlx0017rf01yz0uc0r2</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/businesses/cmtkzuu8g000lm101wq1e4sk3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/businesses/cmtlf9tqq0026m1011k95t50w</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/businesses/cmu5dk8nb002xq001rrpcighv</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/businesses/cmtzyh6b3000tqb01mu1c6fxs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/businesses/cmu6bim9d000hnl013ssb0p9g</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/events/cmu5drzo1003dq001c6zdrbf9</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/events/cmu1iqkjd0013or01xxeibmku</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/events/cmu00baau000crc01dlfmfvbq</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/events/cmtzzgnpr002kqb011g7v8y4y</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://kolab.com.np/events/cmtzyp2ms001fqb01qlfjc2se</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

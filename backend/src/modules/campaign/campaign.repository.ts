@@ -29,6 +29,7 @@ export class CampaignRepository {
   async create(data: {
     businessId: string;
     title: string;
+    slug: string;
     description: string;
     template?: string;
     featureImageUrl?: string;
@@ -470,6 +471,18 @@ export class CampaignRepository {
     return { campaigns, total };
   }
 
+  // Public-URL resolver counterpart to CreatorRepository.findByUsername /
+  // BusinessRepository.findBySlug — only the id is needed here, the actual
+  // render still goes through findById above.
+  async findBySlug(slug: string) {
+    return prisma.campaign.findFirst({ where: { slug, deletedAt: null }, select: { id: true } });
+  }
+
+  async isSlugTaken(slug: string) {
+    const row = await prisma.campaign.findUnique({ where: { slug }, select: { id: true } });
+    return row !== null;
+  }
+
   async findById(id: string) {
     // findFirst (not findUnique) — excluding admin-soft-deleted campaigns
     // needs a second where condition alongside `id`, which findUnique can't
@@ -481,7 +494,7 @@ export class CampaignRepository {
       where: { id, deletedAt: null },
       include: {
         business: {
-          select: { id: true, businessName: true, logoUrl: true, website: true, description: true },
+          select: { id: true, slug: true, businessName: true, logoUrl: true, website: true, description: true },
         },
         _count: { select: { applications: true } },
         requirements: {

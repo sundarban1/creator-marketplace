@@ -1,1 +1,0 @@
-import"./Tabs-D11JX1V2.js";

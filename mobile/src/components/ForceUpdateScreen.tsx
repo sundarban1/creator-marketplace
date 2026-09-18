@@ -8,7 +8,7 @@ import { F, SPACING } from '@/utilities/constants';
 const STORE_URL = Platform.select({
   ios:     'https://apps.apple.com/app/id6792723762',
   android: 'https://play.google.com/store/apps/details?id=com.sundarban.kolab',
-  default: 'https://ourkolab.com',
+  default: 'https://kolab.com.np',
 });
 
 // A hard block, not a dismissible nudge — shown instead of the normal app tree

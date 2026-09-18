@@ -68,13 +68,17 @@ export function BusinessProfilePage() {
   const reviewCount = reviews.length;
   const avgRating = reviewCount > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0;
   const hasStats = business._count.campaigns > 0 || reviewCount > 0;
+  // Canonical URL always prefers the slug once one exists, even when this
+  // page was reached via the raw id (older link, or a slug not generated
+  // yet) — search engines converge on the one URL without a hard redirect.
+  const canonicalPath = `/businesses/${business.slug ?? business.id}`;
 
   return (
     <div>
       <SEO
         title={name}
         description={metaDesc}
-        path={`/businesses/${business.id}`}
+        path={canonicalPath}
         image={business.logoUrl ?? undefined}
         type="article"
         jsonLd={{
@@ -83,7 +87,7 @@ export function BusinessProfilePage() {
           name,
           description: business.description ?? undefined,
           logo: business.logoUrl ?? undefined,
-          url: business.website ?? absoluteUrl(`/businesses/${business.id}`),
+          url: business.website ?? absoluteUrl(canonicalPath),
           address: location || undefined,
           sameAs: socialLinks.map(([, url]) => url),
         }}
@@ -176,7 +180,7 @@ export function BusinessProfilePage() {
             <ul className="space-y-2.5">
               {business.campaigns.map((c) => (
                 <li key={c.id}>
-                  <LinkRow to={`/events/${c.id}`}>
+                  <LinkRow to={`/events/${c.slug ?? c.id}`}>
                     <span className="block truncate text-[14px] font-semibold text-ink">{c.title}</span>
                     <span className="text-[12px] text-ink-soft">{c.category}</span>
                   </LinkRow>

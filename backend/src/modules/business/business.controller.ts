@@ -52,7 +52,12 @@ export class BusinessController {
 
   async getBusinessPublic(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const business = await businessService.getBusinessPublic(req.params.id, req.language);
+      // :id may be a slug (kolab.com.np/businesses/himalayan-java-coffee) or
+      // a raw id (older links, or businesses with no slug yet) — see
+      // BusinessService.resolveSlugToId.
+      const id = await businessService.resolveSlugToId(req.params.id);
+      if (!id) throw new AppError(getDict().business.businessNotFound, HttpStatus.NOT_FOUND);
+      const business = await businessService.getBusinessPublic(id, req.language);
       success(res, business, getDict().business.businessRetrieved);
     } catch (err) {
       next(err);

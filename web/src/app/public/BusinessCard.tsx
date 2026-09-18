@@ -22,9 +22,13 @@ export function BusinessCard({ business, categoryMeta, hrefBase = '/businesses' 
   const name = business.businessName ?? 'Business';
   const location = [business.city, business.district].filter(Boolean).join(', ');
 
+  // Same public-vs-private split as EventCard — only the public profile
+  // route (hrefBase="/businesses") resolves a slug.
+  const handle = hrefBase === '/businesses' ? business.slug ?? business.id : business.id;
+
   return (
     <Link
-      to={`${hrefBase}/${encodeURIComponent(business.id)}`}
+      to={`${hrefBase}/${encodeURIComponent(handle)}`}
       className={cn(
         'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface p-5',
         'transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30',

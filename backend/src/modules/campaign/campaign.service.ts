@@ -6,6 +6,7 @@ import { CreditsRepository } from '../credits/credits.repository';
 import { recordCreditsTransaction } from '../credits/credits.ledger';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
+import { generateUniqueSlug } from '../../utils/slug';
 import { toCampaignDto, toApplicationDto, toActivityLogDto, toEventQuestionDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
 import { videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, uploadImage as uploadImageToCloudinary, uploadRawFile, deleteImage, deleteRawFile } from '../../utils/cloudinary';
 import { createVideoUploadPlan, finalizeR2Object, completeR2Multipart, deleteR2Object, abortR2Multipart } from '../../utils/r2Media';
@@ -369,8 +370,15 @@ export class CampaignService {
     // below (that field is `creditsApplied`, written separately).
     const { creditsToApply, ...campaignInput } = input;
 
+    // Generated once at creation, from the title, and never touched again —
+    // unlike Business/CreatorProfile, a campaign's title can't be edited
+    // after creation the same casual way, but even so this stays stable so
+    // an already-shared/indexed event URL never breaks.
+    const slug = await generateUniqueSlug(input.title, (candidate) => this.repo.isSlugTaken(candidate));
+
     const campaignData = {
       businessId: business.id,
+      slug,
       ...campaignInput,
       isFeatured: input.isFeatured && featuredAllowed,
       status:     resolvedStatus,
@@ -582,6 +590,15 @@ export class CampaignService {
 
   async getPlatforms(): Promise<string[]> {
     return this.repo.getDistinctPlatforms();
+  }
+
+  // Public-URL segment may be a slug or a raw id — mirrors
+  // CreatorService.resolveHandleToId / BusinessService.resolveSlugToId.
+  async resolveSlugToId(slugOrId: string): Promise<string | null> {
+    const bySlug = await this.repo.findBySlug(slugOrId);
+    if (bySlug) return bySlug.id;
+    const byId = await this.repo.findById(slugOrId);
+    return byId ? byId.id : null;
   }
 
   async getById(id: string, lang = 'en') {

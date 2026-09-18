@@ -114,7 +114,7 @@ export function PlatformShowcase() {
     <>
       <div className="mx-auto flex w-full max-w-[360px] flex-col items-center gap-5 lg:hidden">
         <LaptopFrame>
-          <BrowserChrome url="ourkolab.com">
+          <BrowserChrome url="kolab.com.np">
             <WebContent />
           </BrowserChrome>
         </LaptopFrame>
@@ -123,7 +123,7 @@ export function PlatformShowcase() {
 
       <div className="relative mx-auto hidden pb-8 pr-8 lg:block" style={{ width: LAPTOP_SCREEN_W + 40 + PHONE_W * 0.5 * 0.5 }}>
         <LaptopFrame>
-          <BrowserChrome url="ourkolab.com">
+          <BrowserChrome url="kolab.com.np">
             <WebContent />
           </BrowserChrome>
         </LaptopFrame>

@@ -155,6 +155,7 @@ export async function fetchCreatorByHandle(
 
 export interface BusinessCard {
   id: string;
+  slug: string | null;
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
@@ -171,6 +172,7 @@ export interface BusinessProfile {
   /** true when the business turned off its public profile — only id/name/logo are present. */
   isPrivate?: boolean;
   id: string;
+  slug: string | null;
   userId: string;
   businessName: string | null;
   description: string | null;
@@ -188,6 +190,7 @@ export interface BusinessProfile {
   createdAt: string;
   campaigns: Array<{
     id: string;
+    slug: string | null;
     title: string;
     platforms: string[];
     category: string;
@@ -261,6 +264,7 @@ export async function fetchPublicBusiness(id: string, signal?: AbortSignal): Pro
 
 export interface EventCard {
   id: string;
+  slug: string | null;
   title: string;
   description: string;
   featureImageUrl?: string | null;
@@ -287,7 +291,7 @@ export interface EventCard {
   targetAudience?: string[];
   hashtags?: string[];
   createdAt: string;
-  business: { id?: string; businessName: string; logoUrl: string | null; website?: string | null; description?: string | null };
+  business: { id?: string; slug?: string | null; businessName: string; logoUrl: string | null; website?: string | null; description?: string | null };
   _count: { applications: number };
   requirements?: Array<{
     id: string;

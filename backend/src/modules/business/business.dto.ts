@@ -26,6 +26,7 @@ export type BusinessPurpose = 'BRAND_MARKETING' | 'CONTENT_CREATION' | 'EVENT' |
 export interface BusinessProfileDto {
   id: string;
   userId: string;
+  slug: string | null;
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
@@ -87,6 +88,7 @@ export interface PrivateBusinessDto {
 export interface PublicBusinessDto {
   id: string;
   userId: string;
+  slug: string | null;
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
@@ -106,6 +108,7 @@ export interface PublicBusinessDto {
   createdAt: string;
   campaigns: Array<{
     id: string;
+    slug: string | null;
     title: string;
     platforms: string[];
     category: string;
@@ -128,6 +131,7 @@ export interface PublicBusinessDto {
 
 export interface BusinessListItemDto {
   id: string;
+  slug: string | null;
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
@@ -143,6 +147,7 @@ export interface BusinessListItemDto {
 type RawBusinessProfile = {
   id: string;
   userId: string;
+  slug?: string | null;
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
@@ -194,6 +199,7 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
   return {
     id:                  b.id,
     userId:              b.userId,
+    slug:                b.slug ?? null,
     businessName:        b.businessName,
     description:         b.description,
     logoUrl:             b.logoUrl,
@@ -247,6 +253,7 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
 type RawPublicBusiness = {
   id: string;
   userId: string;
+  slug?: string | null;
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
@@ -271,6 +278,7 @@ type RawPublicBusiness = {
   createdAt: Date;
   campaigns: Array<{
     id: string;
+    slug?: string | null;
     title: string;
     platforms: string[];
     category: string;
@@ -298,6 +306,7 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
   return {
     id:                  b.id,
     userId:              b.userId,
+    slug:                b.slug ?? null,
     businessName:        b.businessName,
     description:         b.description,
     logoUrl:             b.logoUrl,
@@ -320,6 +329,7 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
     createdAt:           b.createdAt.toISOString(),
     campaigns:           b.campaigns.map((c) => ({
       ...c,
+      slug: c.slug ?? null,
       benefits: (c.benefits ?? []) as string[],
       deadline: c.deadline.toISOString(),
     })),
@@ -335,6 +345,7 @@ export function toPrivateBusinessDto(b: { id: string; businessName: string | nul
 
 type RawBusinessListItem = {
   id: string;
+  slug?: string | null;
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
@@ -359,6 +370,7 @@ export function toBusinessListItemDto(b: RawBusinessListItem): BusinessListItemD
   const loc = maskLocationByVisibility(b, 'EXACT');
   return {
     id:           b.id,
+    slug:         b.slug ?? null,
     businessName: b.businessName,
     description:  b.description,
     logoUrl:      b.logoUrl,

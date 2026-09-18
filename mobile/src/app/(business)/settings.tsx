@@ -1076,7 +1076,7 @@ export default function BusinessSettingsScreen() {
           </View>
         </Card>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportEmailHint', { email: flags.supportEmail ?? 'info@ourkolab.com' })}</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportEmailHint', { email: flags.supportEmail ?? 'info@kolab.com.np' })}</Text>
         </HintCard>
       </>
     );

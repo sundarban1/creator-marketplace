@@ -23,6 +23,7 @@
     "db:seed:bulk": "tsx prisma/bulk-seed.ts",
     "db:backfill:wallet": "tsx prisma/backfill-wallet-ledger.ts",
     "db:backfill:r2-host": "tsx prisma/backfill-r2-public-host.ts",
+    "db:backfill:slugs": "tsx prisma/backfill-business-campaign-slugs.ts",
     "db:cleanup:campaign-reward-points": "tsx prisma/remove-campaign-reward-points.ts",
     "invitations:regenerate": "tsx prisma/regenerate-invitations.ts",
     "r2:setup-lifecycle": "tsx scripts/setupR2Lifecycle.ts"

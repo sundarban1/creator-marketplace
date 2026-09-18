@@ -7,7 +7,7 @@
  *
  * Setup: the client id's "Authorised JavaScript origins" in Google Cloud
  * Console must include every origin this runs on (http://localhost:5173,
- * https://www.ourkolab.com, the *.onrender.com preview URL).
+ * https://kolab.com.np, https://www.kolab.com.np, the *.onrender.com preview URL).
  */
 
 export const GOOGLE_CLIENT_ID =

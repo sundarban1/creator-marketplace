@@ -6,18 +6,18 @@ import { isPlaceholderEmail } from '../placeholderEmail';
 import { AdminRepository } from '../../modules/admin/admin.repository';
 
 export const adminRepo = new AdminRepository();
-export const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
+export const DEFAULT_SUPPORT_EMAIL = 'info@kolab.com.np';
 
 const FROM_NAME    = 'Kolab';
 // Deliberately NOT env.EMAIL_USERNAME — that's the SMTP auth identity, which for
 // providers like AWS SES is an opaque access-key-style string, not a mailbox.
-const FROM_ADDRESS = env.EMAIL_FROM ?? 'noreply@ourkolab.com';
+const FROM_ADDRESS = env.EMAIL_FROM ?? 'noreply@kolab.com.np';
 const FROM         = `${FROM_NAME} <${FROM_ADDRESS}>`;
 
 // Resend requires the from-address to be on a domain verified with Resend, so
-// this stays on ourkolab.com rather than following EMAIL_USERNAME (which may
+// this stays on kolab.com.np rather than following EMAIL_USERNAME (which may
 // be a Gmail address for the SMTP path, and would never qualify).
-const RESEND_FROM = `${FROM_NAME} <noreply@ourkolab.com>`;
+const RESEND_FROM = `${FROM_NAME} <noreply@kolab.com.np>`;
 
 /** The SMTP host `createTransporter()` would pick, for logging — so a sandboxed
  *  relay (e.g. smtp.mailtrap.io, which swallows everything) is visible in the
@@ -97,7 +97,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   // inbox, and the Resend fallback was never reached because nothing had "failed".
   // Resend is also HTTPS-based, so it's unaffected by hosts that block outbound
   // SMTP ports. Note its free tier only delivers to the account owner's own inbox
-  // until ourkolab.com is verified at resend.com/domains.
+  // until kolab.com.np is verified at resend.com/domains.
   const text = htmlToText(html);
 
   if (env.RESEND_API_KEY) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Pencil, MessageCircle, Check, Gift } from 'lucide-react';
 import { useT, type TFn } from '../i18n';
@@ -88,6 +88,11 @@ export function BusinessEventDetailPage() {
   const [payBusy, setPayBusy] = useState(false);
   const [payError, setPayError] = useState('');
   const [reportTarget, setReportTarget] = useState<BusinessApplication | null>(null);
+  const esewaPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => () => {
+    if (esewaPollRef.current) clearInterval(esewaPollRef.current);
+  }, []);
 
   // Admin-enabled payment methods + Kolab Rewards credits balance — mirrors
   // mobile's activity-timeline.tsx pay modal (methodCatalog + creditsAvailable).
@@ -141,21 +146,74 @@ export function BusinessEventDetailPage() {
     }
   };
 
+  // Polls the applications list until this one shows as paid. eSewa's own
+  // success/failure callback redirects the popup tab straight to a Kolab
+  // page — there's no message it can post back to this tab — so this tab
+  // instead watches for the application to flip to PAID, then closes the
+  // popup and brings this tab's modal/flash up to date, mirroring mobile's
+  // in-app browser session closing itself once payment completes.
+  function watchEsewaPopup(appId: string, popup: Window) {
+    const poll = setInterval(async () => {
+      try {
+        const { items } = await fetchBusinessApplications({ limit: 100 });
+        const updated = items.find((a) => a.id === appId);
+        if (updated && (updated.paymentStatus === 'PAID' || updated.paymentStatus === 'RELEASED')) {
+          clearInterval(poll);
+          esewaPollRef.current = null;
+          popup.close();
+          setPayTarget(null);
+          setPayBusy(false);
+          setFlash(t('biz.paymentSuccessFlash'));
+          apps.reload();
+          return;
+        }
+      } catch {
+        // Transient network hiccup — retry on the next tick.
+      }
+      if (popup.closed) {
+        // The business closed the eSewa tab without finishing (or without
+        // us having seen it finish yet) — stop polling and let them retry.
+        clearInterval(poll);
+        esewaPollRef.current = null;
+        setPayBusy(false);
+      }
+    }, 2500);
+    esewaPollRef.current = poll;
+  }
+
   async function confirmPay() {
     if (!payTarget) return;
-    setPayBusy(true);
     setPayError('');
-    try {
-      if (payMethod === 'esewa') {
+
+    if (payMethod === 'esewa') {
+      // Opened synchronously, in the same tick as the click, so the browser
+      // doesn't treat it as a blocked popup once the async initiate call
+      // below resolves — it starts on a blank tab and gets pointed at
+      // eSewa's checkout page as soon as we have the URL.
+      const popup = window.open('', '_blank');
+      setPayBusy(true);
+      try {
         const { paymentUrl } = await initiateEsewaPayment(payTarget.id);
-        // Leave payBusy true — the button stays in its loading state until
-        // the browser actually navigates away to eSewa's checkout.
-        window.location.href = paymentUrl;
-        return;
+        if (!popup || popup.closed) {
+          // Popup blocked — fall back to redirecting this tab, as before.
+          window.location.href = paymentUrl;
+          return;
+        }
+        popup.location.href = paymentUrl;
+        watchEsewaPopup(payTarget.id, popup);
+      } catch (err) {
+        popup?.close();
+        setPayError(err instanceof Error ? err.message : t('common.somethingWrong'));
+        setPayBusy(false);
       }
-      // Credits (and any other admin-enabled method with no dedicated gateway
-      // flow) settle immediately through the generic pay endpoint — mirrors
-      // mobile's handlePay fallthrough for every method besides esewa/khalti.
+      return;
+    }
+
+    // Credits (and any other admin-enabled method with no dedicated gateway
+    // flow) settle immediately through the generic pay endpoint — mirrors
+    // mobile's handlePay fallthrough for every method besides esewa/khalti.
+    setPayBusy(true);
+    try {
       await payForApplication(payTarget.id, payMethod);
       setPayTarget(null);
       setFlash(t('biz.paymentSuccessFlash'));

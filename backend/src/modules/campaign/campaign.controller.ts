@@ -111,7 +111,11 @@ export class CampaignController {
   // PENDING_APPROVAL campaign 404s here even if its id is known.
   async getPublicById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const campaign = await campaignService.getById(req.params.id, req.language);
+      // :id may be a slug (kolab.com.np/events/food-photography-collab-...)
+      // or a raw id (older links) — see CampaignService.resolveSlugToId.
+      const id = await campaignService.resolveSlugToId(req.params.id);
+      if (!id) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+      const campaign = await campaignService.getById(id, req.language);
       const PUBLIC_STATUSES: CampaignStatus[] = [
         CampaignStatus.ACTIVE,
         CampaignStatus.PAUSED,

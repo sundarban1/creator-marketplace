@@ -43,7 +43,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
         isPaid,
         meta: isPaid ? perCreatorBudget(e).amount : (perks[0] ?? d.events.freeBadge),
         imageUrl: e.featureImageUrl ?? e.business?.logoUrl ?? null,
-        to: `/events/${e.id}`,
+        to: `/events/${e.slug || e.id}`,
       };
     });
   } else {
@@ -86,7 +86,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
         imageUrl: b.logoUrl,
         meta: b.city || b.district || null,
         verified: b.isVerified,
-        to: `/businesses/${b.id}`,
+        to: `/businesses/${b.slug || b.id}`,
       }));
     }
     return copyKind.fallback.map((f, i) => ({

@@ -14,6 +14,7 @@ import { invitationService } from '../campaign/invitation/invitation.service';
 import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
 import { cached, invalidatePrefix } from '../../utils/cache';
+import { generateUniqueSlug } from '../../utils/slug';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -96,7 +97,17 @@ export class BusinessService {
       rest.organizationTypeOther = null;
     }
 
-    const updated = await this.repo.update(userId, rest);
+    let updated = await this.repo.update(userId, rest);
+
+    // Lazily generate the public-URL slug the first time a business has both
+    // a name to derive one from and none yet (new profiles start null — see
+    // BusinessProfile.slug in schema.prisma). Once set, a slug is never
+    // regenerated on a later name change, so an already-shared/indexed URL
+    // never breaks.
+    if (!updated.slug && updated.businessName) {
+      const slug = await generateUniqueSlug(updated.businessName, (candidate) => this.repo.isSlugTaken(candidate));
+      updated = await this.repo.setSlug(updated.id, slug);
+    }
 
     // Logo/cover uploads and every other profile edit route through here.
     void invalidatePublicBusinessProfile(profile.id);
@@ -131,6 +142,17 @@ export class BusinessService {
     const dtos = businesses.map(toBusinessListItemDto);
     const translated = await translateMany(dtos, [...BUSINESS_FIELDS], lang);
     return { businesses: translated, total };
+  }
+
+  // Public-profile URL segment may be a slug or a raw id — mirrors
+  // CreatorService.resolveHandleToId. Older businesses (or ones with no name
+  // set yet) have a null slug, so the id keeps working as a fallback
+  // indefinitely; nothing about existing shared/bookmarked links breaks.
+  async resolveSlugToId(slugOrId: string): Promise<string | null> {
+    const bySlug = await this.repo.findBySlug(slugOrId);
+    if (bySlug) return bySlug.id;
+    const byId = await this.repo.findById(slugOrId);
+    return byId ? byId.id : null;
   }
 
   async getBusinessPublic(id: string, lang = 'en') {

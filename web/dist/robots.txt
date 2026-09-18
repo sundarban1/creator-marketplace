@@ -7,5 +7,11 @@ Disallow: /verify
 Disallow: /forgot-password
 Disallow: /creator/
 Disallow: /business/
+# Listing pages require sign-in (RequireAuth in AppRoutes.tsx) — crawling
+# them just hits a redirect to /login. Their detail pages (/creators/:handle,
+# /businesses/:id, /events/:id) stay open and indexable.
+Disallow: /creators$
+Disallow: /businesses$
+Disallow: /events$
 
 Sitemap: https://kolab.com.np/sitemap.xml

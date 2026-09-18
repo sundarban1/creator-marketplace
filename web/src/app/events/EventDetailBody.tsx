@@ -200,7 +200,7 @@ export function EventDetailBody({
       <Section title={t('public.aboutBusinessHeading')}>
         {event.business.id ? (
           <Link
-            to={`/businesses/${encodeURIComponent(event.business.id)}`}
+            to={`/businesses/${encodeURIComponent(event.business.slug ?? event.business.id)}`}
             className={cn(
               'flex items-start gap-3 rounded-xl border border-line bg-surface p-4',
               'transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-violet/30 hover:shadow-[0_10px_28px_-16px_rgba(123,92,245,0.4)]',

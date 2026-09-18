@@ -23,9 +23,15 @@ export function EventCard({
   const isOpenEvent = event.campaignType === 'OPEN_EVENT';
   const perks = (event.benefits ?? []).filter(Boolean);
 
+  // Only the public listing (hrefBase="/events") resolves a slug — the
+  // authed creator-dashboard listing (hrefBase="/creator/events") is a
+  // private route keyed strictly by the real campaign id, with no
+  // slug-or-id resolver behind it.
+  const slug = hrefBase === '/events' ? event.slug ?? event.id : event.id;
+
   return (
     <Link
-      to={`${hrefBase}/${event.id}`}
+      to={`${hrefBase}/${slug}`}
       className={cn(
         'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface',
         'transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30',

@@ -197,7 +197,7 @@ services:
       # ── Email ───────────────────────────────────────────────────────────────
       # RESEND_API_KEY is the production path and the one that must be set: it
       # sends over HTTPS, so it works regardless of outbound SMTP-port blocking.
-      # Requires ourkolab.com to be verified at resend.com/domains, otherwise
+      # Requires kolab.com.np to be verified at resend.com/domains, otherwise
       # Resend only delivers to the account owner's own inbox.
       # The EMAIL_*/SMTP_* vars below are the local-dev fallback and are usually
       # pointed at a capture-only sandbox (Mailtrap) — do NOT rely on them here:

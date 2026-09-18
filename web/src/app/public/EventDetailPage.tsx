@@ -57,12 +57,16 @@ export function EventDetailPage() {
     );
   }
 
+  // See BusinessProfilePage's canonicalPath comment — same slug-preferred,
+  // id-fallback pattern.
+  const canonicalPath = `/events/${event.slug ?? event.id}`;
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
       <SEO
         title={event.title}
         description={event.description.slice(0, 155)}
-        path={`/events/${event.id}`}
+        path={canonicalPath}
         image={event.featureImageUrl ?? undefined}
         type="article"
         jsonLd={{
@@ -74,7 +78,7 @@ export function EventDetailPage() {
           validThrough: event.deadline,
           hiringOrganization: { '@type': 'Organization', name: event.business.businessName },
           jobLocationType: event.locationType === 'REMOTE' ? 'TELECOMMUTE' : undefined,
-          url: absoluteUrl(`/events/${event.id}`),
+          url: absoluteUrl(canonicalPath),
           baseSalary: {
             '@type': 'MonetaryAmount',
             currency: 'NPR',

@@ -34,6 +34,20 @@ export function applySecurityMiddleware(app: Express): void {
     allowedOrigins.push(process.env.RENDER_EXTERNAL_URL);
   }
 
+  // web/scripts/prerender.mjs boots the built web app with `vite preview`
+  // (always this fixed port — see PORT in that script) and has Playwright
+  // visit it to snapshot public pages, including ones that fetch real data
+  // from this API (legal docs, creator/business/event details). Without
+  // this, every one of those fetches is silently CORS-blocked in the
+  // browser regardless of the network layer even allowing the request
+  // through, which was baking "Couldn't load this page" into the static
+  // /privacy and /terms snapshots crawlers and link-preview bots actually
+  // see. Safe unconditionally: it's a fixed loopback-only address that
+  // exists solely for the duration of a build, never reachable from the
+  // public internet, and every endpoint it calls here is already
+  // unauthenticated/public.
+  allowedOrigins.push('http://localhost:4174');
+
   app.use(
     cors({
       origin: (origin, callback) => {

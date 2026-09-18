@@ -7,6 +7,7 @@ import { expandSearchQuery, expandedTsQuerySql, matchesAny } from '../../utils/s
 // a given request takes.
 const LIST_SELECT = {
   id:           true,
+  slug:         true,
   businessName: true,
   description:  true,
   logoUrl:      true,
@@ -219,6 +220,7 @@ export class BusinessRepository {
       where: { id },
       select: {
         id:                   true,
+        slug:                 true,
         businessName:         true,
         description:          true,
         logoUrl:              true,
@@ -250,6 +252,7 @@ export class BusinessRepository {
           take:    10,
           select: {
             id:              true,
+            slug:            true,
             title:           true,
             platforms:       true,
             category:        true,
@@ -293,10 +296,27 @@ export class BusinessRepository {
     });
   }
 
+  // Public-URL resolver counterpart to CreatorRepository.findByUsername —
+  // only the id is needed by the :id/:slug route resolver, not the full
+  // profile shape findPublicById already fetches for the actual render.
+  async findBySlug(slug: string) {
+    return prisma.businessProfile.findUnique({ where: { slug }, select: { id: true } });
+  }
+
+  async isSlugTaken(slug: string) {
+    const row = await prisma.businessProfile.findUnique({ where: { slug }, select: { id: true } });
+    return row !== null;
+  }
+
+  async setSlug(id: string, slug: string) {
+    return prisma.businessProfile.update({ where: { id }, data: { slug } });
+  }
+
   async update(
     userId: string,
     data: Partial<{
       businessName: string;
+      slug: string;
       description: string | null;
       logoUrl: string | null;
       coverImageUrl: string | null;

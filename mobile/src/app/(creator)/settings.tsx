@@ -1132,7 +1132,7 @@ export default function CreatorSettingsScreen() {
           </View>
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportEmailHint', { email: flags.supportEmail ?? 'info@ourkolab.com' })}</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportEmailHint', { email: flags.supportEmail ?? 'info@kolab.com.np' })}</Text>
         </View>
       </>
     );

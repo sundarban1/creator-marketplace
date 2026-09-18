@@ -681,6 +681,13 @@ model BusinessProfile {
   id                       String                  @id @default(cuid())
   userId                   String                  @unique
   businessName             String?
+  // SEO-friendly public-profile URL segment (kolab.com.np/businesses/{slug}),
+  // e.g. "himalayan-java-coffee". Auto-generated from businessName on first
+  // publish (see business.service.ts generateBusinessSlug) — nullable
+  // because older rows predate this field and the public route/resolver
+  // falls back to the raw id when it's null, mirroring
+  // CreatorProfile.username's resolveHandleToId pattern.
+  slug                     String?                 @unique
   description              String?
   logoUrl                  String?
   coverImageUrl            String?
@@ -797,6 +804,12 @@ model Campaign {
   id                    String                @id @default(cuid())
   businessId            String
   title                 String
+  // SEO-friendly public-event URL segment (kolab.com.np/events/{slug}), e.g.
+  // "food-photography-collab-kathmandu". Auto-generated from title on create
+  // (see campaign.service.ts generateCampaignSlug); nullable for the same
+  // reason and with the same id-fallback resolver pattern as
+  // BusinessProfile.slug above.
+  slug                  String?               @unique
   description           String
   template              String?
   featureImageUrl       String?

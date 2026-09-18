@@ -20,67 +20,42 @@
 
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fetchIndexableEntities } from './lib/fetchEntities.mjs';
+import { STATIC_ROUTES } from './lib/staticRoutes.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIST = join(ROOT, 'dist');
 const PORT = 4174;
 const ORIGIN = `http://localhost:${PORT}`;
 
-// Admin dashboard routes (/dashboard, /login, /users, ...) are intentionally
-// excluded — they're behind auth, disallowed in robots.txt, and prerendering
-// an empty "please log in" shell would serve no one. Keep this list in sync
-// with public/sitemap.xml and the public <Route> entries in src/App.tsx.
-const ROUTES = [
-  '/',
-  '/creator-marketplace-nepal',
-  '/content-creators',
-  '/brands',
-  '/influencers',
-  '/find-campaigns',
-  '/ugc-creators-nepal',
-  '/influencer-marketing-nepal',
-  '/brand-collaboration-nepal',
-  '/tiktok-creators',
-  '/instagram-creators',
-  '/youtube-creators',
-  '/facebook-creators',
-  '/paid-collaborations-nepal',
-  '/industries-nepal',
-  '/cities-nepal',
-  '/food-influencers-nepal',
-  '/travel-influencers-nepal',
-  '/fashion-influencers-nepal',
-  '/beauty-influencers-nepal',
-  '/fitness-influencers-nepal',
-  '/tech-influencers-nepal',
-  '/finance-influencers-nepal',
-  '/education-influencers-nepal',
-  '/gaming-influencers-nepal',
-  '/automobile-influencers-nepal',
-  '/hotel-influencers-nepal',
-  '/restaurant-influencers-nepal',
-  '/healthcare-influencers-nepal',
-  '/real-estate-influencers-nepal',
-  '/influencers-kathmandu',
-  '/influencers-pokhara',
-  '/influencers-lalitpur',
-  '/influencers-bhaktapur',
-  '/influencers-chitwan',
-  '/influencers-butwal',
-  '/influencers-biratnagar',
-  '/influencers-dharan',
-  '/support',
-  '/privacy',
-  '/terms',
-  // Not a real route — no <Route> in src/App.tsx matches it, so it falls
-  // through to the catch-all `*` → NotFoundPage. Prerendering it gives
-  // server.mjs a real dist/404/index.html to serve with an actual HTTP 404
-  // status for genuinely unknown URLs.
-  '/404',
-];
+// The API origin public pages fetch live data from (legal docs, and — once
+// dynamic entity routes are added below — creator/business/event detail
+// data). Read the same way Vite bakes it into the client bundle
+// (`import.meta.env.VITE_API_URL`, see src/lib/api.ts), but this script runs
+// as a plain Node process after the build, not through Vite, so it can't
+// read `import.meta.env` — fall back to parsing .env.production directly.
+async function resolveApiOrigin() {
+  if (process.env.VITE_API_URL) return process.env.VITE_API_URL;
+  try {
+    const envFile = await readFile(join(ROOT, '.env.production'), 'utf8');
+    const match = envFile.match(/^VITE_API_URL=(.+)$/m);
+    if (match) return match[1].trim();
+  } catch {
+    // .env.production missing — fall through to the same default api.ts uses.
+  }
+  return 'http://localhost:3000';
+}
+
+// STATIC_ROUTES (scripts/lib/staticRoutes.mjs) is the shared marketing-page
+// list — also used by generate-sitemap.mjs. '/404' is added here only,
+// since it's not a real route (no <Route> in src/App.tsx matches it, so it
+// falls through to the catch-all `*` → NotFoundPage) and has no business in
+// a sitemap; prerendering it gives server.mjs a real dist/404/index.html to
+// serve with an actual HTTP 404 status for genuinely unknown URLs.
+const ROUTES = [...STATIC_ROUTES, '/404'];
 
 function waitForServer(url, timeoutMs = 20_000) {
   const start = Date.now();
@@ -120,6 +95,24 @@ async function main() {
   // Collecting all HTML in memory first, and only writing to disk after the
   // entire crawl finishes, guarantees every route boots from the same
   // untouched shell regardless of processing order.
+  const apiOrigin = await resolveApiOrigin();
+  console.log(`[prerender] API origin allowlisted: ${apiOrigin}`);
+
+  // Dynamic creator/business/event detail pages, on top of the 41 hardcoded
+  // marketing routes above — see fetchEntities.mjs for why this is a capped
+  // batch, not every entity. Best-effort: a live-API hiccup during the build
+  // shouldn't fail the whole prerender step, just skip the dynamic routes for
+  // this run (the static marketing pages are what actually gates a deploy).
+  let dynamicRoutes = [];
+  try {
+    const { creators, businesses, events } = await fetchIndexableEntities(apiOrigin);
+    dynamicRoutes = [...creators, ...businesses, ...events].map((e) => e.path);
+    console.log(`[prerender] fetched ${dynamicRoutes.length} dynamic entity route(s) (${creators.length} creators, ${businesses.length} businesses, ${events.length} events)`);
+  } catch (err) {
+    console.warn(`[prerender] skipping dynamic entity routes — API fetch failed: ${err instanceof Error ? err.message : err}`);
+  }
+  const allRoutes = [...ROUTES, ...dynamicRoutes];
+
   const results = [];
   try {
     await waitForServer(ORIGIN);
@@ -127,9 +120,10 @@ async function main() {
     browser = await chromium.launch();
     const page = await browser.newPage();
 
-    // Block every request that isn't served by the local preview server.
+    // Block every request that isn't served by the local preview server or
+    // the live API.
     //
-    // Two reasons. First, correctness: the landing page's Collaboration
+    // Three reasons. First, correctness: the landing page's Collaboration
     // section loads the live Google Maps JS API (useJsApiLoader), and if it
     // loads here, page.content() below bakes Maps' injected custom-element
     // definitions into the static HTML. In production that snapshot is
@@ -143,13 +137,21 @@ async function main() {
     // but on a build machine any one of them can hang, and a single hanging
     // request means the page never reaches a quiet network — which is what
     // used to blow the navigation timeout partway through the crawl.
+    //
+    // Third — the API origin has to be let through, not just the local
+    // preview server. Pages like /privacy, /terms (legal doc body) and the
+    // dynamic creator/business/event detail routes below all fetch their
+    // real content from the live backend; blocking that call doesn't leave
+    // them empty, it makes the fetch reject, which for /privacy and /terms
+    // was silently baking "Couldn't load this page. Please try again." into
+    // the static snapshot search engines and link-preview bots actually see.
     await page.route('**', (route) => {
       const url = route.request().url();
-      if (url.startsWith(ORIGIN)) return route.continue();
+      if (url.startsWith(ORIGIN) || url.startsWith(apiOrigin)) return route.continue();
       return route.abort();
     });
 
-    for (const route of ROUTES) {
+    for (const route of allRoutes) {
       const url = `${ORIGIN}${route}`;
       // Deliberately not `waitUntil: 'networkidle'`. Playwright itself
       // discourages it, and here it's actively wrong: "no requests for
@@ -167,6 +169,14 @@ async function main() {
         if (root.querySelector('[role="status"][aria-label="Loading"]')) return false;
         return true;
       }, undefined, { timeout: 30_000 });
+      // Some pages (legal docs, dynamic entity pages) show an
+      // `animate-pulse` skeleton while their own API fetch resolves, on top
+      // of the route-chunk Suspense fallback already waited out above. Give
+      // that a bounded wait too — non-fatal if it never clears (a genuinely
+      // empty/error state is still better captured as itself than timed out
+      // mid-skeleton), since not every route uses this pattern.
+      await page.waitForFunction(() => !document.querySelector('.animate-pulse'), undefined, { timeout: 8_000 }).catch(() => {});
+
       // Sections animate in via framer-motion whileInView — give them a beat
       // to settle so the snapshot isn't caught mid-fade for text content
       // that matters (crawlers don't care about opacity, but this also lets
@@ -198,7 +208,7 @@ async function main() {
     console.log(`[prerender] wrote ${route === '/' ? '/index.html' : `${route}/index.html`}`);
   }
 
-  console.log(`[prerender] done — ${ROUTES.length} routes prerendered.`);
+  console.log(`[prerender] done — ${allRoutes.length} routes prerendered.`);
 }
 
 main()

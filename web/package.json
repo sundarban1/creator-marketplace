@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && npx playwright install chromium && npm run prerender",
+    "build": "tsc -b && vite build && npx playwright install chromium && npm run prerender && npm run sitemap",
     "build:no-prerender": "tsc -b && vite build",
     "prerender": "node scripts/prerender.mjs",
+    "sitemap": "node scripts/generate-sitemap.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server.mjs"

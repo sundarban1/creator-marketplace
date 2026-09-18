@@ -72,6 +72,26 @@ const app = express();
 // this also covers direct-to-origin hits and the *.onrender.com URL.
 app.use(compression());
 
+// Canonical-domain redirect. kolab.com.np is the single SEO domain — this
+// used to only be a comment in render.yaml describing a pending manual
+// Render-dashboard step (reassigning the ourkolab.com custom domain to this
+// service). The domain reassignment itself still has to happen in Render's
+// dashboard (this app can't claim a hostname it isn't bound to), but once it
+// does, this collapses every host variant onto one URL in a single 301 —
+// no separate www-then-non-www hop, so no redirect chain.
+//   ourkolab.com, www.ourkolab.com, www.kolab.com.np, http://kolab.com.np
+//     -> https://kolab.com.np (path + query preserved)
+// Render terminates TLS at its edge and forwards plain HTTP internally, so
+// scheme is read from x-forwarded-proto rather than req.secure.
+const CANONICAL_HOST = 'kolab.com.np';
+app.use((req, res, next) => {
+  const host = req.hostname;
+  const proto = req.get('x-forwarded-proto') ?? req.protocol;
+  if (host === CANONICAL_HOST && proto === 'https') return next();
+  if (!host.endsWith('kolab.com.np') && !host.endsWith('ourkolab.com')) return next();
+  return res.redirect(301, `https://${CANONICAL_HOST}${req.originalUrl}`);
+});
+
 // Real built files (JS/CSS bundles, images, sitemap.xml, robots.txt,
 // favicons) served exactly as-is. index:false/redirect:false so this
 // middleware never guesses at directory index files or issues trailing-

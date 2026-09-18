@@ -32,7 +32,7 @@ const envSchema = z.object({
   // "From" address for the SMTP path — separate from EMAIL_USERNAME because the
   // SMTP auth username isn't always a real mailbox (e.g. AWS SES's SMTP
   // credentials are an opaque access-key-style string, not an email address).
-  // Falls back to noreply@ourkolab.com when unset.
+  // Falls back to noreply@kolab.com.np when unset.
   EMAIL_FROM: z.string().optional(),
   // Resend (HTTP API) — preferred in production, since it isn't blocked by
   // Render's free-tier restriction on outbound SMTP ports.
