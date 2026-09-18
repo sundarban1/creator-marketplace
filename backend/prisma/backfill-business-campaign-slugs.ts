@@ -3,10 +3,14 @@
 // 20260918151037_add_business_campaign_slug) and doesn't have one yet.
 //
 // New rows get a slug automatically going forward (BusinessService.updateProfile
-// on first businessName set; CampaignService.create at creation time) — this
-// script only backfills the ones that already existed before that code shipped.
-// Both write paths reuse the exact same generateUniqueSlug() from
-// src/utils/slug.ts, so a slug minted here looks identical to one minted live.
+// on first businessName set; CampaignService.create at creation time), via the
+// same slugify/generateUniqueSlug logic in src/utils/slug.ts — duplicated
+// below (not imported) because every prisma/backfill-*.ts script here runs
+// standalone in production (`tsx prisma/<script>.ts`) against an image whose
+// runner stage only copies dist/, node_modules/, and prisma/ (see Dockerfile)
+// — no src/, so a cross-directory import 404s at runtime container-side even
+// though it resolves fine in local dev. Keep this in sync with
+// src/utils/slug.ts by hand if that ever changes.
 //
 // Idempotent: only rows with `slug IS NULL` are selected, so re-running finds
 // nothing left to touch. Dry-run by default — pass --apply to write.
@@ -25,10 +29,36 @@
 //   npx tsx prisma/backfill-business-campaign-slugs.ts --apply     # execute
 
 import { PrismaClient } from '@prisma/client';
-import { generateUniqueSlug } from '../src/utils/slug';
 
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
+
+// Duplicated from src/utils/slug.ts — see the file-header comment above for why.
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+    .replace(/-+$/g, '');
+}
+
+async function generateUniqueSlug(base: string, isTaken: (slug: string) => Promise<boolean>): Promise<string> {
+  const root = slugify(base) || 'item';
+  let candidate = root;
+  let suffix = 2;
+  while (await isTaken(candidate)) {
+    candidate = `${root}-${suffix}`;
+    suffix += 1;
+    if (suffix > 50) {
+      candidate = `${root}-${Math.random().toString(36).slice(2, 8)}`;
+      break;
+    }
+  }
+  return candidate;
+}
 
 async function backfillBusinessSlugs(): Promise<void> {
   const rows = await prisma.businessProfile.findMany({
