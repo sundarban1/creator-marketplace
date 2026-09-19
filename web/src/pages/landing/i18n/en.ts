@@ -25,7 +25,7 @@ export const en = {
     headlineLine1: 'The right collaboration',
     headlineLine2: 'starts here.',
     headlineLine3: 'For creators and businesses.',
-    sub: 'Kolab connects creators with businesses looking for real skills, fresh content, and new opportunities.',
+    sub: 'Kolab connects creators with businesses for real collaboration — real skills, fresh content, and new opportunities.',
     searchPlaceholder: "Try 'I need 3 food creators for my restaurant launch'",
     searchAriaLabel: 'Search Kolab',
     searchCta: 'Search',

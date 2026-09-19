@@ -45,7 +45,7 @@ export function Security() {
         <div className="relative h-48 w-full flex-shrink-0 sm:h-auto sm:w-2/5">
           <img
             src={PHOTOS[i]}
-            alt=""
+            alt={point.title}
             loading={i < 2 ? 'eager' : 'lazy'}
             className="h-full w-full object-cover"
           />

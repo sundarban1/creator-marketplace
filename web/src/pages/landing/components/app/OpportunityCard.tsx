@@ -54,7 +54,7 @@ export function OpportunityCard({
       <div className="relative h-28 w-full overflow-hidden bg-app-primary-tint dark:bg-app-primary/10">
         <img
           src={data.photo}
-          alt=""
+          alt={data.title}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         />

@@ -66,6 +66,9 @@ const SPA_PREFIXES = [
 const PUBLIC_SPA_PREFIXES = ['/creators', '/businesses', '/events'];
 
 const app = express();
+// Express's default X-Powered-By header leaks the framework to any crawler
+// or scanner for no benefit; SEO audits flag it too.
+app.disable('x-powered-by');
 
 // Render's Docker web services don't gzip responses the way its static-site
 // hosting does; Cloudflare compresses at the edge for proxied traffic, but

@@ -56,7 +56,7 @@ export function MiniCard({
   return (
     <div className="w-[148px] flex-shrink-0 overflow-hidden rounded-app-lg border border-app-border bg-white shadow-app-card">
       <div className="relative h-[62px] w-full">
-        <img src={photo} alt="" loading="lazy" className="h-full w-full object-cover" />
+        <img src={photo} alt={title} loading="lazy" className="h-full w-full object-cover" />
         <span aria-hidden className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-black/35 to-transparent" />
         <span className="absolute left-1.5 top-1.5 rounded-full bg-[rgba(17,24,39,0.55)] px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wider text-white">
           {category}

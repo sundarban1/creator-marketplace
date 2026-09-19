@@ -66,7 +66,7 @@ export function Possibilities() {
                 <div className="relative aspect-[4/3] w-full overflow-hidden">
                   <img
                     src={photo}
-                    alt=""
+                    alt={copy.title}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                   />

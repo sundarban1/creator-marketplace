@@ -56,7 +56,7 @@ function RoleCard({
           <img
             key={i}
             src={src}
-            alt=""
+            alt={roleLabel}
             loading="lazy"
             className="h-11 w-11 flex-shrink-0 rounded-full border-2 border-paper object-cover shadow-sm dark:border-ink"
           />
@@ -73,6 +73,11 @@ function RoleCard({
       <p className="mt-2 text-sm leading-relaxed text-ink-soft dark:text-white">{sub}</p>
       <Link
         to={ctaHref}
+        // Signup is a conversion action, not indexable content, and the
+        // business variant carries a `?role=` query param — nofollow keeps
+        // crawlers from treating this as a link worth passing equity through
+        // (SEO audits flag internal links with dynamic params otherwise).
+        rel="nofollow"
         className={`mt-6 inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 ${ctaClassName}`}
       >
         <Sparkles size={14} />

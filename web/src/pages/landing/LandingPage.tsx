@@ -77,8 +77,8 @@ function LandingPageInner() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white font-display dark:bg-ink">
       <SEO
-        title="Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations"
-        description="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations."
+        title="Kolab – Nepal's Creator Marketplace for Brands & Influencers"
+        description="Kolab is Nepal's creator marketplace. Hire verified influencers, launch campaigns, and grow your brand — or find paid collaborations as a content creator."
         path="/"
         keywords={[
           // Top 10 priority
