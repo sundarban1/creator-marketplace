@@ -22,8 +22,8 @@ export function ApplicationCard({ application: a }: { application: CreatorApplic
     <Link
       to={`/creator/work/${a.id}`}
       className={cn(
-        'flex items-center gap-4 rounded-xl border border-line bg-surface p-4',
-        'transition-shadow duration-200 hover:shadow-md',
+        'flex items-center gap-4 rounded-2xl border border-line bg-surface p-4',
+        'transition-all duration-200 hover:-translate-y-0.5 hover:border-violet/30 hover:shadow-[0_10px_24px_-14px_rgba(123,92,245,0.35)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
       )}
     >

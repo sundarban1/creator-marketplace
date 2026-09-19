@@ -40,6 +40,7 @@ const OAuthCallbackPage = named(() => import('./app/oauth/OAuthCallbackPage'), '
 const CreatorMarketplaceNepalPage = named(() => import('./pages/landing/content/CreatorMarketplaceNepalPage'), 'CreatorMarketplaceNepalPage');
 const ContentCreatorsPage = named(() => import('./pages/landing/content/ContentCreatorsPage'), 'ContentCreatorsPage');
 const BrandsPage = named(() => import('./pages/landing/content/BrandsPage'), 'BrandsPage');
+const TrustSafetyPage = named(() => import('./pages/landing/content/TrustSafetyPage'), 'TrustSafetyPage');
 const InfluencerMarketingNepalPage = named(() => import('./pages/landing/content/InfluencerMarketingNepalPage'), 'InfluencerMarketingNepalPage');
 const BrandCollaborationNepalPage = named(() => import('./pages/landing/content/BrandCollaborationNepalPage'), 'BrandCollaborationNepalPage');
 const TikTokCreatorsPage = named(() => import('./pages/landing/content/TikTokCreatorsPage'), 'TikTokCreatorsPage');
@@ -121,6 +122,7 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/trust-and-safety" element={<TrustSafetyPage />} />
           <Route path="/creator-marketplace-nepal" element={<CreatorMarketplaceNepalPage />} />
           <Route path="/content-creators" element={<ContentCreatorsPage />} />
           <Route path="/brands" element={<BrandsPage />} />

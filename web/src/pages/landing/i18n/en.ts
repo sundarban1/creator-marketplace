@@ -4,13 +4,15 @@ export const en = {
       discover: 'Discover',
       forCreators: 'For Creators',
       forBusinesses: 'For Businesses',
-      about: 'How It Works',
+      howItWorks: 'How It Works',
+      about: 'About',
+      trustSafety: 'Trust & Safety',
     },
     login: 'Log in',
     toggleMenuAriaLabel: 'Toggle menu',
     languageLabel: 'Language',
     appearanceLabel: 'Appearance',
-    getStarted: 'Get Started',
+    getStarted: 'Join Kolab',
     getStartedModalTitle: 'Ready to get started? ✨',
     getStartedModalBody: 'Create a free account to find creators, discover opportunities, and start working together on Kolab.',
     getStartedModalCta: 'Create an account',
@@ -24,13 +26,18 @@ export const en = {
     headlineLine2: 'starts here.',
     headlineLine3: 'For creators and businesses.',
     sub: 'Kolab connects creators with businesses looking for real skills, fresh content, and new opportunities.',
-    searchPlaceholder: "Try 'I need 3 content creators for my restaurant launch'",
+    searchPlaceholder: "Try 'I need 3 food creators for my restaurant launch'",
     searchAriaLabel: 'Search Kolab',
     searchCta: 'Search',
     popularSearchesLabel: 'Popular searches:',
-    popularSearches: ['Content Creators', 'UGC Creators', 'Product Reviews'],
+    popularSearches: [
+      'Food creators in Kathmandu',
+      'TikTok creators in Pokhara',
+      'Creators for my restaurant',
+      'Travel creators in Nepal',
+    ],
     socialProofSuffix: 'creators are already on Kolab',
-    socialProofFallback: 10000,
+    socialProofQualitative: 'Built for creators and businesses across Nepal',
     connectors: {
       people: { label: 'Creators', sub: 'Find the right creators' },
       services: { label: 'Services', sub: 'Find the skills you need' },
@@ -39,6 +46,8 @@ export const en = {
     },
     ctaCreator: 'Find Opportunities',
     ctaBusiness: 'Find Creators',
+    ctaCreatorSignup: 'Join as a Creator',
+    ctaBusinessSignup: 'Post a Campaign',
     scrollAriaLabel: 'Scroll to explore',
     scrollLabel: 'Scroll',
   },
@@ -71,11 +80,19 @@ export const en = {
   trust: {
     eyebrow: 'Trusted by',
     heading: 'Nepal Creator economy',
-    // fallback is shown only until the real /api/public/landing-stats count loads
+    // Labels for the live numeric tiles, shown once real counts from
+    // /api/public/landing-stats are confirmed positive.
     stats: [
-      { fallback: 5000, label: 'Skilled Creators' },
-      { fallback: 300, label: 'Businesses' },
-      { fallback: 12, label: 'Categories' },
+      { label: 'Skilled Creators' },
+      { label: 'Businesses' },
+      { label: 'Categories' },
+    ],
+    // Shown instead of numbers whenever live counts aren't meaningful yet
+    // (loading, failed, or genuinely zero pre-launch) — never a fabricated number.
+    qualitative: [
+      'Built for creators and businesses across Nepal',
+      'Launching across Nepal',
+      'Designed for creator-business collaboration',
     ],
   },
 
@@ -156,97 +173,6 @@ export const en = {
     closingLine1: { pre: 'Too many ', highlight: 'conversations', post: '.' },
     closingLine2: { pre: 'Too much ', highlight: 'manual', post: ' work.' },
     closingLine3: { pre: 'Too much ', highlight: 'uncertainty', post: '.' },
-  },
-
-  problems: {
-    eyebrow: "Why it feels this way",
-    heading: "The challenge isn't just finding a creator.",
-    headingAccent: "It's finding the right one — and making collaboration easier.",
-    items: [
-      { title: 'Finding the right creator', desc: "Follower count doesn't always tell you who fits the campaign." },
-      { title: 'Scattered communication', desc: 'Conversations happen across direct messages, calls, texts, and different apps.' },
-      { title: 'Unclear expectations', desc: 'What needs to be delivered, deadlines, budgets, and requirements can easily become unclear.' },
-      { title: 'Payment uncertainty', desc: 'Both sides need a clearer process for pricing and getting paid.' },
-      { title: 'Manual coordination', desc: 'Managing many creators means more follow-up messages, deadlines, files, and payments to track.' },
-    ],
-  },
-
-  kolabWay: {
-    eyebrow: 'The Kolab way',
-    heading: "There's a better way to collaborate.",
-    headingAccent: 'One clear workflow, start to finish.',
-    steps: {
-      discover: {
-        label: 'Discover',
-        title: 'Find the right fit, not just the biggest following.',
-        sampleQuery: 'I need 2 food creators in Kathmandu for my restaurant launch.',
-        checklist: ['Food & Beverage', 'Content Creator', 'Kathmandu', '2 creators'],
-        matches: 24,
-        matchesLabel: 'matches found',
-        creatorName: 'Maya Sharma',
-        creatorRole: 'Food · Lifestyle',
-        creatorLocation: 'Itahari',
-        verified: 'Verified',
-        platforms: [
-          { name: 'Instagram', value: '24.8K' },
-          { name: 'TikTok', value: '18.2K' },
-        ],
-        viewProfile: 'View Profile',
-      },
-      connect: {
-        label: 'Connect',
-        title: 'Communication stays connected to the collaboration.',
-        campaignLabel: 'Campaign',
-        campaignName: 'Restaurant Launch',
-        messages: [
-          { from: 'business' as const, text: "Hi Maya, we'd love to collaborate on our new restaurant launch." },
-          { from: 'creator' as const, text: 'Sounds great! What are the deliverables and timeline?' },
-        ],
-      },
-      collaborate: {
-        label: 'Collaborate',
-        title: 'Requirements, budget and timeline — all in one place.',
-        campaignName: 'Restaurant Launch',
-        fields: [
-          { label: 'Creators', value: '3 Creators' },
-          { label: 'Budget', value: 'NPR 24,000' },
-          { label: 'Deliverables', value: '3 Reels' },
-          { label: 'Platform', value: 'Instagram' },
-          { label: 'Location', value: 'Itahari' },
-          { label: 'Deadline', value: 'Sep 30' },
-        ],
-      },
-      deliver: {
-        label: 'Deliver',
-        title: 'From upload to review, without the back-and-forth.',
-        fileName: 'restaurant-launch.mp4',
-        fileType: 'Instagram Reel',
-        submittedLabel: 'Submitted',
-        submittedDate: 'Sep 28',
-        stages: ['Upload', 'Processing', 'Submitted', 'Review'],
-      },
-      complete: {
-        label: 'Complete',
-        title: 'A clear finish, every time.',
-        heading: 'Collaboration Completed',
-        checklist: ['Deliverables approved', 'Payment processed', 'Creator relationship saved'],
-      },
-      grow: {
-        label: 'Grow',
-        title: 'One collaboration can become a relationship.',
-        creatorName: 'Maya Sharma',
-        collaborationsCount: '5 Collaborations',
-        rating: '5.0',
-        history: ['Restaurant Launch', 'Fashion Campaign', 'Product Launch', 'Event Promotion', 'Food Campaign'],
-        closingLine: 'One collaboration can become a relationship.',
-      },
-    },
-  },
-
-  keyMessage: {
-    label: 'A better way to collaborate',
-    from: 'Who do you know?',
-    to: 'Who fits your campaign?',
   },
 
   // A single fake listing reused wherever the page needs a realistic
@@ -448,18 +374,10 @@ export const en = {
     heading: 'Real people. Real collaborations.',
     showMore: 'Show more',
     showLess: 'Show less',
-    items: [
-      { quote: 'My first paid campaign came within two weeks of joining Kolab.', name: 'Priya Sharma', role: 'Fashion Creator, Kathmandu' },
-      { quote: 'We hired three creators for our launch in a single afternoon.', name: 'Himalaya Brew', role: 'Brand' },
-      { quote: 'Escrow made it easy to trust a brand I had never worked with.', name: 'Anish Shrestha', role: 'Tech Creator, Pokhara' },
-      { quote: 'Filtering by budget and location saved us so much time.', name: 'Dhaka Threads', role: 'Brand' },
-      { quote: 'Brands reach out to me now instead of the other way around.', name: 'Suman Gurung', role: 'Fitness Creator, Lalitpur' },
-      { quote: 'Two reels filled our tables for a whole month.', name: 'Everest Eats', role: 'Brand' },
-      { quote: 'My engagement tripled once brands started sending real products, not just cash.', name: 'Kripa Tamang', role: 'Beauty Creator, Biratnagar' },
-      { quote: 'Local creators reached buyers our ads never could.', name: 'Sagarmatha Realty', role: 'Brand' },
-      { quote: 'I finally get paid what my content is actually worth.', name: 'Bibek Rai', role: 'Travel Creator, Chitwan' },
-      { quote: 'Kolab paid for itself with our very first campaign.', name: 'Thamel Boutique', role: 'Brand' },
-    ],
+    // Shown only when there are genuinely no published stories yet (or the
+    // fetch fails) — never a fabricated quote standing in for a real one.
+    emptyTitle: "Stories are just getting started.",
+    emptyBody: 'As creators and businesses complete collaborations on Kolab, their stories will appear here.',
   },
 
   finalCta: {
@@ -469,12 +387,12 @@ export const en = {
     creatorCard: {
       heading: 'Find opportunities. Build your profile. Get hired.',
       sub: 'Create your account and start discovering real work.',
-      cta: 'Create your account',
+      cta: 'Join as a Creator',
     },
     businessCard: {
       heading: 'Find creators who fit your next campaign.',
       sub: 'Post what you need and discover the right people.',
-      cta: 'Find Creators',
+      cta: 'Post a Campaign',
     },
   },
 

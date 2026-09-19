@@ -214,6 +214,8 @@ export function LandingFooter() {
           </FooterColumn>
 
           <FooterColumn title={d.footer.columns.company}>
+            <FooterLink to="/about">{d.nav.links.about}</FooterLink>
+            <FooterLink to="/trust-and-safety">{d.nav.links.trustSafety}</FooterLink>
             <FooterLink to="/industries-nepal">Browse by Industry</FooterLink>
             <FooterLink to="/cities-nepal">Browse by City</FooterLink>
             <FooterLink to="/support">{d.footer.support}</FooterLink>

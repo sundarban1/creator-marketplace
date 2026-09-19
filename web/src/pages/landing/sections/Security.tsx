@@ -5,6 +5,7 @@ import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
+import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
 import { StickyScrollCards } from '../components/StickyScrollCards';
 
 // Positionally mapped to `security.points` in en.ts/ne.ts (Verified Profiles,
@@ -13,7 +14,7 @@ import { StickyScrollCards } from '../components/StickyScrollCards';
 const ICONS = [BadgeCheck, Star, ClipboardList, Wallet, Lock, ShieldAlert];
 
 // One photo per point, picked for what it's literally about rather than
-// reused from elsewhere on the page (Showcase/Hero/KolabWay each have their
+// reused from elsewhere on the page (Showcase/Hero each have their
 // own dedicated set too) — a verified headshot, a review rating, a signed
 // handshake, Nepal's eSewa/connectIPS payment logos, a text conversation, a
 // support headset.
@@ -37,7 +38,7 @@ export function Security() {
     return (
       <div
         key={point.title}
-        className={`flex flex-col overflow-hidden rounded-[2rem] border border-ink/10 bg-paper-dim/80 shadow-[0_20px_60px_-30px_rgba(20,17,16,0.35)] sm:flex-row sm:min-h-[60vh] dark:border-white/10 dark:bg-ink-elevated ${
+        className={`flex flex-col overflow-hidden rounded-[1.75rem] border border-ink/10 bg-paper-dim/80 shadow-[0_20px_60px_-30px_rgba(20,17,16,0.35)] sm:flex-row sm:min-h-[60vh] dark:border-white/10 dark:bg-ink-elevated ${
           reversed ? 'sm:flex-row-reverse' : ''
         }`}
       >
@@ -69,7 +70,12 @@ export function Security() {
   });
 
   return (
-    <section id={SECTION_IDS.security} className="relative overflow-hidden bg-white py-24 dark:bg-ink">
+    <section
+      id={SECTION_IDS.security}
+      style={sectionCutStyle()}
+      className="relative overflow-hidden bg-white py-24 dark:bg-ink"
+    >
+      <SectionCutAccent />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute right-[8%] top-[10%] h-[280px] w-[280px] rounded-full bg-violet/[0.05] blur-[110px]" />
       </div>

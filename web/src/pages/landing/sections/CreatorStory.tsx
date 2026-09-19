@@ -6,6 +6,7 @@ import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
 import { PlatformShowcase } from '../components/app/PlatformShowcase';
+import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
 
 function StatusBadge({ label, live }: { label: string; live: boolean }) {
   return (
@@ -25,7 +26,12 @@ export function CreatorStory() {
   const c = d.creatorStory;
 
   return (
-    <section id={SECTION_IDS.creatorStory} className="relative overflow-hidden bg-paper py-28 dark:bg-ink">
+    <section
+      id={SECTION_IDS.creatorStory}
+      style={sectionCutStyle(true)}
+      className="relative overflow-hidden bg-paper py-28 dark:bg-ink"
+    >
+      <SectionCutAccent flip />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-[8%] top-[-6%] h-[340px] w-[340px] rounded-full bg-brand-orange/[0.08] blur-[110px]" />
       </div>
@@ -51,7 +57,7 @@ export function CreatorStory() {
 
             <motion.ol
               variants={fadeUp}
-              className="relative mx-auto mt-8 w-full max-w-sm overflow-hidden rounded-3xl border border-ink/10 bg-white p-5 text-left shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] lg:mx-0 dark:border-white/10 dark:bg-ink-elevated-2"
+              className="relative mx-auto mt-8 w-full max-w-sm overflow-hidden rounded-2xl border border-ink/10 bg-white p-5 text-left shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] lg:mx-0 dark:border-white/10 dark:bg-ink-elevated-2"
             >
               <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-orange to-brand-orange/30" />
               {c.steps.map((step, i) => (
@@ -69,10 +75,10 @@ export function CreatorStory() {
 
             <motion.div variants={fadeUp} className="mt-7 flex flex-col items-center lg:items-start">
               <Link
-                to="/events"
+                to="/signup"
                 className="inline-flex items-center gap-1.5 rounded-full bg-brand-orange px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(249,115,22,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
               >
-                {d.hero.ctaCreator}
+                {d.hero.ctaCreatorSignup}
                 <ArrowRight size={14} />
               </Link>
               <span className="mt-2 text-xs text-ink-soft dark:text-white">{c.ctaCaption}</span>

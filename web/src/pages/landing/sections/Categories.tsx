@@ -6,6 +6,7 @@ import { useLandingLanguage } from '../context/LanguageContext';
 import { getCategoryStyle } from '../lib/categoryIcons';
 import { getIconOption } from '../../../lib/iconOptions';
 import { TextReveal } from '../components/TextReveal';
+import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
 import type { LandingStats } from '../../../lib/api';
 
 // Reads as a single row at desktop widths (the reference layout), so the
@@ -31,7 +32,12 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
   const visible = list.slice(0, MAX_VISIBLE);
 
   return (
-    <section id={SECTION_IDS.categories} className="bg-paper-dim py-20 dark:bg-ink-elevated">
+    <section
+      id={SECTION_IDS.categories}
+      style={sectionCutStyle(true)}
+      className="relative overflow-hidden bg-paper-dim py-20 dark:bg-ink-elevated"
+    >
+      <SectionCutAccent flip />
       <div className="mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">

@@ -4,9 +4,8 @@ import { Sparkles } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
-import { useLandingTheme } from '../context/ThemeContext';
 import { AppStoreBadges } from '../components/AppStoreBadges';
-import { SectionWave } from '../components/SectionWave';
+import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
 import type { PublicCreatorLite, PublicBusinessLite } from '../../../lib/api';
 
 type RoleKey = 'business' | 'creator';
@@ -46,7 +45,7 @@ function RoleCard({
   return (
     <motion.article
       variants={fadeUp}
-      className={`flex flex-col items-center rounded-3xl border p-8 text-center shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] ${
+      className={`flex flex-col items-center rounded-2xl border p-8 text-center shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] ${
         accent === 'orange'
           ? 'border-brand-orange/15 bg-brand-orange/[0.03] dark:border-brand-orange/20'
           : 'border-violet/15 bg-violet/[0.03] dark:border-violet/20'
@@ -85,7 +84,6 @@ function RoleCard({
 
 export function FinalCTA({ creators, businesses }: Props) {
   const { d } = useLandingLanguage();
-  const { theme } = useLandingTheme();
 
   const realCreatorPhotos = (creators ?? []).map((c) => c.avatarUrl).filter((url): url is string => Boolean(url));
   const realBusinessPhotos = (businesses ?? []).map((b) => b.logoUrl).filter((url): url is string => Boolean(url));
@@ -96,8 +94,12 @@ export function FinalCTA({ creators, businesses }: Props) {
   const businessPhotos = [realBusinessPhotos[0] ?? BUSINESS_FALLBACK_PHOTO];
 
   return (
-    <section id={SECTION_IDS.finalCta} className="relative overflow-hidden bg-paper py-32 text-ink dark:bg-ink dark:text-white">
-      <SectionWave fill={theme === 'dark' ? '#141110' : '#FBF9F5'} />
+    <section
+      id={SECTION_IDS.finalCta}
+      style={sectionCutStyle()}
+      className="relative overflow-hidden bg-paper py-32 text-ink dark:bg-ink dark:text-white"
+    >
+      <SectionCutAccent />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-1/4 top-0 h-[380px] w-[380px] rounded-full bg-violet/[0.18] blur-[110px]" />
         <div className="mesh-blob absolute bottom-0 right-1/4 h-[340px] w-[340px] rounded-full bg-brand-orange/[0.15] blur-[110px]" style={{ animationDelay: '2.5s' }} />
@@ -137,7 +139,7 @@ export function FinalCTA({ creators, businesses }: Props) {
               heading={d.finalCta.businessCard.heading}
               sub={d.finalCta.businessCard.sub}
               cta={d.finalCta.businessCard.cta}
-              ctaHref="/creators"
+              ctaHref="/signup?role=business"
               ctaClassName="bg-violet"
               photos={businessPhotos}
             />

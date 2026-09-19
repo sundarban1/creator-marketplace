@@ -51,6 +51,8 @@ const PRIORITY = {
   '/support': 0.5,
   '/privacy': 0.3,
   '/terms': 0.3,
+  '/about': 0.5,
+  '/trust-and-safety': 0.5,
 };
 const DEFAULT_STATIC_PRIORITY = 0.6;
 const DYNAMIC_PRIORITY = { creators: 0.6, businesses: 0.6, events: 0.7 };

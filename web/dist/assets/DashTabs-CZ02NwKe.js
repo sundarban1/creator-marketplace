@@ -1,0 +1,1 @@
+import"./Tabs-kDSc6H1i.js";

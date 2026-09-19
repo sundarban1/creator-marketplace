@@ -1,0 +1,1 @@
+import{ft as e,gt as t,ht as n}from"./index-DVj04raR.js";async function r(r){if(r.role!==`CREATOR`&&r.role!==`BUSINESS`||r.isOnboarded)return t(r.role);let i=await e();return(r.role===`CREATOR`?i.creatorOnboardingEnabled:i.businessOnboardingEnabled)?n.onboarding:t(r.role)}export{r as t};

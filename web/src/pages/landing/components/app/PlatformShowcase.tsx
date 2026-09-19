@@ -105,7 +105,7 @@ function ScaledPhone({ scale }: { scale: number }) {
 /** Laptop (web, live) + phone (mobile, coming soon) shown together the way a
  * "works on every device" marketing graphic usually does. Two separate
  * layouts rather than one fluidly-scaled graphic (same convention as
- * OldWay/KolabWay's own mobile-vs-desktop split) — overlapping the phone
+ * OldWay's own mobile-vs-desktop split) — overlapping the phone
  * over the laptop's corner only once there's enough width for both to read
  * clearly; stacked and modestly scaled below `lg`, where that width isn't
  * there. */

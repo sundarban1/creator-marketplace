@@ -6,21 +6,44 @@ import { TextReveal } from '../components/TextReveal';
 import { AnimatedTestimonials } from '../components/AnimatedTestimonials';
 import type { ApiSuccessStory } from '../../../lib/api';
 
-type StoryItem = { quote: string; name: string; role: string; photoUrl?: string | null };
 type PublicSuccessStory = Pick<ApiSuccessStory, 'id' | 'name' | 'role' | 'quote' | 'photoUrl'>;
 
 interface StoriesProps {
-  stories: PublicSuccessStory[] | null;
+  status: 'loading' | 'ready' | 'error';
+  stories: PublicSuccessStory[];
 }
 
-export function Stories({ stories }: StoriesProps) {
+export function Stories({ status, stories }: StoriesProps) {
   const { d } = useLandingLanguage();
-  // null = not yet loaded / fetch failed → fall back to static copy.
-  // A resolved empty array is genuine "no active stories" and renders nothing.
-  const items: StoryItem[] = stories !== null ? stories : d.stories.items;
-  if (items.length === 0) return null;
+  // While loading, render nothing rather than a placeholder — a brief blank
+  // beat is better than flashing fabricated content. Once resolved (or on
+  // error), an empty result shows an honest empty state, never invented quotes.
+  if (status === 'loading') return null;
 
-  const testimonials = items.map((item) => ({
+  if (stories.length === 0) {
+    return (
+      <section id={SECTION_IDS.stories} className="bg-paper-dim py-24 dark:bg-ink-elevated">
+        <div className="mx-auto max-w-2xl px-6 text-center">
+          <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
+            <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
+              {d.stories.eyebrow}
+            </motion.p>
+            <TextReveal
+              as="h2"
+              text={d.stories.emptyTitle}
+              delay={0.1}
+              className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
+            />
+            <motion.p variants={fadeUp} className="mt-4 text-sm text-ink-soft dark:text-white">
+              {d.stories.emptyBody}
+            </motion.p>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
+  const testimonials = stories.map((item) => ({
     quote: item.quote,
     name: item.name,
     designation: item.role,

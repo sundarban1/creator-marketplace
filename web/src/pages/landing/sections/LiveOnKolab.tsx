@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
 import { perCreatorBudget } from '../../../app/lib/format';
 import type { EventCard as EventCardData } from '../../../app/api/publicMarketplace';
 import type { PublicCreatorLite, PublicBusinessLite } from '../../../lib/api';
@@ -108,7 +109,12 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
   };
 
   return (
-    <section id={SECTION_IDS.liveOnKolab} className="relative overflow-hidden bg-white py-28 dark:bg-ink">
+    <section
+      id={SECTION_IDS.liveOnKolab}
+      style={sectionCutStyle(true)}
+      className="relative overflow-hidden bg-white py-28 dark:bg-ink"
+    >
+      <SectionCutAccent flip />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-[8%] top-0 h-[320px] w-[320px] rounded-full bg-violet/[0.06] blur-[110px]" />
         <div className="mesh-blob absolute bottom-[-8%] right-[10%] h-[300px] w-[300px] rounded-full bg-brand-orange/[0.06] blur-[110px]" style={{ animationDelay: '2s' }} />
@@ -157,7 +163,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                 <div key={card.key}>
                   <Link
                     to={card.to}
-                    className="group flex h-full flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white text-left shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] transition-all hover:border-ink/20 hover:-translate-y-1 dark:border-white/10 dark:bg-ink-elevated dark:hover:border-white/20"
+                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white text-left shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] transition-all hover:border-violet/30 hover:-translate-y-1 dark:border-white/10 dark:bg-ink-elevated dark:hover:border-violet/40"
                   >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-violet/15 to-brand-orange/15">
                       {card.imageUrl ? (
@@ -205,7 +211,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                 <div key={card.key}>
                   <Link
                     to={card.to}
-                    className="flex h-full flex-col items-center rounded-3xl border border-ink/10 bg-white p-5 text-center shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] transition-all hover:border-ink/20 hover:-translate-y-1 dark:border-white/10 dark:bg-ink-elevated dark:hover:border-white/20"
+                    className="flex h-full flex-col items-center rounded-2xl border border-ink/10 bg-white p-5 text-center shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] transition-all hover:border-violet/30 hover:-translate-y-1 dark:border-white/10 dark:bg-ink-elevated dark:hover:border-violet/40"
                   >
                     <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-violet/15 to-brand-orange/15 text-sm font-bold text-ink dark:text-white">
                       {card.imageUrl ? <img src={card.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" /> : initials(card.name)}

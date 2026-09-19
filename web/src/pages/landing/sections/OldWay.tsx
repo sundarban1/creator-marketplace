@@ -4,6 +4,7 @@ import { VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
+import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
 type ClosingLine = { pre: string; highlight: string; post: string };
@@ -75,7 +76,12 @@ export function OldWay() {
   const o = d.oldWay;
 
   return (
-    <section id={SECTION_IDS.oldWay} className="relative overflow-hidden bg-paper-dim py-28 dark:bg-ink-elevated">
+    <section
+      id={SECTION_IDS.oldWay}
+      style={sectionCutStyle()}
+      className="relative overflow-hidden bg-paper-dim py-28 dark:bg-ink-elevated"
+    >
+      <SectionCutAccent />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-[10%] top-[-8%] h-[340px] w-[340px] rounded-full bg-ink/[0.03] blur-[110px] dark:bg-white/[0.03]" />
         <div className="mesh-blob absolute bottom-[-10%] right-[8%] h-[300px] w-[300px] rounded-full bg-brand-orange/[0.06] blur-[110px]" style={{ animationDelay: '2.4s' }} />

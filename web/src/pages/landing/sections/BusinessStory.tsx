@@ -5,6 +5,7 @@ import { fadeUp, scaleIn, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
+import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
 import { AppCard, AppChip } from '../components/app/AppUI';
 import { OpportunityCard, type OpportunityCardData } from '../components/app/OpportunityCard';
 
@@ -49,7 +50,12 @@ export function BusinessStory() {
   };
 
   return (
-    <section id={SECTION_IDS.businessStory} className="relative overflow-hidden bg-paper-dim py-28 dark:bg-ink-elevated">
+    <section
+      id={SECTION_IDS.businessStory}
+      style={sectionCutStyle()}
+      className="relative overflow-hidden bg-paper-dim py-28 dark:bg-ink-elevated"
+    >
+      <SectionCutAccent />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute right-[8%] top-[-6%] h-[340px] w-[340px] rounded-full bg-violet/[0.08] blur-[110px]" />
       </div>
@@ -85,7 +91,7 @@ export function BusinessStory() {
 
             <motion.ol
               variants={fadeUp}
-              className="relative mx-auto mt-8 w-full max-w-sm overflow-hidden rounded-3xl border border-ink/10 bg-violet/[0.04] p-5 text-left shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] lg:mx-0 dark:border-white/10 dark:bg-violet/[0.06]"
+              className="relative mx-auto mt-8 w-full max-w-sm overflow-hidden rounded-2xl border border-ink/10 bg-violet/[0.04] p-5 text-left shadow-[0_8px_30px_-14px_rgba(20,17,16,0.18)] lg:mx-0 dark:border-white/10 dark:bg-violet/[0.06]"
             >
               <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet/30 to-violet" />
               {b.steps.map((step, i) => (

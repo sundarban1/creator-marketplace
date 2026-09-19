@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AtSign, Building2, Lock, User } from 'lucide-react';
 import { useAppAuth } from './AppAuthContext';
 import { toIdentifier } from './identifier';
@@ -29,7 +29,13 @@ export function SignupScreen() {
   const businessEnabled = flags.data?.businessRegistrationEnabled ?? true;
   const bothClosed = !creatorEnabled && !businessEnabled;
 
-  const [selectedRole, setSelectedRole] = useState<Role>('CREATOR');
+  // Lets a marketing-site CTA (e.g. "Post a Campaign") land a visitor with
+  // the Business tab preselected via `/signup?role=business`, rather than
+  // always defaulting to Creator regardless of which link they clicked.
+  const [searchParams] = useSearchParams();
+  const [selectedRole, setSelectedRole] = useState<Role>(
+    searchParams.get('role')?.toLowerCase() === 'business' ? 'BUSINESS' : 'CREATOR',
+  );
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

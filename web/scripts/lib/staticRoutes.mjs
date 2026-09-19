@@ -54,4 +54,6 @@ export const STATIC_ROUTES = [
   '/support',
   '/privacy',
   '/terms',
+  '/about',
+  '/trust-and-safety',
 ];

@@ -35,9 +35,6 @@ import { Security } from './sections/Security';
 import { Stories } from './sections/Stories';
 import { FinalCTA } from './sections/FinalCTA';
 import { OldWay } from './sections/OldWay';
-import { Problems } from './sections/Problems';
-import { KolabWay } from './sections/KolabWay';
-import { KeyMessageTransition } from './sections/KeyMessageTransition';
 
 // FooterAnchorLink falls back to a real `/#id` navigation when it renders
 // outside this page's LenisProvider (any other route) — this is what makes
@@ -74,7 +71,7 @@ function HashScrollHandler() {
 function LandingPageInner() {
   useScrollToTop();
   const stats = useLandingStats();
-  const successStories = useSuccessStories();
+  const { status: storiesStatus, stories: successStories } = useSuccessStories();
   const { events, creators, businesses, categoryMeta } = useLandingShowcase();
 
   return (
@@ -122,16 +119,13 @@ function LandingPageInner() {
       <LandingNav />
       <Hero stats={stats} creators={creators} />
       <OldWay />
-      <Problems />
-      <KolabWay />
-      <KeyMessageTransition />
+      <LiveOnKolab events={events} creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
       <CreatorStory />
       <BusinessStory />
       <TrustStats stats={stats} />
       <Security />
       <Categories stats={stats} />
-      <LiveOnKolab events={events} creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
-      <Stories stories={successStories} />
+      <Stories status={storiesStatus} stories={successStories} />
       <FinalCTA creators={creators} businesses={businesses} />
       <LandingFooter />
       <ChatWidget />

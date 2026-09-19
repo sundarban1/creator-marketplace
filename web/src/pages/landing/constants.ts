@@ -25,16 +25,13 @@ export const SECTION_IDS = {
   finalCta: 'get-started',
   contact: 'contact',
   oldWay: 'old-way',
-  problems: 'problems',
-  kolabWay: 'kolab-way',
-  keyMessage: 'key-message',
   liveOnKolab: 'live-on-kolab',
 } as const;
 
 // `id` links scroll to a section on the landing page; `to` links navigate to a
 // standalone route (react-router) instead.
 export const NAV_LINKS: {
-  key: 'discover' | 'forCreators' | 'forBusinesses' | 'about';
+  key: 'discover' | 'forCreators' | 'forBusinesses' | 'howItWorks' | 'about' | 'trustSafety';
   id?: string;
   to?: string;
   offset?: number;
@@ -42,5 +39,7 @@ export const NAV_LINKS: {
   { key: 'discover', id: SECTION_IDS.liveOnKolab },
   { key: 'forCreators', id: SECTION_IDS.creatorStory },
   { key: 'forBusinesses', id: SECTION_IDS.businessStory },
-  { key: 'about', id: SECTION_IDS.kolabWay },
+  { key: 'howItWorks', id: SECTION_IDS.security },
+  { key: 'about', to: '/about' },
+  { key: 'trustSafety', to: '/trust-and-safety' },
 ];

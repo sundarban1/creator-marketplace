@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
 import { ArrowRight, Search, Sparkles } from 'lucide-react';
 import { fadeUp, scaleIn, stagger } from '../lib/motion';
@@ -8,7 +8,6 @@ import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
 import { PhoneShowcase } from '../components/PhoneShowcase';
 import { useCountUp } from '../hooks/useCountUp';
-import { useLenisScroll } from '../hooks/useLenis';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import type { LandingStats, PublicCreatorLite } from '../../../lib/api';
 
@@ -25,13 +24,23 @@ const AVATAR_FALLBACK_PHOTOS = [
 
 export function Hero({ stats, creators }: { stats: LandingStats | null; creators: PublicCreatorLite[] | null }) {
   const { d } = useLandingLanguage();
-  const { scrollTo } = useLenisScroll();
+  const navigate = useNavigate();
   const reducedMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const [query, setQuery] = useState('');
 
-  const socialProofTarget = stats ? stats.totalCreators + stats.totalBusinesses : d.hero.socialProofFallback;
-  const { ref: countRef, display } = useCountUp(socialProofTarget);
+  // Only show a numeric social-proof count once the live total is genuinely
+  // positive — `stats` can resolve to real zeros pre-launch, and a "0+
+  // creators are already on Kolab" line would be worse than a qualitative one.
+  // No manufactured fallback number is shown while loading or if it's zero.
+  const liveTotal = stats ? stats.totalCreators + stats.totalBusinesses : null;
+  const hasLiveSocialProof = liveTotal !== null && liveTotal > 0;
+  const { ref: countRef, display } = useCountUp(liveTotal ?? 0);
+
+  function goToCreatorSearch(term: string) {
+    const trimmed = term.trim();
+    navigate(trimmed ? `/creators?q=${encodeURIComponent(trimmed)}` : '/creators');
+  }
 
   // Real creator avatars where we have them, stock photos filling any
   // remaining slots (showcase still loading/failed, or too few avatarUrls).
@@ -119,7 +128,7 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
               variants={fadeUp}
               onSubmit={(e) => {
                 e.preventDefault();
-                scrollTo(`#${SECTION_IDS.finalCta}`);
+                goToCreatorSearch(query);
               }}
               className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:items-center"
             >
@@ -136,7 +145,7 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
               </div>
               <button
                 type="submit"
-                className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
+                className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange px-6 py-3.5 text-sm font-semibold text-white shadow-[0_10px_28px_-10px_rgba(123,92,245,0.6)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_14px_32px_-10px_rgba(123,92,245,0.7)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
               >
                 {d.hero.searchCta}
               </button>
@@ -148,7 +157,7 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
                 <button
                   key={term}
                   type="button"
-                  onClick={() => setQuery(term)}
+                  onClick={() => goToCreatorSearch(term)}
                   className="rounded-full border border-ink/10 bg-white px-3 py-1.5 font-medium text-ink-soft transition-colors hover:border-violet/40 hover:text-violet dark:border-white/10 dark:bg-ink-elevated dark:text-white dark:hover:text-white"
                 >
                   {term}
@@ -193,7 +202,13 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
                 ))}
               </div>
               <p ref={countRef} className="text-sm text-ink-soft dark:text-white">
-                <span className="font-bold text-ink dark:text-white">{display}+</span> {d.hero.socialProofSuffix}
+                {hasLiveSocialProof ? (
+                  <>
+                    <span className="font-bold text-ink dark:text-white">{display}+</span> {d.hero.socialProofSuffix}
+                  </>
+                ) : (
+                  d.hero.socialProofQualitative
+                )}
               </p>
             </motion.div>
           </motion.div>

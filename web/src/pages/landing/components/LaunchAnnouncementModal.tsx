@@ -49,6 +49,13 @@ function renderWithPlatformLinks(text: string, social: SiteInfo['social'] | unde
 
 type Track = 'draw' | 'contest';
 
+// Bump this when the promo's content meaningfully changes (a new event, new
+// prizes) so a visitor who already dismissed the old announcement sees the
+// new one instead of it staying hidden forever — the version string itself
+// is the "easy to update" lever this needs, no code change required beyond it.
+const LAUNCH_MODAL_STORAGE_KEY = 'kolab_launch_modal_dismissed';
+const LAUNCH_MODAL_VERSION = 'lucky-draw-video-contest-2026';
+
 export function LaunchAnnouncementModal() {
   const { lang, setLang, d } = useLandingLanguage();
   const copy = d.launchAnnouncement;
@@ -59,16 +66,24 @@ export function LaunchAnnouncementModal() {
   const [track, setTrack] = useState<Track>('draw');
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Shows on every landing page load (no dismissal persistence) — it's a
-  // live-event announcement, not a one-time onboarding tip.
+  // Shows once per browser per promo version — a visitor who closes it won't
+  // see it again on every reload, but bumping LAUNCH_MODAL_VERSION above
+  // brings it back for a genuinely new announcement.
   useEffect(() => {
+    let alreadyDismissed = false;
+    try {
+      alreadyDismissed = localStorage.getItem(LAUNCH_MODAL_STORAGE_KEY) === LAUNCH_MODAL_VERSION;
+    } catch {
+      // localStorage unavailable (private mode, blocked storage) — fail open.
+    }
+    if (alreadyDismissed) return;
     const timer = setTimeout(() => setOpen(true), 900);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && dismiss();
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     panelRef.current?.focus();
@@ -80,6 +95,11 @@ export function LaunchAnnouncementModal() {
 
   function dismiss() {
     setOpen(false);
+    try {
+      localStorage.setItem(LAUNCH_MODAL_STORAGE_KEY, LAUNCH_MODAL_VERSION);
+    } catch {
+      // ignore — worst case it shows again next load.
+    }
   }
 
   // Shared step-card grid for both tracks — same numbered-card visual

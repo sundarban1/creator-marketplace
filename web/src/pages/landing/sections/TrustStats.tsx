@@ -2,8 +2,7 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { useCountUp } from '../hooks/useCountUp';
 import { useLandingLanguage } from '../context/LanguageContext';
-import { useLandingTheme } from '../context/ThemeContext';
-import { SectionWave } from '../components/SectionWave';
+import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
 import { TextReveal } from '../components/TextReveal';
 import type { LandingStats } from '../../../lib/api';
 
@@ -24,19 +23,36 @@ function StatTile({ value, label, index }: { value: number; label: string; index
   );
 }
 
+function QualitativeTile({ statement, index }: { statement: string; index: number }) {
+  return (
+    <motion.div variants={fadeUp} className="px-6 text-center sm:text-left">
+      <span className="font-mono text-xs tracking-[0.3em] text-ink/35 dark:text-white/35">{String(index + 1).padStart(2, '0')}</span>
+      <div className="mt-3 font-serif text-2xl font-medium leading-snug tracking-tight text-ink sm:text-3xl dark:text-white">
+        {statement}
+      </div>
+    </motion.div>
+  );
+}
+
 export function TrustStats({ stats }: { stats: LandingStats | null }) {
   const { d } = useLandingLanguage();
-  const { theme } = useLandingTheme();
 
-  const values = [
-    stats?.totalCreators ?? d.trust.stats[0]!.fallback,
-    stats?.totalBusinesses ?? d.trust.stats[1]!.fallback,
-    stats?.categories.length ?? d.trust.stats[2]!.fallback,
-  ];
+  // Only render live numeric counts once both core totals are genuinely
+  // positive. `stats` can resolve to real zeros pre-launch — showing "0+" is
+  // worse than a qualitative statement, and we never invent a placeholder
+  // number to paper over it.
+  const hasMeaningfulStats = Boolean(stats && stats.totalCreators > 0 && stats.totalBusinesses > 0);
+  const values = hasMeaningfulStats
+    ? [stats!.totalCreators, stats!.totalBusinesses, stats!.categories.length]
+    : [];
 
   return (
-    <section id="trust" className="relative overflow-hidden bg-paper py-24 text-ink dark:bg-ink dark:text-white">
-      <SectionWave fill={theme === 'dark' ? '#141110' : '#FBF9F5'} />
+    <section
+      id="trust"
+      style={sectionCutStyle(true)}
+      className="relative overflow-hidden bg-paper py-24 text-ink dark:bg-ink dark:text-white"
+    >
+      <SectionCutAccent flip />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-[8%] top-0 h-[360px] w-[360px] rounded-full bg-violet/[0.12] blur-[110px]" />
         <div className="mesh-blob absolute right-[6%] bottom-0 h-[320px] w-[320px] rounded-full bg-brand-orange/[0.1] blur-[110px]" style={{ animationDelay: '2s' }} />
@@ -62,9 +78,9 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
           variants={stagger()}
           className="grid grid-cols-1 gap-14 sm:grid-cols-3 sm:gap-8"
         >
-          {d.trust.stats.map((s, i) => (
-            <StatTile key={i} value={values[i]!} label={s.label} index={i} />
-          ))}
+          {hasMeaningfulStats
+            ? d.trust.stats.map((s, i) => <StatTile key={i} value={values[i]!} label={s.label} index={i} />)
+            : d.trust.qualitative.map((statement, i) => <QualitativeTile key={i} statement={statement} index={i} />)}
         </motion.div>
       </div>
     </section>
