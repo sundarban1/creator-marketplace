@@ -30,7 +30,7 @@ export function CreditsCard() {
           <FontAwesome5 name="gift" solid size={14} color="#fff" />
           <Text style={styles.headerText}>{t('credits.cardTitle')}</Text>
         </View>
-        <Text style={styles.value}>Rs. {(balance?.balance ?? 0).toLocaleString()}</Text>
+        <Text style={styles.value}>{(balance?.balance ?? 0).toLocaleString()} Points</Text>
       </Pressable>
 
       <View style={styles.actionsRow}>

@@ -81,7 +81,7 @@ export default function CreditsScreen() {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
             <LinearGradient colors={['#F59E0B', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceCard}>
               <Text style={styles.balanceLabel}>{t('credits.balanceLabel')}</Text>
-              <Text style={styles.balanceValue}>Rs. {balance.balance.toLocaleString()}</Text>
+              <Text style={styles.balanceValue}>{balance.balance.toLocaleString()} Points</Text>
             </LinearGradient>
 
             <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('credits.recentActivityTitle')}</Text>
@@ -122,7 +122,7 @@ function CreditsRow({ tx, isFirst }: { tx: ApiCreditsLedgerRow; isFirst: boolean
         <Text style={[styles.txTitle, { color: C.text }]} numberOfLines={1}>{t(meta.labelKey)}</Text>
         <Text style={[styles.txDate, { color: C.textSecondary }]}>{formatDate(tx.createdAt)}</Text>
       </View>
-      <Text style={[styles.txAmount, { color: amountColor }]}>{sign} Rs. {tx.amount.toLocaleString()}</Text>
+      <Text style={[styles.txAmount, { color: amountColor }]}>{sign} {tx.amount.toLocaleString()} Points</Text>
     </View>
   );
 }

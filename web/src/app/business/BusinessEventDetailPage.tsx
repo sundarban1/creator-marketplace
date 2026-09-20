@@ -556,7 +556,7 @@ export function BusinessEventDetailPage() {
                     </span>
                   }
                   label={t('biz.payWithCredits')}
-                  sublabel={creditsAffordable ? t('biz.creditsAvailable', { amount: rupees(creditsBalance) }) : t('biz.creditsInsufficientForFee')}
+                  sublabel={creditsAffordable ? t('biz.creditsAvailable', { amount: `${creditsBalance.toLocaleString('en-IN')} Points` }) : t('biz.creditsInsufficientForFee')}
                 />
               </div>
             </div>
