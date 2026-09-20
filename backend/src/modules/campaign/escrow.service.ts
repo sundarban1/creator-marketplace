@@ -38,6 +38,15 @@ interface RefundInput {
   workStatusAfter?: WorkStatus | null;
   /** Suppress the default business/creator notifications (caller sends its own). */
   silent?: boolean;
+  /**
+   * Optional human-readable line posted into the chat as a SYSTEM message
+   * right before the conversation closes (mirrors `release()`'s "Payment
+   * released." notice) — unlike `reason` (an internal/audit-log string),
+   * this is shown verbatim to both parties, so callers should only pass
+   * user-appropriate copy. Omitted ⇒ no chat message, conversation still
+   * closes silently as before.
+   */
+  systemMessage?: string;
 }
 
 interface RefundResult {
@@ -171,9 +180,19 @@ class EscrowService {
     // suppresses notifications (e.g. a dispute resolved in the business's
     // favor) — the chat should close either way, not just on the notified path.
     if (!partial && app.creator?.userId) {
-      messagingService
-        .closeConversationAfterCompletion(app.creator.userId, app.campaign.business.userId, app.creatorId, app.campaign.business.id)
-        .catch(() => {});
+      (async () => {
+        // Unlike release() (which always announces itself in-chat), refund
+        // stayed silent-in-chat by default — only post a notice if the
+        // caller opted in with a specific, user-appropriate message.
+        if (input.systemMessage) {
+          await messagingService
+            .sendSystemMessage(app.creatorId, app.campaign.business.id, app.campaignId, app.campaign.business.userId, 'BUSINESS', input.systemMessage)
+            .catch(() => {});
+        }
+        await messagingService
+          .closeConversationAfterCompletion(app.creator!.userId, app.campaign.business.userId, app.creatorId, app.campaign.business.id)
+          .catch(() => {});
+      })();
     }
 
     return { refunded: true, amount, partial };

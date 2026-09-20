@@ -184,6 +184,7 @@ async function sweepCreatorFailures(now: Date): Promise<number> {
       actorType:       'SYSTEM',
       workStatusAfter: 'CREATOR_FAILED',
       silent:          true,
+      systemMessage:   'This engagement has been closed and the payment refunded — the creator did not deliver any content by the deadline.',
     });
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'CONTENT_OVERDUE', toStatus: 'CREATOR_FAILED', actorType: 'SYSTEM', reason: 'Grace period elapsed with no submission' });
     void escrowService.bumpReliability(app.creatorId, 'failed');
