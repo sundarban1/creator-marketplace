@@ -38,7 +38,6 @@ export default function CreatePromotionScreen() {
   const [discountType, setDiscountType] = useState<PromotionDiscountType>('PERCENTAGE');
   const [discountValue, setDiscountValue] = useState('');
   const [minSpend, setMinSpend] = useState('');
-  const [maxDiscountCap, setMaxDiscountCap] = useState('');
   const [validFrom, setValidFrom] = useState<Date | null>(null);
   const [validUntil, setValidUntil] = useState<Date | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,7 +51,6 @@ export default function CreatePromotionScreen() {
     setDiscountType(p.discountType);
     setDiscountValue(String(p.discountValue));
     setMinSpend(p.minSpend ? String(p.minSpend) : '');
-    setMaxDiscountCap(p.maxDiscountCap ? String(p.maxDiscountCap) : '');
     setValidFrom(new Date(p.validFrom));
     setValidUntil(new Date(p.validUntil));
   }, [promotionQuery.data]);
@@ -85,7 +83,6 @@ export default function CreatePromotionScreen() {
         discountType,
         discountValue: discountNum,
         minSpend: minSpend ? Number(minSpend) : undefined,
-        maxDiscountCap: maxDiscountCap ? Number(maxDiscountCap) : undefined,
         validFrom: validFrom!.toISOString(),
         validUntil: validUntil!.toISOString(),
       };
@@ -162,13 +159,6 @@ export default function CreatePromotionScreen() {
                 placeholder="500"
                 value={minSpend}
                 onChangeText={setMinSpend}
-                keyboardType="number-pad"
-              />
-              <TextInputWithLabel
-                label={`${t('promotions.maxDiscountLabel')} (${t('promotions.optionalHint')})`}
-                placeholder="500"
-                value={maxDiscountCap}
-                onChangeText={setMaxDiscountCap}
                 keyboardType="number-pad"
               />
             </SectionCard>
