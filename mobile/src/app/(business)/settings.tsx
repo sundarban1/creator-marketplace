@@ -1,7 +1,7 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { STALE } from '@/lib/queryClient';
@@ -76,7 +76,6 @@ const CONNECTABLE_SOCIAL_PLATFORMS: { id: string; label: string; iconName: strin
   { id: 'instagram', label: 'Instagram',  iconName: 'instagram', color: '#E1306C', followersLabel: 'Followers' },
   { id: 'youtube',   label: 'YouTube',    iconName: 'youtube',   color: '#FF0000', followersLabel: 'Subscribers' },
 ];
-const OAUTH_LIVE_PLATFORM_IDS = new Set(['youtube', 'tiktok', 'facebook', 'instagram']);
 const PLATFORM_CONFIG: Record<string, { id: string; label: string; iconName: string; color: string; followersLabel: string }> =
   Object.fromEntries(CONNECTABLE_SOCIAL_PLATFORMS.map((p) => [p.id, p]));
 
@@ -231,7 +230,11 @@ export default function BusinessSettingsScreen() {
   const C: ColorsType = useAppColors();
   const toast = useToast();
   const { language, setLanguage, t } = useLanguage();
-  const { flags } = usePlatformFlags();
+  const { flags, refetch: refetchPlatformFlags } = usePlatformFlags();
+  // Platform flags (e.g. the admin's Social Accounts switch) are only fetched
+  // once at app launch — re-pull on focus so an admin-side change is picked
+  // up without requiring an app restart, same as the money fields elsewhere.
+  useFocusEffect(useCallback(() => { void refetchPlatformFlags(); }, [refetchPlatformFlags]));
   const { categories: businessCategoryOptions } = useCategories('BUSINESS');
   // `strict` — provider roles only, no BOTH-scope industry rows. This feeds
   // defaultCreatorCategories, whose one consumer passes it to
@@ -2001,13 +2004,24 @@ export default function BusinessSettingsScreen() {
 
   function renderSocialAccounts() {
     const connectedByPlatform = new Map(socialAccounts.map((a) => [a.platform, a]));
+    // Admin master switch (Settings → Social Accounts) — replaces the old
+    // hardcoded OAUTH_LIVE_PLATFORM_IDS set; all four platforms are gated
+    // together instead of individually.
+    const isLive = flags.socialAccountsEnabled;
 
     return (
       <>
+        {isLive && (
+          <View style={[styles.socialInfoPill, { backgroundColor: C.primaryLight }]}>
+            <FontAwesome5 name="info-circle" solid size={11} color={C.brinjal1} />
+            <Text style={[styles.socialInfoPillText, { color: C.brinjal1 }]}>
+              {t('businessSettings.connectHint')}
+            </Text>
+          </View>
+        )}
         <Card>
           {CONNECTABLE_SOCIAL_PLATFORMS.map((p, idx) => {
             const acct = connectedByPlatform.get(p.id);
-            const isLive = OAUTH_LIVE_PLATFORM_IDS.has(p.id);
             const isConnecting = connectingPlatform === p.id;
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
             return (
@@ -2042,10 +2056,7 @@ export default function BusinessSettingsScreen() {
                     </>
                   ) : (
                     <>
-                      <Text style={[styles.connectPlatformHint, { color: C.textSecondary }]}>
-                        {t('businessSettings.connectHint')}
-                      </Text>
-                      {p.id === 'instagram' && (
+                      {isLive && p.id === 'instagram' && (
                         <Pressable disabled={isConnecting} onPress={() => void handleConnectInstagramDirect()} hitSlop={4}>
                           <Text style={[styles.connectInstagramDirectLink, { color: p.color }]}>
                             {t('businessSettings.connectInstagramDirectly')}
@@ -2060,10 +2071,10 @@ export default function BusinessSettingsScreen() {
                     <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)} hitSlop={8}>
                       <FontAwesome5 name="times" solid size={14} color={C.error} />
                     </Pressable>
-                  ) : isLive ? (
+                  ) : (
                     <Pressable
-                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: isConnecting ? 0.7 : 1 }]}
-                      disabled={isConnecting}
+                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: !isLive ? 0.4 : isConnecting ? 0.7 : 1 }]}
+                      disabled={!isLive || isConnecting}
                       onPress={() => {
                         if (p.id === 'youtube') handleConnectYoutube();
                         else if (p.id === 'tiktok') void handleConnectTiktok();
@@ -2074,12 +2085,26 @@ export default function BusinessSettingsScreen() {
                         ? <ActivityIndicator size="small" color="#fff" />
                         : <Text style={styles.connectBtnText}>{t('businessSettings.connectBtn')}</Text>}
                     </Pressable>
-                  ) : null}
+                  )}
                 </View>
               </View>
             );
           })}
         </Card>
+
+        {!isLive && (
+          <View style={[styles.socialComingSoonBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.socialComingSoonIconWrap, { backgroundColor: C.primaryLight }]}>
+              <FontAwesome5 name="clock" solid size={16} color={C.brinjal1} />
+            </View>
+            <Text style={[styles.socialComingSoonTitle, { color: C.text }]}>
+              {t('businessSettings.socialComingSoonTitle')}
+            </Text>
+            <Text style={[styles.socialComingSoonSub, { color: C.textSecondary }]}>
+              {t('businessSettings.socialComingSoonSub')}
+            </Text>
+          </View>
+        )}
 
         {/* Facebook Page / linked-Instagram picker — only shown when more than one
             qualifying Page exists (auto-selected otherwise). */}
@@ -2530,8 +2555,13 @@ const styles = StyleSheet.create({
   socialPlatformName: { fontSize: 14, fontFamily: F.bold },
   socialActions: { flexDirection: 'row', gap: 6 },
   socialDisconnectBtn: { width: 28, height: 28, borderRadius: RADIUS.full, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
+  socialInfoPill: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginHorizontal: SCREEN_GUTTER, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.md },
+  socialInfoPillText: { flex: 1, fontSize: 11, lineHeight: 15, fontFamily: F.medium },
+  socialComingSoonBanner: { marginHorizontal: SCREEN_GUTTER, marginTop: 12, borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, alignItems: 'center' },
+  socialComingSoonIconWrap: { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  socialComingSoonTitle: { fontSize: 14, fontFamily: F.bold, marginBottom: 4, textAlign: 'center' },
+  socialComingSoonSub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 17 },
   connectPlatformNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  connectPlatformHint:    { fontSize: 11, marginTop: 2, fontFamily: F.regular },
   connectInstagramDirectLink: { fontSize: 11, marginTop: 3, fontFamily: F.bold, textDecorationLine: 'underline' },
   connectBtn:     { borderRadius: RADIUS.sm, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
   connectBtnText: { fontSize: 12, fontFamily: F.bold, color: '#fff' },

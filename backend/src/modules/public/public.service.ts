@@ -42,6 +42,7 @@ export class PublicService {
       businessOnboardingEnabled:   s['business.onboarding'] as boolean,
       creatorOnboardingEnabled:    s['creator.onboarding']  as boolean,
       messagingEnabled:            s['messaging.enabled'] as boolean,
+      socialAccountsEnabled:       s['socialAccounts.enabled'] as boolean,
       supportEmail:                s['platform.supportEmail'] as string | undefined,
       platformCommission:          Number(s['platform.commission']) || 0,
       paymentFeePercent:           Number(s['platform.paymentFeePercent']) || 5,

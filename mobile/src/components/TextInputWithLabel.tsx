@@ -14,7 +14,7 @@ import { F, RADIUS } from '@/utilities/constants';
 import { withAlpha } from '@/utilities/color';
 
 type Props = TextInputProps & {
-  label: string;
+  label?: string;
   error?: string;
   hint?: string;
   secureToggle?: boolean;
@@ -62,10 +62,12 @@ export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInpu
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.labelRow}>
-        <Text style={[styles.label, { color: C.text, fontFamily: F.semibold }]}>{label}</Text>
-        {rightSlot}
-      </View>
+      {(label || rightSlot) && (
+        <View style={styles.labelRow}>
+          {!!label && <Text style={[styles.label, { color: C.text, fontFamily: F.semibold }]}>{label}</Text>}
+          {rightSlot}
+        </View>
+      )}
 
       <Animated.View style={[
         styles.row,

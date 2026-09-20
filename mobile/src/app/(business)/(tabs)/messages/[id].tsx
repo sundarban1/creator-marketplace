@@ -1,8 +1,8 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Animated,
   ActivityIndicator,
@@ -434,7 +434,12 @@ export default function BusinessChatRoomScreen() {
   const { t }    = useLanguage();
   const C        = useAppColors();
   const insets   = useSafeAreaInsets();
-  const { flags } = usePlatformFlags();
+  const { flags, refetch: refetchPlatformFlags } = usePlatformFlags();
+  // The messaging kill switch is only fetched at app launch (+ foreground
+  // resume) by default — re-pull on focus too, so an admin disabling
+  // messaging mid-session hides the composer as soon as this chat is opened,
+  // not just on the next app resume.
+  useFocusEffect(useCallback(() => { void refetchPlatformFlags(); }, [refetchPlatformFlags]));
   // Android only — the keyboard already covers the gesture-nav-bar area,
   // so keeping the safe-area padding on top of it leaves a stray gap
   // between the composer and the keyboard. iOS's KeyboardAvoidingView

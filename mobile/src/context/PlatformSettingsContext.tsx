@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { AppState } from 'react-native';
 import { platformSettingsService, type PlatformFlags } from '@/services/platformSettings';
 
 // Fails open — a network hiccup should never block signup/onboarding/chat.
@@ -14,6 +15,7 @@ const DEFAULT_FLAGS: PlatformFlags = {
   comingSoonIos:               false,
   comingSoonAndroid:           false,
   comingSoon:                  false,
+  socialAccountsEnabled:       true,
   minVersionIos:               '',
   minVersionAndroid:           '',
 };
@@ -42,6 +44,15 @@ export function PlatformSettingsProvider({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     refetch().finally(() => setIsLoading(false));
+    // Also re-pull on every foreground resume (not just cold start), so an
+    // admin change — the min-app-version force-update gate especially —
+    // reaches an already-logged-in user without them needing to fully
+    // relaunch. Individual screens can still call `refetch()` themselves
+    // (e.g. on nav focus) for freshness that can't wait for a backgrounding.
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refetch();
+    });
+    return () => sub.remove();
   }, []);
 
   return (

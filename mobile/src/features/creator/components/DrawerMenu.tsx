@@ -28,9 +28,7 @@ type NavItem = {
 };
 
 const ACCOUNT_ITEMS: NavItem[] = [
-  // Social Accounts — hidden from the creator drawer for now; do not display
-  // in the UI. (renderSocialAccounts() still exists, reachable only by direct URL.)
-  // { iconName: 'share-alt',    labelKey: 'drawer.socialAccounts',    route: '/(creator)/settings?section=social',    color: '#E1306C' },
+  { iconName: 'share-alt',    labelKey: 'drawer.socialAccounts',    route: '/(creator)/settings?section=social',    color: '#E1306C' },
   { iconName: 'star', faName: 'star',            labelKey: 'drawer.kolabRewards',      route: '/(creator)/wallet',                     color: '#16A34A' },
   // Hidden from the drawer for now (My Work / past-work portfolio section — not ready to display in the mobile UI).
   // { iconName: 'images',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },

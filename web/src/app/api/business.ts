@@ -4,7 +4,7 @@
 
 import { apiRequest, apiUpload, type ApiPagination } from '../lib/apiClient';
 import type { EngagementState } from '../lib/engagement';
-import type { CreatorApplication, DeliverableFile } from './creator';
+import type { CreatorApplication, DeliverableFile, FacebookPageOption } from './creator';
 import type { CreatorProfile } from './publicMarketplace';
 
 // ── My campaigns / events ────────────────────────────────────────────────────
@@ -503,4 +503,63 @@ export function uploadIdentityDoc(file: File): Promise<DocUploadResult> {
   const form = new FormData();
   form.append('document', file);
   return apiUpload<DocUploadResult>('/api/business/documents/identity', form);
+}
+
+// ── Social accounts (OAuth connect) ──────────────────────────────────────────
+// Mirrors web/src/app/api/creator.ts's block of the same name — same backend
+// contract (SocialAccount is polymorphic creator/business), just under
+// /api/business/social-accounts instead of /api/creator/social-accounts.
+
+export interface BusinessSocialAccount {
+  id: string;
+  platform: string;
+  profileUrl: string;
+  followers: number;
+  connectedViaOAuth: boolean;
+  avatarUrl: string | null;
+  followersSyncedAt: string | null;
+}
+
+export function fetchBusinessSocialAccounts(signal?: AbortSignal): Promise<BusinessSocialAccount[]> {
+  return apiRequest<BusinessSocialAccount[]>('GET', '/api/business/social-accounts', undefined, {
+    signal,
+  }).then((r) => r.data);
+}
+
+export function deleteBusinessSocialAccount(id: string): Promise<void> {
+  return apiRequest('DELETE', `/api/business/social-accounts/${id}`).then(() => undefined);
+}
+
+export function connectBusinessYoutubeAccount(accessToken: string): Promise<BusinessSocialAccount> {
+  return apiRequest<BusinessSocialAccount>('POST', '/api/business/social-accounts/youtube/connect', {
+    accessToken,
+    clientPlatform: 'web',
+  }).then((r) => r.data);
+}
+
+/** Fetches the TikTok authorize URL to open in a popup (see lib/oauthPopup.ts). */
+export function getBusinessTiktokAuthorizeUrl(): Promise<string> {
+  return apiRequest<{ url: string }>('GET', '/api/business/social-accounts/tiktok/authorize', undefined, {
+    params: { platform: 'web' },
+  }).then((r) => r.data.url);
+}
+
+export function getBusinessFacebookPages(accessToken: string): Promise<FacebookPageOption[]> {
+  return apiRequest<FacebookPageOption[]>('POST', '/api/business/social-accounts/facebook/pages', {
+    accessToken,
+  }).then((r) => r.data);
+}
+
+export function connectBusinessFacebookPage(accessToken: string, pageId: string): Promise<BusinessSocialAccount> {
+  return apiRequest<BusinessSocialAccount>('POST', '/api/business/social-accounts/facebook/connect', {
+    accessToken,
+    pageId,
+  }).then((r) => r.data);
+}
+
+export function connectBusinessInstagramAccount(accessToken: string, pageId: string): Promise<BusinessSocialAccount> {
+  return apiRequest<BusinessSocialAccount>('POST', '/api/business/social-accounts/instagram/connect', {
+    accessToken,
+    pageId,
+  }).then((r) => r.data);
 }

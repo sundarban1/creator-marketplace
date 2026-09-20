@@ -14,6 +14,8 @@ export interface PlatformFlags {
   /** Escrow-funding fee breakdown — mirrors mobile's PlatformSettingsContext, same source endpoint. */
   paymentFeePercent: number;
   paymentTaxPercent: number;
+  /** Master switch for the OAuth "Connect Accounts" flow (TikTok/Facebook/Instagram/YouTube). */
+  socialAccountsEnabled: boolean;
 }
 
 export function fetchPlatformFlags(signal?: AbortSignal): Promise<PlatformFlags> {
@@ -45,6 +47,7 @@ export function getPlatformFlags(): Promise<PlatformFlags> {
       businessOnboardingEnabled: false,
       paymentFeePercent: 5,
       paymentTaxPercent: 13,
+      socialAccountsEnabled: true,
     }));
   }
   return cached;

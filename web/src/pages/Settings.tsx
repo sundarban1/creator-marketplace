@@ -174,6 +174,7 @@ const DEFAULTS: PlatformSettings = {
   'business.onboarding':         true,
   'campaign.autoApproval':       true,
   'payment.escrow':              true,
+  'socialAccounts.enabled':      true,
   'messaging.enabled':           true,
   'messaging.directMessages':    true,
   'messaging.pushNotifications': true,
@@ -322,6 +323,7 @@ export function Settings() {
           <Toggle label="Business Onboarding"   description="Enable the business onboarding flow for new users"               value={bool('business.onboarding')}   onChange={(v) => toggle('business.onboarding', v)} />
           <Toggle label="Event Auto-Approval"    description="When off, new events go into a pending-review queue and stay hidden from creators until an admin approves them" value={bool('campaign.autoApproval')} onChange={(v) => toggle('campaign.autoApproval', v)} />
           <Toggle label="Payment Escrow"         description="Hold payments in escrow until event completion is confirmed"      value={bool('payment.escrow')}        onChange={(v) => toggle('payment.escrow', v)} />
+          <Toggle label="Social Accounts"        description="When on, creators and businesses (mobile + web) can connect TikTok/Facebook/Instagram/YouTube — Connect buttons are active. When off, Connect buttons are disabled and a 'coming soon' notice is shown instead." value={bool('socialAccounts.enabled')} onChange={(v) => toggle('socialAccounts.enabled', v)} />
         </SectionCard>
 
         {/* Messaging */}

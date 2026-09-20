@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -82,7 +82,6 @@ const CONNECTABLE_SOCIAL_PLATFORMS: { id: string; label: string; iconName: strin
   { id: 'instagram', label: 'Instagram',  iconName: 'instagram', color: '#E1306C', followersLabel: 'Followers' },
   { id: 'youtube',   label: 'YouTube',    iconName: 'youtube',   color: '#FF0000', followersLabel: 'Subscribers' },
 ];
-const OAUTH_LIVE_PLATFORM_IDS = new Set(['youtube', 'tiktok', 'facebook', 'instagram']);
 
 // Remaining platforms still use manual entry (no OAuth data-access app for these is
 // in scope right now).
@@ -327,12 +326,17 @@ export default function CreatorSettingsScreen() {
   const { user, logout, updateUser } = useAuth();
   const { isDark, toggleDark } = useIsDark();
   const { language, setLanguage, t } = useLanguage();
-  const { flags } = usePlatformFlags();
+  const { flags, refetch: refetchPlatformFlags } = usePlatformFlags();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
   const toast = useToast();
 
   const [subPage, setSubPage] = useState<string | null>(null);
+
+  // Platform flags (e.g. the admin's Social Accounts switch) are only fetched
+  // once at app launch — re-pull on focus so an admin-side change is picked
+  // up without requiring an app restart, same as the money fields elsewhere.
+  useFocusEffect(useCallback(() => { void refetchPlatformFlags(); }, [refetchPlatformFlags]));
 
   // Notification settings (API-driven) — cache-first, seeded once
   const [pushNotifEnabled, setPushNotifEnabled] = useState(true);
@@ -1371,16 +1375,27 @@ export default function CreatorSettingsScreen() {
   function renderSocialAccounts() {
     const connectablePlatformIds = new Set(CONNECTABLE_SOCIAL_PLATFORMS.map((p) => p.id));
     const connectedByPlatform = new Map(socialAccounts.filter((a) => connectablePlatformIds.has(a.platform)).map((a) => [a.platform, a]));
+    // Admin master switch (Settings → Social Accounts) — replaces the old
+    // hardcoded OAUTH_LIVE_PLATFORM_IDS set; all four platforms are gated
+    // together instead of individually.
+    const isLive = flags.socialAccountsEnabled;
 
     return (
       <>
         {/* ── Connect Accounts: TikTok, Facebook, Instagram, YouTube ──────
             Pulls profile URL + follower/subscriber count straight from the
             platform via OAuth — nothing to type in. ── */}
+        {isLive && (
+          <View style={[styles.socialInfoPill, { backgroundColor: C.primaryLight }]}>
+            <FontAwesome5 name="info-circle" solid size={11} color={C.brinjal1} />
+            <Text style={[styles.socialInfoPillText, { color: C.brinjal1 }]}>
+              {t('creatorSettings.connectHint')}
+            </Text>
+          </View>
+        )}
         <Card>
           {CONNECTABLE_SOCIAL_PLATFORMS.map((p, idx) => {
             const acct = connectedByPlatform.get(p.id);
-            const isLive = OAUTH_LIVE_PLATFORM_IDS.has(p.id);
             const isConnecting = connectingPlatform === p.id;
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
             return (
@@ -1414,10 +1429,7 @@ export default function CreatorSettingsScreen() {
                     </>
                   ) : (
                     <>
-                      <Text style={[styles.connectPlatformHint, { color: C.textSecondary }]}>
-                        {isLive ? t('creatorSettings.connectHint') : t('creatorSettings.comingSoonHint')}
-                      </Text>
-                      {p.id === 'instagram' && (
+                      {isLive && p.id === 'instagram' && (
                         <Pressable disabled={isConnecting} onPress={() => void handleConnectInstagramDirect()} hitSlop={4}>
                           <Text style={[styles.connectInstagramDirectLink, { color: p.color }]}>
                             {t('creatorSettings.connectInstagramDirectly')}
@@ -1432,10 +1444,10 @@ export default function CreatorSettingsScreen() {
                     <Pressable style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deleteSocialAccount(acct)}>
                       <FontAwesome5 name="times" solid size={14} color={C.error} />
                     </Pressable>
-                  ) : isLive ? (
+                  ) : (
                     <Pressable
-                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: isConnecting ? 0.7 : 1 }]}
-                      disabled={isConnecting}
+                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: !isLive ? 0.4 : isConnecting ? 0.7 : 1 }]}
+                      disabled={!isLive || isConnecting}
                       onPress={() => {
                         if (p.id === 'youtube') handleConnectYoutube();
                         else if (p.id === 'tiktok') void handleConnectTiktok();
@@ -1446,16 +1458,26 @@ export default function CreatorSettingsScreen() {
                         ? <ActivityIndicator size="small" color="#fff" />
                         : <Text style={styles.connectBtnText}>{t('creatorSettings.connectBtn')}</Text>}
                     </Pressable>
-                  ) : (
-                    <View style={[styles.comingSoonBtn, { borderColor: C.border }]}>
-                      <Text style={[styles.comingSoonBtnText, { color: C.textSecondary }]}>{t('creatorSettings.comingSoonBtn')}</Text>
-                    </View>
                   )}
                 </View>
               </View>
             );
           })}
         </Card>
+
+        {!isLive && (
+          <View style={[styles.socialComingSoonBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.socialComingSoonIconWrap, { backgroundColor: C.primaryLight }]}>
+              <FontAwesome5 name="clock" solid size={16} color={C.brinjal1} />
+            </View>
+            <Text style={[styles.socialComingSoonTitle, { color: C.text }]}>
+              {t('creatorSettings.socialComingSoonTitle')}
+            </Text>
+            <Text style={[styles.socialComingSoonSub, { color: C.textSecondary }]}>
+              {t('creatorSettings.socialComingSoonSub')}
+            </Text>
+          </View>
+        )}
 
         {/* Facebook Page / linked-Instagram picker — only shown when the creator
             manages more than one qualifying Page (auto-selected otherwise). */}
@@ -2848,13 +2870,17 @@ const styles = StyleSheet.create({
   socialDisconnectBtn: { width: 28, height: 28, borderRadius: RADIUS.sm, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
 
   // ── Connect Accounts (OAuth) ─────────────────────────────────────────────────
+  socialInfoPill: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginHorizontal: SCREEN_GUTTER, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.md },
+  socialInfoPillText: { flex: 1, fontSize: 11, lineHeight: 15, fontFamily: F.medium },
+  socialComingSoonBanner: { marginHorizontal: SCREEN_GUTTER, marginTop: 12, borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, alignItems: 'center' },
+  socialComingSoonIconWrap: { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  socialComingSoonTitle: { fontSize: 14, fontFamily: F.bold, marginBottom: 4, textAlign: 'center' },
+  socialComingSoonSub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 17 },
   connectPlatformNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   connectPlatformHint:    { fontSize: 11, marginTop: 2, fontFamily: F.regular },
   connectInstagramDirectLink: { fontSize: 11, marginTop: 3, fontFamily: F.bold, textDecorationLine: 'underline' },
   connectBtn:     { borderRadius: RADIUS.sm, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
   connectBtnText: { fontSize: 12, fontFamily: F.bold, color: '#fff' },
-  comingSoonBtn:  { borderRadius: RADIUS.sm, paddingHorizontal: 10, height: 32, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
-  comingSoonBtnText: { fontSize: 11, fontFamily: F.semibold },
 
   // ── Facebook/Instagram Page picker ────────────────────────────────────────────
   pagePickerSheet: {

@@ -9,15 +9,13 @@ import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { SectionCard, ChipGroup } from '@/features/business/components/CampaignFormControls';
+import { SectionCard } from '@/features/business/components/CampaignFormControls';
 import { DatePickerField } from '@/features/business/components/DatePickerField';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
-import { promotionService, type PromotionDiscountType } from '@/services/rewards';
+import { promotionService } from '@/services/rewards';
 import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
-
-const DISCOUNT_TYPE_KEYS: PromotionDiscountType[] = ['PERCENTAGE', 'FIXED'];
 
 export default function CreatePromotionScreen() {
   const C = useAppColors();
@@ -35,7 +33,6 @@ export default function CreatePromotionScreen() {
   });
 
   const [title, setTitle] = useState('');
-  const [discountType, setDiscountType] = useState<PromotionDiscountType>('PERCENTAGE');
   const [discountValue, setDiscountValue] = useState('');
   const [minSpend, setMinSpend] = useState('');
   const [validFrom, setValidFrom] = useState<Date | null>(null);
@@ -48,22 +45,14 @@ export default function CreatePromotionScreen() {
     seededRef.current = true;
     const p = promotionQuery.data;
     setTitle(p.title);
-    setDiscountType(p.discountType);
     setDiscountValue(String(p.discountValue));
     setMinSpend(p.minSpend ? String(p.minSpend) : '');
     setValidFrom(new Date(p.validFrom));
     setValidUntil(new Date(p.validUntil));
   }, [promotionQuery.data]);
 
-  const discountTypeLabels: Record<PromotionDiscountType, string> = {
-    PERCENTAGE: t('promotions.discountTypePercentage'),
-    FIXED: t('promotions.discountTypeFixed'),
-  };
-
   const discountNum = Number(discountValue) || 0;
-  const previewDiscount = discountType === 'PERCENTAGE'
-    ? `${discountNum || 0}% OFF`
-    : `Rs. ${(discountNum || 0).toLocaleString()} OFF`;
+  const previewDiscount = `${discountNum || 0}% OFF`;
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -80,7 +69,7 @@ export default function CreatePromotionScreen() {
     try {
       const payload = {
         title: title.trim(),
-        discountType,
+        discountType: 'PERCENTAGE' as const,
         discountValue: discountNum,
         minSpend: minSpend ? Number(minSpend) : undefined,
         validFrom: validFrom!.toISOString(),
@@ -126,7 +115,6 @@ export default function CreatePromotionScreen() {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <SectionCard title={t('promotions.titleLabel')} icon="tag" colors={C}>
               <TextInputWithLabel
-                label={t('promotions.titleLabel')}
                 placeholder={t('promotions.titlePlaceholder')}
                 value={title}
                 onChangeText={setTitle}
@@ -136,26 +124,18 @@ export default function CreatePromotionScreen() {
             </SectionCard>
 
             <SectionCard title={t('promotions.discountTypeLabel')} icon="percentage" colors={C}>
-              <ChipGroup
-                options={DISCOUNT_TYPE_KEYS.map((k) => discountTypeLabels[k])}
-                value={discountTypeLabels[discountType]}
-                onChange={(label) => setDiscountType(DISCOUNT_TYPE_KEYS.find((k) => discountTypeLabels[k] === label) ?? 'PERCENTAGE')}
-                colors={C}
-              />
               <TextInputWithLabel
-                label={t('promotions.discountValueLabel')}
-                placeholder={discountType === 'PERCENTAGE' ? '10' : '500'}
+                placeholder="10"
                 value={discountValue}
                 onChangeText={setDiscountValue}
                 keyboardType="number-pad"
-                leftIcon={discountType === 'PERCENTAGE' ? 'percentage' : 'money-bill-wave'}
+                leftIcon="percentage"
               />
               {!!errors.discountValue && <Text style={styles.errorText}>{errors.discountValue}</Text>}
             </SectionCard>
 
             <SectionCard title={t('promotions.minSpendLabel')} icon="receipt" colors={C}>
               <TextInputWithLabel
-                label={t('promotions.minSpendLabel')}
                 placeholder="500"
                 value={minSpend}
                 onChangeText={setMinSpend}
@@ -163,7 +143,7 @@ export default function CreatePromotionScreen() {
               />
             </SectionCard>
 
-            <SectionCard title={t('promotions.validFromLabel')} icon="calendar-alt" colors={C}>
+            <SectionCard title={t('promotions.validityLabel')} icon="calendar-alt" colors={C}>
               <View style={styles.dateRow}>
                 <View style={{ flex: 1 }}>
                   <DatePickerField label={t('promotions.validFromLabel')} value={validFrom} onChange={setValidFrom} />

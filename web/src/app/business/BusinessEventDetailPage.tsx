@@ -16,7 +16,7 @@ import {
   type BusinessApplication,
 } from '../api/business';
 import { fetchPaymentMethods, type PublicPaymentMethod } from '../api/paymentMethods';
-import { getPlatformFlags } from '../api/platformFlags';
+import { fetchPlatformFlags } from '../api/platformFlags';
 import { ApiError } from '../lib/apiClient';
 import { PageHeader } from '../ui/PageHeader';
 import { Card, CardHeader } from '../ui/Card';
@@ -103,7 +103,11 @@ export function BusinessEventDetailPage() {
   useEffect(() => {
     fetchPaymentMethods().then(setMethodCatalog).catch(() => {});
     getBusinessCredits().then((b) => setCreditsBalance(b.balance)).catch(() => {});
-    getPlatformFlags().then((f) => setFeePercents({ paymentFeePercent: f.paymentFeePercent, paymentTaxPercent: f.paymentTaxPercent })).catch(() => {});
+    // Uncached fetch (not the session-memoized getPlatformFlags()) — this is a
+    // live money figure shown right before the business pays into escrow, so
+    // it needs the current admin-set commission, not whatever was cached from
+    // an earlier page in this browser tab's session.
+    fetchPlatformFlags().then((f) => setFeePercents({ paymentFeePercent: f.paymentFeePercent, paymentTaxPercent: f.paymentTaxPercent })).catch(() => {});
   }, []);
 
   // Defaults to the first admin-enabled method until the business picks one

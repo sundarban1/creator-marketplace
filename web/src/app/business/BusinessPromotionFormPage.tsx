@@ -8,14 +8,12 @@ import {
   updatePromotion,
   publishPromotion,
   type ManagedPromotion,
-  type PromotionDiscountType,
 } from '../api/promotion';
 import { PageHeader } from '../ui/PageHeader';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
 import { Alert } from '../ui/Alert';
-import { SegmentedControl } from '../ui/SegmentedControl';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { ApiError } from '../lib/apiClient';
@@ -57,10 +55,8 @@ function PromotionForm({ id, initial }: { id?: string; initial: ManagedPromotion
   const isEditing = !!id;
 
   const [title, setTitle] = useState(initial?.title ?? '');
-  const [discountType, setDiscountType] = useState<PromotionDiscountType>(initial?.discountType ?? 'PERCENTAGE');
   const [discountValue, setDiscountValue] = useState(initial ? String(initial.discountValue) : '');
   const [minSpend, setMinSpend] = useState(initial?.minSpend ? String(initial.minSpend) : '');
-  const [maxDiscountCap, setMaxDiscountCap] = useState(initial?.maxDiscountCap ? String(initial.maxDiscountCap) : '');
   const [validFrom, setValidFrom] = useState(initial?.validFrom ? initial.validFrom.slice(0, 10) : '');
   const [validUntil, setValidUntil] = useState(initial?.validUntil ? initial.validUntil.slice(0, 10) : '');
 
@@ -68,9 +64,7 @@ function PromotionForm({ id, initial }: { id?: string; initial: ManagedPromotion
   const [saving, setSaving] = useState<'draft' | 'publish' | 'save' | null>(null);
 
   const discountNum = Number(discountValue) || 0;
-  const previewDiscount = discountType === 'PERCENTAGE'
-    ? `${discountNum || 0}% OFF`
-    : `Rs. ${(discountNum || 0).toLocaleString()} OFF`;
+  const previewDiscount = `${discountNum || 0}% OFF`;
 
   function validate(): string {
     if (title.trim().length < 3) return t('biz.promotionValidationTitleRequired');
@@ -88,10 +82,9 @@ function PromotionForm({ id, initial }: { id?: string; initial: ManagedPromotion
     try {
       const payload = {
         title: title.trim(),
-        discountType,
+        discountType: 'PERCENTAGE' as const,
         discountValue: discountNum,
         minSpend: minSpend ? Number(minSpend) : undefined,
-        maxDiscountCap: maxDiscountCap ? Number(maxDiscountCap) : undefined,
         validFrom: new Date(validFrom).toISOString(),
         validUntil: new Date(validUntil).toISOString(),
       };
@@ -130,32 +123,17 @@ function PromotionForm({ id, initial }: { id?: string; initial: ManagedPromotion
 
         <Card className="space-y-3">
           <p className="text-[13px] font-semibold text-ink">{t('biz.discountTypeLabel')}</p>
-          <SegmentedControl<PromotionDiscountType>
-            ariaLabel={t('biz.discountTypeLabel')}
-            value={discountType}
-            onChange={setDiscountType}
-            options={[
-              { value: 'PERCENTAGE', label: t('biz.discountTypePercentage') },
-              { value: 'FIXED', label: t('biz.discountTypeFixed') },
-            ]}
-          />
           <TextField
             label={t('biz.discountValueLabel')}
             type="number"
-            placeholder={discountType === 'PERCENTAGE' ? '10' : '500'}
+            placeholder="10"
             value={discountValue}
             onChange={(e) => setDiscountValue(e.target.value)}
           />
         </Card>
 
-        <Card className="grid grid-cols-2 gap-3">
+        <Card>
           <TextField label={t('biz.minSpendLabel')} type="number" value={minSpend} onChange={(e) => setMinSpend(e.target.value)} />
-          <TextField
-            label={`${t('biz.maxDiscountLabel')} (${t('biz.optionalHint')})`}
-            type="number"
-            value={maxDiscountCap}
-            onChange={(e) => setMaxDiscountCap(e.target.value)}
-          />
         </Card>
 
         <Card className="grid grid-cols-2 gap-3">

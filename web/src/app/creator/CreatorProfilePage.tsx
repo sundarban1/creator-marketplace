@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X } from 'lucide-react';
+import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X, Clock } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useAppAuth } from '../auth/AppAuthContext';
@@ -7,6 +7,7 @@ import { compactNumber } from '../lib/format';
 import { requestYoutubeAccessToken } from '../lib/googleAuth';
 import { requestFacebookAccessToken } from '../lib/facebookAuth';
 import { openOAuthPopup } from '../lib/oauthPopup';
+import { fetchPlatformFlags } from '../api/platformFlags';
 import {
   fetchCreatorFullProfile,
   updateCreatorProfile,
@@ -484,6 +485,12 @@ function ConnectSocialModal({
     accessToken: string;
     pages: FacebookPageOption[];
   } | null>(null);
+  // Admin master switch (Settings → Social Accounts) — same flag mobile
+  // reads via PlatformSettingsContext. Re-fetched (uncached) every time this
+  // modal opens, so an admin-side change is picked up without a full page
+  // reload. Fails open (true) so a flags-fetch hiccup never blocks connecting.
+  const platformFlags = useAsync((s) => fetchPlatformFlags(s), [open]);
+  const socialAccountsEnabled = platformFlags.data?.socialAccountsEnabled ?? true;
 
   const byPlatform = new Map(accounts.map((a) => [a.platform, a]));
 
@@ -616,9 +623,9 @@ function ConnectSocialModal({
                         ? t('profile.connected')
                         : `${compactNumber(acct.followers)} ${t('profile.followers')}`}
                     </p>
-                  ) : (
+                  ) : socialAccountsEnabled ? (
                     <p className="truncate text-[12px] text-ink-soft">{t('profile.connectHint')}</p>
-                  )}
+                  ) : null}
                 </div>
                 {acct ? (
                   <button
@@ -634,7 +641,7 @@ function ConnectSocialModal({
                     variant="secondary"
                     className="flex-shrink-0"
                     onClick={CONNECT_HANDLERS[id]}
-                    disabled={id !== 'youtube'}
+                    disabled={!socialAccountsEnabled}
                   >
                     {t('profile.connectBtn')}
                   </Button>
@@ -643,6 +650,15 @@ function ConnectSocialModal({
             );
           })}
         </ul>
+        {!socialAccountsEnabled && (
+          <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-5 text-center">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand">
+              <Clock size={16} />
+            </span>
+            <p className="text-[13px] font-semibold text-ink">{t('profile.socialComingSoonTitle')}</p>
+            <p className="text-[12px] text-ink-soft">{t('profile.socialComingSoonSub')}</p>
+          </div>
+        )}
         <div className="flex justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('common.cancel')}

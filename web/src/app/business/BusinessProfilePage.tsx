@@ -4,16 +4,24 @@ import {
   Bookmark,
   Camera,
   CalendarDays,
+  Clock,
   Globe,
   Heart,
   Mail,
   Phone,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { isPhonePlaceholderEmail } from '../lib/identity';
 import { useToast } from '../ui/Toast';
+import { compactNumber } from '../lib/format';
+import { requestYoutubeAccessToken } from '../lib/googleAuth';
+import { requestFacebookAccessToken } from '../lib/facebookAuth';
+import { openOAuthPopup } from '../lib/oauthPopup';
+import { fetchPlatformFlags } from '../api/platformFlags';
 import {
   fetchBusinessProfile,
   updateBusinessProfile,
@@ -21,7 +29,16 @@ import {
   uploadBusinessCover,
   fetchMyCampaigns,
   fetchSavedCreatorIds,
+  fetchBusinessSocialAccounts,
+  deleteBusinessSocialAccount,
+  connectBusinessYoutubeAccount,
+  getBusinessTiktokAuthorizeUrl,
+  getBusinessFacebookPages,
+  connectBusinessFacebookPage,
+  connectBusinessInstagramAccount,
+  type BusinessSocialAccount,
 } from '../api/business';
+import type { FacebookPageOption } from '../api/creator';
 import { fetchCategories, type Category } from '../api/catalog';
 import { makeCategoryLookup } from '../public/categoryLookup';
 import { CategoryPill } from '../public/CategoryPill';
@@ -36,10 +53,13 @@ import { TextField } from '../ui/TextField';
 import { Textarea } from '../ui/Textarea';
 import { Skeleton } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
+import { Alert } from '../ui/Alert';
 import { Modal } from '../ui/Modal';
 import { ImageCropModal } from '../ui/ImageCropModal';
+import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 
 const MAX_INDUSTRIES = 5;
+const CONNECTABLE_PLATFORMS = ['tiktok', 'youtube', 'instagram', 'facebook'] as const;
 
 /** Same copy generator as the mobile edit-profile screen — keeps the "Regenerate"
  * button producing identical text on both platforms. */
@@ -60,10 +80,12 @@ export function BusinessProfilePage() {
   const categories = useAsync((s) => fetchCategories(s, 'BUSINESS'), []);
   const campaigns = useAsync((s) => fetchMyCampaigns({ limit: 100 }, s), []);
   const savedCreators = useAsync((s) => fetchSavedCreatorIds(s), []);
+  const socials = useAsync((s) => fetchBusinessSocialAccounts(s), []);
   const categoryMeta = useMemo(() => makeCategoryLookup(categories.data ?? []), [categories.data]);
   const p = profile.data;
 
   const [editing, setEditing] = useState(false);
+  const [socialModal, setSocialModal] = useState(false);
   const [industriesOpen, setIndustriesOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -327,7 +349,58 @@ export function BusinessProfilePage() {
             <AddFieldButton label={t('biz.addIndustries')} onClick={() => setIndustriesOpen(true)} />
           )}
         </Card>
+
+        {/* Social accounts */}
+        <Card accent>
+          <CardHeader
+            title={t('profile.socialHeading')}
+            action={
+              <button
+                onClick={() => setSocialModal(true)}
+                className="inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline"
+              >
+                <Plus size={13} />
+                {t('profile.addSocial')}
+              </button>
+            }
+          />
+          {socials.loading ? (
+            <Skeleton className="h-10 w-full" />
+          ) : (socials.data ?? []).length === 0 ? (
+            <AddFieldButton label={t('profile.addSocial')} onClick={() => setSocialModal(true)} />
+          ) : (
+            <ul className="space-y-2">
+              {socials.data!.map((s) => (
+                <li key={s.id} className="flex items-center gap-3 rounded-xl bg-black/[0.02] px-3 py-2.5">
+                  <PlatformIcon platform={s.platform} size={18} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-ink">{platformMeta(s.platform).label}</p>
+                    <p className="truncate text-[12px] text-ink-soft">{compactNumber(s.followers)} {t('profile.followers')}</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm(t('profile.confirmRemove'))) return;
+                      await deleteBusinessSocialAccount(s.id);
+                      socials.reload();
+                    }}
+                    className="rounded-lg p-1.5 text-ink-soft hover:text-danger"
+                    aria-label={t('profile.remove')}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
+
+      <ConnectSocialModal
+        open={socialModal}
+        accounts={socials.data ?? []}
+        onClose={() => setSocialModal(false)}
+        onChange={() => socials.reload()}
+      />
 
       {/* Edit profile modal */}
       <Modal open={editing} onClose={() => setEditing(false)} title={t('profile.edit')} size="lg">
@@ -518,6 +591,249 @@ function IndustriesModal({
           </Button>
         </div>
       </div>
+    </Modal>
+  );
+}
+
+type ConnectablePlatform = (typeof CONNECTABLE_PLATFORMS)[number];
+type PagePickerMode = 'facebook' | 'instagram';
+
+/**
+ * Mirrors CreatorProfilePage's ConnectSocialModal — one row per platform
+ * (icon + name + follower count/hint on the left, Connect/disconnect on the
+ * right). Connecting pulls the profile link and live follower/subscriber
+ * count straight from each platform via OAuth; see lib/googleAuth.ts,
+ * lib/facebookAuth.ts and lib/oauthPopup.ts for the three underlying flows.
+ */
+function ConnectSocialModal({
+  open,
+  accounts,
+  onClose,
+  onChange,
+}: {
+  open: boolean;
+  accounts: BusinessSocialAccount[];
+  onClose: () => void;
+  onChange: () => void;
+}) {
+  const t = useT();
+  const [connecting, setConnecting] = useState<ConnectablePlatform | null>(null);
+  const [error, setError] = useState('');
+  const [pagePicker, setPagePicker] = useState<{
+    mode: PagePickerMode;
+    accessToken: string;
+    pages: FacebookPageOption[];
+  } | null>(null);
+  // Admin master switch (Settings → Social Accounts) — same flag mobile
+  // reads via PlatformSettingsContext. Re-fetched (uncached) every time this
+  // modal opens, so an admin-side change is picked up without a full page
+  // reload. Fails open (true) so a flags-fetch hiccup never blocks connecting.
+  const platformFlags = useAsync((s) => fetchPlatformFlags(s), [open]);
+  const socialAccountsEnabled = platformFlags.data?.socialAccountsEnabled ?? true;
+
+  const byPlatform = new Map(accounts.map((a) => [a.platform, a]));
+
+  const finishFacebook = async (accessToken: string, pageId: string) => {
+    setConnecting('facebook');
+    setError('');
+    try {
+      await connectBusinessFacebookPage(accessToken, pageId);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setConnecting(null);
+      setPagePicker(null);
+    }
+  };
+
+  const finishInstagram = async (accessToken: string, pageId: string) => {
+    setConnecting('instagram');
+    setError('');
+    try {
+      await connectBusinessInstagramAccount(accessToken, pageId);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setConnecting(null);
+      setPagePicker(null);
+    }
+  };
+
+  const connectYoutube = async () => {
+    setConnecting('youtube');
+    setError('');
+    try {
+      const accessToken = await requestYoutubeAccessToken();
+      await connectBusinessYoutubeAccount(accessToken);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  const connectTiktok = async () => {
+    setConnecting('tiktok');
+    setError('');
+    try {
+      const url = await getBusinessTiktokAuthorizeUrl();
+      const result = await openOAuthPopup(url, 'tiktok');
+      if (result.success) onChange();
+      else setError(result.error ?? t('common.somethingWrong'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  // Facebook only exposes follower counts for Pages (never personal profiles), and an
+  // Instagram Business account's stats are only reachable via the Facebook Page it's
+  // linked to — so both buttons share this one Facebook login + Page-listing step, and
+  // just differ in which pages qualify and which fields get saved.
+  const connectViaFacebook = async (mode: PagePickerMode) => {
+    setConnecting(mode);
+    setError('');
+    try {
+      const accessToken = await requestFacebookAccessToken(['pages_show_list', 'pages_read_engagement', 'instagram_basic']);
+      const pages = await getBusinessFacebookPages(accessToken);
+      const qualifying = mode === 'instagram' ? pages.filter((p) => p.hasInstagram) : pages;
+      if (qualifying.length === 0) {
+        setError(mode === 'instagram' ? t('profile.noInstagramPages') : t('profile.noFacebookPages'));
+        setConnecting(null);
+        return;
+      }
+      if (qualifying.length === 1) {
+        if (mode === 'facebook') await finishFacebook(accessToken, qualifying[0].id);
+        else await finishInstagram(accessToken, qualifying[0].id);
+        return;
+      }
+      setPagePicker({ mode, accessToken, pages: qualifying });
+      setConnecting(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+      setConnecting(null);
+    }
+  };
+
+  // Instagram business stats are only reachable via a linked Facebook Page
+  // (see comment on connectViaFacebook above), so it shares that flow too.
+  const CONNECT_HANDLERS: Record<ConnectablePlatform, () => void> = {
+    tiktok: () => void connectTiktok(),
+    youtube: () => void connectYoutube(),
+    instagram: () => void connectViaFacebook('instagram'),
+    facebook: () => void connectViaFacebook('facebook'),
+  };
+
+  const disconnect = async (id: string) => {
+    if (!window.confirm(t('profile.confirmRemove'))) return;
+    await deleteBusinessSocialAccount(id);
+    onChange();
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('profile.connectAccounts')}
+    >
+      <div className="space-y-4">
+        {error && <Alert tone="error">{error}</Alert>}
+        <ul className="space-y-2">
+          {CONNECTABLE_PLATFORMS.map((id) => {
+            const acct = byPlatform.get(id);
+            const meta = platformMeta(id);
+            return (
+              <li key={id} className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
+                <span
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: `${meta.color}18` }}
+                >
+                  <PlatformIcon platform={id} size={17} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-ink">{meta.label}</p>
+                  {acct ? (
+                    <p className="truncate text-[12px] text-ink-soft">
+                      {id === 'tiktok' && acct.followers === 0
+                        ? t('profile.connected')
+                        : `${compactNumber(acct.followers)} ${t('profile.followers')}`}
+                    </p>
+                  ) : socialAccountsEnabled ? (
+                    <p className="truncate text-[12px] text-ink-soft">{t('profile.connectHint')}</p>
+                  ) : null}
+                </div>
+                {acct ? (
+                  <button
+                    onClick={() => disconnect(acct.id)}
+                    className="flex-shrink-0 rounded-lg p-1.5 text-ink-soft hover:text-danger"
+                    aria-label={t('profile.remove')}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="flex-shrink-0"
+                    onClick={CONNECT_HANDLERS[id]}
+                    disabled={!socialAccountsEnabled}
+                  >
+                    {t('profile.connectBtn')}
+                  </Button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {!socialAccountsEnabled && (
+          <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-5 text-center">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand">
+              <Clock size={16} />
+            </span>
+            <p className="text-[13px] font-semibold text-ink">{t('profile.socialComingSoonTitle')}</p>
+            <p className="text-[12px] text-ink-soft">{t('profile.socialComingSoonSub')}</p>
+          </div>
+        )}
+        <div className="flex justify-end">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+        </div>
+      </div>
+
+      <Modal
+        open={!!pagePicker}
+        onClose={() => setPagePicker(null)}
+        title={pagePicker?.mode === 'instagram' ? t('profile.pickInstagramPage') : t('profile.pickFacebookPage')}
+      >
+        <ul className="divide-y divide-line">
+          {pagePicker?.pages.map((page) => (
+            <li key={page.id}>
+              <button
+                type="button"
+                disabled={connecting !== null}
+                onClick={() =>
+                  pagePicker.mode === 'facebook'
+                    ? void finishFacebook(pagePicker.accessToken, page.id)
+                    : void finishInstagram(pagePicker.accessToken, page.id)
+                }
+                className="flex w-full items-center justify-between gap-3 px-1 py-3 text-left hover:bg-black/[0.02]"
+              >
+                <span className="text-[13px] font-semibold text-ink">
+                  {pagePicker.mode === 'instagram' ? `@${page.instagramUsername ?? page.name}` : page.name}
+                </span>
+                {pagePicker.mode === 'facebook' && (
+                  <span className="text-[12px] text-ink-soft">{compactNumber(page.fanCount)} {t('profile.followers')}</span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Modal>
     </Modal>
   );
 }
