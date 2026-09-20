@@ -37,6 +37,7 @@ export class BusinessRepository {
     category?:  string;
     platform?:  string;
     locations?: string[]; // OR-matched against campaign.location
+    sort?:      'newest';
     page:       number;
     limit:      number;
   }) {
@@ -80,8 +81,11 @@ export class BusinessRepository {
         // isn't unique (bulk-seeded/duplicate-named rows can tie on both), and
         // without a fully deterministic sort, Postgres can return the same
         // row on two different pages (or skip one entirely) as the result
-        // set shifts between paginated queries.
-        orderBy: [{ isVerified: 'desc' }, { businessName: 'asc' }, { id: 'asc' }],
+        // set shifts between paginated queries. Same reasoning applies to the
+        // createdAt tie-breaker on the 'newest' branch below.
+        orderBy: params.sort === 'newest'
+          ? [{ createdAt: 'desc' }, { id: 'asc' }]
+          : [{ isVerified: 'desc' }, { businessName: 'asc' }, { id: 'asc' }],
         select: LIST_SELECT,
       }),
       prisma.businessProfile.count({ where }),

@@ -133,6 +133,7 @@ export class BusinessService {
     category?:  string;
     platform?:  string;
     locations?: string[];
+    sort?:      'newest';
     page:       number;
     limit:      number;
     lang?:      string;

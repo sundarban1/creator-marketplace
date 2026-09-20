@@ -77,13 +77,14 @@ export class PublicService {
   // Landing page's three preview rows (events/creators/businesses) in one
   // round trip — each section only ever shows 4 cards, so this fetches
   // exactly that instead of the old three separate public-marketplace calls
-  // that over-fetched (events: 3 paid + 1 open; creators/businesses: 4 each,
-  // sorted the same way their full browse pages default to).
+  // that over-fetched. All three rows are sorted newest-first (events already
+  // default to createdAt desc) so the landing page always reflects the latest
+  // published event / newly joined creator / newly joined business.
   async getShowcase(lang = 'en') {
     const [events, creatorsResult, businessesResult] = await Promise.all([
       this.campaignService.showcase(3, 1, lang),
-      this.creatorService.listCreators({ page: 1, limit: 4, sort: 'followers', lang }),
-      this.businessService.listBusinesses({ page: 1, limit: 4, lang }),
+      this.creatorService.listCreators({ page: 1, limit: 4, sort: 'newest', lang }),
+      this.businessService.listBusinesses({ page: 1, limit: 4, sort: 'newest', lang }),
     ]);
 
     return {
