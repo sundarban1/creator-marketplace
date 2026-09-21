@@ -312,3 +312,56 @@ export async function apiUpload<T>(
   if (!res.ok) throw await parseError(res);
   return ((await res.json()) as ApiEnvelope<T>).data;
 }
+
+/**
+ * Same as `apiUpload`, but driven by `XMLHttpRequest` instead of `fetch` so the
+ * caller can observe upload progress (`fetch` has no cross-browser upload
+ * progress event) — used for the chat attachment progress bar. Mirrors
+ * `apiUpload`'s 401 -> refresh -> retry and error-envelope parsing.
+ */
+export async function apiUploadWithProgress<T>(
+  path: string,
+  form: FormData,
+  onProgress?: (fraction: number) => void,
+): Promise<T> {
+  const send = (token: string | null): Promise<{ status: number; body: unknown }> =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}${path}`);
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.upload.onprogress = (e) => {
+        if (onProgress && e.lengthComputable) onProgress(e.loaded / e.total);
+      };
+      xhr.onerror = () => reject(new NetworkError());
+      xhr.onload = () => {
+        let body: unknown = {};
+        try {
+          body = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+        } catch {
+          /* non-JSON error body */
+        }
+        resolve({ status: xhr.status, body });
+      };
+      xhr.send(form);
+    });
+
+  let res = await send(getAccessToken());
+
+  if (res.status === 401) {
+    const fresh = await ensureFreshAccessToken();
+    if (fresh) res = await send(fresh);
+  }
+
+  if (res.status < 200 || res.status >= 300) {
+    const body = (res.body ?? {}) as Record<string, unknown>;
+    const message = typeof body['message'] === 'string' ? (body['message'] as string) : `Request failed (${res.status})`;
+    const code = typeof body['code'] === 'string' ? (body['code'] as string) : undefined;
+    const details = { ...body };
+    delete details['message'];
+    delete details['code'];
+    delete details['success'];
+    throw new ApiError(message, res.status, code, details);
+  }
+
+  return (res.body as ApiEnvelope<T>).data;
+}

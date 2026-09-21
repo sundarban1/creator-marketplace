@@ -62,9 +62,8 @@ const CreateEventPage = screen(() => import('./business/CreateEventPage'), 'Crea
 const EditEventPage = screen(() => import('./business/EditEventPage'), 'EditEventPage');
 const BusinessPromotionsPage = screen(() => import('./business/BusinessPromotionsPage'), 'BusinessPromotionsPage');
 const BusinessPromotionFormPage = screen(() => import('./business/BusinessPromotionFormPage'), 'BusinessPromotionFormPage');
-const ChatListPage = screen(() => import('./chat/ChatListPage'), 'ChatListPage');
+const ChatPage = screen(() => import('./chat/ChatPage'), 'ChatPage');
 const NotificationsPage = screen(() => import('./notifications/NotificationsPage'), 'NotificationsPage');
-const ChatThreadPage = screen(() => import('./chat/ChatThreadPage'), 'ChatThreadPage');
 const BusinessApplicationsPage = screen(() => import('./business/BusinessApplicationsPage'), 'BusinessApplicationsPage');
 const BusinessDeliverablesPage = screen(() => import('./business/BusinessDeliverablesPage'), 'BusinessDeliverablesPage');
 const BusinessPaymentsPage = screen(() => import('./business/BusinessPaymentsPage'), 'BusinessPaymentsPage');
@@ -127,8 +126,8 @@ export function marketplaceRoutes() {
               <Route path="applications/:id" element={<CreatorWorkDetailPage />} />
               <Route path="work" element={<CreatorWorkPage />} />
               <Route path="work/:id" element={<CreatorWorkDetailPage />} />
-              <Route path="messages" element={<ChatListPage />} />
-              <Route path="messages/:id" element={<ChatThreadPage />} />
+              <Route path="messages" element={<ChatPage />} />
+              <Route path="messages/:id" element={<ChatPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="wallet" element={<CreatorWalletPage />} />
               <Route path="profile" element={<CreatorProfileEditPage />} />
@@ -156,8 +155,8 @@ export function marketplaceRoutes() {
               <Route path="promotions/create" element={<BusinessPromotionFormPage />} />
               <Route path="promotions/:id/edit" element={<BusinessPromotionFormPage />} />
               <Route path="applications" element={<BusinessApplicationsPage />} />
-              <Route path="messages" element={<ChatListPage />} />
-              <Route path="messages/:id" element={<ChatThreadPage />} />
+              <Route path="messages" element={<ChatPage />} />
+              <Route path="messages/:id" element={<ChatPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="deliverables" element={<BusinessDeliverablesPage />} />
               <Route path="payments" element={<BusinessPaymentsPage />} />

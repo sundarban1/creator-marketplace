@@ -328,7 +328,13 @@ export const ne: AppDict = {
     noMessagesYet: 'अझै कुनै सन्देश छैन — नमस्ते भन्नुहोस्!',
     placeholder: 'सन्देश टाइप गर्नुहोस्…',
     send: 'पठाउनुहोस्',
+    emoji: 'इमोजी',
+    attach: 'फाइल संलग्न गर्नुहोस्',
+    attachmentTooLarge: 'कृपया २० MB भन्दा सानो फाइल छान्नुहोस्।',
+    attachmentUnsupportedType: 'यो फाइल प्रकार समर्थित छैन',
     collaborationClosed: 'सहकार्य पूरा भयो — च्याट बन्द',
+    selectConversationTitle: 'तपाईंका सन्देशहरू',
+    selectConversationBody: 'च्याट सुरु गर्न एउटा कुराकानी छान्नुहोस्।',
   },
 
   notifications: {

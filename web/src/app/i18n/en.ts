@@ -349,7 +349,13 @@ export const en = {
     noMessagesYet: 'No messages yet — say hello!',
     placeholder: 'Type a message…',
     send: 'Send',
+    emoji: 'Emoji',
+    attach: 'Attach file',
+    attachmentTooLarge: 'Please choose a file under 20 MB.',
+    attachmentUnsupportedType: 'This file type is not supported',
     collaborationClosed: 'Collaboration complete — chat closed',
+    selectConversationTitle: 'Your messages',
+    selectConversationBody: 'Select a conversation to start chatting.',
   },
 
   notifications: {

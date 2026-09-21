@@ -6,7 +6,7 @@
  * when payment lands (see campaign.service.ts's sendProposalAcceptedMessage),
  * not by an explicit "start conversation" call from this client.
  */
-import { apiRequest, apiUpload, type ApiPagination } from '../lib/apiClient';
+import { apiRequest, apiUpload, apiUploadWithProgress, type ApiPagination } from '../lib/apiClient';
 
 export type MessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE' | 'SYSTEM';
 
@@ -74,6 +74,23 @@ export function sendAttachment(conversationId: string, file: File, caption?: str
   form.append('file', file);
   if (caption) form.append('caption', caption);
   return apiUpload<ChatMessage>(`/api/messaging/conversations/${conversationId}/attachments`, form);
+}
+
+/** Same as `sendAttachment`, but reports upload progress — drives the chat composer's progress bar. */
+export function sendAttachmentWithProgress(
+  conversationId: string,
+  file: File,
+  caption: string | undefined,
+  onProgress: (fraction: number) => void,
+): Promise<ChatMessage> {
+  const form = new FormData();
+  form.append('file', file);
+  if (caption) form.append('caption', caption);
+  return apiUploadWithProgress<ChatMessage>(
+    `/api/messaging/conversations/${conversationId}/attachments`,
+    form,
+    onProgress,
+  );
 }
 
 export function markSeen(conversationId: string): Promise<void> {
