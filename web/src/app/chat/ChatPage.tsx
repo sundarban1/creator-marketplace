@@ -266,7 +266,7 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
   const [error, setError] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [preview, setPreview] = useState<AttachmentPreview | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -295,8 +295,13 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
     markSeen(id).catch(() => {});
   }, [id]);
 
+  // Scrolls only the messages panel itself — never scrollIntoView(), which
+  // walks up the ancestor chain and can nudge the outer page/document scroll
+  // too if this panel isn't fully settled in the viewport yet (e.g. right
+  // after navigating into a thread).
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
   useEffect(() => {
@@ -412,7 +417,7 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
           <Skeleton className="h-10 w-1/2" />
         </div>
       ) : (
-        <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+        <div ref={messagesRef} className="flex-1 scroll-smooth space-y-3 overflow-y-auto px-5 py-4">
           {messages.length === 0 && <p className="py-10 text-center text-[13px] text-ink-soft">{t('chat.noMessagesYet')}</p>}
           {messages.map((m) => {
             if (m.type === 'SYSTEM') {
@@ -511,7 +516,6 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
               </div>
             );
           })}
-          <div ref={bottomRef} />
         </div>
       )}
 
