@@ -63,6 +63,7 @@ model User {
   pushTokens                PushToken[]
   reportsFiled              Report[]          @relation("ReportsFiled")
   authAccounts              AuthAccount[]
+  biometricCredentials      BiometricCredential[]
 
   @@index([role])
   @@map("users")
@@ -123,6 +124,35 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+// One row per device's registered biometric login credential. Stores only the
+// device's Ed25519 PUBLIC key (raw 32 bytes, base64url) — the matching private
+// key is generated on-device and never leaves it, held in expo-secure-store
+// behind requireAuthentication (OS Keychain/Keystore, biometric-gated). Login
+// is a signed-challenge exchange, never a stored/reusable bearer token. No
+// biometric/Face ID/fingerprint data of any kind is stored here or sent to
+// the server — only the public key and device metadata.
+model BiometricCredential {
+  id         String    @id @default(cuid())
+  userId     String
+  // Same stable per-install id already used by Session/PushToken (x-device-id
+  // header / warmDeviceId()) — one credential per device; re-enabling on the
+  // same device replaces its row.
+  deviceId   String
+  publicKey  String
+  platform   String // 'ios' | 'android'
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  // Soft-revoke (Disable Face ID, or a future admin/security action) — keeps
+  // an audit trail instead of silently deleting. onDelete: Cascade still wipes
+  // the row outright on account deletion.
+  revokedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@map("biometric_credentials")
 }
 
 // One row per device's Expo push token — replaces the old single
@@ -280,8 +310,6 @@ model CreatorProfile {
   memberOf                 ProviderMember[]        @relation("ProviderMemberships")
   eventQuestions           EventQuestion[]
   reliability              CreatorReliability?
-  pointsAccount            CreatorPointsAccount?
-  pointsLedger             CreatorPointsLedger[]
   redemptionSessions       RedemptionSession[]
 
   @@index([isVerified])
@@ -581,6 +609,10 @@ enum WalletTransactionType {
   REFERRAL_BONUS
   WITHDRAWAL
   ADJUSTMENT
+  // Debited when a RedemptionSession reaches CONFIRMED — Kolab Points are the
+  // creator's wallet balance (see the Kolab Rewards comment below), not a
+  // separate currency, so a promotion redemption is just another wallet debit.
+  PROMO_REDEMPTION_DEBIT
 }
 
 enum WalletDirection {
@@ -2330,9 +2362,18 @@ model AuditLog {
 // ============================================================================
 // Business creates a Promotion -> a creator redeems it via a short-lived QR
 // handshake (RedemptionSession) -> the creator spends Kolab Points and the
-// business earns Kolab Credits, both tracked as append-only ledgers mirroring
-// WalletTransaction's pattern above. 1 Point = Rs. 1, 1 Credit = Rs. 1; neither
-// is cash-withdrawable in V1.
+// business earns Kolab Credits. 1 Point = Rs. 1, 1 Credit = Rs. 1.
+//
+// Kolab Points are NOT a separate balance — they ARE the creator's wallet
+// balance (WalletTransaction above). A creator earns money the same way
+// regardless of destination, then chooses to either withdraw it as cash
+// (wallet.service.ts) or spend it at a business via this QR flow
+// (PROMO_REDEMPTION_DEBIT); both draw down the same pool, so redemption
+// checks wallet.service.ts's withdrawableBalance (see redemption.service.ts's
+// confirm(), which also takes the same per-creator advisory lock
+// wallet.service.ts's withdrawal request uses, so the two flows can't
+// double-spend the same money concurrently). Kolab Credits remain a genuinely
+// separate, non-cash-withdrawable business-side currency tracked below.
 
 model Promotion {
   id                   String                @id @default(cuid())
@@ -2420,51 +2461,7 @@ model RedemptionSession {
   @@map("redemption_sessions")
 }
 
-// Cached creator Points balance — deliberately NOT the sole source of truth
-// (that's Σ COMPLETED CreatorPointsLedger rows, exactly like WalletTransaction
-// above); this exists only because the balance renders on nearly every creator
-// screen and a live groupBy on each render would be wasteful. Every write to
-// `balance` happens inside the same transaction as a CreatorPointsLedger row.
-model CreatorPointsAccount {
-  id             String   @id @default(cuid())
-  creatorId      String   @unique
-  balance        Int      @default(0)
-  lifetimeEarned Int      @default(0)
-  lifetimeSpent  Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@map("creator_points_accounts")
-}
-
-// Immutable creator Points ledger. 1 Point = Rs. 1, never cash-withdrawable in
-// V1. Same append-only / idempotent-by-reference shape as WalletTransaction.
-model CreatorPointsLedger {
-  id               String                       @id @default(cuid())
-  creatorId        String
-  type             CreatorPointsTransactionType
-  direction        WalletDirection
-  // Always positive; the sign is carried by `direction`.
-  amount           Int
-  status           WalletTransactionStatus      @default(COMPLETED)
-  description      String
-  // e.g. 'application' | 'redemption_session' + the source row id. The unique
-  // index below is the idempotency backstop, same role as on WalletTransaction.
-  referenceType    String?
-  referenceId      String?
-  createdByAdminId String?
-  createdAt        DateTime                     @default(now())
-
-  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@unique([referenceId, type])
-  @@index([creatorId, createdAt(sort: Desc)])
-  @@map("creator_points_ledger")
-}
-
-// Business-side mirror of CreatorPointsAccount. 1 Credit = Rs. 1, never
+// Business-side mirror of what used to be CreatorPointsAccount. 1 Credit = Rs. 1, never
 // cash-withdrawable in V1.
 model BusinessCreditsAccount {
   id             String   @id @default(cuid())
@@ -2521,15 +2518,6 @@ enum RedemptionSessionStatus {
   CONFIRMED
   EXPIRED
   CANCELLED
-}
-
-enum CreatorPointsTransactionType {
-  // Credited when a paid campaign completes — added alongside the existing
-  // WalletTransaction{CAMPAIGN_PAYOUT} write in escrow.service.ts (Phase 2).
-  CAMPAIGN_REWARD
-  // Debited when a RedemptionSession reaches CONFIRMED.
-  PROMO_REDEMPTION_DEBIT
-  ADJUSTMENT
 }
 
 enum BusinessCreditsTransactionType {

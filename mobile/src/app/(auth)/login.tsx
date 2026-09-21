@@ -40,7 +40,7 @@ import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
-  authenticate as authenticateBiometric,
+  prepareBiometricSignIn,
   getBiometricLabel,
   isBiometricAvailable,
   isBiometricLoginEnabled,
@@ -448,7 +448,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 }) {
   const C = useAppColors();
   const s = useMemo(() => makeStyles(C), [C]);
-  const { login, reloadUser } = useAuth();
+  const { login, loginWithBiometric } = useAuth();
   const { t }     = useLanguage();
   const { flags } = usePlatformFlags();
 
@@ -476,14 +476,29 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
     setApiError('');
     setBiometricLoading(true);
     try {
-      const ok = await authenticateBiometric(t('auth.login.biometricLoginBtn', { biometricLabel }));
-      if (ok) {
-        const u = await reloadUser();
-        if (!u) setApiError(t('auth.login.biometricNoSession'));
-        // On success RootNavigator's redirect effect takes it from here.
+      const result = await prepareBiometricSignIn();
+      if (!result.success) {
+        if (result.reason === 'unavailable') {
+          // Credential invalidated (enrollment changed) or revoked server-side
+          // — prepareBiometricSignIn already cleared local state, so hide the
+          // button rather than leave a dead-end "Continue with..." around.
+          setBiometricReady(false);
+          setApiError(t('auth.login.biometricUnavailable', { biometricLabel }));
+        } else if (result.reason === 'failed' || result.reason === 'network') {
+          setApiError(t('auth.login.biometricFailed'));
+        }
+        // 'cancelled' — stay quiet, same as password login's own cancel handling.
+        return;
       }
-    } catch {
-      setApiError(t('auth.login.biometricFailed'));
+      await loginWithBiometric(result.challenge, result.signature);
+      // On success RootNavigator's redirect effect takes it from here.
+    } catch (e) {
+      const message = e instanceof Error ? e.message : t('auth.login.biometricFailed');
+      if (/suspended/i.test(message)) {
+        setSuspendedModal(true);
+      } else {
+        setApiError(message);
+      }
     } finally {
       setBiometricLoading(false);
     }

@@ -32,6 +32,8 @@ export const ActivityAction = {
   APPLICATION_REVISION_REQUESTED:  'application.revision_requested',
   APPLICATION_DISPUTED:            'application.disputed',
   DISPUTE_RESOLVED:                'dispute.resolved',
+  BIOMETRIC_ENABLED:               'biometric.enabled',
+  BIOMETRIC_DISABLED:              'biometric.disabled',
 } as const;
 
 export const AuditAction = {

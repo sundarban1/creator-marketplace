@@ -197,6 +197,13 @@ export const BIOMETRIC_ENABLED_KEY  = 'ch_biometric_enabled';
 // One-shot marker for the post-login "Enable Face ID / Fingerprint?" offer —
 // set whether the user taps Enable or Not now, so the offer never nags twice.
 export const BIOMETRIC_OFFERED_KEY  = 'ch_biometric_offered';
+// This device's Ed25519 biometric-login private key (32-byte seed,
+// base64url), written with requireAuthentication: true — reading it is what
+// triggers the native Face ID/Touch ID/fingerprint prompt on the login
+// screen. Deliberately NOT read through utilities/storage.ts's shared cache:
+// a requireAuthentication item must never be cached in plaintext, it has to
+// be re-read (and re-prompted) fresh every time. See services/biometric.ts.
+export const BIOMETRIC_KEYPAIR_KEY  = 'ch_biometric_keypair';
 export const RECENT_SEARCHES_KEY    = 'ch_recent_searches';
 // Apple's stable user id (`sub`) for whoever is signed in, when they've linked
 // Apple. Lets the app poll AppleAuthentication.getCredentialStateAsync on

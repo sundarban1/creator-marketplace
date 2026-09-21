@@ -59,6 +59,23 @@ export const authService = {
     return user;
   },
 
+  // Exchanges a signed biometric challenge (see services/biometric.ts
+  // prepareBiometricSignIn) for a brand-new normal session — same persistence
+  // as a password login (always "remembered", matching the Facebook-style
+  // re-login this replaces a manual password entry for).
+  async biometricLogin(challenge: string, signature: string): Promise<User> {
+    const res = await request<ApiLoginResponse>('POST', '/api/auth/biometric/verify', { challenge, signature });
+    const { accessToken, refreshToken, user: apiUser } = res.data;
+    const user = toUser(apiUser);
+
+    await Promise.all([
+      storage.set(ACCESS_TOKEN_KEY,  accessToken),
+      storage.set(REFRESH_TOKEN_KEY, refreshToken),
+    ]);
+    await storage.setJSON(USER_KEY, user);
+    return user;
+  },
+
   async register(payload: Identifier & {
     password:      string;
     role:          'CREATOR' | 'BUSINESS';

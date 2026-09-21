@@ -212,6 +212,59 @@ export class AuthRepository {
     return prisma.user.update({ where: { id: userId }, data: { deviceId } });
   }
 
+  // Enable/re-enable on this device — replaces a previously revoked or
+  // stale key for the same (userId, deviceId) rather than accumulating rows.
+  //
+  // A device's biometric sensor is inherently single-tenant: the mobile app
+  // only ever holds ONE private key locally (not scoped per account), so
+  // enabling Face ID for this account necessarily overwrites whatever key was
+  // there before. If a different Kolab account previously enabled biometric
+  // login on this same physical device (shared/handed-down phone, or two demo
+  // accounts on one test device) and never disabled it, that account's row
+  // would otherwise sit around with a public key nothing on the device can
+  // sign for any more — and since (userId, deviceId) is unique rather than
+  // deviceId alone, findActiveBiometricCredentialByDeviceId's lookup could
+  // then non-deterministically resolve to that dead row instead of this one.
+  // Revoking every other account's active credential for this deviceId here
+  // keeps "one device → at most one active credential" actually true, so that
+  // lookup is always unambiguous.
+  async upsertBiometricCredential(data: { userId: string; deviceId: string; publicKey: string; platform: string }) {
+    return prisma.$transaction(async (tx) => {
+      await tx.biometricCredential.updateMany({
+        where: { deviceId: data.deviceId, userId: { not: data.userId }, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      return tx.biometricCredential.upsert({
+        where: { userId_deviceId: { userId: data.userId, deviceId: data.deviceId } },
+        create: data,
+        update: { publicKey: data.publicKey, platform: data.platform, revokedAt: null },
+      });
+    });
+  }
+
+  // Looked up by deviceId alone at challenge time — the login screen doesn't
+  // know which user it is yet, only which device. Safe because
+  // upsertBiometricCredential above guarantees at most one ACTIVE credential
+  // per deviceId at a time.
+  async findActiveBiometricCredentialByDeviceId(deviceId: string) {
+    return prisma.biometricCredential.findFirst({ where: { deviceId, revokedAt: null } });
+  }
+
+  async findBiometricCredentialById(id: string) {
+    return prisma.biometricCredential.findUnique({ where: { id } });
+  }
+
+  async touchBiometricCredential(id: string) {
+    await prisma.biometricCredential.update({ where: { id }, data: { lastUsedAt: new Date() } });
+  }
+
+  async revokeBiometricCredential(userId: string, deviceId: string) {
+    await prisma.biometricCredential.updateMany({
+      where: { userId, deviceId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
   // Drives the admin-configurable CAPTCHA-after-suspicious-behaviour trigger
   // — see AuthService.login.
   async incrementFailedLogin(userId: string): Promise<number> {

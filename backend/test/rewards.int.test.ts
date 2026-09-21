@@ -7,7 +7,7 @@ import prisma from '../src/prisma';
 import { RedemptionService } from '../src/modules/redemption/redemption.service';
 import { PromotionService } from '../src/modules/promotion/promotion.service';
 import { CampaignService } from '../src/modules/campaign/campaign.service';
-import { recordPointsTransaction, recordPointsTransactionIdempotent } from '../src/modules/points/points.ledger';
+import { recordWalletTransaction, recordWalletTransactionIdempotent } from '../src/modules/wallet/wallet.ledger';
 import { recordCreditsTransaction } from '../src/modules/credits/credits.ledger';
 
 const d = hasDb ? describe : describe.skip;
@@ -26,36 +26,32 @@ async function issueScanBill(
   return billed;
 }
 
-d('Kolab Rewards — points & credits ledger idempotency', () => {
+d('Kolab Rewards — points-via-wallet ledger idempotency', () => {
   beforeEach(resetDb);
 
-  it('points: a duplicate (referenceId, type) is skipped, not double-credited', async () => {
+  it('a PROMO_REDEMPTION_DEBIT duplicate (referenceId, type) is skipped, not double-debited', async () => {
     const { creatorId } = await seedCreatorBusiness();
     const input = {
-      creatorId, type: 'CAMPAIGN_REWARD' as const, direction: 'CREDIT' as const,
-      amount: 50, description: 'test', referenceType: 'application', referenceId: 'app-1',
+      creatorId, type: 'PROMO_REDEMPTION_DEBIT' as const, direction: 'DEBIT' as const,
+      amount: 50, description: 'test', referenceType: 'redemption_session', referenceId: 'sess-1',
     };
-    const first  = await recordPointsTransactionIdempotent(input);
-    const second = await recordPointsTransactionIdempotent(input);
+    const first  = await recordWalletTransactionIdempotent(input);
+    const second = await recordWalletTransactionIdempotent(input);
 
     expect(first).not.toBeNull();
     expect(second).toBeNull();
-    expect(await pointsBalance(creatorId)).toBe(50);
-    expect(await prisma.creatorPointsLedger.count({ where: { creatorId } })).toBe(1);
+    expect(await prisma.walletTransaction.count({ where: { creatorId, type: 'PROMO_REDEMPTION_DEBIT' } })).toBe(1);
   });
 
-  it('points: the cached account balance stays in lockstep with a credit then a debit', async () => {
+  it('points balance nets a credit then a debit correctly (Points ARE the wallet ledger)', async () => {
     const { creatorId } = await seedCreatorBusiness();
-    await recordPointsTransaction(prisma, {
-      creatorId, type: 'CAMPAIGN_REWARD', direction: 'CREDIT', amount: 300, description: 'earned',
+    await recordWalletTransaction(prisma, {
+      creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 300, description: 'earned',
     });
-    await recordPointsTransaction(prisma, {
+    await recordWalletTransaction(prisma, {
       creatorId, type: 'PROMO_REDEMPTION_DEBIT', direction: 'DEBIT', amount: 120, description: 'spent',
     });
     expect(await pointsBalance(creatorId)).toBe(180);
-    const account = await prisma.creatorPointsAccount.findUniqueOrThrow({ where: { creatorId } });
-    expect(account.lifetimeEarned).toBe(300);
-    expect(account.lifetimeSpent).toBe(120);
   });
 });
 
@@ -100,7 +96,8 @@ d('Kolab Rewards — Promotion delete', () => {
   it('a promotion that has already been redeemed cannot be deleted even while PAUSED', async () => {
     const { bizUserId, creatorUserId, businessId, creatorId } = await seedCreatorBusiness();
     const promo = await seedPromotion(businessId, { discountType: 'PERCENTAGE', discountValue: 10, minSpend: 500, maxDiscountCap: 500, status: 'ACTIVE' });
-    await recordPointsTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 200, description: 'seed' });
+    // pointsCost pays the full discounted bill (900 for a Rs. 1000 bill at 10% off), not just the discount slice.
+    await recordWalletTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 1000, description: 'seed' });
 
     const redemption = new RedemptionService();
     const billed = await issueScanBill(redemption, { bizUserId, creatorUserId, promotionId: promo.id, billAmount: 1000 });
@@ -129,28 +126,29 @@ d('Kolab Rewards — redemption state machine', () => {
   it('full flow: issue -> scan -> bill -> confirm settles both ledgers exactly once', async () => {
     const { bizUserId, creatorUserId, businessId, creatorId } = await seedCreatorBusiness();
     const promo = await seedPromotion(businessId, { discountType: 'PERCENTAGE', discountValue: 10, minSpend: 500, maxDiscountCap: 500 });
-    await recordPointsTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 200, description: 'seed' });
+    await recordWalletTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 1000, description: 'seed' });
 
     const redemption = new RedemptionService();
     const billed = await issueScanBill(redemption, { bizUserId, creatorUserId, promotionId: promo.id, billAmount: 1000 });
     expect(billed.discountAmount).toBe(100);
-    expect(billed.pointsCost).toBe(100);
-    expect(billed.creditsEarned).toBe(100);
+    // pointsCost/creditsEarned pay the full discounted bill (900), not just the discount slice (100).
+    expect(billed.pointsCost).toBe(900);
+    expect(billed.creditsEarned).toBe(900);
     expect(billed.status).toBe('BILL_ENTERED');
 
     const confirmed = await redemption.confirm(creatorUserId, billed.id);
     expect(confirmed.status).toBe('CONFIRMED');
 
-    expect(await pointsBalance(creatorId)).toBe(100); // 200 seeded − 100 spent
-    expect(await creditsBalance(businessId)).toBe(100);
-    expect(await prisma.creatorPointsLedger.count({ where: { referenceId: billed.id, type: 'PROMO_REDEMPTION_DEBIT' } })).toBe(1);
+    expect(await pointsBalance(creatorId)).toBe(100); // 1000 seeded − 900 spent
+    expect(await creditsBalance(businessId)).toBe(900);
+    expect(await prisma.walletTransaction.count({ where: { referenceId: billed.id, type: 'PROMO_REDEMPTION_DEBIT' } })).toBe(1);
     expect(await prisma.businessCreditsLedger.count({ where: { referenceId: billed.id, type: 'PROMO_REDEMPTION_CREDIT' } })).toBe(1);
   });
 
   it('one redemption per creator per promotion — a second issue after CONFIRMED is rejected', async () => {
     const { bizUserId, creatorUserId, businessId, creatorId } = await seedCreatorBusiness();
     const promo = await seedPromotion(businessId, { discountValue: 10, minSpend: 0 });
-    await recordPointsTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 100, description: 'seed' });
+    await recordWalletTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 1000, description: 'seed' });
 
     const redemption = new RedemptionService();
     const billed = await issueScanBill(redemption, { bizUserId, creatorUserId, promotionId: promo.id, billAmount: 1000 });
@@ -169,14 +167,14 @@ d('Kolab Rewards — redemption state machine', () => {
     expect(billed.pointsCost).toBe(500);
 
     await expect(redemption.confirm(creatorUserId, billed.id)).rejects.toThrow(/enough kolab points/i);
-    expect(await prisma.creatorPointsLedger.count()).toBe(0);
+    expect(await prisma.walletTransaction.count({ where: { type: 'PROMO_REDEMPTION_DEBIT' } })).toBe(0);
     expect(await prisma.businessCreditsLedger.count()).toBe(0);
   });
 
   it('totalRedemptionLimit blocks a new issue once the cap of CONFIRMED redemptions is reached', async () => {
     const { bizUserId, creatorUserId, businessId, creatorId } = await seedCreatorBusiness();
     const promo = await seedPromotion(businessId, { discountValue: 10, minSpend: 0, totalRedemptionLimit: 1 });
-    await recordPointsTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 100, description: 'seed' });
+    await recordWalletTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 1000, description: 'seed' });
 
     const redemption = new RedemptionService();
     const billed = await issueScanBill(redemption, { bizUserId, creatorUserId, promotionId: promo.id, billAmount: 1000 });
@@ -185,7 +183,7 @@ d('Kolab Rewards — redemption state machine', () => {
     // A different creator hits the promotion's total cap, not the
     // one-per-creator rule (which only blocks the first creator).
     const second = await seedCreator();
-    await recordPointsTransaction(prisma, { creatorId: second.creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 100, description: 'seed' });
+    await recordWalletTransaction(prisma, { creatorId: second.creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 1000, description: 'seed' });
     await expect(redemption.issue(second.creatorUserId, promo.id)).rejects.toThrow(/limit/i);
   });
 
@@ -205,7 +203,7 @@ d('Kolab Rewards — redemption state machine', () => {
   it('two simultaneous confirms on the same session settle exactly once', async () => {
     const { bizUserId, creatorUserId, businessId, creatorId } = await seedCreatorBusiness();
     const promo = await seedPromotion(businessId, { discountValue: 10, minSpend: 0 });
-    await recordPointsTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 1000, description: 'seed' });
+    await recordWalletTransaction(prisma, { creatorId, type: 'ADJUSTMENT', direction: 'CREDIT', amount: 1000, description: 'seed' });
 
     const redemption = new RedemptionService();
     const billed = await issueScanBill(redemption, { bizUserId, creatorUserId, promotionId: promo.id, billAmount: 1000 });
@@ -219,10 +217,10 @@ d('Kolab Rewards — redemption state machine', () => {
     expect(results.filter((r) => r.status === 'rejected').length).toBe(1);
     // The row-lock + unique-constraint backstop must agree: exactly one
     // settlement made it into either ledger, never zero and never two.
-    expect(await prisma.creatorPointsLedger.count({ where: { referenceId: billed.id, type: 'PROMO_REDEMPTION_DEBIT' } })).toBe(1);
+    expect(await prisma.walletTransaction.count({ where: { referenceId: billed.id, type: 'PROMO_REDEMPTION_DEBIT' } })).toBe(1);
     expect(await prisma.businessCreditsLedger.count({ where: { referenceId: billed.id, type: 'PROMO_REDEMPTION_CREDIT' } })).toBe(1);
-    expect(await pointsBalance(creatorId)).toBe(900);
-    expect(await creditsBalance(businessId)).toBe(100);
+    expect(await pointsBalance(creatorId)).toBe(100); // 1000 seeded − 900 spent, exactly once
+    expect(await creditsBalance(businessId)).toBe(900);
   });
 });
 

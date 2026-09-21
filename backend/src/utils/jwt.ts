@@ -165,6 +165,52 @@ export async function verifyOAuthState(token: string): Promise<OAuthStatePayload
   return payload;
 }
 
+// Server-side half of biometric re-login's challenge/signature exchange (see
+// AuthService.biometricChallenge/biometricVerify): the device signs this
+// challenge with the Ed25519 private key backing its registered
+// BiometricCredential, proving possession without ever sending the key or any
+// reusable bearer token. `nonce` is parked in the queue Redis and GETDEL'd on
+// verify so a captured (challenge, signature) pair can't be replayed.
+export interface BiometricChallengePayload {
+  credentialId: string;
+  deviceId: string;
+  nonce: string;
+}
+
+const BIOMETRIC_CHALLENGE_SECRET = env.JWT_ACCESS_SECRET + '_biometric_challenge';
+const BIOMETRIC_CHALLENGE_TTL_SEC = 2 * 60;
+const biometricChallengeKey = (nonce: string) => `biometric-challenge:${nonce}`;
+
+// Unlike signOAuthState's soft Redis fallback, this is payments-adjacent
+// login auth and the nonce MUST be single-use — so it fails closed (throws)
+// if the queue Redis is unavailable rather than silently issuing a
+// replayable challenge.
+export async function signBiometricChallenge(payload: { credentialId: string; deviceId: string }): Promise<string> {
+  const client = await getQueueRedis();
+  if (!client) throw new Error('Redis unavailable — cannot issue a single-use biometric challenge');
+
+  const nonce = crypto.randomUUID();
+  await client.set(biometricChallengeKey(nonce), '1', { EX: BIOMETRIC_CHALLENGE_TTL_SEC });
+
+  const jwtPayload: BiometricChallengePayload = { ...payload, nonce };
+  return jwt.sign(jwtPayload, BIOMETRIC_CHALLENGE_SECRET, { expiresIn: BIOMETRIC_CHALLENGE_TTL_SEC });
+}
+
+// Verifies the challenge JWT's signature/expiry AND atomically consumes its
+// nonce, so the same signed challenge can never be replayed. Throws on an
+// invalid/expired/already-used challenge, or if Redis is unreachable.
+export async function verifyAndConsumeBiometricChallenge(token: string): Promise<BiometricChallengePayload & JwtPayload> {
+  const payload = jwt.verify(token, BIOMETRIC_CHALLENGE_SECRET) as BiometricChallengePayload & JwtPayload;
+
+  const client = await getQueueRedis();
+  if (!client) throw new Error('Redis unavailable — cannot verify single-use biometric challenge');
+
+  const consumed = await client.getDel(biometricChallengeKey(payload.nonce));
+  if (!consumed) throw new Error('Biometric challenge already used or expired');
+
+  return payload;
+}
+
 // Identifies an anonymous website visitor's chat session (landing-page floating
 // widget) — no user account exists, so this token (not a real access token) is
 // what proves "this browser owns this chat" for both REST calls and the socket

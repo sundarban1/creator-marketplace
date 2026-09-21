@@ -1,6 +1,6 @@
-import type { CreatorPointsLedger } from '@prisma/client';
+import type { WalletTransaction } from '@prisma/client';
 
-export function toPointsLedgerDto(row: CreatorPointsLedger) {
+export function toPointsLedgerDto(row: WalletTransaction) {
   return {
     id:          row.id,
     type:        row.type,

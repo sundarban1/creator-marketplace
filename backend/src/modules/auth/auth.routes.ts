@@ -22,6 +22,8 @@ import {
   appleLinkSchema,
   appleNotificationSchema,
   unlinkProviderSchema,
+  biometricRegisterSchema,
+  biometricVerifySchema,
 } from './auth.schema';
 
 const router = Router();
@@ -545,5 +547,47 @@ router.get('/methods',              authenticate, ctrl.getAuthMethods.bind(ctrl)
  *     security: [{ bearerAuth: [] }]
  */
 router.delete('/methods/:provider', authenticate, validate(unlinkProviderSchema, 'params'), ctrl.unlinkProvider.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/biometric/register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register/replace this device's biometric login public key
+ *     description: Only reachable while already authenticated — biometric login can only be enabled after a real login, never before one.
+ *     security: [{ bearerAuth: [] }]
+ */
+router.post('/biometric/register', authenticate, validate(biometricRegisterSchema), ctrl.registerBiometric.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/biometric/challenge:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Issue a short-lived, single-use challenge for this device to sign
+ *     description: Reads the device from the X-Device-Id header. 404 if this device has no active biometric credential (nothing to resume — client should fall back to normal login).
+ */
+router.post('/biometric/challenge', ctrl.biometricChallenge.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/biometric/verify:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify a signed challenge and issue a brand-new normal session
+ *     description: Never reuses an existing/stored token — mints access + refresh tokens exactly like /login.
+ */
+router.post('/biometric/verify', validate(biometricVerifySchema), ctrl.biometricVerify.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/biometric:
+ *   delete:
+ *     tags: [Auth]
+ *     summary: Revoke this device's biometric credential (Disable Face ID / Fingerprint)
+ *     description: Reads the device from the X-Device-Id header. Only revokes the calling device — other devices' biometric login are unaffected. Does not end the caller's current session.
+ *     security: [{ bearerAuth: [] }]
+ */
+router.delete('/biometric', authenticate, ctrl.revokeBiometric.bind(ctrl));
 
 export default router;

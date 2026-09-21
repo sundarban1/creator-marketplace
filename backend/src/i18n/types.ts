@@ -88,6 +88,11 @@ export interface BackendDict {
     loginMethodDisconnected: string;
     emailQueryRequired: string;
     emailAvailabilityChecked: string;
+    biometricEnabled: string;
+    biometricDisabled: string;
+    biometricNotAvailable: string;
+    biometricChallengeInvalid: string;
+    biometricVerificationFailed: string;
   };
   // modules/campaign/campaign.service.ts — every AppError message and the one
   // { message } string from that file (the module's biggest). Internal/500-level

@@ -8,7 +8,6 @@ const TABLES = [
   'campaign_events', 'campaign_submission_versions', 'disputes', 'revision_notes',
   'wallet_transactions', 'payment_transactions', 'creator_reliability',
   'redemption_sessions', 'promotions',
-  'creator_points_ledger', 'creator_points_accounts',
   'business_credits_ledger', 'business_credits_accounts',
   'applications', 'campaigns', 'creator_profiles', 'business_profiles',
   'platform_settings', 'activity_logs', 'audit_logs', 'notifications', 'users',
@@ -157,9 +156,9 @@ export async function seedPromotion(businessId: string, opts: {
   });
 }
 
+/** Kolab Points are the creator's wallet balance (see schema.prisma) — same ledger, same number. */
 export async function pointsBalance(creatorId: string): Promise<number> {
-  const account = await prisma.creatorPointsAccount.findUnique({ where: { creatorId } });
-  return account?.balance ?? 0;
+  return walletBalance(creatorId);
 }
 
 export async function creditsBalance(businessId: string): Promise<number> {

@@ -15,7 +15,12 @@ type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
   login: (identifier: Identifier, password: string, rememberMe?: boolean) => Promise<void>;
+  loginWithBiometric: (challenge: string, signature: string) => Promise<void>;
   logout: () => Promise<void>;
+  // Always a full server + local clear, bypassing the biometric soft-lock.
+  // Use for deactivate/delete-account and other flows where the account must
+  // not remain resumable on this device regardless of the biometric setting.
+  forceLogout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
   reloadUser: () => Promise<User | null>;
 };
@@ -89,6 +94,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
   }
 
+  // Same entry into normal auth state as login() above, just via a signed
+  // biometric challenge instead of a password — see services/biometric.ts
+  // prepareBiometricSignIn + authService.biometricLogin.
+  async function loginWithBiometric(challenge: string, signature: string) {
+    clearSessionExpiredGuard();
+    queryClient.clear();
+    const u = await authService.biometricLogin(challenge, signature);
+    setUser(u);
+  }
+
   // Always a full server + local clear — used when the refresh token itself is
   // genuinely invalid/expired (the session-expired handler below), where there
   // is nothing valid left to preserve for a biometric resume.
@@ -145,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser, reloadUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, loginWithBiometric, logout, forceLogout, updateUser, reloadUser }}>
       {children}
     </AuthContext.Provider>
   );

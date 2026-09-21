@@ -48,11 +48,11 @@ import { usePlatforms } from '@/hooks/usePlatforms';
 import { useGoogleAccessToken } from '@/hooks/useGoogleAccessToken';
 import { useFacebookAccessToken } from '@/hooks/useFacebookAccessToken';
 import {
-  authenticate as authenticateBiometric,
+  enableBiometricLogin,
+  disableBiometricLogin,
   getBiometricLabel,
   isBiometricAvailable,
   isBiometricLoginEnabled,
-  setBiometricLoginEnabled,
   type BiometricLabel,
 } from '@/services/biometric';
 
@@ -224,7 +224,7 @@ function ChipGroup({ options, selected, onToggle }: ChipGroupProps) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function BusinessSettingsScreen() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, forceLogout, updateUser } = useAuth();
   const { isDark, toggleDark } = useIsDark();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
@@ -303,7 +303,9 @@ export default function BusinessSettingsScreen() {
 
   async function handleToggleBiometric() {
     if (biometricEnabled) {
-      await setBiometricLoginEnabled(false);
+      // Revokes the device credential and clears the local key — never signs
+      // the current session out.
+      await disableBiometricLogin();
       setBiometricEnabledState(false);
       return;
     }
@@ -311,13 +313,14 @@ export default function BusinessSettingsScreen() {
       toast.error(t('businessSettings.biometricNotAvailable'));
       return;
     }
-    const ok = await authenticateBiometric(`Enable ${biometricLabel} login`);
-    if (!ok) {
-      toast.error(t('businessSettings.biometricEnableFailed'));
+    const result = await enableBiometricLogin(t('biometricEnroll.confirmPrompt', { label: biometricLabel }));
+    if (result.success) {
+      setBiometricEnabledState(true);
       return;
     }
-    await setBiometricLoginEnabled(true);
-    setBiometricEnabledState(true);
+    if (result.reason !== 'cancelled') {
+      toast.error(result.reason === 'network' ? t('businessSettings.biometricEnableNetworkFailed') : t('businessSettings.biometricEnableFailed'));
+    }
   }
 
   // ── Phone verification ──
@@ -817,7 +820,7 @@ export default function BusinessSettingsScreen() {
       warning: undefined,
       onConfirm: async () => {
         closeAppModal();
-        try { await authService.deactivateAccount(); await logout(); }
+        try { await authService.deactivateAccount(); await forceLogout(); }
         catch { toast.error(t('businessSettings.deactivateFailed')); }
       },
     });
@@ -832,7 +835,7 @@ export default function BusinessSettingsScreen() {
       warning: 'This permanently deletes your account and all data. This action cannot be undone.',
       onConfirm: async () => {
         closeAppModal();
-        try { await authService.deleteAccount(); await logout(); }
+        try { await authService.deleteAccount(); await forceLogout(); }
         catch { toast.error(t('businessSettings.deleteFailed')); }
       },
     });

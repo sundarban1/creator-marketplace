@@ -195,6 +195,49 @@ export class AuthController {
     }
   }
 
+  async registerBiometric(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deviceId = req.headers['x-device-id'] as string | undefined;
+      if (!deviceId) throw new AppError(getDict().auth.biometricNotAvailable, HttpStatus.BAD_REQUEST);
+      const result = await authService.registerBiometric(req.user!.id, deviceId, req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async revokeBiometric(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deviceId = req.headers['x-device-id'] as string | undefined;
+      if (!deviceId) throw new AppError(getDict().auth.biometricNotAvailable, HttpStatus.BAD_REQUEST);
+      const result = await authService.revokeBiometric(req.user!.id, deviceId);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async biometricChallenge(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deviceId = req.headers['x-device-id'] as string | undefined;
+      if (!deviceId) throw new AppError(getDict().auth.biometricNotAvailable, HttpStatus.BAD_REQUEST);
+      const result = await authService.biometricChallenge(deviceId);
+      success(res, result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async biometricVerify(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.biometricVerify(req.body);
+      success(res, result, getDict().auth.loginSuccessful);
+    } catch (err) {
+      logError(req, err, 'Biometric login failed');
+      next(err);
+    }
+  }
+
   async requestPhoneOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.requestPhoneOtp(req.user!.id, req.body);

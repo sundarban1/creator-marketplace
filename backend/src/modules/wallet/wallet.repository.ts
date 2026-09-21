@@ -1,6 +1,9 @@
 import prisma from '../../prisma';
+import type { Prisma } from '@prisma/client';
 
 const RESERVED_WITHDRAWAL_STATUSES = ['PENDING', 'PROCESSING'] as const;
+
+type DbClient = Prisma.TransactionClient | typeof prisma;
 
 // Excludes visually ambiguous characters (0/O, 1/I) so a reference read off a
 // screen or spoken to support can't be mistyped. Mirrors the referral-code alphabet.
@@ -31,9 +34,15 @@ export class WalletRepository {
     return result._sum.proposedRate ?? 0;
   }
 
-  /** Realized wallet ledger totals — the source of truth for wallet balance. */
-  async sumLedger(creatorId: string) {
-    const grouped = await prisma.walletTransaction.groupBy({
+  /**
+   * Realized wallet ledger totals — the source of truth for wallet balance.
+   * Accepts an optional transaction client so callers that must read this
+   * under a row/advisory lock (e.g. redemption.service.ts's confirm()) see a
+   * consistent view inside their own transaction instead of a second,
+   * unlocked connection.
+   */
+  async sumLedger(creatorId: string, client: DbClient = prisma) {
+    const grouped = await client.walletTransaction.groupBy({
       by:      ['direction'],
       where:   { creatorId, status: 'COMPLETED' },
       _sum:    { amount: true },
@@ -48,8 +57,8 @@ export class WalletRepository {
   }
 
   /** Amount reserved by in-flight withdrawal requests (not yet paid, not rejected). */
-  async sumReservedWithdrawals(creatorId: string) {
-    const result = await prisma.withdrawal.aggregate({
+  async sumReservedWithdrawals(creatorId: string, client: DbClient = prisma) {
+    const result = await client.withdrawal.aggregate({
       where: { creatorId, status: { in: [...RESERVED_WITHDRAWAL_STATUSES] } },
       _sum:  { amount: true },
     });

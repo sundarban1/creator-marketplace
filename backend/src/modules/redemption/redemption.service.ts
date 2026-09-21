@@ -6,7 +6,8 @@ import { getDict } from '../../i18n';
 import { RedemptionRepository } from './redemption.repository';
 import { PromotionRepository } from '../promotion/promotion.repository';
 import { toRedemptionSessionDto } from './redemption.dto';
-import { recordPointsTransaction } from '../points/points.ledger';
+import { recordWalletTransaction } from '../wallet/wallet.ledger';
+import { computeWithdrawableBalance, walletLockKey } from '../wallet/wallet.service';
 import { recordCreditsTransaction } from '../credits/credits.ledger';
 import { notificationService } from '../notifications/notification.service';
 import { emitToUser } from '../../socket';
@@ -253,8 +254,14 @@ export class RedemptionService {
 
       const pointsCost = row.pointsCost ?? 0;
       if (pointsCost > 0) {
-        const account = await this.repo.lockPointsAccount(tx, row.creatorId);
-        if ((account?.balance ?? 0) < pointsCost) {
+        // Kolab Points ARE the creator's wallet balance — same money a
+        // withdrawal request spends (see wallet.service.ts). Take the same
+        // advisory lock createWithdrawalRequest() does before reading it, so
+        // a concurrent withdrawal and redemption can't both read a
+        // pre-spend balance and double-spend the same funds.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${walletLockKey(row.creatorId)}))`;
+        const withdrawable = await computeWithdrawableBalance(tx, row.creatorId);
+        if (withdrawable < pointsCost) {
           throw new AppError(getDict().redemption.insufficientPoints, HttpStatus.BAD_REQUEST);
         }
       }
@@ -262,7 +269,7 @@ export class RedemptionService {
       await this.repo.markConfirmed(tx, row.id);
 
       if (pointsCost > 0) {
-        await recordPointsTransaction(tx, {
+        await recordWalletTransaction(tx, {
           creatorId:     row.creatorId,
           type:          'PROMO_REDEMPTION_DEBIT',
           direction:     'DEBIT',

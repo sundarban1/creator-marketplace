@@ -14,6 +14,8 @@ import {
   verifyPasswordResetToken,
   signAppleLinkToken,
   verifyAppleLinkToken,
+  signBiometricChallenge,
+  verifyAndConsumeBiometricChallenge,
 } from '../../utils/jwt';
 import { verifyAppleIdentityToken, exchangeAppleAuthCode, revokeAppleToken, verifyAppleNotification } from '../../utils/apple';
 import { synthesizePlaceholderEmail } from '../../utils/placeholderEmail';
@@ -50,6 +52,8 @@ import type {
   AppleLinkInput,
   UnlinkProviderInput,
   AppleNotificationInput,
+  BiometricRegisterInput,
+  BiometricVerifyInput,
 } from './auth.schema';
 
 type Channel = 'email' | 'phone';
@@ -345,6 +349,123 @@ export class AuthService {
       await this.repo.deleteAllSessions(userId);
     }
     return { message: getDict().auth.loggedOut };
+  }
+
+  // ── Biometric re-login ────────────────────────────────────────────────
+  // See BiometricCredential (schema) + utils/jwt signBiometricChallenge for
+  // the full challenge/signature design: register (while already logged in)
+  // stores a device's public key; challenge hands the device something to
+  // sign; verify checks the signature and mints a brand-new normal session,
+  // via the exact same token/session issuance as password login. Nothing
+  // here ever stores or reuses a bearer token as the "biometric credential."
+
+  async registerBiometric(userId: string, deviceId: string, input: BiometricRegisterInput) {
+    // Fail fast on a malformed key at registration time rather than letting a
+    // client bug silently persist a credential that can only ever fail
+    // verification later with a generic "couldn't verify" error.
+    if (!this.isValidEd25519PublicKey(input.publicKey)) {
+      throw new AppError(getDict().auth.biometricVerificationFailed, HttpStatus.BAD_REQUEST);
+    }
+
+    await this.repo.upsertBiometricCredential({
+      userId,
+      deviceId,
+      publicKey: input.publicKey,
+      platform: input.platform,
+    });
+    logActivity({ userId, action: ActivityAction.BIOMETRIC_ENABLED, metadata: { deviceId, platform: input.platform } });
+    return { message: getDict().auth.biometricEnabled };
+  }
+
+  async revokeBiometric(userId: string, deviceId: string) {
+    await this.repo.revokeBiometricCredential(userId, deviceId);
+    logActivity({ userId, action: ActivityAction.BIOMETRIC_DISABLED, metadata: { deviceId } });
+    return { message: getDict().auth.biometricDisabled };
+  }
+
+  async biometricChallenge(deviceId: string) {
+    const credential = await this.repo.findActiveBiometricCredentialByDeviceId(deviceId);
+    if (!credential) throw new AppError(getDict().auth.biometricNotAvailable, HttpStatus.NOT_FOUND);
+
+    try {
+      const challenge = await signBiometricChallenge({ credentialId: credential.id, deviceId });
+      return { challenge };
+    } catch (err) {
+      logger.error({ err: err instanceof Error ? err.message : err }, 'biometric-challenge: failed to issue challenge');
+      throw new AppError(getDict().auth.biometricNotAvailable, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+  }
+
+  async biometricVerify(input: BiometricVerifyInput) {
+    let decoded;
+    try {
+      decoded = await verifyAndConsumeBiometricChallenge(input.challenge);
+    } catch {
+      throw new AppError(getDict().auth.biometricChallengeInvalid, HttpStatus.UNAUTHORIZED);
+    }
+
+    const credential = await this.repo.findBiometricCredentialById(decoded.credentialId);
+    if (!credential || credential.revokedAt || credential.deviceId !== decoded.deviceId) {
+      throw new AppError(getDict().auth.biometricNotAvailable, HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!this.verifyBiometricSignature(credential.publicKey, input.challenge, input.signature)) {
+      throw new AppError(getDict().auth.biometricVerificationFailed, HttpStatus.UNAUTHORIZED);
+    }
+
+    const user = await this.repo.findUserById(credential.userId);
+    if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.UNAUTHORIZED);
+
+    // Same isActive/suspendedAt gate as normal login() — a suspended account
+    // can't resume via biometrics any more than it can via password, and a
+    // self-deactivated one reactivates the same way.
+    let activeUser = user;
+    let reactivated = false;
+    if (!user.isActive) {
+      if (user.suspendedAt) throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN);
+      activeUser = await this.repo.reactivateAccount(user.id);
+      reactivated = true;
+    }
+
+    const tokenPayload = { id: activeUser.id, email: activeUser.email, role: activeUser.role };
+    const accessToken  = signAccessToken(tokenPayload);
+    const refreshToken = signRefreshToken(tokenPayload);
+    await this.repo.createSession(activeUser.id, refreshToken, credential.deviceId);
+    await this.repo.setDeviceId(activeUser.id, credential.deviceId);
+    await this.repo.touchBiometricCredential(credential.id);
+
+    logActivity({ userId: activeUser.id, action: ActivityAction.USER_LOGIN, metadata: { channel: 'biometric', reactivated, deviceId: credential.deviceId } });
+    logger.info({ event: LogEvent.AUTH_LOGIN, userId: activeUser.id, channel: 'biometric' }, 'Login succeeded (biometric)');
+
+    return { user: toUserDto(activeUser), accessToken, refreshToken, reactivated };
+  }
+
+  // The stored publicKey is the raw 32-byte Ed25519 key, base64url encoded —
+  // wrapped as a JWK here since Node's crypto has no "raw" key import for OKP
+  // curves. `null` as the algorithm is correct for Ed25519 (unlike RSA/ECDSA,
+  // it isn't parameterized).
+  private verifyBiometricSignature(publicKeyB64Url: string, message: string, signatureB64Url: string): boolean {
+    try {
+      const keyObject = crypto.createPublicKey({
+        key: { kty: 'OKP', crv: 'Ed25519', x: publicKeyB64Url },
+        format: 'jwk',
+      });
+      return crypto.verify(null, Buffer.from(message), keyObject, Buffer.from(signatureB64Url, 'base64url'));
+    } catch {
+      return false;
+    }
+  }
+
+  // A well-formed Ed25519 public key is exactly 32 raw bytes — catches a
+  // truncated/garbled/wrong-curve value at register time.
+  private isValidEd25519PublicKey(publicKeyB64Url: string): boolean {
+    try {
+      if (Buffer.from(publicKeyB64Url, 'base64url').length !== 32) return false;
+      crypto.createPublicKey({ key: { kty: 'OKP', crv: 'Ed25519', x: publicKeyB64Url }, format: 'jwk' });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async deactivateAccount(userId: string) {

@@ -57,11 +57,11 @@ import { SupportAttachmentPicker } from '@/components/SupportAttachmentPicker';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay, getAccountIdentityLine, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
-  authenticate as authenticateBiometric,
+  enableBiometricLogin,
+  disableBiometricLogin,
   getBiometricLabel,
   isBiometricAvailable,
   isBiometricLoginEnabled,
-  setBiometricLoginEnabled,
   type BiometricLabel,
 } from '@/services/biometric';
 
@@ -323,7 +323,7 @@ function AccordionRow({ title, body, iconColor, icon, emoji, open, onToggle }: A
 // ── Main screen ───────────────────────────────────────────────
 
 export default function CreatorSettingsScreen() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, forceLogout, updateUser } = useAuth();
   const { isDark, toggleDark } = useIsDark();
   const { language, setLanguage, t } = useLanguage();
   const { flags, refetch: refetchPlatformFlags } = usePlatformFlags();
@@ -536,7 +536,9 @@ export default function CreatorSettingsScreen() {
 
   async function handleToggleBiometric() {
     if (biometricEnabled) {
-      await setBiometricLoginEnabled(false);
+      // Revokes the device credential and clears the local key — never signs
+      // the current session out.
+      await disableBiometricLogin();
       setBiometricEnabledState(false);
       return;
     }
@@ -544,13 +546,14 @@ export default function CreatorSettingsScreen() {
       toast.error(t('creatorSettings.biometricNotAvailable'));
       return;
     }
-    const ok = await authenticateBiometric(`Enable ${biometricLabel} login`);
-    if (!ok) {
-      toast.error(t('creatorSettings.biometricEnableFailed'));
+    const result = await enableBiometricLogin(t('biometricEnroll.confirmPrompt', { label: biometricLabel }));
+    if (result.success) {
+      setBiometricEnabledState(true);
       return;
     }
-    await setBiometricLoginEnabled(true);
-    setBiometricEnabledState(true);
+    if (result.reason !== 'cancelled') {
+      toast.error(result.reason === 'network' ? t('creatorSettings.biometricEnableNetworkFailed') : t('creatorSettings.biometricEnableFailed'));
+    }
   }
 
   // Accordion (support / legal sub-pages)
@@ -959,7 +962,7 @@ export default function CreatorSettingsScreen() {
       await creatorService.deactivateAccount();
       setShowDeactivateModal(false);
       showToast(t('creatorSettings.deactivatedToast'));
-      setTimeout(logout, 1800);
+      setTimeout(forceLogout, 1800);
     } catch {
       showToast(t('creatorSettings.deactivateFailed'));
     } finally {
@@ -973,7 +976,7 @@ export default function CreatorSettingsScreen() {
       await creatorService.deleteAccount();
       setShowDeleteModal(false);
       showToast(t('creatorSettings.deletedToast'));
-      setTimeout(logout, 1800);
+      setTimeout(forceLogout, 1800);
     } catch {
       showToast(t('creatorSettings.deleteFailed'));
     } finally {

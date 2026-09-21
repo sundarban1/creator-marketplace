@@ -175,6 +175,21 @@ export const unlinkProviderSchema = z.object({
     .pipe(z.enum(['GOOGLE', 'APPLE', 'FACEBOOK'])),
 });
 
+// Biometric re-login (see BiometricCredential). `publicKey` is the raw
+// 32-byte Ed25519 public key, base64url-encoded — never a private key or any
+// biometric/Face ID data. `deviceId` itself travels in the `X-Device-Id`
+// header (same convention as /login, /register) rather than the body, since
+// every request already carries it once `warmDeviceId()` has run.
+export const biometricRegisterSchema = z.object({
+  publicKey: z.string().min(1, 'Public key is required'),
+  platform: z.enum(['ios', 'android']),
+});
+
+export const biometricVerifySchema = z.object({
+  challenge: z.string().min(1, 'Challenge is required'),
+  signature: z.string().min(1, 'Signature is required'),
+});
+
 export type RegisterInput         = z.infer<typeof registerSchema>;
 export type LoginInput            = z.infer<typeof loginSchema>;
 export type RefreshTokenInput     = z.infer<typeof refreshTokenSchema>;
@@ -194,3 +209,5 @@ export type AppleAuthInput        = z.infer<typeof appleAuthSchema>;
 export type AppleLinkInput        = z.infer<typeof appleLinkSchema>;
 export type UnlinkProviderInput   = z.infer<typeof unlinkProviderSchema>;
 export type AppleNotificationInput = z.infer<typeof appleNotificationSchema>;
+export type BiometricRegisterInput  = z.infer<typeof biometricRegisterSchema>;
+export type BiometricVerifyInput    = z.infer<typeof biometricVerifySchema>;

@@ -110,6 +110,11 @@ export const en: BackendDict = {
     loginMethodDisconnected:           'Login method disconnected',
     emailQueryRequired:                'Email query param is required',
     emailAvailabilityChecked:          'Email availability checked',
+    biometricEnabled:                  'Biometric login enabled',
+    biometricDisabled:                 'Biometric login disabled',
+    biometricNotAvailable:             'Biometric login is not set up on this device',
+    biometricChallengeInvalid:         'This biometric login attempt has expired. Please try again.',
+    biometricVerificationFailed:       'Biometric verification failed',
   },
   campaign: {
     businessProfileNotFound:           'Business profile not found',

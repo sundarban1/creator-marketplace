@@ -177,6 +177,11 @@ export function applyRateLimits(app: Express): void {
   app.use('/api/auth/google',          authLimiter);
   app.use('/api/auth/facebook',        authLimiter);
   app.use('/api/auth/apple',           authLimiter);
+  // Public, unauthenticated biometric endpoints — same brute-force surface
+  // as password login (challenge lets someone probe deviceIds; verify lets
+  // someone try forged signatures).
+  app.use('/api/auth/biometric/challenge', authLimiter);
+  app.use('/api/auth/biometric/verify',    authLimiter);
 
   // Upload endpoints
   app.use('/api/creator/avatar',          uploadLimiter);

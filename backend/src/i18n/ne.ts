@@ -110,6 +110,11 @@ export const ne: BackendDict = {
     loginMethodDisconnected:           'लगइन विधि विच्छेद गरियो',
     emailQueryRequired:                'इमेल क्वेरी प्यारामिटर आवश्यक छ',
     emailAvailabilityChecked:          'इमेल उपलब्धता जाँच गरियो',
+    biometricEnabled:                  'बायोमेट्रिक लगइन सक्षम गरियो',
+    biometricDisabled:                 'बायोमेट्रिक लगइन असक्षम गरियो',
+    biometricNotAvailable:             'यो डिभाइसमा बायोमेट्रिक लगइन सेटअप गरिएको छैन',
+    biometricChallengeInvalid:         'यो बायोमेट्रिक लगइन प्रयासको म्याद सकियो। फेरि प्रयास गर्नुहोस्।',
+    biometricVerificationFailed:       'बायोमेट्रिक प्रमाणीकरण असफल भयो',
   },
   campaign: {
     businessProfileNotFound:           'व्यवसाय प्रोफाइल फेला परेन',

@@ -3,13 +3,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { AppModal } from '@/components/AppModal';
 import {
-  authenticate,
+  enableBiometricLogin,
   getBiometricLabel,
   hasOfferedBiometricLogin,
   isBiometricAvailable,
   isBiometricLoginEnabled,
   markBiometricLoginOffered,
-  setBiometricLoginEnabled,
   type BiometricLabel,
 } from '@/services/biometric';
 
@@ -58,15 +57,14 @@ export function BiometricEnrollPrompt() {
   async function handleEnable() {
     setBusy(true);
     try {
-      // Confirm against the real sensor before persisting — same gate the
-      // Settings toggle uses, so an unattended device can't switch it on.
-      const ok = await authenticate(t('biometricEnroll.confirmPrompt', { label }));
-      if (!ok) return; // stay open so a mis-scan can be retried
-      await setBiometricLoginEnabled(true);
+      // Confirms against the real sensor, generates the device keypair, and
+      // registers it with the backend — same flow the Settings toggle uses.
+      const result = await enableBiometricLogin(t('biometricEnroll.confirmPrompt', { label }));
+      if (!result.success) return; // stay open so a cancelled/failed attempt can be retried
       await markBiometricLoginOffered();
       setVisible(false);
     } catch {
-      // Sensor error — leave the modal up rather than silently losing the offer.
+      // Unexpected error — leave the modal up rather than silently losing the offer.
     } finally {
       setBusy(false);
     }

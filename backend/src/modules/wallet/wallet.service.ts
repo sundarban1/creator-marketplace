@@ -18,6 +18,38 @@ const DEFAULT_MIN_WITHDRAWAL = 500;
 const DEFAULT_MAX_WITHDRAWAL = 10000;
 const DEFAULT_DAILY_LIMIT = 25000;
 
+/**
+ * The advisory-lock key that serializes every operation which reads-then-
+ * spends a creator's wallet balance. createWithdrawalRequest() below takes it
+ * before reserving funds; redemption.service.ts's confirm() takes the same
+ * key before debiting a Kolab Points redemption, since Points and the
+ * withdrawable wallet balance are the same money — without a shared lock, a
+ * withdrawal request and a promotion redemption could each read a
+ * pre-spend balance and both succeed against funds that only exist once.
+ */
+export function walletLockKey(creatorId: string): string {
+  return `withdrawal:${creatorId}`;
+}
+
+/**
+ * Standalone, transaction-aware version of what a creator can actually spend
+ * right now (wallet.service.ts's `withdrawableBalance`) — exported so callers
+ * outside this module (redemption.service.ts, points.repository.ts) that
+ * treat Kolab Points as the same balance can read it without going through
+ * WalletService's private, non-tx-aware computeBalances().
+ */
+export async function computeWithdrawableBalance(
+  client: Prisma.TransactionClient | typeof prisma,
+  creatorId: string,
+): Promise<number> {
+  const repo = new WalletRepository();
+  const [ledger, reserved] = await Promise.all([
+    repo.sumLedger(creatorId, client),
+    repo.sumReservedWithdrawals(creatorId, client),
+  ]);
+  return Math.max(0, ledger.net - reserved);
+}
+
 function positiveSetting(value: unknown, fallback: number) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -153,7 +185,7 @@ export class WalletService {
     // funds (spec §5/§24). The lock is held until this transaction commits;
     // the next waiter then sees this new PENDING row in its own balance check.
     const withdrawal = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`withdrawal:${profile.id}`}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${walletLockKey(profile.id)}))`;
 
       // One pending request at a time — the creator must wait for the current
       // one to be paid or rejected before asking for more.

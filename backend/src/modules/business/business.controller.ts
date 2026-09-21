@@ -31,7 +31,7 @@ export class BusinessController {
 
   async listBusinesses(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { search, category, platform, locations, page = '1', limit = '20' } = req.query as Record<string, string>;
+      const { search, category, platform, locations, sort, page = '1', limit = '20' } = req.query as Record<string, string>;
       const locationList = locations
         ? locations.split(',').map((l) => l.trim()).filter(Boolean)
         : undefined;
@@ -40,6 +40,7 @@ export class BusinessController {
         category:  category  || undefined,
         platform:  platform  || undefined,
         locations: locationList && locationList.length > 0 ? locationList : undefined,
+        sort:      sort === 'newest' ? sort : undefined,
         page:      parseInt(page,  10) || 1,
         limit:     parseInt(limit, 10) || 20,
         lang:      req.language,

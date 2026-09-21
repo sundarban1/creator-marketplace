@@ -1,7 +1,18 @@
 import { Platform } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
+import * as Crypto from 'expo-crypto';
+import * as ed from '@noble/ed25519';
+import { sha512 } from '@noble/hashes/sha2.js';
 import { storage } from '@/utilities/storage';
-import { BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY } from '@/utilities/constants';
+import { BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, BIOMETRIC_KEYPAIR_KEY } from '@/utilities/constants';
+import { bytesToBase64Url, base64UrlToBytes, asciiToBytes } from '@/utilities/base64url';
+import { request, ApiError } from '@/lib/api';
+
+// Pure-JS SHA-512 (no native module, no dependency on a global WebCrypto that
+// Hermes doesn't provide) — wired once so the synchronous ed25519 API
+// (getPublicKey/sign) can be used instead of the WebCrypto-backed async one.
+ed.hashes.sha512 = sha512;
 
 export type BiometricLabel = 'Face ID' | 'Fingerprint' | 'Biometrics';
 
@@ -125,7 +136,11 @@ export function isBiometricLoginEnabled(): boolean {
   return storage.get(BIOMETRIC_ENABLED_KEY) === 'true';
 }
 
-export async function setBiometricLoginEnabled(enabled: boolean): Promise<void> {
+// Internal — the local "enabled" flag is only ever meaningful alongside the
+// device keypair + backend registration, so it's flipped exclusively by
+// enableBiometricLogin/disableBiometricLogin/clearInvalidBiometricCredential
+// below, never on its own.
+async function setBiometricLoginEnabled(enabled: boolean): Promise<void> {
   await storage.set(BIOMETRIC_ENABLED_KEY, enabled ? 'true' : 'false');
 }
 
@@ -144,10 +159,134 @@ export async function markBiometricLoginOffered(): Promise<void> {
  * install to a device without biometrics). Without this the cold-start gate
  * would arm against a credential that can never succeed, leaving "Use password
  * instead" as the only way in. Returns whether biometric login is still on.
+ *
+ * Deliberately checks hardware/enrollment only, not the SecureStore keypair
+ * itself — reading a requireAuthentication item would trigger a native
+ * biometric prompt on every cold start, which is exactly the app-lock
+ * behavior this feature must NOT become (it's re-login, not app-lock). A
+ * silently-invalidated keypair self-heals the next time the user actually
+ * taps "Continue with Face ID" — see prepareBiometricSignIn below.
  */
 export async function syncBiometricLoginWithDevice(): Promise<boolean> {
   if (!isBiometricLoginEnabled()) return false;
   if (await isBiometricAvailable()) return true;
   await setBiometricLoginEnabled(false);
   return false;
+}
+
+/**
+ * Clears local biometric-login state (and best-effort revokes it server-side)
+ * without ever touching the normal session — used both by the user's
+ * explicit "Disable {label}" action and by self-healing when a credential
+ * turns out to be dead (enrollment changed locally, or revoked/missing on
+ * the backend).
+ */
+export async function clearInvalidBiometricCredential(): Promise<void> {
+  await SecureStore.deleteItemAsync(BIOMETRIC_KEYPAIR_KEY).catch(() => {});
+  await setBiometricLoginEnabled(false);
+}
+
+export type BiometricEnableResult =
+  | { success: true }
+  | { success: false; reason: 'unavailable' | 'cancelled' | 'failed' | 'network' };
+
+/**
+ * Full "Enable {label} login" flow (Settings toggle, or the post-login
+ * offer): confirms against the live sensor, generates a device-bound Ed25519
+ * keypair, and registers only the PUBLIC key with the backend. The private
+ * key never leaves this function in plaintext — it's written straight into
+ * SecureStore behind requireAuthentication and is never cached, logged, or
+ * sent anywhere. Only flips the local "enabled" flag once the backend has
+ * actually confirmed registration, so a half-finished attempt never claims
+ * to be enabled.
+ */
+export async function enableBiometricLogin(confirmPromptMessage: string): Promise<BiometricEnableResult> {
+  if (!(await isBiometricAvailable())) return { success: false, reason: 'unavailable' };
+
+  const confirmed = await authenticate(confirmPromptMessage);
+  if (!confirmed) return { success: false, reason: 'cancelled' };
+
+  const secretKey = await Crypto.getRandomBytesAsync(32);
+  const publicKey = ed.getPublicKey(secretKey);
+
+  try {
+    await SecureStore.setItemAsync(BIOMETRIC_KEYPAIR_KEY, bytesToBase64Url(secretKey), {
+      requireAuthentication: true,
+      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
+  } catch {
+    return { success: false, reason: 'failed' };
+  }
+
+  try {
+    await request('POST', '/api/auth/biometric/register', {
+      publicKey: bytesToBase64Url(publicKey),
+      platform: Platform.OS === 'ios' ? 'ios' : 'android',
+    });
+  } catch {
+    // Never leave a local key registered that the backend doesn't know about.
+    await SecureStore.deleteItemAsync(BIOMETRIC_KEYPAIR_KEY).catch(() => {});
+    return { success: false, reason: 'network' };
+  }
+
+  await setBiometricLoginEnabled(true);
+  return { success: true };
+}
+
+/**
+ * "Disable {label} login": revokes this device's credential server-side
+ * (best-effort — the local key is deleted regardless, since the point is
+ * that this device must stop being able to sign in biometrically even if the
+ * revoke call itself fails to reach the server) and clears local state.
+ * Never touches the normal session — the caller stays logged in.
+ */
+export async function disableBiometricLogin(): Promise<void> {
+  await request('DELETE', '/api/auth/biometric').catch(() => {});
+  await clearInvalidBiometricCredential();
+}
+
+export type BiometricSignInResult =
+  | { success: true; challenge: string; signature: string }
+  | { success: false; reason: 'unavailable' | 'cancelled' | 'failed' | 'network' };
+
+/**
+ * Login-screen "Continue with {label}": reading the device-bound private key
+ * is itself what triggers the native biometric prompt (it was written with
+ * requireAuthentication: true). On success, signs a fresh single-use
+ * challenge from the backend and hands back the (challenge, signature) pair
+ * for authService.biometricLogin to exchange for a brand-new normal session
+ * — nothing here ever reuses or reveals an existing token.
+ */
+export async function prepareBiometricSignIn(): Promise<BiometricSignInResult> {
+  let secretKeyB64: string | null;
+  try {
+    secretKeyB64 = await SecureStore.getItemAsync(BIOMETRIC_KEYPAIR_KEY, { requireAuthentication: true });
+  } catch {
+    // Most likely a cancelled/failed OS prompt — leave local config alone so
+    // the button stays available to retry.
+    return { success: false, reason: 'cancelled' };
+  }
+  if (!secretKeyB64) {
+    // Expo docs: a key invalidated by an enrollment change resolves to null
+    // rather than throwing — nothing left to resume, so self-heal the same
+    // way a revoked/missing backend credential does, below.
+    await clearInvalidBiometricCredential();
+    return { success: false, reason: 'unavailable' };
+  }
+
+  let challenge: string;
+  try {
+    const res = await request<{ challenge: string }>('POST', '/api/auth/biometric/challenge');
+    challenge = res.data.challenge;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      await clearInvalidBiometricCredential();
+      return { success: false, reason: 'unavailable' };
+    }
+    return { success: false, reason: 'network' };
+  }
+
+  const secretKey = base64UrlToBytes(secretKeyB64);
+  const signature = ed.sign(asciiToBytes(challenge), secretKey);
+  return { success: true, challenge, signature: bytesToBase64Url(signature) };
 }

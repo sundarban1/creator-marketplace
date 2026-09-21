@@ -68,12 +68,6 @@ export class RedemptionRepository {
     return rows[0];
   }
 
-  async lockPointsAccount(tx: Prisma.TransactionClient, creatorId: string): Promise<{ balance: number } | undefined> {
-    const rows = await tx.$queryRaw<{ balance: number }[]>`
-      SELECT balance FROM creator_points_accounts WHERE "creatorId" = ${creatorId} FOR UPDATE`;
-    return rows[0];
-  }
-
   async markExpired(tx: Prisma.TransactionClient, id: string) {
     return tx.redemptionSession.update({ where: { id }, data: { status: 'EXPIRED' } });
   }

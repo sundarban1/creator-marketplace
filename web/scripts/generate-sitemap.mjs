@@ -3,14 +3,17 @@
 // had to be kept in sync with src/App.tsx and robots.txt by hand — see
 // docs/SEO_AUDIT.md §2.3/§3).
 //
-// Now includes the same dynamic creator/business/event detail URLs
-// prerender.mjs snapshots (via the shared fetchIndexableEntities), plus a
-// wider best-effort pass beyond that cap — see the `limit` passed below.
-// A sitemap entry is just a <url>, not a full page render, so it's cheap to
-// list more of them than get an actual Playwright snapshot; entities outside
-// both the sitemap and the prerender batch are still reachable and indexable
-// (server.mjs falls back to the bare SPA shell for any /creators|businesses|
-// events/:id request with no prerendered file), just not pre-announced.
+// Includes exactly the same dynamic creator/business/event detail URLs
+// prerender.mjs snapshots (via the shared fetchIndexableEntities, at its
+// shared DEFAULT_ENTITY_LIMIT). This used to ask for a wider 200 here while
+// prerender.mjs only snapshotted 60 — a sitemap entry is just a <url>, so
+// listing more seemed free. It wasn't: every entity in the sitemap but
+// outside the prerender batch has no static HTML (server.mjs falls back to
+// the bare CSR shell for it), and Googlebot's first, HTML-only crawl pass
+// saw nothing worth indexing — Search Console piled those up as "Discovered
+// — currently not indexed" instead of ever indexing them. Entities beyond
+// this shared limit are still reachable and indexable (same CSR-shell
+// fallback), just not pre-announced via the sitemap.
 //
 // Runs after `vite build` (see package.json's `build` script) so it can
 // write straight into dist/, overwriting the copy Vite already copied from
@@ -18,17 +21,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchIndexableEntities } from './lib/fetchEntities.mjs';
+import { DEFAULT_ENTITY_LIMIT, fetchIndexableEntities } from './lib/fetchEntities.mjs';
 import { STATIC_ROUTES } from './lib/staticRoutes.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIST = join(ROOT, 'dist');
 const SITE_URL = 'https://kolab.com.np';
-
-// A sitemap entry costs one API-list round trip's worth of JSON, not a full
-// browser render — safe to ask for noticeably more than prerender.mjs's
-// default (60) without meaningfully slowing the build.
-const SITEMAP_ENTITY_LIMIT = 200;
 
 // Static pages keep the hand-tuned priority/changefreq the old sitemap.xml
 // had — SEO-meaningful (homepage and core pages outrank a city page), so
@@ -88,7 +86,7 @@ async function main() {
 
   let entities = { creators: [], businesses: [], events: [] };
   try {
-    entities = await fetchIndexableEntities(apiOrigin, SITEMAP_ENTITY_LIMIT);
+    entities = await fetchIndexableEntities(apiOrigin, DEFAULT_ENTITY_LIMIT);
   } catch (err) {
     // Same posture as prerender.mjs: a live-API hiccup shouldn't fail the
     // build, just ship a sitemap with the static pages only for this run.
