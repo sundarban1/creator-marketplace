@@ -39,6 +39,15 @@ export class PointsService {
   async listHistory(userId: string) {
     const profile = await this.resolveCreatorId(userId);
     const ledger = await this.repo.listLedger(profile.id);
-    return ledger.map(toPointsLedgerDto);
+    const redemptionSessionIds = ledger
+      .filter((tx) => tx.referenceType === 'redemption_session' && tx.referenceId)
+      .map((tx) => tx.referenceId as string);
+    const businessNames = await this.repo.businessNamesForRedemptionSessions(redemptionSessionIds);
+    return ledger.map((tx) => toPointsLedgerDto(
+      tx,
+      tx.referenceType === 'redemption_session' && tx.referenceId
+        ? businessNames.get(tx.referenceId) ?? null
+        : null,
+    ));
   }
 }

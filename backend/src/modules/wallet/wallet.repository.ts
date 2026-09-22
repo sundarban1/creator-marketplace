@@ -139,6 +139,16 @@ export class WalletRepository {
     return new Map(apps.map((a) => [a.id, a.campaign.title]));
   }
 
+  /** Keyed by RedemptionSession id — lets a PROMO_REDEMPTION_DEBIT ledger row show which business the points were spent at. */
+  async businessNamesForRedemptionSessions(sessionIds: string[]) {
+    if (sessionIds.length === 0) return new Map<string, string | null>();
+    const sessions = await prisma.redemptionSession.findMany({
+      where:  { id: { in: sessionIds } },
+      select: { id: true, business: { select: { businessName: true } } },
+    });
+    return new Map(sessions.map((s) => [s.id, s.business.businessName]));
+  }
+
   /** Rs. 500 rewards earned as the referrer, once each referral is admin-released. */
   async sumCompletedReferrerRewards(creatorId: string) {
     const result = await prisma.referral.aggregate({

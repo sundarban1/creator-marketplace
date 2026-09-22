@@ -30,9 +30,10 @@ export function BiometricGateScreen({ onUnlock }: Props) {
     setChecking(true);
     setFailed(false);
     try {
-      const ok = await authenticate(`Unlock Kolab${user?.name ? ` — ${user.name}` : ''}`);
-      if (ok) onUnlock();
-      else setFailed(true);
+      const result = await authenticate(`Unlock Kolab${user?.name ? ` — ${user.name}` : ''}`);
+      if (result === 'confirmed') onUnlock();
+      else if (result === 'failed') setFailed(true);
+      // 'cancelled' — stay quiet, same as the login screen's biometric cancel handling.
     } catch {
       setFailed(true);
     } finally {

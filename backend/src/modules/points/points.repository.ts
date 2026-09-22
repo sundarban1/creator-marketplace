@@ -39,6 +39,11 @@ export class PointsRepository {
     });
   }
 
+  /** Keyed by RedemptionSession id — lets a PROMO_REDEMPTION_DEBIT row show which business the points were spent at. */
+  async businessNamesForRedemptionSessions(sessionIds: string[]) {
+    return this.walletRepo.businessNamesForRedemptionSessions(sessionIds);
+  }
+
   /** Points earned (CREDIT rows) since `since` — powers the "+N this month" figure. */
   async sumCreditsSince(creatorId: string, since: Date) {
     const result = await prisma.walletTransaction.aggregate({
