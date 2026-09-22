@@ -126,7 +126,9 @@ export class CreatorRepository {
     // A creator who never finished onboarding has no fullName/categories/bio yet —
     // showing them in Explore Creators is just a blank/broken card, so they're
     // excluded here rather than filtered client-side (keeps pagination totals correct).
-    const where: Prisma.CreatorProfileWhereInput = { user: { isOnboarded: true } };
+    // isActive covers both admin-suspended and self-deactivated accounts — either
+    // way the account shouldn't be discoverable or hireable while it's down.
+    const where: Prisma.CreatorProfileWhereInput = { user: { isOnboarded: true, isActive: true } };
 
     if (filters.search) {
       // Matching the name alone meant a search for "coffee" found nobody,
@@ -346,9 +348,12 @@ export class CreatorRepository {
     return prisma.creatorProfile.findUnique({ where: { id } });
   }
 
+  // findFirst rather than findUnique — the extra user.isActive filter means a
+  // suspended/self-deactivated creator's profile 404s the same way an unknown
+  // handle already does, instead of surfacing a dead account's public page.
   async findByIdPublic(id: string) {
-    return prisma.creatorProfile.findUnique({
-      where: { id },
+    return prisma.creatorProfile.findFirst({
+      where: { id, user: { isActive: true } },
       select: {
         id: true,
         userId: true,

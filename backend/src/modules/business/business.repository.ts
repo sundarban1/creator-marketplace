@@ -54,7 +54,12 @@ export class BusinessRepository {
     // crashes anything that assumes businessName is non-null), so it's
     // excluded here rather than filtered client-side (keeps pagination
     // totals correct). Mirrors CreatorRepository's identical exclusion.
-    const where: Prisma.BusinessProfileWhereInput = { showPublicProfile: true, user: { isOnboarded: true } };
+    // isActive covers both admin-suspended and self-deactivated accounts —
+    // either way the account shouldn't be discoverable while it's down.
+    const where: Prisma.BusinessProfileWhereInput = {
+      showPublicProfile: true,
+      user: { isOnboarded: true, isActive: true },
+    };
 
     if (params.category) {
       where.categories = { has: params.category };
@@ -120,7 +125,7 @@ export class BusinessRepository {
     // listing already hides.
     const conditions: Prisma.Sql[] = [
       Prisma.sql`b."showPublicProfile" = true`,
-      Prisma.sql`EXISTS (SELECT 1 FROM users u WHERE u.id = b."userId" AND u."isOnboarded" = true)`,
+      Prisma.sql`EXISTS (SELECT 1 FROM users u WHERE u.id = b."userId" AND u."isOnboarded" = true AND u."isActive" = true)`,
     ];
 
     if (params.category) {
@@ -219,9 +224,12 @@ export class BusinessRepository {
     return { businesses, total };
   }
 
+  // findFirst rather than findUnique — the extra user.isActive filter means a
+  // suspended/self-deactivated business's profile 404s the same way an
+  // unknown id already does, instead of surfacing a dead account's public page.
   async findPublicById(id: string) {
-    return prisma.businessProfile.findUnique({
-      where: { id },
+    return prisma.businessProfile.findFirst({
+      where: { id, user: { isActive: true } },
       select: {
         id:                   true,
         slug:                 true,
