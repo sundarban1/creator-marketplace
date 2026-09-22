@@ -1,38 +1,43 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import { useAppAuth } from './AppAuthContext';
 import { postAuthPath } from './postAuthNav';
+import { paths } from '../routes';
 import { useT } from '../i18n';
-import { useAsync } from '../lib/useAsync';
-import { getPlatformFlags } from '../api/platformFlags';
-import { preloadGoogleSignIn, requestGoogleAccessToken } from '../lib/googleAuth';
+import { isMobileWebBrowser } from '../lib/platform';
+import {
+  classifyGoogleAuthError,
+  preloadGoogleSignIn,
+  requestGoogleAccessToken,
+  startGoogleRedirect,
+  storeGoogleReturnPath,
+  type GoogleAuthModalKind,
+} from '../lib/googleAuth';
+import { GoogleAuthErrorModal } from './GoogleAuthErrorModal';
+import { GoogleRoleModal } from './GoogleRoleModal';
 import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
-import { Alert } from '../ui/Alert';
-import { SegmentedControl } from '../ui/SegmentedControl';
 
 type Role = 'CREATOR' | 'BUSINESS';
 
 /**
  * Google (+ Apple) sign-in for the auth screens. On a brand-new Google account
- * the backend asks for a role first — we collect it in a small dialog and
- * retry. Same registration kill-switches as SignupScreen gate which role(s)
- * can be picked here (see platformFlags.ts) — a brand-new Google account is
- * just as much a "signup" as the email/password form.
+ * the backend asks for a role first — GoogleRoleModal collects it and retries.
+ *
+ * Mobile web (per spec §3) never opens the desktop popup — embedded/in-app
+ * browsers routinely block it — it does a full-page redirect through
+ * GoogleCallbackScreen instead (see lib/googleAuth.ts's startGoogleRedirect).
  */
 export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
   const t = useT();
   const navigate = useNavigate();
+  const location = useLocation();
   const { googleAuth } = useAppAuth();
-
-  const flags = useAsync(() => getPlatformFlags(), []);
-  const creatorEnabled = flags.data?.creatorRegistrationEnabled ?? true;
-  const businessEnabled = flags.data?.businessRegistrationEnabled ?? true;
 
   const [busy, setBusy] = useState(false);
   const [pendingToken, setPendingToken] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<Role>('CREATOR');
+  const [modalKind, setModalKind] = useState<GoogleAuthModalKind | null>(null);
+  const [modalDetail, setModalDetail] = useState<string | undefined>(undefined);
 
   // Warm up the GIS script as soon as this screen mounts, rather than on
   // click — starting the popup outside a click's synchronous call stack
@@ -41,21 +46,40 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
     preloadGoogleSignIn();
   }, []);
 
-  // Derived, not synced via an effect: falls back off whichever side is
-  // closed once flags load, without a render round-trip.
-  const role: Role =
-    selectedRole === 'CREATOR' && !creatorEnabled && businessEnabled
-      ? 'BUSINESS'
-      : selectedRole === 'BUSINESS' && !businessEnabled && creatorEnabled
-        ? 'CREATOR'
-        : selectedRole;
+  const fromRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const state = location.state as { from?: { pathname?: string } } | null;
+    fromRef.current = state?.from?.pathname;
+  }, [location.state]);
 
   const finish = async (r: { needsRole: false; user: Parameters<typeof postAuthPath>[0] }) => {
-    navigate(await postAuthPath(r.user), { replace: true });
+    const from = fromRef.current;
+    navigate(from && from.startsWith('/') ? from : await postAuthPath(r.user), { replace: true });
   };
 
   const handleGoogle = async () => {
+    if (busy) return; // duplicate-tap guard beyond the Button's own `disabled`
     onError('');
+    setModalKind(null);
+
+    if (isMobileWebBrowser()) {
+      // Full-page redirect — this navigates away, nothing after it runs.
+      storeGoogleReturnPath(fromRef.current);
+      setBusy(true);
+      try {
+        await startGoogleRedirect(`${window.location.origin}${paths.googleCallback}`);
+      } catch (err) {
+        // requestCode() itself only fails if GIS never loaded — a real
+        // "cancelled" outcome only shows up after the round trip, in
+        // GoogleCallbackScreen (Google redirects back with ?error=access_denied).
+        setBusy(false);
+        const { kind, detail } = classifyGoogleAuthError(err);
+        setModalKind(kind);
+        setModalDetail(detail);
+      }
+      return;
+    }
+
     setBusy(true);
     try {
       const token = await requestGoogleAccessToken();
@@ -66,13 +90,15 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
         await finish(res);
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : t('common.somethingWrong'));
+      const { kind, detail } = classifyGoogleAuthError(err);
+      setModalKind(kind);
+      setModalDetail(detail);
     } finally {
       setBusy(false);
     }
   };
 
-  const confirmRole = async () => {
+  const confirmRole = async (role: Role) => {
     if (!pendingToken) return;
     setBusy(true);
     try {
@@ -82,7 +108,9 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
         await finish(res);
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : t('common.somethingWrong'));
+      const { kind, detail } = classifyGoogleAuthError(err);
+      setModalKind(kind);
+      setModalDetail(detail);
     } finally {
       setBusy(false);
     }
@@ -103,37 +131,18 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
         <span className="h-px flex-1 bg-line" />
       </div>
 
-      <Modal
-        open={pendingToken != null}
-        onClose={() => setPendingToken(null)}
-        title={t('auth.chooseRoleTitle')}
-      >
-        {!creatorEnabled && !businessEnabled ? (
-          <Alert tone="warning">{t('auth.registrationClosedBoth')}</Alert>
-        ) : creatorEnabled && businessEnabled ? (
-          <SegmentedControl<Role>
-            ariaLabel={t('auth.chooseRoleTitle')}
-            variant="cards"
-            value={role}
-            onChange={setSelectedRole}
-            options={[
-              { value: 'CREATOR', label: t('roles.creator'), description: t('auth.creatorRoleBlurb') },
-              { value: 'BUSINESS', label: t('roles.business'), description: t('auth.businessRoleBlurb') },
-            ]}
-          />
-        ) : (
-          <Alert tone="neutral">
-            {t('auth.registrationOnlyRole', {
-              role: role === 'CREATOR' ? t('roles.creator') : t('roles.business'),
-            })}
-          </Alert>
-        )}
-        {(creatorEnabled || businessEnabled) && (
-          <Button className="mt-4" fullWidth loading={busy} onClick={confirmRole}>
-            {t('common.continue')}
-          </Button>
-        )}
-      </Modal>
+      <GoogleRoleModal open={pendingToken != null} onClose={() => setPendingToken(null)} onConfirm={confirmRole} busy={busy} />
+
+      <GoogleAuthErrorModal
+        kind={modalKind}
+        detail={modalDetail}
+        retrying={busy}
+        onClose={() => setModalKind(null)}
+        onRetry={() => {
+          setModalKind(null);
+          void handleGoogle();
+        }}
+      />
     </>
   );
 }

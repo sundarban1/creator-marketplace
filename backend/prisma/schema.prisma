@@ -8,22 +8,22 @@ datasource db {
 }
 
 model User {
-  id                        String            @id @default(cuid())
-  email                     String            @unique
+  id                        String                @id @default(cuid())
+  email                     String                @unique
   password                  String
   role                      Role
-  isEmailVerified           Boolean           @default(false)
+  isEmailVerified           Boolean               @default(false)
   // True when `email` is a reserved non-routable placeholder (see
   // utils/placeholderEmail.ts) minted because Sign in with Apple withheld the
   // real address on a repeat authorization. Onboarding forces the user to add +
   // verify a real email; verifyEmailOtp clears this.
-  emailIsPlaceholder        Boolean           @default(false)
-  isPhoneVerified           Boolean           @default(false)
-  createdAt                 DateTime          @default(now())
-  updatedAt                 DateTime          @updatedAt
-  phone                     String?           @unique
-  isOnboarded               Boolean           @default(false)
-  isActive                  Boolean           @default(true)
+  emailIsPlaceholder        Boolean               @default(false)
+  isPhoneVerified           Boolean               @default(false)
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @updatedAt
+  phone                     String?               @unique
+  isOnboarded               Boolean               @default(false)
+  isActive                  Boolean               @default(true)
   // Set only when an admin suspends this account (distinct from a user's own
   // self-deactivation, which also flips isActive false but leaves this null).
   // Login blocks outright when this is set; self-deactivated accounts still
@@ -32,36 +32,36 @@ model User {
   // Consecutive failed-password count on login — reset to 0 on a successful
   // login. Drives the admin-configurable CAPTCHA-after-suspicious-behaviour
   // trigger (see AuthService.login); not a lockout by itself.
-  failedLoginCount          Int               @default(0)
+  failedLoginCount          Int                   @default(0)
   lastFailedLoginAt         DateTime?
   // False for accounts created purely through a social provider (Apple/Google) —
   // they hold a random unusable password. Flips true once the user sets one via
   // password reset. Drives the "don't unlink your only login method" guard.
-  hasPassword               Boolean           @default(true)
+  hasPassword               Boolean               @default(true)
   deviceId                  String?
   // Updated on socket connect/disconnect — drives the chat "Active now" / "Active Xm ago" status.
   lastSeenAt                DateTime?
   // Per-channel opt-out — checked before every push (notification.service.ts
   // sendExpoPush) and every transactional campaign email (campaign.service.ts).
   // Independent of each other; either can be off while the other stays on.
-  pushNotificationsEnabled  Boolean           @default(true)
-  emailNotificationsEnabled Boolean           @default(true)
+  pushNotificationsEnabled  Boolean               @default(true)
+  emailNotificationsEnabled Boolean               @default(true)
   businessProfile           BusinessProfile?
   creatorProfile            CreatorProfile?
   issueReports              IssueReport[]
-  sentMessages              Message[]         @relation("MessageSender")
+  sentMessages              Message[]             @relation("MessageSender")
   notifications             Notification[]
   otpVerifications          OtpVerification[]
   supportRequests           SupportRequest[]
-  reviewsGiven              Review[]          @relation("ReviewFrom")
-  reviewsReceived           Review[]          @relation("ReviewTo")
+  reviewsGiven              Review[]              @relation("ReviewFrom")
+  reviewsReceived           Review[]              @relation("ReviewTo")
   visitorMessages           VisitorMessage[]
-  blocksMade                Block[]           @relation("BlocksMade")
-  blocksReceived            Block[]           @relation("BlocksReceived")
+  blocksMade                Block[]               @relation("BlocksMade")
+  blocksReceived            Block[]               @relation("BlocksReceived")
   aiConversations           AiConversation[]
   sessions                  Session[]
   pushTokens                PushToken[]
-  reportsFiled              Report[]          @relation("ReportsFiled")
+  reportsFiled              Report[]              @relation("ReportsFiled")
   authAccounts              AuthAccount[]
   biometricCredentials      BiometricCredential[]
 
@@ -190,35 +190,35 @@ model Block {
 }
 
 model CreatorProfile {
-  id                       String                  @id @default(cuid())
-  userId                   String                  @unique
+  id                       String                      @id @default(cuid())
+  userId                   String                      @unique
   fullName                 String?
   bio                      String?
   location                 String?
   avatarUrl                String?
   coverImageUrl            String?
   categories               String[]
-  socialLinks              Json                    @default("{}")
-  portfolioLinks           Json                    @default("[]")
-  isVerified               Boolean                 @default(false)
-  createdAt                DateTime                @default(now())
-  updatedAt                DateTime                @updatedAt
-  username                 String?                 @unique
-  paymentMethods           String[]                @default([])
-  prefPlatforms            String[]                @default([])
-  prefLocations            String[]                @default([])
-  prefBudgetMin            Float                   @default(0)
-  prefBudgetMax            Float                   @default(500)
+  socialLinks              Json                        @default("{}")
+  portfolioLinks           Json                        @default("[]")
+  isVerified               Boolean                     @default(false)
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+  username                 String?                     @unique
+  paymentMethods           String[]                    @default([])
+  prefPlatforms            String[]                    @default([])
+  prefLocations            String[]                    @default([])
+  prefBudgetMin            Float                       @default(0)
+  prefBudgetMax            Float                       @default(500)
   locationLat              Float?
   locationLng              Float?
-  nearbyRadiusKm           Int                     @default(25)
-  nearbyUseHomeLocation    Boolean                 @default(false)
-  referralCode             String?                 @unique
+  nearbyRadiusKm           Int                         @default(25)
+  nearbyUseHomeLocation    Boolean                     @default(false)
+  referralCode             String?                     @unique
   citizenshipDocUrl        String?
-  citizenshipStatus        CitizenshipStatus       @default(NONE)
+  citizenshipStatus        CitizenshipStatus           @default(NONE)
   citizenshipUploadedAt    DateTime?
   panDocUrl                String?
-  panDocStatus             DocumentStatus          @default(NONE)
+  panDocStatus             DocumentStatus              @default(NONE)
   panDocUploadedAt         DateTime?
   // Parity with BusinessProfile's equivalent pair, added later — BusinessProfile
   // has always had these, Creator never did until the Provider-marketplace work.
@@ -231,15 +231,15 @@ model CreatorProfile {
   city                     String?
   area                     String?
   address                  String?
-  locationVisibility       LocationVisibility      @default(CITY)
+  locationVisibility       LocationVisibility          @default(CITY)
   // §61 — parity with BusinessProfile's equivalent trio, added later:
   // BusinessProfile has always had these, providers never did until now.
   // The public profile endpoint gates on showPublicProfile the same way
   // business.service.ts's getBusinessPublic already does.
-  showPublicProfile        Boolean                 @default(true)
-  hideContactDetails       Boolean                 @default(false)
-  hideSocialLinks          Boolean                 @default(false)
-  availabilityStatus       AvailabilityStatus      @default(AVAILABLE)
+  showPublicProfile        Boolean                     @default(true)
+  hideContactDetails       Boolean                     @default(false)
+  hideSocialLinks          Boolean                     @default(false)
+  availabilityStatus       AvailabilityStatus          @default(AVAILABLE)
   // Collected as the first step of provider onboarding, right after signup.
   providerType             ProviderType?
   // §4 — how many people are in the team. A plain count, not a bucketed enum
@@ -255,7 +255,7 @@ model CreatorProfile {
   // BusinessProfile already makes between its industry `categories` and
   // `defaultCreatorCategories`. AGENCY-only: cleared by
   // CreatorService.updateProfile on any switch away, like teamSize above.
-  industries               String[]                @default([])
+  industries               String[]                    @default([])
   // §5 step 2 — an AGENCY's legal identifiers. Never public (a PAN is not
   // public data): private DTO only, used for verification and payouts.
   // AGENCY-only on write, but deliberately NOT wiped when the provider type
@@ -278,23 +278,23 @@ model CreatorProfile {
   // of BusinessProfile.companyRegDoc*. Optional: it gates the verified badge
   // for an agency, never profile creation (§18).
   companyRegDocUrl         String?
-  companyRegDocStatus      DocumentStatus          @default(NONE)
+  companyRegDocStatus      DocumentStatus              @default(NONE)
   companyRegDocUploadedAt  DateTime?
   // What this provider charges, distinct from prefBudgetMin/Max above (what
   // they're willing to accept on a campaign).
   startingRate             Float?
-  negotiable               Boolean                 @default(true)
+  negotiable               Boolean                     @default(true)
   applications             Application[]
-  conversations            Conversation[]          @relation("CreatorConversations")
-  conversationsAsCreator2  Conversation[]          @relation("Creator2Conversations")
-  user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations            Conversation[]              @relation("CreatorConversations")
+  conversationsAsCreator2  Conversation[]              @relation("Creator2Conversations")
+  user                     User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
   favoriteBusinesses       FavoriteBusiness[]
   shortlistedCampaigns     ShortlistedCampaign[]
   socialAccounts           SocialAccount[]
   savedBy                  SavedCreator[]
   receivedInvitations      CampaignInvitation[]
-  referralsMade            Referral[]              @relation("ReferralsMade")
-  referralsReceived        Referral?               @relation("ReferralsReceived")
+  referralsMade            Referral[]                  @relation("ReferralsMade")
+  referralsReceived        Referral?                   @relation("ReferralsReceived")
   withdrawals              Withdrawal[]
   payoutMethods            PayoutMethod[]
   walletTransactions       WalletTransaction[]
@@ -305,12 +305,13 @@ model CreatorProfile {
   portfolioItems           PortfolioItem[]
   availabilitySchedule     AvailabilitySchedule[]
   serviceRequests          ServiceRequest[]
-  members                  ProviderMember[]        @relation("ProviderMembers")
-  assignedWork             ApplicationAssignment[] @relation("AssignedWork")
-  memberOf                 ProviderMember[]        @relation("ProviderMemberships")
+  members                  ProviderMember[]            @relation("ProviderMembers")
+  assignedWork             ApplicationAssignment[]     @relation("AssignedWork")
+  memberOf                 ProviderMember[]            @relation("ProviderMemberships")
   eventQuestions           EventQuestion[]
   reliability              CreatorReliability?
   redemptionSessions       RedemptionSession[]
+  meetupRegistrations      CreatorMeetupRegistration[]
 
   @@index([isVerified])
   // Explore Creators' default ordering is `createdAt DESC, id ASC` (see
@@ -980,6 +981,138 @@ model EventQuestion {
 
   @@index([campaignId, createdAt])
   @@map("event_questions")
+}
+
+// A city-scoped in-person creator meetup (Itahari, Kathmandu, ...). Deliberately
+// modeled as a reusable record rather than one-off code per city — every
+// city-facing string in the frontend/API comes from this row, never a literal.
+// registrationStatus (is the form open) and status (the meetup's overall
+// lifecycle) are kept separate: a meetup can be ACTIVE while registration is
+// already CLOSED, or UPCOMING while registration hasn't opened yet (DRAFT).
+model CreatorMeetup {
+  id    String @id @default(cuid())
+  title String
+  slug  String @unique
+
+  city     String
+  district String?
+  province String?
+  country  String  @default("Nepal")
+
+  description String?
+
+  registrationStatus   MeetupRegistrationPhase @default(DRAFT)
+  registrationStartsAt DateTime?
+  registrationEndsAt   DateTime?
+
+  // Event logistics — all optional since a meetup is typically created before
+  // venue/date are confirmed (see spec §16/§17: the app shows an "announced
+  // soon on social media" placeholder until these are set).
+  eventDate      DateTime?
+  eventStartTime String?
+  eventEndTime   String?
+  venueName      String?
+  venueAddress   String?
+
+  // Informational cap only — admin decides whether to close registration or
+  // keep accepting once accepted count reaches this (spec §13, never auto-reject).
+  capacity Int?
+
+  status MeetupStatus @default(UPCOMING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  registrations CreatorMeetupRegistration[]
+
+  @@index([status, registrationStatus])
+  @@map("creator_meetups")
+}
+
+enum MeetupRegistrationPhase {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum MeetupStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// One creator's registration for one meetup. Uniqueness is per (meetupId,
+// creatorId) — not per creator — since the same creator can register
+// independently for several city meetups (spec §5).
+model CreatorMeetupRegistration {
+  id        String @id @default(cuid())
+  meetupId  String
+  creatorId String
+
+  // Snapshotted at submission time rather than read live off CreatorProfile —
+  // this is what the creator told us for this specific meetup, and should stay
+  // stable even if their profile changes later.
+  fullName    String
+  phoneNumber String
+  email       String?
+
+  creatorTypes     MeetupCreatorType[]
+  otherCreatorType String?
+
+  socialMediaProfile   String?
+  attendancePreference MeetupAttendancePreference
+  message              String?
+
+  status MeetupRegistrationStatus @default(PENDING)
+
+  acceptedAt DateTime?
+  acceptedBy String?
+  rejectedAt DateTime?
+  rejectedBy String?
+
+  invitationSentAt      DateTime?
+  invitationEmailStatus String?
+
+  // Manual door check-in on event day — an admin marks an ACCEPTED creator
+  // present when they show up. No QR/camera scanning: a search-and-tap flow
+  // in the admin Registrations tab was chosen over building new camera
+  // infrastructure (there's no existing scan surface on web, and no
+  // staff/admin role on mobile).
+  checkedInAt DateTime?
+  checkedInBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  meetup  CreatorMeetup  @relation(fields: [meetupId], references: [id], onDelete: Cascade)
+  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([meetupId, creatorId])
+  @@index([meetupId, status])
+  @@map("creator_meetup_registrations")
+}
+
+enum MeetupCreatorType {
+  CONTENT_CREATOR
+  UGC_CREATOR
+  INFLUENCER
+  YOUTUBER
+  SOCIAL_MEDIA_CREATOR
+  BLOGGER_WRITER
+  PHOTOGRAPHER_VIDEOGRAPHER
+  OTHER
+}
+
+enum MeetupAttendancePreference {
+  YES
+  NOT_SURE
+}
+
+enum MeetupRegistrationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 model Application {

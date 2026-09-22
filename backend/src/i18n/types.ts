@@ -67,6 +67,7 @@ export interface BackendDict {
     emailVerifiedSuccess: string;
     googleTokenInvalid: string;
     googleNoEmail: string;
+    googleEmailNotVerified: string;
     facebookTokenInvalid: string;
     facebookNoEmail: string;
     appleLinkRequired: string;
@@ -494,6 +495,18 @@ export interface BackendDict {
     cannotDeletePromotionWithRedemptions: string;
     promotionDeletedSuccessfully: string;
     cannotPublishInPast: string;
+  };
+  // modules/meetup/meetup.service.ts — every AppError message.
+  meetup: {
+    creatorProfileNotFound: string;
+    meetupNotFound: string;
+    registrationNotFound: string;
+    registrationNotOpen: string;
+    alreadyRegistered: string;
+    registrationAlreadyDecided: string;
+    mustBeAcceptedToCheckIn: string;
+    alreadyCheckedIn: string;
+    notCheckedIn: string;
   };
   // modules/redemption/redemption.service.ts — every AppError message.
   redemption: {

@@ -8,6 +8,7 @@ export const paths = {
   verify: '/verify',
   forgotPassword: '/forgot-password',
   onboarding: '/onboarding',
+  googleCallback: '/auth/google/callback',
 
   creatorHome: '/creator',
   businessHome: '/business',

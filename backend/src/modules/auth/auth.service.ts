@@ -18,6 +18,7 @@ import {
   verifyAndConsumeBiometricChallenge,
 } from '../../utils/jwt';
 import { verifyAppleIdentityToken, exchangeAppleAuthCode, revokeAppleToken, verifyAppleNotification } from '../../utils/apple';
+import { verifyGoogleAccessToken, exchangeGoogleCode } from '../../utils/google';
 import { synthesizePlaceholderEmail } from '../../utils/placeholderEmail';
 import { sendPasswordResetOtpEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
 import { isSmsConfigured, sendOtpSms, sendPasswordResetOtpSms } from '../../utils/sms';
@@ -646,13 +647,11 @@ export class AuthService {
   }
 
   async googleAuth(input: GoogleAuthInput) {
-    const googleRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: { Authorization: `Bearer ${input.accessToken}` },
-    });
-    if (!googleRes.ok) throw new AppError(getDict().auth.googleTokenInvalid, HttpStatus.UNAUTHORIZED);
-
-    const gUser = await googleRes.json() as { id: string; email: string; name?: string; picture?: string };
-    if (!gUser.email) throw new AppError(getDict().auth.googleNoEmail, HttpStatus.BAD_REQUEST);
+    // Mobile-web's redirect flow can't hold a client secret, so it hands us an
+    // authorization code instead of an access token — exchange it server-side
+    // first. Desktop popup / native flows already send a ready-to-use token.
+    const googleAccessToken = input.accessToken ?? await exchangeGoogleCode(input.code!, input.redirectUri!);
+    const gUser = await verifyGoogleAccessToken(googleAccessToken);
 
     const existing = await this.repo.findUserByEmail(gUser.email);
 
@@ -664,7 +663,7 @@ export class AuthService {
         await this.repo.reactivateAccount(existing.id);
       }
       const user = await this.repo.findUserById(existing.id);
-      await this.recordProviderAccount(user!.id, AuthProvider.GOOGLE, gUser.id, gUser.email);
+      await this.recordProviderAccount(user!.id, AuthProvider.GOOGLE, gUser.sub, gUser.email);
       const payload = { id: user!.id, email: user!.email, role: user!.role };
       const accessToken  = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
@@ -694,7 +693,7 @@ export class AuthService {
     // Google has already verified the email — mark it verified without OTP
     const verifiedUser = await this.repo.verifyEmail(createdUser.id);
     await this.repo.setHasPassword(verifiedUser.id, false);
-    await this.recordProviderAccount(verifiedUser.id, AuthProvider.GOOGLE, gUser.id, gUser.email);
+    await this.recordProviderAccount(verifiedUser.id, AuthProvider.GOOGLE, gUser.sub, gUser.email);
 
     const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
     const accessToken  = signAccessToken(payload);

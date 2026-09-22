@@ -21,6 +21,7 @@ function screen(loader: () => Promise<Record<string, unknown>>, key: string) {
 }
 
 const LoginScreen = screen(() => import('./auth/LoginScreen'), 'LoginScreen');
+const GoogleCallbackScreen = screen(() => import('./auth/GoogleCallbackScreen'), 'GoogleCallbackScreen');
 const SignupScreen = screen(() => import('./auth/SignupScreen'), 'SignupScreen');
 const VerifyOtpScreen = screen(() => import('./auth/VerifyOtpScreen'), 'VerifyOtpScreen');
 const ForgotPasswordScreen = screen(() => import('./auth/ForgotPasswordScreen'), 'ForgotPasswordScreen');
@@ -49,6 +50,8 @@ const CreatorWalletPage = screen(() => import('./creator/CreatorWalletPage'), 'C
 const CreatorProfileEditPage = screen(() => import('./creator/CreatorProfilePage'), 'CreatorProfilePage');
 const CreatorSettingsPage = screen(() => import('./creator/CreatorSettingsPage'), 'CreatorSettingsPage');
 const CreatorVerificationPage = screen(() => import('./creator/CreatorVerificationPage'), 'CreatorVerificationPage');
+const CreatorMeetupsPage = screen(() => import('./creator/CreatorMeetupsPage'), 'CreatorMeetupsPage');
+const CreatorMeetupRegisterPage = screen(() => import('./creator/CreatorMeetupRegisterPage'), 'CreatorMeetupRegisterPage');
 const CreatorReferralsPage = screen(() => import('./creator/CreatorReferralsPage'), 'CreatorReferralsPage');
 const AccountSettingsPage = screen(() => import('./shell/AccountSettingsPage'), 'AccountSettingsPage');
 const HelpSupportPage = screen(() => import('./shell/HelpSupportPage'), 'HelpSupportPage');
@@ -102,6 +105,11 @@ export function marketplaceRoutes() {
         <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
       </Route>
 
+      {/* Google's redirect lands here regardless of session state (mid-flow it's
+          neither authed nor a "guest" in the RequireGuest sense), so it's not
+          nested under either guard — see GoogleCallbackScreen. */}
+      <Route path="/auth/google/callback" element={<GoogleCallbackScreen />} />
+
       {/* First-login onboarding — role-branches internally, so it needs an
           authed user but not a specific `RequireRole`. */}
       <Route element={<RequireAuth />}>
@@ -126,6 +134,8 @@ export function marketplaceRoutes() {
               <Route path="applications/:id" element={<CreatorWorkDetailPage />} />
               <Route path="work" element={<CreatorWorkPage />} />
               <Route path="work/:id" element={<CreatorWorkDetailPage />} />
+              <Route path="meetups" element={<CreatorMeetupsPage />} />
+              <Route path="meetups/:meetupId" element={<CreatorMeetupRegisterPage />} />
               <Route path="messages" element={<ChatPage />} />
               <Route path="messages/:id" element={<ChatPage />} />
               <Route path="notifications" element={<NotificationsPage />} />

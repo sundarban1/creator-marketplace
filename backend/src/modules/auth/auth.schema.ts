@@ -116,10 +116,20 @@ export const verifyEmailOtpSchema = z.object({
   code:  codeField,
 });
 
-export const googleAuthSchema = z.object({
-  accessToken: z.string().min(1, 'Google access token is required'),
-  role: z.enum(['CREATOR', 'BUSINESS']).optional(),
-});
+// Accepts either a direct OAuth2 access token (desktop-popup / native flows) or
+// an authorization `code` + the exact `redirectUri` it was issued for (the
+// mobile-web redirect flow, which can't hold a client secret to exchange the
+// code itself — the service layer does that server-side).
+export const googleAuthSchema = z
+  .object({
+    accessToken: z.string().min(1).optional(),
+    code: z.string().min(1).optional(),
+    redirectUri: z.string().min(1).optional(),
+    role: z.enum(['CREATOR', 'BUSINESS']).optional(),
+  })
+  .refine((d) => Boolean(d.accessToken) || Boolean(d.code && d.redirectUri), {
+    message: 'Either accessToken or code + redirectUri is required',
+  });
 
 export const facebookAuthSchema = z.object({
   accessToken: z.string().min(1, 'Facebook access token is required'),

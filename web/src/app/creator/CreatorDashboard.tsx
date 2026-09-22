@@ -12,6 +12,7 @@ import { useDeadlineLabel } from '../lib/useDeadlineLabel';
 import { isActiveWork } from '../lib/engagement';
 import { fetchWalletSummary, fetchMyApplications, fetchNotifications, fetchCreatorFullProfile } from '../api/creator';
 import { fetchPublicEvents } from '../api/publicMarketplace';
+import { fetchOpenMeetups } from '../api/meetup';
 import { cn } from '../ui/cn';
 import { PageHeader } from '../ui/PageHeader';
 import { DashboardHero } from '../ui/DashboardHero';
@@ -42,6 +43,7 @@ export function CreatorDashboard() {
   const activity = useAsync((s) => fetchNotifications(6, s), []);
   const recommended = useAsync((s) => fetchPublicEvents({ limit: 3 }, s), []);
   const profile = useAsync((s) => fetchCreatorFullProfile(s), []);
+  const meetups = useAsync((s) => fetchOpenMeetups(s), []);
 
   const { activeWork, pending, upcoming } = useMemo(() => {
     const list = apps.data?.items ?? [];
@@ -122,6 +124,32 @@ export function CreatorDashboard() {
           ctaLabel={t('dashboard.ctaBtn')}
           to="/creator/events"
         />
+
+        {/* Meetup CTA — every city-facing string comes from the meetup record
+            itself (title/city), never hard-coded, so a second city opening
+            registration needs no code change here (spec §6/§25). Renders
+            nothing while loading/empty, a single-meetup hero when exactly one
+            is open, or a compact multi-meetup card when several are. */}
+        {!meetups.loading && meetups.data && meetups.data.length === 1 && (
+          <DashboardHero
+            title={`🎉 ${meetups.data[0]!.title}`}
+            subtitle={t('meetup.dashboardCtaSubtitle', { city: meetups.data[0]!.city })}
+            ctaLabel={t('meetup.dashboardCtaBtn')}
+            to={`/creator/meetups/${meetups.data[0]!.id}`}
+          />
+        )}
+        {!meetups.loading && meetups.data && meetups.data.length > 1 && (
+          <Link
+            to="/creator/meetups"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4 transition-colors hover:border-line-strong"
+          >
+            <div>
+              <p className="text-[14px] font-semibold text-ink">🎉 {t('meetup.ctaMultipleTitle')}</p>
+              <p className="mt-0.5 text-[12.5px] text-ink-soft">{t('meetup.dashboardCtaMultipleSubtitle', { n: meetups.data.length })}</p>
+            </div>
+            <ArrowRight size={16} className="flex-shrink-0 text-ink-soft" />
+          </Link>
+        )}
       </div>
 
       {/* Stats */}

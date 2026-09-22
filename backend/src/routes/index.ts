@@ -45,6 +45,8 @@ import promotionRoutes from '../modules/promotion/promotion.routes';
 import redemptionRoutes from '../modules/redemption/redemption.routes';
 import pointsRoutes from '../modules/points/points.routes';
 import creditsRoutes from '../modules/credits/credits.routes';
+import meetupRoutes from '../modules/meetup/meetup.routes';
+import meetupAdminRoutes from '../modules/meetup/meetup.admin.routes';
 
 export function registerApiRoutes(app: Express): void {
   app.use('/api/auth', authRoutes);
@@ -73,6 +75,8 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/campaigns', campaignRoutes);
   app.use('/api/promotions', promotionRoutes);
   app.use('/api/redemptions', redemptionRoutes);
+  app.use('/api/meetups', meetupRoutes);
+  app.use('/api/admin/meetups', meetupAdminRoutes);
   app.use('/api/messaging', messagingRoutes);
   app.use('/api/admin/categories', categoryAdminRoutes);
   app.use('/api/admin/platforms', platformAdminRoutes);

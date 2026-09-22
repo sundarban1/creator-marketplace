@@ -29,7 +29,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useAppColors, useIsDark, BUSINESS_DARK_COLORS } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
-import { ApiError } from '@/lib/api';
+import { ApiError, OfflineError, RequestTimeoutError } from '@/lib/api';
 
 const DEFAULT_SUPPORT_EMAIL = 'info@kolab.com.np';
 import type { Lang } from '@/i18n';
@@ -38,6 +38,7 @@ import { withAlpha } from '@/utilities/color';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
+import { AppModal } from '@/components/AppModal';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
   prepareBiometricSignIn,
@@ -54,6 +55,15 @@ const LANG_LABELS: Record<Lang, string> = { en: 'Eng', ne: 'ने' };
 // Facebook Login is wired up but hidden for now (Meta app config isn't ready
 // yet) — flip this back on once that's sorted, no other code changes needed.
 const FACEBOOK_LOGIN_ENABLED = false;
+
+// Structured Google Sign-In failure states shown via AppModal (see
+// googleAuthModal state + GOOGLE_ERROR_COPY below) — mirrors the reliability
+// requirements web's GoogleAuthErrorModal covers, adapted to expo-auth-session's
+// smaller vocabulary of outcomes (no popup-blocked/cookies states on native).
+type GoogleErrorKind = 'cancelled' | 'unavailable' | 'timeout' | 'network' | 'server';
+
+// How long to wait for the browser/auth session to come back before giving up.
+const GOOGLE_AUTH_TIMEOUT_MS = 45_000;
 
 // Full-bleed backdrop behind the brand block — a hazy Himalayan skyline that
 // fades up into the page's warm paper ground through the wash layered over it
@@ -861,7 +871,8 @@ export default function LoginScreen() {
   // above picks up tab: 'signup'), but if expo-router reuses an already-mounted instance the
   // initializer never re-runs — syncing here on every params.tab change is what flips the tab then.
   useEffect(() => {
-    if (params.tab === 'signup' || params.tab === 'login') setTab(params.tab);
+    const nextTab = params.tab;
+    if (nextTab === 'signup' || nextTab === 'login') void Promise.resolve().then(() => setTab(nextTab));
   }, [params.tab]);
 
   // Entrance animation — card slides up and fades in on mount
@@ -879,6 +890,18 @@ export default function LoginScreen() {
 
   const [googleLoading,   setGoogleLoading]   = useState(false);
   const [googleError,     setGoogleError]     = useState('');
+  // Structured failure states (cancelled/unavailable/timeout/network/server) shown
+  // via AppModal — distinct from googleError above, which is only the dev-only
+  // "add EXPO_PUBLIC_GOOGLE_*_CLIENT_ID" setup nudge now (see handleGooglePress).
+  const [googleAuthModal, setGoogleAuthModal] = useState<GoogleErrorKind | null>(null);
+  // For a `server` failure, the backend's own (already user-safe) message — shown
+  // instead of the generic copy, same as today's FormBanner text, just relocated.
+  const [googleServerDetail, setGoogleServerDetail] = useState('');
+  // Guards a late `googleResponse` update from stomping a timeout that already
+  // gave up on this attempt (see the googleResponse effect and handleGooglePress).
+  const googleTimedOutRef = useRef(false);
+  const googleTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (googleTimeoutId.current) clearTimeout(googleTimeoutId.current); }, []);
   const [facebookLoading, setFacebookLoading] = useState(false);
   const [facebookError,   setFacebookError]   = useState('');
   const [appleLoading,    setAppleLoading]    = useState(false);
@@ -938,6 +961,11 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (!googleResponse) return;
+    // A timeout already gave up on this attempt and showed its own modal —
+    // don't let a late-arriving response reopen/overwrite that state.
+    if (googleTimedOutRef.current) return;
+    if (googleTimeoutId.current) { clearTimeout(googleTimeoutId.current); googleTimeoutId.current = null; }
+
     if (googleResponse.type === 'success' && googleResponse.authentication?.accessToken) {
       // Implicit flow (web) — token comes back directly.
       void handleGoogleToken(googleResponse.authentication.accessToken);
@@ -960,14 +988,15 @@ export default function LoginScreen() {
       )
         .then((token) => {
           if (token.accessToken) void handleGoogleToken(token.accessToken);
-          else { setGoogleError(t('auth.login.googleFailed')); setGoogleLoading(false); }
+          else { setGoogleLoading(false); setGoogleAuthModal('server'); }
         })
-        .catch(() => { setGoogleError(t('auth.login.googleFailed')); setGoogleLoading(false); });
+        .catch(() => { setGoogleLoading(false); setGoogleAuthModal('server'); });
     } else if (googleResponse.type === 'error') {
-      setGoogleError(t('auth.login.googleFailed'));
-      setGoogleLoading(false);
+      // The browser/auth session itself failed to start or complete.
+      void Promise.resolve().then(() => { setGoogleLoading(false); setGoogleAuthModal('unavailable'); });
     } else if (googleResponse.type === 'dismiss' || googleResponse.type === 'cancel') {
-      setGoogleLoading(false);
+      // A normal outcome, not a failure (spec §10) — shown, never as "Something went wrong".
+      void Promise.resolve().then(() => { setGoogleLoading(false); setGoogleAuthModal('cancelled'); });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [googleResponse]);
@@ -977,10 +1006,9 @@ export default function LoginScreen() {
     if (facebookResponse.type === 'success' && facebookResponse.authentication?.accessToken) {
       void handleFacebookToken(facebookResponse.authentication.accessToken);
     } else if (facebookResponse.type === 'error') {
-      setFacebookError(t('auth.login.facebookFailed'));
-      setFacebookLoading(false);
+      void Promise.resolve().then(() => { setFacebookError(t('auth.login.facebookFailed')); setFacebookLoading(false); });
     } else if (facebookResponse.type === 'dismiss' || facebookResponse.type === 'cancel') {
-      setFacebookLoading(false);
+      void Promise.resolve().then(() => setFacebookLoading(false));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facebookResponse]);
@@ -1027,12 +1055,17 @@ export default function LoginScreen() {
       }
       await reloadUser();
     } catch (e) {
-      setGoogleError(e instanceof Error ? e.message : 'Google sign-in failed. Please try again.');
       setGoogleLoading(false);
+      if (e instanceof OfflineError) { setGoogleAuthModal('network'); return; }
+      if (e instanceof RequestTimeoutError) { setGoogleAuthModal('timeout'); return; }
+      if (e instanceof ApiError) { setGoogleServerDetail(e.message); setGoogleAuthModal('server'); return; }
+      setGoogleAuthModal('server');
     }
   }
 
   function handleGooglePress() {
+    if (googleLoading) return; // duplicate-tap guard beyond the button's own `disabled`
+
     const iosId     = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
     const androidId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
     const webId     = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
@@ -1049,8 +1082,22 @@ export default function LoginScreen() {
       setGoogleError('Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to .env.');
       return;
     }
-    setGoogleLoading(true);
+
+    // Full reset per spec §24 — no state left over from a previous attempt.
     setGoogleError('');
+    setGoogleAuthModal(null);
+    setGoogleServerDetail('');
+    setGoogleLoading(true);
+    googleTimedOutRef.current = false;
+    if (googleTimeoutId.current) clearTimeout(googleTimeoutId.current);
+    googleTimeoutId.current = setTimeout(() => {
+      googleTimedOutRef.current = true;
+      googleTimeoutId.current = null;
+      setGoogleLoading(false);
+      setGoogleAuthModal('timeout');
+      void WebBrowser.dismissBrowser().catch(() => {});
+    }, GOOGLE_AUTH_TIMEOUT_MS);
+
     void googlePromptAsync();
   }
 
@@ -1169,6 +1216,14 @@ export default function LoginScreen() {
   // after a logout) just pops the user into a screen they're no longer allowed
   // on, which RootNavigator immediately bounces back here.
   const canGoBack    = router.canGoBack() && params.tab === 'signup';
+
+  const googleErrorCopy: Record<GoogleErrorKind, { title: string; body: string }> = {
+    cancelled:   { title: t('auth.login.googleCancelledTitle'),   body: t('auth.login.googleCancelledBody') },
+    unavailable: { title: t('auth.login.googleUnavailableTitle'), body: t('auth.login.googleUnavailableBody') },
+    timeout:     { title: t('auth.login.googleTimeoutTitle'),     body: t('auth.login.googleTimeoutBody') },
+    network:     { title: t('auth.login.googleNetworkTitle'),     body: t('auth.login.googleNetworkBody') },
+    server:      { title: t('auth.login.googleServerTitle'),      body: googleServerDetail || t('auth.login.googleServerBody') },
+  };
 
   return (
     <View style={s.root}>
@@ -1332,6 +1387,20 @@ export default function LoginScreen() {
           </Pressable>
         </View>
       </BottomSheet>
+
+      {/* Structured Google Sign-In failure states — cancelled/unavailable/timeout/
+          network/server (spec §7, adapted to expo-auth-session's outcomes). */}
+      <AppModal
+        visible={googleAuthModal != null}
+        type={googleAuthModal === 'cancelled' ? 'info' : 'warning'}
+        title={googleAuthModal ? googleErrorCopy[googleAuthModal].title : ''}
+        body={googleAuthModal ? googleErrorCopy[googleAuthModal].body : ''}
+        confirmLabel={t('common.retry')}
+        cancelLabel={t('common.cancel')}
+        loading={googleLoading}
+        onConfirm={() => { setGoogleAuthModal(null); handleGooglePress(); }}
+        onCancel={() => setGoogleAuthModal(null)}
+      />
 
     </View>
   );

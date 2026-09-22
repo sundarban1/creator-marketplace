@@ -161,6 +161,18 @@ export async function googleAuth(
   );
 }
 
+/** Mobile-web's redirect flow (GoogleCallbackScreen) — the backend exchanges
+ *  the authorization code for a token itself, since only it holds the client secret. */
+export async function googleAuthWithCode(
+  code: string,
+  redirectUri: string,
+  role?: 'CREATOR' | 'BUSINESS',
+): Promise<SocialAuthResult> {
+  return completeSocial(
+    await api<SocialAuthResponse>('POST', '/api/auth/google', { code, redirectUri, role }),
+  );
+}
+
 export async function appleAuth(input: {
   identityToken: string;
   authorizationCode?: string;

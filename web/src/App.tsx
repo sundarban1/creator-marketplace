@@ -92,6 +92,8 @@ const EditPlatformPage = named(() => import('./pages/platforms/EditPlatformPage'
 const SuccessStoriesPage = named(() => import('./pages/success-stories/SuccessStoriesPage'), 'SuccessStoriesPage');
 const NewSuccessStoryPage = named(() => import('./pages/success-stories/NewSuccessStoryPage'), 'NewSuccessStoryPage');
 const EditSuccessStoryPage = named(() => import('./pages/success-stories/EditSuccessStoryPage'), 'EditSuccessStoryPage');
+const CreatorMeetups = named(() => import('./pages/CreatorMeetups'), 'CreatorMeetups');
+const CreatorMeetupDetail = named(() => import('./pages/creator-meetups/CreatorMeetupDetail'), 'CreatorMeetupDetail');
 
 // Admin-only data providers — mounted only inside the authenticated dashboard
 // so public routes (landing page, login) never trigger admin-scoped API calls.
@@ -163,6 +165,8 @@ export default function App() {
                 <Route path="/admin/businesses" element={<Businesses />} />
                 <Route path="/admin/campaigns" element={<Campaigns />} />
                 <Route path="/admin/campaigns/:id" element={<CampaignDetail />} />
+                <Route path="/admin/creator-meetups" element={<CreatorMeetups />} />
+                <Route path="/admin/creator-meetups/:meetupId" element={<CreatorMeetupDetail />} />
                 <Route path="/admin/analytics/:userId" element={<UserAnalytics />} />
                 <Route path="/admin/categories" element={<CategoriesPage />} />
                 <Route path="/admin/categories/new" element={<NewCategoryPage />} />

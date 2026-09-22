@@ -116,6 +116,54 @@ export interface ApiReport {
   reporter:    { id: string; email: string; role: string };
 }
 
+export interface ApiMeetup {
+  id:                   string;
+  title:                string;
+  slug:                 string;
+  city:                 string;
+  district:             string | null;
+  province:             string | null;
+  country:              string;
+  description:          string | null;
+  registrationStatus:   'DRAFT' | 'OPEN' | 'CLOSED';
+  registrationStartsAt: string | null;
+  registrationEndsAt:   string | null;
+  eventDate:            string | null;
+  eventStartTime:       string | null;
+  eventEndTime:         string | null;
+  venueName:            string | null;
+  venueAddress:         string | null;
+  capacity:             number | null;
+  status:               'UPCOMING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  createdAt:             string;
+  updatedAt:             string;
+}
+
+export interface ApiMeetupAdmin extends ApiMeetup {
+  stats: { total: number; pending: number; accepted: number; rejected: number; checkedIn: number };
+}
+
+export interface ApiMeetupRegistration {
+  id:                   string;
+  meetupId:             string;
+  creatorId:            string;
+  fullName:             string;
+  phoneNumber:          string;
+  email:                string | null;
+  creatorTypes:         string[];
+  otherCreatorType:     string | null;
+  socialMediaProfile:   string | null;
+  attendancePreference: 'YES' | 'NOT_SURE';
+  message:              string | null;
+  status:               'PENDING' | 'ACCEPTED' | 'REJECTED';
+  acceptedAt:           string | null;
+  rejectedAt:           string | null;
+  invitationSentAt:     string | null;
+  checkedInAt:          string | null;
+  createdAt:            string;
+  updatedAt:            string;
+}
+
 export interface Pagination {
   total:      number;
   page:       number;
@@ -956,6 +1004,31 @@ export const api = {
 
     updateReportStatus: (id: string, status: 'UNDER_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED', actionNote?: string) =>
       request<ApiReport>('PUT', `/api/admin/reports/${id}/status`, { status, actionNote }),
+
+    meetups: () => request<ApiMeetupAdmin[]>('GET', '/api/admin/meetups'),
+
+    meetup: (id: string) => request<ApiMeetupAdmin>('GET', `/api/admin/meetups/${id}`),
+
+    createMeetup: (data: Partial<ApiMeetup>) => request<ApiMeetup>('POST', '/api/admin/meetups', data),
+
+    updateMeetup: (id: string, data: Partial<ApiMeetup>) =>
+      request<ApiMeetup>('PATCH', `/api/admin/meetups/${id}`, data),
+
+    meetupRegistrations: (meetupId: string, params?: { status?: string; search?: string }) =>
+      request<ApiMeetupRegistration[]>('GET', `/api/admin/meetups/${meetupId}/registrations`, undefined,
+        params as Record<string, string | number | undefined>),
+
+    acceptMeetupRegistration: (meetupId: string, registrationId: string) =>
+      request<ApiMeetupRegistration>('PATCH', `/api/admin/meetups/${meetupId}/registrations/${registrationId}/accept`),
+
+    rejectMeetupRegistration: (meetupId: string, registrationId: string) =>
+      request<ApiMeetupRegistration>('PATCH', `/api/admin/meetups/${meetupId}/registrations/${registrationId}/reject`),
+
+    checkInMeetupRegistration: (meetupId: string, registrationId: string) =>
+      request<ApiMeetupRegistration>('PATCH', `/api/admin/meetups/${meetupId}/registrations/${registrationId}/check-in`),
+
+    undoCheckInMeetupRegistration: (meetupId: string, registrationId: string) =>
+      request<ApiMeetupRegistration>('PATCH', `/api/admin/meetups/${meetupId}/registrations/${registrationId}/undo-check-in`),
 
     campaignDetail: (id: string) =>
       request<ApiCampaignDetail>('GET', `/api/admin/campaigns/${id}`),

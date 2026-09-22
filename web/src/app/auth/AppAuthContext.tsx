@@ -43,6 +43,7 @@ interface AppAuthValue {
   verifyResetOtp: (identifier: Identifier, code: string) => Promise<string>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   googleAuth: (accessToken: string, role?: 'CREATOR' | 'BUSINESS') => Promise<SocialAuthResult>;
+  googleAuthWithCode: (code: string, redirectUri: string, role?: 'CREATOR' | 'BUSINESS') => Promise<SocialAuthResult>;
   appleAuth: (input: Parameters<typeof authApi.appleAuth>[0]) => Promise<SocialAuthResult>;
   logout: () => Promise<void>;
 
@@ -127,6 +128,15 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
     [adoptSession],
   );
 
+  const googleAuthWithCode = useCallback<AppAuthValue['googleAuthWithCode']>(
+    async (code, redirectUri, role) => {
+      const res = await authApi.googleAuthWithCode(code, redirectUri, role);
+      if (!res.needsRole) adoptSession(res.user);
+      return res;
+    },
+    [adoptSession],
+  );
+
   const appleAuth = useCallback<AppAuthValue['appleAuth']>(
     async (input) => {
       const res = await authApi.appleAuth(input);
@@ -168,13 +178,26 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
       verifyResetOtp: authApi.verifyResetOtp,
       resetPassword: authApi.resetPassword,
       googleAuth,
+      googleAuthWithCode,
       appleAuth,
       logout,
       adoptSession,
       markOnboarded,
       updateUser,
     }),
-    [user, status, loginWithPassword, verifyOtp, googleAuth, appleAuth, logout, adoptSession, markOnboarded, updateUser],
+    [
+      user,
+      status,
+      loginWithPassword,
+      verifyOtp,
+      googleAuth,
+      googleAuthWithCode,
+      appleAuth,
+      logout,
+      adoptSession,
+      markOnboarded,
+      updateUser,
+    ],
   );
 
   return <AppAuthContext.Provider value={value}>{children}</AppAuthContext.Provider>;
