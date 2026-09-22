@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
 import { creditsService } from '@/services/rewards';
 import { F, FONT_SIZE, RADIUS, SHADOW, SPACING } from '@/utilities/constants';
@@ -22,6 +23,11 @@ export function CreditsCard() {
     refetchOnMount: 'always',
   });
   const balance = balanceQuery.data;
+
+  // Home tab stays mounted across navigations (Expo Router tabs), so
+  // refetchOnMount alone never fires again after the first mount — this is
+  // what actually picks up a balance change on returning from a redemption.
+  useRefetchOnFocusIfStale(balanceQuery);
 
   return (
     <LinearGradient colors={['#F59E0B', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>

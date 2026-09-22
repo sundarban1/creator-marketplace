@@ -53,7 +53,13 @@ export interface ApiWithdrawal {
   createdAt: string;
 }
 
-export type TransactionKind = 'CAMPAIGN_PAYOUT' | 'REFERRAL_REWARD' | 'REFERRAL_BONUS' | 'WITHDRAWAL' | 'ADJUSTMENT';
+export type TransactionKind =
+  | 'CAMPAIGN_PAYOUT'
+  | 'REFERRAL_REWARD'
+  | 'REFERRAL_BONUS'
+  | 'WITHDRAWAL'
+  | 'ADJUSTMENT'
+  | 'PROMO_REDEMPTION_DEBIT';
 
 export interface ApiWalletTransaction {
   id: string;
@@ -65,6 +71,8 @@ export interface ApiWalletTransaction {
   title: string;
   /** The campaign name for a CAMPAIGN_PAYOUT row; null for every other kind. */
   campaignTitle: string | null;
+  /** The business's name for a PROMO_REDEMPTION_DEBIT row; null for every other kind. */
+  businessName: string | null;
   method: string | null;
   reference: string | null;
   /** Admin's transfer-proof screenshot for a PAID withdrawal; null otherwise. */

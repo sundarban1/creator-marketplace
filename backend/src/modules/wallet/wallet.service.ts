@@ -293,7 +293,13 @@ export class WalletService {
     const applicationIds = ledger
       .filter((tx) => tx.referenceType === 'application' && tx.referenceId)
       .map((tx) => tx.referenceId as string);
-    const campaignTitles = await this.repo.campaignTitlesForApplications(applicationIds);
-    return buildUnifiedStatement(ledger, withdrawals, campaignTitles);
+    const redemptionSessionIds = ledger
+      .filter((tx) => tx.referenceType === 'redemption_session' && tx.referenceId)
+      .map((tx) => tx.referenceId as string);
+    const [campaignTitles, businessNames] = await Promise.all([
+      this.repo.campaignTitlesForApplications(applicationIds),
+      this.repo.businessNamesForRedemptionSessions(redemptionSessionIds),
+    ]);
+    return buildUnifiedStatement(ledger, withdrawals, campaignTitles, businessNames);
   }
 }

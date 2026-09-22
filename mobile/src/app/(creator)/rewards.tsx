@@ -135,6 +135,8 @@ function PointsRow({ tx, isFirst }: { tx: ApiPointsLedgerRow; isFirst: boolean }
   const credit = tx.direction === 'CREDIT';
   const sign = credit ? '+' : '−';
   const amountColor = credit ? '#059669' : '#EF4444';
+  const businessFirstName = tx.businessName?.trim().split(/\s+/)[0];
+  const title = businessFirstName ? t('rewards.txPromoRedemptionAt', { business: businessFirstName }) : t(meta.labelKey);
 
   return (
     <View style={[styles.txRow, !isFirst && { borderTopWidth: 1, borderTopColor: C.border }]}>
@@ -142,7 +144,7 @@ function PointsRow({ tx, isFirst }: { tx: ApiPointsLedgerRow; isFirst: boolean }
         <FontAwesome5 name={meta.icon} solid size={13} color={credit ? '#059669' : C.brinjal1} />
       </View>
       <View style={styles.txInfo}>
-        <Text style={[styles.txTitle, { color: C.text }]} numberOfLines={1}>{t(meta.labelKey)}</Text>
+        <Text style={[styles.txTitle, { color: C.text }]} numberOfLines={1}>{title}</Text>
         <Text style={[styles.txDate, { color: C.textSecondary }]}>{formatDate(tx.createdAt)}</Text>
       </View>
       <Text style={[styles.txAmount, { color: amountColor }]}>{sign} {tx.amount.toLocaleString()}</Text>

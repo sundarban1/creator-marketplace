@@ -8,7 +8,6 @@ import type { User } from '@/types';
 import { USER_KEY } from '@/utilities/constants';
 import { storage } from '@/utilities/storage';
 import { warmDeviceId } from '@/utilities/deviceId';
-import { isBiometricLoginEnabled } from '@/services/biometric';
 import { logger } from '@/utilities/logger';
 
 type AuthContextValue = {
@@ -17,9 +16,9 @@ type AuthContextValue = {
   login: (identifier: Identifier, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithBiometric: (challenge: string, signature: string) => Promise<void>;
   logout: () => Promise<void>;
-  // Always a full server + local clear, bypassing the biometric soft-lock.
-  // Use for deactivate/delete-account and other flows where the account must
-  // not remain resumable on this device regardless of the biometric setting.
+  // Same full server + local clear as logout(), exposed separately for the
+  // session-expired handler and deactivate/delete-account flows, which need
+  // to force it without going through the drawer/settings logout() call site.
   forceLogout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
   reloadUser: () => Promise<User | null>;
@@ -126,18 +125,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Explicit, user-initiated logout (Settings → Logout, or "Use password
-  // instead" on the biometric lock screen). If biometric login is enabled,
-  // this "locks" instead of fully signing out — the session stays valid on
-  // the server and in storage so Face ID/Fingerprint can silently resume it
-  // later, the same way Instagram/banking apps treat Logout as a lock when
-  // biometric is on. Skips the server logout call entirely in that case,
-  // since the backend nulls out the refresh token on logout — calling it
-  // would invalidate the very session being kept around to resume.
+  // instead" on the biometric lock screen). Always a full sign-out — clears
+  // the session on the server and in storage. Biometric login *enrollment*
+  // (the registered device keypair) is untouched, so "Continue with Face ID"
+  // on the login screen still works for the next sign-in; this only ends the
+  // resumable session so tapping Logout doesn't immediately re-prompt Face ID
+  // and log the user back in.
   async function logout() {
-    if (isBiometricLoginEnabled()) {
-      setUser(null);
-      return;
-    }
     await forceLogout();
   }
 

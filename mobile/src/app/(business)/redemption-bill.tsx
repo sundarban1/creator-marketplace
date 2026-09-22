@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PageHeader } from '@/features/creator/components/PageHeader';
@@ -24,6 +25,7 @@ export default function RedemptionBillScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
   const [phase, setPhase] = useState<Phase>('entering');
   const [billAmount, setBillAmount] = useState('');
@@ -39,8 +41,13 @@ export default function RedemptionBillScreen() {
     const handler = (updated: ApiRedemptionSession) => {
       if (updated.id !== session.id) return;
       setSession(updated);
-      if (updated.status === 'CONFIRMED') setPhase('done');
-      else if (updated.status === 'CANCELLED' || updated.status === 'EXPIRED') {
+      if (updated.status === 'CONFIRMED') {
+        setPhase('done');
+        // Fire the refetch now, in flight before the Done button is even
+        // tapped, so the home screen's credits card is already current by
+        // the time dismissTo() lands on it.
+        void queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
+      } else if (updated.status === 'CANCELLED' || updated.status === 'EXPIRED') {
         toast.error(t('redemptionBill.sessionEndedByCreator'));
         router.back();
       }
@@ -85,25 +92,29 @@ export default function RedemptionBillScreen() {
         <PageHeader title={promotionTitle ?? ''} onBack={phase === 'entering' ? handleCancel : undefined} backFallback="/(business)/(tabs)" />
 
         {phase === 'entering' && (
-          <View style={styles.body}>
-            <View style={[styles.infoCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <InfoRow label={t('redemptionBill.creatorLabel')} value={creatorName ?? ''} />
-              <InfoRow label={t('redemptionBill.promotionLabel')} value={promotionTitle ?? ''} />
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.body}>
+              <View style={[styles.infoCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <InfoRow label={t('redemptionBill.creatorLabel')} value={creatorName ?? ''} />
+                <InfoRow label={t('redemptionBill.promotionLabel')} value={promotionTitle ?? ''} />
+              </View>
+
+              <TextInputWithLabel
+                label={t('redemptionBill.billAmountLabel')}
+                placeholder={t('redemptionBill.billAmountPlaceholder')}
+                value={billAmount}
+                onChangeText={setBillAmount}
+                keyboardType="number-pad"
+                leftIcon="money-bill-wave"
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
+              />
+
+              <View style={{ flex: 1 }} />
+              <Button label={t('redemptionBill.continueButton')} onPress={handleSubmitBill} loading={submitting} disabled={!billNum || submitting} />
             </View>
-
-            <TextInputWithLabel
-              label={t('redemptionBill.billAmountLabel')}
-              placeholder={t('redemptionBill.billAmountPlaceholder')}
-              value={billAmount}
-              onChangeText={setBillAmount}
-              keyboardType="number-pad"
-              leftIcon="money-bill-wave"
-              autoFocus
-            />
-
-            <View style={{ flex: 1 }} />
-            <Button label={t('redemptionBill.continueButton')} onPress={handleSubmitBill} loading={submitting} disabled={!billNum || submitting} />
-          </View>
+          </TouchableWithoutFeedback>
         )}
 
         {phase === 'waiting' && (

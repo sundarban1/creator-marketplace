@@ -37,6 +37,7 @@ const KIND_META: Record<TransactionKind, { icon: keyof typeof FontAwesome5.glyph
   REFERRAL_BONUS:  { icon: 'gift',            labelKey: 'wallet.txReferralBonus' },
   WITHDRAWAL:      { icon: 'arrow-up',        labelKey: 'wallet.txWithdrawal' },
   ADJUSTMENT:      { icon: 'sliders-h',       labelKey: 'wallet.txAdjustment' },
+  PROMO_REDEMPTION_DEBIT: { icon: 'tag',      labelKey: 'wallet.txPromoRedemption' },
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -97,6 +98,9 @@ export default function WalletScreen() {
 
   const summary = summaryQuery.data ?? null;
   const transactions = transactionsQuery.data ?? EMPTY_TRANSACTIONS;
+  // Promo redemptions already have their own home on the Business Deals tab —
+  // the Withdraw Money statement is cash-out activity only.
+  const withdrawTabTransactions = transactions.filter((tx) => tx.kind !== 'PROMO_REDEMPTION_DEBIT');
   const payoutMethods = payoutMethodsQuery.data ?? EMPTY_PAYOUT_METHODS;
   const loading = summaryQuery.isPending || transactionsQuery.isPending || payoutMethodsQuery.isPending;
 
@@ -218,7 +222,7 @@ export default function WalletScreen() {
 
                 {/* Statement */}
                 <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('wallet.statementTitle')}</Text>
-                {transactions.length === 0 ? (
+                {withdrawTabTransactions.length === 0 ? (
                   <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
                     <FontAwesome5 name="receipt" solid size={32} color={C.textSecondary} />
                     <Text style={[styles.emptyTitle, { color: C.text }]}>{t('wallet.noTransactionsYet')}</Text>
@@ -226,7 +230,7 @@ export default function WalletScreen() {
                   </View>
                 ) : (
                   <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-                    {transactions.map((tx, i) => (
+                    {withdrawTabTransactions.map((tx, i) => (
                       <TransactionRow
                         key={tx.id}
                         tx={tx}
@@ -300,6 +304,9 @@ function TransactionRow({
   const amountColor = credit ? '#059669' : (tx.status === 'REJECTED' || tx.status === 'CANCELLED' ? C.textSecondary : '#EF4444');
   const showStatus = tx.status !== 'COMPLETED';
   const statusColor = STATUS_COLOR[tx.status] ?? C.textSecondary;
+  const businessFirstName = tx.businessName?.trim().split(/\s+/)[0];
+  const title = tx.campaignTitle
+    ?? (businessFirstName ? t('wallet.txPromoRedemptionAt', { business: businessFirstName }) : t(meta.labelKey));
 
   return (
     <View style={[styles.txRow, !isFirst && { borderTopWidth: 1, borderTopColor: C.border }]}>
@@ -308,7 +315,7 @@ function TransactionRow({
       </View>
       <View style={styles.txInfo}>
         <Text style={[styles.txTitle, { color: C.text }]} numberOfLines={1}>
-          {tx.campaignTitle ?? t(meta.labelKey)}{tx.method ? ` · ${tx.method}` : ''}
+          {title}{tx.method ? ` · ${tx.method}` : ''}
         </Text>
         <View style={styles.txMetaRow}>
           <Text style={[styles.txDate, { color: C.textSecondary }]}>{formatDate(tx.createdAt)}</Text>
@@ -419,6 +426,8 @@ function PointsRow({ tx, isFirst }: { tx: ApiPointsLedgerRow; isFirst: boolean }
   const credit = tx.direction === 'CREDIT';
   const sign = credit ? '+' : '−';
   const amountColor = credit ? '#059669' : '#EF4444';
+  const businessFirstName = tx.businessName?.trim().split(/\s+/)[0];
+  const title = businessFirstName ? t('rewards.txPromoRedemptionAt', { business: businessFirstName }) : t(meta.labelKey);
 
   return (
     <View style={[styles.txRow, !isFirst && { borderTopWidth: 1, borderTopColor: C.border }]}>
@@ -426,7 +435,7 @@ function PointsRow({ tx, isFirst }: { tx: ApiPointsLedgerRow; isFirst: boolean }
         <FontAwesome5 name={meta.icon} solid size={13} color={credit ? '#059669' : C.brinjal1} />
       </View>
       <View style={styles.txInfo}>
-        <Text style={[styles.txTitle, { color: C.text }]} numberOfLines={1}>{t(meta.labelKey)}</Text>
+        <Text style={[styles.txTitle, { color: C.text }]} numberOfLines={1}>{title}</Text>
         <Text style={[styles.txDate, { color: C.textSecondary }]}>{formatDate(tx.createdAt)}</Text>
       </View>
       <Text style={[styles.txAmount, { color: amountColor }]}>{sign} {tx.amount.toLocaleString()}</Text>

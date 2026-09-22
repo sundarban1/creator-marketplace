@@ -99,14 +99,30 @@ export async function cancelActivePrompt(): Promise<void> {
   }
 }
 
-export function authenticate(promptMessage: string): Promise<boolean> {
-  return prompt(promptMessage, 'Use password instead').then((result) => result.success);
-}
-
 export type SensitiveActionResult =
   | 'confirmed'   // biometric passed, or there was nothing enrolled to check against
   | 'cancelled'   // user dismissed the prompt — abort quietly, this isn't an error
   | 'failed';     // scan didn't match, or the sensor is locked out
+
+// Shared by authenticate() and confirmSensitiveAction() so a real failed/locked-out
+// scan is never collapsed into the same bucket as the user just dismissing the
+// prompt — callers need to tell "try again" apart from "nothing to see here".
+function interpretPromptResult(result: LocalAuthentication.LocalAuthenticationResult): SensitiveActionResult {
+  if (result.success) return 'confirmed';
+  // `error` is only present on the failure branch of the result union.
+  const reason = 'error' in result ? result.error : '';
+  return reason === 'user_cancel' || reason === 'system_cancel' || reason === 'app_cancel'
+    ? 'cancelled'
+    : 'failed';
+}
+
+export async function authenticate(promptMessage: string): Promise<SensitiveActionResult> {
+  try {
+    return interpretPromptResult(await prompt(promptMessage, 'Use password instead'));
+  } catch {
+    return 'failed';
+  }
+}
 
 /**
  * Step-up confirmation before a high-risk action (withdrawals, payout-detail
@@ -120,13 +136,7 @@ export type SensitiveActionResult =
 export async function confirmSensitiveAction(promptMessage: string, cancelLabel: string): Promise<SensitiveActionResult> {
   if (!(await isBiometricAvailable())) return 'confirmed';
   try {
-    const result = await prompt(promptMessage, cancelLabel);
-    if (result.success) return 'confirmed';
-    // `error` is only present on the failure branch of the result union.
-    const reason = 'error' in result ? result.error : '';
-    return reason === 'user_cancel' || reason === 'system_cancel' || reason === 'app_cancel'
-      ? 'cancelled'
-      : 'failed';
+    return interpretPromptResult(await prompt(promptMessage, cancelLabel));
   } catch {
     return 'failed';
   }
@@ -203,8 +213,8 @@ export type BiometricEnableResult =
 export async function enableBiometricLogin(confirmPromptMessage: string): Promise<BiometricEnableResult> {
   if (!(await isBiometricAvailable())) return { success: false, reason: 'unavailable' };
 
-  const confirmed = await authenticate(confirmPromptMessage);
-  if (!confirmed) return { success: false, reason: 'cancelled' };
+  const confirmResult = await authenticate(confirmPromptMessage);
+  if (confirmResult !== 'confirmed') return { success: false, reason: confirmResult };
 
   const secretKey = await Crypto.getRandomBytesAsync(32);
   const publicKey = ed.getPublicKey(secretKey);
@@ -261,10 +271,17 @@ export async function prepareBiometricSignIn(): Promise<BiometricSignInResult> {
   let secretKeyB64: string | null;
   try {
     secretKeyB64 = await SecureStore.getItemAsync(BIOMETRIC_KEYPAIR_KEY, { requireAuthentication: true });
-  } catch {
-    // Most likely a cancelled/failed OS prompt — leave local config alone so
-    // the button stays available to retry.
-    return { success: false, reason: 'cancelled' };
+  } catch (err) {
+    // Leave local config alone either way so the button stays available to
+    // retry. SecureStore has no structured error code for this prompt (unlike
+    // LocalAuthentication.authenticateAsync), but both platforms' native
+    // modules put a distinct "cancel" phrase in the message for a
+    // user-dismissed prompt (errSecUserCanceled on iOS, ERROR_USER_CANCELED/
+    // ERROR_NEGATIVE_BUTTON on Android) — anything else is a genuine failed
+    // or locked-out scan and must surface as 'failed', not be silently
+    // swallowed as a no-op cancel.
+    const message = err instanceof Error ? err.message : '';
+    return { success: false, reason: /cancel/i.test(message) ? 'cancelled' : 'failed' };
   }
   if (!secretKeyB64) {
     // Expo docs: a key invalidated by an enrollment change resolves to null

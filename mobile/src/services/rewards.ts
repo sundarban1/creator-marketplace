@@ -17,6 +17,8 @@ export interface ApiPointsLedgerRow {
   direction: 'CREDIT' | 'DEBIT';
   amount: number;
   description: string;
+  /** The business's name for a PROMO_REDEMPTION_DEBIT row; null otherwise. */
+  businessName: string | null;
   createdAt: string;
 }
 

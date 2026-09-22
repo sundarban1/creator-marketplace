@@ -25,7 +25,8 @@ export type UnifiedTransactionKind =
   | 'REFERRAL_REWARD'
   | 'REFERRAL_BONUS'
   | 'WITHDRAWAL'
-  | 'ADJUSTMENT';
+  | 'ADJUSTMENT'
+  | 'PROMO_REDEMPTION_DEBIT';
 
 export interface UnifiedTransaction {
   id: string;
@@ -39,6 +40,10 @@ export interface UnifiedTransaction {
   // The campaign name for a CAMPAIGN_PAYOUT row (null for every other kind) —
   // lets the mobile statement show which campaign a payout was for.
   campaignTitle: string | null;
+  // The business's name for a PROMO_REDEMPTION_DEBIT row (null for every
+  // other kind) — lets the mobile statement show which business the points
+  // were spent at instead of a generic "a promotion".
+  businessName: string | null;
   method: string | null;
   reference: string | null;
   // The admin's transfer-proof screenshot for a PAID withdrawal (null otherwise).
@@ -56,6 +61,7 @@ export function buildUnifiedStatement(
   ledger: WalletTransaction[],
   withdrawals: Withdrawal[],
   campaignTitles: Map<string, string> = new Map(),
+  businessNames: Map<string, string | null> = new Map(),
 ): UnifiedTransaction[] {
   const withdrawalById = new Map(withdrawals.map((w) => [w.id, w]));
 
@@ -75,6 +81,9 @@ export function buildUnifiedStatement(
         campaignTitle: tx.referenceType === 'application' && tx.referenceId
           ? campaignTitles.get(tx.referenceId) ?? null
           : null,
+        businessName: tx.referenceType === 'redemption_session' && tx.referenceId
+          ? businessNames.get(tx.referenceId) ?? null
+          : null,
         method:    w?.method ?? null,
         reference: w?.referenceCode ?? w?.transactionReference ?? null,
         proofUrl:  w?.screenshotUrl ?? null,
@@ -92,6 +101,7 @@ export function buildUnifiedStatement(
       status:    w.status,
       title:     `Withdrawal via ${w.method}`,
       campaignTitle: null,
+      businessName: null,
       method:    w.method,
       reference: w.referenceCode,
       proofUrl:  null,
