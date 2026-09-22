@@ -19,7 +19,7 @@ export function CreatorMeetupsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title={t('meetup.listTitle')} subtitle={t('meetup.listSubtitle')} />
+      <PageHeader title={t('meetup.listTitle')} description={t('meetup.listSubtitle')} />
 
       {meetups.loading ? (
         <div className="space-y-3">
