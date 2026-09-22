@@ -61,7 +61,7 @@ export function CreatorStory() {
             >
               <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-orange to-brand-orange/30" />
               {c.steps.map((step, i) => (
-                <motion.li key={step.title} variants={fadeUp} className="flex items-start gap-3 py-2 first:pt-0 last:pb-0">
+                <motion.li key={i} variants={fadeUp} className="flex items-start gap-3 py-2 first:pt-0 last:pb-0">
                   <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-brand-orange/10 text-xs font-bold text-brand-orange">
                     {i + 1}
                   </span>

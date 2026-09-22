@@ -21,9 +21,10 @@ export function TestPhasePill() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="mr-1 hidden items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 animate-pulse sm:inline-flex"
+        className="mr-1 inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 animate-pulse"
       >
-        In Testing Phase
+        <span className="sm:hidden">Test</span>
+        <span className="hidden sm:inline">In Testing Phase</span>
       </button>
 
       {open && (
