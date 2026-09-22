@@ -31,6 +31,11 @@ export interface BackendDict {
   auth: {
     registrationClosedCreator: string;
     registrationClosedBusiness: string;
+    // Moderation (backend/src/moderation) — thrown by register() when
+    // fullName/businessName fails the multilingual profanity/impersonation
+    // check. Deliberately generic; never names the offending word (see
+    // docs/moderation.md).
+    displayNameNotAllowed: string;
     emailAlreadyExists: string;
     phoneAlreadyExists: string;
     accountNotFoundEmail: string;
@@ -264,6 +269,9 @@ export interface BackendDict {
     creatorNotFound: string;
     creatorProfileNotFound: string;
     usernameAlreadyTaken: string;
+    // Moderation — see auth.displayNameNotAllowed above.
+    usernameNotAllowed: string;
+    displayNameNotAllowed: string;
     emailAlreadyVerified: string;
     emailAlreadyInUseByAnother: string;
     onlyAgencyUploadsCompanyRegDoc: string;
@@ -346,6 +354,8 @@ export interface BackendDict {
   // interpolates the platform name.
   business: {
     businessProfileNotFound: string;
+    // Moderation — see auth.displayNameNotAllowed above.
+    displayNameNotAllowed: string;
     emailAlreadyVerified: string;
     emailAlreadyInUseByAnother: string;
     businessNotFound: string;

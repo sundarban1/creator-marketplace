@@ -15,6 +15,7 @@ import { logActivity } from '../logging/activity.service';
 import { ActivityAction } from '../logging/logging.constants';
 import { cached, invalidatePrefix } from '../../utils/cache';
 import { generateUniqueSlug } from '../../utils/slug';
+import { moderateDisplayName, logModerationRejection } from '../../moderation';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -63,6 +64,14 @@ export class BusinessService {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) {
       throw new AppError(getDict().business.businessProfileNotFound, HttpStatus.NOT_FOUND);
+    }
+
+    if (input.businessName && input.businessName !== profile.businessName) {
+      const displayNameModeration = moderateDisplayName(input.businessName);
+      if (!displayNameModeration.allowed) {
+        logModerationRejection({ userId, field: 'displayName', result: displayNameModeration });
+        throw new AppError(getDict().business.displayNameNotAllowed, HttpStatus.BAD_REQUEST, true, { code: 'DISPLAY_NAME_NOT_ALLOWED' });
+      }
     }
 
     const { email, ...rest } = input;

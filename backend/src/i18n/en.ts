@@ -54,6 +54,7 @@ export const en: BackendDict = {
   auth: {
     registrationClosedCreator:         'Creator registration is currently closed. Please check back later.',
     registrationClosedBusiness:        'Business registration is currently closed. Please check back later.',
+    displayNameNotAllowed:             'Please choose a different display name.',
     emailAlreadyExists:                'An account with this email already exists',
     phoneAlreadyExists:                'An account with this phone number already exists',
     accountNotFoundEmail:              'No account found with this email',
@@ -263,6 +264,8 @@ export const en: BackendDict = {
     creatorNotFound:                     'Creator not found',
     creatorProfileNotFound:              'Creator profile not found',
     usernameAlreadyTaken:                'This username is already taken',
+    usernameNotAllowed:                  'Please choose a different username.',
+    displayNameNotAllowed:               'Please choose a different display name.',
     emailAlreadyVerified:                'Your account already has a verified email',
     emailAlreadyInUseByAnother:          'This email is already in use by another account',
     onlyAgencyUploadsCompanyRegDoc:      'Only an Agency uploads a company registration document',
@@ -337,6 +340,7 @@ export const en: BackendDict = {
   },
   business: {
     businessProfileNotFound:             'Business profile not found',
+    displayNameNotAllowed:               'Please choose a different display name.',
     emailAlreadyVerified:                'Your account already has a verified email',
     emailAlreadyInUseByAnother:          'This email is already in use by another account',
     businessNotFound:                    'Business not found',

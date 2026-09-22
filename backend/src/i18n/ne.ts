@@ -54,6 +54,7 @@ export const ne: BackendDict = {
   auth: {
     registrationClosedCreator:         'क्रियेटर दर्ता अहिले बन्द छ। कृपया पछि फेरि जाँच गर्नुहोस्।',
     registrationClosedBusiness:        'व्यवसाय दर्ता अहिले बन्द छ। कृपया पछि फेरि जाँच गर्नुहोस्।',
+    displayNameNotAllowed:             'कृपया फरक प्रदर्शन नाम छान्नुहोस्।',
     emailAlreadyExists:                'यो इमेलसँग पहिले नै खाता अवस्थित छ',
     phoneAlreadyExists:                'यो फोन नम्बरसँग पहिले नै खाता अवस्थित छ',
     accountNotFoundEmail:              'यो इमेलसँग कुनै खाता फेला परेन',
@@ -263,6 +264,8 @@ export const ne: BackendDict = {
     creatorNotFound:                     'क्रियेटर फेला परेन',
     creatorProfileNotFound:              'क्रियेटर प्रोफाइल फेला परेन',
     usernameAlreadyTaken:                'यो युजरनेम पहिले नै लिइसकिएको छ',
+    usernameNotAllowed:                  'कृपया फरक युजरनेम छान्नुहोस्।',
+    displayNameNotAllowed:               'कृपया फरक प्रदर्शन नाम छान्नुहोस्।',
     emailAlreadyVerified:                'तपाईंको खातामा पहिले नै प्रमाणित इमेल छ',
     emailAlreadyInUseByAnother:          'यो इमेल पहिले नै अर्को खातामा प्रयोग भइरहेको छ',
     onlyAgencyUploadsCompanyRegDoc:      'कम्पनी दर्ता कागजात केवल एजेन्सीले मात्र अपलोड गर्न सक्छ',
@@ -337,6 +340,7 @@ export const ne: BackendDict = {
   },
   business: {
     businessProfileNotFound:             'व्यवसाय प्रोफाइल फेला परेन',
+    displayNameNotAllowed:               'कृपया फरक प्रदर्शन नाम छान्नुहोस्।',
     emailAlreadyVerified:                'तपाईंको खातामा पहिले नै प्रमाणित इमेल छ',
     emailAlreadyInUseByAnother:          'यो इमेल पहिले नै अर्को खातामा प्रयोग भइरहेको छ',
     businessNotFound:                    'व्यवसाय फेला परेन',

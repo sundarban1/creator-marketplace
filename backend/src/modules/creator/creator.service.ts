@@ -10,6 +10,7 @@ import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
 import { getCachedSettings } from '../../utils/settingsCache';
 import { cached, invalidatePrefix } from '../../utils/cache';
+import { moderateUsername, moderateDisplayName, logModerationRejection } from '../../moderation';
 
 const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
 
@@ -542,6 +543,10 @@ export class CreatorService {
   }
 
   async isUsernameAvailable(username: string) {
+    // Real-time onboarding check (mobile onboarding.tsx, web CreatorOnboarding)
+    // — a moderated username reads as simply "unavailable" here rather than
+    // exposing why, same as the actual submit-time rejection in updateProfile.
+    if (!moderateUsername(username).allowed) return { available: false };
     const taken = await this.repo.findByUsername(username);
     return { available: !taken };
   }
@@ -578,10 +583,24 @@ export class CreatorService {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
-    // Enforce username uniqueness (only if changing)
+    // Moderation runs before the uniqueness/format checks below (see
+    // docs/moderation.md) — a malicious client hitting this endpoint directly
+    // can't bypass it the way it could a frontend-only check.
     if (input.username && input.username !== profile.username) {
+      const usernameModeration = moderateUsername(input.username);
+      if (!usernameModeration.allowed) {
+        logModerationRejection({ userId, field: 'username', result: usernameModeration });
+        throw new AppError(getDict().creator.usernameNotAllowed, HttpStatus.BAD_REQUEST, true, { code: 'USERNAME_NOT_ALLOWED' });
+      }
       const taken = await this.repo.findByUsername(input.username);
       if (taken) throw new AppError(getDict().creator.usernameAlreadyTaken, HttpStatus.CONFLICT);
+    }
+    if (input.fullName && input.fullName !== profile.fullName) {
+      const displayNameModeration = moderateDisplayName(input.fullName);
+      if (!displayNameModeration.allowed) {
+        logModerationRejection({ userId, field: 'displayName', result: displayNameModeration });
+        throw new AppError(getDict().creator.displayNameNotAllowed, HttpStatus.BAD_REQUEST, true, { code: 'DISPLAY_NAME_NOT_ALLOWED' });
+      }
     }
 
     const { email, ...rest } = input;

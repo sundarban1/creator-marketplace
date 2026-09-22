@@ -31,6 +31,7 @@ import { logAudit } from '../logging/audit.service';
 import { ActivityAction, AuditAction } from '../logging/logging.constants';
 import { toUserDto } from './auth.dto';
 import { isRefreshTokenDenied } from '../../utils/tokenDenylist';
+import { moderateDisplayName, logModerationRejection } from '../../moderation';
 import { HttpStatus } from '../../constants/httpStatus';
 import type {
   RegisterInput,
@@ -126,6 +127,20 @@ export class AuthService {
 
   async register(input: RegisterInput, deviceId?: string) {
     await this.assertRegistrationEnabled(input.role);
+
+    // Moderation runs before any DB work — neither field is required at
+    // registration (both are usually collected later during onboarding, see
+    // creator.service.ts/business.service.ts updateProfile), but a caller
+    // that does send one straight to this endpoint can't bypass the check by
+    // going around onboarding.
+    const displayNameInput = input.role === 'CREATOR' ? input.fullName : input.businessName;
+    if (displayNameInput) {
+      const displayNameModeration = moderateDisplayName(displayNameInput);
+      if (!displayNameModeration.allowed) {
+        logModerationRejection({ field: 'displayName', result: displayNameModeration });
+        throw new AppError(getDict().auth.displayNameNotAllowed, HttpStatus.BAD_REQUEST, true, { code: 'DISPLAY_NAME_NOT_ALLOWED' });
+      }
+    }
 
     const channel: Channel = input.email ? 'email' : 'phone';
 
