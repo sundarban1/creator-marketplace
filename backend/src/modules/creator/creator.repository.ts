@@ -118,6 +118,7 @@ export class CreatorRepository {
     priceMin?: number;
     priceMax?: number;
     excludeId?: string;
+    hasAvatar?: boolean;
     page: number;
     limit: number;
     sort?: 'newest' | 'oldest' | 'followers';
@@ -186,6 +187,10 @@ export class CreatorRepository {
     if (filters.categories?.length) where.categories = { hasSome: filters.categories };
     if (filters.location) where.location = { contains: filters.location, mode: 'insensitive' };
     if (filters.excludeId) where.id = { not: filters.excludeId };
+    // Landing-page showcase wants real faces, not initials placeholders —
+    // '' is treated the same as unset since an empty string is what a
+    // removed avatar can leave behind.
+    if (filters.hasAvatar) where.avatarUrl = { not: null, notIn: [''] };
 
     if (filters.platforms?.length) {
       where.socialAccounts = { some: { platform: { in: filters.platforms } } };

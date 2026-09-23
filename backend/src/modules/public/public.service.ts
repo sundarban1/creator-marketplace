@@ -84,7 +84,11 @@ export class PublicService {
   async getShowcase(lang = 'en') {
     const [events, creatorsResult, businessesResult] = await Promise.all([
       this.campaignService.showcase(3, 1, lang),
-      this.creatorService.listCreators({ page: 1, limit: 4, sort: 'newest', lang }),
+      // hasAvatar: this row feeds the Hero avatar stack and FinalCTA photo
+      // strip, both of which only show real faces (no initials fallback) —
+      // a newest-4 pull without this filter surfaces creators who registered
+      // but never uploaded a photo, forcing those sections back onto stock imagery.
+      this.creatorService.listCreators({ page: 1, limit: 4, sort: 'newest', hasAvatar: true, lang }),
       this.businessService.listBusinesses({ page: 1, limit: 4, sort: 'newest', lang }),
     ]);
 
