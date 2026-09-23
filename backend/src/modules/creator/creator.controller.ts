@@ -1,16 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { CreatorService } from './creator.service';
+import { AuthService } from '../auth/auth.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { success } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
 import { env } from '../../config/env';
-import { peekOAuthStatePlatform } from '../../utils/jwt';
+import { peekOAuthStatePlatform, peekOAuthStatePurpose } from '../../utils/jwt';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
 const creatorService = new CreatorService();
+const authService = new AuthService();
 
 export class CreatorController {
   async listCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -275,20 +277,37 @@ export class CreatorController {
   // other handler in this file, failures are reported back as a 302 instead of a
   // JSON error response — to the app's custom URL scheme for the mobile app, or to
   // the web app's own callback page (opened in a popup, closes itself) for web.
+  //
+  // TikTok's Developer Portal has exactly one registered redirect URI, so this
+  // one route is shared by two unrelated flows: an already-logged-in creator
+  // connecting their TikTok profile for stats (the original/default meaning,
+  // handled by creatorService below), and TikTok *login* (see auth.service.ts's
+  // tiktokLoginCallback) — distinguished by the `purpose` field peeked
+  // (unverified — safe, see peekOAuthStatePurpose's doc comment) off the signed
+  // `state` before either branch's own signature-checked verify runs.
   async tiktokCallback(req: Request, res: Response): Promise<void> {
     const { code, state, error } = req.query as { code?: string; state?: string; error?: string };
+    const purpose = state ? peekOAuthStatePurpose(state) : 'connect';
+    const webBase = env.FRONTEND_URL.split(',')[0].trim();
     const redirectBase =
-      state && peekOAuthStatePlatform(state) === 'web'
-        ? `${env.FRONTEND_URL.split(',')[0].trim()}/oauth/callback/tiktok`
-        : `${env.APP_SCHEME}://tiktok-callback`;
+      purpose === 'login'
+        ? `${webBase}/oauth/callback/tiktok-login`
+        : state && peekOAuthStatePlatform(state) === 'web'
+          ? `${webBase}/oauth/callback/tiktok`
+          : `${env.APP_SCHEME}://tiktok-callback`;
 
     if (error || !code || !state) {
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(error ?? 'missing_code')}`);
       return;
     }
     try {
-      await creatorService.handleTiktokCallback(code, state);
-      res.redirect(`${redirectBase}?success=true`);
+      if (purpose === 'login') {
+        const { handoff } = await authService.tiktokLoginCallback(code, state);
+        res.redirect(`${redirectBase}?success=true&handoff=${encodeURIComponent(handoff)}`);
+      } else {
+        await creatorService.handleTiktokCallback(code, state);
+        res.redirect(`${redirectBase}?success=true`);
+      }
     } catch (err) {
       const message = err instanceof AppError ? err.message : getDict().creator.couldNotConnectTiktokAccount;
       res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);

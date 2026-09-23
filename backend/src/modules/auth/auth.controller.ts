@@ -177,6 +177,24 @@ export class AuthController {
     }
   }
 
+  async getTiktokLoginAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const url = await authService.getTiktokLoginAuthorizeUrl();
+      success(res, { url }, getDict().auth.tiktokAuthorizeUrlGenerated);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async tiktokSession(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.tiktokSession(req.body);
+      success(res, result, result.needsRole ? getDict().auth.roleSelectionRequired : getDict().auth.tiktokSignInSuccessful);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getAuthMethods(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.getAuthMethods(req.user!.id);
@@ -188,7 +206,7 @@ export class AuthController {
 
   async unlinkProvider(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await authService.unlinkProvider(req.user!.id, req.params as { provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK' });
+      const result = await authService.unlinkProvider(req.user!.id, req.params as { provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK' | 'TIKTOK' });
       success(res, result, getDict().auth.loginMethodDisconnected);
     } catch (err) {
       next(err);

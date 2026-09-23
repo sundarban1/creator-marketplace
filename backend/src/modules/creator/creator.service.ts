@@ -841,7 +841,7 @@ export class CreatorService {
       throw new AppError(getDict().creator.tiktokAuthorizationExpired, HttpStatus.BAD_REQUEST);
     }
     const { userId, codeVerifier, role } = statePayload;
-    if (!codeVerifier) throw new AppError(getDict().creator.tiktokAuthorizationExpired, HttpStatus.BAD_REQUEST);
+    if (!userId || !codeVerifier) throw new AppError(getDict().creator.tiktokAuthorizationExpired, HttpStatus.BAD_REQUEST);
 
     const isBusiness = role === 'BUSINESS';
     const profile = isBusiness ? await this.businessRepo.findByUserId(userId) : await this.repo.findByUserId(userId);
@@ -1021,6 +1021,7 @@ export class CreatorService {
       throw new AppError(getDict().creator.instagramAuthorizationExpired, HttpStatus.BAD_REQUEST);
     }
     const { userId, role } = statePayload;
+    if (!userId) throw new AppError(getDict().creator.instagramAuthorizationExpired, HttpStatus.BAD_REQUEST);
 
     const isBusiness = role === 'BUSINESS';
     const profile = isBusiness ? await this.businessRepo.findByUserId(userId) : await this.repo.findByUserId(userId);

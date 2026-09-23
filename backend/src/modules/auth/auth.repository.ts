@@ -144,21 +144,26 @@ export class AuthRepository {
     });
   }
 
-  // Creates the User (+ role profile) and its Apple AuthAccount in one
-  // transaction — never leaves a user without the provider row that identifies
-  // how they signed up (spec §29). Email is marked verified: Apple verified it.
-  async createUserWithProfileAndAppleAccount(data: {
+  // Creates the User (+ role profile) and its AuthAccount in one transaction —
+  // never leaves a user without the provider row that identifies how they
+  // signed up (spec §29). Shared by every provider that creates the account
+  // straight from an OAuth identity (currently Apple and TikTok) rather than
+  // lazily backfilling it after an email-matched login (see upsertAuthAccount,
+  // used by Google/Facebook instead).
+  async createUserWithProfileAndAuthAccount(data: {
     email: string;
     password: string;
     role: Role;
-    sub: string;
+    provider: AuthProvider;
+    providerUserId: string;
     providerEmail?: string | null;
     providerRefreshToken?: string | null;
     fullName?: string | null;
     businessName?: string | null;
-    // True when `email` is a synthesized placeholder (Apple withheld the real
-    // address). The account is created email-unverified and flagged so
-    // onboarding collects a real one.
+    // True when `email` is a synthesized placeholder (the provider withheld
+    // the real address — Apple on repeat auth, or TikTok always, since its
+    // Login Kit never discloses one). The account is created email-unverified
+    // and flagged so onboarding collects a real one.
     emailIsPlaceholder?: boolean;
   }) {
     return prisma.$transaction(async (tx) => {
@@ -180,8 +185,8 @@ export class AuthRepository {
       await tx.authAccount.create({
         data: {
           userId: created.id,
-          provider: AuthProvider.APPLE,
-          providerUserId: data.sub,
+          provider: data.provider,
+          providerUserId: data.providerUserId,
           email: data.providerEmail ?? null,
           refreshToken: data.providerRefreshToken ?? null,
         },

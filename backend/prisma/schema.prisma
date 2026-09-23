@@ -82,6 +82,7 @@ enum AuthProvider {
   GOOGLE
   APPLE
   FACEBOOK
+  TIKTOK
 }
 
 model AuthAccount {

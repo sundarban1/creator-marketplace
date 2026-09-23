@@ -74,6 +74,11 @@ export interface BackendDict {
     appleLinkExpired: string;
     appleAlreadyLinkedOther: string;
     appleAlreadyLinked: string;
+    tiktokLoginNotConfigured: string;
+    tiktokAuthorizationExpired: string;
+    couldNotConnectTiktokAccount: string;
+    couldNotReadTiktokProfile: string;
+    tiktokPendingExpired: string;
     loginMethodNotConnected: string;
     lastLoginMethod: string;
     invalidResetToken: string;
@@ -89,6 +94,8 @@ export interface BackendDict {
     facebookSignInSuccessful: string;
     appleSignInSuccessful: string;
     appleAccountLinkedMsg: string;
+    tiktokSignInSuccessful: string;
+    tiktokAuthorizeUrlGenerated: string;
     notificationReceived: string;
     loginMethodsLabel: string;
     loginMethodDisconnected: string;

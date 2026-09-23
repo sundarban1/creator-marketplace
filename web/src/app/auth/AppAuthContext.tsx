@@ -45,6 +45,8 @@ interface AppAuthValue {
   googleAuth: (accessToken: string, role?: 'CREATOR' | 'BUSINESS') => Promise<SocialAuthResult>;
   googleAuthWithCode: (code: string, redirectUri: string, role?: 'CREATOR' | 'BUSINESS') => Promise<SocialAuthResult>;
   appleAuth: (input: Parameters<typeof authApi.appleAuth>[0]) => Promise<SocialAuthResult>;
+  tiktokLoginUrl: () => Promise<string>;
+  tiktokAuth: (input: Parameters<typeof authApi.tiktokAuth>[0]) => Promise<SocialAuthResult>;
   logout: () => Promise<void>;
 
   /** Adopt a freshly-authenticated user (e.g. after social role-completion). */
@@ -146,6 +148,20 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
     [adoptSession],
   );
 
+  const tiktokLoginUrl = useCallback<AppAuthValue['tiktokLoginUrl']>(
+    () => authApi.tiktokLoginAuthorizeUrl(),
+    [],
+  );
+
+  const tiktokAuth = useCallback<AppAuthValue['tiktokAuth']>(
+    async (input) => {
+      const res = await authApi.tiktokAuth(input);
+      if (!res.needsRole) adoptSession(res.user);
+      return res;
+    },
+    [adoptSession],
+  );
+
   const updateUser = useCallback((patch: Partial<AuthUser>) => {
     setUser((prev) => {
       if (!prev) return prev;
@@ -180,6 +196,8 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
       googleAuth,
       googleAuthWithCode,
       appleAuth,
+      tiktokLoginUrl,
+      tiktokAuth,
       logout,
       adoptSession,
       markOnboarded,
@@ -193,6 +211,8 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
       googleAuth,
       googleAuthWithCode,
       appleAuth,
+      tiktokLoginUrl,
+      tiktokAuth,
       logout,
       adoptSession,
       markOnboarded,

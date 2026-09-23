@@ -1056,6 +1056,8 @@ export const en = {
     continueGoogle: 'Continue with Google',
     continueApple: 'Continue with Apple',
     appleUseApp: 'Apple sign-in is available in the Kolab mobile app for now.',
+    continueTiktok: 'Continue with TikTok',
+    tiktokCancelled: 'TikTok sign-in was cancelled.',
 
     // Google Sign-In error modal (GoogleAuthErrorModal)
     googlePopupBlockedTitle: 'Google Sign-In was blocked',

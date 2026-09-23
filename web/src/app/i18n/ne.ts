@@ -1017,6 +1017,8 @@ export const ne: AppDict = {
     continueGoogle: 'Google बाट जारी राख्नुहोस्',
     continueApple: 'Apple बाट जारी राख्नुहोस्',
     appleUseApp: 'अहिलेका लागि Apple साइन-इन Kolab मोबाइल एपमा उपलब्ध छ।',
+    continueTiktok: 'TikTok बाट जारी राख्नुहोस्',
+    tiktokCancelled: 'TikTok साइन-इन रद्द गरियो।',
 
     // Google Sign-In error modal (GoogleAuthErrorModal)
     googlePopupBlockedTitle: 'Google साइन-इन रोकियो',

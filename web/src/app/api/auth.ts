@@ -49,15 +49,18 @@ interface LoginPayload {
   user: AuthUser;
 }
 
-/** Social sign-in either logs the user straight in, or needs a role first. */
+/** Social sign-in either logs the user straight in, or needs a role first.
+ *  `tiktokPendingToken` only ever appears on TikTok's needsRole branch — its
+ *  authorization code is already spent by then, so this stands in for it
+ *  (see AppAuthContext's tiktokAuth). */
 export type SocialAuthResult =
   | { needsRole: false; isNewUser: boolean; user: AuthUser }
-  | { needsRole: true; email: string; name: string };
+  | { needsRole: true; email: string; name: string; tiktokPendingToken?: string };
 
 /** Raw backend shape for a completed social sign-in (before we strip tokens). */
 type SocialAuthResponse =
   | (LoginPayload & { needsRole: false; isNewUser: boolean })
-  | { needsRole: true; email: string; name: string };
+  | { needsRole: true; email: string; name: string; tiktokPendingToken?: string };
 
 // ── Identifier ────────────────────────────────────────────────────────────────
 
@@ -183,6 +186,26 @@ export async function appleAuth(input: {
   return completeSocial(await api<SocialAuthResponse>('POST', '/api/auth/apple', input));
 }
 
+/** Builds the PKCE-protected TikTok authorize URL to open in the login popup. */
+export async function tiktokLoginAuthorizeUrl(): Promise<string> {
+  const { url } = await api<{ url: string }>('GET', '/api/auth/tiktok/authorize');
+  return url;
+}
+
+/**
+ * Redeems the TikTok login popup's one-time `handoff` nonce, or — once a role
+ * has been picked for a brand-new TikTok identity — completes account
+ * creation with the `tiktokPendingToken` that stood in for TikTok's
+ * already-spent authorization code. Exactly one of the two must be set.
+ */
+export async function tiktokAuth(input: {
+  handoff?: string;
+  tiktokPendingToken?: string;
+  role?: 'CREATOR' | 'BUSINESS';
+}): Promise<SocialAuthResult> {
+  return completeSocial(await api<SocialAuthResponse>('POST', '/api/auth/tiktok/session', input));
+}
+
 // ── Session lifecycle ────────────────────────────────────────────────────────
 
 /** The authed "get my profile" endpoint for each marketplace role. */
@@ -241,7 +264,7 @@ export interface AuthMethods {
   hasPassword: boolean;
   email: string;
   phone: string | null;
-  providers: { provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK'; email: string | null; linkedAt: string }[];
+  providers: { provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK' | 'TIKTOK'; email: string | null; linkedAt: string }[];
 }
 
 export function fetchAuthMethods(signal?: AbortSignal): Promise<AuthMethods> {

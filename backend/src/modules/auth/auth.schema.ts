@@ -182,8 +182,23 @@ export const unlinkProviderSchema = z.object({
   provider: z
     .string()
     .transform((s) => s.toUpperCase())
-    .pipe(z.enum(['GOOGLE', 'APPLE', 'FACEBOOK'])),
+    .pipe(z.enum(['GOOGLE', 'APPLE', 'FACEBOOK', 'TIKTOK'])),
 });
+
+// Redeems the login-handoff nonce the TikTok callback minted (see
+// AuthService.tiktokLoginCallback), or — once a role has been picked for a
+// brand-new TikTok identity — the short-lived tiktokPendingToken that stands
+// in for TikTok's already-spent authorization code.
+export const tiktokSessionSchema = z
+  .object({
+    handoff: z.string().min(1).optional(),
+    tiktokPendingToken: z.string().min(1).optional(),
+    role: z.enum(['CREATOR', 'BUSINESS']).optional(),
+  })
+  .refine((d) => Boolean(d.handoff) !== Boolean(d.tiktokPendingToken), {
+    message: 'Provide exactly one of handoff or tiktokPendingToken',
+    path: ['handoff'],
+  });
 
 // Biometric re-login (see BiometricCredential). `publicKey` is the raw
 // 32-byte Ed25519 public key, base64url-encoded — never a private key or any
@@ -218,6 +233,7 @@ export type FacebookAuthInput     = z.infer<typeof facebookAuthSchema>;
 export type AppleAuthInput        = z.infer<typeof appleAuthSchema>;
 export type AppleLinkInput        = z.infer<typeof appleLinkSchema>;
 export type UnlinkProviderInput   = z.infer<typeof unlinkProviderSchema>;
+export type TiktokSessionInput    = z.infer<typeof tiktokSessionSchema>;
 export type AppleNotificationInput = z.infer<typeof appleNotificationSchema>;
 export type BiometricRegisterInput  = z.infer<typeof biometricRegisterSchema>;
 export type BiometricVerifyInput    = z.infer<typeof biometricVerifySchema>;

@@ -24,6 +24,7 @@ import {
   unlinkProviderSchema,
   biometricRegisterSchema,
   biometricVerifySchema,
+  tiktokSessionSchema,
 } from './auth.schema';
 
 const router = Router();
@@ -526,6 +527,41 @@ router.post('/apple/link',          authenticate, validate(appleLinkSchema), ctr
  *       400: { description: Invalid notification signature/shape }
  */
 router.post('/apple/notifications', validate(appleNotificationSchema), ctrl.appleNotifications.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/tiktok/authorize:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Get the TikTok login authorize URL (web only for now)
+ *     description: >
+ *       Builds a PKCE-protected TikTok authorize URL. The browser is redirected
+ *       there, TikTok redirects back to the shared /api/creator/social-accounts/
+ *       tiktok/callback route, which dispatches here (vs. the unrelated "connect
+ *       my TikTok profile" flow) via a `purpose` field on the signed state.
+ *     responses:
+ *       200: { description: Authorize URL generated }
+ */
+router.get('/tiktok/authorize', ctrl.getTiktokLoginAuthorizeUrl.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/tiktok/session:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Redeem a TikTok login handoff, or complete account creation once a role is picked
+ *     description: >
+ *       Takes exactly one of `handoff` (redeems the callback's one-time nonce —
+ *       returns either a completed session or a needsRole + tiktokPendingToken)
+ *       or `tiktokPendingToken` + `role` (creates the account and returns a
+ *       session). TikTok never discloses an email, so unlike /apple this never
+ *       returns ACCOUNT_LINKING_REQUIRED — every new TikTok identity is a new
+ *       Kolab account.
+ *     responses:
+ *       200: { description: Session issued, or role selection required }
+ *       400: { description: Handoff/pending token missing, expired, or already used }
+ */
+router.post('/tiktok/session', validate(tiktokSessionSchema), ctrl.tiktokSession.bind(ctrl));
 
 /**
  * @swagger

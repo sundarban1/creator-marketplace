@@ -12,9 +12,14 @@
 
 export const PLACEHOLDER_EMAIL_DOMAIN = 'placeholder.invalid';
 
-/** Builds a deterministic, unique, non-routable address from a stable id (the Apple `sub`). */
-export function synthesizePlaceholderEmail(seed: string): string {
-  return `apple_${seed.replace(/[^a-zA-Z0-9]/g, '')}@${PLACEHOLDER_EMAIL_DOMAIN}`;
+/**
+ * Builds a deterministic, unique, non-routable address from a stable provider
+ * id (Apple's `sub`, or TikTok's `open_id` — TikTok's Login Kit never returns
+ * an email at any approved scope, so every new TikTok account goes through
+ * this same placeholder path, not just Apple's no-email-on-repeat-auth case).
+ */
+export function synthesizePlaceholderEmail(seed: string, provider: 'apple' | 'tiktok' = 'apple'): string {
+  return `${provider}_${seed.replace(/[^a-zA-Z0-9]/g, '')}@${PLACEHOLDER_EMAIL_DOMAIN}`;
 }
 
 /** True for an address minted by {@link synthesizePlaceholderEmail} — i.e. the user has no real email yet. */

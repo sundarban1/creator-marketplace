@@ -20,7 +20,13 @@ export function OAuthCallbackPage() {
     const success = params.get('success') === 'true';
     const error = params.get('error') ?? undefined;
     if (window.opener) {
-      window.opener.postMessage({ source: 'kolab-oauth', platform, success, error }, window.location.origin);
+      // Forward every query param the backend appended (e.g. TikTok login's
+      // one-time `handoff` nonce) generically — the typed fields are spread
+      // last so they win over their raw string equivalents from `params`.
+      window.opener.postMessage(
+        { ...Object.fromEntries(params), source: 'kolab-oauth', platform, success, error },
+        window.location.origin,
+      );
       window.close();
     }
   }, [platform, params]);

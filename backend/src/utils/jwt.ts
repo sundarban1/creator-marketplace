@@ -68,13 +68,34 @@ export function verifyAppleLinkToken(token: string): AppleLinkPayload & JwtPaylo
   return jwt.verify(token, env.JWT_ACCESS_SECRET + '_apple_link') as AppleLinkPayload & JwtPayload;
 }
 
+// Same idea as AppleLinkPayload, but for a brand-new TikTok sign-in that has no
+// role yet: TikTok's authorization `code` is one-time-use and already spent by
+// the time the client asks for a role, so there's nothing left to resend the
+// way Google/Apple resend their access/identity token. This stands in for that
+// — the client sends it back with the chosen role to actually create the
+// account (see AuthService.tiktokSession).
+export interface TiktokPendingPayload {
+  openId: string;
+  displayName?: string;
+}
+
+export function signTiktokPendingToken(payload: TiktokPendingPayload): string {
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET + '_tiktok_pending', { expiresIn: '10m' });
+}
+
+export function verifyTiktokPendingToken(token: string): TiktokPendingPayload & JwtPayload {
+  return jwt.verify(token, env.JWT_ACCESS_SECRET + '_tiktok_pending') as TiktokPendingPayload & JwtPayload;
+}
+
 // Carries the requesting user (+ PKCE code_verifier, for providers that need it, e.g.
 // TikTok) across the redirect to a third-party OAuth provider and back to our
 // callback, since that round trip happens in a browser with no Authorization header
 // we control. Instagram Login's token exchange uses a client secret instead of PKCE,
 // so codeVerifier is omitted there.
 export interface OAuthStatePayload {
-  userId: string;
+  // Absent for a TikTok *login* state (purpose: 'login') — no Kolab user exists
+  // yet at that point. Every other flow (connect, Instagram) always sets it.
+  userId?: string;
   codeVerifier?: string;
   // Which profile this connect belongs to — defaults to CREATOR when omitted
   // (every state signed before this field existed was creator-only).
@@ -88,6 +109,11 @@ export interface OAuthStatePayload {
   // Set when the PKCE verifier was parked in Redis instead of the JWT — the
   // callback swaps it back in and deletes the key, making the state single-use.
   nonce?: string;
+  // What this OAuth round trip is for — 'connect' (attach a social profile to
+  // an already-logged-in user, the original/default meaning of this state) or
+  // 'login' (TikTok sign-in, no existing user). Defaults to 'connect' when
+  // omitted, so every state signed before this field existed keeps working.
+  purpose?: 'connect' | 'login';
 }
 
 const OAUTH_STATE_SECRET = env.JWT_ACCESS_SECRET + '_oauth_state';
@@ -115,7 +141,7 @@ export async function signOAuthState(payload: OAuthStatePayload): Promise<string
       // flows without one (Instagram) so the nonce is still single-use.
       const stored = JSON.stringify(payload.codeVerifier ? { codeVerifier: payload.codeVerifier } : { ok: true });
       await client.set(oauthStateKey(nonce), stored, { EX: OAUTH_STATE_TTL_SEC });
-      jwtPayload = { userId: payload.userId, role: payload.role, clientPlatform: payload.clientPlatform, nonce };
+      jwtPayload = { userId: payload.userId, role: payload.role, clientPlatform: payload.clientPlatform, purpose: payload.purpose, nonce };
     } catch (err) {
       logger.warn({ err: err instanceof Error ? err.message : err }, 'oauth-state: Redis park failed — verifier stays in the JWT');
     }
@@ -138,6 +164,23 @@ export function peekOAuthStatePlatform(token: string): 'web' | 'mobile' {
     return decoded?.clientPlatform === 'web' ? 'web' : 'mobile';
   } catch {
     return 'mobile';
+  }
+}
+
+/**
+ * Same unverified-peek trick as {@link peekOAuthStatePlatform}, for the single
+ * physical TikTok callback route to pick which handler processes the request
+ * (connect vs. login) before the real, signature-checked verify runs inside
+ * that handler. A forged/garbled `purpose` can only route to the wrong
+ * handler, whose own verify then fails — it can never itself authenticate or
+ * connect anything.
+ */
+export function peekOAuthStatePurpose(token: string): 'connect' | 'login' {
+  try {
+    const decoded = jwt.decode(token) as OAuthStatePayload | null;
+    return decoded?.purpose === 'login' ? 'login' : 'connect';
+  } catch {
+    return 'connect';
   }
 }
 
@@ -209,6 +252,40 @@ export async function verifyAndConsumeBiometricChallenge(token: string): Promise
   if (!consumed) throw new Error('Biometric challenge already used or expired');
 
   return payload;
+}
+
+// TikTok login's server-mediated callback resolves the whole sign-in (or
+// "pick a role" pending state) itself, but its outcome — real bearer tokens,
+// or a token that can go on to create an account — can never ride in the
+// redirect URL back to the frontend (browser history/server logs). This is
+// the drop box for that outcome: mint a single-use nonce whose Redis value is
+// the outcome, redirect with just the (opaque, short-lived) nonce, and let the
+// frontend redeem it once via a normal POST body. Same fail-closed reasoning
+// as the biometric challenge above — there's no safe degraded mode when the
+// thing being protected is login-granting — so this throws rather than
+// silently falling back to something less safe if Redis is unavailable.
+const LOGIN_HANDOFF_TTL_SEC = 2 * 60;
+const loginHandoffKey = (nonce: string) => `login-handoff:${nonce}`;
+
+export async function mintLoginHandoff<T>(payload: T): Promise<string> {
+  const client = await getQueueRedis();
+  if (!client) throw new Error('Redis unavailable — cannot issue a single-use login handoff');
+
+  const nonce = crypto.randomUUID();
+  await client.set(loginHandoffKey(nonce), JSON.stringify(payload), { EX: LOGIN_HANDOFF_TTL_SEC });
+  return nonce;
+}
+
+// GETDELs the value so the same handoff can never be redeemed twice. Returns
+// null (rather than throwing) for a missing/expired/already-used nonce — the
+// caller turns that into an ordinary "link expired" error, same as an
+// expired TiktokPendingToken.
+export async function redeemLoginHandoff<T>(nonce: string): Promise<T | null> {
+  const client = await getQueueRedis();
+  if (!client) throw new Error('Redis unavailable — cannot redeem login handoff');
+
+  const raw = await client.getDel(loginHandoffKey(nonce));
+  return raw ? (JSON.parse(raw) as T) : null;
 }
 
 // Identifies an anonymous website visitor's chat session (landing-page floating

@@ -16,6 +16,12 @@ import {
   verifyAppleLinkToken,
   signBiometricChallenge,
   verifyAndConsumeBiometricChallenge,
+  signOAuthState,
+  verifyOAuthState,
+  signTiktokPendingToken,
+  verifyTiktokPendingToken,
+  mintLoginHandoff,
+  redeemLoginHandoff,
 } from '../../utils/jwt';
 import { verifyAppleIdentityToken, exchangeAppleAuthCode, revokeAppleToken, verifyAppleNotification } from '../../utils/apple';
 import { verifyGoogleAccessToken, exchangeGoogleCode } from '../../utils/google';
@@ -56,9 +62,24 @@ import type {
   AppleNotificationInput,
   BiometricRegisterInput,
   BiometricVerifyInput,
+  TiktokSessionInput,
 } from './auth.schema';
 
 type Channel = 'email' | 'phone';
+
+// TikTok login's raw API response shapes (a separate, minimal copy of the ones
+// creator.service.ts keeps for the unrelated "connect my TikTok profile"
+// feature — login only ever reads open_id/display_name, never stats).
+interface TiktokLoginTokenResponse {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+}
+
+interface TiktokLoginUserInfoResponse {
+  data?: { user?: { open_id?: string; display_name?: string } };
+  error?: { code?: string; message?: string };
+}
 
 // Fixed dev code for phone-delivered OTPs when no SMS gateway is configured
 // (isSmsConfigured() === false) — keeps the signup / forgot-password flows fully
@@ -830,7 +851,7 @@ export class AuthService {
     //     and flag it; onboarding then forces a real email through the existing
     //     request-email-otp / verify-email-otp flow (which clears the flag).
     const emailIsPlaceholder = !resolvedEmail;
-    const accountEmail = resolvedEmail ?? synthesizePlaceholderEmail(sub);
+    const accountEmail = resolvedEmail ?? synthesizePlaceholderEmail(sub, 'apple');
     if (emailIsPlaceholder) {
       logger.info({ sub: sub.slice(0, 6) }, 'Apple sign-in returned no email — creating account with placeholder, onboarding will collect a real one');
     }
@@ -845,11 +866,12 @@ export class AuthService {
       : {};
 
     try {
-      const user = await this.repo.createUserWithProfileAndAppleAccount({
+      const user = await this.repo.createUserWithProfileAndAuthAccount({
         email: accountEmail,
         password: hashedPassword,
         role: input.role === 'CREATOR' ? Role.CREATOR : Role.BUSINESS,
-        sub,
+        provider: AuthProvider.APPLE,
+        providerUserId: sub,
         providerEmail: resolvedEmail ?? null,
         providerRefreshToken: appleRefreshToken ?? null,
         emailIsPlaceholder,
@@ -973,6 +995,188 @@ export class AuthService {
     }
 
     return { received: true };
+  }
+
+  // ── Login with TikTok ───────────────────────────────────────────────────────
+  //
+  // TikTok's Login Kit never discloses an email at any approved scope (unlike
+  // Google/Facebook/Apple), so there is no email to check for a same-account
+  // conflict — every new TikTok identity is unconditionally a new Kolab
+  // account, created with a synthesized placeholder email exactly like Apple's
+  // "no email on repeat auth" case. Identity is keyed on TikTok's `open_id` in
+  // an AuthAccount row, mirroring Apple's identity-first lookup below.
+  //
+  // TikTok mandates PKCE with a server-held code_verifier, so (unlike Google's
+  // client-side flow) the whole exchange happens at our one fixed callback
+  // route (creator.controller.ts's tiktokCallback, shared with the unrelated
+  // "connect my TikTok profile" feature via the `purpose` field on the signed
+  // state — see peekOAuthStatePurpose in utils/jwt.ts). That callback can't
+  // safely hand session tokens back in a redirect URL, so the outcome is
+  // parked behind a one-time Redis nonce (mintLoginHandoff) and redeemed via
+  // tiktokSession below.
+
+  async getTiktokLoginAuthorizeUrl(): Promise<string> {
+    if (!env.TIKTOK_CLIENT_KEY || !env.TIKTOK_REDIRECT_URI) {
+      throw new AppError(getDict().auth.tiktokLoginNotConfigured, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    const codeVerifier = crypto.randomBytes(32).toString('base64url');
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+    const state = await signOAuthState({ codeVerifier, clientPlatform: 'web', purpose: 'login' });
+
+    const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
+    url.searchParams.set('client_key', env.TIKTOK_CLIENT_KEY);
+    // Login only needs the bare identity — no profile/stats scopes, unlike the
+    // creator "connect my TikTok" flow which requests those for follower data.
+    url.searchParams.set('scope', 'user.info.basic');
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('redirect_uri', env.TIKTOK_REDIRECT_URI);
+    url.searchParams.set('state', state);
+    url.searchParams.set('code_challenge', codeChallenge);
+    url.searchParams.set('code_challenge_method', 'S256');
+    url.searchParams.set('disable_auto_auth', '1');
+    return url.toString();
+  }
+
+  async tiktokLoginCallback(code: string, state: string): Promise<{ handoff: string }> {
+    let statePayload: Awaited<ReturnType<typeof verifyOAuthState>>;
+    try {
+      statePayload = await verifyOAuthState(state);
+    } catch (err) {
+      logger.warn({ err }, 'TikTok login state verification failed');
+      throw new AppError(getDict().auth.tiktokAuthorizationExpired, HttpStatus.BAD_REQUEST);
+    }
+    if (statePayload.purpose !== 'login' || !statePayload.codeVerifier) {
+      throw new AppError(getDict().auth.tiktokAuthorizationExpired, HttpStatus.BAD_REQUEST);
+    }
+
+    const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cache-Control': 'no-cache' },
+      body: new URLSearchParams({
+        client_key: env.TIKTOK_CLIENT_KEY!,
+        client_secret: env.TIKTOK_CLIENT_SECRET!,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: env.TIKTOK_REDIRECT_URI!,
+        code_verifier: statePayload.codeVerifier,
+      }),
+    });
+    const tokenData = (await tokenRes.json()) as TiktokLoginTokenResponse;
+    if (!tokenRes.ok || !tokenData.access_token) {
+      logger.error({ status: tokenRes.status, tokenData }, 'TikTok login token exchange failed');
+      throw new AppError(tokenData.error_description ?? getDict().auth.couldNotConnectTiktokAccount, HttpStatus.BAD_GATEWAY);
+    }
+
+    const infoRes = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const infoData = (await infoRes.json()) as TiktokLoginUserInfoResponse;
+    const tiktokUser = infoData.data?.user;
+    if (!infoRes.ok || !tiktokUser?.open_id) {
+      logger.error({ status: infoRes.status, infoData }, 'TikTok login user info request failed');
+      throw new AppError(getDict().auth.couldNotReadTiktokProfile, HttpStatus.BAD_GATEWAY);
+    }
+
+    // 1. Known TikTok identity → straight in (mirrors appleAuth branch 1).
+    const linked = await this.repo.findAuthAccount(AuthProvider.TIKTOK, tiktokUser.open_id);
+    if (linked) {
+      const user = linked.user;
+      if (!user.isActive) {
+        if (user.suspendedAt) {
+          throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN);
+        }
+        await this.repo.reactivateAccount(user.id);
+      }
+      const fresh = await this.repo.findUserById(user.id);
+      const payload = { id: fresh!.id, email: fresh!.email, role: fresh!.role };
+      const accessToken  = signAccessToken(payload);
+      const refreshToken = signRefreshToken(payload);
+      await this.repo.createSession(fresh!.id, refreshToken);
+      logger.info({ userId: fresh!.id }, 'TikTok login successful (existing)');
+      const handoff = await mintLoginHandoff({
+        needsRole: false as const,
+        isNewUser: false,
+        user: toUserDto(fresh!),
+        accessToken,
+        refreshToken,
+      });
+      return { handoff };
+    }
+
+    // 2. New TikTok identity. There is no email to check for a same-account
+    //    conflict (see file-header comment), so this is unconditionally a
+    //    new-identity case — hand the client a pending token to resend once a
+    //    role is picked, since TikTok's one-time authorization code is already
+    //    spent by now.
+    const tiktokPendingToken = signTiktokPendingToken({ openId: tiktokUser.open_id, displayName: tiktokUser.display_name });
+    const handoff = await mintLoginHandoff({
+      needsRole: true as const,
+      email: '',
+      name: tiktokUser.display_name ?? '',
+      tiktokPendingToken,
+    });
+    return { handoff };
+  }
+
+  async tiktokSession(input: TiktokSessionInput) {
+    if (input.handoff) {
+      const outcome = await redeemLoginHandoff<
+        | { needsRole: false; isNewUser: boolean; user: ReturnType<typeof toUserDto>; accessToken: string; refreshToken: string }
+        | { needsRole: true; email: string; name: string; tiktokPendingToken: string }
+      >(input.handoff);
+      if (!outcome) throw new AppError(getDict().auth.tiktokPendingExpired, HttpStatus.BAD_REQUEST);
+      return outcome;
+    }
+
+    // Second step: role was just picked — create the account. The pending
+    // token stands in for TikTok's already-spent authorization code (see
+    // TiktokPendingPayload in utils/jwt.ts).
+    let pending;
+    try {
+      pending = verifyTiktokPendingToken(input.tiktokPendingToken!);
+    } catch {
+      throw new AppError(getDict().auth.tiktokPendingExpired, HttpStatus.BAD_REQUEST);
+    }
+    const role = input.role;
+    if (!role) throw new AppError(getDict().auth.tiktokPendingExpired, HttpStatus.BAD_REQUEST);
+
+    await this.assertRegistrationEnabled(role);
+    const hashedPassword = await hashPassword(crypto.randomBytes(32).toString('hex'));
+    const accountEmail = synthesizePlaceholderEmail(pending.openId, 'tiktok');
+
+    try {
+      const user = await this.repo.createUserWithProfileAndAuthAccount({
+        email: accountEmail,
+        password: hashedPassword,
+        role: role === 'CREATOR' ? Role.CREATOR : Role.BUSINESS,
+        provider: AuthProvider.TIKTOK,
+        providerUserId: pending.openId,
+        providerEmail: null,
+        emailIsPlaceholder: true,
+        fullName: role === 'CREATOR' ? pending.displayName : undefined,
+        businessName: role === 'BUSINESS' ? pending.displayName : undefined,
+      });
+      const payload = { id: user!.id, email: user!.email, role: user!.role };
+      const accessToken  = signAccessToken(payload);
+      const refreshToken = signRefreshToken(payload);
+      await this.repo.createSession(user!.id, refreshToken);
+      logger.info({ userId: user!.id }, 'TikTok account created');
+      return { needsRole: false as const, user: toUserDto(user!), accessToken, refreshToken, isNewUser: true };
+    } catch (err) {
+      // Race: a concurrent first sign-in for the same open_id won the unique
+      // constraint (mirrors appleAuth's equivalent guard).
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const raced = await this.repo.findAuthAccount(AuthProvider.TIKTOK, pending.openId);
+        if (raced) {
+          const payload = { id: raced.user.id, email: raced.user.email, role: raced.user.role };
+          const accessToken  = signAccessToken(payload);
+          const refreshToken = signRefreshToken(payload);
+          await this.repo.createSession(raced.user.id, refreshToken);
+          return { needsRole: false as const, user: toUserDto(raced.user), accessToken, refreshToken, isNewUser: false };
+        }
+      }
+      throw err;
+    }
   }
 
   // ── Manage login methods (Settings → Security) ─────────────────────────────

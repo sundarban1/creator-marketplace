@@ -1,6 +1,10 @@
 export interface OAuthPopupResult {
   success: boolean;
   error?: string;
+  /** Any other fields the backend put on the callback page's query string
+   *  (e.g. TikTok login's one-time `handoff` nonce) — kept generic so this
+   *  helper doesn't need to know about any particular provider's payload. */
+  extra?: Record<string, string>;
 }
 
 /**
@@ -31,11 +35,16 @@ export function openOAuthPopup(url: string, platform: string): Promise<OAuthPopu
 
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      const data = event.data as { source?: string; platform?: string; success?: boolean; error?: string } | null;
+      const data = event.data as Record<string, unknown> | null;
       if (data?.source !== 'kolab-oauth' || data.platform !== platform) return;
       settled = true;
       cleanup();
-      resolve({ success: !!data.success, error: data.error });
+      const extra: Record<string, string> = {};
+      for (const [key, value] of Object.entries(data)) {
+        if (key === 'source' || key === 'platform' || key === 'success' || key === 'error') continue;
+        if (typeof value === 'string') extra[key] = value;
+      }
+      resolve({ success: !!data.success, error: typeof data.error === 'string' ? data.error : undefined, extra });
     };
     window.addEventListener('message', onMessage);
 
