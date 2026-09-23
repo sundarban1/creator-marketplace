@@ -77,6 +77,8 @@ interface TiktokUserInfoResponse {
       open_id?: string;
       display_name?: string;
       avatar_url?: string;
+      profile_deep_link?: string;
+      follower_count?: number;
     };
   };
   error?: { code?: string; message?: string };
@@ -815,9 +817,9 @@ export class CreatorService {
 
     const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
     url.searchParams.set('client_key', env.TIKTOK_CLIENT_KEY);
-    // Only the scope actually enabled on the TikTok app right now — requesting an
+    // Only the scopes actually enabled on the TikTok app right now — requesting an
     // unconfigured scope makes TikTok reject the whole authorize request.
-    url.searchParams.set('scope', 'user.info.basic');
+    url.searchParams.set('scope', 'user.info.basic,user.info.profile,user.info.stats');
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('redirect_uri', env.TIKTOK_REDIRECT_URI);
     url.searchParams.set('state', state);
@@ -863,9 +865,10 @@ export class CreatorService {
       throw new AppError(tokenData.error_description ?? getDict().creator.couldNotConnectTiktokAccount, HttpStatus.BAD_GATEWAY);
     }
 
-    const infoRes = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
+    const infoRes = await fetch(
+      'https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url,profile_deep_link,follower_count',
+      { headers: { Authorization: `Bearer ${tokenData.access_token}` } },
+    );
     const infoData = (await infoRes.json()) as TiktokUserInfoResponse;
     const tiktokUser = infoData.data?.user;
     if (!infoRes.ok || !tiktokUser) {
@@ -873,13 +876,14 @@ export class CreatorService {
       throw new AppError(getDict().creator.couldNotReadTiktokProfile, HttpStatus.BAD_GATEWAY);
     }
 
-    // TikTok only returns the real @handle / profile_deep_link under the
-    // user.info.profile scope, which isn't enabled on this app yet — fall back to a
-    // best-effort link from display_name until that scope is added and approved.
-    const profileUrl = `https://www.tiktok.com/@${encodeURIComponent(tiktokUser.display_name ?? tiktokUser.open_id ?? '')}`;
+    // profile_deep_link (user.info.profile scope) is the real @handle link — fall back
+    // to a best-effort link from display_name if TikTok ever omits it.
+    const profileUrl =
+      tiktokUser.profile_deep_link ??
+      `https://www.tiktok.com/@${encodeURIComponent(tiktokUser.display_name ?? tiktokUser.open_id ?? '')}`;
     const tiktokData = {
       profileUrl,
-      followers: 0,
+      followers: tiktokUser.follower_count ?? 0,
       platformUserId: tiktokUser.open_id ?? profile.id,
       avatarUrl: tiktokUser.avatar_url,
       accessToken: tokenData.access_token,
@@ -1185,10 +1189,6 @@ export class CreatorService {
     };
   }
 
-  // Follower count stays 0 until the app's user.info.stats scope passes TikTok's
-  // review (see CONNECTABLE_SOCIAL_PLATFORMS comment on the mobile side) — still
-  // worth running so the access/refresh token pair gets exercised regularly and is
-  // ready to go the moment that scope is approved.
   private async refreshTiktokFollowers(account: RawSocialAccountRow): Promise<RefreshResult> {
     let accessToken = account.accessToken!;
     let newRefreshToken: string | undefined;
@@ -1212,15 +1212,16 @@ export class CreatorService {
       newRefreshToken = refreshData.refresh_token;
       newExpiry = refreshData.expires_in ? new Date(Date.now() + refreshData.expires_in * 1000) : undefined;
     }
-    const infoRes = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const infoRes = await fetch(
+      'https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url,follower_count',
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
     const infoData = (await infoRes.json()) as TiktokUserInfoResponse;
     if (!infoRes.ok || !infoData.data?.user) {
       throw new AppError('Could not refresh TikTok profile', HttpStatus.BAD_GATEWAY);
     }
     return {
-      followers: 0,
+      followers: infoData.data.user.follower_count ?? 0,
       accessToken: newRefreshToken ? accessToken : undefined,
       refreshToken: newRefreshToken,
       tokenExpiresAt: newExpiry,

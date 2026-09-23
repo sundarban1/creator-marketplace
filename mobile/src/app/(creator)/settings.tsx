@@ -74,8 +74,7 @@ const EMPTY_ARTICLES: HelpArticle[] = [];
 // Platforms with a real "Connect Account" OAuth flow (pulls profile URL + follower/
 // subscriber count directly from the platform — no manual entry). YouTube and TikTok
 // are wired up; Facebook/Instagram need Meta App Review first before they can go from
-// "Coming soon" to functional. TikTok's follower count stays 0 until the app's
-// user.info.stats scope passes TikTok's review — only user.info.basic is live today.
+// "Coming soon" to functional.
 const CONNECTABLE_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color: string; followersLabel: string }[] = [
   { id: 'tiktok',    label: 'TikTok',     iconName: 'tiktok',    color: '#010101', followersLabel: 'Followers' },
   { id: 'facebook',  label: 'Facebook',   iconName: 'facebook',  color: '#1877F2', followersLabel: 'Followers' },
@@ -1378,17 +1377,22 @@ export default function CreatorSettingsScreen() {
   function renderSocialAccounts() {
     const connectablePlatformIds = new Set(CONNECTABLE_SOCIAL_PLATFORMS.map((p) => p.id));
     const connectedByPlatform = new Map(socialAccounts.filter((a) => connectablePlatformIds.has(a.platform)).map((a) => [a.platform, a]));
-    // Admin master switch (Settings → Social Accounts) — replaces the old
-    // hardcoded OAUTH_LIVE_PLATFORM_IDS set; all four platforms are gated
-    // together instead of individually.
-    const isLive = flags.socialAccountsEnabled;
+    // Per-platform admin switches (Settings → Social Accounts) — each
+    // platform's Connect button is gated independently.
+    const PLATFORM_LIVE: Record<string, boolean> = {
+      tiktok: flags.socialAccountsTiktokEnabled,
+      facebook: flags.socialAccountsFacebookEnabled,
+      instagram: flags.socialAccountsInstagramEnabled,
+      youtube: flags.socialAccountsYoutubeEnabled,
+    };
+    const anyLive = CONNECTABLE_SOCIAL_PLATFORMS.some((p) => PLATFORM_LIVE[p.id]);
 
     return (
       <>
         {/* ── Connect Accounts: TikTok, Facebook, Instagram, YouTube ──────
             Pulls profile URL + follower/subscriber count straight from the
             platform via OAuth — nothing to type in. ── */}
-        {isLive && (
+        {anyLive && (
           <View style={[styles.socialInfoPill, { backgroundColor: C.primaryLight }]}>
             <FontAwesome5 name="info-circle" solid size={11} color={C.brinjal1} />
             <Text style={[styles.socialInfoPillText, { color: C.brinjal1 }]}>
@@ -1401,6 +1405,7 @@ export default function CreatorSettingsScreen() {
             const acct = connectedByPlatform.get(p.id);
             const isConnecting = connectingPlatform === p.id;
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
+            const isLive = PLATFORM_LIVE[p.id];
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                 <View
@@ -1468,7 +1473,7 @@ export default function CreatorSettingsScreen() {
           })}
         </Card>
 
-        {!isLive && (
+        {!anyLive && (
           <View style={[styles.socialComingSoonBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={[styles.socialComingSoonIconWrap, { backgroundColor: C.primaryLight }]}>
               <FontAwesome5 name="clock" solid size={16} color={C.brinjal1} />

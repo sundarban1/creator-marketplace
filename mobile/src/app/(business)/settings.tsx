@@ -2007,14 +2007,19 @@ export default function BusinessSettingsScreen() {
 
   function renderSocialAccounts() {
     const connectedByPlatform = new Map(socialAccounts.map((a) => [a.platform, a]));
-    // Admin master switch (Settings → Social Accounts) — replaces the old
-    // hardcoded OAUTH_LIVE_PLATFORM_IDS set; all four platforms are gated
-    // together instead of individually.
-    const isLive = flags.socialAccountsEnabled;
+    // Per-platform admin switches (Settings → Social Accounts) — each
+    // platform's Connect button is gated independently.
+    const PLATFORM_LIVE: Record<string, boolean> = {
+      tiktok: flags.socialAccountsTiktokEnabled,
+      facebook: flags.socialAccountsFacebookEnabled,
+      instagram: flags.socialAccountsInstagramEnabled,
+      youtube: flags.socialAccountsYoutubeEnabled,
+    };
+    const anyLive = CONNECTABLE_SOCIAL_PLATFORMS.some((p) => PLATFORM_LIVE[p.id]);
 
     return (
       <>
-        {isLive && (
+        {anyLive && (
           <View style={[styles.socialInfoPill, { backgroundColor: C.primaryLight }]}>
             <FontAwesome5 name="info-circle" solid size={11} color={C.brinjal1} />
             <Text style={[styles.socialInfoPillText, { color: C.brinjal1 }]}>
@@ -2027,6 +2032,7 @@ export default function BusinessSettingsScreen() {
             const acct = connectedByPlatform.get(p.id);
             const isConnecting = connectingPlatform === p.id;
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
+            const isLive = PLATFORM_LIVE[p.id];
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                 <View
@@ -2095,7 +2101,7 @@ export default function BusinessSettingsScreen() {
           })}
         </Card>
 
-        {!isLive && (
+        {!anyLive && (
           <View style={[styles.socialComingSoonBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={[styles.socialComingSoonIconWrap, { backgroundColor: C.primaryLight }]}>
               <FontAwesome5 name="clock" solid size={16} color={C.brinjal1} />

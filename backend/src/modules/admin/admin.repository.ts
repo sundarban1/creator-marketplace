@@ -18,10 +18,14 @@ const DEFAULTS: Record<string, unknown> = {
   'business.onboarding':           true,
   'campaign.autoApproval':         true,
   'payment.escrow':                true,
-  // Master switch for the OAuth "Connect Accounts" flow (TikTok/Facebook/
-  // Instagram/YouTube) on creator and business, mobile and web. Off = every
-  // connect button is disabled and a "coming soon" notice is shown instead.
-  'socialAccounts.enabled':        true,
+  // Per-platform switches for the OAuth "Connect Accounts" flow on creator
+  // and business, mobile and web. Off = that platform's connect button is
+  // disabled and shows a "coming soon" notice; the other platforms are
+  // unaffected.
+  'socialAccounts.tiktok.enabled':    true,
+  'socialAccounts.facebook.enabled':  true,
+  'socialAccounts.instagram.enabled': true,
+  'socialAccounts.youtube.enabled':   true,
   'platform.commission':           12,
   // Drive the fee/tax breakdown shown in the mobile Complete Payment modal and
   // charged through Khalti/eSewa (CampaignService.applicationTotalNpr) — a

@@ -174,7 +174,10 @@ const DEFAULTS: PlatformSettings = {
   'business.onboarding':         true,
   'campaign.autoApproval':       true,
   'payment.escrow':              true,
-  'socialAccounts.enabled':      true,
+  'socialAccounts.tiktok.enabled':    true,
+  'socialAccounts.facebook.enabled':  true,
+  'socialAccounts.instagram.enabled': true,
+  'socialAccounts.youtube.enabled':   true,
   'messaging.enabled':           true,
   'messaging.directMessages':    true,
   'messaging.pushNotifications': true,
@@ -323,7 +326,10 @@ export function Settings() {
           <Toggle label="Business Onboarding"   description="Enable the business onboarding flow for new users"               value={bool('business.onboarding')}   onChange={(v) => toggle('business.onboarding', v)} />
           <Toggle label="Event Auto-Approval"    description="When off, new events go into a pending-review queue and stay hidden from creators until an admin approves them" value={bool('campaign.autoApproval')} onChange={(v) => toggle('campaign.autoApproval', v)} />
           <Toggle label="Payment Escrow"         description="Hold payments in escrow until event completion is confirmed"      value={bool('payment.escrow')}        onChange={(v) => toggle('payment.escrow', v)} />
-          <Toggle label="Social Accounts"        description="When on, creators and businesses (mobile + web) can connect TikTok/Facebook/Instagram/YouTube — Connect buttons are active. When off, Connect buttons are disabled and a 'coming soon' notice is shown instead." value={bool('socialAccounts.enabled')} onChange={(v) => toggle('socialAccounts.enabled', v)} />
+          <Toggle label="TikTok Connect"    description="When on, creators and businesses (mobile + web) can connect their TikTok account. When off, the Connect button is disabled and a 'coming soon' notice is shown instead." value={bool('socialAccounts.tiktok.enabled')} onChange={(v) => toggle('socialAccounts.tiktok.enabled', v)} />
+          <Toggle label="Facebook Connect"  description="When on, creators and businesses (mobile + web) can connect their Facebook account. When off, the Connect button is disabled and a 'coming soon' notice is shown instead." value={bool('socialAccounts.facebook.enabled')} onChange={(v) => toggle('socialAccounts.facebook.enabled', v)} />
+          <Toggle label="Instagram Connect" description="When on, creators and businesses (mobile + web) can connect their Instagram account. When off, the Connect button is disabled and a 'coming soon' notice is shown instead." value={bool('socialAccounts.instagram.enabled')} onChange={(v) => toggle('socialAccounts.instagram.enabled', v)} />
+          <Toggle label="YouTube Connect"   description="When on, creators and businesses (mobile + web) can connect their YouTube account. When off, the Connect button is disabled and a 'coming soon' notice is shown instead." value={bool('socialAccounts.youtube.enabled')} onChange={(v) => toggle('socialAccounts.youtube.enabled', v)} />
         </SectionCard>
 
         {/* Messaging */}

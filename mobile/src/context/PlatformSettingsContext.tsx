@@ -15,7 +15,10 @@ const DEFAULT_FLAGS: PlatformFlags = {
   comingSoonIos:               false,
   comingSoonAndroid:           false,
   comingSoon:                  false,
-  socialAccountsEnabled:       true,
+  socialAccountsTiktokEnabled:    true,
+  socialAccountsFacebookEnabled:  true,
+  socialAccountsInstagramEnabled: true,
+  socialAccountsYoutubeEnabled:   true,
   minVersionIos:               '',
   minVersionAndroid:           '',
 };

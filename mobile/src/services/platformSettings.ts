@@ -15,10 +15,14 @@ export type PlatformFlags = {
   comingSoonIos: boolean;
   comingSoonAndroid: boolean;
   comingSoon: boolean;
-  // Master switch for the OAuth "Connect Accounts" flow (TikTok/Facebook/
-  // Instagram/YouTube) on both creator and business settings. Off = every
-  // connect button is disabled and a "coming soon" notice is shown instead.
-  socialAccountsEnabled: boolean;
+  // Per-platform switches for the OAuth "Connect Accounts" flow on both
+  // creator and business settings. Off = that platform's connect button is
+  // disabled and a "coming soon" notice is shown instead; the other
+  // platforms are unaffected.
+  socialAccountsTiktokEnabled: boolean;
+  socialAccountsFacebookEnabled: boolean;
+  socialAccountsInstagramEnabled: boolean;
+  socialAccountsYoutubeEnabled: boolean;
   // Empty string = no enforcement.
   minVersionIos: string;
   minVersionAndroid: string;
