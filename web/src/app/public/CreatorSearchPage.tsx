@@ -133,10 +133,13 @@ export function CreatorSearchPage() {
     return () => c.abort();
   }, []);
   const categoryMeta = useMemo(() => makeCategoryLookup(categories), [categories]);
-  const categoryOptions = useMemo(
-    () => categories.filter((c) => c.scope === 'BOTH').map((c) => ({ value: c.name, label: c.name })),
-    [categories],
-  );
+  const categoryOptions = useMemo(() => {
+    const opts = categories.filter((c) => c.scope === 'BOTH').map((c) => ({ value: c.name, label: c.name }));
+    // A category linked in from elsewhere (e.g. a landing category card) may
+    // be outside the BOTH scope — keep it selectable so the dropdown shows it.
+    if (category && !opts.some((o) => o.value === category)) opts.unshift({ value: category, label: category });
+    return opts;
+  }, [categories, category]);
 
   const [items, setItems] = useState<CreatorCardData[]>([]);
   const [total, setTotal] = useState(0);

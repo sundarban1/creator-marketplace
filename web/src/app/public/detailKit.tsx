@@ -140,6 +140,15 @@ export function LinkRow({
       />
     </>
   );
+  // No destination (e.g. social links hidden from signed-out visitors) —
+  // render a static row with no hover lift or arrow.
+  if (!to && !href) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+        <span className="min-w-0 flex-1">{children}</span>
+      </div>
+    );
+  }
   if (to) {
     return (
       <Link to={to} className={className}>

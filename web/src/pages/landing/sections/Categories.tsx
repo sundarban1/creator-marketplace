@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { fadeUp, stagger, VP, PILL_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -13,6 +14,11 @@ import type { LandingStats } from '../../../lib/api';
 // list is capped rather than left to wrap into a multi-row grid — a trailing
 // "More" pill covers whatever's cut off.
 const MAX_VISIBLE = 9;
+
+// Each card opens the public creator search pre-filtered to that category;
+// "More" opens it unfiltered.
+const SEARCH_PATH = '/creators/search';
+const MotionLink = motion.create(Link);
 
 interface Pill {
   name: string;
@@ -52,8 +58,9 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
           className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"
         >
           {visible.map(({ name, icon: Icon, color }, i) => (
-            <motion.div
+            <MotionLink
               key={i}
+              to={`${SEARCH_PATH}?category=${encodeURIComponent(name)}`}
               variants={fadeUp}
               whileHover={PILL_HOVER}
               className="flex flex-col items-center rounded-2xl bg-white px-4 py-7 text-center shadow-[0_14px_40px_-26px_rgba(10,16,51,0.45)] ring-1 ring-lp-black/[0.06] dark:bg-white/[0.05] dark:ring-white/10"
@@ -65,10 +72,10 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
                 <Icon size={22} />
               </span>
               <span className="lp-heading mt-4 text-sm leading-snug">{name}</span>
-            </motion.div>
+            </MotionLink>
           ))}
-          <motion.button
-            type="button"
+          <MotionLink
+            to={SEARCH_PATH}
             variants={fadeUp}
             whileHover={PILL_HOVER}
             className="flex flex-col items-center justify-center rounded-2xl bg-lp-brinjal px-4 py-7 text-center text-white shadow-[0_14px_40px_-20px_rgba(79,70,229,0.8)]"
@@ -77,7 +84,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
               <ChevronRight size={22} />
             </span>
             <span className="lp-heading mt-4 text-sm">{d.categories.more}</span>
-          </motion.button>
+          </MotionLink>
         </motion.div>
       </div>
     </section>

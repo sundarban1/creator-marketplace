@@ -89,9 +89,9 @@ export class PublicService {
       this.campaignService.showcase(3, 1, lang),
       // hasAvatar: this row feeds the Hero avatar stack and FinalCTA photo
       // strip, both of which only show real faces (no initials fallback) —
-      // a newest-4 pull without this filter surfaces creators who registered
+      // a newest-N pull without this filter surfaces creators who registered
       // but never uploaded a photo, forcing those sections back onto stock imagery.
-      this.creatorService.listCreators({ page: 1, limit: 4, sort: 'newest', hasAvatar: true, lang }),
+      this.creatorService.listCreators({ page: 1, limit: 6, sort: 'newest', hasAvatar: true, lang }),
       this.businessService.listBusinesses({ page: 1, limit: 4, sort: 'newest', lang }),
     ]);
 

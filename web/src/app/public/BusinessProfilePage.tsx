@@ -166,7 +166,8 @@ export function BusinessProfilePage() {
             <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {socialLinks.map(([platform, url]) => (
                 <li key={platform}>
-                  <LinkRow href={url}>
+                  {/* Outbound link only for signed-in visitors. */}
+                  <LinkRow href={status === 'authenticated' ? url : undefined}>
                     <span className="text-[14px] font-semibold capitalize text-ink">{platform}</span>
                   </LinkRow>
                 </li>

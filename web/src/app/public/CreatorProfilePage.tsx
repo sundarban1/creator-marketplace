@@ -182,7 +182,9 @@ export function CreatorProfilePage() {
             <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {creator.socialAccounts.map((a) => (
                 <li key={a.platform}>
-                  <LinkRow href={a.profileUrl || undefined}>
+                  {/* Signed-out visitors see platform + count only; the
+                      outbound link is a signed-in perk. */}
+                  <LinkRow href={status === 'authenticated' ? a.profileUrl || undefined : undefined}>
                     <span className="flex items-center gap-3">
                       <PlatformIcon platform={a.platform} size={20} />
                       <span className="min-w-0">
