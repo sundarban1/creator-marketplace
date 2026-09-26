@@ -241,6 +241,45 @@
   --color-lp-green-ink: var(--lp-green-ink);
 }
 
+/* Auth pages (/login, /signup, /forgot-password, /verify — AuthShell) wear
+   the landing design. Their forms are built from the shared app UI (Button,
+   TextField, Alert, SegmentedControl…), which reads these semantic tokens —
+   re-pointing them here, scoped to AuthShell's root the same way
+   `.app-scope` does for the dashboards, retheme those forms for the landing
+   look in both themes without touching the shared components. */
+.auth-scope {
+  --color-paper: var(--lp-navy);
+  --color-surface: #FFFFFF;
+  --color-surface-dim: #F4F5FF;
+  --color-ink: #0A1033;
+  --color-ink-soft: #4B5170;
+  --color-line: #E4E4F0;
+  --color-line-strong: #D4D4E6;
+  --color-brand: #4F46E5;
+  --color-brand-hover: #4338CA;
+  --color-violet: #7B5CF5;
+  --color-violet-dark: #5B2ED6;
+  font-family: var(--font-body);
+}
+.dark .auth-scope {
+  --color-surface: #16143F;
+  --color-surface-dim: #1D1B4F;
+  --color-ink: #FFFFFF;
+  --color-ink-soft: #A9ABC8;
+  --color-line: rgba(255, 255, 255, 0.1);
+  --color-line-strong: rgba(255, 255, 255, 0.18);
+  --color-brand: #6366F1;
+  --color-brand-hover: #818CF8;
+  --color-violet: #A78BFA;
+  --color-violet-dark: #C4B5FD;
+  --color-success: #4ADE80;
+  --color-success-soft: rgba(74, 222, 128, 0.12);
+  --color-danger: #F87171;
+  --color-danger-soft: rgba(248, 113, 113, 0.12);
+  --color-warning: #FBBF24;
+  --color-warning-soft: rgba(251, 191, 36, 0.12);
+}
+
 /* Card surface on the navy sections: a white card with a soft shadow in the
    light theme, translucent glass in the dark one. */
 .lp-glass {
