@@ -1,3 +1,4 @@
+import { Logo } from '../ui/Logo';
 import { useEffect, useState } from 'react';
 import { Sun, Moon, Menu, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -11,8 +12,8 @@ import { NAV_LINKS } from '../../pages/landing/constants';
  * moving from the landing into the marketplace feels like one site.
  *
  * The landing's own `id` nav links scroll to sections that only exist on `/`;
- * here they navigate to `/#section` and the home page scrolls on arrival
- * (LandingPage reads `location.hash`). `to` links navigate directly.
+ * here they navigate to `/` with `state.scrollTo` and the home page scrolls
+ * on arrival (keeps `#section` out of the URL). `to` links navigate directly.
  *
  * Language runs off this app's persistent `useAppLanguage`; the theme toggle
  * uses the landing ThemeProvider that PublicLayout mounts.
@@ -37,7 +38,8 @@ export function PublicHeader() {
       `public.nav${key.charAt(0).toUpperCase()}${key.slice(1)}`,
     );
 
-  const hrefFor = (l: (typeof NAV_LINKS)[number]) => (l.to ? l.to : `/#${l.id}`);
+  const hrefFor = (l: (typeof NAV_LINKS)[number]) => l.to ?? '/';
+  const stateFor = (l: (typeof NAV_LINKS)[number]) => (l.to ? undefined : { scrollTo: l.id });
 
   // `id` links point at a section that normally only exists on the landing
   // page — but a few of them (notably #contact, rendered by PublicLayout's
@@ -55,7 +57,7 @@ export function PublicHeader() {
     }
     if (l.to || !l.id) return;
     const el = document.getElementById(l.id);
-    if (!el) return; // section isn't here — let the <Link> navigate to /#id
+    if (!el) return; // section isn't here — let the <Link> navigate home
     e.preventDefault();
     const top = el.getBoundingClientRect().top + window.scrollY + (l.offset ?? 0);
     window.scrollTo({ top, behavior: 'smooth' });
@@ -103,7 +105,7 @@ export function PublicHeader() {
               so the wordmark stays the same size when navigating between the
               landing page and the marketplace pages (/creators, /businesses,
               /events). Keep the two in sync. */}
-          <img src="/logo.png" alt="Kolab" className="h-9 w-auto object-contain" />
+          <Logo asLink={false} className="h-9 object-contain" />
         </Link>
 
         {/* Desktop menu — landing's italic serif treatment. Every link gets the
@@ -114,6 +116,7 @@ export function PublicHeader() {
             <Link
               key={l.key}
               to={hrefFor(l)}
+              state={stateFor(l)}
               onClick={(e) => onNavClick(e, l)}
               className="group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink"
             >
@@ -151,6 +154,7 @@ export function PublicHeader() {
               <Link
                 key={l.key}
                 to={hrefFor(l)}
+                state={stateFor(l)}
                 onClick={(e) => onNavClick(e, l)}
                 className="rounded-lg py-2.5 font-serif text-lg font-bold italic text-ink"
               >

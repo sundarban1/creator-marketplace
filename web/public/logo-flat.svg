@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 667">
+  <!-- Flat, solid-colour vector of logo.png (no gradients / 3D layer) so the
+       wordmark stays crisp at navbar size. Same 2000x667 canvas and padding as
+       logo.png, so it's a drop-in swap at any existing size. -->
+  <g fill="#3E3ADD">
+    <!-- K -->
+    <rect x="326" y="180" width="78" height="321" rx="10"/>
+    <path stroke="#3E3ADD" stroke-width="12" stroke-linejoin="round" d="M404 306 L530 180 L612 180 L484 337 L612 501 L524 501 L404 380 Z"/>
+    <!-- l -->
+    <rect x="968" y="163" width="71" height="338" rx="10"/>
+    <!-- a -->
+    <path fill-rule="evenodd" d="M1085 380 a128 128 0 1 0 256 0 a128 128 0 1 0 -256 0 Z M1160 380 a56 57 0 1 0 112 0 a56 57 0 1 0 -112 0 Z"/>
+    <rect x="1277" y="259" width="69" height="242" rx="10"/>
+    <!-- b -->
+    <rect x="1404" y="162" width="72" height="339" rx="10"/>
+    <path fill-rule="evenodd" d="M1422 380 a128 128 0 1 0 256 0 a128 128 0 1 0 -256 0 Z M1484 380 a56 57 0 1 0 112 0 a56 57 0 1 0 -112 0 Z"/>
+  </g>
+  <!-- o: play button -->
+  <circle cx="772" cy="368" r="137" fill="#FD6800"/>
+  <path d="M742 312 L826 363 Q834 368 826 373 L742 424 Q730 431 730 418 L730 318 Q730 305 742 312 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round"/>
+</svg>

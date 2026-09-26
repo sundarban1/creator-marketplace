@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { LandingLanguageProvider, useLandingLanguage } from './context/LanguageContext';
 import { LandingThemeProvider } from './context/ThemeContext';
 import { ThemeToggle } from './components/ThemeToggle';
 import { LandingFooter } from './nav/LandingFooter';
+import { Logo } from '../../app/ui/Logo';
 
 // Lightweight header for standalone pages (Privacy, Terms, Support) — separate
 // from LandingNav because that one's links scroll to in-page anchors
@@ -13,9 +13,7 @@ export function StandaloneHeader() {
   return (
     <header className="border-b border-ink/10 bg-paper/80 backdrop-blur-md dark:border-white/10 dark:bg-ink/80">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
-        <Link to="/" className="flex items-center">
-          <img src="/logo.png" alt="Kolab" className="h-6 w-auto object-contain" />
-        </Link>
+        <Logo className="h-9 object-contain" />
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white">
             {(['en', 'ne'] as const).map((l) => (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { BadgeCheck, ClipboardList, Lock, ShieldAlert, Star, Wallet } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
@@ -6,8 +6,7 @@ import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
 import { H2, KICKER, LEAD, panel } from '../lib/surfaces';
-import { ensureGsapRegistered, gsap, type ScrollTrigger } from '../lib/gsap';
-import { useLenisScroll } from '../hooks/useLenis';
+import { ensureGsapRegistered, gsap } from '../lib/gsap';
 
 // Positionally mapped to `security.points` in en.ts/ne.ts (Verified Profiles,
 // Reviews & Ratings, Agreed Terms Both Sides, Secure Escrow Payments, Secure
@@ -35,12 +34,9 @@ const CARD_TONES = ['bg-lp-brinjal-dark', 'bg-lp-green-dark', 'bg-[#9A3412]', 'b
 
 export function Security() {
   const { d } = useLandingLanguage();
-  const { scrollTo } = useLenisScroll();
-  const [active, setActive] = useState(0);
   const points = d.security.points;
   const stageRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<ScrollTrigger | null>(null);
 
   // Desktop: pin the stage for the rail's full travel and slide the track
   // right → left on a scrubbed tween (GSAP pin rather than CSS sticky — the
@@ -70,46 +66,21 @@ export function Security() {
           scrub: 0.8,
           invalidateOnRefresh: true,
           snap: { snapTo: 1 / (cards.length - 1), duration: { min: 0.2, max: 0.5 }, ease: 'power1.inOut' },
-          onUpdate: (self) => setActive(Math.round(self.progress * (cards.length - 1))),
         },
       });
-      triggerRef.current = tween.scrollTrigger ?? null;
-
       return () => {
         tween.scrollTrigger?.kill();
         tween.kill();
         gsap.set(track, { clearProps: 'all' });
-        triggerRef.current = null;
-        setActive(0);
       };
     });
     return () => mm.revert();
   }, [points.length]);
 
-  // Pills jump to their card: inside the pin that's a point along the
-  // trigger's scroll range; on the swipe rail it's a horizontal scroll.
-  function goTo(i: number) {
-    const st = triggerRef.current;
-    if (st) {
-      scrollTo(st.start + ((st.end - st.start) * i) / (points.length - 1));
-      return;
-    }
-    const card = trackRef.current?.children[i] as HTMLElement | undefined;
-    card?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
-  }
-
-  function onRailScroll(e: React.UIEvent<HTMLDivElement>) {
-    if (triggerRef.current) return;
-    const el = e.currentTarget;
-    const first = el.children[0] as HTMLElement | undefined;
-    if (!first) return;
-    setActive(Math.round(el.scrollLeft / (first.offsetWidth + 16)));
-  }
-
   return (
     <section id={SECTION_IDS.security} className={`${panel('mist')} overflow-hidden`}>
       <div ref={stageRef} className="relative flex flex-col justify-center pb-20 pt-24 lg:h-[100svh] lg:pb-10 lg:pt-28">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 sm:px-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-5 text-center sm:px-8">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="max-w-xl">
             <motion.p variants={fadeUp} className={`${KICKER} text-lp-brinjal dark:text-[#A5B4FC]`}>
               {d.security.eyebrow}
@@ -119,29 +90,10 @@ export function Security() {
               {d.security.sub}
             </motion.p>
           </motion.div>
-
-          <div className="flex flex-wrap gap-2 lg:max-w-[540px] lg:justify-end">
-            {points.map((point, i) => (
-              <button
-                key={point.title}
-                type="button"
-                onClick={() => goTo(i)}
-                aria-pressed={active === i}
-                className={`h-9 rounded-full px-4 text-[13px] font-medium transition-colors duration-300 ${
-                  active === i
-                    ? 'bg-lp-black text-white dark:bg-white dark:text-lp-black'
-                    : 'bg-white text-lp-black/70 ring-1 ring-lp-black/[0.08] hover:text-lp-black dark:bg-white/[0.06] dark:text-white/70 dark:ring-white/10 dark:hover:text-white'
-                }`}
-              >
-                {point.title}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div
           ref={trackRef}
-          onScroll={onRailScroll}
           className="mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-5 px-5 pb-2 [scrollbar-width:none] sm:scroll-px-8 sm:px-8 lg:mt-12 lg:snap-none lg:gap-6 lg:overflow-visible lg:px-[max(2rem,calc((100vw-72rem)/2+2rem))] [&::-webkit-scrollbar]:hidden"
         >
           {points.map((point, i) => {

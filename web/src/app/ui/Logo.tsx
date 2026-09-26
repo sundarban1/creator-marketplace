@@ -15,7 +15,7 @@ export function Logo({
 }) {
   const inner = (
     <img
-      src="/logo.png"
+      src="/logo-flat.svg"
       alt="Kolab"
       className={cn('h-7 w-auto', invert && 'brightness-0 invert', className)}
     />

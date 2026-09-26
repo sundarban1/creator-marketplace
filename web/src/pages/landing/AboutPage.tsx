@@ -37,7 +37,7 @@ function AboutContent() {
       </motion.p>
 
       <motion.div variants={fadeUp} className="mt-6 flex flex-col items-center text-center">
-        <img src="/logo.png" alt="Kolab" className="h-10 w-auto object-contain" />
+        <img src="/logo-flat.svg" alt="Kolab" className="h-10 w-auto object-contain" />
         <h1 className="mt-4 text-balance font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl dark:text-white">
           {a.title}
         </h1>

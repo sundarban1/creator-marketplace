@@ -1,3 +1,4 @@
+import { Logo } from '../../../app/ui/Logo';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Mail, MapPin, Phone } from 'lucide-react';
@@ -50,7 +51,7 @@ const ANCHOR_LINK_CLASSES =
 // route (wrapped in LenisProvider, where these ids actually exist on the
 // page) and standalone/content routes like /privacy or /content-creators
 // (no LenisProvider, and no #possibilities etc. on that page at all). Outside
-// the provider this falls back to a real navigation to `/#id` instead of
+// the provider this falls back to navigating home with `state.scrollTo` instead of
 // calling the Lenis-only scrollTo — that used to throw and crash the whole
 // page (caught by the ErrorBoundary as "Something went wrong"), which is why
 // every footer link looked broken on any page other than the homepage.
@@ -59,7 +60,7 @@ function FooterAnchorLink({ id, children }: { id: string; children: React.ReactN
 
   if (!lenis) {
     return (
-      <Link to={`/#${id}`} className={ANCHOR_LINK_CLASSES}>
+      <Link to="/" state={{ scrollTo: id }} className={ANCHOR_LINK_CLASSES}>
         <span>{children}</span>
         <span
           aria-hidden
@@ -102,7 +103,7 @@ export function LandingFooter() {
         <div className="grid gap-12 md:grid-cols-2">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
             <motion.div variants={fadeUp} className="mb-3 flex w-fit items-center">
-              <img src="/logo.png" alt="Kolab" loading="lazy" className="h-6 w-auto object-contain" />
+              <Logo asLink={false} className="h-9 object-contain" />
             </motion.div>
             <motion.p variants={fadeUp} className="max-w-xs text-sm font-light leading-relaxed text-lp-fg/70">
               {d.footer.tagline}

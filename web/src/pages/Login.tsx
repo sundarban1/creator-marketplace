@@ -90,7 +90,7 @@ function LoginInner() {
 
       <header className="flex items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
         <div className="flex items-center gap-2.5">
-          <img src="/logo.png" alt="Kolab" className="h-8 w-auto object-contain" />
+          <img src="/logo-flat.svg" alt="Kolab" className="h-8 w-auto object-contain" />
           <span className="rounded-full border border-lp-fg/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-lp-accent-ink">
             Admin
           </span>

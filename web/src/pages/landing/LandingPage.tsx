@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { MotionConfig } from 'framer-motion';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { LenisProvider, useLenisScroll } from './hooks/useLenis';
 import { useLandingStats } from './hooks/useLandingStats';
 import { useSuccessStories } from './hooks/useSuccessStories';
@@ -35,25 +36,37 @@ import { Stories } from './sections/Stories';
 import { FinalCTA } from './sections/FinalCTA';
 import { OldWay } from './sections/OldWay';
 
-// FooterAnchorLink falls back to a real `/#id` navigation when it renders
-// outside this page's LenisProvider (any other route) — this is what makes
-// that link land back on the right in-page section instead of just at the
-// top of the freshly-mounted home page. A fixed delay (rather than firing on
+// Section links rendered off the home page (LandingNav, PublicHeader,
+// FooterAnchorLink outside this page's LenisProvider) navigate to `/` with
+// `state.scrollTo = id` — keeping the URL clean, no `#id` — and this lands
+// the freshly-mounted home page on that section instead of at the top. A
+// legacy `/#id` URL still works; its hash is stripped once read. A fixed delay (rather than firing on
 // mount) gives Lenis + the sections above the target a moment to finish
 // their own mount-time layout work first.
 function HashScrollHandler() {
   const { scrollTo } = useLenisScroll();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const stateId = (location.state as { scrollTo?: string } | null)?.scrollTo;
+  // Timers outlive the effect re-run triggered by the replace-navigate below,
+  // so they're cleared only on unmount or when a new target arrives.
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   useEffect(() => {
-    if (!window.location.hash) return;
-    const hash = window.location.hash;
+    const id = stateId ?? location.hash.slice(1);
+    if (!id) return;
+    const hash = `#${id}`;
+    // Consume the target so the URL stays `/` and a reload doesn't re-scroll.
+    navigate('/', { replace: true, state: null });
     // Sections below the fold (and their images) settle their height well
     // after mount, which moves the target and can leave a single early
     // scrollTo landing short or getting cancelled by a ScrollTrigger.refresh.
     // Re-fire a few times over ~2s so the last attempt lands after layout
     // settles; stop early once the target is at the top of the viewport.
     const delays = [400, 800, 1300, 2000];
-    const timers = delays.map((d) =>
+    timers.current.forEach(clearTimeout);
+    timers.current = delays.map((d) =>
       setTimeout(() => {
         const el = document.querySelector<HTMLElement>(hash);
         if (!el) return;
@@ -61,8 +74,7 @@ function HashScrollHandler() {
         scrollTo(hash);
       }, d),
     );
-    return () => timers.forEach(clearTimeout);
-  }, [scrollTo]);
+  }, [scrollTo, stateId, location.hash, navigate]);
 
   return null;
 }

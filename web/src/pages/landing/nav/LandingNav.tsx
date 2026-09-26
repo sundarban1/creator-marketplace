@@ -1,3 +1,4 @@
+import { Logo } from '../../../app/ui/Logo';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,8 +86,8 @@ function LanguageSwitchMobile() {
 export function LandingNav() {
   // Null off the home page (no LenisProvider) — the public marketplace pages
   // (/creators/search, /events/…) render this same nav, and there a section
-  // link has to navigate to `/#id` (LandingPage's HashScrollHandler scrolls
-  // it into place) rather than scroll within the current page.
+  // link has to navigate to `/` with `state.scrollTo` (LandingPage's
+  // HashScrollHandler scrolls it into place, keeping `#id` out of the URL) rather than scroll within the current page.
   const lenis = useLenisScrollOptional();
   const navigate = useNavigate();
   const { d } = useLandingLanguage();
@@ -121,7 +122,7 @@ export function LandingNav() {
   function go(id: string, offset?: number) {
     setOpen(false);
     if (!lenis) {
-      navigate(id === 'hero' ? '/' : `/#${id}`);
+      navigate('/', id === 'hero' ? undefined : { state: { scrollTo: id } });
       return;
     }
     setTimeout(() => lenis.scrollTo(`#${id}`, { offset }), open ? 350 : 0);
@@ -135,7 +136,7 @@ export function LandingNav() {
         >
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-5 sm:px-8">
             <button onClick={() => go('hero')} className="flex flex-shrink-0 items-center">
-              <img src="/logo.png" alt="Kolab" className="h-8 w-auto object-contain" />
+              <Logo asLink={false} className="h-9 object-contain" />
             </button>
 
             <nav className="hidden items-center gap-1 lg:flex">
