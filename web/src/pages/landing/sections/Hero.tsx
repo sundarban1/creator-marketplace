@@ -101,7 +101,7 @@ export function Hero({
       id={SECTION_IDS.hero}
       onMouseMove={handlePointerMove}
       onMouseLeave={resetPointer}
-      className="relative isolate overflow-hidden bg-lp-navy pt-32 text-white sm:pt-36"
+      className="relative isolate overflow-hidden bg-lp-navy pt-32 text-lp-fg sm:pt-36"
     >
       {/* Brand glows in the navy — a wide brinjal wash behind the headline and
           a saffron ember low on the right. */}
@@ -114,7 +114,7 @@ export function Hero({
 
       <div className="relative mx-auto max-w-5xl px-5 text-center sm:px-8">
         <motion.div initial="hidden" animate="show" variants={stagger()} className="flex flex-col items-center">
-          <h1 className="lp-display text-balance text-[clamp(2.5rem,6vw,4.3rem)] leading-[1.06] text-white">
+          <h1 className="lp-display text-balance text-[clamp(2.5rem,6vw,4.3rem)] leading-[1.06] text-lp-fg">
             <TextReveal as="span" eager text={d.hero.headlineLine1} delay={0.1} className="block" wordClassName="inline-block" />
             <TextReveal as="span" eager text={d.hero.headlineLine2} delay={0.35} className="block" wordClassName="inline-block lp-gradient-text" />
             <TextReveal as="span" eager text={d.hero.headlineLine3} delay={0.6} className="block" wordClassName="inline-block" />
@@ -126,7 +126,7 @@ export function Hero({
             text={d.hero.sub}
             delay={0.85}
             stagger={0.015}
-            className="mx-auto mt-6 max-w-2xl text-lg font-light leading-relaxed text-white/80 sm:text-xl"
+            className="mx-auto mt-6 max-w-2xl text-lg font-light leading-relaxed text-lp-fg/80 sm:text-xl"
           />
 
           {/* Glowing search capsule */}
@@ -139,15 +139,15 @@ export function Hero({
             className="mt-10 w-full max-w-3xl rounded-full bg-lp-navy-2/90 p-2.5 shadow-[0_0_0_1px_rgba(129,140,248,0.35),0_0_40px_-4px_rgba(99,102,241,0.65)]"
           >
             <div className="flex items-center gap-2">
-              <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-white/[0.06] px-5 py-3">
-                <Search size={18} className="flex-shrink-0 text-white/70" />
+              <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-lp-fg/[0.06] px-5 py-3">
+                <Search size={18} className="flex-shrink-0 text-lp-fg/70" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   type="text"
                   placeholder={d.hero.searchPlaceholder}
                   aria-label={d.hero.searchAriaLabel}
-                  className="min-w-0 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/45"
+                  className="min-w-0 flex-1 bg-transparent text-[15px] text-lp-fg outline-none placeholder:text-lp-fg/45"
                 />
               </div>
               <button type="submit" className={`${pillCtaClass('brinjal', 'lg')} flex-shrink-0 px-5 sm:px-7`}>
@@ -158,13 +158,13 @@ export function Hero({
           </motion.form>
 
           <motion.div variants={fadeUp} className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="text-white/55">{d.hero.popularSearchesLabel}</span>
+            <span className="text-lp-fg/55">{d.hero.popularSearchesLabel}</span>
             {d.hero.popularSearches.map((term) => (
               <button
                 key={term}
                 type="button"
                 onClick={() => goToCreatorSearch(term)}
-                className="rounded-full border border-white/15 px-3 py-1.5 text-white/80 transition-colors hover:border-white/50 hover:text-white"
+                className="rounded-full border border-lp-fg/15 px-3 py-1.5 text-lp-fg/80 transition-colors hover:border-lp-fg/50 hover:text-lp-fg"
               >
                 {term}
               </button>
@@ -175,7 +175,7 @@ export function Hero({
             <PillCta to="/events" tone="gradient" size="lg">
               {d.hero.ctaCreator}
             </PillCta>
-            <PillCta to="/creators" tone="outline-white" size="lg">
+            <PillCta to="/creators" tone="outline-ink" size="lg">
               {d.hero.ctaBusiness}
             </PillCta>
           </motion.div>
@@ -199,10 +199,10 @@ export function Hero({
                 />
               ))}
             </div>
-            <p ref={countRef} className="text-sm text-white/70">
+            <p ref={countRef} className="text-sm text-lp-fg/70">
               {hasLiveSocialProof ? (
                 <>
-                  <span className="font-bold text-white">{display}+</span> {d.hero.socialProofSuffix}
+                  <span className="font-bold text-lp-fg">{display}+</span> {d.hero.socialProofSuffix}
                 </>
               ) : (
                 d.hero.socialProofQualitative
@@ -425,15 +425,15 @@ function FloatingCreatorCard({
           />
           {creator.verified && (
             <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-lp-navy">
-              <BadgeCheck size={13} className="text-[#A5B4FC]" />
+              <BadgeCheck size={13} className="text-lp-accent-ink" />
             </span>
           )}
         </div>
         {first && (
-          <span className="inline-flex max-w-[150px] items-center gap-1 rounded-full border border-white/10 bg-lp-navy-2/85 py-0.5 pl-1.5 pr-2 text-[10px] font-medium text-white/90 backdrop-blur">
+          <span className="inline-flex max-w-[150px] items-center gap-1 rounded-full border border-lp-fg/10 bg-lp-navy-2/85 py-0.5 pl-1.5 pr-2 text-[10px] font-medium text-lp-fg/90 backdrop-blur">
             <Icon size={9} style={{ color }} className="flex-shrink-0" />
             <span className="truncate">{first}</span>
-            {rest.length > 0 && <span className="flex-shrink-0 text-white/55">+{rest.length}</span>}
+            {rest.length > 0 && <span className="flex-shrink-0 text-lp-fg/55">+{rest.length}</span>}
           </span>
         )}
       </motion.div>

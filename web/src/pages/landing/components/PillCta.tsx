@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 // The landing page's CTA (similarweb.com-style): a rounded pill in one of a
 // few fills. `gradient` (brinjal → saffron, the brand run) is the headline
 // action, `brinjal` the solid primary, `green` for business-side actions
-// (the app's business colour), `white` / `outline-white` for dark sections
-// and `outline` for light ones.
-type Tone = 'gradient' | 'brinjal' | 'green' | 'white' | 'outline-white' | 'outline';
+// (the app's business colour), `outline-ink` for the theme-aware navy
+// sections (navy outline in light, white in dark), `white` for fixed-dark
+// backgrounds and `outline` for the light panels.
+type Tone = 'gradient' | 'brinjal' | 'green' | 'white' | 'outline-ink' | 'outline';
 
 const TONES: Record<Tone, string> = {
   gradient:
@@ -14,7 +15,7 @@ const TONES: Record<Tone, string> = {
   brinjal: 'bg-lp-brinjal text-white shadow-[0_10px_30px_-12px_rgba(79,70,229,0.8)] hover:bg-[#5B52F0]',
   green: 'bg-lp-green text-white hover:bg-lp-green-dark',
   white: 'bg-white text-lp-black hover:bg-white/90',
-  'outline-white': 'border border-white/50 text-white hover:border-white hover:bg-white/10',
+  'outline-ink': 'border border-lp-fg/40 text-lp-fg hover:border-lp-fg hover:bg-lp-fg/[0.06]',
   outline:
     'border border-lp-black/20 text-lp-black hover:border-lp-brinjal hover:text-lp-brinjal dark:border-white/30 dark:text-white dark:hover:border-white',
 };

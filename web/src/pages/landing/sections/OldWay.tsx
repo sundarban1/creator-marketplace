@@ -14,7 +14,7 @@ type ClosingLine = { pre: string; highlight: string; post: string };
 // read as an escalating drumbeat rather than one flat block of text.
 function HighlightLine({ line, className = '' }: { line: ClosingLine; className?: string }) {
   return (
-    <p className={`lp-display text-2xl text-white sm:text-3xl ${className}`}>
+    <p className={`lp-display text-2xl text-lp-fg sm:text-3xl ${className}`}>
       {line.pre}
       <span className="lp-gradient-text">
         {line.highlight}
@@ -85,10 +85,10 @@ export function OldWay() {
       </div>
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <p className={`${KICKER} text-[#A5B4FC]`}>{o.eyebrow}</p>
-          <TextReveal as="h2" text={o.heading} delay={0.1} className={`${H2} mt-4 text-white`} />
-          <p className="mt-4 text-lg font-medium text-white/90">{o.problemIntro}</p>
-          <p className={`${LEAD} mx-auto mt-2 max-w-xl text-white/65`}>{o.sub}</p>
+          <p className={`${KICKER} text-lp-accent-ink`}>{o.eyebrow}</p>
+          <TextReveal as="h2" text={o.heading} delay={0.1} className={`${H2} mt-4 text-lp-fg`} />
+          <p className="mt-4 text-lg font-medium text-lp-fg/90">{o.problemIntro}</p>
+          <p className={`${LEAD} mx-auto mt-2 max-w-xl text-lp-fg/65`}>{o.sub}</p>
         </div>
 
         {/* Mobile / tablet — simple stacked clutter, no absolute scatter. */}
@@ -100,9 +100,9 @@ export function OldWay() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={VP}
               transition={{ delay: reducedMotion ? 0 : i * 0.08, duration: 0.4 }}
-              className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-3 text-sm"
+              className="flex items-center gap-2 rounded-2xl lp-glass text-lp-fg px-4 py-3 text-sm"
             >
-              <MessageCircle size={14} className="flex-shrink-0 text-white/55" />
+              <MessageCircle size={14} className="flex-shrink-0 text-lp-fg/55" />
               {msg}
             </motion.div>
           ))}
@@ -111,9 +111,9 @@ export function OldWay() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={VP}
             transition={{ delay: reducedMotion ? 0 : 0.5, duration: 0.4 }}
-            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-3 text-sm"
+            className="flex items-center gap-2 rounded-2xl lp-glass text-lp-fg px-4 py-3 text-sm"
           >
-            <CalendarClock size={14} className="flex-shrink-0 text-[#A5B4FC]" />
+            <CalendarClock size={14} className="flex-shrink-0 text-lp-accent-ink" />
             {o.calendarText}
           </motion.div>
           <motion.div
@@ -121,9 +121,9 @@ export function OldWay() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={VP}
             transition={{ delay: reducedMotion ? 0 : 0.58, duration: 0.4 }}
-            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-3 text-sm"
+            className="flex items-center gap-2 rounded-2xl lp-glass text-lp-fg px-4 py-3 text-sm"
           >
-            <Table2 size={14} className="flex-shrink-0 text-white/55" />
+            <Table2 size={14} className="flex-shrink-0 text-lp-fg/55" />
             {o.spreadsheetText}
           </motion.div>
           <motion.div
@@ -131,9 +131,9 @@ export function OldWay() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={VP}
             transition={{ delay: reducedMotion ? 0 : 0.66, duration: 0.4 }}
-            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-3 text-sm"
+            className="flex items-center gap-2 rounded-2xl lp-glass text-lp-fg px-4 py-3 text-sm"
           >
-            <Banknote size={14} className="flex-shrink-0 text-emerald-300" />
+            <Banknote size={14} className="flex-shrink-0 text-emerald-700 dark:text-emerald-300" />
             {o.paymentText}
           </motion.div>
         </div>
@@ -144,8 +144,8 @@ export function OldWay() {
             const layout = MESSAGE_LAYOUT[i]!;
             return (
               <ClutterCard key={msg} {...layout} delay={i * 0.12} reducedMotion={reducedMotion}>
-                <div className="flex items-start gap-2 rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-2.5 text-sm shadow-[0_20px_40px_-24px_rgba(0,0,0,0.8)]">
-                  <MessageCircle size={13} className="mt-0.5 flex-shrink-0 text-white/55" />
+                <div className="flex items-start gap-2 rounded-2xl rounded-tl-md lp-glass text-lp-fg px-4 py-2.5 text-sm shadow-[0_20px_40px_-24px_rgba(0,0,0,0.8)]">
+                  <MessageCircle size={13} className="mt-0.5 flex-shrink-0 text-lp-fg/55" />
                   {msg}
                 </div>
               </ClutterCard>
@@ -154,40 +154,40 @@ export function OldWay() {
 
           <ClutterCard top="28%" left="72%" rotate={-6} delay={0.7} reducedMotion={reducedMotion}>
             <div className="rounded-xl border border-lp-orange/30 bg-lp-orange/10 px-4 py-3 backdrop-blur">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-white/55">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-lp-fg/55">
                 <Pin size={11} />
                 {o.noteLabel}
               </span>
-              <p className="mt-1.5 text-xs font-medium text-white">{o.noteText}</p>
+              <p className="mt-1.5 text-xs font-medium text-lp-fg">{o.noteText}</p>
             </div>
           </ClutterCard>
 
           <ClutterCard top="76%" left="2%" rotate={3} delay={0.82} reducedMotion={reducedMotion}>
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-3.5 py-2.5">
-              <CalendarClock size={14} className="flex-shrink-0 text-[#A5B4FC]" />
+            <div className="flex items-center gap-2 rounded-xl lp-glass text-lp-fg px-3.5 py-2.5">
+              <CalendarClock size={14} className="flex-shrink-0 text-lp-accent-ink" />
               <div>
-                <p className="text-[10px] font-bold text-white/55">{o.calendarLabel}</p>
-                <p className="text-xs font-semibold text-white">{o.calendarText}</p>
+                <p className="text-[10px] font-bold text-lp-fg/55">{o.calendarLabel}</p>
+                <p className="text-xs font-semibold text-lp-fg">{o.calendarText}</p>
               </div>
             </div>
           </ClutterCard>
 
           <ClutterCard top="52%" left="72%" rotate={-3} delay={0.94} reducedMotion={reducedMotion}>
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-3.5 py-2.5">
-              <Table2 size={14} className="flex-shrink-0 text-white/55" />
+            <div className="flex items-center gap-2 rounded-xl lp-glass text-lp-fg px-3.5 py-2.5">
+              <Table2 size={14} className="flex-shrink-0 text-lp-fg/55" />
               <div>
-                <p className="text-[10px] font-bold text-white/55">{o.spreadsheetLabel}</p>
-                <p className="text-xs font-semibold text-white">{o.spreadsheetText}</p>
+                <p className="text-[10px] font-bold text-lp-fg/55">{o.spreadsheetLabel}</p>
+                <p className="text-xs font-semibold text-lp-fg">{o.spreadsheetText}</p>
               </div>
             </div>
           </ClutterCard>
 
           <ClutterCard top="2%" left="39%" rotate={5} delay={1.06} reducedMotion={reducedMotion}>
             <div className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-2.5 backdrop-blur">
-              <Banknote size={14} className="flex-shrink-0 text-emerald-300" />
+              <Banknote size={14} className="flex-shrink-0 text-emerald-700 dark:text-emerald-300" />
               <div>
-                <p className="text-[10px] font-bold text-emerald-300">{o.paymentLabel}</p>
-                <p className="text-xs font-semibold text-white">{o.paymentText}</p>
+                <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">{o.paymentLabel}</p>
+                <p className="text-xs font-semibold text-lp-fg">{o.paymentText}</p>
               </div>
             </div>
           </ClutterCard>

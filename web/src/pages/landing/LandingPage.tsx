@@ -75,7 +75,7 @@ function LandingPageInner() {
   const { lang } = useLandingLanguage();
 
   return (
-    <div className={`min-h-screen overflow-x-hidden bg-lp-navy font-body text-white ${lang === 'ne' ? 'lp-ne' : ''}`}>
+    <div className={`min-h-screen overflow-x-hidden bg-lp-navy font-body text-lp-fg ${lang === 'ne' ? 'lp-ne' : ''}`}>
       <SEO
         title="Kolab – Nepal's Creator Marketplace for Brands & Influencers"
         description="Kolab is Nepal's creator marketplace. Hire verified influencers, launch campaigns, and grow your brand — or find paid collaborations as a content creator."

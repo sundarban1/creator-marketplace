@@ -13,7 +13,7 @@ import type { LandingStats } from '../../../lib/api';
 function StatIcon({ index }: { index: number }) {
   const Icon = STAT_ICONS[index] ?? BadgeCheck;
   return (
-    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.08] text-[#A5B4FC] ring-1 ring-white/10">
+    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-lp-fg/[0.08] text-lp-accent-ink ring-1 ring-lp-fg/10">
       <Icon size={20} />
     </span>
   );
@@ -24,11 +24,11 @@ function StatTile({ value, label, index }: { value: number; label: string; index
   return (
     <motion.div ref={ref} variants={fadeUp} className="p-8 text-left">
       <StatIcon index={index} />
-      <div className="mt-8 text-5xl font-bold tracking-tight text-white sm:text-6xl">
+      <div className="mt-8 text-5xl font-bold tracking-tight text-lp-fg sm:text-6xl">
         {display}
-        <span className="text-[#A5B4FC]">+</span>
+        <span className="text-lp-accent-ink">+</span>
       </div>
-      <div className="mt-2 text-[15px] font-light text-white/65">{label}</div>
+      <div className="mt-2 text-[15px] font-light text-lp-fg/65">{label}</div>
     </motion.div>
   );
 }
@@ -37,7 +37,7 @@ function QualitativeTile({ statement, index }: { statement: string; index: numbe
   return (
     <motion.div variants={fadeUp} className="p-8 text-left">
       <StatIcon index={index} />
-      <div className="lp-display mt-8 text-2xl text-white sm:text-[1.7rem]">
+      <div className="lp-display mt-8 text-2xl text-lp-fg sm:text-[1.7rem]">
         {statement}
       </div>
     </motion.div>
@@ -67,10 +67,10 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
 
       <div className="relative mx-auto max-w-5xl px-5 sm:px-8">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto mb-14 max-w-2xl text-center">
-          <motion.p variants={fadeUp} className={`${KICKER} text-[#A5B4FC]`}>
+          <motion.p variants={fadeUp} className={`${KICKER} text-lp-accent-ink`}>
             {d.trust.eyebrow}
           </motion.p>
-          <h2 className={`${H2} mt-4 text-white`}>
+          <h2 className={`${H2} mt-4 text-lp-fg`}>
             <span className="lp-gradient-text">{d.trust.heading}</span>
           </h2>
         </motion.div>
@@ -80,7 +80,7 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
           whileInView="show"
           viewport={VP}
           variants={stagger()}
-          className="grid grid-cols-1 divide-y divide-white/10 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] backdrop-blur sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+          className="grid grid-cols-1 divide-y divide-lp-fg/10 overflow-hidden rounded-3xl lp-glass backdrop-blur sm:grid-cols-3 sm:divide-x sm:divide-y-0"
         >
           {hasMeaningfulStats
             ? d.trust.stats.map((s, i) => <StatTile key={i} value={values[i]!} label={s.label} index={i} />)

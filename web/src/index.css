@@ -70,8 +70,6 @@
      COLORS.brinjal1/2 (creator primary), green = BUSINESS_COLORS (business
      primary), orange = COLORS.accent (Nepal saffron). `lp-` prefixed so
      nothing outside src/pages/landing picks these up. */
-  --color-lp-navy: #07061F;
-  --color-lp-navy-2: #100E36;
   --color-lp-glow: #6366F1;
   --color-lp-canvas: #FFFFFF;
   --color-lp-mist: #F4F5FF;
@@ -215,6 +213,49 @@
   box-sizing: border-box;
 }
 
+/* Landing light/dark theme. The "navy" surfaces (hero, stats, closing CTA,
+   nav, footer) and their ink flip with the `.dark` class ThemeContext puts on
+   <html>: light = a soft lavender base with white raised surfaces and navy
+   ink; dark = the deep brinjal-tinted navy with white ink. `@theme inline`
+   makes the utilities read these variables directly, so opacity modifiers
+   (bg-lp-fg/10, border-lp-fg/15 …) keep working in both themes. */
+:root {
+  --lp-navy: #F0EFFF;
+  --lp-navy-2: #FFFFFF;
+  --lp-fg: #0A1033;
+  --lp-accent-ink: #4F46E5;
+  --lp-green-ink: #15803D;
+}
+.dark {
+  --lp-navy: #07061F;
+  --lp-navy-2: #100E36;
+  --lp-fg: #FFFFFF;
+  --lp-accent-ink: #A5B4FC;
+  --lp-green-ink: #86EFAC;
+}
+@theme inline {
+  --color-lp-navy: var(--lp-navy);
+  --color-lp-navy-2: var(--lp-navy-2);
+  --color-lp-fg: var(--lp-fg);
+  --color-lp-accent-ink: var(--lp-accent-ink);
+  --color-lp-green-ink: var(--lp-green-ink);
+}
+
+/* Card surface on the navy sections: a white card with a soft shadow in the
+   light theme, translucent glass in the dark one. */
+.lp-glass {
+  background: #FFFFFF;
+  border: 1px solid rgba(10, 16, 51, 0.08);
+  box-shadow: 0 18px 40px -28px rgba(10, 16, 51, 0.35);
+}
+.dark .lp-glass {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
 /* Landing type — thin large headlines (lp-display) where the key phrase is
    set bold with the brand gradient (lp-gradient-text: the logo's saffron →
    violet → brinjal run), and medium compact titles (lp-heading). Devanagari
@@ -241,8 +282,9 @@
 }
 .lp-ne .lp-display, .lp-ne .lp-heading { line-height: 1.5; }
 
-/* Sparse starfield for the dark data-style panels (stats / closing CTA). */
-.lp-stars {
+/* Sparse starfield for the dark data-style panels (stats / closing CTA) —
+   dark theme only; in light those panels are a plain lavender wash. */
+.dark .lp-stars {
   background-image:
     radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.55), transparent 60%),
     radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.35), transparent 60%),

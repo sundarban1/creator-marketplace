@@ -42,18 +42,18 @@ function RoleCard({
   return (
     <motion.article
       variants={fadeUp}
-      className="flex flex-col items-start rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-8 text-left backdrop-blur"
+      className="flex flex-col items-start rounded-3xl lp-glass p-8 text-left backdrop-blur"
     >
       <div className="flex w-full items-center justify-between">
-        <span className={`text-xs font-medium uppercase tracking-[0.14em] ${accent === 'brinjal' ? 'text-[#A5B4FC]' : 'text-[#86EFAC]'}`}>{roleLabel}</span>
+        <span className={`text-xs font-medium uppercase tracking-[0.14em] ${accent === 'brinjal' ? 'text-lp-accent-ink' : 'text-lp-green-ink'}`}>{roleLabel}</span>
         <div className="flex -space-x-3">
           {photos.map((src, i) => (
             <img key={i} src={src} alt={roleLabel} loading="lazy" className="h-10 w-10 flex-shrink-0 rounded-full border-2 border-lp-navy-2 object-cover" />
           ))}
         </div>
       </div>
-      <h3 className="lp-display mt-8 text-balance text-2xl text-white sm:text-[1.7rem]">{heading}</h3>
-      <p className="mt-3 text-sm font-light leading-relaxed text-white/65">{sub}</p>
+      <h3 className="lp-display mt-8 text-balance text-2xl text-lp-fg sm:text-[1.7rem]">{heading}</h3>
+      <p className="mt-3 text-sm font-light leading-relaxed text-lp-fg/65">{sub}</p>
       {/* Signup is a conversion action, not indexable content, and the
           business variant carries a `?role=` query param — nofollow keeps
           crawlers from treating this as a link worth passing equity through
@@ -82,10 +82,10 @@ export function FinalCTA({ creators, businesses }: Props) {
         <div className="absolute left-1/2 top-[-20%] h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-lp-brinjal/30 blur-[140px]" />
       </div>
       <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="relative mx-auto max-w-5xl px-5 text-center sm:px-8">
-        <motion.h2 variants={fadeUp} className={`${H2} text-white`}>
+        <motion.h2 variants={fadeUp} className={`${H2} text-lp-fg`}>
           <span className="lp-gradient-text">{d.finalCta.heading}</span>
         </motion.h2>
-        <motion.p variants={fadeUp} className={`${LEAD} mx-auto mt-5 max-w-lg text-white/70`}>
+        <motion.p variants={fadeUp} className={`${LEAD} mx-auto mt-5 max-w-lg text-lp-fg/70`}>
           {d.finalCta.supportingLine}
         </motion.p>
 
@@ -113,11 +113,11 @@ export function FinalCTA({ creators, businesses }: Props) {
         </motion.div>
 
         <motion.div variants={fadeUp} className="mt-14">
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/55">{d.footer.downloadApp}</p>
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-lp-fg/55">{d.footer.downloadApp}</p>
           <div className="mt-4 flex justify-center">
-            <AppStoreBadges variant="light" />
+            <AppStoreBadges />
           </div>
-          <p className="mt-6 text-sm font-light text-white/60">🇳🇵 {d.footer.tagline}</p>
+          <p className="mt-6 text-sm font-light text-lp-fg/60">🇳🇵 {d.footer.tagline}</p>
         </motion.div>
       </motion.div>
     </section>

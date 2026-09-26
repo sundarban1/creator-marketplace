@@ -116,13 +116,13 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
     >
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className={`${KICKER} text-[#A5B4FC]`}>
+          <motion.p variants={fadeUp} className={`${KICKER} text-lp-accent-ink`}>
             {copy.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className={`${H2} mt-4 text-white`}>
+          <motion.h2 variants={fadeUp} className={`${H2} mt-4 text-lp-fg`}>
             {copy.heading}
           </motion.h2>
-          <motion.p variants={fadeUp} className={`${LEAD} mx-auto mt-4 max-w-xl text-white/70`}>
+          <motion.p variants={fadeUp} className={`${LEAD} mx-auto mt-4 max-w-xl text-lp-fg/70`}>
             {copy.sub}
           </motion.p>
         </motion.div>
@@ -135,7 +135,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
               onClick={() => setTab(key)}
               aria-pressed={tab === key}
               className={`h-11 rounded-full border px-6 text-[15px] transition-colors duration-300 ${
-                tab === key ? 'border-white bg-white/10 text-white' : 'border-white/20 text-white/70 hover:border-white/50 hover:text-white'
+                tab === key ? 'border-lp-fg bg-lp-fg/10 text-lp-fg' : 'border-lp-fg/20 text-lp-fg/70 hover:border-lp-fg/50 hover:text-lp-fg'
               }`}
             >
               {TAB_META[key].label}
@@ -157,13 +157,13 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                 <div key={card.key}>
                   <Link
                     to={card.to}
-                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] text-left transition-all hover:-translate-y-1 hover:border-[#818CF8]/50 hover:shadow-[0_20px_50px_-24px_rgba(99,102,241,0.7)]"
+                    className="group flex h-full flex-col overflow-hidden rounded-2xl lp-glass text-left transition-all hover:-translate-y-1 hover:border-[#818CF8]/50 hover:shadow-[0_20px_50px_-24px_rgba(99,102,241,0.7)]"
                   >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-lp-brinjal/30 to-lp-orange/20">
                       {card.imageUrl ? (
                         <img src={card.imageUrl} alt={card.business ?? card.title} loading="lazy" className="h-full w-full object-cover" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sm font-bold text-white">
+                        <div className="flex h-full w-full items-center justify-center text-sm font-bold text-lp-fg">
                           {initials(card.business ?? card.title)}
                         </div>
                       )}
@@ -176,11 +176,11 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                       </span>
                     </div>
                     <div className="flex flex-1 flex-col p-4">
-                      <p className="lp-heading line-clamp-2 text-[15px] leading-snug text-white">{card.title}</p>
-                      {card.business && <p className="mt-1 line-clamp-1 text-xs text-white/60">{card.business}</p>}
-                      <p className="mt-2 text-xs font-semibold text-white">{card.meta}</p>
+                      <p className="lp-heading line-clamp-2 text-[15px] leading-snug text-lp-fg">{card.title}</p>
+                      {card.business && <p className="mt-1 line-clamp-1 text-xs text-lp-fg/60">{card.business}</p>}
+                      <p className="mt-2 text-xs font-semibold text-lp-fg">{card.meta}</p>
                       {card.location && (
-                        <p className="mt-auto flex items-center gap-1 pt-2 text-[11px] text-white/60">
+                        <p className="mt-auto flex items-center gap-1 pt-2 text-[11px] text-lp-fg/60">
                           <MapPin size={11} />
                           {card.location}
                         </p>
@@ -205,14 +205,14 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                 <div key={card.key}>
                   <Link
                     to={card.to}
-                    className="flex h-full flex-col items-center p-5 !text-center rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] text-left transition-all hover:-translate-y-1 hover:border-[#818CF8]/50 hover:shadow-[0_20px_50px_-24px_rgba(99,102,241,0.7)]"
+                    className="flex h-full flex-col items-center p-5 !text-center rounded-2xl lp-glass text-left transition-all hover:-translate-y-1 hover:border-[#818CF8]/50 hover:shadow-[0_20px_50px_-24px_rgba(99,102,241,0.7)]"
                   >
-                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-lp-brinjal/30 to-lp-orange/20 text-sm font-bold text-white">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-lp-brinjal/30 to-lp-orange/20 text-sm font-bold text-lp-fg">
                       {card.imageUrl ? <img src={card.imageUrl} alt={card.name} loading="lazy" className="h-full w-full object-cover" /> : initials(card.name)}
                     </div>
-                    <p className="lp-heading mt-3 flex items-center gap-1 text-[15px] leading-tight text-white">
+                    <p className="lp-heading mt-3 flex items-center gap-1 text-[15px] leading-tight text-lp-fg">
                       <span className="line-clamp-1">{card.name}</span>
-                      {card.verified && <BadgeCheck size={13} className="shrink-0 text-[#A5B4FC]" />}
+                      {card.verified && <BadgeCheck size={13} className="shrink-0 text-lp-accent-ink" />}
                     </p>
                     {card.categories.length > 0 &&
                       (() => {
@@ -220,7 +220,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                         const extra = card.categories.length - 1;
                         return (
                           <span
-                            className="mt-2 inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                            className="mt-2 inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-lp-fg"
                             style={{ backgroundColor: `${color}1f`, boxShadow: `inset 0 0 0 1px ${color}3d` }}
                           >
                             <Icon size={10} style={{ color }} className="shrink-0" />
@@ -230,13 +230,13 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                         );
                       })()}
                     {card.location && (
-                      <span className="mt-2 flex items-center gap-1 text-[11px] text-white/60">
+                      <span className="mt-2 flex items-center gap-1 text-[11px] text-lp-fg/60">
                         <MapPin size={11} className="shrink-0" />
                         <span className="line-clamp-1">{card.location}</span>
                       </span>
                     )}
                     {card.meta && (
-                      <span className="mt-2 flex items-center gap-1 text-[11px] text-white/60">
+                      <span className="mt-2 flex items-center gap-1 text-[11px] text-lp-fg/60">
                         {tab === 'creators' ? <Users size={11} /> : <MapPin size={11} />}
                         {card.meta}
                       </span>

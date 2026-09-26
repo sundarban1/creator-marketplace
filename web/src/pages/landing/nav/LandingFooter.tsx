@@ -9,6 +9,7 @@ import { useSiteInfo } from '../hooks/useSiteInfo';
 import { ContactForm } from '../components/ContactForm';
 import { AppStoreBadges } from '../components/AppStoreBadges';
 import { useLenisScrollOptional } from '../hooks/useLenis';
+import { useLandingTheme } from '../context/ThemeContext';
 
 // Same brand colors as SocialRail — this is the compact inline counterpart
 // shown in the footer itself, not a replacement for that fixed side rail.
@@ -24,7 +25,7 @@ const SOCIAL_ICONS = [
 // instead of the footer inventing its own.
 function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-white/60 transition-colors duration-300 hover:text-white">
+    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-lp-fg/60 transition-colors duration-300 hover:text-lp-fg">
       <span>{children}</span>
       <ArrowUpRight
         size={13}
@@ -39,7 +40,7 @@ function FooterLink({ to, children }: { to: string; children: React.ReactNode })
 }
 
 const ANCHOR_LINK_CLASSES =
-  'group relative inline-flex w-fit items-center gap-1 py-0.5 text-left text-white/60 transition-colors duration-300 hover:text-white';
+  'group relative inline-flex w-fit items-center gap-1 py-0.5 text-left text-lp-fg/60 transition-colors duration-300 hover:text-lp-fg';
 
 // Same visual language as FooterLink but for in-page section anchors (the
 // "Discover" column's People/Services/Opportunities/Events) rather than
@@ -82,7 +83,7 @@ function FooterAnchorLink({ id, children }: { id: string; children: React.ReactN
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <motion.div variants={fadeUp}>
-      <p className="text-[15px] font-bold text-white">{title}</p>
+      <p className="text-[15px] font-bold text-lp-fg">{title}</p>
       <nav className="mt-4 flex flex-col gap-2.5 text-sm">{children}</nav>
     </motion.div>
   );
@@ -90,19 +91,20 @@ function FooterColumn({ title, children }: { title: string; children: React.Reac
 
 export function LandingFooter() {
   const { d } = useLandingLanguage();
+  const { theme } = useLandingTheme();
   const siteInfo = useSiteInfo();
   const activeSocials = SOCIAL_ICONS.filter(({ key }) => siteInfo?.social[key]);
 
   return (
-    <footer id={SECTION_IDS.contact} className="relative bg-lp-navy py-16 font-body text-white">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+    <footer id={SECTION_IDS.contact} className="relative bg-lp-navy py-16 font-body text-lp-fg">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-lp-fg/15 to-transparent" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="grid gap-12 md:grid-cols-2">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
             <motion.div variants={fadeUp} className="mb-3 flex w-fit items-center">
               <img src="/logo.png" alt="Kolab" loading="lazy" className="h-6 w-auto object-contain" />
             </motion.div>
-            <motion.p variants={fadeUp} className="max-w-xs text-sm font-light leading-relaxed text-white/70">
+            <motion.p variants={fadeUp} className="max-w-xs text-sm font-light leading-relaxed text-lp-fg/70">
               {d.footer.tagline}
             </motion.p>
 
@@ -119,22 +121,22 @@ export function LandingFooter() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-5 flex flex-col gap-2 text-sm text-white/65">
+                className="mt-5 flex flex-col gap-2 text-sm text-lp-fg/65">
                 {siteInfo.address && (
                   <span className="flex items-start gap-2">
-                    <MapPin size={14} className="mt-0.5 flex-shrink-0 text-[#A5B4FC]" />
+                    <MapPin size={14} className="mt-0.5 flex-shrink-0 text-lp-accent-ink" />
                     {siteInfo.address}
                   </span>
                 )}
                 {siteInfo.phone && (
-                  <a href={`tel:${siteInfo.phone}`} className="flex items-center gap-2 transition-colors hover:text-white">
-                    <Phone size={14} className="flex-shrink-0 text-[#A5B4FC]" />
+                  <a href={`tel:${siteInfo.phone}`} className="flex items-center gap-2 transition-colors hover:text-lp-fg">
+                    <Phone size={14} className="flex-shrink-0 text-lp-accent-ink" />
                     {siteInfo.phone}
                   </a>
                 )}
                 {siteInfo.email && (
-                  <a href={`mailto:${siteInfo.email}`} className="flex items-center gap-2 transition-colors hover:text-white">
-                    <Mail size={14} className="flex-shrink-0 text-[#A5B4FC]" />
+                  <a href={`mailto:${siteInfo.email}`} className="flex items-center gap-2 transition-colors hover:text-lp-fg">
+                    <Mail size={14} className="flex-shrink-0 text-lp-accent-ink" />
                     {siteInfo.email}
                   </a>
                 )}
@@ -155,7 +157,7 @@ export function LandingFooter() {
                     rel="noopener noreferrer"
                     aria-label={label}
                     whileHover={PILL_HOVER}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.08] text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-lp-fg/[0.08] text-lp-fg/80 transition-colors hover:bg-lp-fg/15 hover:text-lp-fg"
                   >
                     <Icon size={14} />
                   </motion.a>
@@ -165,10 +167,10 @@ export function LandingFooter() {
           </motion.div>
 
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp}>
-            <h3 className="mb-5 text-[15px] font-bold text-white">{d.footer.contactForm.heading}</h3>
-            {/* The footer is always the navy surface now, in both page themes,
-                so ContactForm always gets its dark-surface styling. */}
-            <ContactForm dark />
+            <h3 className="mb-5 text-[15px] font-bold text-lp-fg">{d.footer.contactForm.heading}</h3>
+            {/* ContactForm's `dark` prop picks its surface styling; the footer's
+                surface follows the page theme, so it's wired straight to it. */}
+            <ContactForm dark={theme === 'dark'} />
           </motion.div>
         </div>
 
@@ -181,7 +183,7 @@ export function LandingFooter() {
           whileInView="show"
           viewport={VP}
           variants={stagger(0.08)}
-          className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 border-t border-white/10 pt-10 sm:grid-cols-3 lg:grid-cols-5"
+          className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 border-t border-lp-fg/10 pt-10 sm:grid-cols-3 lg:grid-cols-5"
         >
           <FooterColumn title={d.footer.columns.discover}>
             <FooterAnchorLink id={SECTION_IDS.creatorStory}>{d.nav.links.forCreators}</FooterAnchorLink>
@@ -219,12 +221,12 @@ export function LandingFooter() {
           </FooterColumn>
 
           <motion.div variants={fadeUp}>
-            <p className="text-[15px] font-bold text-white">{d.footer.downloadApp}</p>
-            <div className="mt-4"><AppStoreBadges variant="light" /></div>
+            <p className="text-[15px] font-bold text-lp-fg">{d.footer.downloadApp}</p>
+            <div className="mt-4"><AppStoreBadges /></div>
           </motion.div>
         </motion.div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-lp-fg/10 pt-6 sm:flex-row">
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
             <FooterLink to="/privacy">{d.footer.privacy}</FooterLink>
             <FooterLink to="/terms">{d.footer.terms}</FooterLink>
@@ -232,14 +234,14 @@ export function LandingFooter() {
           </div>
           {/* Admin-managed via the dashboard's Company page — only renders once set */}
           {(siteInfo?.companyRegistrationNumber || siteInfo?.companyPan) && (
-            <p className="text-xs text-white/50">
+            <p className="text-xs text-lp-fg/50">
               {[
                 siteInfo.companyRegistrationNumber && `Company Reg. No. ${siteInfo.companyRegistrationNumber}`,
                 siteInfo.companyPan && `PAN ${siteInfo.companyPan}`,
               ].filter(Boolean).join(' · ')}
             </p>
           )}
-          <p className="text-xs text-white/50">© {new Date().getFullYear()} Kolab Technologies Private Limited. {d.footer.rights}</p>
+          <p className="text-xs text-lp-fg/50">© {new Date().getFullYear()} Kolab Technologies Private Limited. {d.footer.rights}</p>
         </div>
       </div>
     </footer>

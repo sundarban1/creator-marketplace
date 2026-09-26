@@ -17,7 +17,7 @@ type Testimonial = {
   src?: string | null;
 };
 
-const PLACEHOLDER_BG = ['bg-lp-brinjal', 'bg-lp-green', 'bg-lp-orange', 'bg-lp-brinjal-dark', 'bg-lp-green-dark', 'bg-lp-navy-2'];
+const PLACEHOLDER_BG = ['bg-lp-brinjal', 'bg-lp-green', 'bg-lp-orange', 'bg-lp-brinjal-dark', 'bg-lp-green-dark', 'bg-lp-black'];
 
 function initials(name: string): string {
   return name

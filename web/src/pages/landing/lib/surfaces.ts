@@ -3,9 +3,9 @@
 // big rounded-top panels wherever the page flips between the two — each panel
 // is pulled up over the one before so its surface shows in the corners.
 export const SURFACE = {
-  navy: 'bg-lp-navy text-white',
-  white: 'bg-lp-canvas text-lp-black dark:bg-lp-navy-2 dark:text-white',
-  mist: 'bg-lp-mist text-lp-black dark:bg-lp-navy-2 dark:text-white',
+  navy: 'bg-lp-navy text-lp-fg',
+  white: 'bg-lp-canvas text-lp-black dark:bg-lp-navy-2 dark:text-lp-fg',
+  mist: 'bg-lp-mist text-lp-black dark:bg-lp-navy-2 dark:text-lp-fg',
 } as const;
 
 /** Straight-edged band, continuing the surface above. */
