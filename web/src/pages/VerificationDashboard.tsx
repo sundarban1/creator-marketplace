@@ -126,7 +126,7 @@ export function VerificationDashboard() {
             const image = isProvider ? (item as ApiVerificationQueueProvider).avatarUrl : (item as ApiVerificationQueueBusiness).logoUrl;
             const docs = docsFor(tab, item);
             return (
-              <div key={item.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-start gap-4">
+              <div key={item.id} className="bg-white rounded-2xl border border-gray-200 adm-card p-4 flex items-start gap-4">
                 {image ? (
                   <img src={image} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
                 ) : (

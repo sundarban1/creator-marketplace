@@ -307,7 +307,7 @@ export function Campaigns() {
       )}
 
       {loading ? (
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card divide-y divide-gray-100">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-14 animate-pulse bg-gray-50 first:rounded-t-xl last:rounded-b-xl" />
           ))}

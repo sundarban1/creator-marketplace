@@ -128,7 +128,7 @@ export function WithdrawalLimitsTab() {
   if (loading) {
     return (
       <div className="max-w-xl">
-        <div className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-1/3 mb-4" />
           {[1, 2, 3].map((j) => <div key={j} className="h-12 bg-gray-100 rounded mb-3" />)}
         </div>
@@ -173,7 +173,7 @@ export function WithdrawalLimitsTab() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-gray-900">Creator Withdrawal Limit</h3>
           <p className="text-xs text-gray-500 mt-0.5">

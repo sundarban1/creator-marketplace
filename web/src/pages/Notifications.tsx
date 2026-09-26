@@ -58,7 +58,7 @@ export function Notifications() {
         }
       />
 
-      <div className="bg-white rounded-xl border border-gray-200">
+      <div className="bg-white rounded-2xl border border-gray-200 adm-card">
         {loading && notifications.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-16">Loading…</p>
         ) : notifications.length === 0 ? (

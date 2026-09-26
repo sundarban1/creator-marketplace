@@ -174,7 +174,7 @@ export function FAQManager() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 adm-card overflow-hidden">
         {loading ? <div className="p-8 text-center text-sm text-gray-400">Loading…</div>
           : filtered.length === 0 ? (
             <div className="p-12 text-center">

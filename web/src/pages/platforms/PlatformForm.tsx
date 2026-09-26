@@ -95,7 +95,7 @@ export function PlatformForm({ initial, onSubmit, submitLabel }: PlatformFormPro
         <div className="lg:col-span-2 space-y-5">
 
           {/* Icon & appearance */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Icon & Appearance</h3>
 
             <div className="flex items-start gap-5 mb-4">
@@ -205,7 +205,7 @@ export function PlatformForm({ initial, onSubmit, submitLabel }: PlatformFormPro
           </div>
 
           {/* Name & Key */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 space-y-4">
             <h3 className="text-sm font-semibold text-gray-800">Platform Details</h3>
             <div>
               <label htmlFor="plt-name" className="block text-xs font-medium text-gray-600 mb-1.5">
@@ -249,7 +249,7 @@ export function PlatformForm({ initial, onSubmit, submitLabel }: PlatformFormPro
 
         {/* Sidebar: status + actions */}
         <div className="space-y-5">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Status</h3>
             <div className="flex flex-col gap-2">
               {(['active', 'inactive'] as PlatformStatus[]).map((s) => (
@@ -275,7 +275,7 @@ export function PlatformForm({ initial, onSubmit, submitLabel }: PlatformFormPro
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 space-y-3">
             <button
               type="submit"
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors"

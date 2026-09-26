@@ -110,35 +110,41 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          className="fixed inset-0 bg-lp-black/40 backdrop-blur-sm z-20 lg:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar panel */}
+      {/* Sidebar panel — a glass rail in the landing style: white in light,
+          translucent navy in dark, gradient pill for the active page. */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-64 bg-slate-900 z-30 flex flex-col
+          fixed top-0 left-0 h-full w-64 z-30 flex flex-col
+          bg-white/85 border-r border-gray-200 backdrop-blur-xl
+          dark:bg-lp-navy-2/80
           transform transition-transform duration-200 ease-in-out
           ${open ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
         `}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-slate-800">
-          <div className="flex items-center gap-2.5 bg-white rounded-lg px-2.5 py-1.5">
-            <img src="/logo.png" alt="Kolab" className="h-6 w-auto" />
+        <div className="flex items-center justify-between px-5 h-16 border-b border-gray-200">
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="Kolab" className="h-7 w-auto object-contain" />
+            <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-lp-accent-ink">
+              Admin
+            </span>
           </div>
-          <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-gray-900 transition-colors">
             <X size={18} />
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+        <nav className="flex-1 px-3 py-5 space-y-5 overflow-y-auto scrollbar-hide">
           {navGroups.map((group) => (
             <div key={group.label}>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-1.5">
+              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-[0.14em] px-3 mb-2">
                 {group.label}
               </p>
               <div className="space-y-0.5">
@@ -148,14 +154,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     to={to}
                     onClick={onClose}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      `flex items-center gap-3 px-3.5 py-2.5 rounded-full text-sm transition-all ${
                         isActive
-                          ? 'bg-indigo-600 text-white'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          ? 'bg-gradient-to-r from-lp-brinjal via-[#8B5CF6] to-lp-orange text-white font-medium shadow-[0_10px_30px_-12px_rgba(99,102,241,0.7)]'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                       }`
                     }
                   >
-                    <Icon size={17} />
+                    <Icon size={17} strokeWidth={1.75} />
                     {label}
                   </NavLink>
                 ))}
@@ -165,21 +171,23 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="px-3 py-4 border-t border-slate-800 space-y-1">
+        <div className="px-3 py-4 border-t border-gray-200 space-y-1">
           <div className="flex items-center gap-3 px-2 py-2">
-            <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              {user ? initials(user.name) : 'SA'}
+            <div className="w-9 h-9 rounded-full p-[2px] bg-gradient-to-br from-lp-orange via-[#C04FD0] to-lp-brinjal flex-shrink-0">
+              <div className="w-full h-full rounded-full bg-lp-brinjal flex items-center justify-center text-white text-xs font-semibold">
+                {user ? initials(user.name) : 'SA'}
+              </div>
             </div>
             <div className="min-w-0">
-              <p className="text-sm text-white font-medium truncate">{user?.name ?? 'Super Admin'}</p>
-              <p className="text-xs text-slate-400 truncate">{user?.email ?? 'admin@creatorhub.com'}</p>
+              <p className="text-sm text-gray-900 font-medium truncate">{user?.name ?? 'Super Admin'}</p>
+              <p className="text-xs text-gray-400 truncate">{user?.email ?? 'admin@creatorhub.com'}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-full text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
           >
-            <LogOut size={18} />
+            <LogOut size={17} strokeWidth={1.75} />
             Sign out
           </button>
         </div>

@@ -53,7 +53,7 @@ export function CreatorMeetups() {
             <button
               key={m.id}
               onClick={() => navigate(`/admin/creator-meetups/${m.id}`)}
-              className="text-left bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-indigo-200 transition-all"
+              className="text-left bg-white rounded-2xl border border-gray-200 adm-card p-5 hover:shadow-md hover:border-indigo-200 transition-all"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-1.5 text-xs text-gray-500">

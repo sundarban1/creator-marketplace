@@ -107,7 +107,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
         <div className="lg:col-span-2 space-y-5">
 
           {/* Icon */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Icon & Appearance</h3>
 
             <div className="flex items-start gap-5 mb-4">
@@ -217,7 +217,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
           </div>
 
           {/* Name & Key */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 space-y-4">
             <h3 className="text-sm font-semibold text-gray-800">Category Details</h3>
 
             <div>
@@ -263,7 +263,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
 
         {/* Sidebar: scope + status + actions */}
         <div className="space-y-5">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-1">Applies to</h3>
             <p className="text-xs text-gray-400 mb-4">Which onboarding/profile flows show this category.</p>
             <div className="flex flex-col gap-2">
@@ -290,7 +290,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
           </div>
 
           {scope !== 'business' && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-1">Group</h3>
               <p className="text-xs text-gray-400 mb-4">Groups related creator types together in pickers.</p>
               <select
@@ -306,7 +306,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
             </div>
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Status</h3>
             <div className="flex flex-col gap-2">
               {(['active', 'inactive'] as CategoryStatus[]).map((s) => (
@@ -334,7 +334,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 space-y-3">
             <button
               type="submit"
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors"

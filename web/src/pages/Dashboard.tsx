@@ -24,7 +24,7 @@ const ROLE_COLORS: Record<string, string> = {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+    <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 animate-pulse">
       <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
       <div className="h-8 bg-gray-200 rounded w-3/4" />
     </div>
@@ -40,9 +40,12 @@ export function Dashboard() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+      <div className="mb-8">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-lp-accent-ink">Kolab Admin</p>
+        <h1 className="lp-display mt-2 text-[2.25rem] sm:text-[2.6rem] leading-tight text-gray-900">
+          Your marketplace, <span className="lp-gradient-text">at a glance</span>
+        </h1>
+        <p className="text-[15px] font-light text-gray-500 mt-1.5">
           Welcome back, {user?.name ?? 'Admin'}. Here's what's happening.
         </p>
       </div>
@@ -147,7 +150,7 @@ export function Dashboard() {
       </div>
 
       {/* Recent users */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
         <div className="flex items-center gap-2 mb-4">
           <Clock size={18} className="text-gray-400" />
           <h2 className="text-base font-semibold text-gray-800">Recently Joined Users</h2>

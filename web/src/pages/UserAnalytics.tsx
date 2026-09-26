@@ -271,7 +271,7 @@ export function UserAnalytics() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{state?.name ?? 'User'} Analytics</h1>
+            <h1 className="lp-heading text-2xl text-gray-900">{state?.name ?? 'User'} Analytics</h1>
             <p className="text-sm text-gray-500 mt-0.5">
               {state?.email ? displayEmailOrPhone(state.email) : ''}{state?.email && result ? ' · ' : ''}{result ? (result.role === 'CREATOR' ? 'Creator' : 'Business') : ''}
             </p>

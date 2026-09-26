@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { NAV_LINKS } from '../constants';
@@ -87,12 +87,26 @@ export function LandingNav() {
   const { d } = useLandingLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const { pathname } = useLocation();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    window.addEventListener('scroll', onScroll);
+    // Scroll-spy: a section link is "selected" while its section spans the line
+    // just under the fixed header (h-16 = 64px).
+    const onScroll = () => {
+      setScrolled(window.scrollY > 24);
+      const probe = 96;
+      const hit = NAV_LINKS.find((l) => {
+        if (!l.id) return false;
+        const r = document.getElementById(l.id)?.getBoundingClientRect();
+        return !!r && r.top <= probe && r.bottom > probe;
+      });
+      setActiveSection(hit?.id ?? null);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
@@ -115,16 +129,20 @@ export function LandingNav() {
               <img src="/logo.png" alt="Kolab" className="h-8 w-auto object-contain" />
             </button>
 
-            <nav className="hidden items-center gap-7 lg:flex">
+            <nav className="hidden items-center gap-1 lg:flex">
               {NAV_LINKS.map((l) => {
-                const cls =
-                  'text-[15px] text-lp-fg/85 transition-colors duration-200 hover:text-lp-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lp-glow';
+                const active = l.to ? pathname === l.to : activeSection === l.id;
+                const cls = `rounded-full px-3.5 py-1.5 text-[15px] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lp-glow ${
+                  active
+                    ? 'bg-gradient-to-r from-lp-brinjal via-[#8B5CF6] to-lp-orange text-white shadow-sm'
+                    : 'text-lp-fg/85 hover:bg-lp-fg/10 hover:text-lp-fg'
+                }`;
                 return l.to ? (
-                  <Link key={l.key} to={l.to} onClick={() => setOpen(false)} className={cls}>
+                  <Link key={l.key} to={l.to} onClick={() => setOpen(false)} aria-current={active ? 'page' : undefined} className={cls}>
                     {d.nav.links[l.key]}
                   </Link>
                 ) : (
-                  <button key={l.key} onClick={() => go(l.id!, l.offset)} className={cls}>
+                  <button key={l.key} onClick={() => go(l.id!, l.offset)} aria-current={active ? 'true' : undefined} className={cls}>
                     {d.nav.links[l.key]}
                   </button>
                 );

@@ -29,7 +29,7 @@ function ReportCard({ report, onUpdateStatus }: {
   onUpdateStatus: (id: string, status: 'UNDER_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED') => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />

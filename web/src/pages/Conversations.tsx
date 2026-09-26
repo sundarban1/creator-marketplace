@@ -57,7 +57,7 @@ function Avatar({ name, url, size = 32 }: { name: string; url?: string | null; s
 
 function StatCard({ label, value, sub, color }: { label: string; value: number; sub?: string; color: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
       <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
       <p className={`text-3xl font-bold ${color}`}>{value.toLocaleString()}</p>
       {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
@@ -152,7 +152,7 @@ export function Conversations() {
       <div className="grid grid-cols-2 xl:grid-cols-6 gap-4 mb-6">
         {statsLoading ? (
           Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse h-20" />
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 adm-card p-5 animate-pulse h-20" />
           ))
         ) : (
           <>
@@ -167,7 +167,7 @@ export function Conversations() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-col sm:flex-row gap-3">
+      <div className="bg-white rounded-2xl border border-gray-200 adm-card p-4 mb-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -199,7 +199,7 @@ export function Conversations() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 adm-card overflow-hidden">
         {listLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />

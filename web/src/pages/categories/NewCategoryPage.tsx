@@ -26,7 +26,7 @@ export function NewCategoryPage() {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add New Category</h1>
+          <h1 className="lp-display text-[2rem] leading-tight text-gray-900">Add New Category</h1>
           <p className="text-sm text-gray-500 mt-0.5">Create a new category for events and creators.</p>
         </div>
       </div>

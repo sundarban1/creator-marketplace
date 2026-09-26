@@ -62,25 +62,25 @@ export function CreatorMeetupDetail() {
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card p-4">
           <p className="text-xs text-gray-400 mb-1">Total Registrations</p>
           <p className="text-xl font-bold text-gray-900">{meetup.stats.total}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card p-4">
           <p className="text-xs text-gray-400 mb-1">Pending</p>
           <p className="text-xl font-bold text-amber-600">{meetup.stats.pending}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card p-4">
           <p className="text-xs text-gray-400 mb-1">Accepted</p>
           <p className="text-xl font-bold text-emerald-600">{meetup.stats.accepted}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card p-4">
           <p className="text-xs text-gray-400 mb-1">Checked In</p>
           <p className="text-xl font-bold text-indigo-600">
             {meetup.stats.checkedIn}{meetup.stats.accepted > 0 ? ` / ${meetup.stats.accepted}` : ''}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card p-4">
           <p className="text-xs text-gray-400 mb-1">Capacity</p>
           <p className="text-xl font-bold text-gray-900">
             {meetup.capacity != null ? `${meetup.stats.accepted} / ${meetup.capacity}` : 'Unlimited'}
@@ -100,7 +100,7 @@ export function CreatorMeetupDetail() {
       </div>
 
       {tab === 'overview' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 max-w-2xl">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card p-6 space-y-4 max-w-2xl">
           <div className="flex items-center gap-2">
             <StatusBadge status={meetup.status.toLowerCase()} />
             <StatusBadge status={meetup.registrationStatus.toLowerCase()} />

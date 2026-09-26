@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Users, Megaphone, CreditCard, ShieldOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { LandingThemeProvider } from './landing/context/ThemeContext';
+import { ThemeToggle } from './landing/components/ThemeToggle';
 
 const DEFAULT_SUPPORT_EMAIL = 'info@kolab.com.np';
 
@@ -14,16 +16,27 @@ const FEATURES = [
 
 function FeatureItem({ icon: Icon, text }: { icon: typeof Users; text: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-        <Icon size={16} className="text-indigo-200" />
-      </div>
-      <p className="text-sm text-indigo-100">{text}</p>
-    </div>
+    <li className="flex items-center gap-3.5 text-[15px] text-lp-fg/85">
+      <span className="lp-glass flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-lp-accent-ink">
+        <Icon size={17} />
+      </span>
+      <span>{text}</span>
+    </li>
   );
 }
 
+// Admin sign-in in the landing page's design language — the same two-pane
+// layout as the marketplace AuthShell: theme-aware navy/lavender base with
+// brand glows, a thin headline with a gradient phrase, and a glass form card.
 export function Login() {
+  return (
+    <LandingThemeProvider>
+      <LoginInner />
+    </LandingThemeProvider>
+  );
+}
+
+function LoginInner() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -68,72 +81,51 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left panel: branding ── */}
-      <div className="hidden lg:flex lg:w-[52%] bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 flex-col justify-between p-12 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 rounded-full" />
-          <div className="absolute -bottom-32 -left-20 w-[500px] h-[500px] bg-white/5 rounded-full" />
-          <div className="absolute top-1/2 right-8 w-48 h-48 bg-white/5 rounded-full" />
-        </div>
-
-        <div className="relative">
-          <div className="flex items-center gap-3 mb-12">
-            <div className="bg-white rounded-xl px-3 py-2">
-              <img src="/logo.png" alt="Kolab" className="h-7 w-auto" />
-            </div>
-            <span className="text-white font-bold text-xl tracking-tight">Admin</span>
-          </div>
-
-          <h1 className="text-4xl font-bold text-white leading-tight mb-4">
-            The command center for your creator marketplace
-          </h1>
-          <p className="text-indigo-200 text-lg leading-relaxed">
-            Manage users, events, and payments — all from one powerful dashboard.
-          </p>
-        </div>
-
-        <div className="relative space-y-4">
-          {FEATURES.map((f) => (
-            <FeatureItem key={f.text} icon={f.icon} text={f.text} />
-          ))}
-        </div>
-
-        <div className="relative flex items-center gap-4 pt-4 border-t border-white/20">
-          <div className="flex -space-x-2">
-            {['SA', 'AM', 'JD'].map((i) => (
-              <div key={i} className="w-8 h-8 rounded-full bg-indigo-400 border-2 border-indigo-700 flex items-center justify-center text-white text-xs font-semibold">
-                {i}
-              </div>
-            ))}
-          </div>
-          <p className="text-indigo-200 text-sm">
-            Trusted by <span className="text-white font-semibold">3 admins</span> managing 12,000+ users
-          </p>
-        </div>
+    <div className="admin-scope lp-stars relative isolate flex min-h-screen flex-col overflow-hidden">
+      {/* Brand glows — brinjal wash behind the story, saffron ember behind the form. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-40 -top-40 h-[620px] w-[620px] rounded-full bg-lp-brinjal/30 blur-[140px]" />
+        <div className="absolute -bottom-40 -right-32 h-[460px] w-[460px] rounded-full bg-lp-orange/15 blur-[130px]" />
       </div>
 
-      {/* ── Right panel: form ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-gray-50">
-        {/* Mobile logo */}
-        <div className="lg:hidden flex items-center gap-2.5 mb-10">
-          <img src="/logo.png" alt="Kolab" className="h-8 w-auto" />
-          <span className="text-gray-900 font-bold text-lg">Admin</span>
+      <header className="flex items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.png" alt="Kolab" className="h-8 w-auto object-contain" />
+          <span className="rounded-full border border-lp-fg/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-lp-accent-ink">
+            Admin
+          </span>
         </div>
+        <ThemeToggle className="flex h-9 w-9 items-center justify-center rounded-full border border-lp-fg/15 text-lp-fg/60 transition-colors hover:text-lp-fg" />
+      </header>
 
-        <div className="w-full max-w-md">
-          {/* Header */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
-            <p className="text-gray-500 mt-1 text-sm">Sign in to your admin account to continue.</p>
-          </div>
+      <div className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-5 pb-14 pt-4 sm:px-8 lg:grid-cols-[1fr_440px] lg:gap-16 lg:px-12">
+        {/* Brand story — desktop only */}
+        <aside className="hidden max-w-lg lg:block">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-lp-accent-ink">Kolab control room</p>
+          <h1 className="lp-display mt-5 text-balance text-[2.9rem] leading-[1.08] text-lp-fg">
+            The command center for your <span className="lp-gradient-text">creator marketplace</span>
+          </h1>
+          <p className="mt-5 text-[17px] font-light leading-relaxed text-lp-fg/65">
+            Manage users, events, and payments — all from one powerful dashboard.
+          </p>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {/* Error */}
+          <ul className="mt-9 space-y-3.5">
+            {FEATURES.map((f) => (
+              <FeatureItem key={f.text} icon={f.icon} text={f.text} />
+            ))}
+          </ul>
+        </aside>
+
+        {/* Form card */}
+        <main className="lp-glass mx-auto w-full max-w-[440px] rounded-[28px] p-7 shadow-[0_0_60px_-20px_rgba(99,102,241,0.55)] sm:p-9">
+          <h2 className="lp-display text-[2rem] leading-tight text-lp-fg">
+            Welcome <span className="lp-gradient-text">back</span>
+          </h2>
+          <p className="mt-2 text-[15px] font-light text-lp-fg/65">Sign in to your admin account to continue.</p>
+
+          <form onSubmit={handleSubmit} noValidate className="mt-7 space-y-4">
             {error && (
-              <div className="flex items-center gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+              <div className="flex items-center gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
                 <AlertCircle size={16} className="flex-shrink-0" />
                 {error}
               </div>
@@ -153,7 +145,7 @@ export function Login() {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(''); }}
                   placeholder="you@creatorhub.com"
-                  className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition bg-white ${error && !email ? 'border-red-300' : 'border-gray-200'}`}
+                  className={`w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border rounded-2xl placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-lp-glow/60 focus:border-transparent transition ${error && !email ? 'border-red-300' : 'border-gray-200'}`}
                 />
               </div>
             </div>
@@ -164,7 +156,7 @@ export function Login() {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <a href="#" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                <a href="#" className="text-xs text-lp-accent-ink hover:underline font-medium">
                   Forgot password?
                 </a>
               </div>
@@ -177,7 +169,7 @@ export function Login() {
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   placeholder="••••••••"
-                  className={`w-full pl-10 pr-11 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition bg-white ${error && !password ? 'border-red-300' : 'border-gray-200'}`}
+                  className={`w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border rounded-2xl placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-lp-glow/60 focus:border-transparent transition !pr-11 ${error && !password ? 'border-red-300' : 'border-gray-200'}`}
                 />
                 <button
                   type="button"
@@ -197,7 +189,7 @@ export function Login() {
                 role="checkbox"
                 aria-checked={rememberMe}
                 onClick={() => setRememberMe(!rememberMe)}
-                className={`w-4.5 h-4.5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${rememberMe ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300 bg-white'}`}
+                className={`w-4.5 h-4.5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${rememberMe ? 'bg-lp-brinjal border-lp-brinjal' : 'border-gray-300'}`}
               >
                 {rememberMe && (
                   <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
@@ -213,11 +205,11 @@ export function Login() {
               </span>
             </div>
 
-            {/* Submit */}
+            {/* Submit — the landing's gradient pill */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-lp-brinjal via-[#8B5CF6] to-lp-orange px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.7)] transition hover:brightness-110 disabled:opacity-60"
             >
               {loading ? (
                 <>
@@ -233,17 +225,17 @@ export function Login() {
             </button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-gray-400">
+          <p className="mt-7 text-center text-xs text-lp-fg/50">
             Admin access only. Contact your system administrator to request access.
           </p>
-        </div>
+        </main>
       </div>
 
       {/* Suspended-account modal — shown instead of the inline banner when the
           backend blocks login because this account has been suspended. */}
       {suspendedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-lp-black/50 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm bg-white rounded-[28px] border border-gray-200 p-7 text-center shadow-xl">
             <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
               <ShieldOff size={26} className="text-red-500" />
             </div>

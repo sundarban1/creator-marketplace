@@ -280,6 +280,236 @@
   --color-warning-soft: rgba(251, 191, 36, 0.12);
 }
 
+/* ── Admin dashboard (/admin/*) — wears the landing design ────────────────
+   Every admin page is built on Tailwind's stock gray/indigo/red/… scale, so
+   instead of rewriting ~65 files, `.admin-scope` (the root of Login and
+   DashboardLayout) re-points those palette tokens: light = the landing's
+   lavender base with cool navy-tinted neutrals, dark (`.dark` from the shared
+   landing ThemeProvider) = the #07061F navy with white ink. Shell pieces
+   (sidebar, topbar, page header, stat cards, login) use the lp-* tokens
+   directly. Scoped, so the creator/business apps are untouched. */
+.admin-scope {
+  --adm-canvas: #F0EFFF;
+  --adm-surface: #FFFFFF;
+  --adm-raised: #FFFFFF;
+  --color-gray-50: #F7F7FD;
+  --color-gray-100: #EFEFF9;
+  --color-gray-200: #E4E4F0;
+  --color-gray-300: #D4D4E6;
+  --color-gray-400: #9699B6;
+  --color-gray-500: #6B6F8E;
+  --color-gray-600: #4B5170;
+  --color-gray-700: #353A5C;
+  --color-gray-800: #1E2346;
+  --color-gray-900: #0A1033;
+  --color-gray-950: #07061F;
+  --color-slate-400: #9699B6;
+  --color-slate-500: #6B6F8E;
+  --color-slate-800: #1E2346;
+  --color-slate-900: #0A1033;
+  font-family: var(--font-body);
+  color: var(--color-gray-900);
+  background-color: var(--adm-canvas);
+}
+.dark .admin-scope {
+  --adm-canvas: #07061F;
+  --adm-surface: #100E36;
+  --adm-raised: #1A1848;
+  --color-gray-50: rgba(255, 255, 255, 0.035);
+  --color-gray-100: rgba(255, 255, 255, 0.065);
+  --color-gray-200: rgba(255, 255, 255, 0.1);
+  --color-gray-300: rgba(255, 255, 255, 0.18);
+  --color-gray-400: #8587AB;
+  --color-gray-500: #A0A2C2;
+  --color-gray-600: #B8BAD6;
+  --color-gray-700: #CFD1E6;
+  --color-gray-800: #E6E7F3;
+  --color-gray-900: #FFFFFF;
+  --color-gray-950: #FFFFFF;
+  --color-slate-400: #8587AB;
+  --color-slate-500: #A0A2C2;
+  --color-slate-800: rgba(255, 255, 255, 0.1);
+  --color-slate-900: #100E36;
+  color-scheme: dark;
+}
+
+/* Surfaces that can't be re-pointed through a variable without also flipping
+   `text-white`: white cards/inputs become the navy surface, and the gray-900
+   toasts/headers become a raised navy. `:where()` keeps specificity at one
+   class so hover:/focus: variants still win. */
+@layer utilities {
+  :where(.dark .admin-scope) .bg-white { background-color: var(--adm-surface); }
+  :where(.dark .admin-scope) .bg-gray-900 { background-color: var(--adm-raised); }
+  :where(.dark .admin-scope) .bg-gray-800 { background-color: #24225A; }
+}
+.dark .admin-scope {
+  --color-red-50: color-mix(in oklab, oklch(63.7% 0.237 25.331) 13%, transparent);
+  --color-red-100: color-mix(in oklab, oklch(63.7% 0.237 25.331) 20%, transparent);
+  --color-red-200: color-mix(in oklab, oklch(70.4% 0.191 22.216) 30%, transparent);
+  --color-red-300: color-mix(in oklab, oklch(70.4% 0.191 22.216) 55%, transparent);
+  --color-orange-50: color-mix(in oklab, oklch(70.5% 0.213 47.604) 13%, transparent);
+  --color-orange-100: color-mix(in oklab, oklch(70.5% 0.213 47.604) 20%, transparent);
+  --color-orange-200: color-mix(in oklab, oklch(75% 0.183 55.934) 30%, transparent);
+  --color-orange-300: color-mix(in oklab, oklch(75% 0.183 55.934) 55%, transparent);
+  --color-amber-50: color-mix(in oklab, oklch(76.9% 0.188 70.08) 13%, transparent);
+  --color-amber-100: color-mix(in oklab, oklch(76.9% 0.188 70.08) 20%, transparent);
+  --color-amber-200: color-mix(in oklab, oklch(82.8% 0.189 84.429) 30%, transparent);
+  --color-amber-300: color-mix(in oklab, oklch(82.8% 0.189 84.429) 55%, transparent);
+  --color-yellow-50: color-mix(in oklab, oklch(79.5% 0.184 86.047) 13%, transparent);
+  --color-yellow-100: color-mix(in oklab, oklch(79.5% 0.184 86.047) 20%, transparent);
+  --color-yellow-200: color-mix(in oklab, oklch(85.2% 0.199 91.936) 30%, transparent);
+  --color-yellow-300: color-mix(in oklab, oklch(85.2% 0.199 91.936) 55%, transparent);
+  --color-green-50: color-mix(in oklab, oklch(72.3% 0.219 149.579) 13%, transparent);
+  --color-green-100: color-mix(in oklab, oklch(72.3% 0.219 149.579) 20%, transparent);
+  --color-green-200: color-mix(in oklab, oklch(79.2% 0.209 151.711) 30%, transparent);
+  --color-green-300: color-mix(in oklab, oklch(79.2% 0.209 151.711) 55%, transparent);
+  --color-emerald-50: color-mix(in oklab, oklch(69.6% 0.17 162.48) 13%, transparent);
+  --color-emerald-100: color-mix(in oklab, oklch(69.6% 0.17 162.48) 20%, transparent);
+  --color-emerald-200: color-mix(in oklab, oklch(76.5% 0.177 163.223) 30%, transparent);
+  --color-emerald-300: color-mix(in oklab, oklch(76.5% 0.177 163.223) 55%, transparent);
+  --color-teal-50: color-mix(in oklab, oklch(70.4% 0.14 182.503) 13%, transparent);
+  --color-teal-100: color-mix(in oklab, oklch(70.4% 0.14 182.503) 20%, transparent);
+  --color-teal-200: color-mix(in oklab, oklch(77.7% 0.152 181.912) 30%, transparent);
+  --color-teal-300: color-mix(in oklab, oklch(77.7% 0.152 181.912) 55%, transparent);
+  --color-cyan-50: color-mix(in oklab, oklch(71.5% 0.143 215.221) 13%, transparent);
+  --color-cyan-100: color-mix(in oklab, oklch(71.5% 0.143 215.221) 20%, transparent);
+  --color-cyan-200: color-mix(in oklab, oklch(78.9% 0.154 211.53) 30%, transparent);
+  --color-cyan-300: color-mix(in oklab, oklch(78.9% 0.154 211.53) 55%, transparent);
+  --color-sky-50: color-mix(in oklab, oklch(68.5% 0.169 237.323) 13%, transparent);
+  --color-sky-100: color-mix(in oklab, oklch(68.5% 0.169 237.323) 20%, transparent);
+  --color-sky-200: color-mix(in oklab, oklch(74.6% 0.16 232.661) 30%, transparent);
+  --color-sky-300: color-mix(in oklab, oklch(74.6% 0.16 232.661) 55%, transparent);
+  --color-blue-50: color-mix(in oklab, oklch(62.3% 0.214 259.815) 13%, transparent);
+  --color-blue-100: color-mix(in oklab, oklch(62.3% 0.214 259.815) 20%, transparent);
+  --color-blue-200: color-mix(in oklab, oklch(70.7% 0.165 254.624) 30%, transparent);
+  --color-blue-300: color-mix(in oklab, oklch(70.7% 0.165 254.624) 55%, transparent);
+  --color-indigo-50: color-mix(in oklab, oklch(58.5% 0.233 277.117) 13%, transparent);
+  --color-indigo-100: color-mix(in oklab, oklch(58.5% 0.233 277.117) 20%, transparent);
+  --color-indigo-200: color-mix(in oklab, oklch(67.3% 0.182 276.935) 30%, transparent);
+  --color-indigo-300: color-mix(in oklab, oklch(67.3% 0.182 276.935) 55%, transparent);
+  --color-violet-50: color-mix(in oklab, oklch(60.6% 0.25 292.717) 13%, transparent);
+  --color-violet-100: color-mix(in oklab, oklch(60.6% 0.25 292.717) 20%, transparent);
+  --color-violet-200: color-mix(in oklab, oklch(70.2% 0.183 293.541) 30%, transparent);
+  --color-violet-300: color-mix(in oklab, oklch(70.2% 0.183 293.541) 55%, transparent);
+  --color-purple-50: color-mix(in oklab, oklch(62.7% 0.265 303.9) 13%, transparent);
+  --color-purple-100: color-mix(in oklab, oklch(62.7% 0.265 303.9) 20%, transparent);
+  --color-purple-200: color-mix(in oklab, oklch(71.4% 0.203 305.504) 30%, transparent);
+  --color-purple-300: color-mix(in oklab, oklch(71.4% 0.203 305.504) 55%, transparent);
+  --color-pink-50: color-mix(in oklab, oklch(65.6% 0.241 354.308) 13%, transparent);
+  --color-pink-100: color-mix(in oklab, oklch(65.6% 0.241 354.308) 20%, transparent);
+  --color-pink-200: color-mix(in oklab, oklch(71.8% 0.202 349.761) 30%, transparent);
+  --color-pink-300: color-mix(in oklab, oklch(71.8% 0.202 349.761) 55%, transparent);
+  --color-rose-50: color-mix(in oklab, oklch(64.5% 0.246 16.439) 13%, transparent);
+  --color-rose-100: color-mix(in oklab, oklch(64.5% 0.246 16.439) 20%, transparent);
+  --color-rose-200: color-mix(in oklab, oklch(71.2% 0.194 13.428) 30%, transparent);
+  --color-rose-300: color-mix(in oklab, oklch(71.2% 0.194 13.428) 55%, transparent);
+}
+
+/* Text on the dark navy: the deep 500-900 text shades would disappear, so
+   lift them to the light end of their own hue (backgrounds keep the vars). */
+@layer utilities {
+  :where(.dark .admin-scope) .text-red-500, :where(.dark .admin-scope) .hover\:text-red-500:hover { color: oklch(70.4% 0.191 22.216); }
+  :where(.dark .admin-scope) .text-red-600, :where(.dark .admin-scope) .hover\:text-red-600:hover { color: oklch(80.8% 0.114 19.571); }
+  :where(.dark .admin-scope) .text-red-700, :where(.dark .admin-scope) .hover\:text-red-700:hover { color: oklch(80.8% 0.114 19.571); }
+  :where(.dark .admin-scope) .text-red-800, :where(.dark .admin-scope) .hover\:text-red-800:hover { color: oklch(88.5% 0.062 18.334); }
+  :where(.dark .admin-scope) .text-red-900, :where(.dark .admin-scope) .hover\:text-red-900:hover { color: oklch(93.6% 0.032 17.717); }
+  :where(.dark .admin-scope) .text-orange-500, :where(.dark .admin-scope) .hover\:text-orange-500:hover { color: oklch(75% 0.183 55.934); }
+  :where(.dark .admin-scope) .text-orange-600, :where(.dark .admin-scope) .hover\:text-orange-600:hover { color: oklch(83.7% 0.128 66.29); }
+  :where(.dark .admin-scope) .text-orange-700, :where(.dark .admin-scope) .hover\:text-orange-700:hover { color: oklch(83.7% 0.128 66.29); }
+  :where(.dark .admin-scope) .text-orange-800, :where(.dark .admin-scope) .hover\:text-orange-800:hover { color: oklch(90.1% 0.076 70.697); }
+  :where(.dark .admin-scope) .text-orange-900, :where(.dark .admin-scope) .hover\:text-orange-900:hover { color: oklch(95.4% 0.038 75.164); }
+  :where(.dark .admin-scope) .text-amber-500, :where(.dark .admin-scope) .hover\:text-amber-500:hover { color: oklch(82.8% 0.189 84.429); }
+  :where(.dark .admin-scope) .text-amber-600, :where(.dark .admin-scope) .hover\:text-amber-600:hover { color: oklch(87.9% 0.169 91.605); }
+  :where(.dark .admin-scope) .text-amber-700, :where(.dark .admin-scope) .hover\:text-amber-700:hover { color: oklch(87.9% 0.169 91.605); }
+  :where(.dark .admin-scope) .text-amber-800, :where(.dark .admin-scope) .hover\:text-amber-800:hover { color: oklch(92.4% 0.12 95.746); }
+  :where(.dark .admin-scope) .text-amber-900, :where(.dark .admin-scope) .hover\:text-amber-900:hover { color: oklch(96.2% 0.059 95.617); }
+  :where(.dark .admin-scope) .text-yellow-500, :where(.dark .admin-scope) .hover\:text-yellow-500:hover { color: oklch(85.2% 0.199 91.936); }
+  :where(.dark .admin-scope) .text-yellow-600, :where(.dark .admin-scope) .hover\:text-yellow-600:hover { color: oklch(90.5% 0.182 98.111); }
+  :where(.dark .admin-scope) .text-yellow-700, :where(.dark .admin-scope) .hover\:text-yellow-700:hover { color: oklch(90.5% 0.182 98.111); }
+  :where(.dark .admin-scope) .text-yellow-800, :where(.dark .admin-scope) .hover\:text-yellow-800:hover { color: oklch(94.5% 0.129 101.54); }
+  :where(.dark .admin-scope) .text-yellow-900, :where(.dark .admin-scope) .hover\:text-yellow-900:hover { color: oklch(97.3% 0.071 103.193); }
+  :where(.dark .admin-scope) .text-green-500, :where(.dark .admin-scope) .hover\:text-green-500:hover { color: oklch(79.2% 0.209 151.711); }
+  :where(.dark .admin-scope) .text-green-600, :where(.dark .admin-scope) .hover\:text-green-600:hover { color: oklch(87.1% 0.15 154.449); }
+  :where(.dark .admin-scope) .text-green-700, :where(.dark .admin-scope) .hover\:text-green-700:hover { color: oklch(87.1% 0.15 154.449); }
+  :where(.dark .admin-scope) .text-green-800, :where(.dark .admin-scope) .hover\:text-green-800:hover { color: oklch(92.5% 0.084 155.995); }
+  :where(.dark .admin-scope) .text-green-900, :where(.dark .admin-scope) .hover\:text-green-900:hover { color: oklch(96.2% 0.044 156.743); }
+  :where(.dark .admin-scope) .text-emerald-500, :where(.dark .admin-scope) .hover\:text-emerald-500:hover { color: oklch(76.5% 0.177 163.223); }
+  :where(.dark .admin-scope) .text-emerald-600, :where(.dark .admin-scope) .hover\:text-emerald-600:hover { color: oklch(84.5% 0.143 164.978); }
+  :where(.dark .admin-scope) .text-emerald-700, :where(.dark .admin-scope) .hover\:text-emerald-700:hover { color: oklch(84.5% 0.143 164.978); }
+  :where(.dark .admin-scope) .text-emerald-800, :where(.dark .admin-scope) .hover\:text-emerald-800:hover { color: oklch(90.5% 0.093 164.15); }
+  :where(.dark .admin-scope) .text-emerald-900, :where(.dark .admin-scope) .hover\:text-emerald-900:hover { color: oklch(95% 0.052 163.051); }
+  :where(.dark .admin-scope) .text-teal-500, :where(.dark .admin-scope) .hover\:text-teal-500:hover { color: oklch(77.7% 0.152 181.912); }
+  :where(.dark .admin-scope) .text-teal-600, :where(.dark .admin-scope) .hover\:text-teal-600:hover { color: oklch(85.5% 0.138 181.071); }
+  :where(.dark .admin-scope) .text-teal-700, :where(.dark .admin-scope) .hover\:text-teal-700:hover { color: oklch(85.5% 0.138 181.071); }
+  :where(.dark .admin-scope) .text-teal-800, :where(.dark .admin-scope) .hover\:text-teal-800:hover { color: oklch(91% 0.096 180.426); }
+  :where(.dark .admin-scope) .text-teal-900, :where(.dark .admin-scope) .hover\:text-teal-900:hover { color: oklch(95.3% 0.051 180.801); }
+  :where(.dark .admin-scope) .text-cyan-500, :where(.dark .admin-scope) .hover\:text-cyan-500:hover { color: oklch(78.9% 0.154 211.53); }
+  :where(.dark .admin-scope) .text-cyan-600, :where(.dark .admin-scope) .hover\:text-cyan-600:hover { color: oklch(86.5% 0.127 207.078); }
+  :where(.dark .admin-scope) .text-cyan-700, :where(.dark .admin-scope) .hover\:text-cyan-700:hover { color: oklch(86.5% 0.127 207.078); }
+  :where(.dark .admin-scope) .text-cyan-800, :where(.dark .admin-scope) .hover\:text-cyan-800:hover { color: oklch(91.7% 0.08 205.041); }
+  :where(.dark .admin-scope) .text-cyan-900, :where(.dark .admin-scope) .hover\:text-cyan-900:hover { color: oklch(95.6% 0.045 203.388); }
+  :where(.dark .admin-scope) .text-sky-500, :where(.dark .admin-scope) .hover\:text-sky-500:hover { color: oklch(74.6% 0.16 232.661); }
+  :where(.dark .admin-scope) .text-sky-600, :where(.dark .admin-scope) .hover\:text-sky-600:hover { color: oklch(82.8% 0.111 230.318); }
+  :where(.dark .admin-scope) .text-sky-700, :where(.dark .admin-scope) .hover\:text-sky-700:hover { color: oklch(82.8% 0.111 230.318); }
+  :where(.dark .admin-scope) .text-sky-800, :where(.dark .admin-scope) .hover\:text-sky-800:hover { color: oklch(90.1% 0.058 230.902); }
+  :where(.dark .admin-scope) .text-sky-900, :where(.dark .admin-scope) .hover\:text-sky-900:hover { color: oklch(95.1% 0.026 236.824); }
+  :where(.dark .admin-scope) .text-blue-500, :where(.dark .admin-scope) .hover\:text-blue-500:hover { color: oklch(70.7% 0.165 254.624); }
+  :where(.dark .admin-scope) .text-blue-600, :where(.dark .admin-scope) .hover\:text-blue-600:hover { color: oklch(80.9% 0.105 251.813); }
+  :where(.dark .admin-scope) .text-blue-700, :where(.dark .admin-scope) .hover\:text-blue-700:hover { color: oklch(80.9% 0.105 251.813); }
+  :where(.dark .admin-scope) .text-blue-800, :where(.dark .admin-scope) .hover\:text-blue-800:hover { color: oklch(88.2% 0.059 254.128); }
+  :where(.dark .admin-scope) .text-blue-900, :where(.dark .admin-scope) .hover\:text-blue-900:hover { color: oklch(93.2% 0.032 255.585); }
+  :where(.dark .admin-scope) .text-indigo-500, :where(.dark .admin-scope) .hover\:text-indigo-500:hover { color: oklch(67.3% 0.182 276.935); }
+  :where(.dark .admin-scope) .text-indigo-600, :where(.dark .admin-scope) .hover\:text-indigo-600:hover { color: oklch(78.5% 0.115 274.713); }
+  :where(.dark .admin-scope) .text-indigo-700, :where(.dark .admin-scope) .hover\:text-indigo-700:hover { color: oklch(78.5% 0.115 274.713); }
+  :where(.dark .admin-scope) .text-indigo-800, :where(.dark .admin-scope) .hover\:text-indigo-800:hover { color: oklch(87% 0.065 274.039); }
+  :where(.dark .admin-scope) .text-indigo-900, :where(.dark .admin-scope) .hover\:text-indigo-900:hover { color: oklch(93% 0.034 272.788); }
+  :where(.dark .admin-scope) .text-violet-500, :where(.dark .admin-scope) .hover\:text-violet-500:hover { color: oklch(70.2% 0.183 293.541); }
+  :where(.dark .admin-scope) .text-violet-600, :where(.dark .admin-scope) .hover\:text-violet-600:hover { color: oklch(81.1% 0.111 293.571); }
+  :where(.dark .admin-scope) .text-violet-700, :where(.dark .admin-scope) .hover\:text-violet-700:hover { color: oklch(81.1% 0.111 293.571); }
+  :where(.dark .admin-scope) .text-violet-800, :where(.dark .admin-scope) .hover\:text-violet-800:hover { color: oklch(89.4% 0.057 293.283); }
+  :where(.dark .admin-scope) .text-violet-900, :where(.dark .admin-scope) .hover\:text-violet-900:hover { color: oklch(94.3% 0.029 294.588); }
+  :where(.dark .admin-scope) .text-purple-500, :where(.dark .admin-scope) .hover\:text-purple-500:hover { color: oklch(71.4% 0.203 305.504); }
+  :where(.dark .admin-scope) .text-purple-600, :where(.dark .admin-scope) .hover\:text-purple-600:hover { color: oklch(82.7% 0.119 306.383); }
+  :where(.dark .admin-scope) .text-purple-700, :where(.dark .admin-scope) .hover\:text-purple-700:hover { color: oklch(82.7% 0.119 306.383); }
+  :where(.dark .admin-scope) .text-purple-800, :where(.dark .admin-scope) .hover\:text-purple-800:hover { color: oklch(90.2% 0.063 306.703); }
+  :where(.dark .admin-scope) .text-purple-900, :where(.dark .admin-scope) .hover\:text-purple-900:hover { color: oklch(94.6% 0.033 307.174); }
+  :where(.dark .admin-scope) .text-pink-500, :where(.dark .admin-scope) .hover\:text-pink-500:hover { color: oklch(71.8% 0.202 349.761); }
+  :where(.dark .admin-scope) .text-pink-600, :where(.dark .admin-scope) .hover\:text-pink-600:hover { color: oklch(82.3% 0.12 346.018); }
+  :where(.dark .admin-scope) .text-pink-700, :where(.dark .admin-scope) .hover\:text-pink-700:hover { color: oklch(82.3% 0.12 346.018); }
+  :where(.dark .admin-scope) .text-pink-800, :where(.dark .admin-scope) .hover\:text-pink-800:hover { color: oklch(89.9% 0.061 343.231); }
+  :where(.dark .admin-scope) .text-pink-900, :where(.dark .admin-scope) .hover\:text-pink-900:hover { color: oklch(94.8% 0.028 342.258); }
+  :where(.dark .admin-scope) .text-rose-500, :where(.dark .admin-scope) .hover\:text-rose-500:hover { color: oklch(71.2% 0.194 13.428); }
+  :where(.dark .admin-scope) .text-rose-600, :where(.dark .admin-scope) .hover\:text-rose-600:hover { color: oklch(81% 0.117 11.638); }
+  :where(.dark .admin-scope) .text-rose-700, :where(.dark .admin-scope) .hover\:text-rose-700:hover { color: oklch(81% 0.117 11.638); }
+  :where(.dark .admin-scope) .text-rose-800, :where(.dark .admin-scope) .hover\:text-rose-800:hover { color: oklch(89.2% 0.058 10.001); }
+  :where(.dark .admin-scope) .text-rose-900, :where(.dark .admin-scope) .hover\:text-rose-900:hover { color: oklch(94.1% 0.03 12.58); }
+}
+
+/* Admin cards (bg-white + adm-card) and primary actions — the landing's soft
+   lifted card and glowing pill buttons. */
+.adm-card { box-shadow: 0 18px 40px -30px rgba(10, 16, 51, 0.35); }
+.dark .adm-card {
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01));
+  box-shadow: none;
+}
+@layer utilities {
+  :where(.admin-scope) :is(button, a).bg-indigo-600 {
+    border-radius: 9999px;
+    box-shadow: 0 10px 30px -12px rgba(99, 102, 241, 0.7);
+  }
+}
+
+/* Recharts on the dark admin surface — its grid/axis/tooltip colours are
+   hard-coded light-theme hexes passed as SVG attributes. */
+.dark .admin-scope .recharts-cartesian-grid line { stroke: rgba(255, 255, 255, 0.07); }
+.dark .admin-scope .recharts-cartesian-axis-line,
+.dark .admin-scope .recharts-cartesian-axis-tick-line { stroke: rgba(255, 255, 255, 0.15); }
+.dark .admin-scope .recharts-cartesian-axis-tick-value { fill: #A0A2C2; }
+.dark .admin-scope .recharts-default-tooltip {
+  background-color: #1A1848 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
 /* Card surface on the navy sections: a white card with a soft shadow in the
    light theme, translucent glass in the dark one. */
 .lp-glass {

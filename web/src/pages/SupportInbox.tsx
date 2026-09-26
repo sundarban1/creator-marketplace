@@ -66,7 +66,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function ContactCard({ item, onStatusChange }: { item: SupportRequest; onStatusChange: (id: string, status: string) => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <MessageSquare size={15} className="text-indigo-500 flex-shrink-0" />
@@ -103,7 +103,7 @@ function ContactCard({ item, onStatusChange }: { item: SupportRequest; onStatusC
 
 function ReportCard({ item, onStatusChange }: { item: IssueReport; onStatusChange: (id: string, status: string) => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle size={15} className="text-amber-500 flex-shrink-0" />

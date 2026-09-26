@@ -100,11 +100,11 @@ export function DisputesTab() {
       {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
 
       {loading ? (
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card divide-y divide-gray-100">
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-14 animate-pulse bg-gray-50 first:rounded-t-xl last:rounded-b-xl" />)}
         </div>
       ) : disputes.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400 text-sm">
+        <div className="bg-white rounded-2xl border border-gray-200 adm-card py-16 text-center text-gray-400 text-sm">
           No {statusFilter.toLowerCase()} disputes.
         </div>
       ) : (

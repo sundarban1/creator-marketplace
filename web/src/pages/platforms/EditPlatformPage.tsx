@@ -53,7 +53,7 @@ export function EditPlatformPage() {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Platform</h1>
+          <h1 className="lp-display text-[2rem] leading-tight text-gray-900">Edit Platform</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             Editing <span className="font-medium text-gray-700">{platform.name}</span>
           </p>

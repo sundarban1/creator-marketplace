@@ -117,7 +117,7 @@ export function LegalEditor() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Legal Editor</h1>
+          <h1 className="lp-display text-[2rem] leading-tight text-gray-900">Legal Editor</h1>
           <p className="text-sm text-gray-500 mt-1">Manage Privacy Policy, Terms & Conditions, and Community Guidelines</p>
         </div>
         <button

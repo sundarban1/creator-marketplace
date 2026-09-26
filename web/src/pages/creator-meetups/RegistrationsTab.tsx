@@ -199,7 +199,7 @@ export function RegistrationsTab({ meetupId }: { meetupId: string }) {
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {registrations.map((r) => (
-              <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div key={r.id} className="bg-white rounded-2xl border border-gray-200 adm-card p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-bold text-gray-900">{r.fullName}</p>

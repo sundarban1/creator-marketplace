@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
-import { BadgeCheck, Search, Sparkles } from 'lucide-react';
+import { BadgeCheck, Search } from 'lucide-react';
 import { fadeUp, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -152,7 +152,7 @@ export function Hero({
               </div>
               <button type="submit" className={`${pillCtaClass('brinjal', 'lg')} flex-shrink-0 px-5 sm:px-7`}>
                 <span className="hidden sm:inline">{d.hero.searchCta}</span>
-                <Sparkles size={16} />
+                <Search size={16} />
               </button>
             </div>
           </motion.form>

@@ -148,7 +148,7 @@ export function ContractTemplateEditor() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contract Editor</h1>
+          <h1 className="lp-display text-[2rem] leading-tight text-gray-900">Contract Editor</h1>
           <p className="text-sm text-gray-500 mt-1">
             This is the agreement text the creator and business each see and sign — once when a creator submits a proposal, and again when the business accepts it. Applies to paid campaigns only.
           </p>

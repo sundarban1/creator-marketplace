@@ -7,7 +7,7 @@ import { api, type PlatformSettings } from '../lib/api';
 
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+    <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 mb-5">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
         {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
@@ -163,7 +163,7 @@ export function RateLimits() {
         <PageHeader title="Rate Limits" />
         <div className="max-w-2xl space-y-5">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 adm-card p-5 animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-1/3 mb-4" />
               <div className="h-10 bg-gray-100 rounded mb-2" />
             </div>

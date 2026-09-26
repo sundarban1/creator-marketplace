@@ -80,7 +80,7 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
         <div className="lg:col-span-2 space-y-5">
 
           {/* Photo */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Photo</h3>
             <div className="flex items-center gap-5">
               <div className="relative w-16 h-16 flex-shrink-0">
@@ -120,7 +120,7 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
           </div>
 
           {/* Details */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 space-y-4">
             <h3 className="text-sm font-semibold text-gray-800">Story Details</h3>
 
             <div>
@@ -186,7 +186,7 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
 
         {/* Sidebar: status + actions */}
         <div className="space-y-5">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Status</h3>
             <div className="flex flex-col gap-2">
               {(['active', 'inactive'] as SuccessStoryStatus[]).map((s) => (
@@ -215,7 +215,7 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
             <p className="text-xs text-gray-400 mt-3">Only active stories appear on the public landing page.</p>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5 space-y-3">
             <button
               type="submit"
               disabled={uploading}

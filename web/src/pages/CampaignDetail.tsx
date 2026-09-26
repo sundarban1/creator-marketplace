@@ -411,7 +411,7 @@ export function CampaignDetail() {
           </button>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-gray-900">{campaign.title}</h1>
+              <h1 className="lp-heading text-2xl text-gray-900">{campaign.title}</h1>
               {campaign.isFeatured && (
                 <span className="flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
                   <Star size={11} /> Featured
