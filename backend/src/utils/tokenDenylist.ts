@@ -20,7 +20,7 @@ const key = (token: string) => `denied-rt:${createHash('sha256').update(token).d
 // Cap the denylist entry lifetime to the token's own remaining validity — once
 // the token would expire on its own there's nothing left to deny. Falls back to
 // the default refresh-token lifetime when the token can't be decoded.
-const FALLBACK_TTL_SECONDS = 7 * 24 * 60 * 60;
+const FALLBACK_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 function remainingTtlSeconds(token: string): number {
   try {

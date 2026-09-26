@@ -825,6 +825,9 @@ async function refreshAccessToken(): Promise<string> {
   });
 
   if (!res.ok) {
+    // A 5xx/429 from a restarting backend isn't an expired session — only an
+    // explicit rejection of the refresh token should sign the admin out.
+    if (res.status !== 401 && res.status !== 403) throw new Error('Could not refresh session');
     clearTokens();
     window.location.href = '/admin/login';
     throw new Error('Session expired');
@@ -952,7 +955,7 @@ export const api = {
       request<{ accessToken: string; refreshToken: string; user: Omit<StoredUser, 'name'> & { role: string } }>(
         'POST', '/api/auth/login', { email, password }
       ),
-    logout: () => request<null>('POST', '/api/auth/logout'),
+    logout: () => request<null>('POST', '/api/auth/logout', { refreshToken: getRefreshToken() ?? undefined }),
   },
 
   notifications: {

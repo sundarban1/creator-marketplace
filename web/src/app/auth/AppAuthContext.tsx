@@ -20,7 +20,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { clearSession, writeStoredUser } from '../lib/apiClient';
+import { clearSession, getRefreshToken, readStoredUser, writeStoredUser } from '../lib/apiClient';
 import * as authApi from '../api/auth';
 import type { AuthUser, Identifier, RegisterInput, SocialAuthResult } from '../api/auth';
 
@@ -73,8 +73,18 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
 
     // Safety net: never leave the app on a full-screen spinner because session
     // restore hung (e.g. a cold-started API taking 30s+ to answer /refresh).
+    // If a session is stored, assume it's still good rather than bouncing the
+    // user to login just because the API was slow; restore's own result still
+    // lands afterwards and corrects this if the session really is dead.
     const safety = setTimeout(() => {
-      if (!cancelled) setStatus((s) => (s === 'loading' ? 'anonymous' : s));
+      if (cancelled) return;
+      const stored = getRefreshToken() ? readStoredUser<AuthUser>() : null;
+      if (stored && (stored.role === 'CREATOR' || stored.role === 'BUSINESS')) {
+        setUser((u) => u ?? stored);
+        setStatus((s) => (s === 'loading' ? 'authenticated' : s));
+      } else {
+        setStatus((s) => (s === 'loading' ? 'anonymous' : s));
+      }
     }, 8000);
 
     authApi

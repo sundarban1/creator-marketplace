@@ -429,7 +429,11 @@ async function refreshAccessToken(): Promise<string> {
     body:    JSON.stringify({ refreshToken: rt }),
   });
 
-  if (!res.ok) throw new AuthRefreshInvalidError('Refresh failed');
+  // Only an explicit rejection means the session is over. A 5xx from a
+  // restarting/cold backend or a 429 is transient — treating it as invalid
+  // force-logged users out after a few idle hours.
+  if (res.status === 401 || res.status === 403) throw new AuthRefreshInvalidError('Refresh rejected');
+  if (!res.ok) throw new ApiError(`Could not refresh session (${res.status})`, res.status);
 
   const json = parseEnvelope<ApiEnvelope<{ accessToken: string; refreshToken?: string }>>(text);
   const newAccessToken = json.data.accessToken;

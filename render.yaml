@@ -188,7 +188,7 @@ services:
         value: 15m
 
       - key: JWT_REFRESH_EXPIRES_IN
-        value: 7d
+        value: 30d
 
       # ── CORS — set to your deployed web app origin(s), comma-separated ─────
       - key: FRONTEND_URL

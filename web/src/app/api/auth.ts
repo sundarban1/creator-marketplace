@@ -8,6 +8,7 @@
 
 import {
   api,
+  ApiError,
   apiRequest,
   clearSession,
   getRefreshToken,
@@ -234,24 +235,29 @@ export async function restoreSession(): Promise<AuthUser | null> {
     return null;
   }
 
+  // refreshAccessToken clears the stored tokens itself when the server
+  // genuinely rejects the refresh token; any other failure (network blip,
+  // cold/restarting backend) leaves them in place, and the session is kept.
   const token = await refreshAccessToken();
-  if (!token) {
-    clearSession();
-    return null;
-  }
+  if (!token) return getRefreshToken() ? stored : null;
 
   try {
     await apiRequest('GET', PROFILE_PATH[stored.role]);
     return stored;
-  } catch {
-    clearSession();
-    return null;
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+      clearSession();
+      return null;
+    }
+    return stored;
   }
 }
 
 export async function logout(): Promise<void> {
   try {
-    await api('POST', '/api/auth/logout');
+    // Send this device's refresh token so only this session is revoked —
+    // without it the backend signs the user out of every device.
+    await api('POST', '/api/auth/logout', { refreshToken: getRefreshToken() ?? undefined });
   } catch {
     /* best effort — clear locally regardless */
   }

@@ -158,7 +158,10 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 
   if (!res.ok) {
-    clearSession();
+    // Only an explicit rejection of the refresh token ends the session. A 5xx
+    // from a restarting/cold backend or a 429 is transient — wiping the tokens
+    // there logged users out after a few idle hours for no real reason.
+    if (res.status === 401 || res.status === 403) clearSession();
     return null;
   }
 
