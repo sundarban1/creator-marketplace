@@ -232,14 +232,15 @@ export function Hero({
         </motion.div>
       </div>
 
-      {/* The live phone showcase, fading out into the navy — HeroRibbon runs
+      {/* The live phone showcase, shown in full (no bottom fade — it used to
+          wash out the in-screen captions, pills and cards). HeroRibbon runs
           behind it, tying it back to the headline above. */}
       <motion.div
         initial={{ opacity: 0, y: 60 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         style={reducedMotion ? undefined : { y: fanY }}
-        className="relative mx-auto mt-16 h-[560px] max-w-6xl sm:h-[620px]"
+        className="relative mx-auto mt-16 min-h-[560px] max-w-6xl sm:min-h-[620px]"
       >
         <motion.div
           style={reducedMotion ? undefined : { rotateY: fanRotateY, rotateX: fanRotateX, transformPerspective: 1200 }}
@@ -249,11 +250,8 @@ export function Hero({
             <PhoneShowcase />
           </div>
         </motion.div>
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-64 bg-gradient-to-t from-lp-navy via-lp-navy/80 to-transparent" />
-
-        {/* Creators floating either side of the phone — above the bottom fade
-            (z-30) so the lower cards stay crisp. md+ only; there's no room
-            beside the phone on a phone. */}
+        {/* Creators floating either side of the phone (z-30). md+ only;
+            there's no room beside the phone on a phone. */}
         <div className="pointer-events-none absolute inset-0 z-30 hidden md:block">
           {floaters.map((creator, i) => (
             <FloatingCreatorCard
