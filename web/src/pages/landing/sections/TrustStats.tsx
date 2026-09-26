@@ -2,32 +2,42 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { useCountUp } from '../hooks/useCountUp';
 import { useLandingLanguage } from '../context/LanguageContext';
-import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
-import { TextReveal } from '../components/TextReveal';
+import { BadgeCheck, Building2, LayoutGrid } from 'lucide-react';
+import { H2, KICKER, panel } from '../lib/surfaces';
+
+// One icon per stat cell, positionally matched to `trust.stats` (creators,
+// businesses, categories) — the data-grid treatment similarweb uses.
+const STAT_ICONS = [BadgeCheck, Building2, LayoutGrid];
 import type { LandingStats } from '../../../lib/api';
+
+function StatIcon({ index }: { index: number }) {
+  const Icon = STAT_ICONS[index] ?? BadgeCheck;
+  return (
+    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.08] text-[#A5B4FC] ring-1 ring-white/10">
+      <Icon size={20} />
+    </span>
+  );
+}
 
 function StatTile({ value, label, index }: { value: number; label: string; index: number }) {
   const { ref, display } = useCountUp(value);
   return (
-    <motion.div ref={ref} variants={fadeUp} className="px-6 text-center sm:text-left">
-      {/* Zero-padded index numeral above each stat — the same editorial "001/002"
-          treatment used elsewhere on the page (Security), so the full-bleed dark
-          moments read as one family. */}
-      <span className="font-mono text-xs tracking-[0.3em] text-ink/35 dark:text-white/35">{String(index + 1).padStart(2, '0')}</span>
-      <div className="mt-3 font-serif text-7xl font-medium leading-none tracking-tight text-ink sm:text-8xl lg:text-9xl dark:text-white">
+    <motion.div ref={ref} variants={fadeUp} className="p-8 text-left">
+      <StatIcon index={index} />
+      <div className="mt-8 text-5xl font-bold tracking-tight text-white sm:text-6xl">
         {display}
-        <span className="text-ink/40 dark:text-white">+</span>
+        <span className="text-[#A5B4FC]">+</span>
       </div>
-      <div className="mt-4 text-sm uppercase tracking-[0.2em] text-ink-soft dark:text-white">{label}</div>
+      <div className="mt-2 text-[15px] font-light text-white/65">{label}</div>
     </motion.div>
   );
 }
 
 function QualitativeTile({ statement, index }: { statement: string; index: number }) {
   return (
-    <motion.div variants={fadeUp} className="px-6 text-center sm:text-left">
-      <span className="font-mono text-xs tracking-[0.3em] text-ink/35 dark:text-white/35">{String(index + 1).padStart(2, '0')}</span>
-      <div className="mt-3 font-serif text-2xl font-medium leading-snug tracking-tight text-ink sm:text-3xl dark:text-white">
+    <motion.div variants={fadeUp} className="p-8 text-left">
+      <StatIcon index={index} />
+      <div className="lp-display mt-8 text-2xl text-white sm:text-[1.7rem]">
         {statement}
       </div>
     </motion.div>
@@ -49,26 +59,20 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
   return (
     <section
       id="trust"
-      style={sectionCutStyle(true)}
-      className="relative overflow-hidden bg-paper py-24 text-ink dark:bg-ink dark:text-white"
+      className={`${panel('navy')} lp-stars overflow-hidden py-28`}
     >
-      <SectionCutAccent flip />
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="mesh-blob absolute left-[8%] top-0 h-[360px] w-[360px] rounded-full bg-violet/[0.12] blur-[110px]" />
-        <div className="mesh-blob absolute right-[6%] bottom-0 h-[320px] w-[320px] rounded-full bg-brand-orange/[0.1] blur-[110px]" style={{ animationDelay: '2s' }} />
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute bottom-[-30%] left-1/2 h-[520px] w-[1100px] -translate-x-1/2 rounded-full bg-lp-brinjal/35 blur-[140px]" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-6">
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-14 max-w-2xl">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
+      <div className="relative mx-auto max-w-5xl px-5 sm:px-8">
+        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto mb-14 max-w-2xl text-center">
+          <motion.p variants={fadeUp} className={`${KICKER} text-[#A5B4FC]`}>
             {d.trust.eyebrow}
           </motion.p>
-          <TextReveal
-            as="h2"
-            text={d.trust.heading}
-            delay={0.1}
-            className="mt-3 font-serif text-2xl font-medium sm:text-3xl md:text-4xl"
-          />
+          <h2 className={`${H2} mt-4 text-white`}>
+            <span className="lp-gradient-text">{d.trust.heading}</span>
+          </h2>
         </motion.div>
 
         <motion.div
@@ -76,7 +80,7 @@ export function TrustStats({ stats }: { stats: LandingStats | null }) {
           whileInView="show"
           viewport={VP}
           variants={stagger()}
-          className="grid grid-cols-1 gap-14 sm:grid-cols-3 sm:gap-8"
+          className="grid grid-cols-1 divide-y divide-white/10 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] backdrop-blur sm:grid-cols-3 sm:divide-x sm:divide-y-0"
         >
           {hasMeaningfulStats
             ? d.trust.stats.map((s, i) => <StatTile key={i} value={values[i]!} label={s.label} index={i} />)

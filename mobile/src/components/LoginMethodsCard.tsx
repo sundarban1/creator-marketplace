@@ -48,6 +48,7 @@ export function LoginMethodsCard() {
 
   const linkedApple  = methods?.providers.find((p) => p.provider === 'APPLE');
   const linkedGoogle = methods?.providers.find((p) => p.provider === 'GOOGLE');
+  const linkedTiktok = methods?.providers.find((p) => p.provider === 'TIKTOK');
 
   async function connectApple() {
     setBusy('APPLE_LINK');
@@ -146,7 +147,7 @@ export function LoginMethodsCard() {
 
         {/* Google — disconnect only (linking happens on the sign-in screen) */}
         {linkedGoogle && (
-          <View style={[s.row, s.rowLast]}>
+          <View style={[s.row, !linkedTiktok && s.rowLast]}>
             <View style={[s.iconWrap, { backgroundColor: '#4285F418' }]}>
               <FontAwesome5 name="google" size={16} color="#4285F4" />
             </View>
@@ -161,6 +162,22 @@ export function LoginMethodsCard() {
               : <Pressable onPress={() => setConfirm('GOOGLE')} hitSlop={8}><Text style={[s.action, { color: C.error }]}>{t('loginMethods.disconnect')}</Text></Pressable>}
           </View>
         )}
+
+        {/* TikTok — disconnect only (linking happens on the sign-in screen) */}
+        {linkedTiktok && (
+          <View style={[s.row, s.rowLast]}>
+            <View style={[s.iconWrap, { backgroundColor: isDark ? '#ffffff' : '#000000' }]}>
+              <FontAwesome5 name="tiktok" size={16} color={isDark ? '#000000' : '#ffffff'} />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={[s.label, { color: C.text }]}>{t('loginMethods.tiktok')}</Text>
+              <Text style={[s.sub, { color: C.textSecondary }]} numberOfLines={1}>{t('loginMethods.connected')}</Text>
+            </View>
+            {busy === 'TIKTOK'
+              ? <ActivityIndicator size="small" color={C.brinjal1} />
+              : <Pressable onPress={() => setConfirm('TIKTOK')} hitSlop={8}><Text style={[s.action, { color: C.error }]}>{t('loginMethods.disconnect')}</Text></Pressable>}
+          </View>
+        )}
       </View>
 
       <AppModal
@@ -168,7 +185,7 @@ export function LoginMethodsCard() {
         type="warning"
         icon="unlink"
         title={t('loginMethods.disconnectTitle')}
-        body={t('loginMethods.disconnectBody', { provider: confirm === 'APPLE' ? t('loginMethods.apple') : t('loginMethods.google') })}
+        body={t('loginMethods.disconnectBody', { provider: confirm === 'APPLE' ? t('loginMethods.apple') : confirm === 'TIKTOK' ? t('loginMethods.tiktok') : t('loginMethods.google') })}
         confirmLabel={t('loginMethods.disconnect')}
         cancelLabel={t('common.cancel')}
         onConfirm={() => confirm && disconnect(confirm)}

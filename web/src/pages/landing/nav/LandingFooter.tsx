@@ -5,7 +5,6 @@ import { FaFacebook, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6';
 import { fadeUp, stagger, VP, PILL_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
-import { useLandingTheme } from '../context/ThemeContext';
 import { useSiteInfo } from '../hooks/useSiteInfo';
 import { ContactForm } from '../components/ContactForm';
 import { AppStoreBadges } from '../components/AppStoreBadges';
@@ -25,7 +24,7 @@ const SOCIAL_ICONS = [
 // instead of the footer inventing its own.
 function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-ink-soft transition-colors duration-300 hover:text-ink dark:text-white dark:hover:text-white">
+    <Link to={to} className="group relative inline-flex w-fit items-center gap-1 py-0.5 text-white/60 transition-colors duration-300 hover:text-white">
       <span>{children}</span>
       <ArrowUpRight
         size={13}
@@ -33,14 +32,14 @@ function FooterLink({ to, children }: { to: string; children: React.ReactNode })
       />
       <span
         aria-hidden
-        className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
+        className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-lp-brinjal to-lp-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
       />
     </Link>
   );
 }
 
 const ANCHOR_LINK_CLASSES =
-  'group relative inline-flex w-fit items-center gap-1 py-0.5 text-left text-ink-soft transition-colors duration-300 hover:text-ink dark:text-white dark:hover:text-white';
+  'group relative inline-flex w-fit items-center gap-1 py-0.5 text-left text-white/60 transition-colors duration-300 hover:text-white';
 
 // Same visual language as FooterLink but for in-page section anchors (the
 // "Discover" column's People/Services/Opportunities/Events) rather than
@@ -63,7 +62,7 @@ function FooterAnchorLink({ id, children }: { id: string; children: React.ReactN
         <span>{children}</span>
         <span
           aria-hidden
-          className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
+          className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-lp-brinjal to-lp-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
         />
       </Link>
     );
@@ -74,7 +73,7 @@ function FooterAnchorLink({ id, children }: { id: string; children: React.ReactN
       <span>{children}</span>
       <span
         aria-hidden
-        className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
+        className="absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-lp-brinjal to-lp-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
       />
     </button>
   );
@@ -83,7 +82,7 @@ function FooterAnchorLink({ id, children }: { id: string; children: React.ReactN
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <motion.div variants={fadeUp}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white">{title}</p>
+      <p className="text-[15px] font-bold text-white">{title}</p>
       <nav className="mt-4 flex flex-col gap-2.5 text-sm">{children}</nav>
     </motion.div>
   );
@@ -91,20 +90,19 @@ function FooterColumn({ title, children }: { title: string; children: React.Reac
 
 export function LandingFooter() {
   const { d } = useLandingLanguage();
-  const { theme } = useLandingTheme();
   const siteInfo = useSiteInfo();
   const activeSocials = SOCIAL_ICONS.filter(({ key }) => siteInfo?.social[key]);
 
   return (
-    <footer id={SECTION_IDS.contact} className="relative bg-paper py-16 text-ink dark:bg-ink dark:text-white">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink/10 to-transparent dark:via-white/10" />
+    <footer id={SECTION_IDS.contact} className="relative bg-lp-navy py-16 font-body text-white">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="grid gap-12 md:grid-cols-2">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
             <motion.div variants={fadeUp} className="mb-3 flex w-fit items-center">
               <img src="/logo.png" alt="Kolab" loading="lazy" className="h-6 w-auto object-contain" />
             </motion.div>
-            <motion.p variants={fadeUp} className="max-w-xs text-sm leading-relaxed text-ink-soft dark:text-white">
+            <motion.p variants={fadeUp} className="max-w-xs text-sm font-light leading-relaxed text-white/70">
               {d.footer.tagline}
             </motion.p>
 
@@ -121,22 +119,22 @@ export function LandingFooter() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-5 flex flex-col gap-2 text-sm text-ink-soft dark:text-white">
+                className="mt-5 flex flex-col gap-2 text-sm text-white/65">
                 {siteInfo.address && (
                   <span className="flex items-start gap-2">
-                    <MapPin size={14} className="mt-0.5 flex-shrink-0 text-violet" />
+                    <MapPin size={14} className="mt-0.5 flex-shrink-0 text-[#A5B4FC]" />
                     {siteInfo.address}
                   </span>
                 )}
                 {siteInfo.phone && (
-                  <a href={`tel:${siteInfo.phone}`} className="flex items-center gap-2 transition-colors hover:text-ink dark:hover:text-white">
-                    <Phone size={14} className="flex-shrink-0 text-violet" />
+                  <a href={`tel:${siteInfo.phone}`} className="flex items-center gap-2 transition-colors hover:text-white">
+                    <Phone size={14} className="flex-shrink-0 text-[#A5B4FC]" />
                     {siteInfo.phone}
                   </a>
                 )}
                 {siteInfo.email && (
-                  <a href={`mailto:${siteInfo.email}`} className="flex items-center gap-2 transition-colors hover:text-ink dark:hover:text-white">
-                    <Mail size={14} className="flex-shrink-0 text-violet" />
+                  <a href={`mailto:${siteInfo.email}`} className="flex items-center gap-2 transition-colors hover:text-white">
+                    <Mail size={14} className="flex-shrink-0 text-[#A5B4FC]" />
                     {siteInfo.email}
                   </a>
                 )}
@@ -149,7 +147,7 @@ export function LandingFooter() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 className="mt-6 flex items-center gap-2.5">
-                {activeSocials.map(({ key, Icon, label, color }) => (
+                {activeSocials.map(({ key, Icon, label }) => (
                   <motion.a
                     key={key}
                     href={siteInfo!.social[key]}
@@ -157,8 +155,7 @@ export function LandingFooter() {
                     rel="noopener noreferrer"
                     aria-label={label}
                     whileHover={PILL_HOVER}
-                    style={{ color }}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white transition-colors dark:border-white/10 dark:bg-ink-elevated"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.08] text-white/80 transition-colors hover:bg-white/15 hover:text-white"
                   >
                     <Icon size={14} />
                   </motion.a>
@@ -168,12 +165,10 @@ export function LandingFooter() {
           </motion.div>
 
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp}>
-            <h3 className="mb-5 font-serif text-lg italic text-ink-soft dark:text-white">{d.footer.contactForm.heading}</h3>
-            {/* ContactForm's `dark` prop is its own surface switch (which color
-                card it's sitting on), independent of the page theme in general —
-                but the footer's surface now follows the page theme 1:1, so it's
-                wired straight to it here. */}
-            <ContactForm dark={theme === 'dark'} />
+            <h3 className="mb-5 text-[15px] font-bold text-white">{d.footer.contactForm.heading}</h3>
+            {/* The footer is always the navy surface now, in both page themes,
+                so ContactForm always gets its dark-surface styling. */}
+            <ContactForm dark />
           </motion.div>
         </div>
 
@@ -186,7 +181,7 @@ export function LandingFooter() {
           whileInView="show"
           viewport={VP}
           variants={stagger(0.08)}
-          className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 border-t border-ink/10 pt-10 dark:border-white/10 sm:grid-cols-3 lg:grid-cols-5"
+          className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 border-t border-white/10 pt-10 sm:grid-cols-3 lg:grid-cols-5"
         >
           <FooterColumn title={d.footer.columns.discover}>
             <FooterAnchorLink id={SECTION_IDS.creatorStory}>{d.nav.links.forCreators}</FooterAnchorLink>
@@ -224,27 +219,27 @@ export function LandingFooter() {
           </FooterColumn>
 
           <motion.div variants={fadeUp}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink/40 dark:text-white">{d.footer.downloadApp}</p>
-            <div className="mt-4"><AppStoreBadges /></div>
+            <p className="text-[15px] font-bold text-white">{d.footer.downloadApp}</p>
+            <div className="mt-4"><AppStoreBadges variant="light" /></div>
           </motion.div>
         </motion.div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-ink/10 pt-6 dark:border-white/10 sm:flex-row">
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-ink-soft dark:text-white">
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 sm:flex-row">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
             <FooterLink to="/privacy">{d.footer.privacy}</FooterLink>
             <FooterLink to="/terms">{d.footer.terms}</FooterLink>
             <FooterLink to="/support">{d.footer.support}</FooterLink>
           </div>
           {/* Admin-managed via the dashboard's Company page — only renders once set */}
           {(siteInfo?.companyRegistrationNumber || siteInfo?.companyPan) && (
-            <p className="text-xs text-ink-soft dark:text-white">
+            <p className="text-xs text-white/50">
               {[
                 siteInfo.companyRegistrationNumber && `Company Reg. No. ${siteInfo.companyRegistrationNumber}`,
                 siteInfo.companyPan && `PAN ${siteInfo.companyPan}`,
               ].filter(Boolean).join(' · ')}
             </p>
           )}
-          <p className="text-xs text-ink-soft dark:text-white">© {new Date().getFullYear()} Kolab Technologies Private Limited. {d.footer.rights}</p>
+          <p className="text-xs text-white/50">© {new Date().getFullYear()} Kolab Technologies Private Limited. {d.footer.rights}</p>
         </div>
       </div>
     </footer>

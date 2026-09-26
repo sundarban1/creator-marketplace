@@ -179,7 +179,8 @@ export class AuthController {
 
   async getTiktokLoginAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const url = await authService.getTiktokLoginAuthorizeUrl();
+      const clientPlatform = req.query.platform === 'mobile' ? 'mobile' : 'web';
+      const url = await authService.getTiktokLoginAuthorizeUrl(clientPlatform);
       success(res, { url }, getDict().auth.tiktokAuthorizeUrlGenerated);
     } catch (err) {
       next(err);

@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BadgeCheck, ClipboardList, Lock, ShieldAlert, Star, Wallet } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
-import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
-import { StickyScrollCards } from '../components/StickyScrollCards';
+import { H2, KICKER, LEAD, panel } from '../lib/surfaces';
+import { ensureGsapRegistered, gsap, type ScrollTrigger } from '../lib/gsap';
+import { useLenisScroll } from '../hooks/useLenis';
 
 // Positionally mapped to `security.points` in en.ts/ne.ts (Verified Profiles,
 // Reviews & Ratings, Agreed Terms Both Sides, Secure Escrow Payments, Secure
@@ -27,93 +28,156 @@ const PHOTOS = [
   'https://images.pexels.com/photos/7504886/pexels-photo-7504886.jpeg?auto=compress&cs=tinysrgb&h=800&w=800&fit=crop',
 ];
 
+// One solid brand colour per card (inmark's audience-rail treatment): the
+// brinjal / green / saffron families from the app palette, dark enough for
+// white text, alternating so neighbouring cards never share a hue.
+const CARD_TONES = ['bg-lp-brinjal-dark', 'bg-lp-green-dark', 'bg-[#9A3412]', 'bg-lp-brinjal', 'bg-[#166534]', 'bg-[#C2410C]'];
+
 export function Security() {
   const { d } = useLandingLanguage();
+  const { scrollTo } = useLenisScroll();
   const [active, setActive] = useState(0);
   const points = d.security.points;
+  const stageRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<ScrollTrigger | null>(null);
 
-  const cards = points.map((point, i) => {
-    const Icon = ICONS[i] ?? BadgeCheck;
-    const reversed = i % 2 === 1;
-    return (
-      <div
-        key={point.title}
-        className={`flex flex-col overflow-hidden rounded-[1.75rem] border border-ink/10 bg-paper-dim/80 shadow-[0_20px_60px_-30px_rgba(20,17,16,0.35)] sm:flex-row sm:min-h-[60vh] dark:border-white/10 dark:bg-ink-elevated ${
-          reversed ? 'sm:flex-row-reverse' : ''
-        }`}
-      >
-        <div className="relative h-48 w-full flex-shrink-0 sm:h-auto sm:w-2/5">
-          <img
-            src={PHOTOS[i]}
-            alt={point.title}
-            loading={i < 2 ? 'eager' : 'lazy'}
-            className="h-full w-full object-cover"
-          />
-        </div>
-        <div className="flex flex-1 flex-col justify-center p-8 sm:p-10">
-          <div className="flex items-center justify-between">
-            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet to-brand-orange text-white shadow-[0_8px_20px_-8px_rgba(123,92,245,0.55)]">
-              <Icon size={20} />
-            </span>
-            <span className="font-mono text-xs tracking-[0.3em] text-ink/25 dark:text-white/25">
-              {String(i + 1).padStart(2, '0')} / {String(points.length).padStart(2, '0')}
-            </span>
-          </div>
-          <h3 className="mt-6 text-balance font-serif text-2xl font-medium leading-snug text-ink sm:text-3xl dark:text-white">
-            {point.title}
-          </h3>
-          <p className="mt-3 text-base leading-relaxed text-ink-soft dark:text-white">{point.desc}</p>
-          <p className="mt-3 text-sm leading-relaxed text-ink-soft/80 dark:text-white/70">{point.detail}</p>
-        </div>
-      </div>
-    );
-  });
+  // Desktop: pin the stage for the rail's full travel and slide the track
+  // right → left on a scrubbed tween (GSAP pin rather than CSS sticky — the
+  // landing root's overflow-x-hidden breaks `position: sticky`, see
+  // StickyScrollCards). Each card ends up where the first one started, so the
+  // previous card peeks in on the left and the next on the right. Below lg or
+  // under reduced motion nothing is pinned; the track is a native swipe rail.
+  useEffect(() => {
+    ensureGsapRegistered();
+    const mm = gsap.matchMedia();
+    mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
+      const stage = stageRef.current;
+      const track = trackRef.current;
+      if (!stage || !track) return;
+      const cards = gsap.utils.toArray<HTMLElement>('.sec-card', track);
+      if (cards.length < 2) return;
+      const distance = () => cards[cards.length - 1]!.offsetLeft - cards[0]!.offsetLeft;
+
+      const tween = gsap.to(track, {
+        x: () => -distance(),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: stage,
+          pin: true,
+          start: 'top top',
+          end: () => '+=' + distance(),
+          scrub: 0.8,
+          invalidateOnRefresh: true,
+          snap: { snapTo: 1 / (cards.length - 1), duration: { min: 0.2, max: 0.5 }, ease: 'power1.inOut' },
+          onUpdate: (self) => setActive(Math.round(self.progress * (cards.length - 1))),
+        },
+      });
+      triggerRef.current = tween.scrollTrigger ?? null;
+
+      return () => {
+        tween.scrollTrigger?.kill();
+        tween.kill();
+        gsap.set(track, { clearProps: 'all' });
+        triggerRef.current = null;
+        setActive(0);
+      };
+    });
+    return () => mm.revert();
+  }, [points.length]);
+
+  // Pills jump to their card: inside the pin that's a point along the
+  // trigger's scroll range; on the swipe rail it's a horizontal scroll.
+  function goTo(i: number) {
+    const st = triggerRef.current;
+    if (st) {
+      scrollTo(st.start + ((st.end - st.start) * i) / (points.length - 1));
+      return;
+    }
+    const card = trackRef.current?.children[i] as HTMLElement | undefined;
+    card?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+  }
+
+  function onRailScroll(e: React.UIEvent<HTMLDivElement>) {
+    if (triggerRef.current) return;
+    const el = e.currentTarget;
+    const first = el.children[0] as HTMLElement | undefined;
+    if (!first) return;
+    setActive(Math.round(el.scrollLeft / (first.offsetWidth + 16)));
+  }
 
   return (
-    <section
-      id={SECTION_IDS.security}
-      style={sectionCutStyle()}
-      className="relative overflow-hidden bg-white py-24 dark:bg-ink"
-    >
-      <SectionCutAccent />
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="mesh-blob absolute right-[8%] top-[10%] h-[280px] w-[280px] rounded-full bg-violet/[0.05] blur-[110px]" />
-      </div>
-      <div className="relative mx-auto max-w-6xl px-6">
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
-            {d.security.eyebrow}
-          </motion.p>
-          <TextReveal
-            as="h2"
-            text={d.security.heading}
-            delay={0.1}
-            className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
-          />
-          <motion.p variants={fadeUp} className="mt-4 text-ink-soft dark:text-white">
-            {d.security.sub}
-          </motion.p>
-        </motion.div>
-      </div>
+    <section id={SECTION_IDS.security} className={`${panel('mist')} overflow-hidden`}>
+      <div ref={stageRef} className="relative flex flex-col justify-center pb-20 pt-24 lg:h-[100svh] lg:pb-10 lg:pt-28">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 sm:px-8 lg:flex-row lg:items-end lg:justify-between">
+          <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="max-w-xl">
+            <motion.p variants={fadeUp} className={`${KICKER} text-lp-brinjal dark:text-[#A5B4FC]`}>
+              {d.security.eyebrow}
+            </motion.p>
+            <TextReveal as="h2" text={d.security.heading} delay={0.1} className={`${H2} mt-4`} />
+            <motion.p variants={fadeUp} className={`${LEAD} mt-4 text-lp-black/65 dark:text-white/65`}>
+              {d.security.sub}
+            </motion.p>
+          </motion.div>
 
-      <StickyScrollCards
-        cards={cards}
-        cardWidthClassName="max-w-4xl"
-        viewportsPerCard={1.6}
-        onActiveChange={setActive}
-        rail={
-          <div aria-hidden className="pointer-events-none absolute right-8 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-3 lg:flex">
+          <div className="flex flex-wrap gap-2 lg:max-w-[540px] lg:justify-end">
             {points.map((point, i) => (
-              <span
+              <button
                 key={point.title}
-                className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                  i === active ? 'h-6 bg-gradient-to-b from-violet to-brand-orange' : 'bg-ink/15 dark:bg-white/15'
+                type="button"
+                onClick={() => goTo(i)}
+                aria-pressed={active === i}
+                className={`h-9 rounded-full px-4 text-[13px] font-medium transition-colors duration-300 ${
+                  active === i
+                    ? 'bg-lp-black text-white dark:bg-white dark:text-lp-black'
+                    : 'bg-white text-lp-black/70 ring-1 ring-lp-black/[0.08] hover:text-lp-black dark:bg-white/[0.06] dark:text-white/70 dark:ring-white/10 dark:hover:text-white'
                 }`}
-              />
+              >
+                {point.title}
+              </button>
             ))}
           </div>
-        }
-      />
+        </div>
+
+        <div
+          ref={trackRef}
+          onScroll={onRailScroll}
+          className="mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-5 px-5 pb-2 [scrollbar-width:none] sm:scroll-px-8 sm:px-8 lg:mt-12 lg:snap-none lg:gap-6 lg:overflow-visible lg:px-[max(2rem,calc((100vw-72rem)/2+2rem))] [&::-webkit-scrollbar]:hidden"
+        >
+          {points.map((point, i) => {
+            const Icon = ICONS[i] ?? BadgeCheck;
+            const isPng = PHOTOS[i]?.endsWith('.png');
+            return (
+              <article
+                key={point.title}
+                className={`sec-card relative flex w-[86vw] flex-shrink-0 snap-start flex-col overflow-hidden rounded-[28px] text-white sm:w-[70vw] lg:h-[min(520px,58vh)] lg:w-[min(1060px,78vw)] lg:flex-row lg:rounded-[36px] ${CARD_TONES[i % CARD_TONES.length]}`}
+              >
+                <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-[80px]" />
+                <div className="relative flex flex-1 flex-col p-7 sm:p-10 lg:p-12">
+                  <span className="flex items-center gap-3 text-[15px] font-medium">
+                    <span className="flex h-8 min-w-11 items-center justify-center rounded-full border border-white/60 px-3 text-sm">{i + 1}</span>
+                    <Icon size={18} className="text-white/85" />
+                  </span>
+                  <h3 className="lp-display mt-8 text-balance text-3xl text-white sm:text-[2.6rem]">{point.title}</h3>
+                  <p className="mt-5 max-w-md text-[15px] leading-relaxed text-white/85">{point.desc}</p>
+                  <p className="mt-3 max-w-md text-sm font-light leading-relaxed text-white/65">{point.detail}</p>
+                  <span className="mt-auto pt-8 text-xs font-medium tracking-[0.14em] text-white/50">
+                    {String(i + 1).padStart(2, '0')} / {String(points.length).padStart(2, '0')}
+                  </span>
+                </div>
+                <div className="relative order-first h-48 flex-shrink-0 p-3 sm:h-60 lg:order-none lg:h-auto lg:w-[42%] lg:p-5">
+                  <img
+                    src={PHOTOS[i]}
+                    alt={point.title}
+                    loading={i < 2 ? 'eager' : 'lazy'}
+                    className={`h-full w-full rounded-[20px] lg:rounded-[26px] ${isPng ? 'bg-white object-contain p-6' : 'object-cover'}`}
+                  />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
     </section>
   );
 }

@@ -7,7 +7,7 @@ import type { User }                                      from '@/types';
 // Every identifier-based call takes exactly one of `email` or `phone` — never both.
 export type Identifier = { email: string; phone?: never } | { phone: string; email?: never };
 
-export type AuthProviderName = 'GOOGLE' | 'APPLE' | 'FACEBOOK';
+export type AuthProviderName = 'GOOGLE' | 'APPLE' | 'FACEBOOK' | 'TIKTOK';
 
 export type AuthMethods = {
   hasPassword: boolean;
@@ -191,6 +191,41 @@ export const authService = {
     return { needsRole: false, user };
   },
 
+  // TikTok login. TikTok's PKCE flow is entirely backend-mediated: the backend hands
+  // back an authorize URL, the callback lands on our API, and the outcome comes back
+  // to the app as a one-time `handoff` nonce on the kolab:// redirect — redeemed here.
+  async getTiktokLoginAuthorizeUrl(): Promise<string> {
+    const res = await request<{ url: string }>('GET', '/api/auth/tiktok/authorize?platform=mobile');
+    return res.data.url;
+  },
+
+  // Exactly one of `handoff` (first call, right after the browser returns) or
+  // `tiktokPendingToken` + `role` (second call, once a role has been picked for a
+  // brand-new TikTok identity).
+  async tiktokAuth(payload: {
+    handoff?: string;
+    tiktokPendingToken?: string;
+    role?: 'CREATOR' | 'BUSINESS';
+  }): Promise<{ needsRole: true; email: string; name: string; tiktokPendingToken?: string } | { needsRole: false; user: User }> {
+    const res = await request<
+      | { needsRole: true; email: string; name: string; tiktokPendingToken?: string }
+      | (ApiLoginResponse & { needsRole: false; isNewUser: boolean })
+    >('POST', '/api/auth/tiktok/session', payload);
+
+    if (res.data.needsRole) {
+      return { needsRole: true, email: res.data.email, name: res.data.name, tiktokPendingToken: res.data.tiktokPendingToken };
+    }
+
+    const { accessToken, refreshToken, user: apiUser } = res.data as ApiLoginResponse & { needsRole: false };
+    await Promise.all([
+      storage.set(ACCESS_TOKEN_KEY,  accessToken),
+      storage.set(REFRESH_TOKEN_KEY, refreshToken),
+    ]);
+    const user = toUser(apiUser);
+    await storage.setJSON(USER_KEY, user);
+    return { needsRole: false, user };
+  },
+
   async appleAuth(payload: {
     identityToken: string;
     authorizationCode?: string;
@@ -244,7 +279,7 @@ export const authService = {
     return res.data;
   },
 
-  async unlinkAuthProvider(provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK'): Promise<AuthMethods> {
+  async unlinkAuthProvider(provider: AuthProviderName): Promise<AuthMethods> {
     const res = await request<AuthMethods>('DELETE', `/api/auth/methods/${provider}`);
     if (provider === 'APPLE') await storage.remove(APPLE_USER_ID_KEY).catch(() => {});
     return res.data;

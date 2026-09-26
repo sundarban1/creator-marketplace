@@ -12,12 +12,16 @@
 // ASWebAuthenticationSession returns the redirect inline with no Linking event. Returning a
 // falsy value here tells Expo Router to stay on the current path.
 //
+// tiktok-login-callback is the same story: the TikTok login browser session resolves from
+// this redirect, and navigating would unmount the /login screen that owns the pending flow.
+//
 // esewa-callback / khalti-callback deliberately do NOT match — those routes own their own
 // post-redirect UX and need the navigation.
 export function redirectSystemPath({ path }: { path: string; initial: boolean }): string | null {
   try {
     if (/[:/]oauthredirect(?:[/?#]|$)/i.test(path)) return null;
     if (/^fb\d+:\/\/authorize(?:[/?#]|$)/i.test(path)) return null;
+    if (/[:/]tiktok-login-callback(?:[/?#]|$)/i.test(path)) return null;
   } catch {
     // never throw from here — a throw can crash app launch
   }

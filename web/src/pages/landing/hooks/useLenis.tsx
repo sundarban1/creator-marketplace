@@ -4,7 +4,7 @@ import { gsap, ScrollTrigger, ensureGsapRegistered } from '../lib/gsap';
 import { useReducedMotion } from './useReducedMotion';
 
 interface LenisContextValue {
-  scrollTo: (target: string | HTMLElement, opts?: { offset?: number }) => void;
+  scrollTo: (target: string | HTMLElement | number, opts?: { offset?: number }) => void;
 }
 
 const LenisContext = createContext<LenisContextValue | null>(null);
@@ -71,7 +71,16 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     };
   }, [reducedMotion]);
 
-  function scrollTo(target: string | HTMLElement, opts?: { offset?: number }) {
+  function scrollTo(target: string | HTMLElement | number, opts?: { offset?: number }) {
+    // A raw document offset (e.g. a position inside a pinned section's scroll
+    // range, like Security's card rail) — nothing to resolve, just go there.
+    if (typeof target === 'number') {
+      const top = target + (opts?.offset ?? 0);
+      if (lenisRef.current) lenisRef.current.scrollTo(top);
+      else window.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
+      return;
+    }
+
     let el = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target;
 
     // A GSAP ScrollTrigger pin (e.g. Showcase's horizontal scroll) wraps its

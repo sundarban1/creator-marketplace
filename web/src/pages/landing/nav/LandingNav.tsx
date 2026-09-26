@@ -7,6 +7,7 @@ import { useLenisScroll } from '../hooks/useLenis';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { pillCtaClass } from '../components/PillCta';
 
 const LANGUAGE_NAMES: Record<'en' | 'ne', string> = { en: 'English', ne: 'नेपाली' };
 
@@ -15,16 +16,16 @@ const LANGUAGE_NAMES: Record<'en' | 'ne', string> = { en: 'English', ne: 'ने
 function ThemeToggleMobile() {
   const { theme, toggleTheme } = useLandingTheme();
   return (
-    <div className="flex items-center gap-1.5 rounded-2xl border border-ink/10 bg-white p-1.5 shadow-[0_8px_24px_-12px_rgba(20,17,16,0.15)] dark:border-white/10 dark:bg-ink-elevated">
+    <div className="flex items-center gap-1.5 rounded-2xl border border-white/10 bg-lp-navy-2 p-1.5">
       {(['light', 'dark'] as const).map((t) => (
         <button
           key={t}
           onClick={() => t !== theme && toggleTheme()}
           aria-pressed={theme === t}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-center font-serif text-base font-bold italic transition-all duration-300 ${
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-center text-base font-medium transition-all duration-300 ${
             theme === t
-              ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm'
-              : 'text-ink-soft hover:text-ink dark:text-white dark:hover:text-white'
+              ? 'bg-gradient-to-r from-lp-brinjal via-[#8B5CF6] to-lp-orange text-white shadow-sm'
+              : 'text-white/65 hover:text-white'
           }`}
         >
           {t === 'light' ? <Sun size={16} /> : <Moon size={16} />}
@@ -64,14 +65,14 @@ function LanguageSwitch({ dark = false }: { dark?: boolean }) {
 function LanguageSwitchMobile() {
   const { lang, setLang } = useLandingLanguage();
   return (
-    <div className="flex items-center gap-1.5 rounded-2xl border border-ink/10 bg-white p-1.5 shadow-[0_8px_24px_-12px_rgba(20,17,16,0.15)] dark:border-white/10 dark:bg-ink-elevated">
+    <div className="flex items-center gap-1.5 rounded-2xl border border-white/10 bg-lp-navy-2 p-1.5">
       {(['en', 'ne'] as const).map((l) => (
         <button
           key={l}
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
-          className={`flex-1 rounded-xl px-4 py-3 text-center font-serif text-base font-bold italic transition-all duration-300 ${
-            lang === l ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm' : 'text-ink-soft hover:text-ink dark:text-white dark:hover:text-white'
+          className={`flex-1 rounded-xl px-4 py-3 text-center text-base font-medium transition-all duration-300 ${
+            lang === l ? 'bg-gradient-to-r from-lp-brinjal via-[#8B5CF6] to-lp-orange text-white shadow-sm' : 'text-white/65 hover:text-white'
           }`}
         >
           {LANGUAGE_NAMES[l]}
@@ -84,7 +85,6 @@ function LanguageSwitchMobile() {
 export function LandingNav() {
   const { scrollTo } = useLenisScroll();
   const { d } = useLandingLanguage();
-  const { theme } = useLandingTheme();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -106,84 +106,54 @@ export function LandingNav() {
 
   return (
     <>
-      <motion.header
-        initial={false}
-        animate={
-          theme === 'dark'
-            ? {
-                backgroundColor: scrolled ? 'rgba(20,17,16,0.85)' : 'rgba(20,17,16,0)',
-                borderColor: scrolled ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0)',
-                boxShadow: scrolled ? '0 10px 30px -10px rgba(0,0,0,0.4)' : '0 0 0 rgba(0,0,0,0)',
-              }
-            : {
-                backgroundColor: scrolled ? 'rgba(251,249,245,0.85)' : 'rgba(251,249,245,0)',
-                borderColor: scrolled ? 'rgba(20,17,16,0.08)' : 'rgba(20,17,16,0)',
-                boxShadow: scrolled ? '0 10px 30px -10px rgba(20,17,16,0.12)' : '0 0 0 rgba(0,0,0,0)',
-              }
-        }
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed left-0 right-0 top-0 z-50 border-b backdrop-blur-xl"
-      >
+      <header className="fixed left-0 right-0 top-0 z-50">
         <div
-          className={`mx-auto flex max-w-6xl items-center justify-between px-6 transition-[padding] duration-300 ease-out ${scrolled ? 'py-3.5' : 'py-5'}`}
+          className={`border-b bg-lp-navy/90 backdrop-blur-xl transition-colors duration-300 ${scrolled ? 'border-white/10' : 'border-transparent'}`}
         >
-          <button onClick={() => go('hero')} className="group flex items-center transition-transform duration-300 ease-out hover:scale-[1.04]">
-            <img src="/logo.png" alt="Kolab" className="h-9 w-auto object-contain" />
-          </button>
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-5 sm:px-8">
+            <button onClick={() => go('hero')} className="flex flex-shrink-0 items-center">
+              <img src="/logo.png" alt="Kolab" className="h-8 w-auto object-contain" />
+            </button>
 
-          <nav className="hidden items-center gap-9 lg:flex">
-            {NAV_LINKS.map((l) => {
-              const cls =
-                'group relative rounded pb-1 font-serif text-[13px] font-bold italic tracking-wide text-ink-soft transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white';
-              const inner = (
-                <>
-                  {d.nav.links[l.key]}
-                  <span
-                    aria-hidden
-                    className="absolute bottom-0 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
-                  />
-                </>
-              );
-              return l.to ? (
-                <Link key={l.key} to={l.to} onClick={() => setOpen(false)} className={cls}>
-                  {inner}
-                </Link>
-              ) : (
-                <button key={l.key} onClick={() => go(l.id!, l.offset)} className={cls}>
-                  {inner}
-                </button>
-              );
-            })}
-            <Link
-              to="/login"
-              className="font-serif text-[13px] font-bold italic text-ink-soft transition-colors duration-300 hover:text-ink dark:text-white dark:hover:text-white"
-            >
-              {d.nav.login}
-            </Link>
-            <Link
-              to="/signup"
-              className="inline-flex items-center rounded-full bg-gradient-to-r from-violet to-brand-orange px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition-transform duration-300 hover:scale-[1.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet"
-            >
-              {d.nav.getStarted}
-            </Link>
-          </nav>
+            <nav className="hidden items-center gap-7 lg:flex">
+              {NAV_LINKS.map((l) => {
+                const cls =
+                  'text-[15px] text-white/85 transition-colors duration-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lp-glow';
+                return l.to ? (
+                  <Link key={l.key} to={l.to} onClick={() => setOpen(false)} className={cls}>
+                    {d.nav.links[l.key]}
+                  </Link>
+                ) : (
+                  <button key={l.key} onClick={() => go(l.id!, l.offset)} className={cls}>
+                    {d.nav.links[l.key]}
+                  </button>
+                );
+              })}
+            </nav>
 
-          <div className="hidden items-center gap-4 lg:flex">
-            <LanguageSwitch dark />
-            <span aria-hidden className="h-5 w-px bg-ink/10 dark:bg-white/10" />
-            <ThemeToggle dark />
+            <div className="hidden flex-shrink-0 items-center gap-3 lg:flex">
+              <LanguageSwitch />
+              <ThemeToggle />
+              <Link to="/signup" className={pillCtaClass('gradient')}>
+                {d.nav.getStarted}
+              </Link>
+              <span aria-hidden className="h-5 w-px bg-white/25" />
+              <Link to="/login" className="text-[15px] font-medium text-white/90 transition-colors hover:text-white">
+                {d.nav.login}
+              </Link>
+            </div>
+
+            <button
+              onClick={() => setOpen((v) => !v)}
+              aria-label={d.nav.toggleMenuAriaLabel}
+              aria-expanded={open}
+              className="rounded-full p-1.5 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lp-glow lg:hidden"
+            >
+              {open ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
-
-          <button
-            onClick={() => setOpen((v) => !v)}
-            aria-label={d.nav.toggleMenuAriaLabel}
-            aria-expanded={open}
-            className="rounded-full p-1.5 text-ink transition-colors duration-300 hover:bg-ink/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet dark:text-white dark:hover:bg-white/5 lg:hidden"
-          >
-            {open ? <X size={22} /> : <Menu size={22} />}
-          </button>
         </div>
-      </motion.header>
+      </header>
 
       <AnimatePresence>
         {open && (
@@ -193,12 +163,12 @@ export function LandingNav() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             data-lenis-prevent
-            className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-paper px-8 py-24 dark:bg-ink"
+            className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-lp-navy px-8 py-24"
           >
             <div className="m-auto flex w-full flex-col gap-1">
               {NAV_LINKS.map((l, i) => {
                 const cls =
-                  'group relative w-fit rounded py-2.5 text-left font-serif text-4xl font-bold italic text-ink/85 transition-colors duration-300 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet dark:text-white dark:hover:text-white';
+                  'group relative w-fit rounded py-2.5 text-left lp-display text-4xl text-white/90 transition-colors duration-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lp-glow';
                 const anim = {
                   initial: { opacity: 0, x: -16 },
                   animate: { opacity: 1, x: 0 },
@@ -209,7 +179,7 @@ export function LandingNav() {
                     {d.nav.links[l.key]}
                     <span
                       aria-hidden
-                      className="absolute bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
+                      className="absolute bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-lp-brinjal via-[#8B5CF6] to-lp-orange transition-transform duration-300 ease-out group-hover:scale-x-100"
                     />
                   </>
                 );
@@ -229,19 +199,19 @@ export function LandingNav() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.08 + NAV_LINKS.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-4 flex flex-col items-start gap-3"
+                className="mt-6 flex flex-wrap items-center gap-3"
               >
                 <Link
                   to="/login"
                   onClick={() => setOpen(false)}
-                  className="font-serif text-lg font-bold italic text-ink/85 transition-colors duration-300 hover:text-ink dark:text-white dark:hover:text-white"
+                  className={pillCtaClass('outline-white', 'lg')}
                 >
                   {d.nav.login}
                 </Link>
                 <Link
                   to="/signup"
                   onClick={() => setOpen(false)}
-                  className="inline-flex items-center rounded-full bg-gradient-to-r from-violet to-brand-orange px-6 py-3 font-serif text-xl font-bold italic text-white shadow-sm"
+                  className={pillCtaClass('gradient', 'lg')}
                 >
                   {d.nav.getStarted}
                 </Link>
@@ -250,17 +220,17 @@ export function LandingNav() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.08 + (NAV_LINKS.length + 1) * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-10 w-full max-w-xs border-t border-ink/10 pt-6 dark:border-white/10"
+                className="mt-10 w-full max-w-xs border-t border-white/10 pt-6"
               >
-                <p className="flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white">
-                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
+                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-white/55">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-lp-brinjal to-lp-orange" />
                   {d.nav.languageLabel}
                 </p>
                 <div className="mt-3">
                   <LanguageSwitchMobile />
                 </div>
-                <p className="mt-5 flex items-center gap-2 font-serif text-sm italic text-ink-soft dark:text-white">
-                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
+                <p className="mt-5 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-white/55">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-lp-brinjal to-lp-orange" />
                   {d.nav.appearanceLabel}
                 </p>
                 <div className="mt-3">

@@ -289,10 +289,11 @@ export class CreatorController {
     const { code, state, error } = req.query as { code?: string; state?: string; error?: string };
     const purpose = state ? peekOAuthStatePurpose(state) : 'connect';
     const webBase = env.FRONTEND_URL.split(',')[0].trim();
+    const isWeb = !!state && peekOAuthStatePlatform(state) === 'web';
     const redirectBase =
       purpose === 'login'
-        ? `${webBase}/oauth/callback/tiktok-login`
-        : state && peekOAuthStatePlatform(state) === 'web'
+        ? (isWeb ? `${webBase}/oauth/callback/tiktok-login` : `${env.APP_SCHEME}://tiktok-login-callback`)
+        : isWeb
           ? `${webBase}/oauth/callback/tiktok`
           : `${env.APP_SCHEME}://tiktok-callback`;
 

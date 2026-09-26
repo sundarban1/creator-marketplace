@@ -30,7 +30,7 @@ export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBad
   const soonClass = isDark
     ? 'border border-ink/15 bg-ink/[0.03] text-ink-soft dark:border-white/15 dark:bg-white/[0.05] dark:text-white/60'
     : 'border border-white/20 bg-white/5 text-white/60';
-  const base = 'flex w-44 items-center justify-center gap-2.5 rounded-md px-4 py-3 text-sm font-semibold';
+  const base = 'flex w-44 items-center justify-center gap-2.5 rounded-full px-4 py-3 text-sm font-semibold';
   const liveLink = `${base} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet ${liveClass}`;
 
   function badge(
@@ -48,7 +48,7 @@ export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBad
           <span className="flex flex-col items-start leading-none">
             <span className="flex items-center gap-1 text-[9px] font-medium uppercase tracking-wide opacity-80">
               <motion.span
-                className="h-1 w-1 rounded-full bg-brand-orange"
+                className="h-1 w-1 rounded-full bg-lp-orange"
                 animate={{ opacity: [1, 0.35, 1] }}
                 transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
               />

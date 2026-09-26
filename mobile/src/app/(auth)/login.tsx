@@ -223,7 +223,7 @@ function FormBanner({ tone, icon, text }: {
 // (surface fill, hairline border, SHADOW.card), same as the list rows on the
 // creator home feed.
 
-function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, appleLabel, onApplePress, appleLoading, appleError }: {
+function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, appleLabel, onApplePress, appleLoading, appleError, tiktokLabel, onTiktokPress, tiktokLoading, tiktokError }: {
   orLabel: string;
   googleLabel: string;
   facebookLabel: string;
@@ -238,6 +238,10 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
   onApplePress: () => void;
   appleLoading: boolean;
   appleError: string;
+  tiktokLabel: string;
+  onTiktokPress: () => void;
+  tiktokLoading: boolean;
+  tiktokError: string;
 }) {
   const C = useAppColors();
   const s = useMemo(() => makeStyles(C), [C]);
@@ -256,61 +260,66 @@ function SocialAuthSection({ orLabel, googleLabel, facebookLabel, onGooglePress,
       {!!googleError && <FormBanner tone="error" icon="exclamation-circle" text={googleError} />}
       {FACEBOOK_LOGIN_ENABLED && !!facebookError && <FormBanner tone="error" icon="exclamation-circle" text={facebookError} />}
       {!!appleError && <FormBanner tone="error" icon="exclamation-circle" text={appleError} />}
+      {!!tiktokError && <FormBanner tone="error" icon="exclamation-circle" text={tiktokError} />}
 
-      <View style={s.socialCardRow}>
+      <View style={s.socialTileRow}>
         <Pressable
           style={({ pressed }) => [
-            s.socialCardBtn, { borderColor: C.border, backgroundColor: C.surface }, SHADOW.card,
+            s.socialTile, { borderColor: C.border, backgroundColor: C.surface }, SHADOW.card,
             googleLoading && { opacity: 0.6 },
-            pressed && !googleLoading && { backgroundColor: C.primaryLight, transform: [{ scale: 0.98 }] },
+            pressed && !googleLoading && { backgroundColor: C.primaryLight, transform: [{ scale: 0.96 }] },
           ]}
           onPress={onGooglePress} disabled={googleLoading}
           accessibilityRole="button"
           accessibilityLabel={googleLabel}>
           {googleLoading
             ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-            : <ExpoImage source={require('@/assets/images/google.png')} style={s.socialCardIcon} contentFit="contain" />}
-          <Text style={[s.socialCardText, { color: C.text }]}>{googleLabel}</Text>
+            : <ExpoImage source={require('@/assets/images/google.png')} style={s.socialTileIcon} contentFit="contain" />}
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
-          <Pressable
-            style={({ pressed }) => [
-              s.socialCardBtn, { borderColor: C.border, backgroundColor: C.surface }, SHADOW.card,
-              facebookLoading && { opacity: 0.6 },
-              pressed && !facebookLoading && { backgroundColor: C.primaryLight, transform: [{ scale: 0.98 }] },
-            ]}
-            onPress={onFacebookPress} disabled={facebookLoading}
-            accessibilityRole="button"
-            accessibilityLabel={facebookLabel}>
-            {facebookLoading
-              ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-              : <View style={s.fbBadgeSmall}><Text style={s.fbF}>f</Text></View>}
-            <Text style={[s.socialCardText, { color: C.text }]}>{facebookLabel}</Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* Sign in with Apple — iOS 13+ only (hidden everywhere else). Full-width
-          card directly under the Google/Facebook row, same neutral surface
-          treatment as those buttons. */}
-      {appleAvailable && (
         <Pressable
           style={({ pressed }) => [
-            s.appleBtn, s.appleBtnRow,
-            { borderColor: C.border, backgroundColor: C.surface },
-            SHADOW.card,
+            s.socialTile, { borderColor: C.border, backgroundColor: C.surface }, SHADOW.card,
+            facebookLoading && { opacity: 0.6 },
+            pressed && !facebookLoading && { backgroundColor: C.primaryLight, transform: [{ scale: 0.96 }] },
+          ]}
+          onPress={onFacebookPress} disabled={facebookLoading}
+          accessibilityRole="button"
+          accessibilityLabel={facebookLabel}>
+          {facebookLoading
+            ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
+            : <View style={s.fbBadgeSmall}><Text style={s.fbF}>f</Text></View>}
+        </Pressable>
+        )}
+        {appleAvailable && (
+        <Pressable
+          style={({ pressed }) => [
+            s.socialTile, { borderColor: C.border, backgroundColor: C.surface }, SHADOW.card,
             appleLoading && { opacity: 0.6 },
-            pressed && !appleLoading && { backgroundColor: C.primaryLight, transform: [{ scale: 0.98 }] },
+            pressed && !appleLoading && { backgroundColor: C.primaryLight, transform: [{ scale: 0.96 }] },
           ]}
           onPress={onApplePress} disabled={appleLoading}
           accessibilityRole="button"
           accessibilityLabel={appleLabel}>
           {appleLoading
             ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
-            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.socialCardIcon} contentFit="contain" tintColor={C.text} />}
-          <Text style={[s.socialCardText, { color: C.text }]}>{appleLabel}</Text>
+            : <ExpoImage source={require('@/assets/images/login/apple.svg')} style={s.socialTileIcon} contentFit="contain" tintColor={C.text} />}
         </Pressable>
-      )}
+        )}
+        <Pressable
+          style={({ pressed }) => [
+            s.socialTile, { borderColor: C.border, backgroundColor: C.surface }, SHADOW.card,
+            tiktokLoading && { opacity: 0.6 },
+            pressed && !tiktokLoading && { backgroundColor: C.primaryLight, transform: [{ scale: 0.96 }] },
+          ]}
+          onPress={onTiktokPress} disabled={tiktokLoading}
+          accessibilityRole="button"
+          accessibilityLabel={tiktokLabel}>
+          {tiktokLoading
+            ? <View style={[s.spinner, { borderColor: C.border, borderTopColor: C.brinjal1 }]} />
+            : <FontAwesome5 name="tiktok" size={20} color={C.text} />}
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -440,7 +449,7 @@ function TempleSkyline() {
 
 // ── Login form ────────────────────────────────────────────────────────────────
 
-function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, onApplePress, appleLoading, appleError, onLoginSuccess }: {
+function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, onApplePress, appleLoading, appleError, onTiktokPress, tiktokLoading, tiktokError, onLoginSuccess }: {
   verified?: string;
   onGooglePress: () => void;
   googleLoading: boolean;
@@ -452,6 +461,9 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   onApplePress: () => void;
   appleLoading: boolean;
   appleError: string;
+  onTiktokPress: () => void;
+  tiktokLoading: boolean;
+  tiktokError: string;
   // Runs right after a successful password login — used to finish an in-progress
   // "link Apple to my existing account" flow before the screen navigates away.
   onLoginSuccess?: () => Promise<void> | void;
@@ -643,6 +655,8 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         appleAvailable={appleAvailable}
         appleLabel={t('auth.login.continueApple')}
         onApplePress={onApplePress} appleLoading={appleLoading} appleError={appleError}
+        tiktokLabel={t('auth.login.continueTiktok')}
+        onTiktokPress={onTiktokPress} tiktokLoading={tiktokLoading} tiktokError={tiktokError}
       />
 
       {/* Suspended-account modal — shown instead of the inline banner when the
@@ -671,7 +685,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
 // ── Create Account form ───────────────────────────────────────────────────────
 
-function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, onApplePress, appleLoading, appleError }: {
+function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, onApplePress, appleLoading, appleError, onTiktokPress, tiktokLoading, tiktokError }: {
   initialRole?: 'CREATOR' | 'BUSINESS';
   onGooglePress: () => void;
   googleLoading: boolean;
@@ -683,6 +697,9 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
   onApplePress: () => void;
   appleLoading: boolean;
   appleError: string;
+  onTiktokPress: () => void;
+  tiktokLoading: boolean;
+  tiktokError: string;
 }) {
   const C = useAppColors();
   const { isDark } = useIsDark();
@@ -832,6 +849,8 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
         appleAvailable={appleAvailable}
         appleLabel={t('auth.signup.continueApple')}
         onApplePress={onApplePress} appleLoading={appleLoading} appleError={appleError}
+        tiktokLabel={t('auth.signup.continueTiktok')}
+        onTiktokPress={onTiktokPress} tiktokLoading={tiktokLoading} tiktokError={tiktokError}
       />
     </View>
   );
@@ -907,6 +926,11 @@ export default function LoginScreen() {
   const [appleLoading,    setAppleLoading]    = useState(false);
   const [appleError,      setAppleError]      = useState('');
   const [appleAvailable,  setAppleAvailable]  = useState(false);
+  const [tiktokLoading,   setTiktokLoading]   = useState(false);
+  const [tiktokError,     setTiktokError]     = useState('');
+  // TikTok's authorization code is spent by the time a role is picked, so the
+  // backend hands back this short-lived token to resend with the chosen role.
+  const [pendingTiktokToken, setPendingTiktokToken] = useState('');
   // Set when the backend returns ACCOUNT_LINKING_REQUIRED — holds the short-lived
   // link token; while it's set the "sign in to connect Apple" sheet shows and a
   // successful password login finishes the link.
@@ -916,7 +940,7 @@ export default function LoginScreen() {
   const [appleLinkSheet,  setAppleLinkSheet]  = useState(false);
   const [roleModal,       setRoleModal]       = useState(false);
   const [pendingToken,    setPendingToken]    = useState('');
-  const [pendingProvider, setPendingProvider] = useState<'google' | 'facebook' | 'apple'>('google');
+  const [pendingProvider, setPendingProvider] = useState<'google' | 'facebook' | 'apple' | 'tiktok'>('google');
   // Apple hands back the name/email only on the first response, so a role-select
   // re-submit has to resend the whole credential, not just a token.
   const [pendingAppleCred, setPendingAppleCred] = useState<AppleAuthentication.AppleAuthenticationCredential | null>(null);
@@ -1177,6 +1201,45 @@ export default function LoginScreen() {
     }
   }
 
+  async function completeTiktok(input: { handoff?: string; tiktokPendingToken?: string; role?: 'CREATOR' | 'BUSINESS' }) {
+    const result = await authService.tiktokAuth(input);
+    if (result.needsRole) {
+      setPendingTiktokToken(result.tiktokPendingToken ?? '');
+      setPendingProvider('tiktok');
+      setRoleModal(true);
+      return;
+    }
+    await reloadUser();
+  }
+
+  async function handleTiktokPress() {
+    if (tiktokLoading) return;
+    setTiktokError('');
+    setTiktokLoading(true);
+    try {
+      const url = await authService.getTiktokLoginAuthorizeUrl();
+      // preferEphemeralSession (iOS): don't silently reuse whichever TikTok account
+      // the shared browser session is already logged into.
+      const result = await WebBrowser.openAuthSessionAsync(url, 'kolab://tiktok-login-callback', { preferEphemeralSession: true });
+      if (result.type !== 'success' || !result.url) return; // cancelled/dismissed
+      const parsed = new URL(result.url);
+      if (parsed.searchParams.get('success') !== 'true') {
+        setTiktokError(parsed.searchParams.get('error') ?? t('auth.login.tiktokFailed'));
+        return;
+      }
+      const handoff = parsed.searchParams.get('handoff');
+      if (!handoff) {
+        setTiktokError(t('auth.login.tiktokFailed'));
+        return;
+      }
+      await completeTiktok({ handoff });
+    } catch (e) {
+      setTiktokError(e instanceof ApiError ? e.message : t('auth.login.tiktokFailed'));
+    } finally {
+      setTiktokLoading(false);
+    }
+  }
+
   // Finishes an in-progress "connect Apple to my existing account" flow right
   // after the user signs in with their existing method (see LoginForm).
   async function finishAppleLinkIfPending() {
@@ -1201,6 +1264,16 @@ export default function LoginScreen() {
     setRoleModal(false);
     if (pendingProvider === 'facebook') {
       await handleFacebookToken(pendingToken, selectedRole);
+    } else if (pendingProvider === 'tiktok') {
+      setTiktokLoading(true);
+      setTiktokError('');
+      try {
+        await completeTiktok({ tiktokPendingToken: pendingTiktokToken, role: selectedRole });
+      } catch (e) {
+        setTiktokError(e instanceof ApiError ? e.message : t('auth.login.tiktokFailed'));
+      } finally {
+        setTiktokLoading(false);
+      }
     } else if (pendingProvider === 'apple') {
       if (pendingAppleCred) await handleAppleToken(pendingAppleCred, selectedRole);
     } else {
@@ -1307,8 +1380,8 @@ export default function LoginScreen() {
               transform: [{ translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
             }]}>
             {tab === 'login'
-              ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} onLoginSuccess={finishAppleLinkIfPending} />
-              : <SignupForm key={params.role} initialRole={params.role === 'BUSINESS' ? 'BUSINESS' : params.role === 'CREATOR' ? 'CREATOR' : undefined} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} />}
+              ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} onTiktokPress={handleTiktokPress} tiktokLoading={tiktokLoading} tiktokError={tiktokError} onLoginSuccess={finishAppleLinkIfPending} />
+              : <SignupForm key={params.role} initialRole={params.role === 'BUSINESS' ? 'BUSINESS' : params.role === 'CREATOR' ? 'CREATOR' : undefined} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} appleAvailable={appleAvailable} onApplePress={handleApplePress} appleLoading={appleLoading} appleError={appleError} onTiktokPress={handleTiktokPress} tiktokLoading={tiktokLoading} tiktokError={tiktokError} />}
 
             {/* Reassurance line — quiet, non-actionable, closes the page. */}
             <View style={s.trustRow}>
@@ -1546,6 +1619,9 @@ function makeStyles(C: typeof COLORS) {
   dividerLine:       { flex: 1, height: 1 },
   dividerText:       { fontSize: FONT_SIZE.xs, color: C.textSecondary, fontFamily: F.semibold, letterSpacing: 1, textTransform: 'uppercase' },
   socialCardRow:     { flexDirection: 'column', gap: SPACING.md },
+  socialTileRow:     { flexDirection: 'row', justifyContent: 'center', gap: SPACING.md },
+  socialTile:        { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.lg, borderWidth: 1 },
+  socialTileIcon:    { width: 24, height: 24 },
   socialCardBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, minHeight: 54, borderRadius: RADIUS.lg, borderWidth: 1 },
   socialCardBtnFull: { flex: 0 },
   // Sign in with Apple button — full width, same height as the primary CTA.

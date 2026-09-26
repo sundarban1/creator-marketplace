@@ -6,7 +6,7 @@ import { useLandingLanguage } from '../context/LanguageContext';
 import { getCategoryStyle } from '../lib/categoryIcons';
 import { getIconOption } from '../../../lib/iconOptions';
 import { TextReveal } from '../components/TextReveal';
-import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
+import { H2, KICKER, band } from '../lib/surfaces';
 import type { LandingStats } from '../../../lib/api';
 
 // Reads as a single row at desktop widths (the reference layout), so the
@@ -34,21 +34,14 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
   return (
     <section
       id={SECTION_IDS.categories}
-      style={sectionCutStyle(true)}
-      className="relative overflow-hidden bg-paper-dim py-20 dark:bg-ink-elevated"
+      className={`${band('white')} overflow-hidden py-24 sm:py-28`}
     >
-      <SectionCutAccent flip />
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
+          <motion.p variants={fadeUp} className={`${KICKER} text-lp-brinjal dark:text-[#A5B4FC]`}>
             {d.categories.eyebrow}
           </motion.p>
-          <TextReveal
-            as="h2"
-            text={d.categories.heading}
-            delay={0.1}
-            className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
-          />
+          <TextReveal as="h2" text={d.categories.heading} delay={0.1} className={`${H2} mt-4`} />
         </motion.div>
 
         <motion.div
@@ -56,29 +49,34 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
           whileInView="show"
           viewport={VP}
           variants={stagger(0.06)}
-          className="mt-12 flex flex-wrap items-start justify-center gap-x-7 gap-y-7 sm:gap-x-10"
+          className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"
         >
           {visible.map(({ name, icon: Icon, color }, i) => (
-            <motion.div key={i} variants={fadeUp} whileHover={PILL_HOVER} className="flex w-16 flex-col items-center gap-2.5 text-center">
+            <motion.div
+              key={i}
+              variants={fadeUp}
+              whileHover={PILL_HOVER}
+              className="flex flex-col items-center rounded-2xl bg-white px-4 py-7 text-center shadow-[0_14px_40px_-26px_rgba(10,16,51,0.45)] ring-1 ring-lp-black/[0.06] dark:bg-white/[0.05] dark:ring-white/10"
+            >
               <span
-                style={{ backgroundColor: `${color}1A`, color, boxShadow: `0 4px 12px -4px ${color}66` }}
-                className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
+                style={{ background: `linear-gradient(135deg, ${color}33, ${color}14)`, color }}
+                className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full"
               >
-                <Icon size={18} />
+                <Icon size={22} />
               </span>
-              <span className="text-xs font-semibold leading-tight text-ink dark:text-white">{name}</span>
+              <span className="lp-heading mt-4 text-sm leading-snug">{name}</span>
             </motion.div>
           ))}
           <motion.button
             type="button"
             variants={fadeUp}
             whileHover={PILL_HOVER}
-            className="flex w-16 flex-col items-center gap-2.5 text-center"
+            className="flex flex-col items-center justify-center rounded-2xl bg-lp-brinjal px-4 py-7 text-center text-white shadow-[0_14px_40px_-20px_rgba(79,70,229,0.8)]"
           >
-            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ink/5 text-ink-soft dark:bg-white/10 dark:text-white">
-              <ChevronRight size={18} />
+            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-white/15">
+              <ChevronRight size={22} />
             </span>
-            <span className="text-xs font-semibold leading-tight text-ink-soft dark:text-white">{d.categories.more}</span>
+            <span className="lp-heading mt-4 text-sm">{d.categories.more}</span>
           </motion.button>
         </motion.div>
       </div>

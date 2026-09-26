@@ -13,14 +13,13 @@ import { useScrollToTop } from './hooks/useScrollToTop';
 if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual';
 }
-import { LandingLanguageProvider } from './context/LanguageContext';
+import { LandingLanguageProvider, useLandingLanguage } from './context/LanguageContext';
 import { LandingThemeProvider } from './context/ThemeContext';
 import { CursorSparkles } from './components/CursorSparkles';
 import { ScrollProgress } from './components/ScrollProgress';
 import { CornerChrome } from './components/CornerChrome';
 import { ChatWidget } from './components/ChatWidget';
 import { SocialRail } from './components/SocialRail';
-import { LaunchAnnouncementModal } from './components/LaunchAnnouncementModal';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
 import { SEO } from '../../lib/seo/SEO';
@@ -73,9 +72,10 @@ function LandingPageInner() {
   const stats = useLandingStats();
   const { status: storiesStatus, stories: successStories } = useSuccessStories();
   const { events, creators, businesses, categoryMeta } = useLandingShowcase();
+  const { lang } = useLandingLanguage();
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white font-display dark:bg-ink">
+    <div className={`min-h-screen overflow-x-hidden bg-lp-navy font-body text-white ${lang === 'ne' ? 'lp-ne' : ''}`}>
       <SEO
         title="Kolab – Nepal's Creator Marketplace for Brands & Influencers"
         description="Kolab is Nepal's creator marketplace. Hire verified influencers, launch campaigns, and grow your brand — or find paid collaborations as a content creator."
@@ -115,7 +115,6 @@ function LandingPageInner() {
       <ScrollProgress />
       <CornerChrome />
       <SocialRail />
-      <LaunchAnnouncementModal />
       <LandingNav />
       <Hero stats={stats} creators={creators} />
       <OldWay />

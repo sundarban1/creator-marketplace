@@ -4,7 +4,7 @@ import { VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
-import { SectionCutAccent, sectionCutStyle } from '../components/SectionWave';
+import { H2, KICKER, LEAD, band } from '../lib/surfaces';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
 type ClosingLine = { pre: string; highlight: string; post: string };
@@ -14,9 +14,9 @@ type ClosingLine = { pre: string; highlight: string; post: string };
 // read as an escalating drumbeat rather than one flat block of text.
 function HighlightLine({ line, className = '' }: { line: ClosingLine; className?: string }) {
   return (
-    <p className={`font-serif text-xl font-medium leading-snug text-ink sm:text-2xl dark:text-white ${className}`}>
+    <p className={`lp-display text-2xl text-white sm:text-3xl ${className}`}>
       {line.pre}
-      <span className="bg-gradient-to-r from-violet to-brand-orange bg-clip-text text-[1.6em] font-bold text-transparent">
+      <span className="lp-gradient-text">
         {line.highlight}
       </span>
       {line.post}
@@ -78,25 +78,17 @@ export function OldWay() {
   return (
     <section
       id={SECTION_IDS.oldWay}
-      style={sectionCutStyle()}
-      className="relative overflow-hidden bg-paper-dim py-28 dark:bg-ink-elevated"
+      className={`${band('navy')} overflow-hidden pb-28 pt-12`}
     >
-      <SectionCutAccent />
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="mesh-blob absolute left-[10%] top-[-8%] h-[340px] w-[340px] rounded-full bg-ink/[0.03] blur-[110px] dark:bg-white/[0.03]" />
-        <div className="mesh-blob absolute bottom-[-10%] right-[8%] h-[300px] w-[300px] rounded-full bg-brand-orange/[0.06] blur-[110px]" style={{ animationDelay: '2.4s' }} />
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-10%] top-[20%] h-[420px] w-[420px] rounded-full bg-lp-brinjal/20 blur-[130px]" />
       </div>
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-balance text-lg font-semibold text-ink dark:text-white">{o.problemIntro}</p>
-          <p className="mt-3 font-serif text-base italic text-ink-soft dark:text-white">{o.eyebrow}</p>
-          <TextReveal
-            as="h2"
-            text={o.heading}
-            delay={0.1}
-            className="mt-3 text-balance font-serif text-3xl font-medium text-ink sm:text-4xl md:text-5xl dark:text-white"
-          />
-          <p className="mt-4 text-ink-soft dark:text-white">{o.sub}</p>
+          <p className={`${KICKER} text-[#A5B4FC]`}>{o.eyebrow}</p>
+          <TextReveal as="h2" text={o.heading} delay={0.1} className={`${H2} mt-4 text-white`} />
+          <p className="mt-4 text-lg font-medium text-white/90">{o.problemIntro}</p>
+          <p className={`${LEAD} mx-auto mt-2 max-w-xl text-white/65`}>{o.sub}</p>
         </div>
 
         {/* Mobile / tablet — simple stacked clutter, no absolute scatter. */}
@@ -108,9 +100,9 @@ export function OldWay() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={VP}
               transition={{ delay: reducedMotion ? 0 : i * 0.08, duration: 0.4 }}
-              className="flex items-center gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink shadow-sm dark:border-white/10 dark:bg-ink-elevated-2 dark:text-white"
+              className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-3 text-sm"
             >
-              <MessageCircle size={14} className="flex-shrink-0 text-ink-soft dark:text-white/60" />
+              <MessageCircle size={14} className="flex-shrink-0 text-white/55" />
               {msg}
             </motion.div>
           ))}
@@ -119,9 +111,9 @@ export function OldWay() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={VP}
             transition={{ delay: reducedMotion ? 0 : 0.5, duration: 0.4 }}
-            className="flex items-center gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink shadow-sm dark:border-white/10 dark:bg-ink-elevated-2 dark:text-white"
+            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-3 text-sm"
           >
-            <CalendarClock size={14} className="flex-shrink-0 text-violet" />
+            <CalendarClock size={14} className="flex-shrink-0 text-[#A5B4FC]" />
             {o.calendarText}
           </motion.div>
           <motion.div
@@ -129,9 +121,9 @@ export function OldWay() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={VP}
             transition={{ delay: reducedMotion ? 0 : 0.58, duration: 0.4 }}
-            className="flex items-center gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink shadow-sm dark:border-white/10 dark:bg-ink-elevated-2 dark:text-white"
+            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-3 text-sm"
           >
-            <Table2 size={14} className="flex-shrink-0 text-ink-soft dark:text-white/60" />
+            <Table2 size={14} className="flex-shrink-0 text-white/55" />
             {o.spreadsheetText}
           </motion.div>
           <motion.div
@@ -139,9 +131,9 @@ export function OldWay() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={VP}
             transition={{ delay: reducedMotion ? 0 : 0.66, duration: 0.4 }}
-            className="flex items-center gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink shadow-sm dark:border-white/10 dark:bg-ink-elevated-2 dark:text-white"
+            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-3 text-sm"
           >
-            <Banknote size={14} className="flex-shrink-0 text-emerald-500" />
+            <Banknote size={14} className="flex-shrink-0 text-emerald-300" />
             {o.paymentText}
           </motion.div>
         </div>
@@ -152,8 +144,8 @@ export function OldWay() {
             const layout = MESSAGE_LAYOUT[i]!;
             return (
               <ClutterCard key={msg} {...layout} delay={i * 0.12} reducedMotion={reducedMotion}>
-                <div className="flex items-start gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-2.5 text-sm text-ink shadow-[0_10px_24px_-14px_rgba(20,17,16,0.3)] dark:border-white/10 dark:bg-ink-elevated-2 dark:text-white">
-                  <MessageCircle size={13} className="mt-0.5 flex-shrink-0 text-ink-soft dark:text-white/60" />
+                <div className="flex items-start gap-2 rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.05] text-white backdrop-blur px-4 py-2.5 text-sm shadow-[0_20px_40px_-24px_rgba(0,0,0,0.8)]">
+                  <MessageCircle size={13} className="mt-0.5 flex-shrink-0 text-white/55" />
                   {msg}
                 </div>
               </ClutterCard>
@@ -161,41 +153,41 @@ export function OldWay() {
           })}
 
           <ClutterCard top="28%" left="72%" rotate={-6} delay={0.7} reducedMotion={reducedMotion}>
-            <div className="rounded-xl border border-ink/10 bg-white px-4 py-3 shadow-[0_10px_24px_-14px_rgba(20,17,16,0.3)] dark:border-white/10 dark:bg-ink-elevated-2">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-ink-soft dark:text-white/60">
+            <div className="rounded-xl border border-lp-orange/30 bg-lp-orange/10 px-4 py-3 backdrop-blur">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-white/55">
                 <Pin size={11} />
                 {o.noteLabel}
               </span>
-              <p className="mt-1.5 text-xs font-medium text-ink dark:text-white">{o.noteText}</p>
+              <p className="mt-1.5 text-xs font-medium text-white">{o.noteText}</p>
             </div>
           </ClutterCard>
 
           <ClutterCard top="76%" left="2%" rotate={3} delay={0.82} reducedMotion={reducedMotion}>
-            <div className="flex items-center gap-2 rounded-xl border border-ink/10 bg-white px-3.5 py-2.5 shadow-[0_10px_24px_-14px_rgba(20,17,16,0.3)] dark:border-white/10 dark:bg-ink-elevated-2">
-              <CalendarClock size={14} className="flex-shrink-0 text-violet" />
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-3.5 py-2.5">
+              <CalendarClock size={14} className="flex-shrink-0 text-[#A5B4FC]" />
               <div>
-                <p className="text-[10px] font-bold text-ink-soft dark:text-white/60">{o.calendarLabel}</p>
-                <p className="text-xs font-semibold text-ink dark:text-white">{o.calendarText}</p>
+                <p className="text-[10px] font-bold text-white/55">{o.calendarLabel}</p>
+                <p className="text-xs font-semibold text-white">{o.calendarText}</p>
               </div>
             </div>
           </ClutterCard>
 
           <ClutterCard top="52%" left="72%" rotate={-3} delay={0.94} reducedMotion={reducedMotion}>
-            <div className="flex items-center gap-2 rounded-xl border border-ink/10 bg-white px-3.5 py-2.5 shadow-[0_10px_24px_-14px_rgba(20,17,16,0.3)] dark:border-white/10 dark:bg-ink-elevated-2">
-              <Table2 size={14} className="flex-shrink-0 text-ink-soft dark:text-white/60" />
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] text-white backdrop-blur px-3.5 py-2.5">
+              <Table2 size={14} className="flex-shrink-0 text-white/55" />
               <div>
-                <p className="text-[10px] font-bold text-ink-soft dark:text-white/60">{o.spreadsheetLabel}</p>
-                <p className="text-xs font-semibold text-ink dark:text-white">{o.spreadsheetText}</p>
+                <p className="text-[10px] font-bold text-white/55">{o.spreadsheetLabel}</p>
+                <p className="text-xs font-semibold text-white">{o.spreadsheetText}</p>
               </div>
             </div>
           </ClutterCard>
 
           <ClutterCard top="2%" left="39%" rotate={5} delay={1.06} reducedMotion={reducedMotion}>
-            <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-3.5 py-2.5 shadow-[0_10px_24px_-14px_rgba(20,17,16,0.3)]">
-              <Banknote size={14} className="flex-shrink-0 text-emerald-500" />
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-2.5 backdrop-blur">
+              <Banknote size={14} className="flex-shrink-0 text-emerald-300" />
               <div>
-                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{o.paymentLabel}</p>
-                <p className="text-xs font-semibold text-ink dark:text-white">{o.paymentText}</p>
+                <p className="text-[10px] font-bold text-emerald-300">{o.paymentLabel}</p>
+                <p className="text-xs font-semibold text-white">{o.paymentText}</p>
               </div>
             </div>
           </ClutterCard>

@@ -4,6 +4,7 @@ import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
 import { AnimatedTestimonials } from '../components/AnimatedTestimonials';
+import { H2, KICKER, LEAD, band } from '../lib/surfaces';
 import type { ApiSuccessStory } from '../../../lib/api';
 
 type PublicSuccessStory = Pick<ApiSuccessStory, 'id' | 'name' | 'role' | 'quote' | 'photoUrl'>;
@@ -22,19 +23,19 @@ export function Stories({ status, stories }: StoriesProps) {
 
   if (stories.length === 0) {
     return (
-      <section id={SECTION_IDS.stories} className="bg-paper-dim py-24 dark:bg-ink-elevated">
+      <section id={SECTION_IDS.stories} className={`${band('white')} pb-32 pt-8`}>
         <div className="mx-auto max-w-2xl px-6 text-center">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
-            <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
+            <motion.p variants={fadeUp} className={`${KICKER} text-lp-brinjal dark:text-[#A5B4FC]`}>
               {d.stories.eyebrow}
             </motion.p>
             <TextReveal
               as="h2"
               text={d.stories.emptyTitle}
               delay={0.1}
-              className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
+              className={`${H2} mt-4`}
             />
-            <motion.p variants={fadeUp} className="mt-4 text-sm text-ink-soft dark:text-white">
+            <motion.p variants={fadeUp} className={`${LEAD} mt-4 text-lp-black/65 dark:text-white/65`}>
               {d.stories.emptyBody}
             </motion.p>
           </motion.div>
@@ -51,17 +52,17 @@ export function Stories({ status, stories }: StoriesProps) {
   }));
 
   return (
-    <section id={SECTION_IDS.stories} className="bg-paper-dim py-24 dark:bg-ink-elevated">
+    <section id={SECTION_IDS.stories} className={`${band('white')} pb-32 pt-8`}>
       <div className="mx-auto max-w-6xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft dark:text-white">
+          <motion.p variants={fadeUp} className={`${KICKER} text-lp-brinjal dark:text-[#A5B4FC]`}>
             {d.stories.eyebrow}
           </motion.p>
           <TextReveal
             as="h2"
             text={d.stories.heading}
             delay={0.1}
-            className="mt-3 text-balance font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl dark:text-white"
+            className={`${H2} mt-4`}
           />
         </motion.div>
 

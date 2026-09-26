@@ -233,7 +233,7 @@ export function ChatWidget() {
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.95 }}
         aria-label={open ? d.chatWidget.closeAriaLabel : d.chatWidget.openAriaLabel}
-        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet to-brand-orange text-white shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
+        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-lp-brinjal via-[#8B5CF6] to-lp-orange text-white shadow-[0_12px_30px_-10px_rgba(99,102,241,0.8)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
       >
         {open ? <X size={22} /> : <MessageCircle size={22} />}
         {hasUnread && !open && (

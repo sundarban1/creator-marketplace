@@ -1015,13 +1015,13 @@ export class AuthService {
   // parked behind a one-time Redis nonce (mintLoginHandoff) and redeemed via
   // tiktokSession below.
 
-  async getTiktokLoginAuthorizeUrl(): Promise<string> {
+  async getTiktokLoginAuthorizeUrl(clientPlatform: 'web' | 'mobile' = 'web'): Promise<string> {
     if (!env.TIKTOK_CLIENT_KEY || !env.TIKTOK_REDIRECT_URI) {
       throw new AppError(getDict().auth.tiktokLoginNotConfigured, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     const codeVerifier = crypto.randomBytes(32).toString('base64url');
     const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
-    const state = await signOAuthState({ codeVerifier, clientPlatform: 'web', purpose: 'login' });
+    const state = await signOAuthState({ codeVerifier, clientPlatform, purpose: 'login' });
 
     const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
     url.searchParams.set('client_key', env.TIKTOK_CLIENT_KEY);
