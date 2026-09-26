@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
-import { Search, Sparkles } from 'lucide-react';
+import { BadgeCheck, Search, Sparkles } from 'lucide-react';
 import { fadeUp, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -11,6 +11,7 @@ import { PillCta, pillCtaClass } from '../components/PillCta';
 import { useCountUp } from '../hooks/useCountUp';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import type { LandingStats, PublicCreatorLite } from '../../../lib/api';
+import type { CategoryMeta } from '../../../app/public/categoryLookup';
 
 // Stock-photo fallback for the avatar stack — used whenever a real creator
 // avatar isn't available yet (showcase fetch failed/still loading, or fewer
@@ -23,7 +24,15 @@ const AVATAR_FALLBACK_PHOTOS = [
   'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
 ];
 
-export function Hero({ stats, creators }: { stats: LandingStats | null; creators: PublicCreatorLite[] | null }) {
+export function Hero({
+  stats,
+  creators,
+  categoryMeta,
+}: {
+  stats: LandingStats | null;
+  creators: PublicCreatorLite[] | null;
+  categoryMeta: (name: string) => CategoryMeta;
+}) {
   const { d } = useLandingLanguage();
   const navigate = useNavigate();
   const reducedMotion = useReducedMotion();
@@ -48,6 +57,19 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
   // remaining slots (showcase still loading/failed, or too few avatarUrls).
   const realAvatarUrls = (creators ?? []).map((c) => c.avatarUrl).filter((url): url is string => Boolean(url));
   const avatarPhotos = AVATAR_FALLBACK_PHOTOS.map((fallback, i) => realAvatarUrls[i] ?? fallback);
+
+  // Four creators floating beside the phone — real ones (with a photo) from
+  // the live showcase first, the translated sample creator types + stock
+  // portraits filling any slots still empty (showcase loading/failed/sparse).
+  const realFloaters: FloatingCreator[] = (creators ?? [])
+    .filter((c) => c.avatarUrl && c.categories.length > 0)
+    .slice(0, FLOATER_SLOTS.length)
+    .map((c) => ({ name: c.fullName || c.username || '', photo: c.avatarUrl!, categories: c.categories, verified: c.isVerified }));
+  const floaters: FloatingCreator[] = FLOATER_SLOTS.map((_, i) => {
+    if (realFloaters[i]) return realFloaters[i]!;
+    const fb = d.marketplace.creators.fallback[i % d.marketplace.creators.fallback.length]!;
+    return { name: fb.name, photo: FLOATER_FALLBACK_PHOTOS[i]!, categories: [fb.category], verified: false };
+  });
 
   // Cursor-driven parallax — the product fan tilts a touch with the pointer,
   // the same ambient touch the previous hero's phone had.
@@ -208,6 +230,22 @@ export function Hero({ stats, creators }: { stats: LandingStats | null; creators
           </div>
         </motion.div>
         <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-64 bg-gradient-to-t from-lp-navy via-lp-navy/80 to-transparent" />
+
+        {/* Creators floating either side of the phone — above the bottom fade
+            (z-30) so the lower cards stay crisp. md+ only; there's no room
+            beside the phone on a phone. */}
+        <div className="pointer-events-none absolute inset-0 z-30 hidden md:block">
+          {floaters.map((creator, i) => (
+            <FloatingCreatorCard
+              key={i}
+              creator={creator}
+              slot={FLOATER_SLOTS[i]!}
+              index={i}
+              categoryMeta={categoryMeta}
+              reducedMotion={reducedMotion}
+            />
+          ))}
+        </div>
       </motion.div>
     </section>
   );
@@ -309,5 +347,96 @@ function HeroRibbon({
         transition={{ duration: 2.2, ease: [0.65, 0, 0.35, 1], delay: 0.3 }}
       />
     </svg>
+  );
+}
+
+type FloatingCreator = { name: string; photo: string; categories: string[]; verified: boolean };
+
+// Where each floating creator icon sits, relative to the fan container's
+// centre line (the phone is ~290px wide and centred): three down each side,
+// staggered in height and distance so they read as a loose scatter.
+const FLOATER_SLOTS: { side: 'left' | 'right'; top: string; gap: number }[] = [
+  { side: 'left', top: '6%', gap: 210 },
+  { side: 'right', top: '14%', gap: 150 },
+  { side: 'left', top: '38%', gap: 120 },
+  { side: 'right', top: '44%', gap: 240 },
+  { side: 'left', top: '66%', gap: 250 },
+  { side: 'right', top: '72%', gap: 140 },
+];
+
+const FLOATER_FALLBACK_PHOTOS = [
+  'https://images.pexels.com/photos/1587009/pexels-photo-1587009.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop',
+  'https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop',
+  'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop',
+  'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop',
+  'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop',
+  'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop',
+];
+
+// A small floating creator icon: round avatar in a brand-gradient ring (with
+// a verified tick badge when applicable) over one tiny niche chip — the first
+// category, iconed/coloured from the admin category settings — plus "+N" for
+// any further niches, the same "first + count" convention LiveOnKolab uses.
+function FloatingCreatorCard({
+  creator,
+  slot,
+  index,
+  categoryMeta,
+  reducedMotion,
+}: {
+  creator: FloatingCreator;
+  slot: (typeof FLOATER_SLOTS)[number];
+  index: number;
+  categoryMeta: (name: string) => CategoryMeta;
+  reducedMotion: boolean;
+}) {
+  const [first, ...rest] = creator.categories;
+  const { Icon, color } = categoryMeta(first ?? '');
+  // Pushed well out from the phone, but capped by the space actually left
+  // beside it (half the container minus the phone's half-width and the
+  // icon+chip's own ~160px, plus edge room) so narrower screens pull them in, not off-screen.
+  const edge = `calc(50% + 145px + max(16px, min(${slot.gap}px, 50% - 340px)))`;
+  const horizontal = slot.side === 'left' ? { right: edge } : { left: edge };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.4 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 1 + index * 0.12, type: 'spring', stiffness: 180, damping: 14 }}
+      style={{ top: slot.top, ...horizontal }}
+      className="absolute"
+    >
+      <motion.div
+        animate={reducedMotion ? undefined : { y: [0, -8, 0] }}
+        transition={{ duration: 4.5 + index * 0.6, repeat: Infinity, ease: 'easeInOut' }}
+        className={`flex flex-col gap-1.5 ${slot.side === 'left' ? 'items-end' : 'items-start'}`}
+        title={creator.name}
+      >
+        <div className="relative rounded-full bg-gradient-to-br from-lp-brinjal via-[#8B5CF6] to-lp-orange p-[2px] shadow-[0_10px_24px_-8px_rgba(99,102,241,0.8)]">
+          <img
+            src={creator.photo}
+            alt={creator.name}
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = FLOATER_FALLBACK_PHOTOS[index % FLOATER_FALLBACK_PHOTOS.length]!;
+            }}
+            className="h-12 w-12 rounded-full border-2 border-lp-navy object-cover"
+          />
+          {creator.verified && (
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-lp-navy">
+              <BadgeCheck size={13} className="text-[#A5B4FC]" />
+            </span>
+          )}
+        </div>
+        {first && (
+          <span className="inline-flex max-w-[150px] items-center gap-1 rounded-full border border-white/10 bg-lp-navy-2/85 py-0.5 pl-1.5 pr-2 text-[10px] font-medium text-white/90 backdrop-blur">
+            <Icon size={9} style={{ color }} className="flex-shrink-0" />
+            <span className="truncate">{first}</span>
+            {rest.length > 0 && <span className="flex-shrink-0 text-white/55">+{rest.length}</span>}
+          </span>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }

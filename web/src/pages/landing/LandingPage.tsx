@@ -116,7 +116,7 @@ function LandingPageInner() {
       <CornerChrome />
       <SocialRail />
       <LandingNav />
-      <Hero stats={stats} creators={creators} />
+      <Hero stats={stats} creators={creators} categoryMeta={categoryMeta} />
       <OldWay />
       <LiveOnKolab events={events} creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
       <CreatorStory />
