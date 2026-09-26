@@ -55,7 +55,7 @@ function WebContent() {
   return (
     <>
       <div className="flex items-center gap-3">
-        <img src="/logo-flat.svg" alt="Kolab" className="h-5 w-auto flex-shrink-0 object-contain" />
+        <img src="/logo.png" alt="Kolab" className="h-5 w-auto flex-shrink-0 object-contain" />
         <div className="flex h-8 flex-1 items-center gap-2 rounded-app-md border border-app-border bg-app-primary-tint px-2.5">
           <Search size={12} className="flex-shrink-0 text-app-muted" />
           <span className="truncate text-[10px] text-app-muted">{p.searchPlaceholder}</span>

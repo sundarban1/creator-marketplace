@@ -24,7 +24,7 @@ export function ErrorFallback({ eventId }: ErrorFallbackProps) {
     <div className="fixed inset-0 flex flex-col bg-paper font-display text-ink dark:bg-ink dark:text-white">
       <header className="mx-auto flex w-full max-w-3xl items-center px-6 py-5">
         <a href="/" className="flex items-center">
-          <img src="/logo-flat.svg" alt="Kolab" className="h-6 w-auto object-contain dark:brightness-0 dark:invert" />
+          <img src="/logo.png" alt="Kolab" className="h-6 w-auto object-contain dark:brightness-0 dark:invert" />
         </a>
       </header>
 
