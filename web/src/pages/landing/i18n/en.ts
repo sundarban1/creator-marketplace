@@ -154,7 +154,7 @@ export const en = {
 
   oldWay: {
     problemIntro: "Finding the right creator shouldn't be this hard.",
-    eyebrow: 'The way it usually works',
+    eyebrow: 'Challenges with the Current Way of Working',
     heading: 'Do you know any good creators?',
     sub: 'For many businesses, working with creators still means asking around, searching social media, and messaging people one by one.',
     messages: [
