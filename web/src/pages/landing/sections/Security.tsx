@@ -51,9 +51,16 @@ export function Security() {
       const stage = stageRef.current;
       const track = trackRef.current;
       if (!stage || !track) return;
-      const cards = gsap.utils.toArray<HTMLElement>('.sec-card', track);
-      if (cards.length < 2) return;
-      const distance = () => cards[cards.length - 1]!.offsetLeft - cards[0]!.offsetLeft;
+      // Re-query the cards on every measure rather than capturing them once:
+      // anything that remounts them would otherwise leave this measuring
+      // detached nodes (offsetLeft 0 → zero travel → the rail stops sliding).
+      const getCards = () => gsap.utils.toArray<HTMLElement>('.sec-card', track);
+      const count = getCards().length;
+      if (count < 2) return;
+      const distance = () => {
+        const cards = getCards();
+        return cards.length < 2 ? 0 : cards[cards.length - 1]!.offsetLeft - cards[0]!.offsetLeft;
+      };
 
       const tween = gsap.to(track, {
         x: () => -distance(),
@@ -65,7 +72,7 @@ export function Security() {
           end: () => '+=' + distance(),
           scrub: 0.8,
           invalidateOnRefresh: true,
-          snap: { snapTo: 1 / (cards.length - 1), duration: { min: 0.2, max: 0.5 }, ease: 'power1.inOut' },
+          snap: { snapTo: 1 / (count - 1), duration: { min: 0.2, max: 0.5 }, ease: 'power1.inOut' },
         },
       });
       return () => {
@@ -101,7 +108,10 @@ export function Security() {
             const isPng = PHOTOS[i]?.endsWith('.png');
             return (
               <article
-                key={point.title}
+                // Keyed by position, not title — the title changes on a
+                // language toggle, which would remount every card under the
+                // pinned GSAP tween.
+                key={i}
                 className={`sec-card relative flex w-[86vw] flex-shrink-0 snap-start flex-col overflow-hidden rounded-[28px] text-white sm:w-[70vw] lg:h-[min(520px,58vh)] lg:w-[min(1060px,78vw)] lg:flex-row lg:rounded-[36px] ${CARD_TONES[i % CARD_TONES.length]}`}
               >
                 <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-[80px]" />
