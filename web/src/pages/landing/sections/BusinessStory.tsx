@@ -17,8 +17,8 @@ function PostingMockup({ opportunity, applyLabel }: { opportunity: OpportunityCa
   return (
     <div className="flex flex-col items-center gap-4">
       <AppCard className="w-full max-w-xs p-4">
-        <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-app-muted">
-          <Building2 size={13} className="text-lp-green" />
+        <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-app-muted dark:text-white/75">
+          <Building2 size={13} className="text-lp-green dark:text-[#86EFAC]" />
           New requirement
         </span>
         <div className="mt-3 flex flex-wrap gap-1.5">

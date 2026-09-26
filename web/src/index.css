@@ -39,8 +39,8 @@
      RADIUS / SHADOW, creator-role values) so these read as the actual app,
      not an approximation. Night/dark values aren't from the mobile app
      (which doesn't ship a dark theme for these screens) — they're picked to
-     match this site's own existing dark palette (ink-elevated / ink) so a
-     mounted OpportunityCard blends in when the landing page's dark mode is on. */
+     match the landing page's dark navy palette (lp-navy / lp-navy-2) so a
+     mounted OpportunityCard / AppCard blends in when dark mode is on. */
   --color-app-primary: #4F46E5;
   --color-app-primary-dark: #3730A3;
   --color-app-primary-tint: #EEF2FF;
@@ -48,10 +48,10 @@
   --color-app-muted: #1E293B;
   --color-app-border: #DBDBDB;
   --color-app-canvas: #F8F9FB;
-  --color-app-night: #1E1A18;
-  --color-app-night-surface: #141110;
+  --color-app-night: #16143F;
+  --color-app-night-surface: #100E36;
   --color-app-night-border: rgba(255, 255, 255, 0.1);
-  --color-app-night-raised: #262120;
+  --color-app-night-raised: #1D1B4F;
   --radius-app-sm: 10px;
   --radius-app-md: 14px;
   --radius-app-lg: 18px;
