@@ -297,7 +297,7 @@ export function DeliverableStrip({
               <button
                 onClick={() => onRemove(it.removeId!)}
                 aria-label={removeLabel ?? t('deliv.remove')}
-                className="absolute right-1 top-1 rounded-lg bg-ink/70 p-1 text-white opacity-0 hover:bg-danger group-hover:opacity-100"
+                className="absolute right-1 top-1 rounded-lg bg-lp-black/70 p-1 text-white opacity-0 hover:bg-danger group-hover:opacity-100"
               >
                 <Trash2 size={13} />
               </button>

@@ -152,7 +152,7 @@ export function CreatorReferralsPage() {
                 description={t('referrals.noReferralsHint')}
               />
             ) : (
-              <div className="divide-y divide-black/[0.05]">
+              <div className="divide-y divide-ink/[0.05]">
                 {o.referrals.map((r) => (
                   <div key={r.id} className="flex items-center gap-3 py-3">
                     <Avatar name={r.referredName} src={r.referredAvatarUrl} size="sm" />

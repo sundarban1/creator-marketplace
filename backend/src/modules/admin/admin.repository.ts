@@ -101,6 +101,22 @@ const DEFAULTS: Record<string, unknown> = {
   // beyond it later is an admin setting change, never a code change. Empty
   // string = no priority city (falls back to plain distance-based sorting).
   'marketplace.launchPriorityCity': 'Itahari',
+  // Landing-hero "Popular searches" candidates, in order. Each is run through
+  // the real creator search and only the ones that currently return creators
+  // are shown (max 4), so an entry for a city with no creators yet simply
+  // stays hidden until one joins — see CreatorService.getPopularSearches.
+  'marketplace.popularCreatorSearches': [
+    'Food creators in Kathmandu',
+    'TikTok creators in Pokhara',
+    'Beauty creators in Kathmandu',
+    'Fashion creators in Nepal',
+    'Fitness creators in Nepal',
+    'Lifestyle creators in Lalitpur',
+    'Travel creators in Pokhara',
+    'YouTube creators in Nepal',
+    'TikTok creators with 10k+ followers',
+    'Top Instagram creators in Kathmandu',
+  ] as string[],
 
   // ── Public contact info (landing page footer) ──────────────────────────
   // Empty string = not set, so the landing footer hides that item entirely

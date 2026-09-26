@@ -11,6 +11,7 @@ import { PillCta, pillCtaClass } from '../components/PillCta';
 import { useCountUp } from '../hooks/useCountUp';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import type { LandingStats, PublicCreatorLite } from '../../../lib/api';
+import { fetchPopularCreatorSearches } from '../../../app/api/publicMarketplace';
 import type { CategoryMeta } from '../../../app/public/categoryLookup';
 
 // Stock-photo fallback for the avatar stack — used whenever a real creator
@@ -33,12 +34,14 @@ export function Hero({
   creators: PublicCreatorLite[] | null;
   categoryMeta: (name: string) => CategoryMeta;
 }) {
-  const { d } = useLandingLanguage();
+  const { d, lang } = useLandingLanguage();
   const navigate = useNavigate();
   const reducedMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const phoneRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const popularSearches = usePopularSearches(lang, d.hero.popularSearches);
 
   // Only show a numeric social-proof count once the live total is genuinely
   // positive — `stats` can resolve to real zeros pre-launch, and a "0+
@@ -48,9 +51,12 @@ export function Hero({
   const hasLiveSocialProof = liveTotal !== null && liveTotal > 0;
   const { ref: countRef, display } = useCountUp(liveTotal ?? 0);
 
+  // The public, sign-in-free results page — the backend interprets the
+  // sentence there. (`/creators` itself is the signed-in browse list.)
   function goToCreatorSearch(term: string) {
     const trimmed = term.trim();
-    navigate(trimmed ? `/creators?q=${encodeURIComponent(trimmed)}` : '/creators');
+    setSearching(true);
+    navigate(trimmed ? `/creators/search?q=${encodeURIComponent(trimmed)}` : '/creators/search');
   }
 
   // Real creator avatars where we have them, stock photos filling any
@@ -136,35 +142,49 @@ export function Hero({
               e.preventDefault();
               goToCreatorSearch(query);
             }}
-            className="mt-10 w-full max-w-3xl rounded-full bg-lp-navy-2/90 p-2.5 shadow-[0_0_0_1px_rgba(129,140,248,0.35),0_0_40px_-4px_rgba(99,102,241,0.65)]"
+            role="search"
+            className="mt-10 w-full max-w-3xl rounded-[28px] bg-lp-navy-2/90 p-2.5 shadow-[0_0_0_1px_rgba(129,140,248,0.35),0_0_40px_-4px_rgba(99,102,241,0.65)] sm:rounded-full"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-lp-fg/[0.06] px-5 py-3">
                 <Search size={18} className="flex-shrink-0 text-lp-fg/70" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  type="text"
+                  type="search"
+                  enterKeyHint="search"
+                  maxLength={200}
                   placeholder={d.hero.searchPlaceholder}
                   aria-label={d.hero.searchAriaLabel}
                   className="min-w-0 flex-1 bg-transparent text-[15px] text-lp-fg outline-none placeholder:text-lp-fg/45"
                 />
               </div>
-              <button type="submit" className={`${pillCtaClass('brinjal', 'lg')} flex-shrink-0 px-5 sm:px-7`}>
-                <span className="hidden sm:inline">{d.hero.searchCta}</span>
-                <Search size={16} />
+              <button
+                type="submit"
+                disabled={searching}
+                aria-busy={searching || undefined}
+                className={`${pillCtaClass('brinjal', 'lg')} w-full flex-shrink-0 justify-center px-7 sm:w-auto`}
+              >
+                {searching ? d.hero.searchingLabel : d.hero.searchCta}
               </button>
             </div>
           </motion.form>
 
-          <motion.div variants={fadeUp} className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
+          {/* Invisible (but holding its space) until the live list resolves, so
+              the chips never visibly swap from the fallback to the real ones. */}
+          <motion.div
+            variants={fadeUp}
+            aria-hidden={popularSearches === null || undefined}
+            className={`mt-5 flex flex-wrap items-center justify-center gap-2 text-xs transition-opacity duration-300 ${popularSearches === null ? 'invisible opacity-0' : 'opacity-100'}`}
+          >
             <span className="text-lp-fg/55">{d.hero.popularSearchesLabel}</span>
-            {d.hero.popularSearches.map((term) => (
+            {(popularSearches ?? d.hero.popularSearches).map((term, i) => (
               <button
                 key={term}
                 type="button"
                 onClick={() => goToCreatorSearch(term)}
-                className="rounded-full border border-lp-fg/15 px-3 py-1.5 text-lp-fg/80 transition-colors hover:border-lp-fg/50 hover:text-lp-fg"
+                // A fourth chip only from sm up — on a phone it wraps the row to three lines.
+                className={`rounded-full border border-lp-fg/15 px-3 py-1.5 text-lp-fg/80 transition-colors hover:border-lp-fg/50 hover:text-lp-fg ${i >= 3 ? 'hidden sm:inline-block' : ''}`}
               >
                 {term}
               </button>
@@ -439,4 +459,34 @@ function FloatingCreatorCard({
       </motion.div>
     </motion.div>
   );
+}
+
+const POPULAR_SEARCHES_MAX = 4;
+// Past this, show the translated fallback rather than keep the row hidden.
+const POPULAR_SEARCHES_TIMEOUT_MS = 2500;
+
+/**
+ * Popular searches for the hero: the backend's list (curated, and only the
+ * ones that currently have creators) in English, the translated static list
+ * in Nepali or whenever the fetch fails/stalls. `null` while still loading.
+ */
+function usePopularSearches(lang: string, fallback: readonly string[]): readonly string[] | null {
+  const [live, setLive] = useState<{ terms: readonly string[] } | null>(null);
+  useEffect(() => {
+    if (lang !== 'en') return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => setLive((cur) => cur ?? { terms: fallback }), POPULAR_SEARCHES_TIMEOUT_MS);
+    fetchPopularCreatorSearches(controller.signal)
+      .then((terms) => setLive({ terms: terms.length ? terms : fallback }))
+      .catch(() => {
+        if (!controller.signal.aborted) setLive({ terms: fallback });
+      })
+      .finally(() => window.clearTimeout(timer));
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [lang, fallback]);
+  const terms = lang === 'en' ? live?.terms ?? null : fallback;
+  return terms ? terms.slice(0, POPULAR_SEARCHES_MAX) : null;
 }

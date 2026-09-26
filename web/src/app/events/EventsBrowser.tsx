@@ -162,7 +162,7 @@ export function EventsBrowser({
                 className={cn(
                   'h-12 w-full pl-11 pr-4 text-[15px] text-ink placeholder:text-ink-soft/60 focus:outline-none',
                   dashboard
-                    ? 'rounded-xl bg-black/[0.03] focus:bg-white focus:ring-2 focus:ring-violet/20'
+                    ? 'rounded-xl bg-ink/[0.03] focus:bg-surface focus:ring-2 focus:ring-violet/20'
                     : 'rounded-xl border border-line-strong bg-surface focus:border-brand focus:ring-2 focus:ring-brand/35',
                 )}
               />
@@ -245,7 +245,7 @@ export function EventsBrowser({
                 key={i}
                 className={cn(
                   'overflow-hidden rounded-2xl',
-                  dashboard ? 'bg-white shadow-sm ring-1 ring-black/[0.04]' : 'border border-line bg-surface',
+                  dashboard ? 'bg-white shadow-sm ring-1 ring-ink/[0.04]' : 'border border-line bg-surface',
                 )}
               >
                 <Skeleton className="aspect-[16/9] w-full rounded-none" />

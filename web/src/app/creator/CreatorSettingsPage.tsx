@@ -62,7 +62,7 @@ export function CreatorSettingsPage() {
       {/* Account */}
       <DashCard>
         <DashCardHeader title={t('settings.accountHeading')} />
-        <div className="divide-y divide-black/[0.05]">
+        <div className="divide-y divide-ink/[0.05]">
           <DashListRow
             icon={User}
             tone="violet"
@@ -99,7 +99,7 @@ export function CreatorSettingsPage() {
                   aria-pressed={language === l.value}
                   className={cn(
                     'rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors',
-                    language === l.value ? 'bg-violet/10 text-violet-dark' : 'bg-black/[0.04] text-ink-soft',
+                    language === l.value ? 'bg-violet/10 text-violet-dark' : 'bg-ink/[0.04] text-ink-soft',
                   )}
                 >
                   {l.label}
@@ -116,7 +116,7 @@ export function CreatorSettingsPage() {
         {methods.loading ? (
           <Skeleton className="h-10 w-full" />
         ) : m && m.providers.length > 0 ? (
-          <div className="divide-y divide-black/[0.05]">
+          <div className="divide-y divide-ink/[0.05]">
             <div className="pb-1 pt-0">
               <p className="mb-1 text-[12px] font-semibold text-ink-soft">{t('settings.connectedAccounts')}</p>
             </div>
@@ -136,7 +136,7 @@ export function CreatorSettingsPage() {
           <p className="text-[13px] text-ink-soft">—</p>
         )}
 
-        <div className="mt-3 divide-y divide-black/[0.05] border-t border-black/[0.05]">
+        <div className="mt-3 divide-y divide-ink/[0.05] border-t border-ink/[0.05]">
           <DashListRow
             as="button"
             icon={UserX}
@@ -187,7 +187,7 @@ export function CreatorSettingsPage() {
       {/* More */}
       <DashCard className="mt-6">
         <DashCardHeader title={t('settings.moreHeading')} />
-        <div className="divide-y divide-black/[0.05]">
+        <div className="divide-y divide-ink/[0.05]">
           <Link to="/creator/verification">
             <DashListRow
               icon={BadgeCheck}

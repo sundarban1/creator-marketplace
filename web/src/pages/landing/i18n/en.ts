@@ -26,15 +26,18 @@ export const en = {
     headlineLine2: 'starts here.',
     headlineLine3: 'For creators and businesses.',
     sub: 'Kolab connects creators with businesses for real collaboration — real skills, fresh content, and new opportunities.',
-    searchPlaceholder: "Try 'I need 3 food creators for my restaurant launch'",
-    searchAriaLabel: 'Search Kolab',
-    searchCta: 'Search',
-    popularSearchesLabel: 'Popular searches:',
+    searchPlaceholder: 'I need 3 creators to promote my cafe',
+    searchAriaLabel: 'Describe the creators you need',
+    searchCta: 'Find Creators',
+    searchingLabel: 'Finding creators…',
+    popularSearchesLabel: 'Popular:',
+    // Fallback only — the live list comes from the backend
+    // (GET /api/public/creators/popular-searches), which drops any search
+    // that currently has no creators.
     popularSearches: [
       'Food creators in Kathmandu',
       'TikTok creators in Pokhara',
-      'Creators for my restaurant',
-      'Travel creators in Nepal',
+      'Beauty creators in Nepal',
     ],
     socialProofSuffix: 'creators are already on Kolab',
     socialProofQualitative: 'Built for creators and businesses across Nepal',

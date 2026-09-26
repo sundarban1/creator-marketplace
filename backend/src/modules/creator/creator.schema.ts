@@ -160,3 +160,21 @@ export type ConnectFacebookPageInput     = z.infer<typeof connectFacebookPageSch
 export type ConnectInstagramAccountInput = z.infer<typeof connectInstagramAccountSchema>;
 export type UpdatePaymentMethodsInput  = z.infer<typeof updatePaymentMethodsSchema>;
 export type UpdateCampaignPrefsInput   = z.infer<typeof updateCampaignPrefsSchema>;
+
+// GET /api/public/creators/search — anonymous hero search. `q` is free text
+// (interpreted server-side); the rest are the results page's optional filter
+// overrides — `any` for location/platform explicitly clears one the query
+// itself named ("…in Kathmandu" → location=any). Bounded so a public caller can't page through the whole table
+// in one request or send an arbitrarily large query.
+export const publicCreatorSearchQuerySchema = z.object({
+  q:        z.string().trim().max(200).default(''),
+  page:     z.coerce.number().int().min(1).max(50).default(1),
+  limit:    z.coerce.number().int().min(1).max(24).default(12),
+  location: z.string().trim().max(80).optional(),
+  platform: z.enum(['instagram', 'tiktok', 'youtube', 'facebook', 'any']).optional(),
+  category: z.string().trim().max(80).optional(),
+  // 0 clears a follower minimum the query itself named ("…with 10k+").
+  minFollowers: z.coerce.number().int().min(0).max(1_000_000_000).optional(),
+  sort:     z.enum(['relevance', 'followers']).optional(),
+});
+export type PublicCreatorSearchQuery = z.infer<typeof publicCreatorSearchQuerySchema>;

@@ -9,6 +9,13 @@ import type { CreatorCard as CreatorCardData } from '../api/publicMarketplace';
 import type { CategoryMeta } from './categoryLookup';
 import { CategoryPill } from './CategoryPill';
 
+const PLATFORM_NAMES: Record<string, string> = {
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  youtube: 'YouTube',
+  facebook: 'Facebook',
+};
+
 interface Props {
   creator: CreatorCardData;
   categoryMeta: (name: string) => CategoryMeta;
@@ -17,12 +24,18 @@ interface Props {
    *  stays inside the authed shell instead of escaping to the public,
    *  landing-nav-wrapped route. */
   hrefBase?: string;
+  /** Show this platform's follower count instead of the all-platform total —
+   *  used when a search is about that platform ("TikTok creators with 10k+"). */
+  followersPlatform?: string;
 }
 
-export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators' }: Props) {
+export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators', followersPlatform }: Props) {
   const t = useT();
   const handle = creator.username ?? creator.id;
-  const followers = totalFollowers(creator.socialAccounts);
+  const platformAccount = followersPlatform
+    ? creator.socialAccounts.find((a) => a.platform === followersPlatform)
+    : undefined;
+  const followers = platformAccount ? platformAccount.followers : totalFollowers(creator.socialAccounts);
   const platforms = [...new Set(creator.socialAccounts.map((a) => a.platform))].slice(0, 4);
   const name = creator.fullName ?? 'Creator';
   const isTeam = creator.providerType === 'TEAM' || creator.providerType === 'AGENCY';
@@ -101,7 +114,11 @@ export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators' }: P
         {followers > 0 && (
           <span className="text-[13px] font-semibold text-ink">
             {compactNumber(followers)}{' '}
-            <span className="font-normal text-ink-soft">{t('public.followers')}</span>
+            <span className="font-normal text-ink-soft">
+              {platformAccount
+                ? t('public.platformFollowers', { platform: PLATFORM_NAMES[platformAccount.platform] ?? platformAccount.platform })
+                : t('public.followers')}
+            </span>
           </span>
         )}
       </div>

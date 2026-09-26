@@ -138,6 +138,84 @@ export async function fetchCreatorFilterOptions(signal?: AbortSignal): Promise<C
   return res.data;
 }
 
+// ── Natural-language creator search (landing hero → /creators/search) ───────
+
+export type SearchPlatform = 'instagram' | 'tiktok' | 'youtube' | 'facebook';
+
+/** What the backend understood from the visitor's free-text query. */
+export interface CreatorSearchInterpretation {
+  query: string;
+  topic: string | null;
+  location: string | null;
+  platforms: string[];
+  creatorCount: number | null;
+  /** Follower range — on the named platform(s), else total across accounts. */
+  minFollowers: number | null;
+  maxFollowers: number | null;
+  /** Ranked by audience size ("top", "most followers"). */
+  sortByFollowers: boolean;
+}
+
+/** A relaxed version of the search that has real matches — `count` creators. */
+export interface BroaderCreatorSearch {
+  topic: string | null;
+  location: string | null;
+  platform: string | null;
+  minFollowers: number | null;
+  maxFollowers: number | null;
+  count: number;
+}
+
+export interface CreatorSearchResult {
+  interpretation: CreatorSearchInterpretation;
+  creators: CreatorCard[];
+  total: number;
+  page: number;
+  limit: number;
+  broaderSearches: BroaderCreatorSearch[];
+}
+
+export async function searchPublicCreators(
+  q: {
+    q: string;
+    page?: number;
+    limit?: number;
+    location?: string;
+    platform?: string;
+    category?: string;
+    /** '0' clears a minimum the query itself named. */
+    minFollowers?: string;
+    sort?: 'relevance' | 'followers' | '';
+  },
+  signal?: AbortSignal,
+): Promise<CreatorSearchResult> {
+  const res = await apiRequest<CreatorSearchResult>('GET', '/api/public/creators/search', undefined, {
+    anonymous: true,
+    signal,
+    params: {
+      q: q.q,
+      page: q.page,
+      limit: q.limit,
+      location: q.location || undefined,
+      platform: q.platform || undefined,
+      category: q.category || undefined,
+      minFollowers: q.minFollowers || undefined,
+      sort: q.sort || undefined,
+    },
+  });
+  return res.data;
+}
+
+export async function fetchPopularCreatorSearches(signal?: AbortSignal): Promise<string[]> {
+  const res = await apiRequest<{ searches: string[] }>(
+    'GET',
+    '/api/public/creators/popular-searches',
+    undefined,
+    { anonymous: true, signal },
+  );
+  return res.data.searches;
+}
+
 export async function fetchCreatorByHandle(
   handle: string,
   signal?: AbortSignal,

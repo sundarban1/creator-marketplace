@@ -10,6 +10,7 @@ import { env } from '../../config/env';
 import { peekOAuthStatePlatform, peekOAuthStatePurpose } from '../../utils/jwt';
 
 import { HttpStatus } from '../../constants/httpStatus';
+import type { PublicCreatorSearchQuery } from './creator.schema';
 
 const creatorService = new CreatorService();
 const authService = new AuthService();
@@ -84,6 +85,30 @@ export class CreatorController {
         lang: req.language,
       });
       success(res, result, getDict().creator.creatorsRetrieved);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Anonymous natural-language search from the landing hero. Query already
+  // validated/coerced by publicCreatorSearchQuerySchema on the route.
+  async searchPublicCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { q, page, limit, location, platform, category, minFollowers, sort } =
+        req.query as unknown as PublicCreatorSearchQuery;
+      const result = await creatorService.searchPublicCreators({
+        q, page, limit, location, platform, category, minFollowers, sort, lang: req.language,
+      });
+      success(res, result, getDict().creator.creatorsRetrieved);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getPopularSearches(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const searches = await creatorService.getPopularSearches();
+      success(res, { searches }, getDict().creator.creatorsRetrieved);
     } catch (err) {
       next(err);
     }

@@ -61,7 +61,7 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
           </div>
         )}
         {event.isFeatured && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-ink/75 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-lp-black/75 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
             <Sparkles size={11} />
             {t('public.featured')}
           </span>
@@ -70,7 +70,7 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
           label={event.status}
           tone={STATUS_TONE[event.status] ?? 'neutral'}
           dot={false}
-          className="absolute right-3 top-3 bg-white shadow-sm"
+          className="absolute right-3 top-3 bg-surface shadow-sm"
         />
       </div>
 

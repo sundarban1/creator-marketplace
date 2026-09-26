@@ -109,20 +109,151 @@ function scoreCreatorMatch(c: ScorableCreator, q: ReturnType<typeof expandSearch
   return score;
 }
 
+export type CreatorListFilters = {
+  search?: string;
+  categories?: string[];
+  location?: string;
+  platforms?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  excludeId?: string;
+  hasAvatar?: boolean;
+  /** Only creators who left their public profile on — anonymous discovery. */
+  publicOnly?: boolean;
+  /** Audience-size range. Checked against an account on one of
+   *  `followersPlatforms` when given ("TikTok creators with 10k+"), else
+   *  against the creator's total across all connected accounts. */
+  minFollowers?: number;
+  maxFollowers?: number;
+  followersPlatforms?: string[];
+};
+
 export class CreatorRepository {
-  async findMany(filters: {
-    search?: string;
-    categories?: string[];
-    location?: string;
-    platforms?: string[];
-    priceMin?: number;
-    priceMax?: number;
-    excludeId?: string;
-    hasAvatar?: boolean;
+  async findMany(filters: CreatorListFilters & {
     page: number;
     limit: number;
     sort?: 'newest' | 'oldest' | 'followers';
   }) {
+    const where = await this.buildListWhere(filters);
+    const rankPlatforms = filters.followersPlatforms?.length ? new Set(filters.followersPlatforms) : null;
+    const skip = (filters.page - 1) * filters.limit;
+
+    const select = {
+      id: true, username: true, fullName: true, bio: true, avatarUrl: true,
+      providerType: true, teamSize: true, industries: true,
+      location: true, categories: true, isVerified: true,
+      citizenshipStatus: true, companyRegDocStatus: true,
+      prefBudgetMin: true, prefBudgetMax: true,
+      socialAccounts: { select: { platform: true, followers: true } },
+      user: { select: { isEmailVerified: true, isPhoneVerified: true } },
+    } satisfies Prisma.CreatorProfileSelect;
+
+    if (filters.sort === 'followers') {
+      // Total followers across a creator's social accounts isn't a column
+      // Prisma can ORDER BY directly (it's an aggregate over a to-many
+      // relation), so this ranks in application code instead of in SQL —
+      // capped to a generous candidate pool rather than the true total, same
+      // scale tradeoff as CreatorService.getRecommendedForCampaign's
+      // findRecommended (fine at this platform's current size; would need a
+      // raw SQL GROUP BY if the creator count grows enough to matter).
+      const FOLLOWERS_SORT_CAP = 1000;
+      const [candidates, total] = await Promise.all([
+        prisma.creatorProfile.findMany({ where, take: FOLLOWERS_SORT_CAP, orderBy: { id: 'asc' }, select }),
+        prisma.creatorProfile.count({ where }),
+      ]);
+      // With platforms named ("top TikTok creators"), rank by the audience on
+      // those platforms, not the grand total.
+      const ranked = candidates
+        .map((c) => ({
+          ...c,
+          totalFollowers: c.socialAccounts
+            .filter((a) => !rankPlatforms || rankPlatforms.has(a.platform))
+            .reduce((sum, a) => sum + a.followers, 0),
+        }))
+        .sort((a, b) => b.totalFollowers - a.totalFollowers);
+      return { creators: ranked.slice(skip, skip + filters.limit), total };
+    }
+
+    // Relevance-ranked search. Only when a query is present and the caller
+    // hasn't asked for an explicit chronological / followers order — those are
+    // deliberate user choices and still win. The pool is loaded once (capped,
+    // like the followers sort above) and ordered by scoreCreatorMatch; past
+    // SEARCH_RANK_CAP results the tail is unreachable, which is the same
+    // tradeoff already accepted for followers and fine for a search result set.
+    if (filters.search && (!filters.sort || filters.sort === 'newest')) {
+      const q = expandSearchQuery(filters.search);
+      const searchSelect = {
+        ...select,
+        username: true, city: true, district: true, province: true, area: true, createdAt: true,
+        services: { select: { name: true, category: { select: { name: true, group: true } } } },
+        portfolioItems: { select: { title: true } },
+      } satisfies Prisma.CreatorProfileSelect;
+
+      const [candidates, total] = await Promise.all([
+        prisma.creatorProfile.findMany({
+          where,
+          take: SEARCH_RANK_CAP,
+          orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+          select: searchSelect,
+        }),
+        prisma.creatorProfile.count({ where }),
+      ]);
+
+      const ranked = candidates
+        .map((c) => ({ c, score: scoreCreatorMatch(c, q) }))
+        .sort(
+          (a, b) =>
+            b.score - a.score ||
+            b.c.createdAt.getTime() - a.c.createdAt.getTime() ||
+            a.c.id.localeCompare(b.c.id),
+        )
+        .map((r) => r.c);
+
+      return { creators: ranked.slice(skip, skip + filters.limit), total };
+    }
+
+    const [creators, total] = await Promise.all([
+      prisma.creatorProfile.findMany({
+        where,
+        skip,
+        take: filters.limit,
+        // `id` is a tie-breaker, not a display order — createdAt alone isn't
+        // unique (bulk-seeded rows can share a timestamp), and without a fully
+        // deterministic sort, Postgres can return the same row on two
+        // different pages (or skip one entirely) as the result set shifts
+        // between paginated queries.
+        orderBy: [{ createdAt: filters.sort === 'oldest' ? 'asc' : 'desc' }, { id: 'asc' }],
+        select,
+      }),
+      prisma.creatorProfile.count({ where }),
+    ]);
+    return { creators, total };
+  }
+
+  /** Distinct category/industry labels creators carry (cached, see creatorLabelVocabulary). */
+  async labelVocabulary() {
+    return creatorLabelVocabulary();
+  }
+
+  /** Distinct free-text locations of discoverable creators, with how many creators list each. */
+  async findListedLocations(): Promise<{ location: string; count: number }[]> {
+    const rows = await prisma.$queryRaw<{ location: string; count: bigint }[]>`
+      SELECT cp.location, COUNT(*) AS count
+      FROM creator_profiles cp
+      JOIN users u ON u.id = cp."userId"
+      WHERE cp.location IS NOT NULL AND cp.location <> ''
+        AND cp."showPublicProfile" = true AND u."isOnboarded" = true AND u."isActive" = true
+      GROUP BY cp.location
+    `;
+    return rows.map((r) => ({ location: r.location, count: Number(r.count) }));
+  }
+
+  /** Match count for a filter set, without loading rows — used to back "try a broader search" suggestions with real numbers. */
+  async countMany(filters: CreatorListFilters): Promise<number> {
+    return prisma.creatorProfile.count({ where: await this.buildListWhere(filters) });
+  }
+
+  private async buildListWhere(filters: CreatorListFilters): Promise<Prisma.CreatorProfileWhereInput> {
     const PRICE_MAX = 1000;
     // A creator who never finished onboarding has no fullName/categories/bio yet —
     // showing them in Explore Creators is just a blank/broken card, so they're
@@ -185,7 +316,7 @@ export class CreatorRepository {
       ];
     }
     if (filters.categories?.length) where.categories = { hasSome: filters.categories };
-    if (filters.location) where.location = { contains: filters.location, mode: 'insensitive' };
+    if (filters.publicOnly) where.showPublicProfile = true;
     if (filters.excludeId) where.id = { not: filters.excludeId };
     // Landing-page showcase wants real faces, not initials placeholders —
     // '' is treated the same as unset since an empty string is what a
@@ -197,6 +328,39 @@ export class CreatorRepository {
     }
 
     const andConditions: Prisma.CreatorProfileWhereInput[] = [];
+    // The free-text `location` is what most profiles actually carry today
+    // ("Birgunj, Nepal"), but the structured columns are checked too so a
+    // profile with only city/district set still matches. An AND entry rather
+    // than where.OR, which the search branch above already owns.
+    if (filters.location) {
+      const place = { contains: filters.location, mode: 'insensitive' as const };
+      andConditions.push({
+        OR: [{ location: place }, { city: place }, { district: place }, { province: place }, { area: place }],
+      });
+    }
+    if (filters.minFollowers != null || filters.maxFollowers != null) {
+      const range = {
+        ...(filters.minFollowers != null ? { gte: filters.minFollowers } : {}),
+        ...(filters.maxFollowers != null ? { lte: filters.maxFollowers } : {}),
+      };
+      if (filters.followersPlatforms?.length) {
+        andConditions.push({
+          socialAccounts: { some: { platform: { in: filters.followersPlatforms }, followers: range } },
+        });
+      } else {
+        // Total audience is an aggregate over the to-many relation, which the
+        // Prisma where-builder can't express — resolve the matching ids in SQL.
+        const rows = await prisma.$queryRaw<{ id: string }[]>`
+          SELECT "creatorProfileId" AS id
+          FROM social_accounts
+          WHERE "creatorProfileId" IS NOT NULL
+          GROUP BY "creatorProfileId"
+          HAVING SUM(followers) >= ${filters.minFollowers ?? 0}
+             AND SUM(followers) <= ${filters.maxFollowers ?? 2_000_000_000}
+        `;
+        andConditions.push({ id: { in: rows.map((r) => r.id) } });
+      }
+    }
     if (filters.priceMin !== undefined && filters.priceMin > 0) {
       andConditions.push({ prefBudgetMax: { gte: filters.priceMin } });
     }
@@ -204,91 +368,7 @@ export class CreatorRepository {
       andConditions.push({ prefBudgetMin: { lte: filters.priceMax } });
     }
     if (andConditions.length) where.AND = andConditions;
-
-    const skip = (filters.page - 1) * filters.limit;
-    const select = {
-      id: true, username: true, fullName: true, bio: true, avatarUrl: true,
-      providerType: true, teamSize: true, industries: true,
-      location: true, categories: true, isVerified: true,
-      citizenshipStatus: true, companyRegDocStatus: true,
-      prefBudgetMin: true, prefBudgetMax: true,
-      socialAccounts: { select: { platform: true, followers: true } },
-      user: { select: { isEmailVerified: true, isPhoneVerified: true } },
-    } satisfies Prisma.CreatorProfileSelect;
-
-    if (filters.sort === 'followers') {
-      // Total followers across a creator's social accounts isn't a column
-      // Prisma can ORDER BY directly (it's an aggregate over a to-many
-      // relation), so this ranks in application code instead of in SQL —
-      // capped to a generous candidate pool rather than the true total, same
-      // scale tradeoff as CreatorService.getRecommendedForCampaign's
-      // findRecommended (fine at this platform's current size; would need a
-      // raw SQL GROUP BY if the creator count grows enough to matter).
-      const FOLLOWERS_SORT_CAP = 1000;
-      const [candidates, total] = await Promise.all([
-        prisma.creatorProfile.findMany({ where, take: FOLLOWERS_SORT_CAP, orderBy: { id: 'asc' }, select }),
-        prisma.creatorProfile.count({ where }),
-      ]);
-      const ranked = candidates
-        .map((c) => ({ ...c, totalFollowers: c.socialAccounts.reduce((sum, a) => sum + a.followers, 0) }))
-        .sort((a, b) => b.totalFollowers - a.totalFollowers);
-      return { creators: ranked.slice(skip, skip + filters.limit), total };
-    }
-
-    // Relevance-ranked search. Only when a query is present and the caller
-    // hasn't asked for an explicit chronological / followers order — those are
-    // deliberate user choices and still win. The pool is loaded once (capped,
-    // like the followers sort above) and ordered by scoreCreatorMatch; past
-    // SEARCH_RANK_CAP results the tail is unreachable, which is the same
-    // tradeoff already accepted for followers and fine for a search result set.
-    if (filters.search && (!filters.sort || filters.sort === 'newest')) {
-      const q = expandSearchQuery(filters.search);
-      const searchSelect = {
-        ...select,
-        username: true, city: true, district: true, province: true, area: true, createdAt: true,
-        services: { select: { name: true, category: { select: { name: true, group: true } } } },
-        portfolioItems: { select: { title: true } },
-      } satisfies Prisma.CreatorProfileSelect;
-
-      const [candidates, total] = await Promise.all([
-        prisma.creatorProfile.findMany({
-          where,
-          take: SEARCH_RANK_CAP,
-          orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-          select: searchSelect,
-        }),
-        prisma.creatorProfile.count({ where }),
-      ]);
-
-      const ranked = candidates
-        .map((c) => ({ c, score: scoreCreatorMatch(c, q) }))
-        .sort(
-          (a, b) =>
-            b.score - a.score ||
-            b.c.createdAt.getTime() - a.c.createdAt.getTime() ||
-            a.c.id.localeCompare(b.c.id),
-        )
-        .map((r) => r.c);
-
-      return { creators: ranked.slice(skip, skip + filters.limit), total };
-    }
-
-    const [creators, total] = await Promise.all([
-      prisma.creatorProfile.findMany({
-        where,
-        skip,
-        take: filters.limit,
-        // `id` is a tie-breaker, not a display order — createdAt alone isn't
-        // unique (bulk-seeded rows can share a timestamp), and without a fully
-        // deterministic sort, Postgres can return the same row on two
-        // different pages (or skip one entirely) as the result set shifts
-        // between paginated queries.
-        orderBy: [{ createdAt: filters.sort === 'oldest' ? 'asc' : 'desc' }, { id: 'asc' }],
-        select,
-      }),
-      prisma.creatorProfile.count({ where }),
-    ]);
-    return { creators, total };
+    return where;
   }
 
   /**

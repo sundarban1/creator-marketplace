@@ -371,7 +371,7 @@ export function BusinessProfilePage() {
           ) : (
             <ul className="space-y-2">
               {socials.data!.map((s) => (
-                <li key={s.id} className="flex items-center gap-3 rounded-xl bg-black/[0.02] px-3 py-2.5">
+                <li key={s.id} className="flex items-center gap-3 rounded-xl bg-ink/[0.02] px-3 py-2.5">
                   <PlatformIcon platform={s.platform} size={18} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-ink">{platformMeta(s.platform).label}</p>
@@ -830,7 +830,7 @@ function ConnectSocialModal({
                     ? void finishFacebook(pagePicker.accessToken, page.id)
                     : void finishInstagram(pagePicker.accessToken, page.id)
                 }
-                className="flex w-full items-center justify-between gap-3 px-1 py-3 text-left hover:bg-black/[0.02]"
+                className="flex w-full items-center justify-between gap-3 px-1 py-3 text-left hover:bg-ink/[0.02]"
               >
                 <span className="text-[13px] font-semibold text-ink">
                   {pagePicker.mode === 'instagram' ? `@${page.instagramUsername ?? page.name}` : page.name}

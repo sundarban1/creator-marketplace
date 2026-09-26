@@ -5,6 +5,8 @@ import { BusinessController } from '../business/business.controller';
 import { CampaignController } from '../campaign/campaign.controller';
 import { validate } from '../../middleware/validate';
 import { campaignListQuerySchema } from '../campaign/campaign.schema';
+import { publicCreatorSearchQuerySchema } from '../creator/creator.schema';
+import { publicSearchLimiter } from '../../middleware/rateLimit';
 
 const router = Router();
 const ctrl = new PublicController();
@@ -27,8 +29,18 @@ router.get('/showcase', ctrl.showcase.bind(ctrl));
 // Fully public, like the event detail route below — a signed-out visitor can
 // browse a creator's profile; the web app gates the *actions* on it (messaging,
 // hiring) behind a signup/login prompt instead of the route itself.
-// `/filter-options` before `/:handle` so the literal segment wins.
+// Literal segments (`/filter-options`, `/search`, `/popular-searches`) before
+// `/:handle` so they win.
 router.get('/creators/filter-options', creatorCtrl.getCreatorFilterOptions.bind(creatorCtrl));
+// Natural-language search from the landing hero ("I need 3 food creators in
+// Kathmandu") — parsed server-side into filters; only public profiles returned.
+router.get(
+  '/creators/search',
+  publicSearchLimiter,
+  validate(publicCreatorSearchQuerySchema, 'query'),
+  creatorCtrl.searchPublicCreators.bind(creatorCtrl),
+);
+router.get('/creators/popular-searches', creatorCtrl.getPopularSearches.bind(creatorCtrl));
 router.get('/creators', creatorCtrl.listPublicCreators.bind(creatorCtrl));
 router.get('/creators/:handle', creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
 

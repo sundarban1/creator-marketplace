@@ -28,10 +28,10 @@ export function Card({
   return (
     <As
       className={cn(
-        'relative min-w-0 rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(16,24,40,0.04)]',
+        'app-card relative min-w-0 rounded-2xl border border-line bg-surface',
         padded && 'p-5',
         interactive &&
-          'transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_8px_24px_rgba(16,24,40,0.08)]',
+          'transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_20px_44px_-24px_var(--app-glow)]',
         className,
       )}
       {...rest}
@@ -52,7 +52,7 @@ export function CardHeader({
 }) {
   return (
     <div className={cn('mb-4 flex items-center justify-between gap-3', className)}>
-      <h2 className="text-base font-semibold text-ink">{title}</h2>
+      <h2 className="lp-heading text-[17px] text-ink">{title}</h2>
       {action}
     </div>
   );

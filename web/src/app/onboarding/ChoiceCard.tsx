@@ -42,14 +42,14 @@ export function ChoiceCardGroup<T extends string>({
               'flex items-start gap-3.5 rounded-2xl border p-4 text-left transition-all duration-150',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
               active
-                ? 'border-violet/40 bg-violet/[0.06] shadow-[0_10px_28px_-18px_rgba(123,92,245,0.5)]'
+                ? 'border-violet/50 bg-violet/[0.08] shadow-[0_14px_34px_-20px_var(--app-glow)]'
                 : 'border-line-strong bg-surface hover:border-line-strong hover:bg-surface-dim',
             )}
           >
             <span
               className={cn(
                 'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full',
-                active ? 'bg-gradient-to-br from-violet to-violet-dark text-white' : 'bg-violet/[0.08] text-violet-dark',
+                active ? 'app-active-pill' : 'bg-violet/[0.1] text-violet-dark',
               )}
             >
               {opt.icon}
@@ -64,7 +64,7 @@ export function ChoiceCardGroup<T extends string>({
             <span
               className={cn(
                 'mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border',
-                active ? 'border-violet bg-violet text-white' : 'border-line-strong text-transparent',
+                active ? 'border-brand bg-brand text-white' : 'border-line-strong text-transparent',
               )}
               aria-hidden
             >

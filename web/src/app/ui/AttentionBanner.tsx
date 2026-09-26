@@ -46,7 +46,7 @@ export function AttentionBanner({
             onDismiss();
           }}
           aria-label="Dismiss"
-          className="absolute right-2.5 top-2.5 rounded-full p-1 text-ink-soft/50 hover:bg-black/[0.05] hover:text-ink-soft"
+          className="absolute right-2.5 top-2.5 rounded-full p-1 text-ink-soft/50 hover:bg-ink/[0.05] hover:text-ink-soft"
         >
           <X size={14} />
         </button>

@@ -137,6 +137,7 @@ function TrustSafetyPageInner() {
       faqs={t.faqs}
       related={t.related}
       cta={t.cta}
+      backToHome
     >
       <ContentSection heading={t.sections.foundations.heading}>
         <BenefitGrid

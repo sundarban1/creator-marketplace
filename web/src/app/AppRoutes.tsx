@@ -33,6 +33,7 @@ const BusinessDashboard = screen(() => import('./business/BusinessDashboard'), '
 const PublicLayout = screen(() => import('./public/PublicLayout'), 'PublicLayout');
 const CreatorsPage = screen(() => import('./public/CreatorsPage'), 'CreatorsPage');
 const CreatorProfilePage = screen(() => import('./public/CreatorProfilePage'), 'CreatorProfilePage');
+const CreatorSearchPage = screen(() => import('./public/CreatorSearchPage'), 'CreatorSearchPage');
 const PublicBusinessesPage = screen(() => import('./public/BusinessesPage'), 'BusinessesPage');
 const PublicBusinessProfilePage = screen(() => import('./public/BusinessProfilePage'), 'BusinessProfilePage');
 const EventsPage = screen(() => import('./public/EventsPage'), 'EventsPage');
@@ -93,6 +94,11 @@ export function marketplaceRoutes() {
           <Route path="/businesses" element={<PublicBusinessesPage />} />
         </Route>
         <Route path="/events/:id" element={<EventDetailPage />} />
+        {/* The landing hero's natural-language search lands here — open to
+            signed-out visitors (unlike the /creators browse list above);
+            only public profiles are returned. The literal segment outranks
+            /creators/:handle in react-router's matching. */}
+        <Route path="/creators/search" element={<CreatorSearchPage />} />
         <Route path="/creators/:handle" element={<CreatorProfilePage />} />
         <Route path="/businesses/:id" element={<PublicBusinessProfilePage />} />
       </Route>

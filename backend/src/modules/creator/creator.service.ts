@@ -8,11 +8,62 @@ import { signOAuthState, verifyOAuthState } from '../../utils/jwt';
 import { toCreatorProfileDto, toPublicCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
+import { isLexiconTerm } from '../../utils/searchTerms';
+import { parseCreatorSearchIntent, type CreatorSearchIntent } from './creatorSearchIntent';
+import type { CreatorListFilters } from './creator.repository';
 import { getCachedSettings } from '../../utils/settingsCache';
 import { cached, invalidatePrefix } from '../../utils/cache';
 import { moderateUsername, moderateDisplayName, logModerationRejection } from '../../moderation';
 
 const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
+
+// ── Public natural-language creator search (landing hero → /creators/search) ──
+const PLACES_CACHE_KEY = 'creator-search:places:v1';
+const POPULAR_SEARCHES_CACHE_KEY = 'creator-search:popular:v1';
+const PLACES_CACHE_TTL_SEC = 10 * 60;
+const POPULAR_SEARCHES_CACHE_TTL_SEC = 30 * 60;
+const POPULAR_SEARCHES_MAX = 4;
+const PUBLIC_SEARCH_PAGE_MAX = 24;
+
+/**
+ * The meaningful place parts of a free-text location, most specific first:
+ * "Samakhusi, Kathmandu, Bagmati Province, Nepal" → ["Samakhusi", "Kathmandu"].
+ * Country and province segments are dropped — too broad to be a place filter.
+ */
+function placeParts(location: string): string[] {
+  return location
+    .split(',')
+    .map((p) => p.trim())
+    .filter((p) => p.length >= 3 && !/^nepal$/i.test(p) && !/province/i.test(p) && !/\d/.test(p));
+}
+
+/**
+ * City-level location for a search result card — anonymous search shouldn't
+ * surface a creator's street/neighbourhood, so only the last place part
+ * ("Kathmandu" out of "Samakhusi, Kathmandu, Bagmati Province, Nepal") is shown.
+ */
+function publicCity(location: string | null): string | null {
+  if (!location) return null;
+  const parts = placeParts(location);
+  return parts[parts.length - 1] ?? null;
+}
+
+function intentFilters(
+  i: Pick<CreatorSearchIntent, 'topic' | 'location' | 'platforms' | 'minFollowers' | 'maxFollowers'>,
+  categories?: string[],
+): CreatorListFilters {
+  return {
+    search: i.topic ?? undefined,
+    location: i.location ?? undefined,
+    platforms: i.platforms.length ? i.platforms : undefined,
+    categories,
+    publicOnly: true,
+    minFollowers: i.minFollowers ?? undefined,
+    maxFollowers: i.maxFollowers ?? undefined,
+    // "TikTok creators with 10k+" means 10k on TikTok, not in total.
+    followersPlatforms: i.platforms.length ? i.platforms : undefined,
+  };
+}
 
 // Public creator-profile responses are read far more often than the profile
 // changes, and each one runs 5 parallel aggregate queries plus a live external
@@ -199,6 +250,20 @@ async function fetchYoutubeSubscriberCount(accessToken: string): Promise<number>
   const data = (await res.json()) as YoutubeChannelResponse;
   const stats = data.items?.[0]?.statistics;
   return stats?.hiddenSubscriberCount ? 0 : parseInt(stats?.subscriberCount ?? '0', 10);
+}
+
+// Public subscriber count by channel id, via the server API key — no user token
+// needed. Used when a connected channel's OAuth token can no longer be renewed.
+async function fetchYoutubeSubscriberCountByChannelId(channelId: string): Promise<number> {
+  const url =
+    'https://www.googleapis.com/youtube/v3/channels?part=statistics' +
+    `&id=${encodeURIComponent(channelId)}&key=${encodeURIComponent(env.YOUTUBE_API_KEY!)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new AppError(`Could not refresh YouTube subscriber count (${res.status})`, HttpStatus.BAD_GATEWAY);
+  const data = (await res.json()) as YoutubeChannelResponse;
+  const stats = data.items?.[0]?.statistics;
+  if (!stats) throw new AppError('YouTube channel not found', HttpStatus.BAD_GATEWAY);
+  return stats.hiddenSubscriberCount ? 0 : parseInt(stats.subscriberCount ?? '0', 10);
 }
 
 // Shared by both creator and business YouTube connect — fetches the caller's own
@@ -415,6 +480,171 @@ export class CreatorService {
     const dtos = raw.map(toCreatorListItemDto);
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
     return { creators, total, page, limit };
+  }
+
+  /**
+   * Public, anonymous natural-language creator search. The query is parsed into
+   * topic/place/platform/count (creatorSearchIntent.ts) and those become plain
+   * filters on the same findMany the /creators browse uses — results are
+   * always real, public-profile creators, never padded to the requested count.
+   * Explicit filter params (the results page's dropdowns) override what was
+   * parsed; `any` clears a parsed location/platform. When fewer creators match than asked for, `broaderSearches` lists
+   * relaxed versions of the search that DO have creators, with their counts.
+   */
+  async searchPublicCreators(params: {
+    q: string;
+    page: number;
+    limit: number;
+    location?: string;
+    platform?: string;
+    category?: string;
+    /** 0 clears a follower minimum the query itself named. */
+    minFollowers?: number;
+    sort?: 'relevance' | 'followers';
+    lang?: string;
+  }) {
+    const { page, lang = 'en' } = params;
+    const limit = Math.min(params.limit, PUBLIC_SEARCH_PAGE_MAX);
+    const parsed = await this.parseSearchIntent(params.q);
+    const intent: CreatorSearchIntent = {
+      ...parsed,
+      location: params.location === 'any' ? null : params.location || parsed.location,
+      platforms: params.platform === 'any' ? [] : params.platform ? [params.platform] : parsed.platforms,
+      minFollowers: params.minFollowers === undefined ? parsed.minFollowers : params.minFollowers || null,
+      sortByFollowers: params.sort ? params.sort === 'followers' : parsed.sortByFollowers,
+    };
+    const categories = params.category ? [params.category] : undefined;
+
+    const { creators: raw, total } = await this.repo.findMany({
+      ...intentFilters(intent, categories),
+      sort: intent.sortByFollowers ? 'followers' : undefined,
+      page,
+      limit,
+    });
+    const dtos = raw.map((c) => ({ ...toCreatorListItemDto(c), location: publicCity(c.location) }));
+    const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
+
+    const wanted = Math.max(1, intent.creatorCount ?? 1);
+    const broaderSearches = page === 1 && total < wanted ? await this.broaderSearches(intent, categories) : [];
+
+    return {
+      interpretation: {
+        query: intent.query,
+        topic: intent.topic,
+        location: intent.location,
+        platforms: intent.platforms,
+        creatorCount: intent.creatorCount,
+        minFollowers: intent.minFollowers,
+        maxFollowers: intent.maxFollowers,
+        sortByFollowers: intent.sortByFollowers,
+      },
+      creators,
+      total,
+      page,
+      limit,
+      broaderSearches,
+    };
+  }
+
+  /**
+   * Relaxed variants of a search (drop the place / the topic / the platform),
+   * each with its real match count — only variants that actually have creators
+   * are returned, so a "try a broader search" suggestion never leads nowhere.
+   */
+  private async broaderSearches(intent: CreatorSearchIntent, categories?: string[]) {
+    type Variant = {
+      topic: string | null;
+      location: string | null;
+      platform: string | null;
+      minFollowers: number | null;
+      maxFollowers: number | null;
+    };
+    const base: Variant = {
+      topic: intent.topic,
+      location: intent.location,
+      platform: intent.platforms[0] ?? null,
+      minFollowers: intent.minFollowers,
+      maxFollowers: intent.maxFollowers,
+    };
+    const hasAudience = base.minFollowers !== null || base.maxFollowers !== null;
+    const variants: Variant[] = [];
+    // A follower threshold is usually the tightest constraint while the
+    // marketplace is growing — relaxing it is offered first.
+    if (hasAudience) variants.push({ ...base, minFollowers: null, maxFollowers: null });
+    if (base.location) variants.push({ ...base, location: null });
+    if (base.topic) variants.push({ ...base, topic: null });
+    if (base.platform) variants.push({ ...base, platform: null });
+    // When no single relaxation has creators (a very specific search on a
+    // young marketplace), fall back to just the place, then just the platform.
+    const none: Variant = { topic: null, location: null, platform: null, minFollowers: null, maxFollowers: null };
+    const constraints = [base.topic, base.location, base.platform, hasAudience || null].filter(Boolean).length;
+    if (constraints >= 2 && base.location) variants.push({ ...none, location: base.location });
+    if (constraints >= 2 && base.platform) variants.push({ ...none, platform: base.platform });
+    if (base.location && (base.topic || base.platform || hasAudience)) variants.push(none);
+
+    const key = (v: Variant) => `${v.topic}|${v.location}|${v.platform}|${v.minFollowers}|${v.maxFollowers}`;
+    const counted = await Promise.all(
+      variants.map(async (v) => ({
+        ...v,
+        count: await this.repo.countMany(intentFilters({ ...v, platforms: v.platform ? [v.platform] : [] }, categories)),
+      })),
+    );
+    return counted
+      .filter((v) => v.count > 0)
+      .filter((v, i, all) => all.findIndex((o) => key(o) === key(v)) === i)
+      .slice(0, 3);
+  }
+
+  /**
+   * Landing-hero popular searches: the admin-curated candidates
+   * (marketplace.popularCreatorSearches), keeping only those that currently
+   * return creators. Topped up with "Creators in <city>" for the cities with
+   * the most discoverable creators if too few curated ones survive.
+   */
+  async getPopularSearches(): Promise<string[]> {
+    return cached(POPULAR_SEARCHES_CACHE_KEY, POPULAR_SEARCHES_CACHE_TTL_SEC, async () => {
+      const settings = await getCachedSettings();
+      const configured = settings['marketplace.popularCreatorSearches'];
+      const candidates = Array.isArray(configured)
+        ? configured.filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+        : [];
+
+      const results: string[] = [];
+      for (const term of candidates) {
+        if (results.length >= POPULAR_SEARCHES_MAX) break;
+        const intent = await this.parseSearchIntent(term);
+        if ((await this.repo.countMany(intentFilters(intent))) > 0) results.push(term.trim());
+      }
+
+      if (results.length < 2) {
+        const byCity = new Map<string, number>();
+        for (const { location, count } of await this.repo.findListedLocations()) {
+          const city = publicCity(location);
+          if (city) byCity.set(city, (byCity.get(city) ?? 0) + count);
+        }
+        const topCities = [...byCity.entries()].sort((a, b) => b[1] - a[1]).map(([city]) => city);
+        for (const city of topCities) {
+          if (results.length >= POPULAR_SEARCHES_MAX) break;
+          const term = `Creators in ${city}`;
+          if (!results.includes(term)) results.push(term);
+        }
+      }
+      return results;
+    });
+  }
+
+  private async parseSearchIntent(q: string): Promise<CreatorSearchIntent> {
+    const [places, vocabulary] = await Promise.all([
+      cached(PLACES_CACHE_KEY, PLACES_CACHE_TTL_SEC, async () => {
+        const rows = await this.repo.findListedLocations();
+        return [...new Set(rows.flatMap((r) => placeParts(r.location)))];
+      }),
+      this.repo.labelVocabulary(),
+    ]);
+    const labelWords = new Set(
+      [...vocabulary.categories, ...vocabulary.industries].flatMap((l) => l.toLowerCase().split(/[^\p{L}]+/u)).filter(Boolean),
+    );
+    return parseCreatorSearchIntent(q, places, (w) => isLexiconTerm(w) || labelWords.has(w));
   }
 
   /**
@@ -875,6 +1105,11 @@ export class CreatorService {
       logger.error({ status: infoRes.status, infoData }, 'TikTok user info request failed');
       throw new AppError(getDict().creator.couldNotReadTiktokProfile, HttpStatus.BAD_GATEWAY);
     }
+    if (tiktokUser.follower_count === undefined) {
+      // Connect still succeeds (the profile link is real), but the count can't
+      // be read — surface why instead of silently storing 0.
+      logger.warn({ openId: tiktokUser.open_id }, 'TikTok connect: follower_count missing — user.info.stats scope not granted');
+    }
 
     // profile_deep_link (user.info.profile scope) is the real @handle link — fall back
     // to a best-effort link from display_name if TikTok ever omits it.
@@ -1099,6 +1334,20 @@ export class CreatorService {
   // only from refreshOneAccountFollowers below — never directly.
 
   private async refreshYoutubeFollowers(account: RawSocialAccountRow): Promise<RefreshResult> {
+    try {
+      return await this.refreshYoutubeFollowersWithToken(account);
+    } catch (err) {
+      // Expired token with no refresh token (every web connect), or a revoked
+      // one — the count is public, so read it by channel id instead when a
+      // server API key is configured.
+      if (env.YOUTUBE_API_KEY && account.platformUserId) {
+        return { followers: await fetchYoutubeSubscriberCountByChannelId(account.platformUserId) };
+      }
+      throw err;
+    }
+  }
+
+  private async refreshYoutubeFollowersWithToken(account: RawSocialAccountRow): Promise<RefreshResult> {
     let accessToken = account.accessToken!;
     if (isTokenStaleOrExpired(account.tokenExpiresAt) && account.refreshToken) {
       const { clientId, clientSecret } = resolveGoogleRefreshCredentials(account.oauthConnectionType);
@@ -1220,6 +1469,12 @@ export class CreatorService {
     const infoData = (await infoRes.json()) as TiktokUserInfoResponse;
     if (!infoRes.ok || !infoData.data?.user) {
       throw new AppError('Could not refresh TikTok profile', HttpStatus.BAD_GATEWAY);
+    }
+    // TikTok omits follower_count (rather than erroring) when the token was
+    // granted without user.info.stats — e.g. accounts connected before that
+    // scope went live. Writing 0 would wipe a real count and look like success.
+    if (infoData.data.user.follower_count === undefined) {
+      throw new AppError('TikTok token lacks the user.info.stats scope — the creator must reconnect TikTok', HttpStatus.UNAUTHORIZED);
     }
     return {
       followers: infoData.data.user.follower_count ?? 0,

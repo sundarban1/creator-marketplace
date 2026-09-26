@@ -154,6 +154,11 @@ function groupsFor(term: string): number[] {
   return (singular && GROUP_INDEX.get(singular)) || [];
 }
 
+/** Whether the lexicon knows `term` (or its singular) — lets callers tell a topic word from, say, a place name. */
+export function isLexiconTerm(term: string): boolean {
+  return groupsFor(normalize(term)).length > 0;
+}
+
 /**
  * Turn a raw search box value into the term set the repositories query with.
  * Original tokens always come first so callers can rank exact hits above

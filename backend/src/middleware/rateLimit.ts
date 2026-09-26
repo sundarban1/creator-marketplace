@@ -110,6 +110,18 @@ export const apiLimiter = limiter({
   },
 });
 
+// Anonymous natural-language creator search (landing hero → /creators/search).
+// Public and unauthenticated, and each call runs a ranked search plus a few
+// counts, so it gets its own per-IP budget well under the general API limit —
+// generous for a person refining a search, tight for a scraper.
+export const publicSearchLimiter = limiter({
+  windowMs: 60 * 1000, // 1 minute
+  limit: async () => devFloor(await settingNumber('rateLimit.publicSearch.max', isProd ? 30 : 300), 300),
+  message: { success: false, message: 'Too many searches. Please wait a moment and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Per-user (not per-IP) limiter for sending chat messages — applies equally
 // to creators and businesses. Placed after `authenticate` on its route so
 // `req.user` is populated for the key.

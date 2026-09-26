@@ -32,8 +32,8 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'flex items-start gap-4 rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]',
-        'transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_8px_24px_rgba(16,24,40,0.08)]',
+        'app-card flex items-start gap-4 rounded-2xl border border-line bg-surface p-5',
+        'transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_20px_44px_-24px_var(--app-glow)]',
         compact && 'flex-col items-center gap-1.5 p-3 text-center sm:flex-row sm:items-start sm:gap-4 sm:p-5 sm:text-left',
         className,
       )}
@@ -44,14 +44,14 @@ export function StatCard({
         </span>
       )}
       <div className={cn('min-w-0 flex-1', compact && 'flex flex-col items-center sm:items-stretch')}>
-        <p className={cn('truncate text-sm font-medium text-ink-soft', compact && 'hidden sm:block', labelClassName)}>{label}</p>
+        <p className={cn('truncate text-xs font-medium uppercase tracking-[0.12em] text-ink-soft', compact && 'hidden sm:block', labelClassName)}>{label}</p>
         {value === undefined ? (
           <Skeleton className="mt-1.5 h-7 w-16" />
         ) : (
           <p
             className={cn(
-              'mt-0.5 text-2xl font-bold leading-none tracking-tight text-ink',
-              compact && 'mt-0 text-base font-semibold sm:mt-0.5 sm:text-2xl sm:font-bold',
+              'lp-display mt-1.5 text-3xl leading-none text-ink',
+              compact && 'mt-0 text-lg sm:mt-1.5 sm:text-3xl',
             )}
           >
             {value}

@@ -28,7 +28,7 @@ export function AiGeneratingOverlay() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-2 bg-ink/80 p-6">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-2 bg-lp-black/80 p-6">
       <div
         className="h-56 w-56 sm:h-64 sm:w-64"
         // Inline SVG (not an <img>) so its SMIL <animate> elements actually play.

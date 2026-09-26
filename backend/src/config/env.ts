@@ -90,6 +90,12 @@ const envSchema = z.object({
   // client ID/secret are only relevant for the implicit-flow web connect, which never
   // actually receives a refresh token in the first place (see useGoogleAccessToken.ts).
   GOOGLE_WEB_CLIENT_ID: z.string().optional(),
+  // Server-side YouTube Data API key (Google Cloud console → YouTube Data API v3).
+  // Subscriber counts are public, so with this set the follower refresh can read
+  // a channel's count by id even when its OAuth token has expired with no
+  // refresh token to renew it (every web connect — the implicit flow above never
+  // returns one). Unset = token-only refresh, as before.
+  YOUTUBE_API_KEY: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_ANDROID_CLIENT_ID: z.string().optional(),
   GOOGLE_IOS_CLIENT_ID: z.string().optional(),

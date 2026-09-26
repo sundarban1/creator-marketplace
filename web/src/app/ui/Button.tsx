@@ -22,17 +22,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-brand text-white hover:bg-brand-hover active:bg-brand-hover shadow-sm',
+    'bg-brand text-white hover:bg-brand-hover active:bg-brand-hover shadow-[0_10px_30px_-12px_var(--app-glow,rgba(99,102,241,0.7))]',
   secondary:
     'bg-surface text-ink border border-line-strong hover:bg-surface-dim active:bg-surface-dim',
-  ghost: 'bg-transparent text-ink hover:bg-black/[0.04] active:bg-black/[0.06]',
+  ghost: 'bg-transparent text-ink hover:bg-ink/[0.04] active:bg-ink/[0.06]',
   danger: 'bg-danger text-white hover:brightness-95 active:brightness-90 shadow-sm',
 };
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-9 px-3 text-sm rounded-lg gap-1.5',
-  md: 'h-11 px-4 text-sm rounded-xl gap-2',
-  lg: 'h-12 px-5 text-[15px] rounded-xl gap-2',
+  sm: 'h-9 px-3.5 text-sm rounded-full gap-1.5',
+  md: 'h-11 px-5 text-sm rounded-full gap-2',
+  lg: 'h-12 px-6 text-[15px] rounded-full gap-2',
 };
 
 export function Button({

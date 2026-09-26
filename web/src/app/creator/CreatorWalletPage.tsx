@@ -175,7 +175,7 @@ function TransactionList({ data, loading }: { data: WalletTransaction[] | null; 
   }
 
   return (
-    <ul className="divide-y divide-black/[0.05]">
+    <ul className="divide-y divide-ink/[0.05]">
       {data.map((tx) => {
         const credit = tx.direction === 'CREDIT';
         return (
@@ -253,7 +253,7 @@ function WithdrawalList({
   }
 
   return (
-    <ul className="divide-y divide-black/[0.05]">
+    <ul className="divide-y divide-ink/[0.05]">
       {data.map((wd) => {
         const s = W_STATUS[wd.status];
         return (

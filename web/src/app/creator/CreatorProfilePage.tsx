@@ -174,7 +174,7 @@ export function CreatorProfilePage() {
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
 
       {/* Identity — gradient cover band + overlapping avatar */}
-      <div className="overflow-hidden rounded-3xl bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] ring-1 ring-black/[0.04]">
+      <div className="overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] ring-1 ring-ink/[0.04]">
         <div className="relative h-28 bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark sm:h-32">
           <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-dash-pink/30 blur-3xl" />
         </div>
@@ -182,10 +182,10 @@ export function CreatorProfilePage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="-mt-10 flex flex-col gap-3 sm:-mt-5 sm:flex-row sm:items-end">
               <div className="relative w-fit">
-                <span className="inline-flex rounded-full bg-white p-1 shadow-sm">
+                <span className="inline-flex rounded-full bg-surface p-1 shadow-sm">
                   <Avatar name={p.fullName ?? 'Creator'} src={p.avatarUrl} size="xl" className="h-20 w-20 sm:h-24 sm:w-24" />
                 </span>
-                <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-ink-soft shadow-sm ring-1 ring-black/[0.06] hover:text-ink">
+                <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-ink-soft shadow-sm ring-1 ring-ink/[0.06] hover:text-ink">
                   <Camera size={14} />
                   <input
                     type="file"
@@ -284,7 +284,7 @@ export function CreatorProfilePage() {
         ) : (
           <ul className="space-y-2">
             {socials.data!.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 rounded-xl bg-black/[0.02] px-3 py-2.5">
+              <li key={s.id} className="flex items-center gap-3 rounded-xl bg-ink/[0.02] px-3 py-2.5">
                 <PlatformIcon platform={s.platform} size={18} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-semibold text-ink">{platformMeta(s.platform).label}</p>
@@ -328,11 +328,11 @@ export function CreatorProfilePage() {
         ) : (
           <ul className="space-y-2">
             {portfolioItems.data!.map((item) => (
-              <li key={item.id} className="flex items-center gap-3 rounded-xl bg-black/[0.02] px-3 py-2.5">
+              <li key={item.id} className="flex items-center gap-3 rounded-xl bg-ink/[0.02] px-3 py-2.5">
                 {item.mediaUrl ? (
                   <img src={item.mediaUrl} alt="" className="h-11 w-11 flex-shrink-0 rounded-lg object-cover" />
                 ) : (
-                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-black/[0.04] text-ink-soft">
+                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-ink/[0.04] text-ink-soft">
                     <Link2 size={16} />
                   </span>
                 )}

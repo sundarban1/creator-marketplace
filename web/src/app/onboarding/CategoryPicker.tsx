@@ -37,7 +37,7 @@ export function CategoryPicker({
               'inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-[14px] font-semibold transition-all duration-150',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
               active
-                ? 'border-transparent bg-gradient-to-br from-violet to-violet-dark text-white shadow-sm'
+                ? 'app-active-pill border-transparent'
                 : 'border-line-strong bg-surface text-ink hover:bg-surface-dim',
               disabled && 'cursor-not-allowed opacity-40',
             )}

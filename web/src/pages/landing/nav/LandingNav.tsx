@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { NAV_LINKS } from '../constants';
-import { useLenisScroll } from '../hooks/useLenis';
+import { useLenisScrollOptional } from '../hooks/useLenis';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -83,7 +83,12 @@ function LanguageSwitchMobile() {
 }
 
 export function LandingNav() {
-  const { scrollTo } = useLenisScroll();
+  // Null off the home page (no LenisProvider) — the public marketplace pages
+  // (/creators/search, /events/…) render this same nav, and there a section
+  // link has to navigate to `/#id` (LandingPage's HashScrollHandler scrolls
+  // it into place) rather than scroll within the current page.
+  const lenis = useLenisScrollOptional();
+  const navigate = useNavigate();
   const { d } = useLandingLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -115,7 +120,11 @@ export function LandingNav() {
 
   function go(id: string, offset?: number) {
     setOpen(false);
-    setTimeout(() => scrollTo(`#${id}`, { offset }), open ? 350 : 0);
+    if (!lenis) {
+      navigate(id === 'hero' ? '/' : `/#${id}`);
+      return;
+    }
+    setTimeout(() => lenis.scrollTo(`#${id}`, { offset }), open ? 350 : 0);
   }
 
   return (

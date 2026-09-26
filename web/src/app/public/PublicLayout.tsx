@@ -4,11 +4,12 @@ import { AppLanguageProvider } from '../i18n';
 import { LandingThemeProvider } from '../../pages/landing/context/ThemeContext';
 import { LandingLanguageProvider, useLandingLanguage } from '../../pages/landing/context/LanguageContext';
 import { LandingFooter } from '../../pages/landing/nav/LandingFooter';
-import { PublicHeader } from './PublicHeader';
+import { LandingNav } from '../../pages/landing/nav/LandingNav';
 
 /**
  * Layout for the public marketplace pages (/creators, /events and their detail
- * pages). Uses the landing site's own header nav, theme, footer and language —
+ * pages). Uses the landing site's own nav (LandingNav, the same component as
+ * the home page), theme, footer and language —
  * so the pages read as one continuous site with the marketing pages:
  *  - LandingThemeProvider drives the dark-mode toggle (index.css defines dark
  *    values for every marketplace token under `.dark .market-scope`);
@@ -23,8 +24,11 @@ export function PublicLayout() {
       <LandingLanguageProvider>
         <LanguageBridge>
           <div className="market-scope flex min-h-screen flex-col bg-paper font-display text-ink">
-            <PublicHeader />
-            <main className="flex-1">
+            {/* Fixed h-16 header — the main area starts below it. */}
+            <div className="footer-landing-scope">
+              <LandingNav />
+            </div>
+            <main className="flex-1 pt-16">
               <ScrollToTop />
               <Outlet />
             </main>

@@ -79,7 +79,7 @@ export function ImageCropModal({
     >
       {imageSrc && (
         <div className="flex flex-col gap-4">
-          <div className="relative h-72 w-full overflow-hidden rounded-xl bg-ink sm:h-80">
+          <div className="relative h-72 w-full overflow-hidden rounded-xl bg-lp-black sm:h-80">
             <Cropper
               image={imageSrc}
               crop={crop}
