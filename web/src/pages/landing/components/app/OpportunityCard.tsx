@@ -55,6 +55,8 @@ export function OpportunityCard({
         <img
           src={data.photo}
           alt={data.title}
+          width={264}
+          height={112}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         />
@@ -87,7 +89,7 @@ export function OpportunityCard({
       </div>
 
       <div className="p-3">
-        <h4 className="truncate text-sm font-bold leading-[1.5] text-app-text dark:text-white">{data.title}</h4>
+        <h3 className="truncate text-sm font-bold leading-[1.5] text-app-text dark:text-white">{data.title}</h3>
         <p className="mt-0.5 truncate text-[13px] font-bold leading-[1.5] text-app-text dark:text-white">{data.budget}</p>
         <p className="mt-1.5 truncate text-[11px] font-medium leading-[1.5] text-app-muted dark:text-white">
           {data.brand} · {data.postedAgo}

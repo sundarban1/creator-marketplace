@@ -131,6 +131,8 @@ export function Security() {
                   <img
                     src={PHOTOS[i]}
                     alt={point.title}
+                    width={800}
+                    height={800}
                     loading={i < 2 ? 'eager' : 'lazy'}
                     className={`h-full w-full rounded-[20px] lg:rounded-[26px] ${isPng ? 'bg-white object-contain p-6' : 'object-cover'}`}
                   />

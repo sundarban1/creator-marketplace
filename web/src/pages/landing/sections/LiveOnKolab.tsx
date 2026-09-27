@@ -161,7 +161,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                   >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-lp-brinjal/30 to-lp-orange/20">
                       {card.imageUrl ? (
-                        <img src={card.imageUrl} alt={card.business ?? card.title} loading="lazy" className="h-full w-full object-cover" />
+                        <img src={card.imageUrl} alt={card.business ?? card.title} width={320} height={180} loading="lazy" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-sm font-bold text-lp-fg">
                           {initials(card.business ?? card.title)}
@@ -208,7 +208,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                     className="flex h-full flex-col items-center p-5 !text-center rounded-2xl lp-glass text-left transition-all hover:-translate-y-1 hover:border-[#818CF8]/50 hover:shadow-[0_20px_50px_-24px_rgba(99,102,241,0.7)]"
                   >
                     <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-lp-brinjal/30 to-lp-orange/20 text-sm font-bold text-lp-fg">
-                      {card.imageUrl ? <img src={card.imageUrl} alt={card.name} loading="lazy" className="h-full w-full object-cover" /> : initials(card.name)}
+                      {card.imageUrl ? <img src={card.imageUrl} alt={card.name} width={96} height={96} loading="lazy" className="h-full w-full object-cover" /> : initials(card.name)}
                     </div>
                     <p className="lp-heading mt-3 flex items-center gap-1 text-[15px] leading-tight text-lp-fg">
                       <span className="line-clamp-1">{card.name}</span>

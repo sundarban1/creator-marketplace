@@ -17,6 +17,8 @@ export function Logo({
     <img
       src="/logo.png"
       alt="Kolab"
+      width={540}
+      height={180}
       className={cn('h-7 w-auto', invert && 'brightness-0 invert', className)}
     />
   );

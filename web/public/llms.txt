@@ -1,0 +1,44 @@
+# Kolab
+
+> Kolab is Nepal's creator marketplace. Businesses and brands find and hire verified content creators and influencers (Instagram, TikTok, YouTube, Facebook), post paid campaigns or free events, and pay through Kolab-held escrow. Creators discover paid collaborations, apply with proposals, deliver content, and get paid to their Kolab wallet. The main product is the Kolab mobile app (iOS and Android); kolab.com.np is the public website.
+
+Key facts:
+
+- Market: Nepal (all cities); prices in Nepali Rupees (Rs.)
+- Two sides: creators (influencers / content creators) and businesses (brands, cafés, shops, agencies)
+- Payments: the business funds escrow up front; the creator is paid when the business approves the delivered work; disputes are handled by Kolab
+- Trust: verified profiles, two-way reviews and ratings, in-app chat, reporting
+- Contact: info@kolab.com.np
+
+## Main pages
+
+- [Home](https://kolab.com.np/): overview of Kolab for creators and businesses
+- [About](https://kolab.com.np/about): who we are and why Kolab exists
+- [Creator Marketplace Nepal](https://kolab.com.np/creator-marketplace-nepal): how the marketplace works
+- [For Brands](https://kolab.com.np/brands): hiring creators and running campaigns as a business
+- [For Creators](https://kolab.com.np/content-creators): finding paid collaborations as a creator
+- [Trust & Safety](https://kolab.com.np/trust-and-safety): verification, escrow payments, reviews, reporting
+
+## Find creators
+
+- [Creator search](https://kolab.com.np/creators/search): search creators by category, platform and follower count
+- [Influencers in Nepal](https://kolab.com.np/influencers)
+- [TikTok creators](https://kolab.com.np/tiktok-creators)
+- [Instagram creators](https://kolab.com.np/instagram-creators)
+- [YouTube creators](https://kolab.com.np/youtube-creators)
+- [Facebook creators](https://kolab.com.np/facebook-creators)
+- [Browse by industry](https://kolab.com.np/industries-nepal)
+- [Browse by city](https://kolab.com.np/cities-nepal)
+
+## Guides
+
+- [Influencer marketing in Nepal](https://kolab.com.np/influencer-marketing-nepal)
+- [Brand collaboration in Nepal](https://kolab.com.np/brand-collaboration-nepal)
+- [Paid collaborations in Nepal](https://kolab.com.np/paid-collaborations-nepal)
+- [Find campaigns](https://kolab.com.np/find-campaigns)
+
+## Optional
+
+- [Support](https://kolab.com.np/support)
+- [Terms](https://kolab.com.np/terms)
+- [Privacy](https://kolab.com.np/privacy)

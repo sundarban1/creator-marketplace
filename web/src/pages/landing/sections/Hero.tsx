@@ -207,6 +207,8 @@ export function Hero({
                   key={i}
                   src={src}
                   alt=""
+                  width={36}
+                  height={36}
                   loading="lazy"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
@@ -434,6 +436,8 @@ function FloatingCreatorCard({
           <img
             src={creator.photo}
             alt={creator.name}
+            width={48}
+            height={48}
             loading="lazy"
             onError={(e) => {
               e.currentTarget.onerror = null;

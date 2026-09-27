@@ -160,7 +160,8 @@ export function LandingFooter() {
                     whileHover={PILL_HOVER}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-lp-fg/[0.08] text-lp-fg/80 transition-colors hover:bg-lp-fg/15 hover:text-lp-fg"
                   >
-                    <Icon size={14} />
+                    <Icon size={14} aria-hidden />
+                    <span className="sr-only">Kolab on {label}</span>
                   </motion.a>
                 ))}
               </motion.div>

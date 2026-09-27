@@ -16,7 +16,22 @@ export function organizationSchema() {
       '@type': 'Country',
       name: 'Nepal',
     },
-    sameAs: [] as string[],
+    // Static mirror of the admin-managed social links (useSiteInfo) —
+    // schema is prerendered, so it can't wait on the async siteInfo fetch.
+    // Keep in sync when a profile is added/changed in the dashboard.
+    sameAs: [
+      'https://www.facebook.com/kolabnepal/',
+      'https://www.instagram.com/kolab_nepal',
+      'https://www.tiktok.com/@kolab_nepal',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      telephone: '+977-9852065104',
+      email: 'info@kolab.com.np',
+      areaServed: 'NP',
+      availableLanguage: ['English', 'Nepali'],
+    },
   };
 }
 

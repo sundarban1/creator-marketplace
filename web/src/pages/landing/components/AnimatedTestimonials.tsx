@@ -145,6 +145,8 @@ export function AnimatedTestimonials({
                     <img
                       src={testimonial.src}
                       alt={testimonial.name}
+                      width={500}
+                      height={500}
                       draggable={false}
                       loading="lazy"
                       className="h-full w-full rounded-3xl border border-lp-black/10 object-cover object-center shadow-[0_30px_60px_-30px_rgba(10,16,51,0.45)] dark:border-white/10"

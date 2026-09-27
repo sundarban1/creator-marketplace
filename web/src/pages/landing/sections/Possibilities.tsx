@@ -67,6 +67,8 @@ export function Possibilities() {
                   <img
                     src={photo}
                     alt={copy.title}
+                    width={400}
+                    height={300}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                   />

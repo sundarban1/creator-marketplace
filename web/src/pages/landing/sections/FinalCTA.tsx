@@ -48,7 +48,7 @@ function RoleCard({
         <span className={`text-xs font-medium uppercase tracking-[0.14em] ${accent === 'brinjal' ? 'text-lp-accent-ink' : 'text-lp-green-ink'}`}>{roleLabel}</span>
         <div className="flex -space-x-3">
           {photos.map((src, i) => (
-            <img key={i} src={src} alt={roleLabel} loading="lazy" className="h-10 w-10 flex-shrink-0 rounded-full border-2 border-lp-navy-2 object-cover" />
+            <img key={i} src={src} alt={roleLabel} width={40} height={40} loading="lazy" className="h-10 w-10 flex-shrink-0 rounded-full border-2 border-lp-navy-2 object-cover" />
           ))}
         </div>
       </div>

@@ -55,7 +55,8 @@ export function SocialRail() {
             style={{ color, boxShadow: `0 6px 16px -6px ${color}66` }}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white transition-shadow duration-300 dark:border-white/10 dark:bg-ink-elevated"
           >
-            <Icon size={16} />
+            <Icon size={16} aria-hidden />
+            <span className="sr-only">Kolab on {label}</span>
           </motion.a>
         );
       })}

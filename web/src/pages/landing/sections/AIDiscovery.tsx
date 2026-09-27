@@ -120,7 +120,7 @@ export function AIDiscovery() {
               <p className="mt-1 text-xs font-semibold text-ink-soft dark:text-white">{ai.matchesLabel}</p>
               <div className="mt-4 flex items-center justify-center -space-x-2.5">
                 {MATCH_AVATARS.map((src) => (
-                  <img key={src} src={src} alt="" loading="lazy" className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-paper-dim object-cover dark:border-ink-elevated" />
+                  <img key={src} src={src} alt="" width={32} height={32} loading="lazy" className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-paper-dim object-cover dark:border-ink-elevated" />
                 ))}
                 <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 border-paper-dim bg-ink/10 text-[10px] font-bold text-ink dark:border-ink-elevated dark:bg-white/10 dark:text-white">
                   +21
