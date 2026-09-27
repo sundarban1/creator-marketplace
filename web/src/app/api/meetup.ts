@@ -61,7 +61,7 @@ export interface RegisterForMeetupInput {
   email?: string;
   creatorTypes: MeetupCreatorType[];
   otherCreatorType?: string;
-  socialMediaProfile?: string;
+  socialMediaProfile: string;
   attendancePreference: 'YES' | 'NOT_SURE';
   message?: string;
 }

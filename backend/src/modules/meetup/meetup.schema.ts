@@ -61,7 +61,7 @@ export const registerForMeetupSchema = z.object({
   email:                z.string().trim().email().optional(),
   creatorTypes:         z.array(creatorType).min(1, 'Select at least one').max(2, 'Select up to 2'),
   otherCreatorType:     z.string().trim().max(100).optional(),
-  socialMediaProfile:   z.string().trim().max(300).optional(),
+  socialMediaProfile:   z.string().trim().min(1, 'Add your Instagram or TikTok profile link').max(300),
   attendancePreference,
   message:              z.string().trim().max(1000).optional(),
 }).refine(

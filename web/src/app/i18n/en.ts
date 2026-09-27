@@ -432,7 +432,8 @@ export const en = {
     fieldEmail: 'Email address',
     fieldCreatorType: 'What best describes you? (up to 2)',
     fieldOtherCreatorType: 'Tell us more',
-    fieldSocialProfile: 'Social media profile',
+    fieldSocialProfile: 'Social media profile link',
+    fieldSocialProfileHint: 'Paste your Instagram or TikTok profile link, e.g. https://instagram.com/yourhandle or https://tiktok.com/@yourhandle',
     fieldAttendance: 'Will you attend the meetup?',
     attendanceYes: 'Yes, I’ll attend',
     attendanceNotSure: 'I’m not sure yet',
@@ -442,6 +443,7 @@ export const en = {
     validationPhoneRequired: 'Enter your phone number.',
     validationTypeRequired: 'Select at least one option.',
     validationOtherRequired: 'Tell us what best describes you.',
+    validationSocialRequired: 'Add your Instagram or TikTok profile link.',
     // Flat (not nested) — AppDict's mapped type only widens string values two
     // levels deep, see en.ts's `export type AppDict` at the bottom of this file.
     typeContentCreator: 'Content Creator',

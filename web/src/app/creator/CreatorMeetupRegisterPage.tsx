@@ -226,6 +226,7 @@ function RegistrationForm({ meetupId, initial }: {
     if (!phoneNumber.trim()) return t('meetup.validationPhoneRequired');
     if (creatorTypes.length === 0) return t('meetup.validationTypeRequired');
     if (creatorTypes.includes('OTHER') && !otherCreatorType.trim()) return t('meetup.validationOtherRequired');
+    if (!socialMediaProfile.trim()) return t('meetup.validationSocialRequired');
     return '';
   }
 
@@ -242,7 +243,7 @@ function RegistrationForm({ meetupId, initial }: {
         email: email.trim() || undefined,
         creatorTypes,
         otherCreatorType: otherCreatorType.trim() || undefined,
-        socialMediaProfile: socialMediaProfile.trim() || undefined,
+        socialMediaProfile: socialMediaProfile.trim(),
         attendancePreference,
         message: message.trim() || undefined,
       });
@@ -306,7 +307,9 @@ function RegistrationForm({ meetupId, initial }: {
       <Card>
         <TextField
           label={t('meetup.fieldSocialProfile')}
-          placeholder="instagram.com/yourhandle"
+          hint={t('meetup.fieldSocialProfileHint')}
+          placeholder="https://instagram.com/yourhandle"
+          required
           value={socialMediaProfile}
           onChange={(e) => setSocialMediaProfile(e.target.value)}
         />

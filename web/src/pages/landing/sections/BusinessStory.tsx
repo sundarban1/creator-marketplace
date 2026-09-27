@@ -76,7 +76,7 @@ export function BusinessStory() {
               </motion.p>
               <AudienceSteps steps={b.steps} accent="green" />
               <motion.div variants={fadeUp} className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3">
-                <PillCta to="/creators" tone="green" size="lg">
+                <PillCta to="/creators/search" tone="green" size="lg">
                   {d.hero.ctaBusiness}
                 </PillCta>
                 <span className="text-xs text-lp-black/55 dark:text-white/55">{b.ctaCaption}</span>
