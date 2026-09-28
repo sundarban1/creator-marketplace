@@ -1193,6 +1193,7 @@ export const en = {
     noCreatorsTitle: 'No creators found',
     noCreatorsBody: 'Try adjusting your search or filters.',
     followers: 'followers',
+    subscribers: 'subscribers',
     verified: 'Verified',
     workWithCreator: 'Work with this creator',
     viewProfile: 'View profile',

@@ -262,6 +262,7 @@ export const en = {
       cta: 'Browse all creators',
       verified: 'Verified',
       followers: 'followers',
+      subscribers: 'subscribers',
       modalTitle: 'Ready to discover more creators? ✨',
       modalBody: 'Create an account to explore talented creators on Kolab and find the perfect match for your next project.',
       modalCta: 'Create an account',

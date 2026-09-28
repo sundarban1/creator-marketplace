@@ -1146,6 +1146,7 @@ export const ne: AppDict = {
     noCreatorsTitle: 'कुनै क्रिएटर भेटिएन',
     noCreatorsBody: 'आफ्नो खोज वा फिल्टर मिलाएर हेर्नुहोस्।',
     followers: 'फलोअर',
+    subscribers: 'सब्सक्राइबर',
     verified: 'प्रमाणित',
     workWithCreator: 'यस क्रिएटरसँग काम गर्नुहोस्',
     viewProfile: 'प्रोफाइल हेर्नुहोस्',

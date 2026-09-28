@@ -11,6 +11,7 @@ import { perCreatorBudget } from '../../../app/lib/format';
 import type { EventCard as EventCardData } from '../../../app/api/publicMarketplace';
 import type { PublicCreatorLite, PublicBusinessLite } from '../../../lib/api';
 import type { CategoryMeta } from '../../../app/public/categoryLookup';
+import { platformMeta } from '../../../app/ui/PlatformIcon';
 
 type Tab = 'opportunities' | 'creators' | 'businesses';
 
@@ -22,7 +23,7 @@ interface Props {
 }
 
 type EventCell = { key: string; title: string; business: string | null; location: string | null; isPaid: boolean; meta: string; imageUrl: string | null; to: string };
-type PeopleCell = { key: string; name: string; categories: string[]; location: string | null; imageUrl: string | null; meta: string | null; verified: boolean; to: string };
+type PeopleCell = { key: string; name: string; categories: string[]; location: string | null; imageUrl: string | null; meta: string | null; topPlatform?: string; verified: boolean; to: string };
 
 const fmtCount = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n));
 const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
@@ -66,14 +67,21 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
     const copyKind = isCreators ? d.marketplace.creators : d.marketplace.businesses;
     if (isCreators && creators && creators.length) {
       return creators.slice(0, 4).map((c) => {
-        const followers = Math.max(0, ...c.socialAccounts.map((s) => s.followers));
+        // Only the creator's biggest account — "[tiktok] 12K followers".
+        const top = c.socialAccounts.reduce<(typeof c.socialAccounts)[number] | null>(
+          (best, s) => (!best || s.followers > best.followers ? s : best),
+          null,
+        );
+        const topPlatform = top?.platform.toLowerCase();
+        const unit = topPlatform === 'youtube' ? d.marketplace.creators.subscribers : d.marketplace.creators.followers;
         return {
           key: c.id,
           name: c.fullName || c.username || '—',
           categories: c.categories,
           location: c.location,
           imageUrl: c.avatarUrl,
-          meta: followers >= 500 ? `${fmtCount(followers)} ${d.marketplace.creators.followers}` : null,
+          meta: top && top.followers > 0 ? `${fmtCount(top.followers)} ${unit}` : null,
+          topPlatform: top && top.followers > 0 ? topPlatform : undefined,
           verified: c.isVerified,
           to: `/creators/${c.username || c.id}`,
         };
@@ -237,7 +245,14 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
                     )}
                     {card.meta && (
                       <span className="mt-2 flex items-center gap-1 text-[11px] text-lp-fg/60">
-                        {tab === 'creators' ? <Users size={11} /> : <MapPin size={11} />}
+                        {card.topPlatform
+                          ? (() => {
+                              const { Icon, color, label } = platformMeta(card.topPlatform);
+                              // TikTok/X brand black disappears on the navy band.
+                              const mono = color === '#000000';
+                              return <Icon size={12} color={mono ? 'currentColor' : color} className={mono ? 'text-lp-fg' : undefined} aria-label={label} />;
+                            })()
+                          : tab === 'creators' ? <Users size={11} /> : <MapPin size={11} />}
                         {card.meta}
                       </span>
                     )}

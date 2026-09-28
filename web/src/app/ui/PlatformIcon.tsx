@@ -25,5 +25,10 @@ export function PlatformIcon({
   colored?: boolean;
 }) {
   const { Icon, color, label } = platformMeta(platform);
+  // TikTok/X brand color is pure black, which disappears on dark surfaces —
+  // flip those to white in dark mode instead of using the literal brand color.
+  if (colored && color === '#000000') {
+    return <Icon size={size} className="text-black dark:text-white" title={label} aria-label={label} />;
+  }
   return <Icon size={size} color={colored ? color : 'currentColor'} title={label} aria-label={label} />;
 }

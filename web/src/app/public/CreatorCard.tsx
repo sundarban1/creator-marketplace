@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { BadgeCheck, MapPin, ArrowUpRight, Users } from 'lucide-react';
 import { useT } from '../i18n';
-import { compactNumber, totalFollowers } from '../lib/format';
+import { compactNumber } from '../lib/format';
 import { Avatar } from '../ui/Avatar';
 import { PlatformIcon } from '../ui/PlatformIcon';
 import { cn } from '../ui/cn';
@@ -9,11 +9,11 @@ import type { CreatorCard as CreatorCardData } from '../api/publicMarketplace';
 import type { CategoryMeta } from './categoryLookup';
 import { CategoryPill } from './CategoryPill';
 
-const PLATFORM_NAMES: Record<string, string> = {
-  instagram: 'Instagram',
-  tiktok: 'TikTok',
-  youtube: 'YouTube',
-  facebook: 'Facebook',
+// Display order for the per-platform follower grid; anything else trails.
+const PLATFORM_ORDER = ['instagram', 'tiktok', 'facebook', 'youtube'];
+const orderOf = (p: string) => {
+  const i = PLATFORM_ORDER.indexOf(p);
+  return i === -1 ? PLATFORM_ORDER.length : i;
 };
 
 interface Props {
@@ -24,19 +24,25 @@ interface Props {
    *  stays inside the authed shell instead of escaping to the public,
    *  landing-nav-wrapped route. */
   hrefBase?: string;
-  /** Show this platform's follower count instead of the all-platform total —
-   *  used when a search is about that platform ("TikTok creators with 10k+"). */
+  /** Lead the follower grid with this platform — used when a search is about
+   *  that platform ("TikTok creators with 10k+"). */
   followersPlatform?: string;
 }
 
 export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators', followersPlatform }: Props) {
   const t = useT();
   const handle = creator.username ?? creator.id;
-  const platformAccount = followersPlatform
-    ? creator.socialAccounts.find((a) => a.platform === followersPlatform)
-    : undefined;
-  const followers = platformAccount ? platformAccount.followers : totalFollowers(creator.socialAccounts);
-  const platforms = [...new Set(creator.socialAccounts.map((a) => a.platform))].slice(0, 4);
+  // One entry per platform (highest count if a creator linked two of the same).
+  const byPlatform = new Map<string, number>();
+  for (const a of creator.socialAccounts) {
+    const p = a.platform.toLowerCase();
+    byPlatform.set(p, Math.max(byPlatform.get(p) ?? 0, a.followers));
+  }
+  const lead = followersPlatform?.toLowerCase();
+  const platformStats = [...byPlatform]
+    .map(([platform, followers]) => ({ platform, followers }))
+    .sort((a, b) => Number(b.platform === lead) - Number(a.platform === lead) || orderOf(a.platform) - orderOf(b.platform))
+    .slice(0, 4);
   const name = creator.fullName ?? 'Creator';
   const isTeam = creator.providerType === 'TEAM' || creator.providerType === 'AGENCY';
 
@@ -105,23 +111,28 @@ export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators', fol
         </div>
       )}
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-        <div className="flex items-center gap-2 text-ink-soft">
-          {platforms.map((p) => (
-            <PlatformIcon key={p} platform={p} size={15} />
+      {platformStats.length > 0 && (
+        // Two per row: "[ig] 56 followers | [tt] 56 followers"
+        <div className="mt-auto grid grid-cols-2 gap-y-2 border-t border-line pt-3">
+          {platformStats.map(({ platform, followers }, i) => (
+            <span
+              key={platform}
+              className={cn(
+                'flex min-w-0 items-center gap-1.5 text-[12.5px]',
+                i % 2 === 1 && 'border-l border-line pl-3',
+              )}
+            >
+              <span className="flex-shrink-0">
+                <PlatformIcon platform={platform} size={14} />
+              </span>
+              <span className="font-semibold text-ink">{compactNumber(followers)}</span>
+              <span className="truncate text-ink-soft">
+                {platform === 'youtube' ? t('public.subscribers') : t('public.followers')}
+              </span>
+            </span>
           ))}
         </div>
-        {followers > 0 && (
-          <span className="text-[13px] font-semibold text-ink">
-            {compactNumber(followers)}{' '}
-            <span className="font-normal text-ink-soft">
-              {platformAccount
-                ? t('public.platformFollowers', { platform: PLATFORM_NAMES[platformAccount.platform] ?? platformAccount.platform })
-                : t('public.followers')}
-            </span>
-          </span>
-        )}
-      </div>
+      )}
     </Link>
   );
 }
