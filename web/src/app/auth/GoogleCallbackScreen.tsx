@@ -34,23 +34,29 @@ function redirectUri(): string {
  */
 export function GoogleCallbackScreen() {
   const navigate = useNavigate();
-  const { googleAuthWithCode } = useAppAuth();
+  const { googleAuth, googleAuthWithCode } = useAppAuth();
 
-  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  // Google access token for a brand-new account awaiting its role choice.
+  // Not the code: codes are single-use, so the backend already spent it on
+  // the first exchange and hands this token back for the second call.
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [modalKind, setModalKind] = useState<GoogleAuthModalKind | null>(null);
   const [modalDetail, setModalDetail] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const startedRef = useRef(false);
 
-  const runExchange = async (code: string, role?: Role) => {
+  const runExchange = async (auth: { code: string } | { accessToken: string; role: Role }) => {
     setBusy(true);
     setModalKind(null);
     try {
-      const res = await googleAuthWithCode(code, redirectUri(), role);
+      const res = 'code' in auth
+        ? await googleAuthWithCode(auth.code, redirectUri())
+        : await googleAuth(auth.accessToken, auth.role);
       if (res.needsRole) {
-        setPendingCode(code);
+        if (!res.googleAccessToken) throw new Error('Missing Google access token for role selection');
+        setPendingToken(res.googleAccessToken);
       } else {
-        setPendingCode(null);
+        setPendingToken(null);
         navigate(consumeGoogleReturnPath() ?? (await postAuthPath(res.user)), { replace: true });
       }
     } catch (err) {
@@ -85,7 +91,7 @@ export function GoogleCallbackScreen() {
       void Promise.resolve().then(() => setModalKind('unavailable'));
       return;
     }
-    void Promise.resolve().then(() => runExchange(code));
+    void Promise.resolve().then(() => runExchange({ code }));
     // Intentionally run-once (see startedRef) — this reads the URL exactly once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -95,10 +101,10 @@ export function GoogleCallbackScreen() {
       <FullScreenLoader />
 
       <GoogleRoleModal
-        open={pendingCode != null}
+        open={pendingToken != null}
         onClose={() => navigate(paths.login, { replace: true })}
         onConfirm={(role) => {
-          if (pendingCode) void runExchange(pendingCode, role);
+          if (pendingToken) void runExchange({ accessToken: pendingToken, role });
         }}
         busy={busy}
       />

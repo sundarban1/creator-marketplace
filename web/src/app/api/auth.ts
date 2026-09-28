@@ -56,12 +56,12 @@ interface LoginPayload {
  *  (see AppAuthContext's tiktokAuth). */
 export type SocialAuthResult =
   | { needsRole: false; isNewUser: boolean; user: AuthUser }
-  | { needsRole: true; email: string; name: string; tiktokPendingToken?: string };
+  | { needsRole: true; email: string; name: string; tiktokPendingToken?: string; googleAccessToken?: string };
 
 /** Raw backend shape for a completed social sign-in (before we strip tokens). */
 type SocialAuthResponse =
   | (LoginPayload & { needsRole: false; isNewUser: boolean })
-  | { needsRole: true; email: string; name: string; tiktokPendingToken?: string };
+  | { needsRole: true; email: string; name: string; tiktokPendingToken?: string; googleAccessToken?: string };
 
 // ── Identifier ────────────────────────────────────────────────────────────────
 

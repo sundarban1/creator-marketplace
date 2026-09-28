@@ -481,6 +481,7 @@ router.post('/request-email-otp',   authenticate, validate(requestEmailOtpSchema
  */
 router.post('/verify-email-otp',    authenticate, validate(verifyEmailOtpSchema),  ctrl.verifyEmailOtp.bind(ctrl));
 
+router.get('/google/config',        ctrl.getGoogleConfig.bind(ctrl));
 router.post('/google',              validate(googleAuthSchema),          ctrl.googleAuth.bind(ctrl));
 router.post('/facebook',            validate(facebookAuthSchema),        ctrl.facebookAuth.bind(ctrl));
 

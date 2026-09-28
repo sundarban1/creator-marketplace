@@ -693,7 +693,17 @@ export class AuthService {
     }
 
     if (!input.role) {
-      return { needsRole: true as const, email: gUser.email, name: gUser.name ?? gUser.email.split('@')[0] };
+      return {
+        needsRole: true as const,
+        email: gUser.email,
+        name: gUser.name ?? gUser.email.split('@')[0],
+        // An authorization code is single-use — the client can't resend it
+        // with the chosen role (Google answers invalid_grant). Hand back the
+        // access token we just exchanged it for so the role-completion call
+        // goes through the accessToken path instead, same as the desktop
+        // popup flow, which already holds this token client-side.
+        ...(input.code ? { googleAccessToken } : {}),
+      };
     }
 
     await this.assertRegistrationEnabled(input.role);

@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { success } from '../../utils/response';
 import { logError, AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
+import { env } from '../../config/env';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -130,6 +131,13 @@ export class AuthController {
     } catch (err) {
       next(err);
     }
+  }
+
+  /** Public: the web client id the web app should start Google sign-in with.
+   *  Served from the backend so it can never drift from the id /google checks
+   *  tokens against (it's public — it appears in every Google auth URL anyway). */
+  getGoogleConfig(_req: Request, res: Response): void {
+    success(res, { clientId: env.GOOGLE_WEB_CLIENT_ID ?? null }, 'OK');
   }
 
   async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {

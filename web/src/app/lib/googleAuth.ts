@@ -10,11 +10,30 @@
  * https://kolab.com.np, https://www.kolab.com.np, the *.onrender.com preview URL).
  */
 
-import { NetworkError, ApiError } from './apiClient';
+import { api, NetworkError, ApiError } from './apiClient';
 
-export const GOOGLE_CLIENT_ID =
+/** Build-time fallback only — the live id comes from the backend (see
+ *  loadClientId), so rotating GOOGLE_WEB_CLIENT_ID on the API service is
+ *  enough and the web build can't end up minting tokens for a stale client
+ *  the backend then rejects as "Invalid or expired Google token". */
+const FALLBACK_CLIENT_ID =
   (import.meta.env['VITE_GOOGLE_CLIENT_ID'] as string | undefined) ??
   '543768819635-6mhj10fgm73eboahjnhttogaihn068if.apps.googleusercontent.com';
+
+let clientId = FALLBACK_CLIENT_ID;
+let clientIdPromise: Promise<void> | null = null;
+
+function loadClientId(): Promise<void> {
+  clientIdPromise ??= api<{ clientId: string | null }>('GET', '/api/auth/google/config')
+    .then((res) => {
+      if (res.clientId) clientId = res.clientId;
+    })
+    .catch(() => {
+      // Keep the fallback; a later attempt may reach the backend.
+      clientIdPromise = null;
+    });
+  return clientIdPromise;
+}
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 
@@ -101,6 +120,10 @@ export function preloadGoogleSignIn(): void {
 }
 
 function loadGis(): Promise<void> {
+  return Promise.all([loadGisScript(), loadClientId()]).then(() => undefined);
+}
+
+function loadGisScript(): Promise<void> {
   if (window.google?.accounts?.oauth2) return Promise.resolve();
   if (scriptPromise) return scriptPromise;
   scriptPromise = new Promise((resolve, reject) => {
@@ -140,7 +163,7 @@ function requestAccessToken(scope: string, prompt: string): Promise<string> {
           return;
         }
         const client = oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
+          client_id: clientId,
           scope,
           callback: (resp) => {
             if (resp.access_token) resolve(resp.access_token);
@@ -191,7 +214,7 @@ export function startGoogleRedirect(redirectUri: string, state?: string): Promis
     const oauth2 = window.google?.accounts.oauth2;
     if (!oauth2) throw new GoogleAuthError('unavailable', 'Google Sign-In is unavailable.');
     const client = oauth2.initCodeClient({
-      client_id: GOOGLE_CLIENT_ID,
+      client_id: clientId,
       scope: 'openid email profile',
       ux_mode: 'redirect',
       redirect_uri: redirectUri,
