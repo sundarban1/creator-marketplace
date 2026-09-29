@@ -49,6 +49,7 @@ export const en = {
     },
     ctaCreator: 'Find Opportunities',
     ctaBusiness: 'Find Creators',
+    ctaFindBusiness: 'Find Business',
     ctaCreatorSignup: 'Join as a Creator',
     ctaBusinessSignup: 'Post a Campaign',
     scrollAriaLabel: 'Scroll to explore',

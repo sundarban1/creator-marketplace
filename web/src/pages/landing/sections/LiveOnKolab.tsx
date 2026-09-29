@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, MapPin, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -13,7 +13,15 @@ import type { PublicCreatorLite, PublicBusinessLite } from '../../../lib/api';
 import type { CategoryMeta } from '../../../app/public/categoryLookup';
 import { platformMeta } from '../../../app/ui/PlatformIcon';
 
-type Tab = 'opportunities' | 'creators' | 'businesses';
+export type LiveTab = 'opportunities' | 'creators' | 'businesses';
+type Tab = LiveTab;
+
+// Other sections (the hero CTAs) jump here with a specific tab pre-selected by
+// dispatching this window event before scrolling to the section.
+export const LIVE_TAB_EVENT = 'landing:live-on-kolab-tab';
+export function selectLiveTab(tab: LiveTab) {
+  window.dispatchEvent(new CustomEvent<LiveTab>(LIVE_TAB_EVENT, { detail: tab }));
+}
 
 interface Props {
   events: EventCardData[] | null;
@@ -31,6 +39,11 @@ const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).filter(Boo
 export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Props) {
   const { d } = useLandingLanguage();
   const [tab, setTab] = useState<Tab>('opportunities');
+  useEffect(() => {
+    const onSelect = (e: Event) => setTab((e as CustomEvent<Tab>).detail);
+    window.addEventListener(LIVE_TAB_EVENT, onSelect);
+    return () => window.removeEventListener(LIVE_TAB_EVENT, onSelect);
+  }, []);
   const copy = d.liveOnKolab;
 
   let eventCells: EventCell[];
@@ -113,7 +126,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
 
   const TAB_META: Record<Tab, { label: string; to: string; cta: string }> = {
     opportunities: { label: copy.tabs.opportunities, to: '/events', cta: d.events.cta },
-    creators: { label: copy.tabs.creators, to: '/creators', cta: d.marketplace.creators.cta },
+    creators: { label: copy.tabs.creators, to: '/creators/search', cta: d.marketplace.creators.cta },
     businesses: { label: copy.tabs.businesses, to: '/businesses', cta: d.marketplace.businesses.cta },
   };
 

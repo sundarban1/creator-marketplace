@@ -48,6 +48,7 @@ export const ne: LandingDict = {
     },
     ctaCreator: 'अवसरहरू खोज्नुहोस्',
     ctaBusiness: 'क्रिएटर खोज्नुहोस्',
+    ctaFindBusiness: 'व्यवसाय खोज्नुहोस्',
     ctaCreatorSignup: 'क्रिएटरको रूपमा जोडिनुहोस्',
     ctaBusinessSignup: 'क्याम्पेन पोस्ट गर्नुहोस्',
     scrollAriaLabel: 'हेर्नका लागि स्क्रोल गर्नुहोस्',

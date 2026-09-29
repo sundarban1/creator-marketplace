@@ -7,7 +7,9 @@ import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
 import { PhoneShowcase } from '../components/PhoneShowcase';
-import { PillCta, pillCtaClass } from '../components/PillCta';
+import { pillCtaClass } from '../components/PillCta';
+import { useLenisScroll } from '../hooks/useLenis';
+import { selectLiveTab, type LiveTab } from './LiveOnKolab';
 import { useCountUp } from '../hooks/useCountUp';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import type { LandingStats, PublicCreatorLite } from '../../../lib/api';
@@ -36,6 +38,13 @@ export function Hero({
 }) {
   const { d, lang } = useLandingLanguage();
   const navigate = useNavigate();
+  const { scrollTo } = useLenisScroll();
+
+  // Same scroll as the nav's "Discover" link, with the matching tab selected.
+  function goToLive(tab: LiveTab) {
+    selectLiveTab(tab);
+    scrollTo(`#${SECTION_IDS.liveOnKolab}`);
+  }
   const reducedMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const phoneRef = useRef<HTMLDivElement>(null);
@@ -192,12 +201,12 @@ export function Hero({
           </motion.div>
 
           <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <PillCta to="/events" tone="gradient" size="lg">
+            <button type="button" onClick={() => goToLive('opportunities')} className={pillCtaClass('gradient', 'lg')}>
               {d.hero.ctaCreator}
-            </PillCta>
-            <PillCta to="/creators" tone="outline-ink" size="lg">
-              {d.hero.ctaBusiness}
-            </PillCta>
+            </button>
+            <button type="button" onClick={() => goToLive('businesses')} className={pillCtaClass('outline-ink', 'lg')}>
+              {d.hero.ctaFindBusiness}
+            </button>
           </motion.div>
 
           <motion.div variants={fadeUp} className="mt-8 flex items-center gap-3">
