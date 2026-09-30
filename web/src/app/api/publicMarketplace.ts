@@ -96,6 +96,10 @@ export interface CreatorQuery {
   sort?: CreatorSort;
   page?: number;
   limit?: number;
+  /** Only verified-badge creators (who also left their profile public). */
+  verified?: boolean;
+  /** Only creators with a profile photo. */
+  hasAvatar?: boolean;
 }
 
 export interface Paged<T> {
@@ -123,6 +127,8 @@ export async function fetchPublicCreators(
       sort: q.sort,
       page: q.page,
       limit: q.limit,
+      verified: q.verified ? 'true' : undefined,
+      hasAvatar: q.hasAvatar ? 'true' : undefined,
     },
   });
   return res.data;

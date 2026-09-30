@@ -22,7 +22,9 @@
         try {
           var stored = localStorage.getItem('kolab-landing-theme');
           var dark = stored ? stored === 'dark' : true;
-          if (dark) document.documentElement.classList.add('dark');
+          // toggle, not add: a prerendered page may already carry a
+          // `dark` class, which must be removed for a stored light choice.
+          document.documentElement.classList.toggle('dark', dark);
         } catch (e) {}
       })();
     </script>

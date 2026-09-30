@@ -80,8 +80,15 @@ export class CreatorController {
       const priceMax = req.query.priceMax ? parseFloat(String(req.query.priceMax)) : undefined;
       const sortRaw = req.query.sort as string | undefined;
       const sort = sortRaw === 'oldest' || sortRaw === 'followers' ? sortRaw : 'newest';
+      // Landing "Verified Profiles" slider: verified creators with a real
+      // photo, and only those who left their profile public (their face is
+      // shown on the marketing page).
+      const verified = req.query.verified === 'true';
+      const hasAvatar = req.query.hasAvatar === 'true';
       const result = await creatorService.listCreators({
         page, limit, search, categories, location, platforms, priceMin, priceMax, sort,
+        fullyVerified: verified || undefined, hasAvatar: hasAvatar || undefined,
+        publicOnly: verified || undefined,
         lang: req.language,
       });
       success(res, result, getDict().creator.creatorsRetrieved);

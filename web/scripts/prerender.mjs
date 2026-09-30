@@ -192,6 +192,16 @@ async function main() {
       // @googlemaps/js-api-loader". Strip it before capturing.
       await page.evaluate(() => document.getElementById('kolab-google-maps')?.remove());
 
+      // Runtime state on <html> (the headless browser's default `.dark`
+      // theme, Lenis's `lenis` class + inline scroll style) must not be baked
+      // into the snapshot — otherwise a visitor who picked light mode reloads
+      // into `class="dark"` and ThemeContext reads + re-saves it as dark.
+      // index.html's pre-paint script re-derives the theme per visitor.
+      await page.evaluate(() => {
+        document.documentElement.removeAttribute('class');
+        document.documentElement.removeAttribute('style');
+      });
+
       const html = await page.content();
       results.push({ route, html });
       console.log(`[prerender] crawled ${route}`);

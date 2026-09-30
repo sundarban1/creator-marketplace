@@ -118,6 +118,9 @@ export type CreatorListFilters = {
   priceMax?: number;
   excludeId?: string;
   hasAvatar?: boolean;
+  /** Only creators who earn the verified badge — mirrors
+   *  isCreatorFullyVerified (utils/verification.ts); keep the two in sync. */
+  fullyVerified?: boolean;
   /** Only creators who left their public profile on — anonymous discovery. */
   publicOnly?: boolean;
   /** Audience-size range. Checked against an account on one of
@@ -360,6 +363,16 @@ export class CreatorRepository {
         `;
         andConditions.push({ id: { in: rows.map((r) => r.id) } });
       }
+    }
+    if (filters.fullyVerified) {
+      where.user = { ...(where.user as Prisma.UserWhereInput), isEmailVerified: true, isPhoneVerified: true };
+      andConditions.push({
+        OR: [
+          { providerType: 'AGENCY', companyRegDocStatus: 'APPROVED' },
+          { providerType: null, citizenshipStatus: 'APPROVED' },
+          { providerType: { not: 'AGENCY' }, citizenshipStatus: 'APPROVED' },
+        ],
+      });
     }
     if (filters.priceMin !== undefined && filters.priceMin > 0) {
       andConditions.push({ prefBudgetMax: { gte: filters.priceMin } });

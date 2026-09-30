@@ -7,6 +7,7 @@ import { useLandingLanguage } from '../context/LanguageContext';
 import { TextReveal } from '../components/TextReveal';
 import { H2, KICKER, LEAD, panel } from '../lib/surfaces';
 import { ensureGsapRegistered, gsap } from '../lib/gsap';
+import { VerifiedCreatorsSlider } from '../components/VerifiedCreatorsSlider';
 
 // Positionally mapped to `security.points` in en.ts/ne.ts (Verified Profiles,
 // Reviews & Ratings, Agreed Terms Both Sides, Secure Escrow Payments, Secure
@@ -128,6 +129,14 @@ export function Security() {
                   </span>
                 </div>
                 <div className="relative order-first h-48 flex-shrink-0 p-3 sm:h-60 lg:order-none lg:h-auto lg:w-[42%] lg:p-5">
+                  {i === 0 ? (
+                    // Verified Profiles: slide through real verified creators.
+                    <VerifiedCreatorsSlider
+                      fallbackSrc={PHOTOS[0]!}
+                      alt={point.title}
+                      className="h-full w-full rounded-[20px] lg:rounded-[26px]"
+                    />
+                  ) : (
                   <img
                     src={PHOTOS[i]}
                     alt={point.title}
@@ -136,6 +145,7 @@ export function Security() {
                     loading={i < 2 ? 'eager' : 'lazy'}
                     className={`h-full w-full rounded-[20px] lg:rounded-[26px] ${isPng ? 'bg-white object-contain p-6' : 'object-cover'}`}
                   />
+                  )}
                 </div>
               </article>
             );
