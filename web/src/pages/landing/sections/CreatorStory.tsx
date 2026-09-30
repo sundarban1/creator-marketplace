@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Clapperboard } from 'lucide-react';
 import { fadeUp, scaleIn, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -37,6 +37,16 @@ export function CreatorStory() {
           className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-lp-mist via-white to-white p-7 ring-1 ring-lp-black/[0.06] shadow-[0_30px_70px_-45px_rgba(10,16,51,0.45)] sm:p-12 dark:from-white/[0.06] dark:via-white/[0.03] dark:to-transparent dark:ring-white/10"
         >
           <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 bg-lp-brinjal/15 h-72 w-72 rounded-full blur-[100px]" />
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={VP}
+            variants={stagger()}
+            className="relative mx-auto mb-10 flex max-w-3xl flex-col items-center text-center sm:mb-12"
+          >
+            <AudienceTag label={c.eyebrow} icon={<Clapperboard size={14} />} accent="brinjal" />
+            <TextReveal as="h2" text={c.heading} delay={0.1} className={`${H2} mt-4`} />
+          </motion.div>
           <div className="relative grid items-center gap-12 lg:grid-cols-2 lg:gap-14">
             <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger(0.15)} className="order-2 mx-auto flex w-full min-w-0 flex-col items-center gap-5 lg:order-2">
               <motion.div variants={scaleIn} className="w-full">
@@ -49,9 +59,7 @@ export function CreatorStory() {
             </motion.div>
 
             <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="order-1 max-w-xl lg:order-1">
-              <AudienceTag label={c.eyebrow} icon={<Sparkles size={14} />} accent="brinjal" />
-              <TextReveal as="h2" text={c.heading} delay={0.1} className={`${H2} mt-4`} />
-              <motion.p variants={fadeUp} className={`${LEAD} mt-4 text-lp-black/65 dark:text-white/65`}>
+              <motion.p variants={fadeUp} className={`${LEAD} text-lp-black/65 dark:text-white/65`}>
                 {c.sub}
               </motion.p>
               <AudienceSteps steps={c.steps} accent="brinjal" />
