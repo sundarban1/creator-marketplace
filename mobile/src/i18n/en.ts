@@ -1986,6 +1986,7 @@ const en = {
       locationPlaceholder: 'Tap to search location…',
       charCount: '{{n}}/500',
       clearLocation: 'Clear location',
+      locationRequiredWarning: 'Please add your location.',
       saveBtn: 'Save Profile',
       locationModalCancel: 'Cancel',
       locationModalTitle: 'Search Location',

@@ -42,6 +42,7 @@ export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState('');
   const [nameError, setNameError] = useState<string | undefined>(undefined);
+  const [locationError, setLocationError] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState('');
   const [originalUsername, setOriginalUsername] = useState('');
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
@@ -105,6 +106,7 @@ export default function EditProfileScreen() {
     setLocation(address);
     setLocationLat(lat || null);
     setLocationLng(lng || null);
+    setLocationError(undefined);
     setLocationModalOpen(false);
   }
 
@@ -116,6 +118,10 @@ export default function EditProfileScreen() {
     }
     if (website.trim() && !isValidWebsiteUrl(website)) {
       setWebsiteError(t('profile.editCreator.websiteInvalidWarning'));
+      hasError = true;
+    }
+    if (!location.trim()) {
+      setLocationError(t('profile.editCreator.locationRequiredWarning'));
       hasError = true;
     }
     const usernameChanged = username !== originalUsername;
@@ -135,20 +141,11 @@ export default function EditProfileScreen() {
         website: normalizeWebsiteUrl(website) || null,
       };
       if (usernameChanged) payload.username = username;
-      // Always send location as a trio (or null-out the whole trio when
-      // cleared) rather than only including whichever pieces are non-empty —
-      // sending text without matching coordinates left stale coordinates
-      // behind on the backend (an omitted key means "leave unchanged", not
-      // "clear"), pairing a new/cleared address with an old, wrong pin.
-      if (location.trim()) {
-        payload.location = location.trim();
-        payload.locationLat = locationLat;
-        payload.locationLng = locationLng;
-      } else {
-        payload.location = null;
-        payload.locationLat = null;
-        payload.locationLng = null;
-      }
+      // Location is required (validated above), and always sent as a trio
+      // with its coordinates so a new address never pairs with an old pin.
+      payload.location = location.trim();
+      payload.locationLat = locationLat;
+      payload.locationLng = locationLng;
       const profile = await creatorService.updateProfile(payload);
       // The server's own fresh profile, not a client guess — write it
       // straight into the shared cache so every screen reading it (home,
@@ -280,6 +277,9 @@ export default function EditProfileScreen() {
               </Text>
               <Text style={styles.locationArrow}>›</Text>
             </Pressable>
+            {locationError ? (
+              <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>{locationError}</Text>
+            ) : null}
             {location ? (
               <Pressable onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
                 <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>{t('profile.editCreator.clearLocation')}</Text>

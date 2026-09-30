@@ -122,7 +122,7 @@ export default function EditBusinessProfileScreen() {
         businessName: businessName.trim(),
         description:  description.trim() || undefined,
         website:      normalizeWebsiteUrl(website) || undefined,
-        location:     trimmedLocation || null,
+        location:     trimmedLocation,
         locationLat:  trimmedLocation ? locationLat : null,
         locationLng:  trimmedLocation ? locationLng : null,
         // Deliberately NOT sent — this screen has no UI for editing industries,

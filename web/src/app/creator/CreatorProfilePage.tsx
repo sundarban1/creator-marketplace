@@ -82,6 +82,7 @@ export function CreatorProfilePage() {
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
+  const [locationSubmitted, setLocationSubmitted] = useState(false);
   const [website, setWebsite] = useState('');
 
   const regenerateBio = async () => {
@@ -101,6 +102,7 @@ export function CreatorProfilePage() {
     setFullName(p.fullName ?? '');
     setBio(p.bio ?? '');
     setLocation(p.location ?? '');
+    setLocationSubmitted(false);
     setWebsite(p.website ?? '');
     setEditing(true);
     setError('');
@@ -108,13 +110,15 @@ export function CreatorProfilePage() {
 
   const saveEdit = async (e: FormEvent) => {
     e.preventDefault();
+    setLocationSubmitted(true);
+    if (!location.trim()) return;
     setSaving(true);
     setError('');
     try {
       await updateCreatorProfile({
         fullName: fullName.trim() || undefined,
         bio: bio.trim(),
-        location: location.trim() || null,
+        location: location.trim(),
         website: website.trim() || null,
       });
       setEditing(false);
@@ -397,6 +401,9 @@ export function CreatorProfilePage() {
           <div className="w-full">
             <label className="mb-1.5 block text-[13px] font-semibold text-ink">{t('profile.location')}</label>
             <LocationAutocomplete value={location} onChange={setLocation} placeholder={t('profile.location')} />
+            {locationSubmitted && !location.trim() && (
+              <p className="mt-1.5 text-[13px] font-medium text-danger">{t('onboarding.locationRequired')}</p>
+            )}
           </div>
           <TextField
             label={t('profile.website')}

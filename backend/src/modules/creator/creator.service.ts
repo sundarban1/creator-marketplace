@@ -48,6 +48,18 @@ function publicCity(location: string | null): string | null {
   return parts[parts.length - 1] ?? null;
 }
 
+/**
+ * Location label for a public search card: the city when there is one,
+ * otherwise "Nepal" for a creator whose location is only the country (or a
+ * province + country) — so the card still shows where they are instead of
+ * nothing. Kept separate from publicCity, which also feeds the
+ * "Creators in <city>" popular searches where a bare country isn't useful.
+ */
+function publicCardLocation(location: string | null): string | null {
+  if (!location) return null;
+  return publicCity(location) ?? (/\bnepal\b/i.test(location) ? 'Nepal' : null);
+}
+
 function intentFilters(
   i: Pick<CreatorSearchIntent, 'topic' | 'location' | 'platforms' | 'minFollowers' | 'maxFollowers'>,
   categories?: string[],
@@ -521,7 +533,7 @@ export class CreatorService {
       page,
       limit,
     });
-    const dtos = raw.map((c) => ({ ...toCreatorListItemDto(c), location: publicCity(c.location) }));
+    const dtos = raw.map((c) => ({ ...toCreatorListItemDto(c), location: publicCardLocation(c.location) }));
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
 
     const wanted = Math.max(1, intent.creatorCount ?? 1);

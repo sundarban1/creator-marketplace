@@ -1974,6 +1974,7 @@ const ne = {
       locationPlaceholder: 'लोकेसन खोज्न थिच्नुहोस्…',
       charCount: '{{n}}/५००',
       clearLocation: 'लोकेसन हटाउनुहोस्',
+      locationRequiredWarning: 'कृपया आफ्नो लोकेसन थप्नुहोस्।',
       saveBtn: 'प्रोफाइल सेभ गर्नुहोस्',
       locationModalCancel: 'रद्द गर्नुहोस्',
       locationModalTitle: 'लोकेसन खोज्नुहोस्',

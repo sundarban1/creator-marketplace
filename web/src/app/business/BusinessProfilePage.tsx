@@ -97,6 +97,7 @@ export function BusinessProfilePage() {
   const [about, setAbout] = useState('');
   const [website, setWebsite] = useState('');
   const [location, setLocation] = useState('');
+  const [locationSubmitted, setLocationSubmitted] = useState(false);
 
   const openEdit = () => {
     if (!p) return;
@@ -104,18 +105,21 @@ export function BusinessProfilePage() {
     setAbout(p.description ?? '');
     setWebsite(p.website ?? '');
     setLocation(p.location ?? '');
+    setLocationSubmitted(false);
     setEditing(true);
   };
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
+    setLocationSubmitted(true);
+    if (!location.trim()) return;
     setSaving(true);
     try {
       await updateBusinessProfile({
         businessName: businessName.trim() || undefined,
         description: about.trim() || null,
         website: website.trim() || null,
-        location: location.trim() || null,
+        location: location.trim(),
       });
       setEditing(false);
       toast.success(t('profile.saved'));
@@ -429,6 +433,9 @@ export function BusinessProfilePage() {
           <div className="w-full">
             <label className="mb-1.5 block text-[13px] font-semibold text-ink">{t('biz.location')}</label>
             <LocationAutocomplete value={location} onChange={setLocation} placeholder={t('biz.location')} />
+            {locationSubmitted && !location.trim() && (
+              <p className="mt-1.5 text-[13px] font-medium text-danger">{t('onboarding.locationRequired')}</p>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setEditing(false)} disabled={saving}>

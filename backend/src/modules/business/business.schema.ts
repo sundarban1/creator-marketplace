@@ -27,7 +27,9 @@ export const updateBusinessProfileSchema = z.object({
   website: z.string().url('Invalid website URL').optional().nullable(),
   categories: z.array(z.string()).optional(),
   panNo: z.string().optional().nullable(),
-  location: z.string().optional().nullable(),
+  // Required on a business profile: absent = unchanged, but a sent value
+  // must be non-empty — it can't be cleared (null / blank).
+  location: z.string().trim().min(1, 'Location is required').optional(),
   locationLat: z.number().optional().nullable(),
   locationLng: z.number().optional().nullable(),
   phone: businessPhoneField,
