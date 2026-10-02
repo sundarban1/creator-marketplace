@@ -15,6 +15,32 @@ function creatorTypeLabel(t: string) {
   return t.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function socialPlatformLabel(host: string): string {
+  if (/(^|\.)tiktok\.com$/.test(host)) return 'TikTok';
+  if (/(^|\.)(facebook\.com|fb\.com|fb\.me)$/.test(host)) return 'Facebook';
+  if (/(^|\.)(instagram\.com|instagr\.am)$/.test(host)) return 'Instagram';
+  return 'Link';
+}
+
+function SocialHandle({ value }: { value: string | null }) {
+  const raw = value?.trim();
+  if (!raw) return <span className="text-gray-400">N/A</span>;
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    if (!url.hostname.includes('.')) throw new Error('not a url');
+  } catch {
+    // Bare handle (e.g. "@name") with no recognisable URL — show as typed.
+    return <span className="text-gray-600">{raw}</span>;
+  }
+  return (
+    <a href={url.href} target="_blank" rel="noopener noreferrer" title={raw}
+      className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline">
+      {socialPlatformLabel(url.hostname.toLowerCase())}
+    </a>
+  );
+}
+
 function formatCheckedInTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
@@ -168,6 +194,7 @@ export function RegistrationsTab({ meetupId }: { meetupId: string }) {
                 <tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Contact</th>
+                  <th className="px-4 py-3 font-medium">Handle</th>
                   <th className="px-4 py-3 font-medium">Creator Type</th>
                   <th className="px-4 py-3 font-medium">Attending</th>
                   <th className="px-4 py-3 font-medium">Status</th>
@@ -182,6 +209,7 @@ export function RegistrationsTab({ meetupId }: { meetupId: string }) {
                       <div>{r.phoneNumber}</div>
                       {r.email && <div className="text-xs text-gray-400">{r.email}</div>}
                     </td>
+                    <td className="px-4 py-3"><SocialHandle value={r.socialMediaProfile} /></td>
                     <td className="px-4 py-3 text-gray-600">{r.creatorTypes.map(creatorTypeLabel).join(', ')}</td>
                     <td className="px-4 py-3 text-gray-600">{r.attendancePreference === 'YES' ? "Yes, I'll attend" : "Not sure yet"}</td>
                     <td className="px-4 py-3"><StatusBadge status={r.status.toLowerCase()} /></td>
@@ -207,6 +235,7 @@ export function RegistrationsTab({ meetupId }: { meetupId: string }) {
                   </div>
                   <StatusBadge status={r.status.toLowerCase()} />
                 </div>
+                <p className="text-xs text-gray-500 mb-1">Handle: <SocialHandle value={r.socialMediaProfile} /></p>
                 <p className="text-xs text-gray-500 mb-1">{r.creatorTypes.map(creatorTypeLabel).join(', ')}</p>
                 <p className="text-xs text-gray-400 mb-3">{r.attendancePreference === 'YES' ? "Yes, I'll attend" : "Not sure yet"}</p>
                 <ActionButtons registration={r} busy={busyId === r.id}
