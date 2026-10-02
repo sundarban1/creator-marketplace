@@ -233,9 +233,13 @@ export function BusinessProfilePage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="-mt-10 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end">
               <div className="relative w-fit">
-                <RingAvatar>
+                {p.logoUrl ? (
                   <Avatar name={p.businessName ?? 'Business'} src={p.logoUrl} size="xl" className="h-20 w-20 sm:h-24 sm:w-24" />
-                </RingAvatar>
+                ) : (
+                  <RingAvatar>
+                    <Avatar name={p.businessName ?? 'Business'} src={p.logoUrl} size="xl" className="h-20 w-20 sm:h-24 sm:w-24" />
+                  </RingAvatar>
+                )}
                 <label
                   className={`absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-sm hover:text-ink ${logoUploading ? 'pointer-events-none opacity-70' : ''}`}
                   aria-label={t('biz.changeLogo')}
