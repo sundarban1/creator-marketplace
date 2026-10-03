@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { BadgeCheck, MapPin, ArrowUpRight, Bookmark } from 'lucide-react';
 import { useT } from '../i18n';
-import { compactNumber, totalFollowers } from '../lib/format';
 import { Avatar } from '../ui/Avatar';
 import { PlatformIcon } from '../ui/PlatformIcon';
 import { cn } from '../ui/cn';
@@ -30,7 +29,6 @@ export function BizCreatorCard({
 }) {
   const t = useT();
   const name = creator.fullName ?? 'Creator';
-  const followers = totalFollowers(creator.socialAccounts);
   const platforms = [...new Set(creator.socialAccounts.map((a) => a.platform))].slice(0, 4);
 
   return (
@@ -91,11 +89,6 @@ export function BizCreatorCard({
               <PlatformIcon key={p} platform={p} size={15} />
             ))}
           </div>
-          {followers > 0 && (
-            <span className="text-[13px] font-semibold text-ink">
-              {compactNumber(followers)} <span className="font-normal text-ink-soft">{t('public.followers')}</span>
-            </span>
-          )}
         </div>
       </Link>
 

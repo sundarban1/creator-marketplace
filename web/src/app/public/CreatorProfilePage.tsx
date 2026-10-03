@@ -4,7 +4,7 @@ import { BadgeCheck, MapPin, Star, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
-import { compactNumber, totalFollowers } from '../lib/format';
+import { compactNumber } from '../lib/format';
 import { fetchCreatorByHandle } from '../api/publicMarketplace';
 import { fetchCategories } from '../api/catalog';
 import { makeCategoryLookup } from './categoryLookup';
@@ -63,7 +63,6 @@ export function CreatorProfilePage() {
   }
 
   const name = creator.fullName ?? 'Creator';
-  const followers = totalFollowers(creator.socialAccounts);
   const canonicalHandle = creator.username ?? creator.id;
   const isTeam = creator.providerType === 'TEAM' || creator.providerType === 'AGENCY';
   const metaDesc =
@@ -77,7 +76,9 @@ export function CreatorProfilePage() {
         ? t('public.hoursShort', { h: Math.round(stat.responseTimeAvgMins / 60) })
         : t('public.minsShort', { m: stat.responseTimeAvgMins })
       : null;
-  const hasStats = followers > 0 || Boolean(stat);
+  const hasStats = Boolean(
+    stat && (stat.reviewCount > 0 || stat.completionRate > 0 || responseTime),
+  );
 
   return (
     <div>
@@ -148,9 +149,6 @@ export function CreatorProfilePage() {
 
         {hasStats && (
           <HeroReveal className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {followers > 0 && (
-              <StatTile label={t('public.followers')} value={compactNumber(followers)} />
-            )}
             {stat && stat.reviewCount > 0 && (
               <StatTile
                 label={t('public.avgRating')}

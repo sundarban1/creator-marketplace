@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BadgeCheck, MapPin, Star, ExternalLink, Bookmark } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
-import { compactNumber, totalFollowers } from '../lib/format';
+import { compactNumber } from '../lib/format';
 import {
   getBusinessCreator,
   toggleSaveCreator,
@@ -72,7 +72,6 @@ export function BusinessCreatorDetailPage() {
 
   const c = creator.data;
   const name = c.fullName ?? 'Creator';
-  const followers = totalFollowers(c.socialAccounts);
 
   const onToggleSave = async () => {
     setSaved(!isSaved);
@@ -123,9 +122,8 @@ export function BusinessCreatorDetailPage() {
         </Button>
       </div>
 
-      {(followers > 0 || c.stats) && (
+      {c.stats && (c.stats.reviewCount > 0 || c.stats.completionRate > 0) && (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {followers > 0 && <Stat label={t('public.followers')} value={compactNumber(followers)} />}
           {c.stats && c.stats.reviewCount > 0 && (
             <Stat
               label={t('public.avgRating')}
