@@ -14,14 +14,14 @@ export interface FAQItem {
 function FAQAccordionItem({ item }: { item: FAQItem }) {
   const [open, setOpen] = useState(false);
   return (
-    <motion.div variants={fadeUp} className="border-b border-ink/10 py-4">
+    <motion.div variants={fadeUp} className="border-b border-ink/10 py-4 dark:border-white/10">
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between gap-4 text-left"
         aria-expanded={open}
       >
-        <span className="font-serif text-lg text-ink">{item.question}</span>
-        <ChevronDown size={18} className={`flex-shrink-0 text-ink-soft transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+        <span className="font-serif text-lg text-ink dark:text-white">{item.question}</span>
+        <ChevronDown size={18} className={`flex-shrink-0 text-ink-soft transition-transform dark:text-white/70 duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -32,7 +32,7 @@ function FAQAccordionItem({ item }: { item: FAQItem }) {
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <p className="whitespace-pre-wrap pt-3 text-[15px] leading-relaxed text-ink-soft">{item.answer}</p>
+            <p className="whitespace-pre-wrap pt-3 text-[15px] leading-relaxed text-ink-soft dark:text-white">{item.answer}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -42,7 +42,7 @@ function FAQAccordionItem({ item }: { item: FAQItem }) {
 
 export function FAQAccordion({ items }: { items: FAQItem[] }) {
   return (
-    <div className="border-t border-ink/10">
+    <div className="border-t border-ink/10 dark:border-white/10">
       {items.map((item, i) => (
         <FAQAccordionItem key={i} item={item} />
       ))}

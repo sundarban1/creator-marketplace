@@ -18,18 +18,18 @@ export function NotFoundPage() {
         <motion.span variants={fadeUp} className="flex h-14 w-14 items-center justify-center rounded-full bg-violet/10 text-violet">
           <Compass size={26} />
         </motion.span>
-        <motion.p variants={fadeUp} className="mt-6 font-serif text-7xl italic text-ink/15">404</motion.p>
-        <motion.h1 variants={fadeUp} className="mt-2 text-balance font-serif text-3xl font-medium tracking-tight text-ink sm:text-4xl">
+        <motion.p variants={fadeUp} className="mt-6 font-serif text-7xl italic text-ink/15 dark:text-white/15">404</motion.p>
+        <motion.h1 variants={fadeUp} className="mt-2 text-balance font-serif text-3xl font-medium tracking-tight text-ink sm:text-4xl dark:text-white">
           This page wandered off
         </motion.h1>
-        <motion.p variants={fadeUp} className="mt-3 max-w-sm text-ink-soft">
+        <motion.p variants={fadeUp} className="mt-3 max-w-sm text-ink-soft dark:text-white">
           The page you're looking for doesn't exist or may have moved. Let's get you back on track.
         </motion.p>
         <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/" className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90">
+          <Link to="/" className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 dark:bg-white dark:text-ink">
             Back to Home
           </Link>
-          <Link to="/support" className="rounded-full border border-ink/15 px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-ink/5">
+          <Link to="/support" className="rounded-full border border-ink/15 px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-ink/5 dark:border-white/20 dark:text-white dark:hover:bg-white/10">
             Get Support
           </Link>
         </motion.div>

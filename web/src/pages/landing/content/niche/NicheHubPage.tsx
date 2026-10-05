@@ -65,16 +65,16 @@ function NicheHubPageInner({ slug, keywords, icon, items, en, ne }: NicheHubPage
               <Link
                 key={item.slug}
                 to={`/${item.slug}`}
-                className="group rounded-2xl border border-ink/10 bg-white p-5 transition-all duration-300 hover:border-violet/30 hover:shadow-[0_14px_28px_-14px_rgba(123,92,245,0.25)]"
+                className="group rounded-2xl border border-ink/10 bg-white p-5 transition-all duration-300 hover:border-violet/30 hover:shadow-[0_14px_28px_-14px_rgba(123,92,245,0.25)] dark:border-white/10 dark:bg-ink-elevated"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet/10 text-violet transition-transform duration-300 group-hover:scale-110">
                   <item.icon size={16} />
                 </span>
-                <span className="mt-3 flex items-center gap-1.5 font-semibold text-ink group-hover:text-violet">
+                <span className="mt-3 flex items-center gap-1.5 font-semibold text-ink group-hover:text-violet dark:text-white">
                   {itemCopy.breadcrumbName}
                   <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                 </span>
-                <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{itemCopy.eyebrow}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-soft dark:text-white">{itemCopy.eyebrow}</p>
               </Link>
             );
           })}

@@ -59,7 +59,7 @@ function AboutContent() {
         <p className="text-[13px] font-semibold text-ink dark:text-white">{a.company}</p>
         <div className="flex items-center gap-2.5 text-[13px]">
           <a href="/terms" className="font-semibold text-violet hover:underline">{a.terms}</a>
-          <span className="text-ink-soft/40">•</span>
+          <span className="text-ink-soft/40 dark:text-white/40">•</span>
           <a href="/privacy" className="font-semibold text-violet hover:underline">{a.privacy}</a>
         </div>
         <p className="text-[12px] text-ink-soft dark:text-white">{a.copyright.replace('{year}', String(year))}</p>
