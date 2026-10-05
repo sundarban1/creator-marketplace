@@ -6,6 +6,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { api } from '../../lib/api';
 import { useApi } from '../../lib/useApi';
 import { MeetupFormModal } from './MeetupFormModal';
+import { lifecycleOf } from './meetupLifecycle';
 import { RegistrationsTab } from './RegistrationsTab';
 
 const TABS = [
@@ -102,8 +103,7 @@ export function CreatorMeetupDetail() {
       {tab === 'overview' && (
         <div className="bg-white rounded-2xl border border-gray-200 adm-card p-6 space-y-4 max-w-2xl">
           <div className="flex items-center gap-2">
-            <StatusBadge status={meetup.status.toLowerCase()} />
-            <StatusBadge status={meetup.registrationStatus.toLowerCase()} />
+            <StatusBadge status={lifecycleOf(meetup).toLowerCase()} />
           </div>
 
           {meetup.description && <p className="text-sm text-gray-600">{meetup.description}</p>}

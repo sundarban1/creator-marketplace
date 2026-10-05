@@ -26,6 +26,15 @@ export class MeetupService {
     return profile;
   }
 
+  /** Closed meetups 404 for creators; paused ones stay reachable so registrants can check their status. */
+  private async getCreatorVisibleMeetupOrThrow(idOrSlug: string) {
+    const meetup = await this.getMeetupOrThrow(idOrSlug);
+    if (meetup.status === 'COMPLETED' || meetup.status === 'CANCELLED') {
+      throw new AppError(getDict().meetup.meetupNotFound, HttpStatus.NOT_FOUND);
+    }
+    return meetup;
+  }
+
   private async getMeetupOrThrow(idOrSlug: string) {
     const meetup = await this.repo.findBySlugOrId(idOrSlug);
     if (!meetup) throw new AppError(getDict().meetup.meetupNotFound, HttpStatus.NOT_FOUND);
@@ -40,7 +49,7 @@ export class MeetupService {
   }
 
   async getForCreator(idOrSlug: string) {
-    const meetup = await this.getMeetupOrThrow(idOrSlug);
+    const meetup = await this.getCreatorVisibleMeetupOrThrow(idOrSlug);
     return toMeetupDto(meetup);
   }
 
@@ -52,7 +61,7 @@ export class MeetupService {
 
   async register(userId: string, meetupId: string, input: RegisterForMeetupInput) {
     const creator = await this.resolveCreatorId(userId);
-    const meetup = await this.getMeetupOrThrow(meetupId);
+    const meetup = await this.getCreatorVisibleMeetupOrThrow(meetupId);
 
     if (meetup.registrationStatus !== 'OPEN') {
       throw new AppError(getDict().meetup.registrationNotOpen, HttpStatus.FORBIDDEN);

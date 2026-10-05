@@ -78,7 +78,8 @@ export class MeetupRepository {
 
   async findMyRegistrations(creatorId: string) {
     return prisma.creatorMeetupRegistration.findMany({
-      where:   { creatorId },
+      // Closed (completed/cancelled) meetups are hidden from creators entirely.
+      where:   { creatorId, meetup: { status: { in: ['UPCOMING', 'ACTIVE'] } } },
       include: { meetup: true },
       orderBy: { createdAt: 'desc' },
     });

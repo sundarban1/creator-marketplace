@@ -1,4 +1,4 @@
-import { env } from '../../config/env';
+import { frontendBaseUrl } from '../../config/env';
 import { sendEmail, wrapLayout } from './core';
 
 export async function sendWelcomeEmail(
@@ -57,7 +57,7 @@ export async function sendWelcomeEmail(
 
     <!-- CTA Button -->
     <div style="text-align:center;margin-bottom:28px;">
-      <a href="${env.FRONTEND_URL}"
+      <a href="${frontendBaseUrl}"
          style="display:inline-block;background:#4F46E5;color:#fff;font-size:15px;font-weight:600;
                 padding:14px 32px;border-radius:8px;text-decoration:none;letter-spacing:0.2px;">
         ${ctaText}

@@ -6,7 +6,7 @@ import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
-import { env } from '../../config/env';
+import { env, frontendBaseUrl } from '../../config/env';
 import { logger } from '../../config/logger';
 import { LogEvent } from '../../config/observability';
 import { buildEsewaCheckoutHtml, decodeEsewaResponse, esewaCheckoutCsp } from '../../utils/esewa';
@@ -568,7 +568,7 @@ export class CampaignController {
     result: { success: boolean; error?: string; campaignId?: string },
   ): void {
     if (platform === 'web') {
-      const base = env.FRONTEND_URL.split(',')[0].trim();
+      const base = frontendBaseUrl;
       const path = result.campaignId ? `/business/events/${result.campaignId}` : '/business/events';
       const qs = new URLSearchParams({ payment: result.success ? 'success' : 'failed' });
       if (result.error) qs.set('paymentError', result.error);

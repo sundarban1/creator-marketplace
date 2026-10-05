@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { api } from '../lib/api';
 import { useApi } from '../lib/useApi';
 import { MeetupFormModal } from './creator-meetups/MeetupFormModal';
+import { lifecycleOf } from './creator-meetups/meetupLifecycle';
 
 function formatEventDate(iso: string | null): string {
   if (!iso) return 'TBD';
@@ -60,7 +61,7 @@ export function CreatorMeetups() {
                   <MapPin size={13} />
                   {m.city}{m.district ? `, ${m.district}` : ''}
                 </div>
-                <StatusBadge status={m.registrationStatus.toLowerCase()} />
+                <StatusBadge status={lifecycleOf(m).toLowerCase()} />
               </div>
 
               <h3 className="text-sm font-bold text-gray-900 mb-1">{m.title}</h3>
@@ -75,9 +76,6 @@ export function CreatorMeetups() {
                   <span className="text-amber-600 font-medium">{m.stats.pending} pending</span>
                   <span className="text-emerald-600 font-medium">{m.stats.accepted} accepted</span>
                 </div>
-              </div>
-              <div className="mt-2">
-                <StatusBadge status={m.status.toLowerCase()} />
               </div>
             </button>
           ))}

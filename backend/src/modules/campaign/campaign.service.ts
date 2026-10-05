@@ -32,7 +32,7 @@ import { escrowService } from './escrow.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
-import { env } from '../../config/env';
+import { env, frontendBaseUrl } from '../../config/env';
 import { initiateKhaltiPayment as khaltiInitiate, lookupKhaltiPayment as khaltiLookup } from '../../utils/khalti';
 import { buildEsewaSignedFields, decodeEsewaResponse, verifyEsewaSignature, checkEsewaStatus, parseEsewaAmount, friendlyEsewaStatusMessage, type EsewaFormFields } from '../../utils/esewa';
 import { HttpStatus } from '../../constants/httpStatus';
@@ -1614,7 +1614,7 @@ export class CampaignService {
       purchaseOrderId:   appId,
       purchaseOrderName: `Payment for "${campaign.title}"`,
       returnUrl:         env.KHALTI_RETURN_URL,
-      websiteUrl:        env.FRONTEND_URL.split(',')[0].trim(),
+      websiteUrl:        frontendBaseUrl,
       customerInfo: {
         name:  business.businessName ?? undefined,
         email: businessUser?.email ?? undefined,

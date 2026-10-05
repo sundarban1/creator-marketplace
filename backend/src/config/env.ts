@@ -206,3 +206,9 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+/**
+ * FRONTEND_URL doubles as the comma-separated CORS allow-list, so anything
+ * that builds a user-facing link must use only the first (canonical) origin.
+ */
+export const frontendBaseUrl = env.FRONTEND_URL.split(',')[0].trim().replace(/\/+$/, '');

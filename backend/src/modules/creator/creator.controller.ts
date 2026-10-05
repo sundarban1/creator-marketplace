@@ -6,7 +6,7 @@ import { success } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
-import { env } from '../../config/env';
+import { env, frontendBaseUrl } from '../../config/env';
 import { peekOAuthStatePlatform, peekOAuthStatePurpose } from '../../utils/jwt';
 
 import { HttpStatus } from '../../constants/httpStatus';
@@ -320,7 +320,7 @@ export class CreatorController {
   async tiktokCallback(req: Request, res: Response): Promise<void> {
     const { code, state, error } = req.query as { code?: string; state?: string; error?: string };
     const purpose = state ? peekOAuthStatePurpose(state) : 'connect';
-    const webBase = env.FRONTEND_URL.split(',')[0].trim();
+    const webBase = frontendBaseUrl;
     const isWeb = !!state && peekOAuthStatePlatform(state) === 'web';
     const redirectBase =
       purpose === 'login'

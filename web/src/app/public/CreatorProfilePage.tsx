@@ -76,9 +76,6 @@ export function CreatorProfilePage() {
         ? t('public.hoursShort', { h: Math.round(stat.responseTimeAvgMins / 60) })
         : t('public.minsShort', { m: stat.responseTimeAvgMins })
       : null;
-  const hasStats = Boolean(
-    stat && (stat.reviewCount > 0 || stat.completionRate > 0 || responseTime),
-  );
 
   return (
     <div>
@@ -147,25 +144,27 @@ export function CreatorProfilePage() {
           </div>
         </HeroReveal>
 
-        {hasStats && (
-          <HeroReveal className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {stat && stat.reviewCount > 0 && (
-              <StatTile
-                label={t('public.avgRating')}
-                value={
-                  <span className="inline-flex items-center gap-1">
-                    {stat.averageRating.toFixed(1)}
-                    <Star size={15} className="fill-warning text-warning" />
-                  </span>
-                }
-              />
-            )}
-            {stat && stat.completionRate > 0 && (
-              <StatTile label={t('public.completionRate')} value={`${stat.completionRate}%`} />
-            )}
-            {responseTime && <StatTile label={t('public.responseTime')} value={responseTime} />}
-          </HeroReveal>
-        )}
+        {/* Always shown — an em dash stands in until there's data. */}
+        <HeroReveal className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          <StatTile
+            label={t('public.avgRating')}
+            value={
+              stat && stat.reviewCount > 0 ? (
+                <span className="inline-flex items-center gap-1">
+                  {stat.averageRating.toFixed(1)}
+                  <Star size={15} className="fill-warning text-warning" />
+                </span>
+              ) : (
+                '—'
+              )
+            }
+          />
+          <StatTile
+            label={t('public.completionRate')}
+            value={stat && stat.completionRate > 0 ? `${stat.completionRate}%` : '—'}
+          />
+          <StatTile label={t('public.responseTime')} value={responseTime ?? '—'} />
+        </HeroReveal>
       </DetailHero>
 
       <DetailBody>

@@ -1,8 +1,8 @@
-import { env } from '../../config/env';
+import { frontendBaseUrl } from '../../config/env';
 import { sendEmail, wrapLayout } from './core';
 
 export async function sendPasswordResetEmail(email: string, resetToken: string): Promise<void> {
-  const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const resetUrl = `${frontendBaseUrl}/reset-password?token=${resetToken}`;
 
   const html = wrapLayout(`
     <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 8px;">Reset your password</h2>

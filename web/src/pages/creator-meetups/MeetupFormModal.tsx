@@ -1,8 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { api, type ApiMeetup } from '../../lib/api';
+import { LIFECYCLE_LABELS, fieldsForLifecycle, lifecycleOf, type MeetupLifecycle } from './meetupLifecycle';
 
-const REGISTRATION_STATUS_OPTIONS = ['DRAFT', 'OPEN', 'CLOSED'] as const;
-const MEETUP_STATUS_OPTIONS = ['UPCOMING', 'ACTIVE', 'COMPLETED', 'CANCELLED'] as const;
+const LIFECYCLE_HINTS: Record<MeetupLifecycle, string> = {
+  DRAFT:  'Not published — creators can’t see it yet.',
+  ACTIVE: 'Shown to creators and open for registration.',
+  PAUSED: 'Registration paused — hidden from the creator home page. Set back to Active to resume.',
+  CLOSED: 'Event ended — hidden from creators.',
+};
 
 function toDateTimeInputValue(iso?: string | null): string {
   if (!iso) return '';
@@ -21,7 +26,7 @@ type FormState = {
   province: string;
   country: string;
   description: string;
-  registrationStatus: (typeof REGISTRATION_STATUS_OPTIONS)[number];
+  lifecycle: MeetupLifecycle;
   registrationStartsAt: string;
   registrationEndsAt: string;
   eventDate: string;
@@ -30,7 +35,6 @@ type FormState = {
   venueName: string;
   venueAddress: string;
   capacity: string;
-  status: (typeof MEETUP_STATUS_OPTIONS)[number];
 };
 
 function toForm(m?: ApiMeetup): FormState {
@@ -41,7 +45,7 @@ function toForm(m?: ApiMeetup): FormState {
     province:              m?.province ?? '',
     country:               m?.country ?? 'Nepal',
     description:           m?.description ?? '',
-    registrationStatus:    m?.registrationStatus ?? 'DRAFT',
+    lifecycle:             m ? lifecycleOf(m) : 'DRAFT',
     registrationStartsAt:  toDateTimeInputValue(m?.registrationStartsAt),
     registrationEndsAt:    toDateTimeInputValue(m?.registrationEndsAt),
     eventDate:             toDateInputValue(m?.eventDate),
@@ -50,7 +54,6 @@ function toForm(m?: ApiMeetup): FormState {
     venueName:             m?.venueName ?? '',
     venueAddress:          m?.venueAddress ?? '',
     capacity:              m?.capacity != null ? String(m.capacity) : '',
-    status:                m?.status ?? 'UPCOMING',
   };
 }
 
@@ -98,7 +101,7 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
         province:              form.province.trim() || null,
         country:               form.country.trim() || 'Nepal',
         description:           form.description.trim() || null,
-        registrationStatus:    form.registrationStatus,
+        ...fieldsForLifecycle(form.lifecycle, meetup),
         registrationStartsAt:  form.registrationStartsAt ? new Date(form.registrationStartsAt).toISOString() : null,
         registrationEndsAt:    form.registrationEndsAt ? new Date(form.registrationEndsAt).toISOString() : null,
         eventDate:             form.eventDate ? new Date(form.eventDate).toISOString() : null,
@@ -107,7 +110,6 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
         venueName:             form.venueName.trim() || null,
         venueAddress:          form.venueAddress.trim() || null,
         capacity:              form.capacity ? Number(form.capacity) : null,
-        status:                form.status,
       };
       if (isEdit) {
         await api.admin.updateMeetup(meetup.id, payload);
@@ -171,21 +173,16 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Registration Status</label>
-              <select value={form.registrationStatus} onChange={(e) => update('registrationStatus', e.target.value as FormState['registrationStatus'])}
-                className={`${inputClass()} bg-white`}>
-                {REGISTRATION_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Meetup Status</label>
-              <select value={form.status} onChange={(e) => update('status', e.target.value as FormState['status'])}
-                className={`${inputClass()} bg-white`}>
-                {MEETUP_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>)}
-              </select>
-            </div>
+          <div>
+            <label className={labelClass}>Status</label>
+            <select value={form.lifecycle} onChange={(e) => update('lifecycle', e.target.value as MeetupLifecycle)}
+              className={`${inputClass()} bg-white`}>
+              {/* Draft is only offered until the meetup is first published. */}
+              {(['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED'] as const)
+                .filter((l) => l !== 'DRAFT' || !meetup || lifecycleOf(meetup) === 'DRAFT')
+                .map((l) => <option key={l} value={l}>{LIFECYCLE_LABELS[l]}</option>)}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">{LIFECYCLE_HINTS[form.lifecycle]}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

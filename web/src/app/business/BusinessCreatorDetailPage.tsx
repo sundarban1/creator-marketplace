@@ -122,24 +122,25 @@ export function BusinessCreatorDetailPage() {
         </Button>
       </div>
 
-      {c.stats && (c.stats.reviewCount > 0 || c.stats.completionRate > 0) && (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {c.stats && c.stats.reviewCount > 0 && (
-            <Stat
-              label={t('public.avgRating')}
-              value={
-                <span className="inline-flex items-center gap-1">
-                  {c.stats.averageRating.toFixed(1)}
-                  <Star size={13} className="fill-warning text-warning" />
-                </span>
-              }
-            />
-          )}
-          {c.stats && c.stats.completionRate > 0 && (
-            <Stat label={t('public.completionRate')} value={`${c.stats.completionRate}%`} />
-          )}
-        </div>
-      )}
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat
+          label={t('public.avgRating')}
+          value={
+            c.stats && c.stats.reviewCount > 0 ? (
+              <span className="inline-flex items-center gap-1">
+                {c.stats.averageRating.toFixed(1)}
+                <Star size={13} className="fill-warning text-warning" />
+              </span>
+            ) : (
+              '—'
+            )
+          }
+        />
+        <Stat
+          label={t('public.completionRate')}
+          value={c.stats && c.stats.completionRate > 0 ? `${c.stats.completionRate}%` : '—'}
+        />
+      </div>
 
       <Card className="mt-6">
         <CardHeader title={t('public.aboutHeading')} />
