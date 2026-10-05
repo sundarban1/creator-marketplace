@@ -259,9 +259,13 @@ export function initiateEsewaPayment(appId: string): Promise<{ paymentUrl: strin
   ).then((r) => r.data);
 }
 
-/** Starts a connectIPS escrow-funding payment; same checkout-page-URL shape as initiateEsewaPayment. */
-export function initiateConnectIpsPayment(appId: string): Promise<{ paymentUrl: string }> {
-  return apiRequest<{ paymentUrl: string }>(
+/**
+ * Starts a connectIPS escrow-funding payment; same checkout-page-URL shape as
+ * initiateEsewaPayment. `paymentUrl` is null (with `alreadyPaid`) when the
+ * backend found an earlier attempt for this application had actually been paid.
+ */
+export function initiateConnectIpsPayment(appId: string): Promise<{ paymentUrl: string | null; alreadyPaid?: boolean }> {
+  return apiRequest<{ paymentUrl: string | null; alreadyPaid?: boolean }>(
     'POST',
     `/api/campaigns/applications/${appId}/pay/connectips/initiate`,
     undefined,

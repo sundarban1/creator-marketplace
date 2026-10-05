@@ -35,7 +35,7 @@ import { haversineKm } from '../../utils/geo';
 import { env, frontendBaseUrl } from '../../config/env';
 import { initiateKhaltiPayment as khaltiInitiate, lookupKhaltiPayment as khaltiLookup } from '../../utils/khalti';
 import { buildEsewaSignedFields, decodeEsewaResponse, verifyEsewaSignature, checkEsewaStatus, parseEsewaAmount, friendlyEsewaStatusMessage, type EsewaFormFields } from '../../utils/esewa';
-import { buildConnectIpsSignedFields, validateConnectIpsTxn, friendlyConnectIpsStatusMessage, newConnectIpsTxnId, isConnectIpsConfigured, type ConnectIpsFormFields } from '../../utils/connectips';
+import { buildConnectIpsSignedFields, validateConnectIpsTxn, friendlyConnectIpsStatusMessage, newConnectIpsTxnId, isConnectIpsConfigured, toPaisa, type ConnectIpsFormFields } from '../../utils/connectips';
 import { HttpStatus } from '../../constants/httpStatus';
 import {
   sendPaymentSecuredEmail,
@@ -81,6 +81,11 @@ async function applicationTotalNpr(adminRepo: AdminRepository, proposedRate: num
 // Payment methods backed by a real gateway — these must finalize through
 // their own verified callback, never payForApplication's instant path.
 const GATEWAY_METHODS = new Set(['esewa', 'khalti', 'connectips']);
+
+// connectIPS reconciliation window: an open attempt is first re-checked after a
+// few minutes (time to finish OTP), and given up on after a day.
+const CONNECTIPS_RECONCILE_AFTER_MS = 3 * 60_000;
+const CONNECTIPS_EXPIRE_AFTER_MS = 24 * 60 * 60_000;
 
 const ALLOWED_DELIVERABLE_VIDEO_FORMATS = new Set(['mp4', 'mov', 'qt']);
 
@@ -1793,87 +1798,148 @@ export class CampaignService {
     return { campaignId: application.campaignId };
   }
 
-  // Step 1 of the connectIPS flow — same shape as eSewa: record a fresh TXNID
-  // (authenticated, so only the paying business can rotate it) and point the
-  // client at our checkout page, which renders the signed form. The platform
-  // rides inside the TXNID itself (see newConnectIpsTxnId) because NCHL's
-  // redirect URL is fixed per merchant and can't carry it.
-  async initiateConnectIpsPayment(appId: string, userId: string, platform?: 'web' | 'mobile'): Promise<{ paymentUrl: string }> {
+  // Step 1 of the connectIPS flow. Before minting a new attempt, re-checks
+  // this application's still-open attempts with NCHL: a business whose earlier
+  // payment went through but never made it back to us (browser closed, timeout
+  // during validation) gets that payment applied instead of being charged
+  // twice. Otherwise records a fresh attempt — amount frozen now, TXNID
+  // carrying the platform (NCHL's redirect URL is fixed per merchant) — and
+  // points the client at our checkout page for that TXNID.
+  async initiateConnectIpsPayment(
+    appId: string,
+    userId: string,
+    platform?: 'web' | 'mobile',
+  ): Promise<{ paymentUrl: string | null; alreadyPaid: boolean }> {
     if (!isConnectIpsConfigured()) throw new AppError(getDict().connectips.notConfigured, HttpStatus.SERVICE_UNAVAILABLE);
 
-    await this.validatePendingPayment(appId, userId);
+    const { application } = await this.validatePendingPayment(appId, userId);
 
+    for (const open of await this.repo.findOpenConnectIpsPayments(appId)) {
+      const { outcome } = await this.settleConnectIpsPayment(open.txnId).catch(() => ({ outcome: 'pending' as const }));
+      if (outcome === 'success') return { paymentUrl: null, alreadyPaid: true };
+    }
+
+    const amountPaisa = toPaisa(await applicationTotalNpr(this.adminRepo, application.proposedRate));
     const txnId = newConnectIpsTxnId(platform === 'web' ? 'web' : 'mobile');
-    await this.repo.setConnectipsTxnId(appId, txnId);
+    await this.repo.createConnectIpsPayment({ txnId, applicationId: appId, amountPaisa });
+    logger.info({ event: LogEvent.PAYMENT_CONNECTIPS_INITIATED, appId, txnId, amountPaisa }, 'connectIPS payment initiated');
 
-    return { paymentUrl: `${env.CONNECTIPS_RETURN_BASE_URL}/api/payments/connectips/checkout/${appId}` };
+    return { paymentUrl: `${env.CONNECTIPS_RETURN_BASE_URL}/api/payments/connectips/checkout/${txnId}`, alreadyPaid: false };
   }
 
-  // Renders the form the checkout page auto-submits. Same re-validation as
-  // getEsewaCheckoutForm so a stale link can't reopen a finished payment.
-  async getConnectIpsCheckoutForm(appId: string): Promise<ConnectIpsFormFields> {
-    const application = await this.repo.findApplicationById(appId);
+  // Renders the form the checkout page auto-submits. Keyed by TXNID (not
+  // application) so two tabs each post their own attempt. Refuses a finished
+  // attempt or an already-funded application so a stale link can't reopen it.
+  async getConnectIpsCheckoutForm(txnId: string): Promise<ConnectIpsFormFields> {
+    const attempt = await this.repo.findConnectIpsPayment(txnId);
+    if (!attempt || attempt.status !== 'INITIATED') {
+      throw new AppError(getDict().campaign.noPendingConnectipsPayment, HttpStatus.BAD_REQUEST);
+    }
+    const application = await this.repo.findApplicationById(attempt.applicationId);
     if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
       throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
     }
-    if (!application.connectipsTxnId) {
-      throw new AppError(getDict().campaign.noPendingConnectipsPayment, HttpStatus.BAD_REQUEST);
+    return buildConnectIpsSignedFields({ txnId, amountPaisa: attempt.amountPaisa });
+  }
+
+  // The one place a connectIPS attempt is resolved — used by the success and
+  // failure redirects, the retry re-check in initiate, and the reconcile job.
+  // NCHL's redirect is unsigned (just TXNID), so nothing is trusted until
+  // validatetxn confirms SUCCESS for this TXNID at the amount frozen on the
+  // attempt. Outcomes:
+  //  - success: escrow funded (now or earlier — idempotent)
+  //  - failed:  not paid (NCHL FAILED, or not completed/not found yet)
+  //  - pending: couldn't reach a verdict (NCHL unreachable) — left open for
+  //             the reconcile job; never reported to the user as a failure.
+  async settleConnectIpsPayment(txnId: string): Promise<{
+    outcome: 'success' | 'failed' | 'pending';
+    campaignId?: string;
+    message?: string;
+  }> {
+    const attempt = await this.repo.findConnectIpsPayment(txnId);
+    if (!attempt) throw new AppError(getDict().campaign.connectipsPaymentMismatch, HttpStatus.BAD_REQUEST);
+
+    const application = await this.repo.findApplicationById(attempt.applicationId);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    const campaignId = application.campaignId;
+
+    if (attempt.status === 'SUCCESS') {
+      logger.info({ event: LogEvent.PAYMENT_CALLBACK_ALREADY_PROCESSED, txnId, method: 'connectips' }, 'connectIPS attempt already settled');
+      return { outcome: 'success', campaignId };
+    }
+    if (attempt.status !== 'INITIATED') return { outcome: 'failed', campaignId };
+
+    let result;
+    try {
+      result = await validateConnectIpsTxn({ txnId, amountPaisa: attempt.amountPaisa });
+    } catch (err) {
+      logger.warn({ txnId, err }, 'connectIPS validation inconclusive — left open for reconciliation');
+      return { outcome: 'pending', campaignId };
+    }
+    await this.repo.recordConnectIpsCheck(txnId, result.status, result.statusDesc);
+
+    if (result.status === 'FAILED') {
+      await this.repo.claimConnectIpsPayment(txnId, 'FAILED');
+      return { outcome: 'failed', campaignId, message: friendlyConnectIpsStatusMessage(result) };
+    }
+    if (result.status !== 'SUCCESS') {
+      // ERROR (NOT FOUND / INCOMPLETE): not paid yet, but the user may still be
+      // finishing in an open tab — stays INITIATED until it expires.
+      return { outcome: 'failed', campaignId, message: friendlyConnectIpsStatusMessage(result) };
     }
 
-    return buildConnectIpsSignedFields({
-      txnId:          application.connectipsTxnId,
-      totalAmountNpr: await applicationTotalNpr(this.adminRepo, application.proposedRate),
-    });
-  }
-
-  // Looks up which application a redirect's TXNID belongs to — the only
-  // identifier NCHL sends back. Null for an unknown/superseded id.
-  async findApplicationByConnectIpsTxnId(txnId: string): Promise<{ appId: string; campaignId: string } | null> {
-    const appId = await this.repo.findApplicationIdByConnectipsTxnId(txnId);
-    if (!appId) return null;
-    const application = await this.repo.findApplicationById(appId);
-    return application ? { appId, campaignId: application.campaignId } : null;
-  }
-
-  // Step 2: NCHL redirects the browser back with only `TXNID` (unsigned), so
-  // the payment is never trusted until validatetxn confirms SUCCESS for this
-  // exact id and the amount we expect — the amount is part of the signed
-  // request, so a mismatch comes back as a non-SUCCESS status.
-  async confirmConnectIpsPayment(txnId: string): Promise<{ campaignId: string }> {
-    const appId = await this.repo.findApplicationIdByConnectipsTxnId(txnId);
-    if (!appId) throw new AppError(getDict().campaign.connectipsPaymentMismatch, HttpStatus.BAD_REQUEST);
-
-    const application = await this.repo.findApplicationById(appId);
-    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    // Only one concurrent settler wins the claim; the rest see it settled.
+    if (!(await this.repo.claimConnectIpsPayment(txnId, 'SUCCESS'))) return { outcome: 'success', campaignId };
 
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
-      logger.info({ event: LogEvent.PAYMENT_CALLBACK_ALREADY_PROCESSED, appId, method: 'connectips' }, 'connectIPS callback: payment already processed');
-      return { campaignId: application.campaignId };
-    }
-
-    const expectedNpr = await applicationTotalNpr(this.adminRepo, application.proposedRate);
-    const result = await validateConnectIpsTxn({ txnId, totalAmountNpr: expectedNpr });
-    if (result.status !== 'SUCCESS') {
-      logger.warn({ appId, txnId, ...result }, 'connectIPS payment not successful');
-      throw new AppError(friendlyConnectIpsStatusMessage(result), HttpStatus.BAD_REQUEST);
+      // Money arrived for an application that was already funded (a second
+      // tab, or another method) — keep the record, alert for a manual refund.
+      reportError(new Error('connectIPS payment received for an already-funded application'), {
+        event: LogEvent.PAYMENT_CONNECTIPS_DUPLICATE, appId: application.id, txnId, amountPaisa: attempt.amountPaisa,
+      });
+      return { outcome: 'success', campaignId };
     }
 
     const campaign = application.campaign as any;
-    await this.finalizeApplicationPayment({
-      appId,
-      campaignId:     application.campaignId,
-      campaignTitle:  campaign.title,
-      businessId:     campaign.business.id,
-      businessUserId: campaign.business.userId,
-      businessName:   campaign.business.businessName ?? 'Business',
-      creatorId:      application.creatorId,
-      creatorUserId:  (application.creator as any)?.userId,
-      proposedRate:   application.proposedRate,
-      method:         'connectips',
-    });
+    try {
+      await this.finalizeApplicationPayment({
+        appId:          application.id,
+        campaignId,
+        campaignTitle:  campaign.title,
+        businessId:     campaign.business.id,
+        businessUserId: campaign.business.userId,
+        businessName:   campaign.business.businessName ?? 'Business',
+        creatorId:      application.creatorId,
+        creatorUserId:  (application.creator as any)?.userId,
+        proposedRate:   application.proposedRate,
+        method:         'connectips',
+      });
+    } catch (err) {
+      // NCHL has the money but we couldn't fund the escrow — reopen so the
+      // reconcile job retries rather than stranding a confirmed payment.
+      await this.repo.reopenConnectIpsPayment(txnId).catch(() => {});
+      reportError(err, { event: LogEvent.PAYMENT_CONNECTIPS_FINALIZE_FAILED, txnId, appId: application.id });
+      return { outcome: 'pending', campaignId };
+    }
+    return { outcome: 'success', campaignId };
+  }
 
-    return { campaignId: application.campaignId };
+  // Background reconciliation (jobs/reconcileConnectIps): settles attempts the
+  // user never came back from, and expires ones still unpaid after the window.
+  async reconcileConnectIpsPayments(): Promise<{ checked: number; funded: number; expired: number }> {
+    if (!isConnectIpsConfigured()) return { checked: 0, funded: 0, expired: 0 };
+    const now = Date.now();
+    const due = await this.repo.findConnectIpsPaymentsToReconcile(new Date(now - CONNECTIPS_RECONCILE_AFTER_MS), 25);
+    let funded = 0, expired = 0;
+    for (const attempt of due) {
+      const { outcome } = await this.settleConnectIpsPayment(attempt.txnId).catch(() => ({ outcome: 'pending' as const }));
+      if (outcome === 'success') funded++;
+      else if (outcome === 'failed' && now - attempt.createdAt.getTime() > CONNECTIPS_EXPIRE_AFTER_MS) {
+        if (await this.repo.claimConnectIpsPayment(attempt.txnId, 'EXPIRED')) expired++;
+      }
+    }
+    return { checked: due.length, funded, expired };
   }
 
   // Job/Application Activity tab — either participant (the applying creator

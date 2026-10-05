@@ -83,6 +83,9 @@ export function BusinessEventDetailPage() {
   const [error, setError] = useState(() =>
     searchParams.get('payment') === 'failed' ? searchParams.get('paymentError') || t('biz.paymentFailedFlash') : '',
   );
+  // connectIPS only: NCHL couldn't be reached to verify yet — the backend's
+  // reconciliation job finishes it, so this is neither success nor failure.
+  const [notice] = useState(() => (searchParams.get('payment') === 'pending' ? t('biz.paymentPendingFlash') : ''));
   const [busyId, setBusyId] = useState('');
   const [payTarget, setPayTarget] = useState<BusinessApplication | null>(null);
   const [payMethodChoice, setPayMethodChoice] = useState('');
@@ -207,6 +210,16 @@ export function BusinessEventDetailPage() {
       setPayBusy(true);
       try {
         const { paymentUrl } = await initiateHosted(payTarget.id);
+        if (!paymentUrl) {
+          // connectIPS re-checked an earlier attempt for this application and
+          // found it had actually been paid — nothing left to pay.
+          popup?.close();
+          setPayTarget(null);
+          setPayBusy(false);
+          setFlash(t('biz.paymentSuccessFlash'));
+          apps.reload();
+          return;
+        }
         if (!popup || popup.closed) {
           // Popup blocked — fall back to redirecting this tab, as before.
           window.location.href = paymentUrl;
@@ -298,6 +311,7 @@ export function BusinessEventDetailPage() {
       />
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
+      {notice && <Alert tone="info" className="mb-5">{notice}</Alert>}
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
 
       {/* Applicants */}

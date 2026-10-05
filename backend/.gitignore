@@ -10,6 +10,13 @@ build/
 .env.local
 .env.*.local
 
+# payment certificates / private keys (e.g. connectIPS CREDITOR.pfx) — these
+# live only in deployment secrets (CONNECTIPS_PRIVATE_KEY), never in git
+*.pfx
+*.p12
+*.pem
+*.key
+
 # typescript
 *.tsbuildinfo
 

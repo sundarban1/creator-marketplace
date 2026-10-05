@@ -14,7 +14,7 @@ export default function ConnectIpsCallback() {
   const router = useRouter();
   const toast = useToast();
   const { t } = useLanguage();
-  const { success } = useLocalSearchParams<{ success?: string; error?: string }>();
+  const { success, pending } = useLocalSearchParams<{ success?: string; pending?: string; error?: string }>();
   const handled = useRef(false);
 
   useEffect(() => {
@@ -26,13 +26,16 @@ export default function ConnectIpsCallback() {
 
     if (success === 'true') {
       toast.success(t('activityTimeline.toastPaySuccess'));
+    } else if (pending === 'true') {
+      // Bank verification inconclusive — backend reconciliation finishes it.
+      toast.info(t('activityTimeline.toastPayPending'));
     } else {
       toast.error(t('activityTimeline.toastConnectIpsIssue'));
     }
 
     if (router.canGoBack()) router.back();
     else router.replace('/');
-  }, [router, toast, t, success]);
+  }, [router, toast, t, success, pending]);
 
   return null;
 }

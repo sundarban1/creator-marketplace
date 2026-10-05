@@ -1167,10 +1167,6 @@ model Application {
   // overwrite-on-retry role as khaltiPidx above, verified against eSewa's
   // signed redirect + status-check API in confirmEsewaPayment.
   esewaTransactionUuid String?           @unique
-  // connectIPS TXNID for the most recent initiate call — same overwrite-on-retry
-  // role as the two above. NCHL's fixed redirect carries only this id, so it's
-  // also how the callback finds the application (see confirmConnectIpsPayment).
-  connectipsTxnId      String?           @unique
   // Set only when an admin manually releases the held escrow payment —
   // brand approval no longer releases funds automatically, see approveWork().
   releasedAt           DateTime?
@@ -1224,6 +1220,7 @@ model Application {
   creator                      CreatorProfile              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   reviews                      Review[]
   paymentTransactions          PaymentTransaction[]
+  connectipsPayments           ConnectIpsPayment[]
   revisionNotes                RevisionNote[]
   assignments                  ApplicationAssignment[]
   contract                     Contract?
@@ -1479,6 +1476,40 @@ model CreatorReliability {
 //   PAYOUT          Kolab escrow → creator    (release, RELEASED)
 //   REFUND          Kolab escrow → business   (full refund, REFUNDED)
 //   PARTIAL_REFUND  Kolab escrow → business   (split settlement, PARTIALLY_REFUNDED)
+enum ConnectIpsPaymentStatus {
+  INITIATED // form built / user may still be on connectIPS — not conclusive
+  SUCCESS // validatetxn said SUCCESS for this TXNID + amount
+  FAILED // validatetxn said FAILED (final per NCHL)
+  EXPIRED // still not SUCCESS after the reconciliation window — abandoned
+}
+
+// One row per connectIPS checkout attempt (each Pay click mints a new TXNID).
+// NCHL's fixed redirect carries only TXNID, so this is how a callback finds its
+// application — for ANY attempt, not just the latest, so a payment completed in
+// an older tab still lands. Also the reconciliation record against NCHL/bank
+// statements: amount is frozen at initiate and is what validatetxn is checked
+// against. See CampaignService.confirmConnectIpsPayment + jobs/reconcileConnectIps.
+model ConnectIpsPayment {
+  id                 String                  @id @default(cuid())
+  // ≤20 chars (NCHL limit); first char W/M = web/mobile initiator.
+  txnId              String                  @unique
+  applicationId      String
+  amountPaisa        Int
+  status             ConnectIpsPaymentStatus @default(INITIATED)
+  // Last validatetxn reply, sanitized (status + statusDesc only, never token).
+  providerStatus     String?
+  providerStatusDesc String?
+  verifiedAt         DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, status])
+  @@index([status, createdAt])
+  @@map("connectips_payments")
+}
+
 model PaymentTransaction {
   id            String                 @id @default(cuid())
   type          PaymentTransactionType

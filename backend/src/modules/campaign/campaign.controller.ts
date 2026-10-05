@@ -585,25 +585,25 @@ export class CampaignController {
     try {
       const platform = req.query.platform === 'web' ? 'web' : undefined;
       const result = await campaignService.initiateConnectIpsPayment(req.params.appId, req.user!.id, platform);
-      success(res, result, 'connectIPS payment initiated');
+      success(res, result, result.alreadyPaid ? 'connectIPS payment already completed' : 'connectIPS payment initiated');
     } catch (err) {
       next(err);
     }
   }
 
   // Public — same role as esewaCheckoutPage: an auto-submitting HTML form that
-  // POSTs the signed fields to connectIPS's login page.
+  // POSTs the signed fields for this TXNID's attempt to connectIPS's login page.
   async connectIpsCheckoutPage(req: Request, res: Response): Promise<void> {
     res.setHeader('Content-Security-Policy', connectIpsCheckoutCsp());
     try {
-      const fields = await campaignService.getConnectIpsCheckoutForm(req.params.appId);
+      const fields = await campaignService.getConnectIpsCheckoutForm(req.params.txnId);
       logger.info(
-        { appId: req.params.appId, txnId: fields.TXNID, txnAmt: fields.TXNAMT, txnDate: fields.TXNDATE },
+        { txnId: fields.TXNID, txnAmt: fields.TXNAMT, txnDate: fields.TXNDATE },
         'connectIPS checkout page rendered — auto-submitting form to connectIPS',
       );
       res.type('html').send(buildConnectIpsCheckoutHtml(fields));
     } catch (err) {
-      logger.warn({ appId: req.params.appId, err }, 'connectIPS checkout page could not render');
+      logger.warn({ txnId: req.params.txnId, err }, 'connectIPS checkout page could not render');
       const message = err instanceof AppError ? err.message : 'Could not start the connectIPS payment. Please try again.';
       res.status(err instanceof AppError ? err.statusCode : 500).type('html').send(
         `<!doctype html><html><head><meta charset="utf-8" /><title>Payment error</title></head><body style="font-family:sans-serif;text-align:center;padding:48px 24px;color:#374151;"><p>${message}</p></body></html>`
@@ -611,72 +611,63 @@ export class CampaignController {
     }
   }
 
-  // Public — NCHL redirects here (URL registered with them, not sent per
-  // request) appending only `?TXNID=`. Accepts GET and POST since the gateway
-  // docs only promise the param, not the method. The TXNID's prefix says
-  // whether to land on the web app or the mobile deep link.
+  // Public — NCHL redirects here (URLs registered with them, not sent per
+  // request) appending only `?TXNID=`: the success URL after OTP, the failure
+  // URL when the user clicks "Return" / "Return to Creditor Site" (merchant
+  // interface §3.5). The latter can follow a completed payment, so BOTH are
+  // settled the same way — validatetxn decides, never the redirect itself.
+  // GET and POST accepted since the spec only promises the param. The TXNID's
+  // prefix says whether to land on the web app or the mobile deep link.
   async connectIpsSuccessCallback(req: Request, res: Response): Promise<void> {
-    const txnId = this.connectIpsTxnId(req);
-    logger.info({ txnId }, 'connectIPS success callback hit');
+    await this.handleConnectIpsReturn(req, res, 'success');
+  }
+
+  async connectIpsFailureCallback(req: Request, res: Response): Promise<void> {
+    await this.handleConnectIpsReturn(req, res, 'failure');
+  }
+
+  private async handleConnectIpsReturn(req: Request, res: Response, via: 'success' | 'failure'): Promise<void> {
+    const raw = (req.query.TXNID ?? req.body?.TXNID) as unknown;
+    const txnId = typeof raw === 'string' && raw.trim() ? raw.trim() : undefined;
+    logger.info({ txnId, via }, 'connectIPS return hit');
     if (!txnId) {
-      this.redirectConnectIpsResult(res, 'mobile', { success: false, error: 'missing_payment_reference' });
+      this.redirectConnectIpsResult(res, 'mobile', { outcome: 'failed', error: 'missing_payment_reference' });
       return;
     }
     const platform = platformFromTxnId(txnId);
     try {
-      const { campaignId } = await campaignService.confirmConnectIpsPayment(txnId);
-      this.redirectConnectIpsResult(res, platform, { success: true, campaignId });
+      const result = await campaignService.settleConnectIpsPayment(txnId);
+      logger.info({ txnId, via, outcome: result.outcome }, 'connectIPS return settled');
+      this.redirectConnectIpsResult(res, platform, {
+        outcome: result.outcome,
+        campaignId: result.campaignId,
+        // A plain "Return" click is a cancellation, not an error worth a reason.
+        error: via === 'failure' ? undefined : result.message,
+      });
     } catch (err) {
       const message = err instanceof AppError ? err.message : 'Could not confirm the connectIPS payment';
-      logger.warn({ txnId, err }, 'connectIPS success callback: confirmation failed');
-      const match = await campaignService.findApplicationByConnectIpsTxnId(txnId).catch(() => null);
-      this.redirectConnectIpsResult(res, platform, { success: false, error: message, campaignId: match?.campaignId });
+      logger.warn({ txnId, err }, 'connectIPS return could not be settled');
+      this.redirectConnectIpsResult(res, platform, { outcome: 'failed', error: message });
     }
   }
 
-  // Public — NCHL sends the browser here whenever the user clicks "Return" on
-  // the login page or "Return to Creditor Site" on the transaction page (merchant
-  // interface §3.5). That second button is also reachable AFTER a payment went
-  // through, so a failure redirect alone doesn't prove nothing was paid — still
-  // ask validatetxn, and finalize if it says SUCCESS.
-  async connectIpsFailureCallback(req: Request, res: Response): Promise<void> {
-    const txnId = this.connectIpsTxnId(req);
-    if (!txnId) {
-      logger.warn({ query: req.query }, 'connectIPS failure callback with no TXNID');
-      this.redirectConnectIpsResult(res, 'mobile', { success: false, error: 'payment_failed' });
-      return;
-    }
-    const platform = platformFromTxnId(txnId);
-    try {
-      const { campaignId } = await campaignService.confirmConnectIpsPayment(txnId);
-      logger.info({ txnId }, 'connectIPS failure callback: payment was actually successful');
-      this.redirectConnectIpsResult(res, platform, { success: true, campaignId });
-    } catch (err) {
-      logger.warn({ txnId, err }, 'connectIPS payment failed / not completed');
-      const match = await campaignService.findApplicationByConnectIpsTxnId(txnId).catch(() => null);
-      this.redirectConnectIpsResult(res, platform, { success: false, error: 'payment_failed', campaignId: match?.campaignId });
-    }
-  }
-
-  private connectIpsTxnId(req: Request): string | undefined {
-    const raw = (req.query.TXNID ?? req.body?.TXNID) as unknown;
-    return typeof raw === 'string' && raw.trim() ? raw.trim() : undefined;
-  }
-
-  // Same landing spots as redirectEsewaResult, with its own mobile deep link.
+  // Same landing spots as redirectEsewaResult, plus a third "pending" state
+  // (couldn't verify yet — reconciliation will finish it) so an unknown result
+  // is never shown as a failure.
   private redirectConnectIpsResult(
     res: Response,
     platform: 'web' | 'mobile',
-    result: { success: boolean; error?: string; campaignId?: string },
+    result: { outcome: 'success' | 'failed' | 'pending'; error?: string; campaignId?: string },
   ): void {
     if (platform === 'web') {
       const path = result.campaignId ? `/business/events/${result.campaignId}` : '/business/events';
-      const qs = new URLSearchParams({ payment: result.success ? 'success' : 'failed' });
-      if (result.error && result.error !== 'payment_failed') qs.set('paymentError', result.error);
+      const qs = new URLSearchParams({ payment: result.outcome });
+      if (result.outcome === 'failed' && result.error) qs.set('paymentError', result.error);
       res.redirect(`${frontendBaseUrl}${path}?${qs.toString()}`);
       return;
     }
-    const qs = new URLSearchParams({ success: String(result.success) });
+    const qs = new URLSearchParams({ success: String(result.outcome === 'success') });
+    if (result.outcome === 'pending') qs.set('pending', 'true');
     if (result.error) qs.set('error', result.error);
     res.redirect(`${env.APP_SCHEME}://connectips-callback?${qs.toString()}`);
   }

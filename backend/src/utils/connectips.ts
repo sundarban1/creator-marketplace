@@ -14,8 +14,8 @@ import { HttpStatus } from '../constants/httpStatus';
 //    (from NCHL's CREDITOR.pfx), not an HMAC over a shared secret;
 //  - success/failure URLs are registered with NCHL per merchant, never sent in
 //    the form, so the redirect carries only `TXNID` — that id alone has to lead
-//    back to the application (Application.connectipsTxnId) and to which client
-//    started it (encoded in the id's prefix, see newConnectIpsTxnId).
+//    back to the attempt (ConnectIpsPayment.txnId → application) and to which
+//    client started it (encoded in the id's prefix, see newConnectIpsTxnId).
 
 export type ConnectIpsFormFields = {
   MERCHANTID: string;
@@ -125,7 +125,7 @@ function txnDate(now = new Date()): string {
 
 export function buildConnectIpsSignedFields(params: {
   txnId: string;
-  totalAmountNpr: number;
+  amountPaisa: number;
 }): ConnectIpsFormFields {
   const cfg = assertConfigured();
   const fields: Omit<ConnectIpsFormFields, 'TOKEN'> = {
@@ -135,7 +135,7 @@ export function buildConnectIpsSignedFields(params: {
     TXNID:       params.txnId,
     TXNDATE:     txnDate(),
     TXNCRNCY:    'NPR',
-    TXNAMT:      String(toPaisa(params.totalAmountNpr)),
+    TXNAMT:      String(params.amountPaisa),
     // Our TXNID is already unique per attempt, so it doubles as the reference.
     REFERENCEID: params.txnId,
     REMARKS:     'Kolab escrow payment',
@@ -190,11 +190,11 @@ export function buildConnectIpsCheckoutHtml(fields: ConnectIpsFormFields): strin
 // validatetxn API confirms this id + amount as SUCCESS.
 export async function validateConnectIpsTxn(params: {
   txnId: string;
-  totalAmountNpr: number;
+  amountPaisa: number;
 }): Promise<ConnectIpsValidateResult> {
   const dict = getDict();
   const cfg = assertConfigured();
-  const txnAmt = toPaisa(params.totalAmountNpr);
+  const txnAmt = params.amountPaisa;
   const token = sign(
     cfg.privateKey,
     `MERCHANTID=${cfg.merchantId},APPID=${cfg.appId},REFERENCEID=${params.txnId},TXNAMT=${txnAmt}`,
@@ -231,7 +231,8 @@ export async function validateConnectIpsTxn(params: {
     throw new AppError(dict.connectips.validateRejected, HttpStatus.BAD_GATEWAY);
   }
   if (!res.ok || !body?.status) {
-    logger.warn({ status: res.status, body, txnId: params.txnId }, 'connectIPS validatetxn rejected');
+    // Never log the raw body — NCHL echoes our signed token back in it.
+    logger.warn({ httpStatus: res.status, status: body?.status, statusDesc: body?.statusDesc, txnId: params.txnId }, 'connectIPS validatetxn rejected');
     throw new AppError(dict.connectips.validateRejected, HttpStatus.BAD_GATEWAY);
   }
 

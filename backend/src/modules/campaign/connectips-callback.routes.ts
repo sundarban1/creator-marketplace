@@ -6,7 +6,7 @@ const ctrl = new CampaignController();
 
 // Public — the mobile WebBrowser session / web popup opens this directly (no
 // Authorization header); it renders an auto-submitting form to connectIPS.
-router.get('/checkout/:appId', ctrl.connectIpsCheckoutPage.bind(ctrl));
+router.get('/checkout/:txnId', ctrl.connectIpsCheckoutPage.bind(ctrl));
 
 // Public — NCHL redirects the browser here after payment with `?TXNID=`.
 // These two paths are what gets registered with NCHL as the merchant's

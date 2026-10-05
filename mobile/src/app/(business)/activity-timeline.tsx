@@ -1439,7 +1439,7 @@ export default function CampaignWorkspaceScreen() {
   // the session cookie between steps — connectIPS's docs list exactly that
   // "403 session expired" as a cookie problem — bouncing the payment to failure.
   async function handlePayHostedCheckout(
-    initiate: (appId: string) => Promise<string>,
+    initiate: (appId: string) => Promise<string | null>,
     returnUrl: string,
     issueMessage: string,
   ) {
@@ -1447,6 +1447,14 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       const paymentUrl = await initiate(app.id);
+      if (!paymentUrl) {
+        // connectIPS found an earlier attempt that had actually been paid.
+        setShowPay(false);
+        setApp(a => a ? { ...a, paymentStatus: 'PAID', engagementState: 'ESCROW_FUNDED', paymentDueAt: null } : a);
+        void load({ silent: true });
+        topToast.success(t('activityTimeline.toastPaySuccess'));
+        return;
+      }
       const result = await WebBrowser.openAuthSessionAsync(paymentUrl, returnUrl, { preferEphemeralSession: false });
       // Close the modal once the gateway tab is done — whichever way it ended.
       // useFocusEffect re-runs load() when we return here, so the card below
@@ -1463,6 +1471,11 @@ export default function CampaignWorkspaceScreen() {
           setApp(a => a ? { ...a, paymentStatus: 'PAID', engagementState: 'ESCROW_FUNDED', paymentDueAt: null } : a);
           void load({ silent: true });
           topToast.success(t('activityTimeline.toastPaySuccess'));
+        } else if (parsed.searchParams.get('pending') === 'true') {
+          // connectIPS: couldn't verify with the bank yet — the backend's
+          // reconciliation finishes it; don't tell them it failed.
+          void load({ silent: true });
+          topToast.info(t('activityTimeline.toastPayPending'));
         } else {
           // The gateway bounced us back without completing — the raw reason
           // (payment_failed / canceled / …) isn't useful to the business, so

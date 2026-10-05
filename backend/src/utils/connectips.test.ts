@@ -24,6 +24,7 @@ import {
   friendlyConnectIpsStatusMessage,
   newConnectIpsTxnId,
   platformFromTxnId,
+  toPaisa,
 } from './connectips';
 
 function verify(message: string, signature: string): boolean {
@@ -33,6 +34,14 @@ function verify(message: string, signature: string): boolean {
 beforeEach(() => {
   env.CONNECTIPS_PRIVATE_KEY = privatePem;
   vi.restoreAllMocks();
+});
+
+describe('toPaisa', () => {
+  it('rounds NPR to integer paisa without float drift', () => {
+    expect(toPaisa(4460)).toBe(446000);
+    expect(toPaisa(1234.5)).toBe(123450);
+    expect(toPaisa(0.1 + 0.2)).toBe(30);
+  });
 });
 
 describe('newConnectIpsTxnId', () => {
@@ -49,7 +58,7 @@ describe('newConnectIpsTxnId', () => {
 
 describe('buildConnectIpsSignedFields', () => {
   it('signs the documented field string with SHA256withRSA, amount in paisa', () => {
-    const f = buildConnectIpsSignedFields({ txnId: 'M123', totalAmountNpr: 1234.5 });
+    const f = buildConnectIpsSignedFields({ txnId: 'M123', amountPaisa: 123450 });
     expect(f.TXNAMT).toBe('123450');
     expect(f.TXNDATE).toMatch(/^\d{2}-\d{2}-\d{4}$/);
     const message =
@@ -62,9 +71,9 @@ describe('buildConnectIpsSignedFields', () => {
 
   it('accepts the key as a single line with \\n escapes or base64', () => {
     env.CONNECTIPS_PRIVATE_KEY = privatePem.replace(/\n/g, '\\n');
-    expect(() => buildConnectIpsSignedFields({ txnId: 'M1', totalAmountNpr: 10 })).not.toThrow();
+    expect(() => buildConnectIpsSignedFields({ txnId: 'M1', amountPaisa: 1000 })).not.toThrow();
     env.CONNECTIPS_PRIVATE_KEY = Buffer.from(privatePem).toString('base64');
-    expect(() => buildConnectIpsSignedFields({ txnId: 'M1', totalAmountNpr: 10 })).not.toThrow();
+    expect(() => buildConnectIpsSignedFields({ txnId: 'M1', amountPaisa: 1000 })).not.toThrow();
   });
 });
 
@@ -73,7 +82,7 @@ describe('validateConnectIpsTxn', () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ status: 'SUCCESS', statusDesc: 'TRANSACTION SUCCESSFUL' }), { status: 200 }),
     );
-    const result = await validateConnectIpsTxn({ txnId: 'W9', totalAmountNpr: 500 });
+    const result = await validateConnectIpsTxn({ txnId: 'W9', amountPaisa: 50000 });
     expect(result).toEqual({ status: 'SUCCESS', statusDesc: 'TRANSACTION SUCCESSFUL' });
 
     const [, init] = fetchMock.mock.calls[0];
@@ -87,7 +96,7 @@ describe('validateConnectIpsTxn', () => {
 
   it('treats a 401 as a gateway error, not a payment outcome', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 401 }));
-    await expect(validateConnectIpsTxn({ txnId: 'W9', totalAmountNpr: 500 })).rejects.toThrow();
+    await expect(validateConnectIpsTxn({ txnId: 'W9', amountPaisa: 50000 })).rejects.toThrow();
   });
 });
 

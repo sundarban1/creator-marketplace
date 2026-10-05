@@ -1205,18 +1205,57 @@ export class CampaignRepository {
     });
   }
 
-  async setConnectipsTxnId(appId: string, txnId: string) {
-    return prisma.application.update({
-      where: { id: appId },
-      data: { connectipsTxnId: txnId },
+  // ── connectIPS attempts (see ConnectIpsPayment in schema.prisma) ──────────
+
+  async createConnectIpsPayment(data: { txnId: string; applicationId: string; amountPaisa: number }) {
+    return prisma.connectIpsPayment.create({ data });
+  }
+
+  async findConnectIpsPayment(txnId: string) {
+    return prisma.connectIpsPayment.findUnique({ where: { txnId } });
+  }
+
+  async findOpenConnectIpsPayments(applicationId: string) {
+    return prisma.connectIpsPayment.findMany({
+      where: { applicationId, status: 'INITIATED' },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
     });
   }
 
-  // Deliberately NOT cleared by payForApplication — a reloaded/double success
-  // redirect still needs to find the (now PAID) application to no-op on it.
-  async findApplicationIdByConnectipsTxnId(txnId: string): Promise<string | null> {
-    const app = await prisma.application.findUnique({ where: { connectipsTxnId: txnId }, select: { id: true } });
-    return app?.id ?? null;
+  // Reconciliation job's work list: attempts still open long enough that the
+  // user has either finished on connectIPS or walked away.
+  async findConnectIpsPaymentsToReconcile(olderThan: Date, limit: number) {
+    return prisma.connectIpsPayment.findMany({
+      where: { status: 'INITIATED', createdAt: { lt: olderThan } },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+    });
+  }
+
+  async recordConnectIpsCheck(txnId: string, providerStatus: string, providerStatusDesc: string | null) {
+    return prisma.connectIpsPayment.update({
+      where: { txnId },
+      data: { providerStatus, providerStatusDesc },
+    });
+  }
+
+  // Atomic INITIATED → final transition. Returns true only for the single
+  // caller that actually moved it — the callback, the failure redirect, the
+  // retry re-check and the reconcile job can all race on one TXNID, and only
+  // the winner may go on to fund the escrow.
+  async claimConnectIpsPayment(txnId: string, status: 'SUCCESS' | 'FAILED' | 'EXPIRED'): Promise<boolean> {
+    const { count } = await prisma.connectIpsPayment.updateMany({
+      where: { txnId, status: 'INITIATED' },
+      data: { status, verifiedAt: new Date() },
+    });
+    return count === 1;
+  }
+
+  // Undo a SUCCESS claim when funding the escrow then failed, so the
+  // reconcile job retries it instead of the money being stranded.
+  async reopenConnectIpsPayment(txnId: string) {
+    return prisma.connectIpsPayment.update({ where: { txnId }, data: { status: 'INITIATED', verifiedAt: null } });
   }
 
   // Ledger entry for the business escrowing funds — see PaymentTransaction's

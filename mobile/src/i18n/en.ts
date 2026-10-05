@@ -3749,6 +3749,7 @@ const en = {
     toastPayFailed:          'Payment failed. Please try again.',
     toastEsewaIssue:         'Looks like there is an issue with eSewa payment. Please try again later.',
     toastConnectIpsIssue:    'Looks like there is an issue with connectIPS payment. Please try again later.',
+    toastPayPending:         "We're still confirming your payment with the bank. It will show as paid within a few minutes — no need to pay again.",
     toastStartFailed:        'Failed to start. Please try again.',
     toastSubmitFailed:       'Submission failed. Please try again.',
     toastApproveFailed:      'Approval failed. Please try again.',
