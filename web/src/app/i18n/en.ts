@@ -744,6 +744,7 @@ export const en = {
     creditsAvailable: '{amount} available',
     creditsInsufficientForFee: 'Insufficient Kolab Credits to pay',
     payModalEsewaNote: "You'll be redirected to eSewa to complete this payment securely.",
+    payModalConnectIpsNote: "You'll be redirected to connectIPS to complete this payment securely from your bank account.",
     confirmPayment: 'Confirm payment',
     payModalConfirmBtn: 'Confirm payment · {amount}',
     paymentSuccessFlash: 'Payment successful — funds are held in escrow until the work is approved.',

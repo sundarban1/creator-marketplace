@@ -259,6 +259,16 @@ export function initiateEsewaPayment(appId: string): Promise<{ paymentUrl: strin
   ).then((r) => r.data);
 }
 
+/** Starts a connectIPS escrow-funding payment; same checkout-page-URL shape as initiateEsewaPayment. */
+export function initiateConnectIpsPayment(appId: string): Promise<{ paymentUrl: string }> {
+  return apiRequest<{ paymentUrl: string }>(
+    'POST',
+    `/api/campaigns/applications/${appId}/pay/connectips/initiate`,
+    undefined,
+    { params: { platform: 'web' } },
+  ).then((r) => r.data);
+}
+
 export function approveWork(appId: string): Promise<BusinessApplication> {
   return apiRequest<BusinessApplication>('PUT', `/api/campaigns/applications/${appId}/approve`).then(
     (r) => r.data,

@@ -19,6 +19,17 @@ export const en: BackendDict = {
       CANCELED:       'This eSewa payment was canceled.',
     },
   },
+  connectips: {
+    notConfigured:        'connectIPS is not configured on the server yet.',
+    validateNetworkError: 'Could not confirm the connectIPS payment. Please try again.',
+    validateRejected:     'Could not confirm the connectIPS payment.',
+    status: {
+      FAILED:     'The connectIPS payment was unsuccessful. Please try again or use another method.',
+      NOT_FOUND:  'connectIPS has no record of this payment. Please try again.',
+      INCOMPLETE: 'The connectIPS payment was not completed. You can try again.',
+      UNKNOWN:    'connectIPS could not confirm this payment. Please try again.',
+    },
+  },
   khalti: {
     notConfigured:            'Khalti is not configured on the server yet.',
     initiateNetworkError:     'Could not reach Khalti. Please check your connection and try again.',
@@ -168,6 +179,9 @@ export const en: BackendDict = {
     paidAmountMismatch:                'The paid amount does not match what was due.',
     esewaPaymentMismatch:              'This eSewa payment does not match any pending payment.',
     noPendingEsewaPayment:             'No pending eSewa payment for this application.',
+    connectipsPaymentMismatch:         'This connectIPS payment does not match any pending payment.',
+    noPendingConnectipsPayment:        'No pending connectIPS payment for this application.',
+    gatewayMethodNeedsCheckout:        'This payment method must be paid through its checkout page.',
     applicationNotAccepted:            'Application is not accepted',
     freeEventsNoWorkStage:             'Free events have no work stage — being accepted is final',
     paymentNotYetSecured:              'Payment not yet secured',

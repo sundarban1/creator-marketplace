@@ -387,6 +387,40 @@ services:
       - key: ESEWA_RETURN_BASE_URL
         value: https://kolab-api.onrender.com
 
+      # ── connectIPS (NCHL) gateway (same role as eSewa above) ───────────────
+      # Optional: without MERCHANT_ID / APP_ID / APP_PASSWORD / PRIVATE_KEY,
+      # selecting connectIPS at pay time fails with a clear error. NCHL
+      # registers ONE success/failure pair per app — for this service:
+      #   https://kolab-api.onrender.com/api/payments/connectips/success
+      #   https://kolab-api.onrender.com/api/payments/connectips/failure
+      # GATEWAY/VALIDATE URLs below are UAT; switch both to the live hosts
+      # (and the live merchant creds + pfx) for real payments.
+      - key: CONNECTIPS_MERCHANT_ID
+        value: "5265"
+
+      - key: CONNECTIPS_APP_ID
+        value: MER-5265-APP-1
+
+      - key: CONNECTIPS_APP_NAME
+        value: Kolab
+
+      # Basic-auth password for validatetxn — paste in the dashboard.
+      - key: CONNECTIPS_APP_PASSWORD
+        sync: false
+
+      # PEM from CREDITOR.pfx, base64-encoded as one line — paste in the dashboard.
+      - key: CONNECTIPS_PRIVATE_KEY
+        sync: false
+
+      - key: CONNECTIPS_GATEWAY_URL
+        value: https://uat.connectips.com/connectipswebgw/loginpage
+
+      - key: CONNECTIPS_VALIDATE_URL
+        value: https://uat.connectips.com/connectipswebws/api/creditor/validatetxn
+
+      - key: CONNECTIPS_RETURN_BASE_URL
+        value: https://kolab-api.onrender.com
+
       # ── SMS — Nepal, signup + forgot-password OTP only ─────────────────────
       # Two gateways (backend/src/utils/sms.ts): SMS Pasal is tried first when
       # SMSPASAL_API_KEY is set; on failure (or if unset) it falls back to

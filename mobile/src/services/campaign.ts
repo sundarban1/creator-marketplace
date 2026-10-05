@@ -647,6 +647,12 @@ export const campaignService = {
     return res.data.paymentUrl;
   },
 
+  // connectIPS — same hosted-checkout pattern as eSewa above.
+  async initiateConnectIpsPayment(appId: string): Promise<string> {
+    const res = await request<{ paymentUrl: string }>('POST', `/api/campaigns/applications/${appId}/pay/connectips/initiate`);
+    return res.data.paymentUrl;
+  },
+
   async submitWork(appId: string, data: { note?: string; urls?: string }): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/submit`, data);
   },

@@ -367,6 +367,13 @@ router.post(
   ctrl.initiateEsewaPayment.bind(ctrl)
 );
 
+router.post(
+  '/applications/:appId/pay/connectips/initiate',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.initiateConnectIpsPayment.bind(ctrl)
+);
+
 router.put(
   '/applications/:appId/submit',
   authenticate,

@@ -712,6 +712,7 @@ export const ne: AppDict = {
     creditsAvailable: '{amount} उपलब्ध',
     creditsInsufficientForFee: 'तिर्नको लागि Kolab Credits अपर्याप्त छ',
     payModalEsewaNote: 'यो भुक्तानी सुरक्षित रूपमा पूरा गर्न तपाईंलाई eSewa मा पुनर्निर्देशित गरिनेछ।',
+    payModalConnectIpsNote: 'यो भुक्तानी आफ्नो बैंक खाताबाट सुरक्षित रूपमा पूरा गर्न तपाईंलाई connectIPS मा लगिनेछ।',
     confirmPayment: 'भुक्तानी पुष्टि गर्नुहोस्',
     payModalConfirmBtn: 'भुक्तानी पुष्टि गर्नुहोस् · {amount}',
     paymentSuccessFlash: 'भुक्तानी सफल भयो — काम स्वीकृत नभएसम्म रकम एस्क्रोमा राखिनेछ।',

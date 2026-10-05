@@ -10,6 +10,7 @@ import {
   acceptApplication,
   rejectApplication,
   initiateEsewaPayment,
+  initiateConnectIpsPayment,
   payForApplication,
   getBusinessCredits,
   reportIssue,
@@ -189,7 +190,15 @@ export function BusinessEventDetailPage() {
     if (!payTarget) return;
     setPayError('');
 
-    if (payMethod === 'esewa') {
+    // eSewa and connectIPS share one hosted-checkout flow: our backend's
+    // checkout page auto-POSTs a signed form to the gateway, and the gateway's
+    // redirect lands back on this page (see backend redirectEsewaResult /
+    // redirectConnectIpsResult).
+    const initiateHosted =
+      payMethod === 'esewa' ? initiateEsewaPayment
+      : payMethod === 'connectips' ? initiateConnectIpsPayment
+      : null;
+    if (initiateHosted) {
       // Opened synchronously, in the same tick as the click, so the browser
       // doesn't treat it as a blocked popup once the async initiate call
       // below resolves — it starts on a blank tab and gets pointed at
@@ -197,7 +206,7 @@ export function BusinessEventDetailPage() {
       const popup = window.open('', '_blank');
       setPayBusy(true);
       try {
-        const { paymentUrl } = await initiateEsewaPayment(payTarget.id);
+        const { paymentUrl } = await initiateHosted(payTarget.id);
         if (!popup || popup.closed) {
           // Popup blocked — fall back to redirecting this tab, as before.
           window.location.href = paymentUrl;
@@ -215,7 +224,7 @@ export function BusinessEventDetailPage() {
 
     // Credits (and any other admin-enabled method with no dedicated gateway
     // flow) settle immediately through the generic pay endpoint — mirrors
-    // mobile's handlePay fallthrough for every method besides esewa/khalti.
+    // mobile's handlePay fallthrough for every method besides the real gateways.
     setPayBusy(true);
     try {
       await payForApplication(payTarget.id, payMethod);
@@ -492,12 +501,15 @@ export function BusinessEventDetailPage() {
       <Modal open={!!payTarget} onClose={() => (payBusy ? null : setPayTarget(null))} title={t('biz.payModalTitle')}>
         {payTarget && (
           <div className="space-y-4">
-            <div className="w-full space-y-1 border border-[#4A235A]/20 bg-white px-3.5 py-2.5 text-left text-[11.5px] font-bold leading-snug text-[#4A235A]">
-              <p className="text-[14px]">{t('biz.payModalTestCredsLabel')}</p>
-              <p>{t('biz.payModalTestCredsId', { value: '9711111111' })}</p>
-              <p>{t('biz.payModalTestCredsPassword', { value: 'Test@123' })}</p>
-              <p>{t('biz.payModalTestCredsOtp', { value: '123456' })}</p>
-            </div>
+            {/* eSewa's sandbox login — only meaningful when eSewa is the chosen method. */}
+            {payMethod === 'esewa' && (
+              <div className="w-full space-y-1 border border-[#4A235A]/20 bg-white px-3.5 py-2.5 text-left text-[11.5px] font-bold leading-snug text-[#4A235A]">
+                <p className="text-[14px]">{t('biz.payModalTestCredsLabel')}</p>
+                <p>{t('biz.payModalTestCredsId', { value: '9711111111' })}</p>
+                <p>{t('biz.payModalTestCredsPassword', { value: 'Test@123' })}</p>
+                <p>{t('biz.payModalTestCredsOtp', { value: '123456' })}</p>
+              </div>
+            )}
 
             <div className="flex items-center gap-3">
               <Avatar name={payTarget.creator?.fullName ?? 'Creator'} src={payTarget.creator?.avatarUrl} size="md" />
@@ -562,6 +574,7 @@ export function BusinessEventDetailPage() {
             </div>
 
             {payMethod === 'esewa' && <p className="text-[12px] text-ink-soft">{t('biz.payModalEsewaNote')}</p>}
+            {payMethod === 'connectips' && <p className="text-[12px] text-ink-soft">{t('biz.payModalConnectIpsNote')}</p>}
 
             {payError && <Alert tone="error">{payError}</Alert>}
 

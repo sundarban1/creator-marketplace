@@ -1167,6 +1167,10 @@ model Application {
   // overwrite-on-retry role as khaltiPidx above, verified against eSewa's
   // signed redirect + status-check API in confirmEsewaPayment.
   esewaTransactionUuid String?           @unique
+  // connectIPS TXNID for the most recent initiate call — same overwrite-on-retry
+  // role as the two above. NCHL's fixed redirect carries only this id, so it's
+  // also how the callback finds the application (see confirmConnectIpsPayment).
+  connectipsTxnId      String?           @unique
   // Set only when an admin manually releases the held escrow payment —
   // brand approval no longer releases funds automatically, see approveWork().
   releasedAt           DateTime?

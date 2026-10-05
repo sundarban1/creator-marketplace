@@ -13,6 +13,12 @@ export interface BackendDict {
     statusCheckRejected: string;
     status: Record<'PENDING' | 'FULL_REFUND' | 'PARTIAL_REFUND' | 'AMBIGUOUS' | 'NOT_FOUND' | 'CANCELED', string>;
   };
+  connectips: {
+    notConfigured: string;
+    validateNetworkError: string;
+    validateRejected: string;
+    status: Record<'FAILED' | 'NOT_FOUND' | 'INCOMPLETE' | 'UNKNOWN', string>;
+  };
   khalti: {
     notConfigured: string;
     initiateNetworkError: string;
@@ -159,6 +165,9 @@ export interface BackendDict {
     paidAmountMismatch: string;
     esewaPaymentMismatch: string;
     noPendingEsewaPayment: string;
+    connectipsPaymentMismatch: string;
+    noPendingConnectipsPayment: string;
+    gatewayMethodNeedsCheckout: string;
     applicationNotAccepted: string;
     freeEventsNoWorkStage: string;
     paymentNotYetSecured: string;

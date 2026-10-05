@@ -19,6 +19,17 @@ export const ne: BackendDict = {
       CANCELED:       'यो eSewa भुक्तानी रद्द गरिएको थियो।',
     },
   },
+  connectips: {
+    notConfigured:        'connectIPS अहिलेसम्म सर्भरमा कन्फिगर गरिएको छैन।',
+    validateNetworkError: 'connectIPS भुक्तानी पुष्टि गर्न सकिएन। कृपया फेरि प्रयास गर्नुहोस्।',
+    validateRejected:     'connectIPS भुक्तानी पुष्टि गर्न सकिएन।',
+    status: {
+      FAILED:     'connectIPS भुक्तानी असफल भयो। कृपया फेरि प्रयास गर्नुहोस् वा अर्को माध्यम प्रयोग गर्नुहोस्।',
+      NOT_FOUND:  'connectIPS सँग यो भुक्तानीको कुनै रेकर्ड छैन। कृपया फेरि प्रयास गर्नुहोस्।',
+      INCOMPLETE: 'connectIPS भुक्तानी पूरा भएन। तपाईं फेरि प्रयास गर्न सक्नुहुन्छ।',
+      UNKNOWN:    'connectIPS ले यो भुक्तानी पुष्टि गर्न सकेन। कृपया फेरि प्रयास गर्नुहोस्।',
+    },
+  },
   khalti: {
     notConfigured:            'Khalti अहिलेसम्म सर्भरमा कन्फिगर गरिएको छैन।',
     initiateNetworkError:     'Khalti सँग सम्पर्क गर्न सकिएन। कृपया आफ्नो इन्टरनेट जडान जाँची फेरि प्रयास गर्नुहोस्।',
@@ -168,6 +179,9 @@ export const ne: BackendDict = {
     paidAmountMismatch:                'तिरिएको रकम तिर्नुपर्ने रकमसँग मेल खाँदैन।',
     esewaPaymentMismatch:              'यो eSewa भुक्तानी कुनै पनि विचाराधीन भुक्तानीसँग मेल खाँदैन।',
     noPendingEsewaPayment:             'यो आवेदनका लागि कुनै विचाराधीन eSewa भुक्तानी छैन।',
+    connectipsPaymentMismatch:         'यो connectIPS भुक्तानी कुनै पनि विचाराधीन भुक्तानीसँग मेल खाँदैन।',
+    noPendingConnectipsPayment:        'यो आवेदनका लागि कुनै विचाराधीन connectIPS भुक्तानी छैन।',
+    gatewayMethodNeedsCheckout:        'यो भुक्तानी माध्यम यसको checkout पेजबाट मात्र तिर्न सकिन्छ।',
     applicationNotAccepted:            'आवेदन स्वीकृत गरिएको छैन',
     freeEventsNoWorkStage:             'निःशुल्क इभेन्टमा कुनै कार्य चरण हुँदैन — स्वीकृत हुनु नै अन्तिम हो',
     paymentNotYetSecured:              'भुक्तानी अझै सुरक्षित गरिएको छैन',

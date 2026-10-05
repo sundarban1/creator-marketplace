@@ -15,7 +15,7 @@
 // tiktok-login-callback is the same story: the TikTok login browser session resolves from
 // this redirect, and navigating would unmount the /login screen that owns the pending flow.
 //
-// esewa-callback / khalti-callback deliberately do NOT match — those routes own their own
+// esewa-callback / khalti-callback / connectips-callback deliberately do NOT match — those routes own their own
 // post-redirect UX and need the navigation.
 export function redirectSystemPath({ path }: { path: string; initial: boolean }): string | null {
   try {

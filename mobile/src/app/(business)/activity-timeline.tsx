@@ -1431,26 +1431,32 @@ export default function CampaignWorkspaceScreen() {
     }
   }
 
-  // eSewa needs the same hosted-checkout round trip as Khalti above.
-  async function handlePayEsewa() {
+  // eSewa and connectIPS share the same hosted-checkout round trip as Khalti
+  // above: the backend hands back our own checkout page, which auto-POSTs a
+  // signed form to the gateway, and the gateway redirects back into the app.
+  // NOT ephemeral (unlike Khalti): both checkouts are multi-step logins
+  // (ID → password → OTP) and an ephemeral ASWebAuthenticationSession can drop
+  // the session cookie between steps — connectIPS's docs list exactly that
+  // "403 session expired" as a cookie problem — bouncing the payment to failure.
+  async function handlePayHostedCheckout(
+    initiate: (appId: string) => Promise<string>,
+    returnUrl: string,
+    issueMessage: string,
+  ) {
     if (!app) return;
     setSubmitting(true);
     try {
-      const paymentUrl = await campaignService.initiateEsewaPayment(app.id);
-      // NOT ephemeral (unlike Khalti): eSewa's checkout is a multi-step login
-      // (eSewa ID → password → OTP token) and an ephemeral ASWebAuthenticationSession
-      // can drop the session cookie between steps, bouncing the payment to
-      // failure_url. eSewa also has no "silently reuse the logged-in account"
-      // risk here the way Khalti does — it always prompts for the token.
-      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, 'kolab://esewa-callback', { preferEphemeralSession: false });
-      // Close the modal once the eSewa tab is done — whichever way it ended.
+      const paymentUrl = await initiate(app.id);
+      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, returnUrl, { preferEphemeralSession: false });
+      // Close the modal once the gateway tab is done — whichever way it ended.
       // useFocusEffect re-runs load() when we return here, so the card below
       // reflects the real PAID status either way.
       setShowPay(false);
       // On iOS the session usually captures the kolab:// redirect and we get it
       // here. On Android (and sometimes iOS) Expo Router consumes the deep link
-      // first — then app/esewa-callback.tsx has already shown the toast, so only
-      // handle the result when the session actually returned it.
+      // first — then app/esewa-callback.tsx / connectips-callback.tsx has
+      // already shown the toast, so only handle the result when the session
+      // actually returned it.
       if (result.type === 'success' && result.url) {
         const parsed = new URL(result.url);
         if (parsed.searchParams.get('success') === 'true') {
@@ -1458,14 +1464,14 @@ export default function CampaignWorkspaceScreen() {
           void load({ silent: true });
           topToast.success(t('activityTimeline.toastPaySuccess'));
         } else {
-          // eSewa bounced us back without completing — the raw reason
+          // The gateway bounced us back without completing — the raw reason
           // (payment_failed / canceled / …) isn't useful to the business, so
           // show one calm, generic message.
-          topToast.error(t('activityTimeline.toastEsewaIssue'));
+          topToast.error(issueMessage);
         }
       }
     } catch (e: any) {
-      topToast.error(e?.message ?? t('activityTimeline.toastEsewaIssue'));
+      topToast.error(e?.message ?? issueMessage);
     } finally {
       setSubmitting(false);
     }
@@ -1474,7 +1480,12 @@ export default function CampaignWorkspaceScreen() {
   async function handlePay() {
     if (!app) return;
     if (payMethod === 'khalti') return handlePayKhalti();
-    if (payMethod === 'esewa') return handlePayEsewa();
+    if (payMethod === 'esewa') {
+      return handlePayHostedCheckout(campaignService.initiateEsewaPayment, 'kolab://esewa-callback', t('activityTimeline.toastEsewaIssue'));
+    }
+    if (payMethod === 'connectips') {
+      return handlePayHostedCheckout(campaignService.initiateConnectIpsPayment, 'kolab://connectips-callback', t('activityTimeline.toastConnectIpsIssue'));
+    }
     setSubmitting(true);
     try {
       await campaignService.payForApplication(app.id, payMethod);

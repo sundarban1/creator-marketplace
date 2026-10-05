@@ -1205,6 +1205,20 @@ export class CampaignRepository {
     });
   }
 
+  async setConnectipsTxnId(appId: string, txnId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { connectipsTxnId: txnId },
+    });
+  }
+
+  // Deliberately NOT cleared by payForApplication — a reloaded/double success
+  // redirect still needs to find the (now PAID) application to no-op on it.
+  async findApplicationIdByConnectipsTxnId(txnId: string): Promise<string | null> {
+    const app = await prisma.application.findUnique({ where: { connectipsTxnId: txnId }, select: { id: true } });
+    return app?.id ?? null;
+  }
+
   // Ledger entry for the business escrowing funds — see PaymentTransaction's
   // schema comment for why this exists alongside Application.paymentStatus.
   // Idempotent: a retried payment webhook that slips past the upstream

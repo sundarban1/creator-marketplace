@@ -35,6 +35,7 @@ import { haversineKm } from '../../utils/geo';
 import { env, frontendBaseUrl } from '../../config/env';
 import { initiateKhaltiPayment as khaltiInitiate, lookupKhaltiPayment as khaltiLookup } from '../../utils/khalti';
 import { buildEsewaSignedFields, decodeEsewaResponse, verifyEsewaSignature, checkEsewaStatus, parseEsewaAmount, friendlyEsewaStatusMessage, type EsewaFormFields } from '../../utils/esewa';
+import { buildConnectIpsSignedFields, validateConnectIpsTxn, friendlyConnectIpsStatusMessage, newConnectIpsTxnId, isConnectIpsConfigured, type ConnectIpsFormFields } from '../../utils/connectips';
 import { HttpStatus } from '../../constants/httpStatus';
 import {
   sendPaymentSecuredEmail,
@@ -77,6 +78,10 @@ async function applicationTotalNpr(adminRepo: AdminRepository, proposedRate: num
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered as MP4 via
 // videoPlaybackUrl. Mirrors messaging.service.ts's same allow-list.
+// Payment methods backed by a real gateway — these must finalize through
+// their own verified callback, never payForApplication's instant path.
+const GATEWAY_METHODS = new Set(['esewa', 'khalti', 'connectips']);
+
 const ALLOWED_DELIVERABLE_VIDEO_FORMATS = new Set(['mp4', 'mov', 'qt']);
 
 // Non-destructive cap, not the avatar-style 400x400 face-crop — these are
@@ -1565,6 +1570,13 @@ export class CampaignService {
       throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
     }
 
+    // Real gateways only ever finalize through their own verified callback —
+    // never via this instant path, which would mark the escrow funded with no
+    // money having moved.
+    if (GATEWAY_METHODS.has(method)) {
+      throw new AppError(getDict().campaign.gatewayMethodNeedsCheckout, HttpStatus.BAD_REQUEST);
+    }
+
     if (method === 'credits') {
       await this.debitCreditsForApplication(business.id, appId, application.proposedRate);
     }
@@ -1776,6 +1788,89 @@ export class CampaignService {
       creatorUserId:  (application.creator as any)?.userId,
       proposedRate:   application.proposedRate,
       method:         'esewa',
+    });
+
+    return { campaignId: application.campaignId };
+  }
+
+  // Step 1 of the connectIPS flow — same shape as eSewa: record a fresh TXNID
+  // (authenticated, so only the paying business can rotate it) and point the
+  // client at our checkout page, which renders the signed form. The platform
+  // rides inside the TXNID itself (see newConnectIpsTxnId) because NCHL's
+  // redirect URL is fixed per merchant and can't carry it.
+  async initiateConnectIpsPayment(appId: string, userId: string, platform?: 'web' | 'mobile'): Promise<{ paymentUrl: string }> {
+    if (!isConnectIpsConfigured()) throw new AppError(getDict().connectips.notConfigured, HttpStatus.SERVICE_UNAVAILABLE);
+
+    await this.validatePendingPayment(appId, userId);
+
+    const txnId = newConnectIpsTxnId(platform === 'web' ? 'web' : 'mobile');
+    await this.repo.setConnectipsTxnId(appId, txnId);
+
+    return { paymentUrl: `${env.CONNECTIPS_RETURN_BASE_URL}/api/payments/connectips/checkout/${appId}` };
+  }
+
+  // Renders the form the checkout page auto-submits. Same re-validation as
+  // getEsewaCheckoutForm so a stale link can't reopen a finished payment.
+  async getConnectIpsCheckoutForm(appId: string): Promise<ConnectIpsFormFields> {
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
+      throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
+    }
+    if (!application.connectipsTxnId) {
+      throw new AppError(getDict().campaign.noPendingConnectipsPayment, HttpStatus.BAD_REQUEST);
+    }
+
+    return buildConnectIpsSignedFields({
+      txnId:          application.connectipsTxnId,
+      totalAmountNpr: await applicationTotalNpr(this.adminRepo, application.proposedRate),
+    });
+  }
+
+  // Looks up which application a redirect's TXNID belongs to — the only
+  // identifier NCHL sends back. Null for an unknown/superseded id.
+  async findApplicationByConnectIpsTxnId(txnId: string): Promise<{ appId: string; campaignId: string } | null> {
+    const appId = await this.repo.findApplicationIdByConnectipsTxnId(txnId);
+    if (!appId) return null;
+    const application = await this.repo.findApplicationById(appId);
+    return application ? { appId, campaignId: application.campaignId } : null;
+  }
+
+  // Step 2: NCHL redirects the browser back with only `TXNID` (unsigned), so
+  // the payment is never trusted until validatetxn confirms SUCCESS for this
+  // exact id and the amount we expect — the amount is part of the signed
+  // request, so a mismatch comes back as a non-SUCCESS status.
+  async confirmConnectIpsPayment(txnId: string): Promise<{ campaignId: string }> {
+    const appId = await this.repo.findApplicationIdByConnectipsTxnId(txnId);
+    if (!appId) throw new AppError(getDict().campaign.connectipsPaymentMismatch, HttpStatus.BAD_REQUEST);
+
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+
+    if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
+      logger.info({ event: LogEvent.PAYMENT_CALLBACK_ALREADY_PROCESSED, appId, method: 'connectips' }, 'connectIPS callback: payment already processed');
+      return { campaignId: application.campaignId };
+    }
+
+    const expectedNpr = await applicationTotalNpr(this.adminRepo, application.proposedRate);
+    const result = await validateConnectIpsTxn({ txnId, totalAmountNpr: expectedNpr });
+    if (result.status !== 'SUCCESS') {
+      logger.warn({ appId, txnId, ...result }, 'connectIPS payment not successful');
+      throw new AppError(friendlyConnectIpsStatusMessage(result), HttpStatus.BAD_REQUEST);
+    }
+
+    const campaign = application.campaign as any;
+    await this.finalizeApplicationPayment({
+      appId,
+      campaignId:     application.campaignId,
+      campaignTitle:  campaign.title,
+      businessId:     campaign.business.id,
+      businessUserId: campaign.business.userId,
+      businessName:   campaign.business.businessName ?? 'Business',
+      creatorId:      application.creatorId,
+      creatorUserId:  (application.creator as any)?.userId,
+      proposedRate:   application.proposedRate,
+      method:         'connectips',
     });
 
     return { campaignId: application.campaignId };

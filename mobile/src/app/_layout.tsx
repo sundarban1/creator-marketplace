@@ -397,6 +397,7 @@ function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="oauthredirect" />
         <Stack.Screen name="esewa-callback" />
+        <Stack.Screen name="connectips-callback" />
         <Stack.Screen name="khalti-callback" />
         {/* Fade rather than slide: this group is entered via replace('/login')
             on logout / session-expiry, where a lateral slide of the outgoing

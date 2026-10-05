@@ -130,6 +130,25 @@ const envSchema = z.object({
   // URLs eSewa's browser flow needs (unlike Khalti, eSewa gives no single
   // "initiate" API call that returns a hosted URL for us).
   ESEWA_RETURN_BASE_URL: z.string().optional(),
+  // connectIPS (NCHL) e-payment — same role as eSewa above (see utils/connectips.ts).
+  // Optional as a block: without MERCHANT_ID / APP_ID / PRIVATE_KEY / RETURN_BASE_URL,
+  // selecting connectIPS at pay time fails with a clear error. The success/failure
+  // URLs are NOT sent per-request — NCHL registers them against the merchant, so
+  // give NCHL `${CONNECTIPS_RETURN_BASE_URL}/api/payments/connectips/success` and
+  // `/failure`.
+  CONNECTIPS_MERCHANT_ID: z.string().optional(),
+  CONNECTIPS_APP_ID: z.string().optional(),
+  CONNECTIPS_APP_NAME: z.string().default('Kolab'),
+  // Basic-auth password for the validatetxn API (username = APP_ID).
+  CONNECTIPS_APP_PASSWORD: z.string().optional(),
+  // RSA private key from NCHL's CREDITOR.pfx, as PEM. Accepts literal "\n"
+  // escapes or the whole PEM base64-encoded, so it fits a single env line.
+  // Convert with: openssl pkcs12 -in CREDITOR.pfx -nocerts -nodes -legacy -out key.pem
+  CONNECTIPS_PRIVATE_KEY: z.string().optional(),
+  CONNECTIPS_GATEWAY_URL: z.string().default('https://uat.connectips.com/connectipswebgw/loginpage'),
+  CONNECTIPS_VALIDATE_URL: z.string().default('https://uat.connectips.com/connectipswebws/api/creditor/validatetxn'),
+  // Absolute public origin of this backend — builds the checkout page URL.
+  CONNECTIPS_RETURN_BASE_URL: z.string().optional(),
   // SMS gateways (Nepal). sendSms() tries SMS Pasal first, then falls back to
   // Sparrow SMS. It only sends when at least one is configured — otherwise it
   // logs and no-ops, so the signup / forgot-password OTP flows keep working
