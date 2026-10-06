@@ -384,10 +384,10 @@ function IdentifierField({ value, onChangeText, placeholder, accessibilityLabel,
 }
 
 // ── Brand mark ───────────────────────────────────────────────────────────────
-// The KOLAB wordmark, shipped as the shared brand SVG so it stays identical to
-// the rest of the app (splash, account-type header) rather than redrawn here.
+// The KOLAB wordmark — the shared brand SVG plus a white outline traced around
+// the letters (kolab-outlined.svg), so it reads over the photo without a card.
 
-const BRAND_LOGO = require('@/assets/images/kolab.svg');
+const BRAND_LOGO = require('@/assets/images/kolab-outlined.svg');
 
 function BrandMark() {
   const s = useMemo(() => makeStyles(COLORS), []);
@@ -1519,13 +1519,8 @@ function makeStyles(C: typeof COLORS) {
     marginBottom: SPACING.xxl,
     alignSelf: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.xl,
-    ...SHADOW.floating,
   },
-  brandLogo:    { width: 208, height: 208 * (102 / 375) }, // kolab.svg viewBox aspect
+  brandLogo:    { width: 208, height: 208 * (114 / 387) }, // kolab-outlined.svg viewBox aspect
 
   headlineWrap:      { alignSelf: 'stretch', alignItems: 'center' },
   // This heading renders Devanagari — Poppins has no देवनागरी glyphs, so Android
