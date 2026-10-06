@@ -955,8 +955,8 @@ export default function CampaignWorkspaceScreen() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { flags, refetch: refetchPlatformFlags } = usePlatformFlags();
-  const { campaignId, campaignTitle, role, brand, applicationId, openFeedback } = useLocalSearchParams<{
-    campaignId: string; campaignTitle: string; role?: string; brand?: string; applicationId?: string; openFeedback?: string;
+  const { campaignId, campaignTitle, role, brand, applicationId, openFeedback, openChat } = useLocalSearchParams<{
+    campaignId: string; campaignTitle: string; role?: string; brand?: string; applicationId?: string; openFeedback?: string; openChat?: string;
   }>();
 
   // Role determined from auth token primarily, URL param as fallback
@@ -1379,6 +1379,18 @@ export default function CampaignWorkspaceScreen() {
       setShowFeedback(true);
     }
   }, [openFeedback, app]);
+
+  // Deep-linked from "X is waiting for your response" — open the chat once the
+  // engagement (and so the other party's profile id) has loaded. Same
+  // once-per-mount guard as the feedback auto-open above.
+  const autoOpenedChat = useRef(false);
+  useEffect(() => {
+    if (!autoOpenedChat.current && openChat === 'true' && app?.creatorProfileId) {
+      autoOpenedChat.current = true;
+      void handleMessage();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openChat, app]);
 
   // Center progress tracker on current step after data loads
   useEffect(() => {

@@ -3,6 +3,7 @@ import prisma from '../../prisma';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
 import { notificationService } from '../notifications/notification.service';
+import { notify, collaborationWebUrl, NotificationEvent } from '../notifications/notify';
 import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { recordCampaignEventTx } from './campaign-events';
@@ -331,22 +332,52 @@ class EscrowService {
     void this.bumpReliability(app.creatorId, app.submittedLate ? 'late' : 'completed');
 
     if (!params.silent) {
-      notificationService.create({
+      const title = app.campaign.title;
+      const bizName = app.campaign.business.businessName ?? 'the business';
+      const creatorName = app.creator.fullName ?? 'your creator';
+      const amountText = `NPR ${amount.toLocaleString()}`;
+      const common = { refId: app.campaignId, refType: 'campaign', applicationId, campaignId: app.campaignId } as const;
+      // Released straight from HELD = the business just approved, and the
+      // creator already got the "work approved" email in that same moment —
+      // only a later release (settlement hold elapsed, dispute resolved) needs
+      // its own completion email.
+      const delayedRelease = app.escrowStatus !== 'HELD';
+      void notify({
+        ...common,
         userId:  creatorUserId,
-        type:    'payment_released',
+        type:    NotificationEvent.PAYMENT_RELEASED,
         title:   'Payment released to your wallet',
-        body:    `Your payment for "${app.campaign.title}" has been released to your wallet.`,
-        refId:   app.campaignId,
-        refType: 'campaign',
-      }).catch(() => {});
-      notificationService.create({
+        body:    `Your payment for "${title}" has been released to your wallet.`,
+        ...(delayedRelease ? {
+          email: {
+            subject: `Your "${title}" collaboration is complete`,
+            heading: 'Collaboration completed',
+            paragraphs: [
+              `Your collaboration with ${bizName} is complete and ${amountText} has been released to your Kolab wallet.`,
+              'How did it go? Rate the collaboration to help other creators.',
+            ],
+            details: [{ label: 'Campaign', value: title }, { label: 'Released', value: amountText }],
+            cta: { label: 'Rate Collaboration', url: collaborationWebUrl('CREATOR', NotificationEvent.COLLABORATION_COMPLETED, app.campaignId) },
+          },
+        } : {}),
+      });
+      void notify({
+        ...common,
         userId:  businessUserId,
-        type:    'project_completed',
+        type:    NotificationEvent.COLLABORATION_COMPLETED,
         title:   'Project Complete',
-        body:    `Payment for "${app.campaign.title}" has been released — the project is now complete.`,
-        refId:   app.campaignId,
-        refType: 'campaign',
-      }).catch(() => {});
+        body:    `Payment for "${title}" has been released — the project is now complete.`,
+        email: {
+          subject: `Your "${title}" collaboration is complete`,
+          heading: 'Collaboration completed',
+          paragraphs: [
+            `Your collaboration with ${creatorName} on "${title}" is complete and the payment has been released.`,
+            `Leave a review for ${creatorName} — it helps other businesses find great creators.`,
+          ],
+          details: [{ label: 'Campaign', value: title }, { label: 'Paid', value: amountText }],
+          cta: { label: 'Rate Collaboration', url: collaborationWebUrl('BUSINESS', NotificationEvent.COLLABORATION_COMPLETED, app.campaignId) },
+        },
+      });
 
       await messagingService
         .sendSystemMessage(app.creator.id, app.campaign.business.id, app.campaignId, businessUserId, 'BUSINESS', 'Payment released.')

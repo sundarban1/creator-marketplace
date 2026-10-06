@@ -57,8 +57,8 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
 
   const fromRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    const state = location.state as { from?: { pathname?: string } } | null;
-    fromRef.current = state?.from?.pathname;
+    const state = location.state as { from?: { pathname?: string; search?: string } } | null;
+    fromRef.current = state?.from?.pathname ? state.from.pathname + (state.from.search ?? '') : undefined;
   }, [location.state]);
 
   const finish = async (r: { needsRole: false; user: Parameters<typeof postAuthPath>[0] }) => {

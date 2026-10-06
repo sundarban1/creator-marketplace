@@ -20,10 +20,11 @@ const repo = new NotificationRepository();
 // for the client's notification-tap listener to resolve where to navigate
 // (see mobile/src/utilities/notificationRouting.ts), without duplicating the
 // full notification record over the wire.
-function pushDeepLinkData(n: { type: string; refId?: string; refType?: string }): Record<string, string> {
+function pushDeepLinkData(n: { type: string; refId?: string; refType?: string; applicationId?: string }): Record<string, string> {
   const data: Record<string, string> = { type: n.type };
   if (n.refId)   data['refId']   = n.refId;
   if (n.refType) data['refType'] = n.refType;
+  if (n.applicationId) data['applicationId'] = n.applicationId;
   return data;
 }
 
@@ -227,11 +228,14 @@ export const notificationService = {
     body: string;
     refId?: string;
     refType?: string;
-  }) {
+    applicationId?: string;
+  }, opts: { push?: boolean } = {}) {
     const raw = await repo.create(data);
     const notification = toNotificationDto(raw);
     emitToUser(data.userId, 'notification:new', notification);
-    void sendExpoPush(data.userId, data.title, data.body, 0, pushDeepLinkData(data));
+    // push: false = bell + socket only (e.g. an application folded into a
+    // grouped "N creators applied" push — see jobs/collaborationReminders.ts).
+    if (opts.push !== false) void sendExpoPush(data.userId, data.title, data.body, 0, pushDeepLinkData(data));
     return notification;
   },
 

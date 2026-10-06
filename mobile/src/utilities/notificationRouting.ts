@@ -6,6 +6,8 @@ export type NotificationRouteInput = {
   type: string;
   refType?: string | null;
   refId?: string | null;
+  /** Collaboration notifications only — pins the timeline to one creator on multi-creator campaigns. */
+  applicationId?: string | null;
 };
 
 // Mirrors the exact routing decisions from (creator)/(tabs)/notifications.tsx's
@@ -72,9 +74,24 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
   if (
     n.refType === 'campaign' && n.refId &&
     ['work_approved', 'payment_released', 'campaign_closed', 'project_completed',
-     'dispute_opened', 'dispute_resolved', 'payment_refunded'].includes(n.type)
+     'dispute_opened', 'dispute_resolved', 'payment_refunded',
+     // Collaboration reminders — each asks for an action that lives on this
+     // timeline (confirm, submit, review, fund), for whichever role got it.
+     'confirmation_pending', 'deliverable_due_24h', 'deliverable_due_3h', 'payment_pending',
+     'collaboration_inactive', 'revision_submitted', 'review_reminder', 'content_overdue',
+     'payment_expired', 'reliability_warning', 'review_pending', 'response_pending', 'deadline_risk'].includes(n.type)
   ) {
-    return { pathname: '/(business)/activity-timeline', params: { campaignId: n.refId, ...(isCreator ? { role: 'CREATOR' } : {}) } };
+    return {
+      pathname: '/(business)/activity-timeline',
+      params: {
+        campaignId: n.refId,
+        ...(isCreator ? { role: 'CREATOR' } : {}),
+        ...(n.applicationId ? { applicationId: n.applicationId } : {}),
+        // "X is waiting for your response" — the timeline opens the chat on
+        // top of itself (it has the participant details the chat screen needs).
+        ...(n.type === 'response_pending' ? { openChat: 'true' } : {}),
+      },
+    };
   }
 
   // Admin approved / rejected a business's own event → open it so they see it

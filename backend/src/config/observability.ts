@@ -28,6 +28,7 @@ export const LogEvent = {
   JOB_COMPLETED: 'job.completed',
   JOB_FAILED: 'job.failed',
   ESCROW_SWEEP_STEP_FAILED: 'escrow.sweep_step_failed',
+  REMINDER_SWEEP_STEP_FAILED: 'reminders.sweep_step_failed',
   REDIS_CONNECTION_DISABLED: 'redis.connection_disabled',
   SOCKET_AUTHENTICATION_FAILED: 'socket.authentication_failed',
   SOCKET_MESSAGE_SEND_FAILED: 'socket.message_send_failed',

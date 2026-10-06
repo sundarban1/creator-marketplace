@@ -10,7 +10,7 @@ const TABLES = [
   'redemption_sessions', 'promotions',
   'business_credits_ledger', 'business_credits_accounts',
   'applications', 'campaigns', 'creator_profiles', 'business_profiles',
-  'platform_settings', 'activity_logs', 'audit_logs', 'notifications', 'users',
+  'platform_settings', 'activity_logs', 'audit_logs', 'notification_deliveries', 'notifications', 'users',
 ];
 
 export async function resetDb() {

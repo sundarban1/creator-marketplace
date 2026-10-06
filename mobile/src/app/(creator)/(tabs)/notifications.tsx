@@ -69,6 +69,21 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
   campaign_approved:        { icon: 'check-circle',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeEventApproved' },
   campaign_rejected:        { icon: 'ban',              iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeEventRejected' },
   campaign_deleted:         { icon: 'trash-alt',        iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeEventRemoved' },
+  // Collaboration reminders (backend modules/notifications/notify.ts) + the
+  // escrow sweep's existing reminder/expiry rows (jobs/escrowStateMachine.ts).
+  confirmation_pending:     { icon: 'hand-paper',       iconColor: '#6366F1', iconBg: '#EEF2FF', accentColor: '#6366F1', labelKey: 'notifications.typeConfirmationPending' },
+  deliverable_due_24h:      { icon: 'clock',            iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeDeliverableDue' },
+  deliverable_due_3h:       { icon: 'exclamation-circle', iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeDeliverableDueSoon' },
+  payment_pending:          { icon: 'wallet',           iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typePaymentPending' },
+  collaboration_inactive:   { icon: 'bell',             iconColor: '#0891B2', iconBg: '#E0F2FE', accentColor: '#0891B2', labelKey: 'notifications.typeCollaborationInactive' },
+  revision_submitted:       { icon: 'sync-alt',         iconColor: '#A855F7', iconBg: '#FAF5FF', accentColor: '#A855F7', labelKey: 'notifications.typeRevisionSubmitted' },
+  review_reminder:          { icon: 'eye',              iconColor: '#A855F7', iconBg: '#FAF5FF', accentColor: '#A855F7', labelKey: 'notifications.typeReviewPending' },
+  content_overdue:          { icon: 'exclamation-triangle', iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeContentOverdue' },
+  payment_expired:          { icon: 'hourglass-end',    iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typePaymentExpired' },
+  reliability_warning:      { icon: 'exclamation-triangle', iconColor: '#D97706', iconBg: '#FFFBEB', accentColor: '#D97706', labelKey: 'notifications.typeReliabilityWarning' },
+  review_pending:           { icon: 'star',             iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeReviewRequest' },
+  response_pending:         { icon: 'comment-dots',     iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeResponsePending' },
+  deadline_risk:            { icon: 'exclamation-triangle', iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeDeadlineRisk' },
 };
 
 const FALLBACK: TypeConfig = { icon: 'bell', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeNotification' };

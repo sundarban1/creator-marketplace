@@ -43,7 +43,9 @@ export function CreatorWorkDetailPage() {
   const { id = '' } = useParams();
   const { all, loading, error, reload } = useApplications();
   const fmtDeadline = useDeadlineLabel();
-  const app = all.find((a) => a.id === id) ?? null;
+  // Accepts an application id or a campaign id — collaboration notifications
+  // and reminder emails link by campaign (a creator has one application each).
+  const app = all.find((a) => a.id === id) ?? all.find((a) => a.campaignId === id) ?? null;
 
   const [flash, setFlash] = useState('');
   const [busy, setBusy] = useState(false);

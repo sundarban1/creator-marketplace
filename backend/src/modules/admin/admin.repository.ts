@@ -94,6 +94,26 @@ const DEFAULTS: Record<string, unknown> = {
   // 0 = no restriction (conservative launch); raise it to start gating.
   'escrow.minReliabilityToApply':       0,
 
+  // ── Collaboration reminders (jobs/collaborationReminders.ts) ─────────────
+  // Lead times are "hours before the stage's deadline" — every reminder hangs
+  // off an escrow deadline above, so editing a window moves its reminder too.
+  // minStageAgeHours stops a reminder landing right on top of the update that
+  // started the stage (e.g. a 12h-window engagement funded a minute ago).
+  'reminders.enabled':                    true,
+  'reminders.paymentLeadHours':            12, // business: fund escrow (B9)
+  'reminders.confirmationLeadHours':       12, // creator: "Let's Create Content" (C2) + business FYI (B3)
+  'reminders.deliverableDueLeadHours':     24, // creator + business: due tomorrow (C4/B5)
+  'reminders.deliverableDueSoonLeadHours':  3, // creator: due soon (C5)
+  'reminders.minStageAgeHours':             1,
+  'reminders.inactivityDays':               3, // both: no update or chat message for this long (S1)
+  'reminders.reviewFirstHours':            24, // both: first "rate your collaboration" nudge after completion (S5)
+  'reminders.reviewSecondDays':             4, // both: one more nudge, then stop
+  'reminders.reviewMaxAgeDays':             7, // never nudge for collaborations completed longer ago than this
+  'reminders.responseHours':               24, // both: chat message unanswered this long during a collaboration (S2)
+  'reminders.responseMaxAgeDays':           3, // ignore threads that went quiet longer ago than this
+  'reminders.deadlineRiskLeadHours':       24, // campaign deadline this close but work can't start yet (S3)
+  'reminders.applicationPushWindowMinutes': 15, // business: group application pushes per campaign per window (B2); 0 = push every one
+
   // ── Marketplace ──────────────────────────────────────────────────────────
   // §79 — the current launch-focus city. Recommendations (getRecommendedCreators/
   // getRecommendedBusinesses) rank a same-city match above same-district above

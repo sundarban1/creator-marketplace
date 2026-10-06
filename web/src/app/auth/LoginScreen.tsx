@@ -18,8 +18,10 @@ export function LoginScreen() {
   const location = useLocation();
   const { loginWithPassword } = useAppAuth();
 
-  const state = location.state as { from?: { pathname?: string }; flash?: string } | null;
-  const from = state?.from?.pathname;
+  const state = location.state as { from?: { pathname?: string; search?: string }; flash?: string } | null;
+  // Keep the query string too — email/notification deep links carry it
+  // (e.g. /business/deliverables?campaign=…).
+  const from = state?.from?.pathname ? state.from.pathname + (state.from.search ?? '') : undefined;
   const flash = state?.flash;
 
   const [identifier, setIdentifier] = useState('');

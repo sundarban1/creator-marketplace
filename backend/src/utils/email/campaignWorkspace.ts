@@ -6,6 +6,7 @@ export async function sendPaymentSecuredEmail(
   campaignTitle: string,
   businessName: string,
   amount: number,
+  confirmWindowHours = 24,
 ): Promise<void> {
   const html = wrapLayout(`
     <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 8px;">Payment Secured!</h2>
@@ -22,7 +23,7 @@ export async function sendPaymentSecuredEmail(
       Your payment is safely held on the platform. Open the Kolab app, click <strong>"Let's Start Work"</strong> to officially start working, and deliver your best work!
     </p>
     <div style="background:#FFF7ED;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
-      <p style="margin:0;color:#92400E;font-size:13px;">⏰ Please start work within <strong>48 hours</strong> to keep the campaign on track.</p>
+      <p style="margin:0;color:#92400E;font-size:13px;">⏰ Please start work within <strong>${confirmWindowHours} hours</strong> — if you don't, the collaboration is released and the business is refunded.</p>
     </div>
   `);
   await sendEmail(creatorEmail, `💰 Payment secured for "${campaignTitle}"`, html);

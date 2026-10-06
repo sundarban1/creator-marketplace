@@ -16,9 +16,9 @@ import { logger } from '@/utilities/logger';
 import { resolveNotificationRoute } from '@/utilities/notificationRouting';
 
 function navigateFromPushData(data: unknown, isCreator: boolean) {
-  const d = data as { type?: string; refId?: string; refType?: string } | undefined;
+  const d = data as { type?: string; refId?: string; refType?: string; applicationId?: string } | undefined;
   if (!d?.type) return;
-  const route = resolveNotificationRoute({ type: d.type, refId: d.refId, refType: d.refType }, isCreator);
+  const route = resolveNotificationRoute({ type: d.type, refId: d.refId, refType: d.refType, applicationId: d.applicationId }, isCreator);
   if (route) router.push(route);
 }
 

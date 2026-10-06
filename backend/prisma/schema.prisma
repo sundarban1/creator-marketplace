@@ -8,22 +8,22 @@ datasource db {
 }
 
 model User {
-  id                        String                @id @default(cuid())
-  email                     String                @unique
+  id                        String                 @id @default(cuid())
+  email                     String                 @unique
   password                  String
   role                      Role
-  isEmailVerified           Boolean               @default(false)
+  isEmailVerified           Boolean                @default(false)
   // True when `email` is a reserved non-routable placeholder (see
   // utils/placeholderEmail.ts) minted because Sign in with Apple withheld the
   // real address on a repeat authorization. Onboarding forces the user to add +
   // verify a real email; verifyEmailOtp clears this.
-  emailIsPlaceholder        Boolean               @default(false)
-  isPhoneVerified           Boolean               @default(false)
-  createdAt                 DateTime              @default(now())
-  updatedAt                 DateTime              @updatedAt
-  phone                     String?               @unique
-  isOnboarded               Boolean               @default(false)
-  isActive                  Boolean               @default(true)
+  emailIsPlaceholder        Boolean                @default(false)
+  isPhoneVerified           Boolean                @default(false)
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  phone                     String?                @unique
+  isOnboarded               Boolean                @default(false)
+  isActive                  Boolean                @default(true)
   // Set only when an admin suspends this account (distinct from a user's own
   // self-deactivation, which also flips isActive false but leaves this null).
   // Login blocks outright when this is set; self-deactivated accounts still
@@ -32,36 +32,37 @@ model User {
   // Consecutive failed-password count on login — reset to 0 on a successful
   // login. Drives the admin-configurable CAPTCHA-after-suspicious-behaviour
   // trigger (see AuthService.login); not a lockout by itself.
-  failedLoginCount          Int                   @default(0)
+  failedLoginCount          Int                    @default(0)
   lastFailedLoginAt         DateTime?
   // False for accounts created purely through a social provider (Apple/Google) —
   // they hold a random unusable password. Flips true once the user sets one via
   // password reset. Drives the "don't unlink your only login method" guard.
-  hasPassword               Boolean               @default(true)
+  hasPassword               Boolean                @default(true)
   deviceId                  String?
   // Updated on socket connect/disconnect — drives the chat "Active now" / "Active Xm ago" status.
   lastSeenAt                DateTime?
   // Per-channel opt-out — checked before every push (notification.service.ts
   // sendExpoPush) and every transactional campaign email (campaign.service.ts).
   // Independent of each other; either can be off while the other stays on.
-  pushNotificationsEnabled  Boolean               @default(true)
-  emailNotificationsEnabled Boolean               @default(true)
+  pushNotificationsEnabled  Boolean                @default(true)
+  emailNotificationsEnabled Boolean                @default(true)
   businessProfile           BusinessProfile?
   creatorProfile            CreatorProfile?
   issueReports              IssueReport[]
-  sentMessages              Message[]             @relation("MessageSender")
+  sentMessages              Message[]              @relation("MessageSender")
   notifications             Notification[]
+  notificationDeliveries    NotificationDelivery[]
   otpVerifications          OtpVerification[]
   supportRequests           SupportRequest[]
-  reviewsGiven              Review[]              @relation("ReviewFrom")
-  reviewsReceived           Review[]              @relation("ReviewTo")
+  reviewsGiven              Review[]               @relation("ReviewFrom")
+  reviewsReceived           Review[]               @relation("ReviewTo")
   visitorMessages           VisitorMessage[]
-  blocksMade                Block[]               @relation("BlocksMade")
-  blocksReceived            Block[]               @relation("BlocksReceived")
+  blocksMade                Block[]                @relation("BlocksMade")
+  blocksReceived            Block[]                @relation("BlocksReceived")
   aiConversations           AiConversation[]
   sessions                  Session[]
   pushTokens                PushToken[]
-  reportsFiled              Report[]              @relation("ReportsFiled")
+  reportsFiled              Report[]               @relation("ReportsFiled")
   authAccounts              AuthAccount[]
   biometricCredentials      BiometricCredential[]
 
@@ -1930,20 +1931,50 @@ model OtpVerification {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String
-  title     String
-  body      String
-  isRead    Boolean  @default(false)
-  refId     String?
-  refType   String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  title         String
+  body          String
+  isRead        Boolean  @default(false)
+  refId         String?
+  refType       String?
+  // Set by collaboration notifications (modules/notifications/notify.ts) so a
+  // tap opens the right creator's timeline on a multi-creator campaign —
+  // refId alone is the campaign.
+  applicationId String?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, isRead])
   @@map("notifications")
+}
+
+// Dedupe ledger + delivery log for the collaboration reminder system (see
+// modules/notifications/notify.ts). A row is inserted BEFORE anything is sent:
+// the unique dedupeKey (e.g. `app:{id}:deliverable_due_24h`) is the claim, so a
+// reminder fires at most once even with overlapping sweeps or multiple API
+// instances. Reminders are never pre-scheduled — sweeps re-derive them from the
+// engagement's current state — so there is nothing to cancel when the action
+// they ask for gets done; this table only stops repeats. Read/opened state
+// lives on the linked bell Notification (isRead).
+model NotificationDelivery {
+  id             String    @id @default(cuid())
+  dedupeKey      String    @unique
+  userId         String
+  type           String
+  applicationId  String?
+  campaignId     String?
+  notificationId String?
+  pushSentAt     DateTime?
+  emailSentAt    DateTime?
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([applicationId])
+  @@map("notification_deliveries")
 }
 
 model FavoriteBusiness {

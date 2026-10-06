@@ -205,13 +205,27 @@ export type AppNotification = {
     | 'payment_refunded'
     | 'campaign_approved'
     | 'campaign_rejected'
-    | 'campaign_deleted';
+    | 'campaign_deleted'
+    | 'confirmation_pending'
+    | 'deliverable_due_24h'
+    | 'deliverable_due_3h'
+    | 'payment_pending'
+    | 'collaboration_inactive'
+    | 'revision_submitted'
+    | 'review_reminder'
+    | 'content_overdue'
+    | 'payment_expired'
+    | 'reliability_warning'
+    | 'review_pending'
+    | 'response_pending'
+    | 'deadline_risk';
   title: string;
   body: string;
   timestamp: string;
   isRead: boolean;
   refId?: string | null;
   refType?: string | null;
+  applicationId?: string | null;
   actorName?: string;
   actorAvatar?: string;
 };

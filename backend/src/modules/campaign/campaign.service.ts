@@ -17,6 +17,8 @@ import { FavoriteRepository } from '../creator/favorite.repository';
 import { AdminRepository } from '../admin/admin.repository';
 import { CategoryRepository } from '../category/category.repository';
 import { notificationService } from '../notifications/notification.service';
+import { notify, collaborationWebUrl, NotificationEvent, applicationPushWindow, applicationPushKey } from '../notifications/notify';
+import { getReminderTimings } from '../notifications/reminder-config';
 import { contractService } from '../contract/contract.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
@@ -1290,18 +1292,47 @@ export class CampaignService {
     const isFreeEvent = (campaign as any).campaignType === 'OPEN_EVENT';
     if (business) {
       analyticsService.incrProposalSubmitted(userId, business.userId);
-      notificationService.create({
+      const creatorName = creator.fullName ?? 'A creator';
+      const message = input.coverLetter?.trim() ?? '';
+      // B2: only the first application in each window pushes; the rest land in
+      // the bell and the reminder sweep sends one "N creators applied" push.
+      // Gated on reminders.enabled too: the summary push comes from the reminder
+      // sweep, so with reminders off every application must push on its own.
+      const { enabled: remindersOn, applicationPushWindowMinutes } = await getReminderTimings();
+      const pushThrottleKey = remindersOn && applicationPushWindowMinutes > 0
+        ? applicationPushKey(campaign.id, applicationPushWindow(new Date(), applicationPushWindowMinutes).index)
+        : undefined;
+      void notify({
+        pushThrottleKey,
         userId:  business.userId,
-        type:    'proposal_received',
+        type:    NotificationEvent.NEW_APPLICATION,
         title:   isFreeEvent
-          ? `${creator.fullName ?? 'A creator'} joined your event`
-          : `${creator.fullName ?? 'A creator'} submitted a proposal`,
+          ? `${creatorName} joined your event`
+          : `${creatorName} submitted a proposal`,
         body:    isFreeEvent
-          ? `${creator.fullName ?? 'A creator'} submitted a participation request for "${campaign.title}". Tap to review.`
-          : `${creator.fullName ?? 'A creator'} has submitted a proposal for "${campaign.title}"`,
+          ? `${creatorName} submitted a participation request for "${campaign.title}". Tap to review.`
+          : `${creatorName} has submitted a proposal for "${campaign.title}"`,
         refId:   campaign.id,
         refType: isFreeEvent ? 'event' : 'campaign',
-      }).catch(() => {});
+        applicationId: application.id,
+        campaignId:    campaign.id,
+        // One email per campaign per hour — a popular campaign shouldn't flood
+        // the inbox; the bell and push still show every application.
+        emailDedupeKey: `campaign:${campaign.id}:proposal_received_email:${Math.floor(Date.now() / 3_600_000)}`,
+        email: {
+          subject: `New creator application for "${campaign.title}"`,
+          heading: isFreeEvent ? 'New participation request' : 'New creator application',
+          paragraphs: [
+            `${creatorName} applied to "${campaign.title}".`,
+            ...(message ? [`"${message.length > 300 ? `${message.slice(0, 300)}…` : message}"`] : []),
+          ],
+          details: [
+            { label: 'Campaign', value: campaign.title },
+            ...(!isFreeEvent && input.proposedRate ? [{ label: 'Proposed rate', value: `NPR ${input.proposedRate.toLocaleString()}` }] : []),
+          ],
+          cta: { label: 'Review Application', url: collaborationWebUrl('BUSINESS', NotificationEvent.NEW_APPLICATION, campaign.id) },
+        },
+      });
     }
 
     notificationService.createForAdmins({
@@ -1626,14 +1657,44 @@ export class CampaignService {
           ? `Congratulations! ${business.businessName} accepted your proposal for "${campaign.title}". Payment is expected within 24 hours.`
           : `${business.businessName} has reviewed your proposal for "${campaign.title}".`;
 
-        notificationService.create({
-          userId:  creatorUserId,
-          type,
-          title,
-          body,
-          refId:   campaign.id,
-          refType: 'campaign',
-        }).catch(() => {});
+        if (status === 'ACCEPTED') {
+          const deadline = (campaign as any).deadline as Date | null | undefined;
+          void notify({
+            userId:  creatorUserId,
+            type:    NotificationEvent.COLLABORATION_SELECTED,
+            title,
+            body,
+            refId:   campaign.id,
+            refType: 'campaign',
+            applicationId: appId,
+            campaignId:    campaign.id,
+            email: {
+              subject: `You've been selected for "${campaign.title}"`,
+              heading: "You're selected!",
+              paragraphs: [
+                `${business.businessName} selected you for "${campaign.title}".`,
+                "Once they fund the collaboration you'll get a notification — then tap \"Let's Start Work\" to confirm and begin.",
+              ],
+              details: [
+                { label: 'Business', value: business.businessName ?? 'Business' },
+                { label: 'Campaign', value: campaign.title },
+                ...((campaign as any).deliverables ? [{ label: 'Deliverables', value: String((campaign as any).deliverables) }] : []),
+                { label: 'Budget', value: `NPR ${application.proposedRate.toLocaleString()}` },
+                ...(deadline ? [{ label: 'Deadline', value: new Date(deadline).toLocaleDateString('en-US', { timeZone: 'Asia/Kathmandu', dateStyle: 'medium' }) }] : []),
+              ],
+              cta: { label: 'View Collaboration', url: collaborationWebUrl('CREATOR', NotificationEvent.COLLABORATION_SELECTED, campaign.id) },
+            },
+          });
+        } else {
+          notificationService.create({
+            userId:  creatorUserId,
+            type,
+            title,
+            body,
+            refId:   campaign.id,
+            refType: 'campaign',
+          }).catch(() => {});
+        }
       }
 
       // Notify other pending applicants that the spot is filled. Requirement-
@@ -1712,12 +1773,14 @@ export class CampaignService {
       const emailMap = await this.repo.getUserEmails([creatorUserId]);
       const creatorEmail = emailMap.get(creatorUserId);
       if (creatorEmail) {
+        const { creatorConfirmWindowHours } = await getEscrowTimings();
         sendPaymentSecuredEmail(
           creatorEmail,
           (accepted.creator as any).fullName ?? 'Creator',
           campaign.title,
           business.businessName ?? 'Brand',
           campaign.budgetMin,
+          creatorConfirmWindowHours,
         ).catch(() => {});
       }
     }).catch(() => {});
@@ -2338,14 +2401,19 @@ export class CampaignService {
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: appId, axis: 'work', fromStatus: app.workStatus, toStatus: 'SUBMITTED', actorId: userId, actorType: 'CREATOR', metadata: { hasNote: !!data.note, late: wasLate, version } });
 
     const businessUserId = app.campaign.business.userId;
-    notificationService.create({
+    const isResubmission = app.workStatus === 'REVISION';
+    void notify({
       userId:  businessUserId,
-      type:    'work_submitted',
-      title:   'Work Submitted for Review',
-      body:    `${creator.fullName ?? 'Creator'} submitted deliverables for "${app.campaign.title}". Review within 5 days.`,
+      type:    isResubmission ? NotificationEvent.REVISION_SUBMITTED : NotificationEvent.DELIVERABLE_SUBMITTED,
+      title:   isResubmission ? 'Updated deliverable submitted' : 'Work Submitted for Review',
+      body:    isResubmission
+        ? `${creator.fullName ?? 'Creator'} resubmitted the "${app.campaign.title}" deliverable for review.`
+        : `${creator.fullName ?? 'Creator'} submitted deliverables for "${app.campaign.title}". Review within ${Math.round(businessReviewHours / 24) || 1} days.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch(() => {});
+      applicationId: appId,
+      campaignId:    app.campaignId,
+    });
 
     messagingService
       .sendSystemMessage(app.creatorId, app.campaign.business.id, app.campaignId, userId, 'CREATOR', 'Deliverable submitted.')

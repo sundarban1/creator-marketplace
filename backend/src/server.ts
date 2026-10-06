@@ -9,6 +9,7 @@ import { startCampaignExpiryJob } from './jobs/expireCampaigns';
 import { startSocialFollowerRefreshJob } from './jobs/refreshSocialFollowers';
 import { startCounterFlushJob } from './jobs/flushCounters';
 import { startEscrowStateMachineJob } from './jobs/escrowStateMachine';
+import { startCollaborationRemindersJob } from './jobs/collaborationReminders';
 import { startConnectIpsReconcileJob } from './jobs/reconcileConnectIps';
 import { startResourceAlertsJob } from './jobs/resourceAlerts';
 import { startPushWorker, stopPushWorker } from './workers/pushWorker';
@@ -34,6 +35,7 @@ export async function startServer(app: Express): Promise<void> {
     startSocialFollowerRefreshJob();
     startCounterFlushJob();
     startEscrowStateMachineJob();
+    startCollaborationRemindersJob();
     startConnectIpsReconcileJob();
     startResourceAlertsJob();
     startPushWorker();

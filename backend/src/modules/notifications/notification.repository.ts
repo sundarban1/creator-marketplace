@@ -8,6 +8,7 @@ export class NotificationRepository {
     body: string;
     refId?: string;
     refType?: string;
+    applicationId?: string;
   }) {
     return prisma.notification.create({ data });
   }
@@ -20,6 +21,7 @@ export class NotificationRepository {
       body: string;
       refId?: string;
       refType?: string;
+    applicationId?: string;
     }>,
   ) {
     return prisma.notification.createMany({ data });

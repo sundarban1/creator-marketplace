@@ -3,6 +3,7 @@ import prisma from '../prisma';
 import { logger } from '../config/logger';
 import { reportError, LogEvent } from '../config/observability';
 import { notificationService } from '../modules/notifications/notification.service';
+import { notify, engagementKey, collaborationWebUrl, NotificationEvent } from '../modules/notifications/notify';
 import { escrowService } from '../modules/campaign/escrow.service';
 import { getEscrowTimings, deadlineFromNow } from '../modules/campaign/escrow-config';
 import { recordCampaignEvent } from '../modules/campaign/campaign-events';
@@ -225,18 +226,41 @@ async function sweepBusinessReview(now: Date): Promise<{ reminders: number; auto
       businessReviewDueAt:          { not: null },
     },
     include: ENGAGEMENT_INCLUDE,
-  }) as (EngagementRow & { id: string })[];
+  }) as (EngagementRow & { id: string; submittedAt: Date | null; businessReviewDueAt: Date | null })[];
 
   for (const app of toRemind) {
     await prisma.application.update({ where: { id: app.id }, data: { businessReviewReminderSentAt: now } });
-    notificationService.create({
+    const creator = app.creator.fullName ?? 'Your creator';
+    const title = app.campaign.title;
+    const type = NotificationEvent.DELIVERABLE_REVIEW_PENDING;
+    // notify() never throws — awaited so a sweep run finishes its sends.
+    await notify({
       userId:  app.campaign.business.userId,
-      type:    'review_reminder',
-      title:   'A submission is waiting for your review',
-      body:    `"${app.campaign.title}" has content awaiting your review. Approve it or request changes before the review window closes.`,
+      type,
+      title:   'Submission waiting for review',
+      body:    `${creator}'s "${title}" deliverable is waiting for your review. Approve it or request changes before the review window closes.`,
       refId:   app.campaignId,
       refType: 'campaign',
-    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
+      applicationId: app.id,
+      campaignId:    app.campaignId,
+      // Per submission — businessReviewReminderSentAt is cleared on each submit.
+      dedupeKey: engagementKey(app.id, type, String(app.submittedAt?.getTime() ?? 0)),
+      email: {
+        subject: `${creator}'s "${title}" deliverable is waiting for your review`,
+        heading: 'Submission waiting for review',
+        paragraphs: [
+          `${creator} submitted their deliverable for "${title}" and is waiting for your feedback.`,
+          'Approve the work to release payment, or request changes if something needs fixing.',
+        ],
+        details: [
+          { label: 'Campaign', value: title },
+          ...(app.businessReviewDueAt
+            ? [{ label: 'Review by', value: app.businessReviewDueAt.toLocaleString('en-US', { timeZone: 'Asia/Kathmandu', dateStyle: 'medium', timeStyle: 'short' }) }]
+            : []),
+        ],
+        cta: { label: 'Review Submission', url: collaborationWebUrl('BUSINESS', type, app.campaignId) },
+      },
+    });
   }
 
   // Auto-approve — only when the admin switch is on.
