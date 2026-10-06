@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { businessService } from '@/services/business';
 import { campaignService } from '@/services/campaign';
 import { STALE } from '@/lib/queryClient';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { logger } from '@/utilities/logger';
 import { BusinessProfileView } from '@/features/business/components/BusinessProfileView';
 import { toVisitorVm, privateVisitorVm } from '@/features/business/utils/businessProfileVm';
@@ -24,6 +25,9 @@ export default function BusinessDetailScreen() {
     queryFn: () => businessService.getBusinessById(id),
     enabled: !!id,
     staleTime: STALE.profile,
+    // Always background-refresh on open (cache still renders instantly) so
+    // edits made elsewhere — web app, another device — show up.
+    refetchOnMount: 'always',
   });
   // Shared with every other screen that reads the creator's own applications
   // (no params here — the full list — so it's a distinct cache entry from the
@@ -33,6 +37,8 @@ export default function BusinessDetailScreen() {
     queryFn: () => campaignService.getMyApplications().then((r) => r.proposals),
     staleTime: STALE.list,
   });
+
+  const { refreshing, onRefresh } = usePullToRefresh(bizQuery, applicationsQuery);
 
   // Raw error text never reaches the user — logger.error ships it to Sentry,
   // BusinessProfileView shows a sanitized, translated sentence instead.
@@ -57,6 +63,8 @@ export default function BusinessDetailScreen() {
       isPrivate={isPrivate}
       vm={vm}
       onRetry={() => { void bizQuery.refetch(); }}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
       appliedCampaignIds={appliedCampaignIds}
     />
   );

@@ -155,6 +155,7 @@ export const en: BackendDict = {
     dailyEventCreationLimitReached:    (maxPerDay) => `You've reached the limit of ${maxPerDay} events created per day. Please try again tomorrow.`,
     dailyProposalLimitReached:         (maxPerDay) => `You've reached the limit of ${maxPerDay} proposals submitted per day. Please try again tomorrow.`,
     reliabilityTooLowToApply:          'Your reliability score is temporarily too low to apply to new campaigns. Complete your current commitments on time to restore it.',
+    socialAccountRequiredToApply:      'Connect at least one social media account before submitting a proposal.',
     cannotChangeFieldAfterProposals:   (field) => `Cannot change ${field} — proposals have already been submitted for this event`,
     cannotReduceCreatorsBelowConfirmed: (confirmed) => `You already have ${confirmed} confirmed creator${confirmed === 1 ? '' : 's'} working on this campaign. You cannot reduce the creator requirement below the number of active collaborations.`,
     cannotChangeEventTimeConfirmed:    'Cannot change the event time — a creator has already been confirmed for this event',

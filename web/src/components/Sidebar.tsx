@@ -27,6 +27,7 @@ import {
   History,
   ShieldCheck,
   CalendarDays,
+  CalendarHeart,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,6 +45,7 @@ const navGroups: NavGroup[] = [
       { to: '/admin/verification', label: 'Verification', icon: ShieldCheck },
       { to: '/admin/campaigns',  label: 'Events',     icon: Megaphone       },
       { to: '/admin/creator-meetups', label: 'Creator Meetups', icon: CalendarDays },
+      { to: '/admin/events',     label: 'Community Events', icon: CalendarHeart },
       { to: '/admin/categories', label: 'Categories', icon: Tag             },
       { to: '/admin/platforms',  label: 'Platforms',  icon: Share2          },
     ],

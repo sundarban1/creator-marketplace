@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pencil, Target, MapPin, Users, Smartphone, Clapperboard, Wallet, CalendarDays, ListChecks, Sparkles, CircleAlert } from 'lucide-react';
 import { useT } from '../../i18n';
 import { rupees } from '../../lib/format';
@@ -10,6 +10,8 @@ import { BRIEF_SECTIONS, sectionFilled, shownPlatform } from './briefSections';
 import { locationSummary } from './guidedModel';
 import { SaveTemplateButton } from './templates';
 import { ProvenanceTag, SuggestionNote } from './parts';
+import { EventAttachmentsEditor } from '../../events/EventAttachments';
+import type { CampaignAttachment } from '../../api/business';
 
 function fmtDate(d: string) {
   return d ? new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
@@ -44,7 +46,7 @@ function Row({ icon, label, value, provenance, onEdit, attention }: {
 }
 
 export function ReviewStep({
-  form, issues, onEdit, onPublish, onSaveExit, publishing, mode, serverError, onAnswerVisit, campaignId, beforeSaveTemplate,
+  form, issues, onEdit, onPublish, onSaveExit, publishing, mode, serverError, onAnswerVisit, campaignId, beforeSaveTemplate, onAttachmentsChange,
 }: {
   form: GuidedForm;
   issues: CampaignRuleIssue[];
@@ -58,8 +60,10 @@ export function ReviewStep({
   // Saved campaign/draft id — enables "Save as template" (§23).
   campaignId?: string | null;
   beforeSaveTemplate?: () => Promise<void>;
+  onAttachmentsChange: (next: CampaignAttachment[]) => void;
 }) {
   const t = useT();
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false);
   const blocking = issues.filter((i) => i.severity === 'required');
   const suggestions = issues.filter((i) => i.severity === 'recommended');
   const creators = form.creatorsNeeded ?? 0;
@@ -145,6 +149,11 @@ export function ReviewStep({
         />
       </div>
 
+      {/* Reference images / PDF briefs — last thing before publishing. */}
+      <div className="mt-6 rounded-2xl border border-line bg-surface p-4 sm:p-5">
+        <EventAttachmentsEditor value={form.brief.attachments ?? []} onChange={onAttachmentsChange} onBusyChange={setAttachmentsBusy} />
+      </div>
+
       {blocking.length > 0 && (
         <div className="mt-6 rounded-2xl border border-warning/30 bg-warning-soft/40 p-4">
           <p className="flex items-center gap-2 text-[14px] font-semibold text-ink"><CircleAlert size={16} className="text-warning" />{t('guided.beforePublish')}</p>
@@ -169,7 +178,7 @@ export function ReviewStep({
         <Button type="button" variant="ghost" onClick={onSaveExit} disabled={publishing}>
           {mode === 'edit' ? t('guided.cancel') : t('guided.saveExit')}
         </Button>
-        <Button type="button" size="lg" onClick={onPublish} loading={publishing} disabled={blocking.length > 0 || visitUnknown}>
+        <Button type="button" size="lg" onClick={onPublish} loading={publishing} disabled={blocking.length > 0 || visitUnknown || attachmentsBusy} title={attachmentsBusy ? t('biz.attachmentsWaitUpload') : undefined}>
           {mode === 'edit' ? t('guided.saveChanges') : t('guided.publish')}
         </Button>
       </div>

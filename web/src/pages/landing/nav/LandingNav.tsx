@@ -141,7 +141,7 @@ export function LandingNav() {
 
             <nav className="hidden items-center gap-1 lg:flex">
               {NAV_LINKS.map((l) => {
-                const active = l.to ? pathname === l.to : activeSection === l.id;
+                const active = l.to ? pathname === l.to || pathname.startsWith(`${l.to}/`) : activeSection === l.id;
                 const cls = `rounded-full px-3.5 py-1.5 text-[15px] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lp-glow ${
                   active
                     ? 'bg-gradient-to-r from-lp-brinjal via-[#8B5CF6] to-lp-orange text-white shadow-sm'

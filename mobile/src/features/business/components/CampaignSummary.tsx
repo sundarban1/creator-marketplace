@@ -14,7 +14,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import type { TFn } from '@/context/LanguageContext';
 import { EVENT_LOADING_SVG } from '@/lib/eventLoadingSvg';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { sc } from '@/features/business/components/CampaignFormControls';
 
 // Components used on the confirm/review recap screens of the create-campaign
@@ -88,7 +88,7 @@ const lh = StyleSheet.create({
   // sit among the other cards on the home feed.
   wrap:            { borderRadius: RADIUS.lg, ...SHADOW.raised },
   card:            { borderRadius: RADIUS.lg, overflow: 'hidden' },
-  image:           { width: '100%', height: 160 },
+  image:           { width: '100%', aspectRatio: FEATURE_IMAGE_ASPECT },
   body:            { padding: 14, gap: 6 },
   categoryPill:    { alignSelf: 'flex-start', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 3 },
   categoryPillText:{ fontSize: 11, fontFamily: F.bold },

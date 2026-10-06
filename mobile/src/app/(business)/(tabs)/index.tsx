@@ -17,7 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { F, FONT_SIZE, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, FONT_SIZE, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   campaignCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, paddingRight: SPACING.lg + 20, overflow: 'hidden' },
 
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
-  thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+  thumb: { width: 96, aspectRatio: FEATURE_IMAGE_ASPECT, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   titleSection: { flex: 1, gap: 6 },
   eventTitle: { fontSize: 16, fontFamily: F.bold, lineHeight: 24 },
   tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },

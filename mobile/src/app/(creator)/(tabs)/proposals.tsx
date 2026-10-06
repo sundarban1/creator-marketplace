@@ -23,7 +23,7 @@ import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
 import { campaignService } from '@/services/campaign';
-import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -518,8 +518,8 @@ const styles = StyleSheet.create({
   // CampaignListItem's cardHeader/thumb/titleSection/tagContainer/tagBadge
   // (the home feed's card) instead of the old cramped single-row layout.
   cardHeader:   { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  thumbColumn:  { width: 60, alignItems: 'center', gap: 5, flexShrink: 0 },
-  thumb:        { width: 60, height: 60, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+  thumbColumn:  { width: 96, alignItems: 'center', gap: 5, flexShrink: 0 },
+  thumb:        { width: 96, aspectRatio: FEATURE_IMAGE_ASPECT, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   thumbInitials:{ fontSize: 18, fontFamily: F.bold },
   submittedText:{ fontSize: 10, fontFamily: F.semibold, lineHeight: lineHeightFor(10), textAlign: 'center' },
   titleSection: { flex: 1, gap: 4 },

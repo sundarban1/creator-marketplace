@@ -9,13 +9,12 @@ import { LogBox, Platform, SafeAreaView, ScrollView, StyleSheet, Text, Touchable
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   useFonts,
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-  Poppins_700Bold_Italic,
-  Poppins_800ExtraBold,
-} from '@expo-google-fonts/poppins';
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_600SemiBold_Italic,
+  DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { AuthProvider } from '@/context/AuthContext';
 import { useAuth, hasSignedInThisLaunch } from '@/context/AuthContext';
@@ -25,6 +24,7 @@ import { AppThemeProvider, useAppColors, useIsDark } from '@/context/ThemeContex
 import { NotificationProvider } from '@/context/NotificationContext';
 import { PlatformSettingsProvider, usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { SplashScreen } from '@/components/SplashScreen';
+import { ImageCropHost } from '@/components/ImageCropModal';
 import { BiometricGateScreen } from '@/components/BiometricGateScreen';
 import { BiometricEnrollPrompt } from '@/components/BiometricEnrollPrompt';
 import { ForceUpdateScreen } from '@/components/ForceUpdateScreen';
@@ -455,14 +455,13 @@ function RootLayout() {
   // finishes loading async, on whichever screen happens to use it first in a
   // session (this is what caused chat's composer icons to intermittently pop in
   // a beat after the message list, since it's the icons that were blank, not the
-  // surrounding layout — the message text uses Poppins, already preloaded here).
+  // surrounding layout — the message text uses DM Sans, already preloaded here).
   const [fontsLoaded, fontError] = useFonts({
-    'Poppins-Regular':    Poppins_400Regular,
-    'Poppins-Medium':     Poppins_500Medium,
-    'Poppins-SemiBold':   Poppins_600SemiBold,
-    'Poppins-Bold':       Poppins_700Bold,
-    'Poppins-BoldItalic': Poppins_700Bold_Italic,
-    'Poppins-ExtraBold':  Poppins_800ExtraBold,
+    'DMSans-Regular':        DMSans_400Regular,
+    'DMSans-Medium':         DMSans_500Medium,
+    'DMSans-SemiBold':       DMSans_600SemiBold,
+    'DMSans-SemiBoldItalic': DMSans_600SemiBold_Italic,
+    'DMSans-Bold':           DMSans_700Bold,
     ...FontAwesome5.font,
   });
 
@@ -496,6 +495,8 @@ function RootLayout() {
               <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
                 <View style={{ flex: 1 }}>
                   <RootLayoutInner />
+                  {/* Crop step for aspect-bound uploads (utilities/uploadImage.ts). */}
+                  <ImageCropHost />
                   <SplashScreen />
                 </View>
               </PersistQueryClientProvider>

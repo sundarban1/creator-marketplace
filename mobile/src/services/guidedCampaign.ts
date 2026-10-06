@@ -21,7 +21,7 @@ export interface CampaignBrief {
   content?: { keyMessages?: string[]; talkingPoints?: string[]; mentions?: string[]; contentStyle?: string; dos?: string[]; donts?: string[]; productInfo?: string; creatorsVisit?: boolean | null };
   commercial?: { usageRights?: string; licensingDays?: number | null; exclusivity?: boolean; exclusivityDays?: number | null };
   approval?: { draftRequired?: boolean; revisionRounds?: number | null; approvalDeadline?: string | null; reportingRequired?: boolean; notes?: string };
-  attachments?: { url: string; name: string }[];
+  attachments?: CampaignAttachment[];
 }
 
 /** Raw campaign as the API returns it (fields the guided creator reads). */
@@ -205,4 +205,13 @@ export const guidedCampaignService = {
   async platforms(): Promise<string[]> {
     return (await request<string[]>('GET', '/api/campaigns/platforms')).data;
   },
+};
+
+/** Reference image / PDF on an event (brief.attachments). kind etc. absent on older rows. */
+export type CampaignAttachment = {
+  url: string;
+  name: string;
+  kind?: 'IMAGE' | 'PDF';
+  mimeType?: string;
+  sizeBytes?: number;
 };

@@ -141,6 +141,7 @@ export interface BackendDict {
     dailyEventCreationLimitReached: (maxPerDay: number) => string;
     dailyProposalLimitReached: (maxPerDay: number) => string;
     reliabilityTooLowToApply: string;
+    socialAccountRequiredToApply: string;
     cannotChangeFieldAfterProposals: (field: string) => string;
     cannotReduceCreatorsBelowConfirmed: (confirmed: number) => string;
     cannotChangeEventTimeConfirmed: string;

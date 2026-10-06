@@ -6,6 +6,8 @@ import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
+import { storeCampaignAttachment } from './campaign-attachments';
+import { assertCampaignAttachmentSize } from '../../middleware/upload';
 import { env, frontendBaseUrl } from '../../config/env';
 import { logger } from '../../config/logger';
 import { LogEvent } from '../../config/observability';
@@ -29,6 +31,16 @@ export class CampaignController {
         FEATURE_IMAGE_TRANSFORMATION,
       );
       success(res, { imageUrl }, 'Image uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async uploadAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError(getDict().campaign.noImageFileProvided, HttpStatus.BAD_REQUEST);
+      assertCampaignAttachmentSize(req.file, req.language);
+      success(res, await storeCampaignAttachment(req.user!.id, req.file), 'Attachment uploaded', 201);
     } catch (err) {
       next(err);
     }

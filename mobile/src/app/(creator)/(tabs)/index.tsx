@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -23,10 +23,11 @@ import { creatorService, type ApiProviderMember } from '@/services/creator';
 import { campaignService } from '@/services/campaign';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { STALE } from '@/lib/queryClient';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
 import type { Campaign } from '@/types';
-import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
@@ -99,6 +100,9 @@ export default function HomeScreen() {
   });
 
   useRefetchOnFocusIfStale(profileQuery, applicationsQuery, recommendedQuery, teamQuery);
+
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTopOnTabPress('index', () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
 
   const proposals = applicationsQuery.data?.proposals ?? NO_PROPOSALS;
   const yourWork = proposals.filter((a) => a.workStatus === 'IN_PROGRESS' || a.workStatus === 'SUBMITTED');
@@ -289,6 +293,7 @@ export default function HomeScreen() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scroll}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
@@ -712,7 +717,7 @@ const styles = StyleSheet.create({
   railScroll: { gap: SPACING.md, paddingRight: SPACING.xs },
 
   workCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.md },
-  workThumb: { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 },
+  workThumb: { width: 64, aspectRatio: FEATURE_IMAGE_ASPECT, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 },
   workTitle: { fontSize: FONT_SIZE.md, fontFamily: F.semibold },
   workBrand: { fontSize: FONT_SIZE.sm, fontFamily: F.regular, marginTop: 2 },
   workStatusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 5 },

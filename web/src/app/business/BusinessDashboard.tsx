@@ -208,7 +208,7 @@ export function BusinessDashboard() {
                     to={`/business/events/${c.id}`}
                     className="group flex items-center gap-4 rounded-xl px-2 py-3 transition-colors hover:bg-surface-dim"
                   >
-                    <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-surface-dim">
+                    <div className="aspect-[16/9] w-20 flex-shrink-0 overflow-hidden rounded-lg bg-surface-dim">
                       {c.featureImageUrl ? (
                         <img src={c.featureImageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                       ) : (

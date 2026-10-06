@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { creatorService } from '@/services/creator';
 import { STALE } from '@/lib/queryClient';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { CreatorProfileView } from '@/features/creator/components/CreatorProfileView';
 import { toVisitorVm, privateVisitorVm } from '@/features/creator/utils/creatorProfileVm';
 
@@ -19,7 +20,12 @@ export default function CreatorDetailScreen() {
     queryFn: () => creatorService.getCreatorPublicProfile(id),
     enabled: !!id,
     staleTime: STALE.profile,
+    // Always background-refresh on open (cache still renders instantly) so
+    // edits made elsewhere — web app, another device — show up.
+    refetchOnMount: 'always',
   });
+
+  const { refreshing, onRefresh } = usePullToRefresh(q);
 
   const profile = q.data;
   const isPrivate = !!profile?.isPrivate;
@@ -33,6 +39,8 @@ export default function CreatorDetailScreen() {
       error={q.isError && !profile}
       isPrivate={isPrivate}
       onRetry={() => { void q.refetch(); }}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
       viaTeam={viaTeam === '1'}
     />
   );

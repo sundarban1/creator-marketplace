@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { CampaignController } from './campaign.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { uploadImage, uploadDeliverableFile } from '../../middleware/upload';
+import { uploadImage, uploadDeliverableFile, uploadCampaignAttachment } from '../../middleware/upload';
 import {
   createCampaignSchema,
   updateCampaignSchema,
@@ -53,6 +53,17 @@ router.post(
   authorize('BUSINESS'),
   uploadImage.single('image'),
   ctrl.uploadFeatureImage.bind(ctrl)
+);
+
+// Reference image (PNG/JPG/WebP) or PDF attached while creating/editing an
+// event. Returns { url, name, kind, mimeType, sizeBytes }; the client keeps it
+// in brief.attachments and saves it with the campaign.
+router.post(
+  '/attachments',
+  authenticate,
+  authorize('BUSINESS'),
+  uploadCampaignAttachment.single('file'),
+  ctrl.uploadAttachment.bind(ctrl)
 );
 
 /**

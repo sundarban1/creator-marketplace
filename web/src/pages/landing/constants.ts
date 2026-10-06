@@ -31,12 +31,13 @@ export const SECTION_IDS = {
 // `id` links scroll to a section on the landing page; `to` links navigate to a
 // standalone route (react-router) instead.
 export const NAV_LINKS: {
-  key: 'discover' | 'forCreators' | 'forBusinesses' | 'howItWorks' | 'about' | 'trustSafety';
+  key: 'discover' | 'events' | 'forCreators' | 'forBusinesses' | 'howItWorks' | 'about' | 'trustSafety';
   id?: string;
   to?: string;
   offset?: number;
 }[] = [
   { key: 'discover', id: SECTION_IDS.liveOnKolab },
+  { key: 'events', to: '/community/events' },
   { key: 'forCreators', id: SECTION_IDS.creatorStory },
   { key: 'forBusinesses', id: SECTION_IDS.businessStory },
   { key: 'howItWorks', id: SECTION_IDS.security },

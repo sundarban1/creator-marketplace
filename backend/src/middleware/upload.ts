@@ -16,6 +16,18 @@ const UPLOAD_ERROR_MESSAGES = {
     en: 'Only JPG, PNG, PDF, and DOCX files are allowed',
     ne: 'JPG, PNG, PDF, र DOCX फाइलहरू मात्र स्वीकृत छन्',
   },
+  campaignAttachmentType: {
+    en: 'Only PNG, JPG, WebP images and PDF files are allowed',
+    ne: 'PNG, JPG, WebP फोटो र PDF फाइलहरू मात्र स्वीकृत छन्',
+  },
+  campaignAttachmentImageSize: {
+    en: 'Images must be 5 MB or smaller',
+    ne: 'फोटो ५ MB वा सोभन्दा सानो हुनुपर्छ',
+  },
+  campaignAttachmentPdfSize: {
+    en: 'PDF files must be 10 MB or smaller',
+    ne: 'PDF फाइल १० MB वा सोभन्दा सानो हुनुपर्छ',
+  },
   chatFileType: {
     en: 'This file type is not supported',
     ne: 'यो फाइल प्रकार समर्थित छैन',
@@ -59,6 +71,22 @@ export const uploadChatImage = multer({
   },
 });
 
+// Community event photos (admin → Community Events): cover, gallery, speaker
+// headshots, partner logos. Event photos straight off a phone routinely exceed
+// the 5 MB general cap, so this allows 10 MB per file; Cloudinary downsizes on
+// upload (see community-event.controller.ts).
+export const uploadEventImages = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: CHAT_IMAGE_MAX_BYTES, files: 20 },
+  fileFilter(req, file, cb) {
+    if (ALLOWED_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new AppError(uploadErrorMessage('imageType', req.language), HttpStatus.BAD_REQUEST) as unknown as null, false);
+    }
+  },
+});
+
 // Campaign deliverables (images + PDF/DOCX only — narrower than uploadChatFile's
 // allowlist above, and a much smaller cap since these are proxied through this
 // server rather than uploaded direct-to-Cloudinary like deliverable videos).
@@ -77,6 +105,34 @@ export const uploadDeliverableFile = multer({
       cb(null, true);
     } else {
       cb(new AppError(uploadErrorMessage('deliverableFileType', req.language), HttpStatus.BAD_REQUEST) as unknown as null, false);
+    }
+  },
+});
+
+// Reference images + PDF briefs a business attaches while creating an event
+// (Campaign.brief.attachments). Stored via campaign-attachments.ts. multer's
+// cap is the larger (PDF) limit; the tighter image limit is checked after.
+export const CAMPAIGN_ATTACHMENT_ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+export const CAMPAIGN_ATTACHMENT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;  // 5 MB
+export const CAMPAIGN_ATTACHMENT_PDF_MAX_BYTES   = 10 * 1024 * 1024; // 10 MB
+const CAMPAIGN_ATTACHMENT_MAX_BYTES = CAMPAIGN_ATTACHMENT_PDF_MAX_BYTES;
+
+export function assertCampaignAttachmentSize(file: Express.Multer.File, lang: string): void {
+  const isPdf = file.mimetype === 'application/pdf';
+  const max = isPdf ? CAMPAIGN_ATTACHMENT_PDF_MAX_BYTES : CAMPAIGN_ATTACHMENT_IMAGE_MAX_BYTES;
+  if (file.size > max) {
+    throw new AppError(uploadErrorMessage(isPdf ? 'campaignAttachmentPdfSize' : 'campaignAttachmentImageSize', lang), HttpStatus.BAD_REQUEST);
+  }
+}
+
+export const uploadCampaignAttachment = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: CAMPAIGN_ATTACHMENT_MAX_BYTES },
+  fileFilter(req, file, cb) {
+    if (CAMPAIGN_ATTACHMENT_ALLOWED_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new AppError(uploadErrorMessage('campaignAttachmentType', req.language), HttpStatus.BAD_REQUEST) as unknown as null, false);
     }
   },
 });

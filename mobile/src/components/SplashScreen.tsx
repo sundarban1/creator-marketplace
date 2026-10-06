@@ -79,7 +79,7 @@ export function SplashScreen() {
 
       {/* Logo — static, matching the native splash frame it hands off from */}
       <View style={styles.logoCard}>
-        <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} contentFit="contain" />
+        <Image source={require('@/assets/images/kolab.svg')} style={styles.logoImage} contentFit="contain" />
       </View>
 
       {/* Tagline — sits just below the logo card, absolutely positioned off
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   logoImage: {
     width: 200,
-    height: 200 * (428 / 1200),
+    height: 200 * (102 / 375), // kolab.svg viewBox aspect
   },
   textBlock: {
     position: 'absolute',

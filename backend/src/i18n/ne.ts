@@ -155,6 +155,7 @@ export const ne: BackendDict = {
     dailyEventCreationLimitReached:    (maxPerDay) => `तपाईंले प्रतिदिन ${maxPerDay} इभेन्ट सिर्जना गर्ने सीमा पूरा गर्नुभयो। कृपया भोलि फेरि प्रयास गर्नुहोस्।`,
     dailyProposalLimitReached:         (maxPerDay) => `तपाईंले प्रतिदिन ${maxPerDay} प्रस्ताव पेश गर्ने सीमा पूरा गर्नुभयो। कृपया भोलि फेरि प्रयास गर्नुहोस्।`,
     reliabilityTooLowToApply:          'तपाईंको भरपर्दोपन स्कोर अहिलेको लागि नयाँ क्याम्पेनमा आवेदन दिन धेरै कम छ। यसलाई पुनर्स्थापित गर्न आफ्ना हालका प्रतिबद्धताहरू समयमै पूरा गर्नुहोस्।',
+    socialAccountRequiredToApply:      'प्रपोजल पठाउनुअघि कम्तीमा एउटा सोसल मिडिया खाता जोड्नुहोस्।',
     cannotChangeFieldAfterProposals:   (field) => `${field} परिवर्तन गर्न सकिँदैन — यो इभेन्टका लागि प्रस्तावहरू पहिले नै पेश भइसकेका छन्`,
     cannotReduceCreatorsBelowConfirmed: (confirmed) => `यस क्याम्पेनमा पहिले नै ${confirmed} जना क्रिएटर पुष्टि भई काम गर्दै छन्। सक्रिय सहकार्यको संख्याभन्दा तल क्रिएटर आवश्यकता घटाउन सकिँदैन।`,
     cannotChangeEventTimeConfirmed:    'इभेन्टको समय परिवर्तन गर्न सकिँदैन — यस इभेन्टका लागि एक क्रियेटर पहिले नै पुष्टि भइसकेका छन्',

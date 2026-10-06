@@ -17,7 +17,7 @@ type Role = 'CREATOR' | 'BUSINESS';
 const LANG_LABELS = { en: 'Eng', ne: 'ने' } as const;
 
 // Same logo mark the login header carries.
-const LOGO = require('@/assets/images/logo.png');
+const LOGO = require('@/assets/images/kolab.svg');
 
 // Photo band fronting each choice card — a creator-at-work shot for the "offer
 // your skills" side, a business scene for the "hire" side.
@@ -185,7 +185,7 @@ function useStyles(C: ReturnType<typeof useAppColors>) {
     // ── Header ── mirrors login.tsx's pinned row.
     headerRow:   { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, paddingBottom: SPACING.lg },
     headerBrand: { flex: 1 },
-    headerLogo:  { width: 84, height: 28 },
+    headerLogo:  { width: 84, height: 84 * (102 / 375) }, // kolab.svg viewBox aspect
     langChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, minHeight: 36, justifyContent: 'center' },
     langChipText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
 

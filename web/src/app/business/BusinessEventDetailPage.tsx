@@ -4,6 +4,7 @@ import { ArrowLeft, Pencil, MessageCircle, Check, Gift } from 'lucide-react';
 import { useT, type TFn } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { CampaignBriefSections } from '../events/CampaignBriefSections';
+import { EventAttachmentsView } from '../events/EventAttachments';
 import { SaveTemplateButton } from './guided/templates';
 import { rupees, perCreatorBudget } from '../lib/format';
 import {
@@ -439,7 +440,7 @@ export function BusinessEventDetailPage() {
           <img
             src={c.featureImageUrl}
             alt=""
-            className="mb-5 h-56 w-full rounded-xl object-cover shadow-[0_16px_32px_-20px_rgba(23,20,33,0.35)]"
+            className="mb-5 aspect-[16/9] w-full rounded-xl object-cover shadow-[0_16px_32px_-20px_rgba(23,20,33,0.35)]"
           />
         )}
 
@@ -520,6 +521,11 @@ export function BusinessEventDetailPage() {
           </>
         )}
         {isPaid && <CampaignBriefSections c={c} Section={BriefSection} />}
+        {!!c.brief?.attachments?.length && (
+          <BriefSection title={t('biz.attachmentsHeading')}>
+            <EventAttachmentsView attachments={c.brief.attachments} />
+          </BriefSection>
+        )}
         {isPaid && (
           <div className="mt-6 border-t border-line/70 pt-5">
             <SaveTemplateButton campaignId={c.id} defaultName={c.title} variant="secondary" />

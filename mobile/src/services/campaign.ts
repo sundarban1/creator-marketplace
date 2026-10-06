@@ -1,6 +1,7 @@
 import { request, API_BASE, ensureFreshAccessToken, getApiLanguage } from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign, EventQuestion } from '@/types';
+import type { CampaignAttachment, CampaignBrief } from '@/services/guidedCampaign';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
@@ -290,6 +291,58 @@ export function toCampaign(api: ApiCampaign): Campaign {
   };
 }
 
+// Single-file multipart POST via XHR instead of fetch — XHR is what lets
+// onProgress report real upload percentage; the optional AbortSignal lets
+// callers cancel an in-flight upload. Since this bypasses lib/api.ts's
+// request(), it mirrors that helper's refresh-on-401 retry itself — an access
+// token that expired while the user was picking a file would otherwise
+// surface as a raw "Token has expired" error with no retry.
+async function uploadFileWithProgress<T>(
+  path: string,
+  file: PickedFile,
+  signal?: AbortSignal,
+  onProgress?: (fraction: number) => void,
+): Promise<T> {
+  const form = new FormData();
+  form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
+
+  type Result = { status: number; json: { success: boolean; data: T; message?: string } | null };
+  const send = (token: string) => new Promise<Result>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE}${path}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('X-Language', getApiLanguage());
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      try {
+        resolve({ status: xhr.status, json: JSON.parse(xhr.responseText) });
+      } catch {
+        resolve({ status: xhr.status, json: null });
+      }
+    };
+    xhr.onerror = () => reject(new Error('Upload failed'));
+    xhr.onabort = () => reject(Object.assign(new Error('Upload cancelled'), { name: 'AbortError' }));
+
+    if (signal) {
+      if (signal.aborted) { xhr.abort(); return; }
+      signal.addEventListener('abort', () => xhr.abort());
+    }
+    xhr.send(form);
+  });
+
+  let { status, json } = await send(storage.get(ACCESS_TOKEN_KEY) ?? '');
+  if (status === 401 && storage.get(REFRESH_TOKEN_KEY)) {
+    const fresh = await ensureFreshAccessToken();
+    if (fresh) ({ status, json } = await send(fresh));
+  }
+
+  if (status >= 200 && status < 300 && json) return json.data;
+  throw new Error(json?.message ?? 'Upload failed');
+}
+
 function toApiStatus(s: Campaign['status']): 'ACTIVE' | 'PAUSED' | 'CLOSED' {
   if (s === 'active') return 'ACTIVE';
   if (s === 'closed') return 'CLOSED';
@@ -449,6 +502,8 @@ export const campaignService = {
 
   async create(data: {
     title: string;
+    // Reference images / PDFs live in brief.attachments (whole-brief replace on update).
+    brief?: CampaignBrief;
     description: string;
     template?: string;
     featureImageUrl?: string;
@@ -529,6 +584,8 @@ export const campaignService = {
 
   async update(id: string, data: {
     title?: string;
+    // Reference images / PDFs live in brief.attachments (whole-brief replace on update).
+    brief?: CampaignBrief;
     description?: string;
     featureImageUrl?: string | null;
     template?: string;
@@ -708,49 +765,17 @@ export const campaignService = {
     signal?: AbortSignal,
     onProgress?: (fraction: number) => void,
   ): Promise<DeliverableFile> {
-    const form = new FormData();
-    form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
+    return uploadFileWithProgress<DeliverableFile>(`/api/campaigns/applications/${appId}/deliverables/file`, file, signal, onProgress);
+  },
 
-    type Result = { status: number; json: { success: boolean; data: DeliverableFile; message?: string } | null };
-    const send = (token: string) => new Promise<Result>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${API_BASE}/api/campaigns/applications/${appId}/deliverables/file`);
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.setRequestHeader('X-Language', getApiLanguage());
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) onProgress?.(e.loaded / e.total);
-      };
-      xhr.onload = () => {
-        try {
-          resolve({ status: xhr.status, json: JSON.parse(xhr.responseText) });
-        } catch {
-          resolve({ status: xhr.status, json: null });
-        }
-      };
-      xhr.onerror = () => reject(new Error('Upload failed'));
-      xhr.onabort = () => reject(Object.assign(new Error('Upload cancelled'), { name: 'AbortError' }));
-
-      if (signal) {
-        if (signal.aborted) { xhr.abort(); return; }
-        signal.addEventListener('abort', () => xhr.abort());
-      }
-      xhr.send(form);
-    });
-
-    // This uses a raw XHR (for real upload-progress events) instead of
-    // lib/api.ts's request(), so it doesn't get that helper's refresh-on-401
-    // interceptor for free — an access token that's expired/near-expiry when
-    // the creator picks a file otherwise surfaces as a raw "Token has expired"
-    // error with no retry. Mirror the same recovery here.
-    let { status, json } = await send(storage.get(ACCESS_TOKEN_KEY) ?? '');
-    if (status === 401 && storage.get(REFRESH_TOKEN_KEY)) {
-      const fresh = await ensureFreshAccessToken();
-      if (fresh) ({ status, json } = await send(fresh));
-    }
-
-    if (status >= 200 && status < 300 && json) return json.data;
-    throw new Error(json?.message ?? 'Upload failed');
+  // Reference image / PDF a business attaches while creating or editing an
+  // event — returns the stored attachment for the form's brief.attachments.
+  async uploadCampaignAttachment(
+    file: PickedFile,
+    signal?: AbortSignal,
+    onProgress?: (fraction: number) => void,
+  ): Promise<CampaignAttachment> {
+    return uploadFileWithProgress<CampaignAttachment>('/api/campaigns/attachments', file, signal, onProgress);
   },
 
   async removeDeliverableFile(appId: string, fileId: string): Promise<void> {

@@ -1,36 +1,21 @@
 import { useEffect } from 'react';
-import { LandingLanguageProvider, useLandingLanguage } from './context/LanguageContext';
+import { LandingLanguageProvider } from './context/LanguageContext';
 import { LandingThemeProvider } from './context/ThemeContext';
-import { ThemeToggle } from './components/ThemeToggle';
 import { LandingFooter } from './nav/LandingFooter';
-import { Logo } from '../../app/ui/Logo';
+import { LandingNav } from './nav/LandingNav';
 
-// Lightweight header for standalone pages (Privacy, Terms, Support) — separate
-// from LandingNav because that one's links scroll to in-page anchors
-// (#hero, #trust, ...) that only exist on the single-page home route.
+// Same top nav as the home page (LandingNav) so About, Trust & Safety, legal
+// and SEO pages don't swap the navbar out. Off the home page there's no
+// LenisProvider, so LandingNav's section links navigate to `/` and scroll
+// there. LandingNav's header is fixed (h-16) — the spacer keeps content
+// below it. Wrapped in footer-landing-scope like PublicLayout does;
+// font-body matches the home page's root font so link widths line up.
 export function StandaloneHeader() {
-  const { lang, setLang } = useLandingLanguage();
   return (
-    <header className="border-b border-ink/10 bg-paper/80 backdrop-blur-md dark:border-white/10 dark:bg-ink/80">
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
-        <Logo className="h-9 object-contain" />
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-white">
-            {(['en', 'ne'] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={lang === l ? 'text-ink underline underline-offset-4 dark:text-white' : 'opacity-60 hover:opacity-100'}
-              >
-                {l === 'en' ? 'EN' : 'ने'}
-              </button>
-            ))}
-          </div>
-          <span aria-hidden className="h-4 w-px bg-ink/10 dark:bg-white/10" />
-          <ThemeToggle dark />
-        </div>
-      </div>
-    </header>
+    <div className="footer-landing-scope font-body">
+      <LandingNav />
+      <div aria-hidden className="h-16" />
+    </div>
   );
 }
 

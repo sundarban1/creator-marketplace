@@ -2784,3 +2784,156 @@ enum BusinessCreditsTransactionType {
   CAMPAIGN_BUDGET_SPEND
   ADJUSTMENT
 }
+
+// ─── Community Events (public CMS) ──────────────────────────────────────────
+// Kolab-run community events (meetups, workshops, …) shown on the public
+// /community/events pages and managed from admin → Community Events. Distinct
+// from Campaign (business "events" creators apply to, already at /events) and
+// from CreatorMeetup (the in-app registration/check-in flow).
+//
+// Visibility is `published` alone (a draft is simply unpublished). The public
+// Upcoming/Ongoing/Past grouping is derived from the dates in `timezone` at
+// read time — see community-event.status.ts — so nobody has to edit an event
+// just because it happened. `statusOverride` exists only for what dates can't
+// express (CANCELLED, or forcing COMPLETED/ONGOING); null = automatic.
+
+enum CommunityEventType {
+  MEETUP
+  WORKSHOP
+  TRAINING
+  NETWORKING
+  COMMUNITY_EVENT
+  OTHER
+}
+
+enum CommunityEventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+model CommunityEvent {
+  id               String                @id @default(cuid())
+  title            String
+  slug             String                @unique
+  shortDescription String
+  description      String?               @db.Text
+  eventType        CommunityEventType    @default(MEETUP)
+  statusOverride   CommunityEventStatus?
+  coverImageUrl    String?
+
+  // Stored as UTC instants; the admin enters wall-clock date/time in
+  // `timezone` and the service converts. endDateTime null = "… onwards".
+  startDateTime DateTime
+  endDateTime   DateTime?
+  timezone      String    @default("Asia/Kathmandu")
+
+  venueName String?
+  address   String?
+  city      String?
+  country   String? @default("Nepal")
+  latitude  Float?
+  longitude Float?
+  mapsUrl   String?
+  videoUrl  String?
+
+  registrationEnabled  Boolean   @default(false)
+  registrationUrl      String?
+  registrationDeadline DateTime?
+  maxAttendees         Int?
+
+  metaTitle       String?
+  metaDescription String?
+  ogImageUrl      String?
+
+  featured    Boolean   @default(false)
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images     CommunityEventImage[]
+  speakers   CommunityEventSpeaker[]
+  highlights CommunityEventHighlight[]
+  agenda     CommunityEventAgendaItem[]
+  partners   CommunityEventPartner[]
+
+  @@index([published, startDateTime])
+  @@map("community_events")
+}
+
+model CommunityEventImage {
+  id      String  @id @default(cuid())
+  eventId String
+  url     String
+  caption String?
+  order   Int     @default(0)
+
+  event CommunityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, order])
+  @@map("community_event_images")
+}
+
+model CommunityEventSpeaker {
+  id           String  @id @default(cuid())
+  eventId      String
+  name         String
+  imageUrl     String?
+  role         String?
+  organization String?
+  bio          String?
+  profileUrl   String?
+  order        Int     @default(0)
+
+  event CommunityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, order])
+  @@map("community_event_speakers")
+}
+
+model CommunityEventHighlight {
+  id          String  @id @default(cuid())
+  eventId     String
+  title       String
+  description String?
+  imageUrl    String?
+  order       Int     @default(0)
+
+  event CommunityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, order])
+  @@map("community_event_highlights")
+}
+
+model CommunityEventAgendaItem {
+  id          String  @id @default(cuid())
+  eventId     String
+  // Free-form display label ("1:00 PM") — agenda times are presentational
+  // and often approximate, so not a DateTime.
+  time        String?
+  title       String
+  description String?
+  order       Int     @default(0)
+
+  event CommunityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, order])
+  @@map("community_event_agenda_items")
+}
+
+model CommunityEventPartner {
+  id         String  @id @default(cuid())
+  eventId    String
+  name       String
+  logoUrl    String?
+  websiteUrl String?
+  order      Int     @default(0)
+
+  event CommunityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, order])
+  @@map("community_event_partners")
+}

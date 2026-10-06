@@ -32,7 +32,7 @@ async function fetchJson(url) {
 /**
  * @param {string} apiOrigin
  * @param {number} [limit]
- * @returns {Promise<{ creators: {path: string}[], businesses: {path: string}[], events: {path: string}[] }>}
+ * @returns {Promise<{ creators: {path: string}[], businesses: {path: string}[], events: {path: string}[], communityEvents: {path: string}[] }>}
  */
 export async function fetchIndexableEntities(apiOrigin, limit = DEFAULT_ENTITY_LIMIT) {
   const [creatorsRes, businessesRes, eventsRes] = await Promise.all([
@@ -62,5 +62,12 @@ export async function fetchIndexableEntities(apiOrigin, limit = DEFAULT_ENTITY_L
   const events = (Array.isArray(eventsRes.data) ? eventsRes.data : [])
     .map((e) => ({ path: `/events/${encodeURIComponent(e.slug ?? e.id)}` }));
 
-  return { creators, businesses, events };
+  // Kolab community events (/community/events/:slug) — every published one,
+  // upcoming and past. Fetched on its own and allowed to fail to [] so an API
+  // without this endpoint never drops the creator/business/event routes above.
+  const communityRes = await fetchJson(`${apiOrigin}/api/community-events`).catch(() => null);
+  const communityEvents = [...(communityRes?.data?.upcoming ?? []), ...(communityRes?.data?.past ?? [])]
+    .map((e) => ({ path: `/community/events/${encodeURIComponent(e.slug)}` }));
+
+  return { creators, businesses, events, communityEvents };
 }

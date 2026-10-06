@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { useT } from '../i18n';
 import { rupees } from '../lib/format';
-import { applyToCampaign, type CreatorApplication } from '../api/creator';
+import { applyToCampaign, fetchSocialAccounts, type CreatorApplication } from '../api/creator';
 import { ApiError } from '../lib/apiClient';
 import { generateCoverLetterTemplate } from '../lib/coverLetterTemplates';
 import { Modal } from '../ui/Modal';
@@ -40,6 +41,9 @@ export function ApplyProposalModal({
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ cover?: string; rate?: string }>({});
   const [submitting, setSubmitting] = useState(false);
+  // Set when the creator has no connected social account — re-checked on
+  // every submit, so disconnecting the last account brings it back.
+  const [needsSocial, setNeedsSocial] = useState(false);
 
   const regenerateCoverLetter = () => {
     setCoverLetter(generateCoverLetterTemplate(event.category, event.title, event.business?.businessName ?? ''));
@@ -57,6 +61,7 @@ export function ApplyProposalModal({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    setNeedsSocial(false);
 
     const fe: typeof fieldErrors = {};
     if (coverLetter.trim().length < MIN_COVER) fe.cover = t('creatorEvents.coverLetterTooShort');
@@ -82,6 +87,14 @@ export function ApplyProposalModal({
 
     setSubmitting(true);
     try {
+      // Businesses judge a proposal by the creator's actual content, so at
+      // least one social account must be connected (backend enforces too).
+      const accounts = await fetchSocialAccounts();
+      if (accounts.length === 0) {
+        setNeedsSocial(true);
+        return;
+      }
+
       const application = await applyToCampaign(event.id, {
         coverLetter: coverLetter.trim(),
         proposedRate: numRate,
@@ -90,7 +103,9 @@ export function ApplyProposalModal({
       });
       onApplied(application);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
+      if (err instanceof ApiError && err.code === 'SOCIAL_ACCOUNT_REQUIRED') {
+        setNeedsSocial(true);
+      } else if (err instanceof ApiError && err.status === 409) {
         setError(t('creatorEvents.alreadyApplied'));
       } else {
         setError(err instanceof Error ? err.message : t('common.somethingWrong'));
@@ -119,6 +134,18 @@ export function ApplyProposalModal({
     >
       <form id="apply-form" onSubmit={handleSubmit} noValidate className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
+        {needsSocial && (
+          <Alert tone="error">
+            <span className="block font-semibold">{t('creatorEvents.socialRequiredTitle')}</span>
+            <span className="mt-1 block">{t('creatorEvents.socialRequiredBody')}</span>
+            <Link
+              to="/creator/profile?connect=social"
+              className="mt-2 inline-block font-semibold text-violet-dark underline"
+            >
+              {t('creatorEvents.socialRequiredCta')}
+            </Link>
+          </Alert>
+        )}
 
         <Textarea
           label={t('creatorEvents.coverLetter')}

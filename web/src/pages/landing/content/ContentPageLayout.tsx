@@ -24,8 +24,8 @@ interface ContentPageLayoutProps {
   seo: SEOProps;
   /** Full chain including the current page — first item should always be Home ("/"). */
   breadcrumb: BreadcrumbItem[];
-  icon: LucideIcon;
-  eyebrow: string;
+  icon?: LucideIcon;
+  eyebrow?: string;
   /** Renders as the page's single <h1>. */
   heading: string;
   intro?: string;
@@ -34,8 +34,8 @@ interface ContentPageLayoutProps {
   faqs?: FAQItem[];
   related?: RelatedLink[];
   cta: { heading: string; sub: string };
-  /** Show the About-page style "Back to home" link instead of the visual breadcrumb (schema is still emitted). */
-  backToHome?: boolean;
+  /** Hide the visual breadcrumb (schema is still emitted). */
+  hideBreadcrumb?: boolean;
 }
 
 // Shared shell for every /*-nepal, /content-creators, /brands, etc. SEO
@@ -49,7 +49,7 @@ interface ContentPageLayoutProps {
 // Theme is different: nothing above this needs to read it before mount, so
 // this component provides its own <LandingThemeProvider> around the whole
 // tree (LandingFooter below reads it) — callers don't need to wrap one.
-export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, heading, intro, children, faqs, related, cta, backToHome }: ContentPageLayoutProps) {
+export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, heading, intro, children, faqs, related, cta, hideBreadcrumb }: ContentPageLayoutProps) {
   const { d } = useLandingLanguage();
 
   useEffect(() => {
@@ -69,23 +69,23 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
 
         <main className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
           <motion.div initial="hidden" animate="show" variants={stagger()}>
-            {backToHome ? (
-              <motion.p variants={fadeUp} className="font-serif text-sm italic text-ink-soft dark:text-white">
-                <a href="/" className="hover:text-ink dark:hover:text-white">{d.legalPages.backToHome}</a>
-              </motion.p>
-            ) : (
+            {!hideBreadcrumb && (
               <motion.div variants={fadeUp}>
                 <Breadcrumb items={breadcrumb} />
               </motion.div>
             )}
 
-            <motion.span variants={fadeUp} className="mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-violet/10 text-violet shadow-[0_4px_12px_-4px_rgba(123,92,245,0.35)]">
-              <Icon size={22} />
-            </motion.span>
+            {Icon && (
+              <motion.span variants={fadeUp} className="mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-violet/10 text-violet shadow-[0_4px_12px_-4px_rgba(123,92,245,0.35)] first:mt-0">
+                <Icon size={22} />
+              </motion.span>
+            )}
 
-            <motion.p variants={fadeUp} className="mt-5 font-serif text-base italic text-ink-soft dark:text-white">{eyebrow}</motion.p>
+            {eyebrow && (
+              <motion.p variants={fadeUp} className="mt-5 font-serif text-base italic text-ink-soft first:mt-0 dark:text-white">{eyebrow}</motion.p>
+            )}
 
-            <motion.h1 variants={fadeUp} className="text-balance mt-3 font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl dark:text-white">
+            <motion.h1 variants={fadeUp} className="text-balance mt-3 first:mt-0 font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl dark:text-white">
               {heading}
             </motion.h1>
 

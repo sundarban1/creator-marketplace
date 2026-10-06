@@ -9,6 +9,7 @@ import { API_BASE, assertOnline, fetchWithTimeout, getApiLanguage, UPLOAD_TIMEOU
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
+import { requestImageCrop } from '@/components/ImageCropModal';
 
 export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' | 'business-cover' | 'creator-citizenship' | 'creator-pan' | 'creator-company-reg' | 'business-pan' | 'business-company-reg' | 'business-identity' | 'campaign-feature' | 'portfolio-item';
 
@@ -98,7 +99,21 @@ export async function compressImage(
   }
 }
 
-async function pickFromLibrary(aspect?: [number, number]): Promise<ImagePicker.ImagePickerAsset | null> {
+// Aspect-bound targets are framed in our own <ImageCropHost /> rather than the
+// picker's `allowsEditing` editor — iOS ignores `aspect` there and always crops
+// square, so covers/event images came out the wrong shape on iPhone.
+async function cropToAspect(
+  asset: ImagePicker.ImagePickerAsset,
+  aspect: [number, number],
+): Promise<ImagePicker.ImagePickerAsset | null> {
+  const rect = await requestImageCrop({ uri: asset.uri, width: asset.width, height: asset.height, aspect: aspect[0] / aspect[1] });
+  if (!rect) return null;
+  const rendered = await ImageManipulator.manipulate(asset.uri).crop(rect).renderAsync();
+  const saved = await rendered.saveAsync({ compress: 0.92, format: SaveFormat.JPEG });
+  return { ...asset, uri: saved.uri, width: saved.width, height: saved.height, mimeType: 'image/jpeg' };
+}
+
+async function pickFromLibrary(): Promise<ImagePicker.ImagePickerAsset | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
     showPermissionDeniedAlert('Permission required', 'Please allow access to your photo library in Settings.');
@@ -106,13 +121,12 @@ async function pickFromLibrary(aspect?: [number, number]): Promise<ImagePicker.I
   }
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    ...(aspect ? { allowsEditing: true, aspect } : {}),
     quality: 0.85,
   });
   return result.canceled ? null : result.assets[0];
 }
 
-async function pickFromCamera(aspect?: [number, number]): Promise<ImagePicker.ImagePickerAsset | null> {
+async function pickFromCamera(): Promise<ImagePicker.ImagePickerAsset | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
     showPermissionDeniedAlert('Permission required', 'Please allow camera access in Settings.');
@@ -120,7 +134,6 @@ async function pickFromCamera(aspect?: [number, number]): Promise<ImagePicker.Im
   }
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ['images'],
-    ...(aspect ? { allowsEditing: true, aspect } : {}),
     quality: 0.85,
   });
   return result.canceled ? null : result.assets[0];
@@ -194,7 +207,9 @@ export async function pickAndUpload(target: UploadTarget): Promise<UploadResult 
   if (!source) return null;
 
   const { aspect } = TARGET_CONFIG[target];
-  const asset = source === 'library' ? await pickFromLibrary(aspect) : await pickFromCamera(aspect);
+  const picked = source === 'library' ? await pickFromLibrary() : await pickFromCamera();
+  if (!picked) return null;
+  const asset = aspect ? await cropToAspect(picked, aspect) : picked;
   if (!asset) return null;
 
   return uploadAsset(asset, target);

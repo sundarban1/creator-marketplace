@@ -1281,6 +1281,10 @@ const ne = {
   },
 
   proposal: {
+    socialRequiredTitle: 'पहिले सोसल मिडिया खाता जोड्नुहोस्',
+    socialRequiredBody: 'प्रपोजल स्वीकार गर्नुअघि व्यवसायहरूले तपाईंको काम हेर्न चाहन्छन्। कम्तीमा एउटा सोसल मिडिया खाता जोडेर फेरि पठाउनुहोस्।',
+    socialRequiredCta: 'खाता जोड्नुहोस्',
+    socialRequiredNotNow: 'अहिले होइन',
     title: 'एप्लिकेसन पठाउनुहोस्',
     applyingTo: 'एप्लाई गर्दै',
     applyingForRole: '{{role}} को रूपमा एप्लाई गर्दै',
@@ -2966,6 +2970,35 @@ const ne = {
   },
 
   // ── Create Event ──────────────────────────────────────────────
+  eventAttachments: {
+    title:               'संलग्न फाइलहरू',
+    optional:            'वैकल्पिक',
+    hint:                'बढीमा {{maxImages}} फोटो (PNG/JPG, प्रत्येक ५ MB) र {{maxPdfs}} PDF (प्रत्येक १० MB)',
+    count:               '{{images}}/{{maxImages}} फोटो · {{pdfs}}/{{maxPdfs}} PDF',
+    add:                 'फाइल थप्नुहोस्',
+    addTitle:            'संलग्न फाइल थप्नुहोस्',
+    choosePhotos:        'फोटो छान्नुहोस्',
+    takePhoto:           'फोटो खिच्नुहोस्',
+    choosePdf:           'PDF छान्नुहोस्',
+    cancel:              'रद्द गर्नुहोस्',
+    uploadingPct:        'अपलोड हुँदै {{pct}}%',
+    failed:              'अपलोड असफल भयो',
+    retry:               'पुनः प्रयास',
+    tooLargeTitle:       'फाइल धेरै ठूलो छ',
+    imageTooLarge:       'फोटो ५ MB वा सोभन्दा सानो हुनुपर्छ।',
+    pdfTooLarge:         'PDF फाइल १० MB वा सोभन्दा सानो हुनुपर्छ।',
+    previewAfterUpload:  'अपलोड सकिएपछि यो PDF हेर्न सक्नुहुन्छ।',
+    waitUpload:          'संलग्न फाइलहरू अपलोड नसकिएसम्म पर्खनुहोस्।',
+    downloadFailedTitle: 'डाउनलोड असफल भयो',
+    downloadFailed:      'यो फाइल डाउनलोड गर्न सकिएन। फेरि प्रयास गर्नुहोस्।',
+    previewA11y:         '{{name}} हेर्नुहोस्',
+    removeTitle:         'संलग्न फाइल मेटाउने?',
+    removeConfirm:       'के तपाईं "{{name}}" मेटाउन निश्चित हुनुहुन्छ?',
+    removeAction:        'मेटाउनुहोस्',
+    removeA11y:          '{{name}} हटाउनुहोस्',
+    downloadA11y:        '{{name}} डाउनलोड गर्नुहोस्',
+  },
+
   createEvent: {
     headerTitle: 'इभेन्ट बनाउनुहोस्',
     headerSubRoles: 'तपाईंलाई को चाहिन्छ?',
@@ -4276,7 +4309,6 @@ const ne = {
     startTitle: "तपाईंलाई क्रिएटर केका लागि चाहियो?",
     startSub: "आफ्नै शब्दमा क्याम्पेनबारे भन्नुहोस्।",
     startPlaceholder: "जस्तै: इटहरीको नयाँ क्याफे प्रमोट गर्न ३ जना टिकटक क्रिएटर चाहियो",
-    aiWillOrganize: "AI ले विवरण मिलाइदिनेछ।",
     createWithAi: "AI सँग बनाउनुहोस्",
     fillMyself: "म आफैं भर्छु",
     quickStartLabel: "वा एउटा विचारबाट सुरु गर्नुहोस्",
@@ -4531,6 +4563,12 @@ const ne = {
     genericError: "केही गडबड भयो। फेरि प्रयास गर्नुहोस्।",
     close: "बन्द गर्नुहोस्",
     aiWorking: "Kolab ले तपाईंको क्याम्पेन मिलाउँदैछ…",
+  },
+  imageCrop: {
+    title: 'फोटो मिलाउनुहोस्',
+    hint: 'सार्न तान्नुहोस् · जुम गर्न पिन्च गर्नुहोस्',
+    processing: 'काटिँदैछ…',
+    failed: 'यो फोटो काट्न सकिएन। कृपया अर्को फोटो छान्नुहोस्।',
   },
 };
 

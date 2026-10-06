@@ -21,7 +21,7 @@ import { DELIVERABLE_TYPES, shownPlatform } from './briefSections';
 /** One step: heading, short explanation, optional example, scrollable body,
  *  and a footer pinned above the home indicator with one primary action. */
 export function StepShell({ title, subtitle, example, header, children, footer }: {
-  title: string;
+  title?: string;
   subtitle?: string;
   example?: string;
   header?: ReactNode;
@@ -37,7 +37,7 @@ export function StepShell({ title, subtitle, example, header, children, footer }
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag">
         {header}
-        <Text style={[st.title, { color: C.text }]}>{title}</Text>
+        {title ? <Text style={[st.title, { color: C.text }]}>{title}</Text> : null}
         {subtitle ? <Text style={[st.subtitle, { color: C.textSecondary }]}>{subtitle}</Text> : null}
         {example ? <Text style={[st.example, { color: C.textPlaceholder }]}>{example}</Text> : null}
         <View style={{ marginTop: SPACING.xl, gap: SPACING.xl }}>{children}</View>

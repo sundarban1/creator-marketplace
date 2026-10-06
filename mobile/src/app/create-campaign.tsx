@@ -31,6 +31,8 @@ import { EventTimeField, EventTimeSheet, formatEventTime } from '@/components/Ev
 import { BackButton } from '@/components/BackButton';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import { EventAttachmentsField } from '@/components/EventAttachmentsField';
+import type { CampaignAttachment } from '@/services/guidedCampaign';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
 import { VoicePromptInput } from '@/features/business/components/VoicePromptInput';
 import { VoiceTranscriptReview } from '@/features/business/components/VoiceTranscriptReview';
@@ -803,6 +805,9 @@ export default function CreateCampaignScreen() {
   const notRequiredLabel = t('createEvent.notRequired');
   const [phase, setPhase] = useState<Phase>('chooseType');
   const [loading, setLoading] = useState(false);
+  // Reference images / PDFs (brief.attachments) — added on the final step.
+  const [attachments, setAttachments] = useState<CampaignAttachment[]>([]);
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false);
   const [publishWarnVisible, setPublishWarnVisible] = useState(false);
   // Open Event publish — warn once when the event has no start time set.
   const [timeWarnVisible, setTimeWarnVisible] = useState(false);
@@ -1571,6 +1576,7 @@ export default function CreateCampaignScreen() {
             completionReason: r.completionType ? (r.completionReason || undefined) : undefined,
           }))
         : undefined,
+      brief: attachments.length ? { attachments } : undefined,
     };
   }
 
@@ -1608,11 +1614,13 @@ export default function CreateCampaignScreen() {
       targetAudience: form.roleTypes,
       completionType:   form.completionType ?? undefined,
       completionReason: form.completionType ? (form.completionReason || undefined) : undefined,
+      brief: attachments.length ? { attachments } : undefined,
     };
   }
 
   async function handleSaveDraft() {
     if (loading) return;
+    if (attachmentsBusy) { showToast(t('eventAttachments.waitUpload'), 'error'); return; }
     setLoading(true);
     try {
       const payload = form.eventType === 'PAID_CAMPAIGN' ? buildPaidCampaignPayload() : buildOpenEventPayload();
@@ -1699,6 +1707,7 @@ export default function CreateCampaignScreen() {
   }
 
   async function handlePublish() {
+    if (attachmentsBusy) { showToast(t('eventAttachments.waitUpload'), 'error'); return; }
     if (form.eventType === 'PAID_CAMPAIGN') {
       const errs = { ...validateRoles(), ...validatePaidReview() };
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
@@ -2008,6 +2017,8 @@ export default function CreateCampaignScreen() {
               </View>
 
               <SectionCard colors={C}>
+                {/* Voice prompt option disabled for now — Write/Voice chooser hidden,
+                    promptMode stays 'text'. Uncomment to bring it back.
                 <View style={{ gap: 8 }}>
                   {(
                     [
@@ -2038,6 +2049,7 @@ export default function CreateCampaignScreen() {
                     );
                   })}
                 </View>
+                */}
 
                 {promptMode === 'text' ? (
                   <>
@@ -2304,6 +2316,11 @@ export default function CreateCampaignScreen() {
                 lockedSubKey="createOpportunity.featuredLockedSub"
               />
 
+              {/* Attachments — last thing before saving / publishing. */}
+              <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <EventAttachmentsField mode="edit" value={attachments} onChange={setAttachments} onBusyChange={setAttachmentsBusy} />
+              </View>
+
               {/* Save as Draft */}
               <Pressable
                 style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
@@ -2360,6 +2377,8 @@ export default function CreateCampaignScreen() {
               </View>
 
               <SectionCard colors={C}>
+                {/* Voice prompt option disabled for now — Write/Voice chooser hidden,
+                    promptMode stays 'text'. Uncomment to bring it back.
                 <View style={{ gap: 8 }}>
                   {(
                     [
@@ -2390,6 +2409,7 @@ export default function CreateCampaignScreen() {
                     );
                   })}
                 </View>
+                */}
 
                 {promptMode === 'text' ? (
                   <>
@@ -2689,6 +2709,11 @@ export default function CreateCampaignScreen() {
                 lockedSubKey="createInvitation.featuredLockedSub"
               />
 
+              {/* Attachments — last thing before saving / publishing. */}
+              <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <EventAttachmentsField mode="edit" value={attachments} onChange={setAttachments} onBusyChange={setAttachmentsBusy} />
+              </View>
+
               {/* Save as Draft */}
               <Pressable
                 style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
@@ -2770,6 +2795,8 @@ export default function CreateCampaignScreen() {
                   {/* Describe & generate */}
                   <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.makeEventTitle')}</Text>
                   <SectionCard colors={C}>
+                    {/* Voice prompt option disabled for now — Write/Voice chooser hidden,
+                        promptMode stays 'text'. Uncomment to bring it back.
                     <View style={{ gap: 8 }}>
                       {(
                         [
@@ -2800,6 +2827,7 @@ export default function CreateCampaignScreen() {
                         );
                       })}
                     </View>
+                    */}
 
                     {promptMode === 'text' ? (
                       <>
@@ -2932,6 +2960,8 @@ export default function CreateCampaignScreen() {
                   {/* Describe & generate */}
                   <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.makeEventTitle')}</Text>
                   <SectionCard colors={C}>
+                    {/* Voice prompt option disabled for now — Write/Voice chooser hidden,
+                        promptMode stays 'text'. Uncomment to bring it back.
                     <View style={{ gap: 8 }}>
                       {(
                         [
@@ -2962,6 +2992,7 @@ export default function CreateCampaignScreen() {
                         );
                       })}
                     </View>
+                    */}
 
                     {promptMode === 'text' ? (
                       <>
@@ -3446,6 +3477,11 @@ export default function CreateCampaignScreen() {
                     t={t}
                   />
 
+                  {/* Attachments — last thing before saving / publishing. */}
+                  <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                    <EventAttachmentsField mode="edit" value={attachments} onChange={setAttachments} onBusyChange={setAttachmentsBusy} />
+                  </View>
+
                   {/* Save as Draft */}
                   <Pressable
                     style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
@@ -3517,6 +3553,11 @@ export default function CreateCampaignScreen() {
                 colors={C}
                 t={t}
               />
+
+              {/* Attachments — last thing before saving / publishing. */}
+              <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <EventAttachmentsField mode="edit" value={attachments} onChange={setAttachments} onBusyChange={setAttachmentsBusy} />
+              </View>
 
               {/* Kolab Rewards — apply Business Credits toward this campaign's
                   budget. Renders nothing when the business has no credits, so

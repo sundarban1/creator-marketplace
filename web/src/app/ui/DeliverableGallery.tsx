@@ -11,6 +11,7 @@ import {
 import { useT } from '../i18n';
 import type { DeliverableFile, DeliverableVideo } from '../api/creator';
 import { cn } from './cn';
+import { downloadFile } from '../lib/downloadFile';
 
 export type DeliverableMediaKind = 'image' | 'video' | 'pdf' | 'file';
 
@@ -124,6 +125,11 @@ export function DeliverableGallery({
           target="_blank"
           rel="noreferrer"
           download
+          onClick={(e) => {
+            // Cross-origin `download` is ignored by browsers — save via blob.
+            e.preventDefault();
+            void downloadFile(item.url, item.name);
+          }}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium text-white/90 hover:bg-white/10"
         >
           <Download size={15} /> {t('deliv.download')}

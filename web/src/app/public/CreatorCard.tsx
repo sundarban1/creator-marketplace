@@ -32,17 +32,6 @@ interface Props {
 export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators', followersPlatform }: Props) {
   const t = useT();
   const handle = creator.username ?? creator.id;
-  // One entry per platform (highest count if a creator linked two of the same).
-  const byPlatform = new Map<string, number>();
-  for (const a of creator.socialAccounts) {
-    const p = a.platform.toLowerCase();
-    byPlatform.set(p, Math.max(byPlatform.get(p) ?? 0, a.followers));
-  }
-  const lead = followersPlatform?.toLowerCase();
-  const platformStats = [...byPlatform]
-    .map(([platform, followers]) => ({ platform, followers }))
-    .sort((a, b) => Number(b.platform === lead) - Number(a.platform === lead) || orderOf(a.platform) - orderOf(b.platform))
-    .slice(0, 4);
   const name = creator.fullName ?? 'Creator';
   const isTeam = creator.providerType === 'TEAM' || creator.providerType === 'AGENCY';
 
@@ -111,28 +100,57 @@ export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators', fol
         </div>
       )}
 
-      {platformStats.length > 0 && (
-        // Two per row: "[ig] 56 followers | [tt] 56 followers"
-        <div className="mt-auto grid grid-cols-2 gap-y-2 border-t border-line pt-3">
-          {platformStats.map(({ platform, followers }, i) => (
-            <span
-              key={platform}
-              className={cn(
-                'flex min-w-0 items-center gap-1.5 text-[12.5px]',
-                i % 2 === 1 && 'border-l border-line pl-3',
-              )}
-            >
-              <span className="flex-shrink-0">
-                <PlatformIcon platform={platform} size={14} />
-              </span>
-              <span className="font-semibold text-ink">{compactNumber(followers)}</span>
-              <span className="truncate text-ink-soft">
-                {platform === 'youtube' ? t('public.subscribers') : t('public.followers')}
-              </span>
-            </span>
-          ))}
-        </div>
-      )}
+      <CreatorFollowerGrid socialAccounts={creator.socialAccounts} leadPlatform={followersPlatform} />
     </Link>
+  );
+}
+
+/**
+ * Per-platform follower counts, two per row ("[ig] 56 followers | [tt] 1.2K
+ * followers"), pinned to the card's bottom edge. Shared by the public card and
+ * the business app's BizCreatorCard so both show the same numbers.
+ */
+export function CreatorFollowerGrid({
+  socialAccounts,
+  leadPlatform,
+}: {
+  socialAccounts: { platform: string; followers: number }[];
+  /** Lead the grid with this platform. */
+  leadPlatform?: string;
+}) {
+  const t = useT();
+  // One entry per platform (highest count if a creator linked two of the same).
+  const byPlatform = new Map<string, number>();
+  for (const a of socialAccounts) {
+    const p = a.platform.toLowerCase();
+    byPlatform.set(p, Math.max(byPlatform.get(p) ?? 0, a.followers ?? 0));
+  }
+  const lead = leadPlatform?.toLowerCase();
+  const platformStats = [...byPlatform]
+    .map(([platform, followers]) => ({ platform, followers }))
+    .sort((a, b) => Number(b.platform === lead) - Number(a.platform === lead) || orderOf(a.platform) - orderOf(b.platform))
+    .slice(0, 4);
+  if (platformStats.length === 0) return null;
+
+  return (
+    <div className="mt-auto grid grid-cols-2 gap-y-2 border-t border-line pt-3">
+      {platformStats.map(({ platform, followers }, i) => (
+        <span
+          key={platform}
+          className={cn(
+            'flex min-w-0 items-center gap-1.5 text-[12.5px]',
+            i % 2 === 1 && 'border-l border-line pl-3',
+          )}
+        >
+          <span className="flex-shrink-0">
+            <PlatformIcon platform={platform} size={14} />
+          </span>
+          <span className="font-semibold text-ink">{compactNumber(followers)}</span>
+          <span className="truncate text-ink-soft">
+            {platform === 'youtube' ? t('public.subscribers') : t('public.followers')}
+          </span>
+        </span>
+      ))}
+    </div>
   );
 }

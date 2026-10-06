@@ -108,7 +108,6 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onSwit
   const text = form.aiPrompt;
   return (
     <StepShell
-      title={t('guided.startTitle')}
       subtitle={t('guided.startSub')}
       footer={
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -123,7 +122,7 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onSwit
       }
     >
       <div>
-        <label htmlFor="guided-idea" className="sr-only">{t('guided.startTitle')}</label>
+        <label htmlFor="guided-idea" className="sr-only">{t('guided.startSub')}</label>
         <textarea
           id="guided-idea"
           rows={5}

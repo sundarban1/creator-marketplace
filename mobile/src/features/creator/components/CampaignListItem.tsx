@@ -12,7 +12,7 @@ import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
 import { prefetchCampaign } from '@/lib/prefetch';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 
 function expiryLabel(iso: string, t: TFn): { label: string; color: string } {
   const days = Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
@@ -124,7 +124,8 @@ const styles = StyleSheet.create({
   cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
   card:   { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1 },
 
-  thumb:  { width: 96, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, position: 'relative' },
+  // Inset 16:9 tile (not a full-height column) so the whole feature image shows.
+  thumb:  { width: 112, aspectRatio: FEATURE_IMAGE_ASPECT, alignSelf: 'center', marginLeft: 12, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, position: 'relative' },
   thumbIcon: { opacity: 0.35 },
   ribbon: { position: 'absolute', top: 8, left: 8, borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },
   ribbonText: { fontSize: 9, color: '#fff', letterSpacing: 0.3, fontFamily: F.semibold },

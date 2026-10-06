@@ -7,6 +7,7 @@ import {
   Image,
   Linking,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -37,7 +38,7 @@ import { eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { logger } from '@/utilities/logger';
-import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import type { BusinessProfileVM } from '@/features/business/utils/businessProfileVm';
 
 type ConvStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED';
@@ -52,6 +53,9 @@ type Props = {
   error?: boolean;
   isPrivate?: boolean;
   onRetry?: () => void;
+  /** Pull-to-refresh — omitted = no refresh control. */
+  refreshing?: boolean;
+  onRefresh?: () => void;
   // Owner: scroll the Reviews section into view (review_received deep-link).
   focusReviews?: boolean;
   // Visitor: campaign ids the current creator has already applied to.
@@ -253,7 +257,7 @@ function InfoCard({
 }
 
 export function BusinessProfileView({
-  mode, vm, loading, error, isPrivate, onRetry, focusReviews, appliedCampaignIds,
+  mode, vm, loading, error, isPrivate, onRetry, refreshing, onRefresh, focusReviews, appliedCampaignIds,
 }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -429,7 +433,8 @@ export function BusinessProfileView({
       <MaxWidthContainer>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 60 }}>
+        contentContainerStyle={{ paddingBottom: 60 }}
+        refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} /> : undefined}>
 
         <HeroCover
           coverUri={coverUri}
@@ -897,7 +902,8 @@ const styles = StyleSheet.create({
 
   campaignCardWrap:      { borderRadius: RADIUS.lg, ...SHADOW.raised },
   campaignCard:          { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1 },
-  campaignThumb:         { width: 96, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, position: 'relative' },
+  // Inset 16:9 tile (not a full-height column) so the whole feature image shows.
+  campaignThumb:         { width: 112, aspectRatio: FEATURE_IMAGE_ASPECT, alignSelf: 'center', marginLeft: 12, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, position: 'relative' },
   campaignThumbIcon:     { opacity: 0.35 },
   featuredRibbon:        { position: 'absolute', top: 8, left: 8, borderRadius: RADIUS.sm, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
   campaignBody:          { flex: 1, padding: 12, gap: 6, minWidth: 0 },

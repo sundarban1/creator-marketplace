@@ -9,6 +9,7 @@ import { cn } from '../ui/cn';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import type { EventCard as EventData } from '../api/publicMarketplace';
 import { CampaignBriefSections } from './CampaignBriefSections';
+import { EventAttachmentsView } from './EventAttachments';
 
 /**
  * Shared visual layout for an event's detail page — a hero card (image, title,
@@ -206,6 +207,12 @@ export function EventDetailBody({
       )}
 
       {!isOpenEvent && <CampaignBriefSections c={event} Section={Section} />}
+
+      {!!event.brief?.attachments?.length && (
+        <Section title={t('biz.attachmentsHeading')}>
+          <EventAttachmentsView attachments={event.brief.attachments} />
+        </Section>
+      )}
 
       <Section title={t('public.aboutBusinessHeading')}>
         {event.business.id ? (

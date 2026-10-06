@@ -44,7 +44,7 @@ import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { NameVideoModal } from '@/components/NameVideoModal';
 import type { Campaign } from '@/types';
-import { F, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPACING } from '@/utilities/constants';
+import { F, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 import { useToast } from '@/components/Toast';
@@ -2738,7 +2738,7 @@ const s = StyleSheet.create({
   ratingCta: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.md, borderWidth: 1.5, padding: 12 },
 
   summaryRow:   { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  thumb:        { width: 68, height: 68, borderRadius: RADIUS.md, flexShrink: 0 },
+  thumb:        { width: 96, aspectRatio: FEATURE_IMAGE_ASPECT, borderRadius: RADIUS.md, flexShrink: 0 },
   thumbClip:    { width: '100%', height: '100%', borderRadius: RADIUS.md, overflow: 'hidden' },
   thumbImage:   { width: '100%', height: '100%' },
   summaryTitle: { fontSize: 15, fontFamily: F.bold, lineHeight: 23, marginBottom: 3 },

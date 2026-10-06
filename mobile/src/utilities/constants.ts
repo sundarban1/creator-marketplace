@@ -52,21 +52,26 @@ export const BUSINESS_COLORS: typeof COLORS = {
   primaryLight: '#F0FDF4', // light tint for chips/highlighted rows on white
 };
 
-// Poppins font families — loaded globally in src/app/_layout.tsx
+// DM Sans font families — loaded globally in src/app/_layout.tsx. Same face as
+// the web creator/business apps (`--font-body`). Each key sits one weight step
+// lighter than its name to mirror the web hierarchy (titles 600 / labels 500 /
+// body 400) — Poppins' heavier Bold read far denser than the web pages.
 export const F = {
-  regular:    'Poppins-Regular',
-  medium:     'Poppins-Medium',
-  semibold:   'Poppins-SemiBold',
-  bold:       'Poppins-Bold',
-  boldItalic: 'Poppins-BoldItalic',
-  extrabold:  'Poppins-ExtraBold',
+  regular:    'DMSans-Regular',        // 400
+  medium:     'DMSans-Medium',         // 500
+  semibold:   'DMSans-Medium',         // 500 — web `font-medium` labels
+  bold:       'DMSans-SemiBold',       // 600 — web `font-semibold` titles
+  boldItalic: 'DMSans-SemiBoldItalic', // 600 italic
+  extrabold:  'DMSans-Bold',           // 700 — hero numbers/headlines
 };
 
 // Minimum `lineHeight / fontSize` ratio for any Text that can render Nepali.
 //
 // Devanagari hangs its consonants from a headline (shirorekha) and then stacks
 // vowel signs and nasal marks *above* it, so it needs far more room above the
-// baseline than Latin does. Measured from the shipped Poppins TTF (1000 upm):
+// baseline than Latin does. Measured from the Poppins TTF (1000 upm) the app originally shipped — DM Sans
+// has no Devanagari glyphs, so Nepali now falls back to the system Devanagari
+// face, which needs at least as much room:
 //
 //   'A' (Latin cap)   693      <- what tight line heights were tuned against
 //   'द' (consonant)   740
@@ -97,9 +102,9 @@ export const lineHeightFor = (fontSize: number) =>
 // (10/11/12/14/16/20...) with no consistent logic. Use these everywhere instead
 // so every card/button/sheet reads as one coherent system.
 export const RADIUS = {
-  sm:   10,  // chips, small icon buttons, inputs
-  md:   14,  // standard cards, list rows
-  lg:   18,  // section cards, banners
+  sm:   12,  // chips, small icon buttons, inputs — web `rounded-xl`
+  md:   16,  // standard cards, list rows — web `rounded-2xl`
+  lg:   16,  // section cards, banners — web `rounded-2xl`
   xl:   24,  // hero panels, bottom sheets, modals
   full: 999, // pills, avatars, circular buttons
 };
@@ -155,6 +160,12 @@ export const SPACING = {
 // category pills) reference one source instead of three copies of the
 // literal 20 silently drifting apart.
 export const SCREEN_GUTTER = 20;
+
+// Event/campaign feature images are cropped to 16:9 at upload (uploadImage.ts
+// 'campaign-feature'), so every thumbnail/card/hero that shows one is sized to
+// this ratio (`width` + `aspectRatio`) — a square or arbitrary box would
+// re-crop the image the business just framed.
+export const FEATURE_IMAGE_ASPECT = 16 / 9;
 
 // Shared type scale. Floor is 11 — iOS HIG's smallest practical size
 // ("Caption 2"); anything below that stops being reliably legible once a

@@ -2,11 +2,11 @@ import { Link } from 'react-router-dom';
 import { BadgeCheck, MapPin, ArrowUpRight, Bookmark } from 'lucide-react';
 import { useT } from '../i18n';
 import { Avatar } from '../ui/Avatar';
-import { PlatformIcon } from '../ui/PlatformIcon';
 import { cn } from '../ui/cn';
 import type { BusinessCreatorCard } from '../api/business';
 import type { CategoryMeta } from '../public/categoryLookup';
 import { CategoryPill } from '../public/CategoryPill';
+import { CreatorFollowerGrid } from '../public/CreatorCard';
 
 /**
  * Same card as the public marketplace's CreatorCard (identical layout, hover
@@ -29,7 +29,6 @@ export function BizCreatorCard({
 }) {
   const t = useT();
   const name = creator.fullName ?? 'Creator';
-  const platforms = [...new Set(creator.socialAccounts.map((a) => a.platform))].slice(0, 4);
 
   return (
     <div className="relative h-full">
@@ -83,13 +82,7 @@ export function BizCreatorCard({
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <div className="flex items-center gap-2 text-ink-soft">
-            {platforms.map((p) => (
-              <PlatformIcon key={p} platform={p} size={15} />
-            ))}
-          </div>
-        </div>
+        <CreatorFollowerGrid socialAccounts={creator.socialAccounts} />
       </Link>
 
       <button

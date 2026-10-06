@@ -1220,6 +1220,14 @@ export class CampaignService {
 
     await this.assertProposalSubmissionAllowed(creator.id);
 
+    // Businesses judge a proposal by the creator's actual content, so at least
+    // one social account must be connected at submission time. Checked on
+    // every submit — disconnecting the last account re-arms the requirement.
+    const socialAccountCount = await prisma.socialAccount.count({ where: { creatorProfileId: creator.id } });
+    if (socialAccountCount === 0) {
+      throw new AppError(getDict().campaign.socialAccountRequiredToApply, HttpStatus.FORBIDDEN, true, { code: 'SOCIAL_ACCOUNT_REQUIRED' });
+    }
+
     const isFreeCampaign = (campaign as any).campaignType === 'OPEN_EVENT';
     if (requirement) {
       // Validate against the requirement's own budget, not the campaign's —

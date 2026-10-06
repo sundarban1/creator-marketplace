@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
@@ -10,6 +10,8 @@ import { locationSummary, type GuidedForm, type GuidedStep } from './guidedModel
 import { BRIEF_SECTIONS, sectionFilled } from './briefSections';
 import { StepShell, ProvenanceTag, SuggestionNote, deliverableLine, st } from './parts';
 import { SaveTemplateButton } from './templates';
+import { EventAttachmentsField } from '@/components/EventAttachmentsField';
+import type { CampaignAttachment } from '@/services/guidedCampaign';
 
 const rupees = (n: number) => `Rs. ${Math.round(n).toLocaleString('en-IN')}`;
 const fmtDate = (d: string) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
@@ -45,7 +47,7 @@ function Row({ icon, label, value, provenance, onEdit, attention }: {
   );
 }
 
-export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, publishing, serverError, onAnswerVisit, header, campaignId, beforeSaveTemplate }: {
+export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, publishing, serverError, onAnswerVisit, header, campaignId, beforeSaveTemplate, onAttachmentsChange }: {
   form: GuidedForm;
   issues: CampaignRuleIssue[];
   mode: 'create' | 'edit';
@@ -59,9 +61,11 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
   // Saved campaign/draft id — enables "Save as template" (§23).
   campaignId?: string | null;
   beforeSaveTemplate?: () => Promise<void>;
+  onAttachmentsChange: (next: CampaignAttachment[]) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false);
   const blocking = issues.filter((i) => i.severity === 'required');
   const suggestions = issues.filter((i) => i.severity === 'recommended');
   const creators = form.creatorsNeeded ?? 0;
@@ -85,7 +89,7 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
       footer={
         <View style={{ gap: SPACING.sm }}>
           {serverError ? <Text style={[st.small, { color: C.error }]}>{serverError}</Text> : null}
-          <Button label={mode === 'edit' ? t('guided.saveChanges') : t('guided.publish')} onPress={onPublish} loading={publishing} disabled={blocking.length > 0 || visitUnknown} fullWidth />
+          <Button label={mode === 'edit' ? t('guided.saveChanges') : t('guided.publish')} onPress={onPublish} loading={publishing} disabled={blocking.length > 0 || visitUnknown || attachmentsBusy} fullWidth />
           <Button label={mode === 'edit' ? t('guided.cancel') : t('guided.saveExit')} variant="ghost" onPress={onSaveExit} disabled={publishing} fullWidth />
         </View>
       }>
@@ -140,6 +144,11 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
           onEdit={() => onEdit('budget')}
         />
         <Row icon="tasks" label={t('guided.rRequirements')} value={advanced.length ? advanced.map((s) => t(s.title)).join(' · ') : t('guided.noAdvanced')} onEdit={() => onEdit('requirements')} />
+      </View>
+
+      {/* Reference images / PDFs — last thing before publishing. */}
+      <View style={{ paddingTop: SPACING.lg, borderTopWidth: 1, borderTopColor: C.border }}>
+        <EventAttachmentsField mode="edit" value={form.brief.attachments ?? []} onChange={onAttachmentsChange} onBusyChange={setAttachmentsBusy} />
       </View>
 
       {blocking.length ? (

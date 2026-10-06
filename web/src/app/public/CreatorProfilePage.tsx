@@ -144,7 +144,7 @@ export function CreatorProfilePage() {
           </div>
         </HeroReveal>
 
-        {/* Always shown — an em dash stands in until there's data. */}
+        {/* Always shown — rating/completion read 0 until there's data; response time uses an em dash. */}
         <HeroReveal className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           <StatTile
             label={t('public.avgRating')}
@@ -155,13 +155,13 @@ export function CreatorProfilePage() {
                   <Star size={15} className="fill-warning text-warning" />
                 </span>
               ) : (
-                '—'
+                '0'
               )
             }
           />
           <StatTile
             label={t('public.completionRate')}
-            value={stat && stat.completionRate > 0 ? `${stat.completionRate}%` : '—'}
+            value={`${stat?.completionRate ?? 0}%`}
           />
           <StatTile label={t('public.responseTime')} value={responseTime ?? '—'} />
         </HeroReveal>

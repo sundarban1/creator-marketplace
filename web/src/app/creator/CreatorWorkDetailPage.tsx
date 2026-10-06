@@ -141,7 +141,7 @@ export function CreatorWorkDetailPage() {
           <img
             src={c.featureImageUrl}
             alt=""
-            className="h-16 w-16 flex-shrink-0 rounded-xl border border-line object-cover"
+            className="aspect-[16/9] w-28 flex-shrink-0 rounded-xl border border-line object-cover"
           />
         ) : (
           <Avatar name={c?.business?.businessName ?? 'Business'} src={c?.business?.logoUrl} size="lg" />

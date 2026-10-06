@@ -16,7 +16,7 @@ import { DELIVERABLE_TYPES } from './briefSections';
 export function StepShell({
   title, subtitle, example, children, footer,
 }: {
-  title: string;
+  title?: string;
   subtitle?: string;
   example?: string;
   children: ReactNode;
@@ -24,7 +24,7 @@ export function StepShell({
 }) {
   return (
     <section>
-      <h2 className="font-serif text-[24px] font-medium leading-tight tracking-tight text-ink sm:text-[28px]">{title}</h2>
+      {title && <h2 className="font-serif text-[24px] font-medium leading-tight tracking-tight text-ink sm:text-[28px]">{title}</h2>}
       {subtitle && <p className="mt-1.5 text-[15px] text-ink-soft">{subtitle}</p>}
       {example && <p className="mt-1 text-[13px] italic text-ink-soft/80">{example}</p>}
       <div className="mt-6 space-y-6">{children}</div>

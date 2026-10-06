@@ -32,11 +32,7 @@ function AboutContent() {
         path="/about"
         jsonLd={[webPageSchema({ path: '/about', title: `${a.title} | Kolab`, description: a.intro })]}
       />
-      <motion.p variants={fadeUp} className="font-serif text-sm italic text-ink-soft dark:text-white">
-        <a href="/" className="hover:text-ink dark:hover:text-white">{d.legalPages.backToHome}</a>
-      </motion.p>
-
-      <motion.div variants={fadeUp} className="mt-6 flex flex-col items-center text-center">
+      <motion.div variants={fadeUp} className="flex flex-col items-center text-center">
         <img src="/logo.png" alt="Kolab" width={540} height={180} className="h-10 w-auto object-contain" />
         <h1 className="mt-4 text-balance font-serif text-4xl font-medium tracking-tight text-ink sm:text-5xl dark:text-white">
           {a.title}

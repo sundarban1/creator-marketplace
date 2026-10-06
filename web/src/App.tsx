@@ -90,6 +90,8 @@ const PlatformsPage = named(() => import('./pages/platforms/PlatformsPage'), 'Pl
 const NewPlatformPage = named(() => import('./pages/platforms/NewPlatformPage'), 'NewPlatformPage');
 const EditPlatformPage = named(() => import('./pages/platforms/EditPlatformPage'), 'EditPlatformPage');
 const SuccessStoriesPage = named(() => import('./pages/success-stories/SuccessStoriesPage'), 'SuccessStoriesPage');
+const CommunityEventsAdminPage = named(() => import('./pages/community-events/CommunityEventsAdminPage'), 'CommunityEventsAdminPage');
+const CommunityEventEditorPage = named(() => import('./pages/community-events/CommunityEventEditorPage'), 'CommunityEventEditorPage');
 const NewSuccessStoryPage = named(() => import('./pages/success-stories/NewSuccessStoryPage'), 'NewSuccessStoryPage');
 const EditSuccessStoryPage = named(() => import('./pages/success-stories/EditSuccessStoryPage'), 'EditSuccessStoryPage');
 const CreatorMeetups = named(() => import('./pages/CreatorMeetups'), 'CreatorMeetups');
@@ -167,6 +169,9 @@ export default function App() {
                 <Route path="/admin/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/admin/creator-meetups" element={<CreatorMeetups />} />
                 <Route path="/admin/creator-meetups/:meetupId" element={<CreatorMeetupDetail />} />
+                <Route path="/admin/events" element={<CommunityEventsAdminPage />} />
+                <Route path="/admin/events/new" element={<CommunityEventEditorPage />} />
+                <Route path="/admin/events/:id/edit" element={<CommunityEventEditorPage key="edit" />} />
                 <Route path="/admin/analytics/:userId" element={<UserAnalytics />} />
                 <Route path="/admin/categories" element={<CategoriesPage />} />
                 <Route path="/admin/categories/new" element={<NewCategoryPage />} />

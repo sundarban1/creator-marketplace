@@ -314,6 +314,7 @@ export default function GuidedCampaignScreen() {
               onSaveExit={close}
               campaignId={mode === 'edit' ? campaign?.id ?? null : draftId}
               beforeSaveTemplate={mode === 'create' ? () => autosave.flush() : undefined}
+              onAttachmentsChange={(attachments) => setForm((f) => ({ ...f, brief: { ...f.brief, attachments } }))}
               onAnswerVisit={(visit) => update(visit ? { locationType: 'ONSITE', locationScope: 'SPECIFIC' } : { locationType: 'REMOTE' }, ['locationType'])}
             />
           )}

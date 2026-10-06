@@ -2,7 +2,7 @@
  * Authenticated business endpoints — mirrors the mobile business app's contract.
  */
 
-import { apiRequest, apiUpload, type ApiPagination } from '../lib/apiClient';
+import { apiRequest, apiUpload, apiUploadWithProgress, type ApiPagination } from '../lib/apiClient';
 import type { EngagementState } from '../lib/engagement';
 import type { CreatorApplication, DeliverableFile, FacebookPageOption } from './creator';
 import type { CreatorProfile } from './publicMarketplace';
@@ -79,7 +79,16 @@ export interface CampaignBrief {
   content?: { keyMessages?: string[]; talkingPoints?: string[]; mentions?: string[]; contentStyle?: string; dos?: string[]; donts?: string[]; productInfo?: string; creatorsVisit?: boolean | null };
   commercial?: { usageRights?: string; licensingDays?: number | null; exclusivity?: boolean; exclusivityDays?: number | null };
   approval?: { draftRequired?: boolean; revisionRounds?: number | null; approvalDeadline?: string | null; reportingRequired?: boolean; notes?: string };
-  attachments?: { url: string; name: string }[];
+  attachments?: CampaignAttachment[];
+}
+
+/** Reference image / PDF on an event (brief.attachments). kind etc. absent on older rows. */
+export interface CampaignAttachment {
+  url: string;
+  name: string;
+  kind?: 'IMAGE' | 'PDF';
+  mimeType?: string;
+  sizeBytes?: number;
 }
 
 /** Autosave / validate body — everything optional (backend draftCampaignSchema). */
@@ -247,6 +256,7 @@ export interface CreateCampaignInput {
   venue?: string;
   benefits?: string[];
   targetAudience?: string[];
+  brief?: CampaignBrief;
 }
 
 export function createCampaign(input: CreateCampaignInput): Promise<{ id: string }> {
@@ -377,6 +387,12 @@ export function uploadCampaignFeatureImage(file: File): Promise<{ imageUrl: stri
   const form = new FormData();
   form.append('image', file);
   return apiUpload<{ imageUrl: string }>('/api/campaigns/feature-image', form);
+}
+
+export function uploadCampaignAttachment(file: File, onProgress?: (fraction: number) => void): Promise<CampaignAttachment> {
+  const form = new FormData();
+  form.append('file', file);
+  return apiUploadWithProgress<CampaignAttachment>('/api/campaigns/attachments', form, onProgress);
 }
 
 // ── Applications the business received ────────────────────────────────────────

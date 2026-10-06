@@ -18,12 +18,15 @@ import { SegmentedControl } from '../ui/SegmentedControl';
 import { FeaturedEventToggle } from './FeaturedEventToggle';
 import { NeedHelpButton } from './NeedHelpModal';
 import { cn } from '../ui/cn';
+import { ImageCropModal } from '../ui/ImageCropModal';
 import { OFFERING_OPTIONS, MIN_BUDGET_PER_CREATOR, isoInDays } from './eventFormConstants';
 import { ChipGroup } from './eventFormShared';
 import { BudgetPicker } from './BudgetPicker';
 import { budgetPickerResetKey, type BudgetRateType, type BudgetInputType } from './budgetPickerTypes';
 import type { AiDraft } from '../api/business';
 import { GuidedCampaignCreator } from './guided/GuidedCampaignCreator';
+import { EventAttachmentsEditor } from '../events/EventAttachments';
+import type { CampaignAttachment } from '../api/business';
 
 type CType = 'PAID_CAMPAIGN' | 'OPEN_EVENT';
 // 'prompt' — the AI textarea (or "enter manually"); 'budget' — a dedicated
@@ -43,6 +46,7 @@ export function CreateEventPage() {
   const [phase, setPhase] = useState<Phase>('prompt');
 
   const [featureImageUrl, setFeatureImageUrl] = useState('');
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [featureImageCredit, setFeatureImageCredit] = useState<{ name: string; profileUrl: string } | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageIsCustom, setImageIsCustom] = useState(false);
@@ -82,6 +86,9 @@ export function CreateEventPage() {
   // "RSVP deadline must be before the event date" invariant holds out of the box.
   const [eventDate, setEventDate] = useState(isoInDays(16));
   const [eventTime, setEventTime] = useState('');
+
+  const [attachments, setAttachments] = useState<CampaignAttachment[]>([]);
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false);
 
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -230,10 +237,19 @@ export function CreateEventPage() {
     setPhase('details');
   }
 
-  async function onPickImage(file: File) {
+  // Picking opens the 16:9 crop step; the upload runs on confirm, so the
+  // image always matches the 16:9 frame event cards render it in.
+  function onPickImage(file: File) {
+    setCropSrc(URL.createObjectURL(file));
+  }
+  function closeCrop() {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  }
+  async function onImageCropped(blob: Blob) {
     setImageUploading(true);
     try {
-      const { imageUrl } = await uploadCampaignFeatureImage(file);
+      const { imageUrl } = await uploadCampaignFeatureImage(new File([blob], 'feature.jpg', { type: 'image/jpeg' }));
       setFeatureImageUrl(imageUrl);
       setFeatureImageCredit(null);
       setImageIsCustom(true);
@@ -241,6 +257,7 @@ export function CreateEventPage() {
       setError(err instanceof Error ? err.message : t('common.somethingWrong'));
     } finally {
       setImageUploading(false);
+      closeCrop();
     }
   }
 
@@ -248,6 +265,7 @@ export function CreateEventPage() {
     e.preventDefault();
     setError('');
 
+    if (attachmentsBusy) return setError(t('biz.attachmentsWaitUpload'));
     if (title.trim().length < 3) return setError('Add a title.');
     if (!category) return setError('Pick a category.');
 
@@ -293,6 +311,7 @@ export function CreateEventPage() {
         venue: isFree ? (location.trim() || undefined) : undefined,
         benefits: isFree ? benefits : undefined,
         targetAudience: isFree ? roleTypes : undefined,
+        brief: attachments.length ? { attachments } : undefined,
       });
       navigate(`/business/events/${id}`);
     } catch (err) {
@@ -426,7 +445,7 @@ export function CreateEventPage() {
               or previously uploaded); no empty "add an image" prompt upfront. */}
           {featureImageUrl && (
             <Card padded={false}>
-              <div className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-2xl bg-surface-dim sm:h-48">
+              <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-2xl bg-surface-dim">
                 <img src={featureImageUrl} alt="" className="h-full w-full object-cover" />
 
                 <button
@@ -608,16 +627,28 @@ export function CreateEventPage() {
 
           <FeaturedEventToggle checked={isFeatured} onChange={setIsFeatured} />
 
+          {/* Last step before publishing: reference images / PDF brief. */}
+          <EventAttachmentsEditor value={attachments} onChange={setAttachments} onBusyChange={setAttachmentsBusy} />
+
           <div className="flex gap-2 pt-2">
-            <Button type="submit" size="lg" loading={submitting}>
+            <Button type="submit" size="lg" loading={submitting} disabled={attachmentsBusy}>
               {t('biz.publish')}
             </Button>
-            <Button type="button" size="lg" variant="secondary" disabled={submitting} onClick={(e) => submit(e as unknown as FormEvent, 'DRAFT')}>
+            <Button type="button" size="lg" variant="secondary" disabled={submitting || attachmentsBusy} onClick={(e) => submit(e as unknown as FormEvent, 'DRAFT')}>
               {t('biz.saveDraft')}
             </Button>
           </div>
         </form>
       )}
+
+      <ImageCropModal
+        open={!!cropSrc}
+        imageSrc={cropSrc}
+        aspect={16 / 9}
+        title={t('biz.cropEventImageTitle')}
+        onCancel={closeCrop}
+        onConfirm={onImageCropped}
+      />
     </div>
   );
 }

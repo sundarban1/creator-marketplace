@@ -22,16 +22,10 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { contractService, type ContractPreview } from '@/services/contract';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the required-social-account check, temporarily disabled below
 import { creatorService } from '@/services/creator';
+import { ApiError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-
-// At least one of these must be present before a creator can apply — brands
-// evaluating a proposal need to see the creator's actual content somewhere.
-// Requirement is temporarily disabled in handleSubmit(); kept for when it's re-implemented.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const REQUIRED_SOCIAL_PLATFORMS = ['facebook', 'instagram', 'tiktok'];
 
 function isValidUrl(v: string) {
   try { new URL(v); return true; } catch { return false; }
@@ -202,15 +196,6 @@ export default function SubmitProposalScreen() {
   }
 
   async function submitApplication() {
-    // Social-account requirement temporarily disabled; re-enable by restoring
-    // the block below (kept for when this is implemented again).
-    // const accounts = await creatorService.getSocialAccounts();
-    // const hasRequiredSocial = accounts.some((a) => REQUIRED_SOCIAL_PLATFORMS.includes(a.platform.toLowerCase()));
-    // if (!hasRequiredSocial) {
-    //   setShowSocialModal(true);
-    //   return;
-    // }
-
     await campaignService.apply(campaignId, {
       coverLetter:  coverLetter.trim(),
       proposedRate,
@@ -228,10 +213,37 @@ export default function SubmitProposalScreen() {
     setTimeout(() => router.replace('/(creator)/(tabs)/proposals'), 1200);
   }
 
+  function handleSubmitError(e: unknown) {
+    if (e instanceof ApiError && e.code === 'SOCIAL_ACCOUNT_REQUIRED') {
+      setContractModalVisible(false);
+      setShowSocialModal(true);
+      return;
+    }
+    toast.error(e instanceof Error ? e.message : t('proposal.submitError'));
+  }
+
   async function handleSubmit() {
     setSubmitted(true);
     if (coverLetterLen < 50 || isRateInvalid || (portfolio.trim() && !isValidUrl(portfolio.trim()))) {
       return;
+    }
+
+    // Brands evaluating a proposal need to see the creator's actual content,
+    // so at least one social account must be connected. Checked fresh on every
+    // submit (never cached) — disconnecting the last account re-arms it. The
+    // backend enforces the same rule (SOCIAL_ACCOUNT_REQUIRED).
+    setLoading(true);
+    try {
+      const accounts = await creatorService.getSocialAccounts();
+      if (accounts.length === 0) {
+        setShowSocialModal(true);
+        return;
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('proposal.submitError'));
+      return;
+    } finally {
+      setLoading(false);
     }
 
     // Free events aren't a paid engagement — submit directly, same as before.
@@ -240,7 +252,7 @@ export default function SubmitProposalScreen() {
       try {
         await submitApplication();
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : t('proposal.submitError'));
+        handleSubmitError(e);
       } finally {
         setLoading(false);
       }
@@ -265,7 +277,7 @@ export default function SubmitProposalScreen() {
     try {
       await submitApplication();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('proposal.submitError'));
+      handleSubmitError(e);
     } finally {
       setAgreeing(false);
     }
@@ -402,10 +414,10 @@ export default function SubmitProposalScreen() {
         visible={showSocialModal}
         type="info"
         icon="link"
-        title="Add a Social Link First"
-        body="Businesses want to see your work before accepting a proposal. Add at least one Facebook, Instagram, or TikTok profile to your account, then come back and submit."
-        confirmLabel="Add Social Link"
-        cancelLabel="Not Now"
+        title={t('proposal.socialRequiredTitle')}
+        body={t('proposal.socialRequiredBody')}
+        confirmLabel={t('proposal.socialRequiredCta')}
+        cancelLabel={t('proposal.socialRequiredNotNow')}
         onConfirm={() => {
           setShowSocialModal(false);
           router.push('/(creator)/settings?section=social' as never);

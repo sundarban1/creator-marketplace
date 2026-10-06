@@ -10,6 +10,7 @@ import { AuthShell } from './AuthShell';
 import { SocialAuth } from './SocialAuth';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
+import { IdentifierField } from './IdentifierField';
 import { Alert } from '../ui/Alert';
 
 export function LoginScreen() {
@@ -96,14 +97,14 @@ export function LoginScreen() {
           </Alert>
         )}
 
-        <TextField
+        <IdentifierField
           label={t('auth.emailOrPhone')}
           icon={<AtSign />}
           placeholder={t('auth.emailOrPhonePlaceholder')}
           autoComplete="username"
           inputMode="email"
           value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+          onValueChange={setIdentifier}
         />
 
         <TextField

@@ -99,7 +99,6 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onInpu
   return (
     <StepShell
       header={header}
-      title={t('guided.startTitle')}
       subtitle={t('guided.startSub')}
       footer={
         <View style={{ gap: SPACING.sm }}>
@@ -115,17 +114,14 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onInpu
           placeholderTextColor={C.textPlaceholder}
           multiline
           textAlignVertical="top"
-          accessibilityLabel={t('guided.startTitle')}
+          accessibilityLabel={t('guided.startSub')}
           style={[st.input, { minHeight: 140, paddingTop: 14, borderColor: C.border, backgroundColor: C.surface, color: C.text }]}
         />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.sm }}>
-          <FontAwesome5 name="magic" size={12} color={C.brinjal1} />
-          <Text style={[st.small, { color: C.brinjal1, fontFamily: F.medium }]}>{t('guided.aiWillOrganize')}</Text>
-        </View>
         <MakeClearer field="idea" text={text} form={form} onUse={(v) => update({ aiPrompt: v })} />
       </View>
 
-      {/* Speak instead of typing — transcribed into the box for the business to check. */}
+      {/* Speak instead of typing — transcribed into the box for the business to check.
+          Voice input disabled for now; uncomment to bring it back.
       <View style={{ gap: SPACING.sm }}>
         <Text style={[st.small, { color: C.textSecondary }]}>{t('guided.orSpeak')}</Text>
         <VoicePromptInput
@@ -146,6 +142,7 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onInpu
         {transcribing ? <ActivityIndicator color={C.brinjal1} /> : null}
         {voiceError ? <Text style={[st.small, { color: C.error }]}>{voiceError}</Text> : null}
       </View>
+      */}
 
       <Field label={t('guided.quickStartLabel')}>
         <ChoiceChips<(typeof QUICK_STARTS)[number]>

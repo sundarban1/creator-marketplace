@@ -137,6 +137,17 @@ const BASE_STYLE = `
   background: #f4f4f7; margin: 0; padding: 0;
 `;
 
+// Static mirror of the admin-managed contact/social info — same values as
+// web/src/lib/seo/schema.ts. Keep both in sync when a profile changes.
+const FOOTER_WEBSITE = 'https://www.kolab.com.np';
+const FOOTER_PHONE   = '+977-9852065104';
+// Icons are PNGs served from web/public/email — Gmail and Outlook strip SVG.
+const FOOTER_SOCIALS = [
+  { label: 'Facebook',  url: 'https://www.facebook.com/kolabnepal/',   icon: `${FOOTER_WEBSITE}/email/facebook.png` },
+  { label: 'Instagram', url: 'https://www.instagram.com/kolab_nepal',  icon: `${FOOTER_WEBSITE}/email/instagram.png` },
+  { label: 'TikTok',    url: 'https://www.tiktok.com/@kolab_nepal',    icon: `${FOOTER_WEBSITE}/email/tiktok.png` },
+];
+
 export function wrapLayout(content: string): string {
   return `
 <!DOCTYPE html>
@@ -163,9 +174,19 @@ export function wrapLayout(content: string): string {
 
         <!-- Footer -->
         <tr>
-          <td style="padding:20px 0;text-align:center;">
+          <td style="padding:24px 0 8px;text-align:center;">
+            <p style="margin:0 0 12px;">
+              ${FOOTER_SOCIALS.map((s) => `<a href="${s.url}" style="display:inline-block;margin:0 6px;text-decoration:none;"><img src="${s.icon}" width="32" height="32" alt="${s.label}" style="display:block;border:0;"></a>`).join('')}
+            </p>
+            <p style="color:#6b7280;font-size:12px;line-height:1.7;margin:0 0 12px;">
+              <a href="tel:${FOOTER_PHONE.replace(/[^+\d]/g, '')}" style="color:#6b7280;text-decoration:none;">📞 ${FOOTER_PHONE}</a>
+              &nbsp;&nbsp;|&nbsp;&nbsp;
+              <a href="mailto:${DEFAULT_SUPPORT_EMAIL}" style="color:#6b7280;text-decoration:none;">✉️ ${DEFAULT_SUPPORT_EMAIL}</a>
+              &nbsp;&nbsp;|&nbsp;&nbsp;
+              <a href="${FOOTER_WEBSITE}" style="color:#6b7280;text-decoration:none;">🌐 ${FOOTER_WEBSITE.replace(/^https?:\/\//, '')}</a>
+            </p>
             <p style="color:#9ca3af;font-size:12px;margin:0;">
-              © 2026 Kolab Pvt. Ltd., Kathmandu, Nepal<br>
+              © 2026 Kolab Pvt. Ltd., Itahari, Nepal<br>
               You received this email because you have an account on Kolab.
             </p>
           </td>

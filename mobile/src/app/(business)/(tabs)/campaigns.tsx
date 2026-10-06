@@ -22,6 +22,7 @@ import { TabSlider } from '@/components/TabSlider';
 import { useToast } from '@/components/Toast';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useQueryClient } from '@tanstack/react-query';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem, type ApiCreatorListItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
@@ -30,7 +31,7 @@ import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { FilterSheet, FilterSectionHeader } from '@/components/FilterSheet';
 import { BottomSheet } from '@/components/BottomSheet';
 import type { Campaign } from '@/types';
-import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -209,7 +210,14 @@ export default function CampaignsScreen() {
     void loadTab(activeFilterRef.current, 1, true);
   }, []));
 
-  const onRefresh = useCallback(() => loadCampaigns(true), [activeFilter]);
+  // Pull-to-refresh also drops the cached event details (['campaign', id]) so
+  // edits made elsewhere — e.g. attachments added from the web app — show up
+  // the next time an event is opened instead of waiting out STALE.profile.
+  const queryClient = useQueryClient();
+  const onRefresh = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['campaign'] });
+    return loadCampaigns(true);
+  }, [activeFilter]);
 
   // Re-query when the (debounced) search term settles. Every tab's cache is
   // invalidated so switching status chips mid-search refetches with the term
@@ -931,7 +939,7 @@ const styles = StyleSheet.create({
   typeBadgeTextFree: { color: TabColors.info.color },
   postedDay: { fontSize: FONT_SIZE.xs, fontFamily: F.regular, textAlign: 'center' },
   thumbColumn: { alignItems: 'center', gap: 4, flexShrink: 0 },
-  thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+  thumb: { width: 96, aspectRatio: FEATURE_IMAGE_ASPECT, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
 
   // Stat chips — each chip's own tinted background is what visually
   // separates it from its neighbors, no border lines needed.

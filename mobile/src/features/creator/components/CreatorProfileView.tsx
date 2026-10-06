@@ -8,6 +8,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -57,6 +58,9 @@ type Props = {
   error?: boolean;
   isPrivate?: boolean;
   onRetry?: () => void;
+  /** Pull-to-refresh — omitted = no refresh control. */
+  refreshing?: boolean;
+  onRefresh?: () => void;
   focusReviews?: boolean;
   // §9 badge suppression — set when this profile was reached from a team roster
   // and the member is an INDIVIDUAL (their "Individual" badge is noise there).
@@ -222,7 +226,7 @@ function PlatformList({ platforms }: { platforms: MergedPlatform[] }) {
 }
 
 export function CreatorProfileView({
-  mode, vm, loading, error, isPrivate, onRetry, focusReviews, viaTeam,
+  mode, vm, loading, error, isPrivate, onRetry, refreshing, onRefresh, focusReviews, viaTeam,
 }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -430,7 +434,10 @@ export function CreatorProfileView({
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={edges}>
       <MaxWidthContainer>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 60 }}
+        refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} /> : undefined}>
 
         <HeroCover
           coverUri={coverUri}

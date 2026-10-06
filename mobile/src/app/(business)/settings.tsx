@@ -2007,15 +2007,16 @@ export default function BusinessSettingsScreen() {
 
   function renderSocialAccounts() {
     const connectedByPlatform = new Map(socialAccounts.map((a) => [a.platform, a]));
-    // Per-platform admin switches (Settings → Social Accounts) — each
-    // platform's Connect button is gated independently.
+    // Per-platform admin switches (Settings → Social Accounts) — a platform
+    // switched off is hidden from this list entirely.
     const PLATFORM_LIVE: Record<string, boolean> = {
       tiktok: flags.socialAccountsTiktokEnabled,
       facebook: flags.socialAccountsFacebookEnabled,
       instagram: flags.socialAccountsInstagramEnabled,
       youtube: flags.socialAccountsYoutubeEnabled,
     };
-    const anyLive = CONNECTABLE_SOCIAL_PLATFORMS.some((p) => PLATFORM_LIVE[p.id]);
+    const livePlatforms = CONNECTABLE_SOCIAL_PLATFORMS.filter((p) => PLATFORM_LIVE[p.id]);
+    const anyLive = livePlatforms.length > 0;
 
     return (
       <>
@@ -2027,12 +2028,12 @@ export default function BusinessSettingsScreen() {
             </Text>
           </View>
         )}
+        {anyLive && (
         <Card>
-          {CONNECTABLE_SOCIAL_PLATFORMS.map((p, idx) => {
+          {livePlatforms.map((p, idx) => {
             const acct = connectedByPlatform.get(p.id);
             const isConnecting = connectingPlatform === p.id;
-            const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
-            const isLive = PLATFORM_LIVE[p.id];
+            const isLast = idx === livePlatforms.length - 1;
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                 <View
@@ -2065,7 +2066,7 @@ export default function BusinessSettingsScreen() {
                     </>
                   ) : (
                     <>
-                      {isLive && p.id === 'instagram' && (
+                      {p.id === 'instagram' && (
                         <Pressable disabled={isConnecting} onPress={() => void handleConnectInstagramDirect()} hitSlop={4}>
                           <Text style={[styles.connectInstagramDirectLink, { color: p.color }]}>
                             {t('businessSettings.connectInstagramDirectly')}
@@ -2082,8 +2083,8 @@ export default function BusinessSettingsScreen() {
                     </Pressable>
                   ) : (
                     <Pressable
-                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: !isLive ? 0.4 : isConnecting ? 0.7 : 1 }]}
-                      disabled={!isLive || isConnecting}
+                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: isConnecting ? 0.7 : 1 }]}
+                      disabled={isConnecting}
                       onPress={() => {
                         if (p.id === 'youtube') handleConnectYoutube();
                         else if (p.id === 'tiktok') void handleConnectTiktok();
@@ -2100,6 +2101,7 @@ export default function BusinessSettingsScreen() {
             );
           })}
         </Card>
+        )}
 
         {!anyLive && (
           <View style={[styles.socialComingSoonBanner, { backgroundColor: C.surface, borderColor: C.border }]}>

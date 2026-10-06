@@ -38,6 +38,8 @@ const PublicBusinessesPage = screen(() => import('./public/BusinessesPage'), 'Bu
 const PublicBusinessProfilePage = screen(() => import('./public/BusinessProfilePage'), 'BusinessProfilePage');
 const EventsPage = screen(() => import('./public/EventsPage'), 'EventsPage');
 const EventDetailPage = screen(() => import('./public/EventDetailPage'), 'EventDetailPage');
+const CommunityEventsPage = screen(() => import('./community-events/CommunityEventsPage'), 'CommunityEventsPage');
+const CommunityEventDetailPage = screen(() => import('./community-events/CommunityEventDetailPage'), 'CommunityEventDetailPage');
 const CreatorEventsPage = screen(() => import('./creator/CreatorEventsPage'), 'CreatorEventsPage');
 const CreatorEventDetailPage = screen(() => import('./creator/CreatorEventDetailPage'), 'CreatorEventDetailPage');
 const CreatorDiscoverCreatorsPage = screen(() => import('./creator/CreatorDiscoverCreatorsPage'), 'CreatorDiscoverCreatorsPage');
@@ -94,6 +96,10 @@ export function marketplaceRoutes() {
           <Route path="/businesses" element={<PublicBusinessesPage />} />
         </Route>
         <Route path="/events/:id" element={<EventDetailPage />} />
+        {/* Kolab community events (meetups, workshops) — open to everyone.
+            Not under /events, which is the campaign browser above. */}
+        <Route path="/community/events" element={<CommunityEventsPage />} />
+        <Route path="/community/events/:slug" element={<CommunityEventDetailPage />} />
         {/* The landing hero's natural-language search lands here — open to
             signed-out visitors (unlike the /creators browse list above);
             only public profiles are returned. The literal segment outranks

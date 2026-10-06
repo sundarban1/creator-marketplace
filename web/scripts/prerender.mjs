@@ -105,8 +105,8 @@ async function main() {
   // this run (the static marketing pages are what actually gates a deploy).
   let dynamicRoutes = [];
   try {
-    const { creators, businesses, events } = await fetchIndexableEntities(apiOrigin);
-    dynamicRoutes = [...creators, ...businesses, ...events].map((e) => e.path);
+    const { creators, businesses, events, communityEvents } = await fetchIndexableEntities(apiOrigin);
+    dynamicRoutes = [...creators, ...businesses, ...events, ...communityEvents].map((e) => e.path);
     console.log(`[prerender] fetched ${dynamicRoutes.length} dynamic entity route(s) (${creators.length} creators, ${businesses.length} businesses, ${events.length} events)`);
   } catch (err) {
     console.warn(`[prerender] skipping dynamic entity routes — API fetch failed: ${err instanceof Error ? err.message : err}`);

@@ -4,6 +4,7 @@ export const ne: LandingDict = {
   nav: {
     links: {
       discover: 'खोज',
+      events: 'इभेन्टहरू',
       forCreators: 'क्रिएटरहरूका लागि',
       forBusinesses: 'व्यवसायहरूका लागि',
       howItWorks: 'यसरी काम गर्छ',

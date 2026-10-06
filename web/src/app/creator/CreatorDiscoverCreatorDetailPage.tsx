@@ -106,13 +106,13 @@ export function CreatorDiscoverCreatorDetailPage() {
                 <Star size={13} className="fill-warning text-warning" />
               </span>
             ) : (
-              '—'
+              '0'
             )
           }
         />
         <Stat
           label={t('public.completionRate')}
-          value={c.stats && c.stats.completionRate > 0 ? `${c.stats.completionRate}%` : '—'}
+          value={`${c.stats?.completionRate ?? 0}%`}
         />
       </div>
 

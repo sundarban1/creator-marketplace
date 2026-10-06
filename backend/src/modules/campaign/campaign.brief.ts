@@ -27,6 +27,13 @@ export const deliverableItemSchema = z.object({
 });
 export type DeliverableItem = z.infer<typeof deliverableItemSchema>;
 
+// Per-event attachment caps — shared with web/mobile (EventAttachments).
+export const MAX_ATTACHMENT_IMAGES = 3;
+export const MAX_ATTACHMENT_PDFS = 2;
+
+const isPdfAttachment = (a: { kind?: string; mimeType?: string; url: string; name: string }) =>
+  a.kind === 'PDF' || a.mimeType === 'application/pdf' || /\.pdf($|\?)/i.test(a.url) || /\.pdf$/i.test(a.name);
+
 export const CREATOR_TIERS = ['NANO', 'MICRO', 'MID', 'MACRO'] as const;
 
 export const campaignBriefSchema = z.object({
@@ -71,10 +78,20 @@ export const campaignBriefSchema = z.object({
     reportingRequired: z.boolean().optional(),
     notes:             shortText(500).optional(),
   }).optional(),
+  // Reference images / PDF briefs (POST /api/campaigns/attachments), max 3
+  // images + 2 PDFs. kind,
+  // mimeType and sizeBytes are optional so older {url,name} rows stay valid.
   attachments: z.array(z.object({
-    url:  z.string().url(),
-    name: shortText(120).min(1),
-  })).max(10).optional(),
+    url:       z.string().url(),
+    name:      shortText(120).min(1),
+    kind:      z.enum(['IMAGE', 'PDF']).optional(),
+    mimeType:  shortText(100).optional(),
+    sizeBytes: z.number().int().min(0).optional(),
+  })).superRefine((list, ctx) => {
+    const pdfs = list.filter(isPdfAttachment).length;
+    if (list.length - pdfs > MAX_ATTACHMENT_IMAGES) ctx.addIssue({ code: z.ZodIssueCode.custom, message: `At most ${MAX_ATTACHMENT_IMAGES} images can be attached` });
+    if (pdfs > MAX_ATTACHMENT_PDFS) ctx.addIssue({ code: z.ZodIssueCode.custom, message: `At most ${MAX_ATTACHMENT_PDFS} PDF files can be attached` });
+  }).optional(),
 });
 export type CampaignBrief = z.infer<typeof campaignBriefSchema>;
 

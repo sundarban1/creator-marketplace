@@ -17,7 +17,6 @@ const COPY = {
       description: 'How Kolab keeps creator-business collaboration safe: verified accounts, escrow-protected payments, secure in-app communication, reviews, and reporting.',
     },
     breadcrumbName: 'Trust & Safety',
-    eyebrow: 'Trust & Safety',
     heading: 'Built for safe, structured collaboration.',
     intro: 'Every profile, campaign, and payment on Kolab is designed around the same idea: creators and businesses should be able to work together without guesswork about who they’re dealing with, what was agreed, or whether they’ll get paid.',
     faqs: [
@@ -64,7 +63,6 @@ const COPY = {
       description: 'How Kolab keeps creator-business collaboration safe: verified accounts, escrow-protected payments, secure in-app communication, reviews, and reporting.',
     },
     breadcrumbName: 'भरोसा र सुरक्षा',
-    eyebrow: 'भरोसा र सुरक्षा',
     heading: 'सुरक्षित, संरचित सहकार्यका लागि बनाइएको।',
     intro: 'Kolab मा प्रत्येक प्रोफाइल, क्याम्पेन, र भुक्तानी एउटै सोचमा डिजाइन गरिएको छ: क्रिएटर र व्यवसायले उनीहरू कोसँग काम गरिरहेका छन्, के सहमति भएको थियो, वा भुक्तानी पाउँछन् कि पाउँदैनन् भन्ने अनुमान बिना सँगै काम गर्न सक्नुपर्छ।',
     faqs: [
@@ -130,14 +128,12 @@ function TrustSafetyPageInner() {
         jsonLd: [organizationSchema(), webPageSchema({ path: '/trust-and-safety', title: t.seo.title, description: t.seo.description })],
       }}
       breadcrumb={[{ name: d.contentPage.home, path: '/' }, { name: t.breadcrumbName, path: '/trust-and-safety' }]}
-      icon={ShieldCheck}
-      eyebrow={t.eyebrow}
       heading={t.heading}
       intro={t.intro}
       faqs={t.faqs}
       related={t.related}
       cta={t.cta}
-      backToHome
+      hideBreadcrumb
     >
       <ContentSection heading={t.sections.foundations.heading}>
         <BenefitGrid

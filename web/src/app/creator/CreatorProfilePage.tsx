@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X, Clock } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -69,7 +70,10 @@ export function CreatorProfilePage() {
   const [flash, setFlash] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [socialModal, setSocialModal] = useState(false);
+  // ?connect=social (sent from the apply-proposal modal when no account is
+  // connected) opens the Connect Social modal straight away.
+  const [searchParams] = useSearchParams();
+  const [socialModal, setSocialModal] = useState(() => searchParams.get('connect') === 'social');
   const [portfolioModal, setPortfolioModal] = useState(false);
   const [nicheModal, setNicheModal] = useState(false);
   const [bioGenerating, setBioGenerating] = useState(false);
@@ -619,8 +623,9 @@ function ConnectSocialModal({
     >
       <div className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
+        {anySocialPlatformEnabled && (
         <ul className="space-y-2">
-          {CONNECTABLE_PLATFORMS.map((id) => {
+          {CONNECTABLE_PLATFORMS.filter(isSocialPlatformEnabled).map((id) => {
             const acct = byPlatform.get(id);
             const meta = platformMeta(id);
             return (
@@ -639,9 +644,9 @@ function ConnectSocialModal({
                         ? t('profile.connected')
                         : `${compactNumber(acct.followers)} ${t('profile.followers')}`}
                     </p>
-                  ) : isSocialPlatformEnabled(id) ? (
+                  ) : (
                     <p className="truncate text-[12px] text-ink-soft">{t('profile.connectHint')}</p>
-                  ) : null}
+                  )}
                 </div>
                 {acct ? (
                   <button
@@ -657,7 +662,6 @@ function ConnectSocialModal({
                     variant="secondary"
                     className="flex-shrink-0"
                     onClick={CONNECT_HANDLERS[id]}
-                    disabled={!isSocialPlatformEnabled(id)}
                   >
                     {t('profile.connectBtn')}
                   </Button>
@@ -666,6 +670,7 @@ function ConnectSocialModal({
             );
           })}
         </ul>
+        )}
         {!anySocialPlatformEnabled && (
           <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-5 text-center">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand">

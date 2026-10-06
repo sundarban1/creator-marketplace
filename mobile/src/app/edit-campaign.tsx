@@ -26,6 +26,8 @@ import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import { EventAttachmentsField } from '@/components/EventAttachmentsField';
+import type { CampaignAttachment } from '@/services/guidedCampaign';
 import {
   DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
@@ -213,6 +215,8 @@ export default function EditCampaignScreen() {
   // collaboration). Raising the count is always fine.
   const [confirmedCreators, setConfirmedCreators] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [attachments, setAttachments] = useState<CampaignAttachment[]>([]);
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false);
   const [featureImageUploading, setFeatureImageUploading] = useState(false);
   // Only relevant while the campaign isn't already featured — see the `quota`
   // prop passed to FeaturedToggle below for why an already-featured campaign
@@ -281,6 +285,7 @@ export default function EditCampaignScreen() {
           return;
         }
         setCampaign(c);
+        setAttachments(c.brief?.attachments ?? []);
         setEditForm({
           title:        c.title,
           description:  c.description ?? '',
@@ -372,6 +377,7 @@ export default function EditCampaignScreen() {
   }
 
   async function handleSave() {
+    if (attachmentsBusy) { showToast(t('eventAttachments.waitUpload'), 'error'); return; }
     const errs = validateEdit();
     if (Object.keys(errs).length > 0) { setEditErrors(errs); return; }
     setSaving(true);
@@ -390,6 +396,8 @@ export default function EditCampaignScreen() {
           // unrelated edit (title, venue) isn't rejected for touching it.
           ...(timeLocked ? {} : { eventTime: editForm.eventTime }),
           benefits:    editForm.benefits,
+          // Whole-brief replace on the server — keep every other section.
+          brief:       { ...(campaign!.brief ?? {}), attachments },
           // Locked by the backend once proposals exist — see the PAID_CAMPAIGN
           // branch below for the full explanation of why this has to be
           // conditionally omitted rather than sent as false/unchanged.
@@ -681,6 +689,11 @@ export default function EditCampaignScreen() {
             t={t}
           />
           {hasProposals && <Text style={[s.lockedNote, { color: C.textSecondary, marginTop: 8 }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
+        </View>
+
+        {/* ── Attachments ── */}
+        <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <EventAttachmentsField mode="edit" value={attachments} onChange={setAttachments} onBusyChange={setAttachmentsBusy} />
         </View>
 
         <View style={{ height: 8 }} />

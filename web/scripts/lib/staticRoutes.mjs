@@ -28,6 +28,8 @@ export const STATIC_ROUTES = [
   '/facebook-creators',
   '/paid-collaborations-nepal',
   '/industries-nepal',
+  // Public (no RequireAuth) — unlike the /events campaign browser above.
+  '/community/events',
   '/cities-nepal',
   '/food-influencers-nepal',
   '/travel-influencers-nepal',

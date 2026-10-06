@@ -7,6 +7,7 @@ import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { STALE } from '@/lib/queryClient';
 import { CreatorProfileView } from '@/features/creator/components/CreatorProfileView';
 import { toOwnerVm, emptyOwnerVm } from '@/features/creator/utils/creatorProfileVm';
@@ -40,6 +41,7 @@ export default function CreatorProfileScreen() {
     staleTime: STALE.profile,
   });
   useRefetchOnFocusIfStale(profileQuery, applicationsQuery, portfolioQuery);
+  const { refreshing, onRefresh } = usePullToRefresh(profileQuery, applicationsQuery, portfolioQuery);
 
   // The favourite-business ids live in their own hook; keep re-syncing them on
   // focus (cheap, and covers un-favouriting done on another screen).
@@ -61,6 +63,6 @@ export default function CreatorProfileScreen() {
     : emptyOwnerVm(user?.name ?? 'Creator');
 
   return (
-    <CreatorProfileView mode="owner" vm={vm} focusReviews={focus === 'reviews'} />
+    <CreatorProfileView mode="owner" vm={vm} focusReviews={focus === 'reviews'} refreshing={refreshing} onRefresh={onRefresh} />
   );
 }

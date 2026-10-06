@@ -5,6 +5,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { STALE } from '@/lib/queryClient';
 import { BusinessProfileView } from '@/features/business/components/BusinessProfileView';
 import { toOwnerVm, emptyOwnerVm } from '@/features/business/utils/businessProfileVm';
@@ -35,6 +36,7 @@ export default function BusinessProfileScreen() {
     staleTime: STALE.list,
   });
   useRefetchOnFocusIfStale(profileQuery, campaignsQuery, savedCreatorsQuery);
+  const { refreshing, onRefresh } = usePullToRefresh(profileQuery, campaignsQuery, savedCreatorsQuery);
 
   const profile = profileQuery.data;
   const activeCampaigns = (campaignsQuery.data?.campaigns ?? []).filter((c) => c.status === 'active').length;
@@ -49,6 +51,8 @@ export default function BusinessProfileScreen() {
       mode="owner"
       vm={vm}
       focusReviews={focus === 'reviews'}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
     />
   );
 }

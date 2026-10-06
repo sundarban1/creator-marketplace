@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { Button } from '@/components/Button';
@@ -12,6 +12,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { promotionService } from '@/services/rewards';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 
 function formatDate(iso: string): string {
@@ -28,7 +29,12 @@ export default function DealDetailScreen() {
     queryFn: () => promotionService.getById(id!),
     enabled: !!id,
     staleTime: 30_000,
+    // Always background-refresh on open (cache still renders instantly) so
+    // edits made elsewhere — web app, another device — show up.
+    refetchOnMount: 'always',
   });
+
+  const { refreshing, onRefresh } = usePullToRefresh(promotionQuery);
 
   const promotion = promotionQuery.data;
   const discount = promotion
@@ -52,7 +58,10 @@ export default function DealDetailScreen() {
           <EmptyState faIcon="tag" title={t('deals.notFound')} />
         ) : (
           <>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.content}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
               <View style={[styles.heroImage, { backgroundColor: C.primaryLight }]}>
                 {promotion.imageUrl ? (
                   <Image source={{ uri: promotion.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />

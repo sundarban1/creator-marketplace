@@ -53,7 +53,7 @@ const PRIORITY = {
   '/trust-and-safety': 0.5,
 };
 const DEFAULT_STATIC_PRIORITY = 0.6;
-const DYNAMIC_PRIORITY = { creators: 0.6, businesses: 0.6, events: 0.7 };
+const DYNAMIC_PRIORITY = { creators: 0.6, businesses: 0.6, events: 0.7, communityEvents: 0.6 };
 
 async function resolveApiOrigin() {
   if (process.env.VITE_API_URL) return process.env.VITE_API_URL;
@@ -84,7 +84,7 @@ function urlEntry(path, { priority, changefreq }) {
 async function main() {
   const apiOrigin = await resolveApiOrigin();
 
-  let entities = { creators: [], businesses: [], events: [] };
+  let entities = { creators: [], businesses: [], events: [], communityEvents: [] };
   try {
     entities = await fetchIndexableEntities(apiOrigin, DEFAULT_ENTITY_LIMIT);
   } catch (err) {
@@ -101,6 +101,7 @@ async function main() {
     ...entities.creators.map((e) => urlEntry(e.path, { priority: DYNAMIC_PRIORITY.creators, changefreq: 'weekly' })),
     ...entities.businesses.map((e) => urlEntry(e.path, { priority: DYNAMIC_PRIORITY.businesses, changefreq: 'weekly' })),
     ...entities.events.map((e) => urlEntry(e.path, { priority: DYNAMIC_PRIORITY.events, changefreq: 'daily' })),
+    ...entities.communityEvents.map((e) => urlEntry(e.path, { priority: DYNAMIC_PRIORITY.communityEvents, changefreq: 'weekly' })),
   ];
 
   const xml = [

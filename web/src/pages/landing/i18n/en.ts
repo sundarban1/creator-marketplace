@@ -2,6 +2,7 @@ export const en = {
   nav: {
     links: {
       discover: 'Discover',
+      events: 'Events',
       forCreators: 'For Creators',
       forBusinesses: 'For Businesses',
       howItWorks: 'How It Works',

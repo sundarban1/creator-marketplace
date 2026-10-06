@@ -303,6 +303,132 @@ export interface ApiSuccessStory {
   updatedAt: string;
 }
 
+// ── Community Events (admin → Community Events, public /community/events) ────
+
+export type CommunityEventType = 'MEETUP' | 'WORKSHOP' | 'TRAINING' | 'NETWORKING' | 'COMMUNITY_EVENT' | 'OTHER';
+export type CommunityEventStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+export type CommunityEventSection = 'upcoming' | 'past' | 'cancelled';
+export type CommunityEventUploadKind = 'cover' | 'gallery' | 'speaker' | 'partner' | 'highlight';
+
+export interface CommunityEventImage { id?: string; url: string; caption?: string | null }
+export interface CommunityEventSpeaker {
+  id?: string; name: string; imageUrl?: string | null; role?: string | null;
+  organization?: string | null; bio?: string | null; profileUrl?: string | null;
+}
+export interface CommunityEventHighlight { id?: string; title: string; description?: string | null; imageUrl?: string | null }
+export interface CommunityEventAgendaItem { id?: string; time?: string | null; title: string; description?: string | null }
+export interface CommunityEventPartner { id?: string; name: string; logoUrl?: string | null; websiteUrl?: string | null }
+
+/** Body for create/update — wall-clock date/time strings in `timezone`. */
+export interface CommunityEventInput {
+  title: string;
+  slug: string | null;
+  shortDescription: string;
+  description: string | null;
+  eventType: CommunityEventType;
+  statusOverride: CommunityEventStatus | null;
+  coverImageUrl: string | null;
+  startDate: string;
+  startTime: string;
+  endDate: string | null;
+  endTime: string | null;
+  timezone: string;
+  venueName: string | null;
+  address: string | null;
+  city: string | null;
+  country: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  mapsUrl: string | null;
+  videoUrl: string | null;
+  registrationEnabled: boolean;
+  registrationUrl: string | null;
+  registrationDeadline: string | null;
+  maxAttendees: number | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImageUrl: string | null;
+  featured: boolean;
+  published: boolean;
+  images: CommunityEventImage[];
+  speakers: CommunityEventSpeaker[];
+  highlights: CommunityEventHighlight[];
+  agenda: CommunityEventAgendaItem[];
+  partners: CommunityEventPartner[];
+}
+
+export interface CommunityEventAdmin extends CommunityEventInput {
+  id: string;
+  slug: string;
+  startDateTime: string;
+  endDateTime: string | null;
+  publishedAt: string | null;
+  status: CommunityEventStatus;
+  section: CommunityEventSection;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunityEventListRow {
+  id: string;
+  title: string;
+  slug: string;
+  eventType: CommunityEventType;
+  coverImageUrl: string | null;
+  startDateTime: string;
+  timezone: string;
+  venueName: string | null;
+  city: string | null;
+  country: string | null;
+  published: boolean;
+  featured: boolean;
+  status: CommunityEventStatus;
+  section: CommunityEventSection;
+  _count: { images: number; speakers: number };
+}
+
+/** Public card (listing). */
+export interface CommunityEventCard {
+  id: string;
+  slug: string;
+  title: string;
+  shortDescription: string;
+  eventType: CommunityEventType;
+  coverImageUrl: string | null;
+  startDateTime: string;
+  endDateTime: string | null;
+  timezone: string;
+  venueName: string | null;
+  city: string | null;
+  country: string | null;
+  featured: boolean;
+  status: CommunityEventStatus;
+  section: CommunityEventSection;
+  registrationOpen: boolean;
+  registrationUrl: string | null;
+}
+
+/** Public detail page. */
+export interface CommunityEventDetail extends Omit<CommunityEventCard, 'registrationUrl'> {
+  description: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  mapsUrl: string | null;
+  videoUrl: string | null;
+  registrationUrl: string | null;
+  registrationDeadline: string | null;
+  maxAttendees: number | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImageUrl: string | null;
+  images: CommunityEventImage[];
+  speakers: CommunityEventSpeaker[];
+  highlights: CommunityEventHighlight[];
+  agenda: CommunityEventAgendaItem[];
+  partners: CommunityEventPartner[];
+}
+
 export interface LandingStats {
   totalCreators: number;
   totalBusinesses: number;
@@ -878,7 +1004,12 @@ async function request<T>(
   }
 
   const json = await res.json() as ApiResponse<T>;
-  if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
+  if (!res.ok) {
+    // Keep the server's per-field validation errors (422) on the Error so a
+    // form can point at the offending field instead of just "Validation failed".
+    const body = json as { message?: string; errors?: Array<{ field: string; message: string }> };
+    throw Object.assign(new Error(body.message ?? `Request failed (${res.status})`), { errors: body.errors });
+  }
   return json;
 }
 
@@ -902,6 +1033,25 @@ async function uploadFile<T>(path: string, file: File, fieldName: string): Promi
     res = await send(await ensureFreshAccessToken());
   }
 
+  const json = await res.json() as ApiResponse<T>;
+  if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
+  return json;
+}
+
+// Multipart POST of several files under one field name (Community Events
+// gallery bulk upload). Same 401→refresh→retry as uploadFile.
+async function uploadFiles<T>(path: string, files: File[], fieldName: string): Promise<ApiResponse<T>> {
+  const form = new FormData();
+  files.forEach((f) => form.append(fieldName, f));
+  const send = (token: string | null) => fetch(`${BASE}${path}`, {
+    method:  'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body:    form,
+  });
+  let res = await send(getAccessToken());
+  if (res.status === 401) {
+    res = await send(await ensureFreshAccessToken());
+  }
   const json = await res.json() as ApiResponse<T>;
   if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
   return json;
@@ -1221,6 +1371,27 @@ export const api = {
 
     uploadSuccessStoryPhoto: (file: File) =>
       uploadFile<{ photoUrl: string }>('/api/admin/success-stories/photo', file, 'photo'),
+
+    communityEvents: () =>
+      request<CommunityEventListRow[]>('GET', '/api/admin/community-events'),
+
+    communityEvent: (id: string) =>
+      request<CommunityEventAdmin>('GET', `/api/admin/community-events/${id}`),
+
+    createCommunityEvent: (data: CommunityEventInput) =>
+      request<CommunityEventAdmin>('POST', '/api/admin/community-events', data),
+
+    updateCommunityEvent: (id: string, data: CommunityEventInput) =>
+      request<CommunityEventAdmin>('PUT', `/api/admin/community-events/${id}`, data),
+
+    setCommunityEventPublished: (id: string, published: boolean) =>
+      request<CommunityEventAdmin>('PATCH', `/api/admin/community-events/${id}/publish`, { published }),
+
+    deleteCommunityEvent: (id: string) =>
+      request<null>('DELETE', `/api/admin/community-events/${id}`),
+
+    uploadCommunityEventImages: (files: File[], kind: CommunityEventUploadKind) =>
+      uploadFiles<{ urls: string[] }>(`/api/admin/community-events/images?kind=${kind}`, files, 'images'),
   },
 
   help: {

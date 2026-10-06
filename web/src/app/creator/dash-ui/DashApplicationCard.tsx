@@ -26,7 +26,7 @@ export function DashApplicationCard({ application: a }: { application: CreatorAp
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
       )}
     >
-      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-surface-dim">
+      <div className="aspect-[16/9] w-24 flex-shrink-0 overflow-hidden rounded-xl bg-surface-dim">
         {c?.featureImageUrl ? (
           <img src={c.featureImageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (

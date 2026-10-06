@@ -13,14 +13,14 @@ import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
 import { prefetchCampaign } from '@/lib/prefetch';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 
 // Featured and Nearby used to be two byte-for-byte-identical card components,
 // differing only in their top-right tag (a "NEW" badge vs. a distance pill).
 // One component, one `variant`, instead of two files to keep in sync.
 
 const CARD_W    = 264;
-const CARD_IMG_H = 112;
+const CARD_IMG_H = Math.round(CARD_W / FEATURE_IMAGE_ASPECT); // 16:9 — matches the upload crop
 
 function timeAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();

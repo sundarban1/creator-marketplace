@@ -18,9 +18,11 @@ import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { ApiError } from '../lib/apiClient';
 import { cn } from '../ui/cn';
+import { ImageCropModal } from '../ui/ImageCropModal';
 import { OFFERING_OPTIONS, ROLE_TYPE_OPTIONS } from './eventFormConstants';
 import { ChipGroup } from './eventFormShared';
 import { GuidedCampaignCreator } from './guided/GuidedCampaignCreator';
+import { EventAttachmentsEditor } from '../events/EventAttachments';
 
 type Status = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED';
 
@@ -70,6 +72,7 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
   const categories = useAsync((s) => fetchCategories(s), []);
 
   const [featureImageUrl, setFeatureImageUrl] = useState(c.featureImageUrl ?? '');
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
 
   const [title, setTitle] = useState(c.title);
@@ -94,6 +97,9 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
   const [eventDate, setEventDate] = useState(c.eventDate ? c.eventDate.slice(0, 10) : '');
   const [eventTime, setEventTime] = useState(c.eventTime ?? '');
 
+  const [attachments, setAttachments] = useState(c.brief?.attachments ?? []);
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false);
+
   const [error, setError] = useState('');
   const [flash, setFlash] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -113,15 +119,25 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
     }
   }
 
-  async function onPickImage(file: File) {
+  // Picking opens the 16:9 crop step; the upload runs on confirm, so the
+  // image always matches the 16:9 frame event cards render it in.
+  function onPickImage(file: File) {
+    setCropSrc(URL.createObjectURL(file));
+  }
+  function closeCrop() {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  }
+  async function onImageCropped(blob: Blob) {
     setImageUploading(true);
     try {
-      const { imageUrl } = await uploadCampaignFeatureImage(file);
+      const { imageUrl } = await uploadCampaignFeatureImage(new File([blob], 'feature.jpg', { type: 'image/jpeg' }));
       setFeatureImageUrl(imageUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.somethingWrong'));
     } finally {
       setImageUploading(false);
+      closeCrop();
     }
   }
 
@@ -130,6 +146,7 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
     setError('');
     setFlash('');
 
+    if (attachmentsBusy) return setError(t('biz.attachmentsWaitUpload'));
     if (title.trim().length < 3) return setError('Add a title.');
     if (!category) return setError('Pick a category.');
 
@@ -165,6 +182,8 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
         eventTime: isFree ? eventTime || null : undefined,
         venue: isFree ? location.trim() || undefined : undefined,
         benefits: isFree ? benefits : undefined,
+        // Whole-brief replace on the server — keep every other section.
+        brief: { ...(c.brief ?? {}), attachments },
       });
       navigate(`/business/events/${id}`);
     } catch (err) {
@@ -188,7 +207,7 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
       <form onSubmit={submit} className="space-y-4">
         {/* Cover image — always editable in edit mode, empty state included. */}
         <Card padded={false}>
-          <div className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-2xl bg-surface-dim sm:h-48">
+          <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-2xl bg-surface-dim">
             {featureImageUrl ? (
               <img src={featureImageUrl} alt="" className="h-full w-full object-cover" />
             ) : (
@@ -371,8 +390,10 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
 
         <FeaturedEventToggle checked={isFeatured} onChange={setIsFeatured} />
 
+        <EventAttachmentsEditor value={attachments} onChange={setAttachments} onBusyChange={setAttachmentsBusy} />
+
         <div className="flex gap-2 pt-2">
-          <Button type="submit" size="lg" loading={submitting}>
+          <Button type="submit" size="lg" loading={submitting} disabled={attachmentsBusy}>
             {t('biz.saveChanges')}
           </Button>
           <Button type="button" size="lg" variant="secondary" disabled={submitting} onClick={() => navigate(`/business/events/${id}`)}>
@@ -380,6 +401,15 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
           </Button>
         </div>
       </form>
+
+      <ImageCropModal
+        open={!!cropSrc}
+        imageSrc={cropSrc}
+        aspect={16 / 9}
+        title={t('biz.cropEventImageTitle')}
+        onCancel={closeCrop}
+        onConfirm={onImageCropped}
+      />
     </div>
   );
 }

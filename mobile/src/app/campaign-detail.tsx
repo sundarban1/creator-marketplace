@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,13 +24,15 @@ import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { eventOptionLabel } from '@/features/business/utils/eventOptionLabels';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { STALE } from '@/lib/queryClient';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type ApiCampaignInvitation } from '@/services/creator';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
+import { EventAttachmentsField } from '@/components/EventAttachmentsField';
 import { formatEventTime } from '@/components/EventTimeField';
-import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -64,6 +67,9 @@ export default function CampaignDetailScreen() {
     queryFn: () => campaignService.getById(campaignId!),
     enabled: !!campaignId,
     staleTime: STALE.profile,
+    // Always background-refresh on open (cache still renders instantly) so
+    // edits made elsewhere — web app, another device — show up.
+    refetchOnMount: 'always',
   });
 
   // Same unfiltered "all my applications" cache business-detail.tsx uses —
@@ -83,6 +89,11 @@ export default function CampaignDetailScreen() {
   });
 
   useRefetchOnFocusIfStale(campaignQuery, applicationsQuery, invitationsQuery);
+
+  // Pull-to-refresh — the cached campaign can be up to STALE.profile old (and
+  // is restored from disk on cold start), so an edit made elsewhere (e.g.
+  // attachments added from the web app) needs an explicit way to show up.
+  const { refreshing, onRefresh } = usePullToRefresh(campaignQuery, applicationsQuery, invitationsQuery);
 
   const campaign = campaignQuery.data ?? null;
   const loading  = campaignQuery.isPending;
@@ -171,7 +182,11 @@ export default function CampaignDetailScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+      >
 
         {/* Hero */}
         <View style={[s.hero, { backgroundColor: heroBg }]}>
@@ -450,6 +465,15 @@ export default function CampaignDetailScreen() {
         {/* Guided-creator data: places, structured deliverables, timeline,
             advanced brief (content guidelines, requirements, terms…). */}
         {!isOpenEvent ? <CampaignBriefSections c={campaign} /> : null}
+
+        {/* Reference images / PDFs the business attached — tap to preview,
+            corner button downloads (share sheet). */}
+        {campaign.brief?.attachments?.length ? (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('eventAttachments.title')}</Text>
+            <EventAttachmentsField mode="view" value={campaign.brief.attachments} />
+          </View>
+        ) : null}
         {isBusiness && !isOpenEvent ? (
           <View style={{ marginHorizontal: SCREEN_GUTTER, marginTop: 8 }}>
             <SaveTemplateButton campaignId={campaign.id} defaultName={campaign.title} />
@@ -709,7 +733,7 @@ const s = StyleSheet.create({
 
   scroll: { paddingBottom: SPACING.xxxl },
 
-  hero:         { height: 180, justifyContent: 'center', alignItems: 'center', position: 'relative', overflow: 'hidden' },
+  hero:         { width: '100%', aspectRatio: FEATURE_IMAGE_ASPECT, justifyContent: 'center', alignItems: 'center', position: 'relative', overflow: 'hidden' },
   heroImgOverlay: { backgroundColor: 'rgba(0,0,0,0.28)' },
   heroBadge:    { position: 'absolute', top: 14, left: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm },
   heroNewBadge: { position: 'absolute', top: 14, right: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm },
