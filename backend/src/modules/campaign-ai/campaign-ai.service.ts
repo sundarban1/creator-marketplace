@@ -9,8 +9,16 @@ import { BusinessRepository } from '../business/business.repository';
 import {
   aiCampaignDraftSchema, aiEventDraftSchema, BENEFIT_OPTIONS, BENEFIT_DESCRIPTIONS,
   EXCHANGE_OPTIONS, EXCHANGE_DESCRIPTIONS, NEEDS_INPUT_FIELDS, EVENT_NEEDS_INPUT_FIELDS,
+  DELIVERABLE_ITEM_TYPES, STATED_FIELDS, SUGGESTABLE_FIELDS,
   type AiCampaignDraft, type AiEventDraft, type AiRequirementDraft, type SuggestDescriptionInput,
+  type RecommendInput, type ImproveTextInput, type AskKolabInput,
 } from './campaign-ai.schema';
+import {
+  buildGuidedExtras, recommendBudget, recommendCreatorCount, recommendDeliverables, askKolabFallback,
+  describeDraftForAi, type GuidedExtras,
+} from './campaign-ai.guided';
+import prisma from '../../prisma';
+import { getDict } from '../../i18n';
 import { searchStockPhoto } from '../../utils/imageSearch';
 import dummyData from './campaign-ai.dummy.json';
 
@@ -272,7 +280,7 @@ function buildBusinessContextBlock(business: { businessName: string | null; cate
   return `\nBUSINESS PROFILE (use this to fill gaps the brand's prompt doesn't cover — never ask the brand to repeat something already listed here):\n${lines.join('\n')}\n`;
 }
 
-function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
+function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, today: string, inputSource?: 'voice' | 'text'): string {
   return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting businesses with content creators for paid opportunities.
 
 Given a brand's short description of what they want to promote, generate a complete campaign brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
@@ -307,6 +315,14 @@ Respond with a JSON object with EXACTLY these keys:
 - location: string or null, a city/area if inferable, otherwise null
 - imageQuery: string, 2-5 words in ENGLISH naming the single best stock photo for this campaign, describing the photo's SUBJECT only — e.g. "momo dumplings on table", "holi festival colour powder", "himalaya trekking trail", "barista pouring latte", "jewellery display case". Concrete and photographable: no brand names, no person's name, no business or street names (a well-known natural landmark like "himalaya" is fine when it genuinely IS the subject), no words like "photo"/"image"/"banner"/"poster", no adjectives about mood. Base it on what the campaign is actually ABOUT, not on the category name — a Holi party at a cafe is "holi festival colour powder", not "cafe interior". ALWAYS English even when every other field is Nepali, because it is used verbatim as a stock-photo search query.
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless. Do NOT put budget here — budgetStatus already reports that.
+- locations: string[] (0-10) — EVERY city/area the brand named for where creators should be or visit ("around Dharan" -> ["Dharan"]; "Kathmandu and Pokhara" -> ["Kathmandu","Pokhara"]). Empty when they named none. Do not add places they did not say (you may still use the business profile's location in "location" above as a guess).
+- locationScope: EXACTLY ONE of "SPECIFIC" (they named place(s)), "NATIONWIDE" ("all over Nepal", "anywhere in Nepal"), "ANYWHERE" ("creators can be anywhere", "they don't need to visit", online/remote content), "UNSURE" (they said nothing about location).
+- creatorsVisit: true if creators must come to a physical place (visit the café/store/event), false if the brand said remote/online content is fine, null if they did not make it clear.
+- deliverableItems: array (0-10) of { "type": one of ${DELIVERABLE_ITEM_TYPES.map((t) => `"${t}"`).join(', ')}, "platform": platform name or null, "quantity": integer 1-10 per creator }. Mirror what the brand asked for; if they asked for nothing specific, give your single best suggestion (usually ONE short-form video).
+- startDate / endDate: "YYYY-MM-DD" or null — TODAY'S DATE IS ${today}. Resolve what the brand said about timing ("from Oct 10 to 20", "next two weeks", "before Dashain") against that date. null when they gave no timing at all — never invent dates.
+- statedFields: string[] — which of these the brand EXPLICITLY said in their own words (not inferred, not from the business profile): ${STATED_FIELDS.map((f) => `"${f}"`).join(', ')}. Be strict: if you had to guess or used a default, it is NOT stated.
+- statedRequirements: { "minFollowers": integer or null, "languages": string[], "tiers": subset of ["NANO","MICRO","MID","MACRO"], "notes": string } — ONLY creator requirements the brand actually stated. NEVER invent a follower minimum, engagement rate, tier or language they did not mention; leave null/[]/"" instead.
+- suggestionNotes: array (0-4) of { "field": one of ${SUGGESTABLE_FIELDS.map((f) => `"${f}"`).join(', ')}, "note": one short friendly sentence (in the brand's language) explaining why you suggested that value } — only for fields that are NOT in statedFields.
 
 ${buildLanguageInstruction(language, CAMPAIGN_LOCALIZED_FIELDS, inputSource)}
 
@@ -415,7 +431,7 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null; requirements: (AiRequirementDraft & { categoryId: string })[] }> {
+  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; platforms: string[]; aiFallback: boolean; featureImageUrl: string | null; featureImageCredit: { name: string; profileUrl: string } | null; requirements: (AiRequirementDraft & { categoryId: string })[]; guided: GuidedExtras }> {
     const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
@@ -432,7 +448,7 @@ export class CampaignAiService {
     let aiFallback = false;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language, businessContext, inputSource), prompt);
+      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language, businessContext, todayInNepal(), inputSource), prompt);
       this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response', NEEDS_INPUT_FIELDS);
       draft = normalizeCampaignBudget(draft);
@@ -448,6 +464,10 @@ export class CampaignAiService {
       ...matched,
       ...(await this.resolveFeatureImage(draft)),
       aiFallback,
+      // Guided-creator structure (locations, deliverable items, timeline,
+      // provenance, missing info, clarifying questions, suggestions) — under
+      // its own key so existing clients reading the flat fields are untouched.
+      guided: buildGuidedExtras({ ...matched, platform: matched.platform }),
       // The app connects content creators only — campaigns are never multi-role
       // now, so requirements is always empty. Kept in the response shape so
       // clients that still read the field get a stable [].
@@ -504,6 +524,107 @@ export class CampaignAiService {
       ...(await this.resolveFeatureImage(draft)),
       aiFallback,
     };
+  }
+
+  // ── Guided creator helpers ─────────────────────────────────────────────
+
+  // "Let Kolab recommend" — deterministic (campaign-ai.guided.ts), using real
+  // creator supply on Kolab for the count.
+  async recommend(input: RecommendInput) {
+    const { field, draft } = input;
+    if (field === 'deliverables') {
+      return { field, value: recommendDeliverables(draft), reason: getDict().guidedAi.recommend.deliverables, estimate: false };
+    }
+    if (field === 'budget') {
+      const { budgetMin, budgetMax, reason } = recommendBudget(draft);
+      return { field, value: { budgetMin, budgetMax, perCreator: true }, reason, estimate: true };
+    }
+    const place = draft.locations?.[0]?.name?.split(',')[0]?.trim();
+    const supply = place ? { count: await this.countCreatorsNear(place), place } : null;
+    const { creatorsNeeded, reason } = recommendCreatorCount(draft, supply);
+    return { field, value: creatorsNeeded, reason, estimate: false };
+  }
+
+  private async countCreatorsNear(place: string): Promise<number> {
+    return prisma.creatorProfile.count({
+      where: {
+        user: { isActive: true, role: 'CREATOR' },
+        OR: [
+          { city: { equals: place, mode: 'insensitive' } },
+          { district: { equals: place, mode: 'insensitive' } },
+          { location: { contains: place, mode: 'insensitive' } },
+        ],
+      },
+    }).catch(() => 0);
+  }
+
+  // "Make this clearer" (§18) — returns a suggestion the business can take or
+  // leave; null (not a canned rewrite) when AI is unavailable, so the app
+  // simply doesn't offer one rather than showing something generic.
+  async improveText(input: ImproveTextInput, language: string = 'en'): Promise<{ suggestion: string | null }> {
+    if (!env.OPENAI_API_KEY) return { suggestion: null };
+    try {
+      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: DESCRIPTION_TIMEOUT_MS, maxRetries: MAX_RETRIES });
+      const what = input.field === 'idea'
+        ? "the business's own short description of what they need creators for"
+        : 'the campaign description creators will read';
+      const response = await client.chat.completions.create({
+        model: MODEL,
+        max_completion_tokens: 400,
+        reasoning_effort: 'minimal',
+        verbosity: 'low',
+        messages: [
+          {
+            role: 'system',
+            content: `You help small businesses in Nepal write clearer creator-campaign briefs. Rewrite ${what} so it reads clearly: who the business is, what creators should do, and what to highlight. 1-3 sentences, friendly and plain.
+STRICT: keep every fact the business gave (from the text and the campaign details), and add NO new facts — no platforms (Instagram, TikTok, Facebook...), numbers, prices, dates, places, follower counts, whether creators must visit, or any other requirement that is not already given. You may describe the content in general terms (e.g. "showcasing the menu and the café experience"). Respond with ONLY the rewritten text — no quotes, no labels.
+${buildLanguageInstruction(language, ['the rewritten text'])}`,
+          },
+          { role: 'user', content: `Text to rewrite: ${input.text}\n\nCampaign details already given:\n${describeDraftForAi(input.draft)}` },
+        ],
+      });
+      const text = (response.choices[0]?.message?.content ?? '').trim().replace(/^["']|["']$/g, '');
+      if (text.length < 10 || text === input.text.trim()) return { suggestion: null };
+      return { suggestion: text };
+    } catch (err) {
+      logger.warn({ err: err instanceof Error ? err.message : err }, 'improveText unavailable');
+      return { suggestion: null };
+    }
+  }
+
+  // "Ask Kolab" (§17) — short, contextual answers about the current campaign.
+  async askKolab(input: AskKolabInput, language: string = 'en'): Promise<{ answer: string; fallback: boolean }> {
+    const fallback = () => ({ answer: askKolabFallback(input.question) ?? getDict().guidedAi.askUnavailable, fallback: true });
+    if (!env.OPENAI_API_KEY) return fallback();
+    try {
+      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: DESCRIPTION_TIMEOUT_MS, maxRetries: MAX_RETRIES });
+      const response = await client.chat.completions.create({
+        model: MODEL,
+        max_completion_tokens: 600,
+        reasoning_effort: 'minimal',
+        verbosity: 'low',
+        messages: [
+          {
+            role: 'system',
+            content: `You are "Ask Kolab", a friendly co-pilot inside Kolab's campaign creator (a Nepal creator marketplace connecting businesses with content creators). The business is creating a campaign and asks you something. Answer in at most 90 words, plain and practical, specific to THEIR campaign below and to Nepal (NPR, local platforms and habits). If they ask for numbers (budget, creator count), give a sensible range and say it's an estimate they decide on. Never claim a creator exists or promise results. Start with the answer itself — no greeting or preamble. Write plain text (no markdown headings or bold); for a list use at most 4 short lines starting with "• ". Write money as "Rs." (Nepali rupees) — never "₹" or "INR". Only if the question has nothing to do with creating this campaign, say briefly that you can help with the campaign and suggest what they could ask.
+The business is on the "${input.step ?? 'campaign'}" step. Their campaign so far:
+${describeDraftForAi(input.draft)}
+${buildLanguageInstruction(language, ['your answer'])}`,
+          },
+          { role: 'user', content: input.question },
+        ],
+      });
+      // Belt and braces for the format rules above: Nepali currency, no markdown emphasis.
+      const answer = (response.choices[0]?.message?.content ?? '')
+        .replace(/₹\s?|\bINR\s?/g, 'Rs. ')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .trim();
+      if (answer.length < 5) return fallback();
+      return { answer, fallback: false };
+    } catch (err) {
+      logger.warn({ err: err instanceof Error ? err.message : err }, 'askKolab unavailable — FAQ fallback');
+      return fallback();
+    }
   }
 
   // Fed into the system prompt so the AI can infer industry/location the

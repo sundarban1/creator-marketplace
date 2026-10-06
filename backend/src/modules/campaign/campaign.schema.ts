@@ -1,11 +1,14 @@
 import { z } from 'zod';
+import { guidedCampaignFields } from './campaign.brief';
+import { MIN_BUDGET_PER_CREATOR } from './campaign.rules';
 
 // A paid campaign, once ACTIVE (published), must carry a real per-creator
 // payment — the business confirms "Rs. X per creator" on the review screen
 // before it goes live (AI paid-event budget spec §2). Drafts, free events,
 // multi-role campaigns (budget lives per requirement) and product-exchange
 // campaigns (no cash) are exempt. Mirrors the mobile MIN_BUDGET_PER_CREATOR.
-export const MIN_BUDGET_PER_CREATOR = 500;
+// Lives in the shared campaign.rules.ts so the apps use the same figure.
+export { MIN_BUDGET_PER_CREATOR };
 
 // budgetMin/budgetMax are per-creator bounds; the campaign-wide figure is the
 // per-creator ceiling times the number of creators. Always computed here, never
@@ -110,6 +113,7 @@ export const createCampaignSchema = z.object({
   // get saved (so old clients reading a campaign don't see blank fields) but
   // become informational summaries rather than what applicants apply against.
   requirements: z.array(campaignRequirementSchema).max(10, 'At most 10 requirements').optional(),
+  ...guidedCampaignFields,
 }).refine((data) => data.budgetMax >= data.budgetMin, {
   message: 'Budget maximum must be greater than or equal to budget minimum',
   path: ['budgetMax'],
@@ -128,7 +132,7 @@ export const createCampaignSchema = z.object({
 });
 
 export const updateCampaignSchema = z.object({
-  title: z.string().min(3).optional(),
+  title: z.string().trim().min(3, 'What should we call this campaign?').optional(),
   description: z.string().min(10).optional(),
   template: z.string().optional(),
   featureImageUrl: z.string().url().optional().nullable(),
@@ -162,6 +166,54 @@ export const updateCampaignSchema = z.object({
   eventStatus:  z.enum(['OPEN', 'FULL', 'CLOSED']).optional(),
   completionType:   z.enum(['SERVICE', 'DELIVERABLE']).optional(),
   completionReason: z.string().max(300).optional(),
+  ...guidedCampaignFields,
+});
+
+// Autosave for the guided creator (UX spec §22): every field optional and
+// loose, because a draft is saved after every step — half-filled is normal.
+// Shape limits still apply (lengths, ranges, enums) so junk can't be stored;
+// what's *required* is only checked on publish (campaign.rules.ts).
+export const draftCampaignSchema = z.object({
+  title:          z.string().trim().max(120).optional(),
+  description:    z.string().max(2000).optional(),
+  featureImageUrl: z.string().url().nullable().optional(),
+  category:       z.string().max(60).optional(),
+  goals:          z.array(z.string().max(60)).max(5).optional(),
+  platforms:      z.array(z.string().max(40)).max(3, 'You can select up to 3 platforms').optional(),
+  minFollowers:   z.number().int().min(0).optional(),
+  contentType:    z.string().max(200).optional(),
+  deliverables:   z.string().max(1000).optional(),
+  deadline:       z.string().datetime({ message: 'Invalid deadline date' }).optional(),
+  location:       z.string().max(120).nullable().optional(),
+  locationLat:    z.number().min(-90).max(90).nullable().optional(),
+  locationLng:    z.number().min(-180).max(180).nullable().optional(),
+  locationType:   z.enum(['ONSITE', 'REMOTE']).optional(),
+  budgetMin:      z.number().min(0).optional(),
+  budgetMax:      z.number().min(0).optional(),
+  budgetRateType:  z.enum(['FIXED', 'RANGE']).optional(),
+  budgetInputType: z.enum(['PER_CREATOR', 'TOTAL']).optional(),
+  paymentType:    z.string().max(40).optional(),
+  creatorsNeeded: z.number().int().min(1).max(50).optional(),
+  targetAudience: z.array(z.string().max(60)).max(20).optional(),
+  hashtags:       z.array(z.string().max(40)).max(10).optional(),
+  sampleCaption:  z.string().max(600).optional(),
+  aiGenerated:    z.boolean().optional(),
+  aiPrompt:       z.string().max(2500).optional(),
+  aiSuggestedCategories: z.array(z.string()).max(5).optional(),
+  aiNeedsInputFields:    z.array(z.string()).max(10).optional(),
+  ...guidedCampaignFields,
+});
+export type DraftCampaignInput = z.infer<typeof draftCampaignSchema>;
+
+// Templates (UX spec §23): save one of your campaigns as a template, or start
+// a new draft from a built-in template, a saved template, or a past campaign.
+export const saveTemplateSchema = z.object({
+  name:       z.string().trim().min(1, 'Give your template a name').max(80),
+  campaignId: z.string().min(1),
+});
+export const draftFromSchema = z.object({
+  source: z.enum(['system', 'template', 'campaign']),
+  id:     z.string().min(1).max(60),
 });
 
 export const campaignListQuerySchema = z.object({

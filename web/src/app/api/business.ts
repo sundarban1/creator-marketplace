@@ -43,6 +43,160 @@ export interface MyCampaign {
   venue?: string | null;
   benefits?: string[];
   targetAudience?: string[];
+  // Guided campaign creator (always present from the API; empty for older campaigns).
+  locations?: CampaignLocation[];
+  locationScope?: LocationScope;
+  deliverableItems?: DeliverableItem[];
+  brief?: CampaignBrief;
+  startDate?: string | null;
+  applicationDeadline?: string | null;
+  complexity?: 'QUICK' | 'STANDARD' | 'ADVANCED' | null;
+  aiProvenance?: Record<string, Provenance>;
+  draftStep?: string | null;
+  updatedAt?: string | null;
+  slug?: string | null;
+  aiPrompt?: string | null;
+  aiGenerated?: boolean;
+  paymentType?: string;
+}
+
+// ── Guided campaign creator shapes (mirror backend campaign.brief.ts) ────────
+
+export type LocationScope = 'SPECIFIC' | 'NATIONWIDE' | 'ANYWHERE';
+export type Provenance = 'USER' | 'AI_EXTRACTED' | 'AI_SUGGESTED';
+export interface CampaignLocation { name: string; lat?: number | null; lng?: number | null }
+export interface DeliverableItem {
+  type: string;
+  platform?: string | null;
+  quantity: number;
+  format?: string | null;
+  durationSec?: number | null;
+  notes?: string | null;
+}
+export interface CampaignBrief {
+  audience?: { ageMin?: number | null; ageMax?: number | null; genders?: string[]; locations?: string[]; interests?: string[]; languages?: string[]; notes?: string };
+  creatorRequirements?: { tiers?: ('NANO' | 'MICRO' | 'MID' | 'MACRO')[]; minEngagementRate?: number | null; languages?: string[]; notes?: string };
+  content?: { keyMessages?: string[]; talkingPoints?: string[]; mentions?: string[]; contentStyle?: string; dos?: string[]; donts?: string[]; productInfo?: string; creatorsVisit?: boolean | null };
+  commercial?: { usageRights?: string; licensingDays?: number | null; exclusivity?: boolean; exclusivityDays?: number | null };
+  approval?: { draftRequired?: boolean; revisionRounds?: number | null; approvalDeadline?: string | null; reportingRequired?: boolean; notes?: string };
+  attachments?: { url: string; name: string }[];
+}
+
+/** Autosave / validate body — everything optional (backend draftCampaignSchema). */
+export interface GuidedDraftPayload {
+  title?: string;
+  description?: string;
+  featureImageUrl?: string | null;
+  category?: string;
+  goals?: string[];
+  platforms?: string[];
+  minFollowers?: number;
+  deliverables?: string;
+  deadline?: string;
+  location?: string | null;
+  locationType?: 'ONSITE' | 'REMOTE';
+  budgetMin?: number;
+  budgetMax?: number;
+  budgetRateType?: 'FIXED' | 'RANGE';
+  budgetInputType?: 'PER_CREATOR' | 'TOTAL';
+  paymentType?: string;
+  creatorsNeeded?: number;
+  hashtags?: string[];
+  aiGenerated?: boolean;
+  aiPrompt?: string;
+  locations?: CampaignLocation[];
+  locationScope?: LocationScope;
+  deliverableItems?: DeliverableItem[];
+  brief?: CampaignBrief;
+  startDate?: string | null;
+  applicationDeadline?: string | null;
+  aiProvenance?: Record<string, Provenance>;
+  draftStep?: string | null;
+}
+
+export interface CampaignRuleIssueDto {
+  code: string;
+  field: string;
+  step: 'basics' | 'creators' | 'content' | 'budget' | 'requirements';
+  severity: 'required' | 'recommended';
+  message: string;
+}
+
+export function createGuidedDraft(body: GuidedDraftPayload): Promise<MyCampaign> {
+  return apiRequest<MyCampaign>('POST', '/api/campaigns/drafts', body).then((r) => r.data);
+}
+
+export function saveGuidedDraft(id: string, body: GuidedDraftPayload, opts: { keepalive?: boolean } = {}): Promise<MyCampaign> {
+  return apiRequest<MyCampaign>('PATCH', `/api/campaigns/drafts/${id}`, body, opts).then((r) => r.data);
+}
+
+export function fetchLatestDraft(signal?: AbortSignal): Promise<MyCampaign | null> {
+  return apiRequest<MyCampaign | null>('GET', '/api/campaigns/drafts/latest', undefined, { signal }).then((r) => r.data);
+}
+
+export function publishGuidedDraft(id: string): Promise<MyCampaign> {
+  return apiRequest<MyCampaign>('POST', `/api/campaigns/drafts/${id}/publish`).then((r) => r.data);
+}
+
+export function validateCampaignDraft(body: GuidedDraftPayload): Promise<{ ready: boolean; issues: CampaignRuleIssueDto[]; complexity: string }> {
+  return apiRequest<{ ready: boolean; issues: CampaignRuleIssueDto[]; complexity: string }>('POST', '/api/campaigns/validate', body).then((r) => r.data);
+}
+
+export function deleteCampaign(id: string): Promise<void> {
+  return apiRequest<void>('DELETE', `/api/campaigns/${id}`).then(() => undefined);
+}
+
+// ── Templates (guided creator §23) ───────────────────────────────────────────
+
+export interface SystemTemplate { key: string; icon: string; name: string; summary: string }
+export interface MyTemplate { id: string; name: string; summary: string | null; sourceCampaignId: string | null; updatedAt: string }
+
+export function fetchTemplates(signal?: AbortSignal): Promise<{ system: SystemTemplate[]; mine: MyTemplate[] }> {
+  return apiRequest<{ system: SystemTemplate[]; mine: MyTemplate[] }>('GET', '/api/campaigns/templates', undefined, { signal }).then((r) => r.data);
+}
+
+export function saveCampaignTemplate(campaignId: string, name: string): Promise<{ id: string; name: string }> {
+  return apiRequest<{ id: string; name: string }>('POST', '/api/campaigns/templates', { campaignId, name }).then((r) => r.data);
+}
+
+export function deleteCampaignTemplate(id: string): Promise<void> {
+  return apiRequest<void>('DELETE', `/api/campaigns/templates/${id}`).then(() => undefined);
+}
+
+/** New draft from a built-in template, a saved template, or a past campaign. */
+export function createDraftFrom(source: 'system' | 'template' | 'campaign', id: string): Promise<MyCampaign> {
+  return apiRequest<MyCampaign>('POST', '/api/campaigns/drafts/from', { source, id }).then((r) => r.data);
+}
+
+export type RecommendField = 'creatorsNeeded' | 'budget' | 'deliverables';
+export interface Recommendation<T = unknown> { field: RecommendField; value: T; reason: string; estimate: boolean }
+
+/** Context sent to the AI helpers — what the business has so far. */
+export interface GuidedAiContext {
+  title?: string;
+  description?: string;
+  category?: string;
+  goal?: string;
+  platforms?: string[];
+  creatorsNeeded?: number;
+  budgetMin?: number;
+  budgetMax?: number;
+  locations?: { name: string }[];
+  locationType?: 'ONSITE' | 'REMOTE';
+  deliverableItems?: { type: string; platform?: string | null; quantity: number }[];
+  deadline?: string;
+}
+
+export function recommendForCampaign<T>(field: RecommendField, draft: GuidedAiContext): Promise<Recommendation<T>> {
+  return apiRequest<Recommendation<T>>('POST', '/api/campaigns/ai/recommend', { field, draft }).then((r) => r.data);
+}
+
+export function improveCampaignText(field: 'idea' | 'description', text: string, draft: GuidedAiContext): Promise<{ suggestion: string | null }> {
+  return apiRequest<{ suggestion: string | null }>('POST', '/api/campaigns/ai/improve', { field, text, draft }).then((r) => r.data);
+}
+
+export function askKolab(question: string, step: string, draft: GuidedAiContext): Promise<{ answer: string; fallback: boolean }> {
+  return apiRequest<{ answer: string; fallback: boolean }>('POST', '/api/campaigns/ai/ask', { question, step, draft }).then((r) => r.data);
 }
 
 export function fetchMyCampaigns(
@@ -125,6 +279,14 @@ export interface UpdateCampaignInput {
   eventTime?: string | null;
   venue?: string;
   benefits?: string[];
+  paymentType?: string;
+  locations?: CampaignLocation[];
+  locationScope?: LocationScope;
+  deliverableItems?: DeliverableItem[];
+  brief?: CampaignBrief;
+  startDate?: string | null;
+  applicationDeadline?: string | null;
+  aiProvenance?: Record<string, Provenance>;
 }
 
 export function updateCampaign(id: string, input: UpdateCampaignInput): Promise<MyCampaign> {
@@ -150,6 +312,34 @@ export interface AiDraft {
   needsInput: string[];
   featureImageUrl?: string | null;
   featureImageCredit?: { name: string; profileUrl: string } | null;
+  goal?: string;
+  sampleCaption?: string;
+  aiFallback?: boolean;
+  /** Guided-creator structure (backend campaign-ai.guided.ts). */
+  guided?: AiGuidedExtras;
+}
+
+export interface AiClarifyingQuestion {
+  id: 'CREATORS_VISIT' | 'LOCATION';
+  field: string;
+  question: string;
+  options: { value: string; label: string }[];
+  suggested: string | null;
+}
+
+export interface AiGuidedExtras {
+  locations: { name: string }[];
+  locationScope: LocationScope | null;
+  locationType: 'ONSITE' | 'REMOTE' | null;
+  deliverableItems: DeliverableItem[];
+  startDate: string | null;
+  deadline: string;
+  minFollowers: number;
+  brief: CampaignBrief;
+  aiProvenance: Record<string, Provenance>;
+  missingInformation: string[];
+  clarifyingQuestions: AiClarifyingQuestion[];
+  suggestions: { field: string; value: unknown; reason: string }[];
 }
 
 export function generateAiDraft(prompt: string): Promise<AiDraft> {

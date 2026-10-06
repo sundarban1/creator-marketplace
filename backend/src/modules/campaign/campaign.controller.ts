@@ -34,6 +34,62 @@ export class CampaignController {
     }
   }
 
+  async listTemplates(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try { success(res, await campaignService.listTemplates(req.user!.id)); } catch (err) { next(err); }
+  }
+
+  async saveTemplate(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try { success(res, await campaignService.saveTemplate(req.user!.id, req.body), 'Template saved', 201); } catch (err) { next(err); }
+  }
+
+  async deleteTemplate(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try { success(res, await campaignService.deleteTemplate(req.user!.id, req.params.id), 'Template deleted'); } catch (err) { next(err); }
+  }
+
+  async createDraftFrom(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try { success(res, await campaignService.createDraftFrom(req.user!.id, req.body), 'Draft created', 201); } catch (err) { next(err); }
+  }
+
+  async validateCampaign(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, campaignService.validateCampaign(req.body));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async createDraft(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, await campaignService.createDraft(req.user!.id, req.body), 'Draft saved', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getLatestDraft(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, await campaignService.getLatestDraft(req.user!.id));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateDraft(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, await campaignService.updateDraft(req.params.id, req.user!.id, req.body), 'Draft saved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async publishDraft(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, await campaignService.publishDraft(req.params.id, req.user!.id), 'Campaign published');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.create(req.user!.id, req.body);

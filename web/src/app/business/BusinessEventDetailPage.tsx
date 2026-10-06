@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Pencil, MessageCircle, Check, Gift } from 'lucide-react';
 import { useT, type TFn } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { CampaignBriefSections } from '../events/CampaignBriefSections';
+import { SaveTemplateButton } from './guided/templates';
 import { rupees, perCreatorBudget } from '../lib/format';
 import {
   fetchCampaign,
@@ -79,7 +81,8 @@ export function BusinessEventDetailPage() {
   // carries the result. Read once via a lazy initializer (plain render-time
   // logic, not a setState-in-effect) so the flash survives the effect below
   // scrubbing the query string a moment later.
-  const [flash, setFlash] = useState(() => (searchParams.get('payment') === 'success' ? t('biz.paymentSuccessFlash') : ''));
+  const routeState = useLocation().state as { flash?: string } | null;
+  const [flash, setFlash] = useState(() => (searchParams.get('payment') === 'success' ? t('biz.paymentSuccessFlash') : routeState?.flash ?? ''));
   const [error, setError] = useState(() =>
     searchParams.get('payment') === 'failed' ? searchParams.get('paymentError') || t('biz.paymentFailedFlash') : '',
   );
@@ -465,12 +468,18 @@ export function BusinessEventDetailPage() {
           )}
           <DetailField
             label={t('public.location')}
-            value={c.locationType === 'REMOTE' ? t('public.remote') : (isPaid ? c.location : c.venue) || '—'}
+            value={
+              isPaid && c.locations && c.locations.length > 1
+                ? c.locations.map((l) => l.name).join(' · ')
+                : c.locationType === 'REMOTE'
+                  ? (isPaid && c.locationScope === 'NATIONWIDE' ? t('guided.scopeNationwide') : t('public.remote'))
+                  : (isPaid ? c.location : c.venue) || '—'
+            }
           />
           {isFeatured(c) && <DetailField label={t('biz.featureThisEvent')} value="✓" />}
         </dl>
 
-        {isPaid && c.deliverables && (
+        {isPaid && c.deliverables && !(c.deliverableItems && c.deliverableItems.length) && (
           <>
             <p className="mt-4 text-[13px] font-semibold text-ink">{t('public.deliverablesHeading')}</p>
             <p className="mt-1 text-[14px] text-ink-soft">{c.deliverables}</p>
@@ -509,6 +518,12 @@ export function BusinessEventDetailPage() {
               ))}
             </div>
           </>
+        )}
+        {isPaid && <CampaignBriefSections c={c} Section={BriefSection} />}
+        {isPaid && (
+          <div className="mt-6 border-t border-line/70 pt-5">
+            <SaveTemplateButton campaignId={c.id} defaultName={c.title} variant="secondary" />
+          </div>
         )}
       </Card>
 
@@ -775,5 +790,15 @@ function ApplicantRow({
         )}
       </div>
     </li>
+  );
+}
+
+// Section shell for CampaignBriefSections inside the business's About card.
+function BriefSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mt-6 border-t border-line/70 pt-5">
+      <p className="mb-3 text-[13px] font-semibold text-ink">{title}</p>
+      {children}
+    </div>
   );
 }

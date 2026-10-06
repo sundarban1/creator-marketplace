@@ -168,6 +168,10 @@ export interface BackendDict {
     connectipsPaymentMismatch: string;
     noPendingConnectipsPayment: string;
     gatewayMethodNeedsCheckout: string;
+    onlyDraftsAutosave: string;
+    onlyDraftsPublish: string;
+    templateNotFound: string;
+    templateLimit: (max: number) => string;
     applicationNotAccepted: string;
     freeEventsNoWorkStage: string;
     paymentNotYetSecured: string;
@@ -631,6 +635,25 @@ export interface BackendDict {
   // ai-assistant.controller.ts — every AppError and success message from the
   // BUSINESS-only voice-transcription endpoint (a normal business user
   // feature, not admin tooling).
+  // Guided campaign creator — clarifying questions, recommendation reasons,
+  // Ask Kolab fallbacks (campaign-ai.guided.ts).
+  campaignTemplates: Record<import('../modules/campaign/campaign.templates').SystemTemplateKey, import('../modules/campaign/campaign.templates').TemplateCopy>;
+  guidedAi: {
+    clarify: {
+      CREATORS_VISIT: { question: string; YES: string; NO: string; NOT_SURE: string };
+      LOCATION: { question: string; SPECIFIC: string; NATIONWIDE: string; ANYWHERE: string };
+    };
+    suggestionReason: Record<'creatorsNeeded' | 'deliverables' | 'platforms' | 'timeline' | 'category', string>;
+    recommend: {
+      creators: (count: number) => string;
+      creatorsSupply: (count: number, place: string) => string;
+      budget: (low: string, high: string) => string;
+      budgetVisit: string;
+      deliverables: string;
+    };
+    askUnavailable: string;
+    askFaq: Record<'creators' | 'budget' | 'deliverables' | 'reelVsTiktok' | 'description', string>;
+  };
   aiAssistant: {
     noAudioFileProvided: string;
     voiceInputUnavailable: string;

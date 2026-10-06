@@ -23,6 +23,7 @@ import { ChipGroup } from './eventFormShared';
 import { BudgetPicker } from './BudgetPicker';
 import { budgetPickerResetKey, type BudgetRateType, type BudgetInputType } from './budgetPickerTypes';
 import type { AiDraft } from '../api/business';
+import { GuidedCampaignCreator } from './guided/GuidedCampaignCreator';
 
 type CType = 'PAID_CAMPAIGN' | 'OPEN_EVENT';
 // 'prompt' — the AI textarea (or "enter manually"); 'budget' — a dedicated
@@ -299,6 +300,12 @@ export function CreateEventPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Paid campaigns use the guided, AI-first creator (create, resume via
+  // ?draft=, autosave). This page keeps the free/open-event form below.
+  if (!isFree) {
+    return <GuidedCampaignCreator onSwitchToFree={() => setCType('OPEN_EVENT')} />;
   }
 
   const promptExamples = isFree

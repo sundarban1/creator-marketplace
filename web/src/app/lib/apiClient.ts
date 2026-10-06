@@ -186,6 +186,9 @@ interface RequestOptions {
   /** Skip the Authorization header even if a token is present (public reads). */
   anonymous?: boolean;
   signal?: AbortSignal;
+  /** Let the request outlive the page (tab close / navigation) — used for the
+   *  guided creator's final autosave. Body must stay under ~64KB. */
+  keepalive?: boolean;
 }
 
 function buildUrl(path: string, params?: QueryParams): string {
@@ -240,6 +243,7 @@ export async function apiRequest<T>(
       headers: headers(token),
       body: body != null ? JSON.stringify(body) : undefined,
       signal: opts.signal,
+      keepalive: opts.keepalive,
     });
 
   let res: Response;

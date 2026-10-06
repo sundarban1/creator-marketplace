@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { CampaignAiService } from './campaign-ai.service';
 import { success } from '../../utils/response';
-import type { SuggestDescriptionInput, GenerateCampaignInput } from './campaign-ai.schema';
+import type { SuggestDescriptionInput, GenerateCampaignInput, RecommendInput, ImproveTextInput, AskKolabInput } from './campaign-ai.schema';
 
 const campaignAiService = new CampaignAiService();
 
@@ -30,6 +30,30 @@ export class CampaignAiController {
     try {
       const description = await campaignAiService.suggestDescription(req.body as SuggestDescriptionInput, req.language);
       success(res, { description }, 'Description suggested');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async recommend(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, await campaignAiService.recommend(req.body as RecommendInput), 'Recommendation ready');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async improve(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, await campaignAiService.improveText(req.body as ImproveTextInput, req.language));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async ask(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, await campaignAiService.askKolab(req.body as AskKolabInput, req.language));
     } catch (err) {
       next(err);
     }

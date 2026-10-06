@@ -15,6 +15,9 @@ import {
   renameDeliverableVideoSchema,
   askEventQuestionSchema,
   answerEventQuestionSchema,
+  draftCampaignSchema,
+  saveTemplateSchema,
+  draftFromSchema,
 } from './campaign.schema';
 
 const router = Router();
@@ -304,6 +307,22 @@ router.get('/my', authenticate, authorize('BUSINESS'), ctrl.getMyCampaigns.bind(
  *         description: Whether the paywall is on, the free quota, how many have been used, how many remain, and the price per feature beyond that
  */
 router.get('/featured-quota', authenticate, authorize('BUSINESS'), ctrl.getFeaturedQuota.bind(ctrl));
+
+// ── Guided campaign creator ─────────────────────────────────────────────────
+// Readiness check — the same shared rules (campaign.rules.ts) the publish
+// gate enforces, so the apps never disagree with the server.
+router.post('/validate', authenticate, authorize('BUSINESS'), validate(draftCampaignSchema), ctrl.validateCampaign.bind(ctrl));
+// Autosave: create a draft after the first step, then PATCH it after each one.
+// Start a draft from a built-in template, a saved template, or a past campaign.
+router.post('/drafts/from', authenticate, authorize('BUSINESS'), validate(draftFromSchema), ctrl.createDraftFrom.bind(ctrl));
+router.post('/drafts', authenticate, authorize('BUSINESS'), validate(draftCampaignSchema), ctrl.createDraft.bind(ctrl));
+// Templates (UX spec §23): built-in + the business's own.
+router.get('/templates', authenticate, authorize('BUSINESS'), ctrl.listTemplates.bind(ctrl));
+router.post('/templates', authenticate, authorize('BUSINESS'), validate(saveTemplateSchema), ctrl.saveTemplate.bind(ctrl));
+router.delete('/templates/:id', authenticate, authorize('BUSINESS'), ctrl.deleteTemplate.bind(ctrl));
+router.get('/drafts/latest', authenticate, authorize('BUSINESS'), ctrl.getLatestDraft.bind(ctrl));
+router.patch('/drafts/:id', authenticate, authorize('BUSINESS'), validate(draftCampaignSchema), ctrl.updateDraft.bind(ctrl));
+router.post('/drafts/:id/publish', authenticate, authorize('BUSINESS'), ctrl.publishDraft.bind(ctrl));
 
 /**
  * @swagger

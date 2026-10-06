@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import type { CampaignBrief, DeliverableItem } from './campaign.brief';
 import { z } from 'zod';
 import { deriveEngagementState } from './application-state-machine';
 
@@ -107,7 +108,19 @@ export interface CampaignDto {
   aiSuggestedCategories: string[];
   completionType: string | null;
   completionReason: string | null;
+  // Guided campaign creator fields (see campaign.brief.ts). Always present —
+  // older campaigns get empty defaults, so clients never need null checks.
+  locations: { name: string; lat?: number | null; lng?: number | null }[];
+  locationScope: 'SPECIFIC' | 'NATIONWIDE' | 'ANYWHERE';
+  deliverableItems: DeliverableItem[];
+  brief: CampaignBrief;
+  startDate: string | null;
+  applicationDeadline: string | null;
+  complexity: 'QUICK' | 'STANDARD' | 'ADVANCED' | null;
+  aiProvenance: Record<string, 'USER' | 'AI_EXTRACTED' | 'AI_SUGGESTED'>;
+  draftStep: string | null;
   createdAt: string;
+  updatedAt: string | null;
   business?: {
     id?: string;
     slug?: string | null;
@@ -297,7 +310,18 @@ type RawCampaign = {
   aiSuggestedCategories: string[];
   completionType: string | null;
   completionReason: string | null;
+  // Optional: some callers select a subset of columns.
+  locations?: Prisma.JsonValue;
+  locationScope?: string;
+  deliverableItems?: Prisma.JsonValue;
+  brief?: Prisma.JsonValue;
+  startDate?: Date | null;
+  applicationDeadline?: Date | null;
+  complexity?: string | null;
+  aiProvenance?: Prisma.JsonValue;
+  draftStep?: string | null;
   createdAt: Date;
+  updatedAt?: Date;
   business?: { id?: string; slug?: string | null; businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
   _count?: { applications: number };
   // Applications received inside the trending window (see
@@ -373,7 +397,17 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     aiSuggestedCategories: c.aiSuggestedCategories ?? [],
     completionType:   c.completionType,
     completionReason: c.completionReason,
+    locations:        Array.isArray(c.locations) ? (c.locations as CampaignDto['locations']) : [],
+    locationScope:    (c.locationScope as CampaignDto['locationScope']) ?? 'SPECIFIC',
+    deliverableItems: Array.isArray(c.deliverableItems) ? (c.deliverableItems as DeliverableItem[]) : [],
+    brief:            c.brief && typeof c.brief === 'object' && !Array.isArray(c.brief) ? (c.brief as CampaignBrief) : {},
+    startDate:           c.startDate ? c.startDate.toISOString() : null,
+    applicationDeadline: c.applicationDeadline ? c.applicationDeadline.toISOString() : null,
+    complexity:       (c.complexity as CampaignDto['complexity']) ?? null,
+    aiProvenance:     c.aiProvenance && typeof c.aiProvenance === 'object' && !Array.isArray(c.aiProvenance) ? (c.aiProvenance as CampaignDto['aiProvenance']) : {},
+    draftStep:        c.draftStep ?? null,
     createdAt:      c.createdAt.toISOString(),
+    updatedAt:      c.updatedAt ? c.updatedAt.toISOString() : null,
   };
   if (c.business != null) dto.business = c.business;
   if (c._count  != null) dto._count   = c._count;

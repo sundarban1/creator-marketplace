@@ -1,4 +1,4 @@
-import { CampaignStatus, ApplicationStatus, CampaignType, WorkStatus } from '@prisma/client';
+import { CampaignStatus, ApplicationStatus, CampaignType, WorkStatus, Prisma } from '@prisma/client';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import prisma from '../../prisma';
@@ -37,6 +37,7 @@ import { initiateKhaltiPayment as khaltiInitiate, lookupKhaltiPayment as khaltiL
 import { buildEsewaSignedFields, decodeEsewaResponse, verifyEsewaSignature, checkEsewaStatus, parseEsewaAmount, friendlyEsewaStatusMessage, type EsewaFormFields } from '../../utils/esewa';
 import { buildConnectIpsSignedFields, validateConnectIpsTxn, friendlyConnectIpsStatusMessage, newConnectIpsTxnId, isConnectIpsConfigured, toPaisa, type ConnectIpsFormFields } from '../../utils/connectips';
 import { HttpStatus } from '../../constants/httpStatus';
+import { assertPublishable, assessCampaign, guidedPersistFields } from './campaign.guided';
 import {
   sendPaymentSecuredEmail,
   sendWorkStartedEmail,
@@ -114,7 +115,20 @@ function deliverableFileCloudinaryId(publicId: string): string {
 const FIELDS_LOCKED_AFTER_PROPOSALS = [
   'budgetMin', 'budgetMax', 'budgetRateType', 'budgetInputType', 'platforms', 'deliverables',
   'location', 'locationLat', 'locationLng', 'locationType', 'isFeatured', 'completionType',
+  'locations', 'locationScope', 'deliverableItems',
 ] as const;
+
+// Fields a live-campaign edit is checked against (campaign.rules.ts field
+// names, keyed by the update body keys that feed them).
+const RULE_FIELDS_BY_INPUT: Record<string, string[]> = {
+  title: ['title'], description: ['description'], category: ['category'],
+  platforms: ['platforms'], creatorsNeeded: ['creatorsNeeded'],
+  deliverables: ['deliverableItems'], deliverableItems: ['deliverableItems'],
+  budgetMin: ['budgetMax'], budgetMax: ['budgetMax'], paymentType: ['budgetMax'],
+  deadline: ['deadline', 'startDate', 'applicationDeadline'],
+  startDate: ['startDate'], applicationDeadline: ['applicationDeadline'],
+  location: ['locations'], locations: ['locations'], locationType: ['locations'],
+};
 
 export const MASTER_CATEGORIES: { label: string }[] = [
   { label: 'Food' },
@@ -153,7 +167,14 @@ import type {
   UpdateCampaignInput,
   CampaignListQuery,
   ApplyToCampaignInput,
+  DraftCampaignInput,
 } from './campaign.schema';
+import { draftCampaignSchema } from './campaign.schema';
+import {
+  SYSTEM_TEMPLATES, SYSTEM_TEMPLATE_KEYS, REUSABLE_FIELDS, MAX_TEMPLATES_PER_BUSINESS, systemTemplatePayload,
+  type SystemTemplateKey,
+} from './campaign.templates';
+import { summarizeDeliverables, type DeliverableItem } from './campaign.brief';
 import { canReduceCreatorsNeeded, computeTotalBudget, deriveBudgetRateType, MIN_BUDGET_PER_CREATOR } from './campaign.schema';
 
 const messagingService = new MessagingService();
@@ -349,8 +370,14 @@ export class CampaignService {
     await this.assertCampaignCreationAllowed(business, input.status);
 
     const locationType = input.locationType ?? 'ONSITE';
-    if (locationType === 'ONSITE' && !input.location?.trim()) {
+    if (locationType === 'ONSITE' && !input.location?.trim() && !input.locations?.length) {
       throw new AppError(getDict().campaign.locationRequiredForOnsite, HttpStatus.BAD_REQUEST);
+    }
+
+    // Guided-creator publish rules (campaign.rules.ts) — same function the
+    // apps run, so front-end and back-end validation can't disagree.
+    if (input.status === 'ACTIVE' && (input.campaignType ?? 'PAID_CAMPAIGN') === 'PAID_CAMPAIGN') {
+      assertPublishable({ ...input, locationType });
     }
 
     // Each requirement's categoryId must be a real, active, strict
@@ -378,7 +405,12 @@ export class CampaignService {
     // creditsToApply is a Kolab Rewards input, not a Campaign column — pulled
     // out here so it's never accidentally spread into the Prisma create data
     // below (that field is `creditsApplied`, written separately).
-    const { creditsToApply, ...campaignInput } = input;
+    const {
+      creditsToApply,
+      locations: _locations, locationScope: _locationScope, deliverableItems: _deliverableItems, brief: _brief,
+      startDate: _startDate, applicationDeadline: _applicationDeadline, aiProvenance: _aiProvenance, draftStep: _draftStep,
+      ...campaignInput
+    } = input;
 
     // Generated once at creation, from the title, and never touched again —
     // unlike Business/CreatorProfile, a campaign's title can't be edited
@@ -411,6 +443,8 @@ export class CampaignService {
       locationLat:  locationType === 'REMOTE' ? null : input.locationLat,
       locationLng:  locationType === 'REMOTE' ? null : input.locationLng,
       locationType,
+      ...guidedPersistFields({ ...input, locationType }),
+      complexity: assessCampaign({ ...input, locationType }).complexity,
     };
 
     let raw;
@@ -458,6 +492,212 @@ export class CampaignService {
       this.fanOutNewCampaign(campaign, business, userId);
     }
 
+    return campaign;
+  }
+
+  // ── Guided creator drafts (UX spec §22 autosave) ──────────────────────────
+  // A draft is saved after every step, so it starts half-empty: placeholder
+  // values satisfy the NOT NULL columns, and nothing is *required* until
+  // publishDraft runs the shared rules. Drafts get no slug (minted on publish)
+  // and never fan out, notify admins, or count against creation limits.
+
+  async createDraft(userId: string, input: DraftCampaignInput) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
+
+    const locationType = input.locationType ?? 'ONSITE';
+    const fields = this.draftFields(input, locationType);
+    const raw = await this.repo.create({
+      businessId:   business.id,
+      slug:         null,
+      title:        input.title?.trim() || 'Untitled campaign',
+      description:  input.description ?? '',
+      category:     input.category ?? '',
+      platforms:    input.platforms ?? [],
+      minFollowers: input.minFollowers ?? 0,
+      contentType:  input.contentType ?? '',
+      deliverables: input.deliverables ?? '',
+      deadline:     input.deadline ? new Date(input.deadline) : new Date(Date.now() + 14 * 86_400_000),
+      budgetMin:    input.budgetMin ?? 0,
+      budgetMax:    input.budgetMax ?? 0,
+      paymentType:  input.paymentType ?? 'Fixed Fee',
+      campaignType: 'PAID_CAMPAIGN',
+      status:       'DRAFT',
+      ...fields,
+      complexity:   assessCampaign({ ...input, locationType, ...fields }).complexity,
+    } as Parameters<CampaignRepository['create']>[0]);
+    logActivity({ userId, action: ActivityAction.CAMPAIGN_CREATED, entityType: EntityType.CAMPAIGN, entityId: raw.id, metadata: { campaignType: raw.campaignType, status: raw.status, autosave: true } });
+    return toCampaignDto(raw);
+  }
+
+  async updateDraft(id: string, userId: string, input: DraftCampaignInput) {
+    const campaign = await this.findOwnedCampaign(id, userId);
+    if (campaign.status !== 'DRAFT') {
+      throw new AppError(getDict().campaign.onlyDraftsAutosave, HttpStatus.CONFLICT);
+    }
+    const locationType = input.locationType ?? (campaign.locationType as 'ONSITE' | 'REMOTE');
+    const fields = this.draftFields(input, locationType);
+    const merged = { ...campaign, ...input, ...fields };
+    const updated = await this.repo.update(id, {
+      ...fields,
+      ...this.budgetUpdateFields(input, campaign),
+      complexity: assessCampaign(merged).complexity,
+    } as Parameters<CampaignRepository['update']>[1]);
+    return toCampaignDto(updated);
+  }
+
+  // Most recently touched draft — "Continue your campaign".
+  async getLatestDraft(userId: string) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
+    const raw = await this.repo.findLatestDraft(business.id);
+    return raw ? toCampaignDto(raw) : null;
+  }
+
+  // Publishes a saved draft: creation-limit gate, slug, then the normal
+  // update() path (which runs the shared publish rules, auto-approval and
+  // fan-out) — so a published draft is indistinguishable from create(ACTIVE).
+  async publishDraft(id: string, userId: string) {
+    const campaign = await this.findOwnedCampaign(id, userId);
+    if (campaign.status !== 'DRAFT') {
+      throw new AppError(getDict().campaign.onlyDraftsPublish, HttpStatus.CONFLICT);
+    }
+    const business = await this.businessRepo.findByUserId(userId);
+    await this.assertCampaignCreationAllowed(business!, 'ACTIVE');
+    assertPublishable(campaign);
+    if (!campaign.slug) {
+      const slug = await generateUniqueSlug(campaign.title, (candidate) => this.repo.isSlugTaken(candidate));
+      await this.repo.update(id, { slug });
+    }
+    return this.update(id, userId, { status: 'ACTIVE', draftStep: null });
+  }
+
+  // Readiness check the apps call before publishing (and on the review
+  // screen): same rules the publish gate enforces.
+  validateCampaign(input: DraftCampaignInput) {
+    return assessCampaign({ ...input, locationType: input.locationType ?? 'ONSITE' });
+  }
+
+  // ── Templates (UX spec §23) ───────────────────────────────────────────────
+
+  async listTemplates(userId: string) {
+    const business = await this.requireBusiness(userId);
+    const dict = getDict().campaignTemplates;
+    const mine = await prisma.campaignTemplate.findMany({
+      where: { businessId: business.id },
+      orderBy: { updatedAt: 'desc' },
+    });
+    return {
+      system: SYSTEM_TEMPLATE_KEYS.map((key) => ({
+        key, icon: SYSTEM_TEMPLATES[key].icon, name: dict[key].name, summary: dict[key].summary,
+      })),
+      mine: mine.map((tpl) => {
+        const items = ((tpl.payload as { deliverableItems?: DeliverableItem[] }).deliverableItems ?? []);
+        return { id: tpl.id, name: tpl.name, summary: items.length ? summarizeDeliverables(items) : null, sourceCampaignId: tpl.sourceCampaignId, updatedAt: tpl.updatedAt.toISOString() };
+      }),
+    };
+  }
+
+  // "Save as template" — copies the reusable parts of one of the business's
+  // own campaigns (never dates or draft state).
+  async saveTemplate(userId: string, input: { name: string; campaignId: string }) {
+    const campaign = await this.findOwnedCampaign(input.campaignId, userId);
+    const count = await prisma.campaignTemplate.count({ where: { businessId: campaign.businessId } });
+    if (count >= MAX_TEMPLATES_PER_BUSINESS) {
+      throw new AppError(getDict().campaign.templateLimit(MAX_TEMPLATES_PER_BUSINESS), HttpStatus.BAD_REQUEST);
+    }
+    const tpl = await prisma.campaignTemplate.create({
+      data: {
+        businessId: campaign.businessId,
+        name: input.name,
+        sourceCampaignId: campaign.id,
+        payload: this.reusablePayload(campaign) as unknown as Prisma.InputJsonValue,
+      },
+    });
+    return { id: tpl.id, name: tpl.name };
+  }
+
+  async deleteTemplate(userId: string, id: string) {
+    const business = await this.requireBusiness(userId);
+    const { count } = await prisma.campaignTemplate.deleteMany({ where: { id, businessId: business.id } });
+    if (!count) throw new AppError(getDict().campaign.templateNotFound, HttpStatus.NOT_FOUND);
+    return { deleted: true };
+  }
+
+  // New draft from a built-in template, a saved template, or a past campaign.
+  // The apps then resume it like any draft, so autosave/resume/publish are
+  // the exact same path as a fresh campaign.
+  async createDraftFrom(userId: string, input: { source: 'system' | 'template' | 'campaign'; id: string }) {
+    const business = await this.requireBusiness(userId);
+    let payload: DraftCampaignInput;
+    let step: string;
+    if (input.source === 'system') {
+      if (!(SYSTEM_TEMPLATE_KEYS as readonly string[]).includes(input.id)) {
+        throw new AppError(getDict().campaign.templateNotFound, HttpStatus.NOT_FOUND);
+      }
+      const key = input.id as SystemTemplateKey;
+      payload = systemTemplatePayload(key, getDict().campaignTemplates[key]);
+      step = 'basics'; // the business still names it and adds place/budget
+    } else if (input.source === 'template') {
+      const tpl = await prisma.campaignTemplate.findFirst({ where: { id: input.id, businessId: business.id } });
+      if (!tpl) throw new AppError(getDict().campaign.templateNotFound, HttpStatus.NOT_FOUND);
+      payload = tpl.payload as DraftCampaignInput;
+      step = 'review';
+    } else {
+      const campaign = await this.findOwnedCampaign(input.id, userId);
+      payload = this.reusablePayload(campaign);
+      step = 'review';
+    }
+    return this.createDraft(userId, { ...this.cleanDraftPayload(payload), draftStep: step });
+  }
+
+  private reusablePayload(campaign: Record<string, unknown>): DraftCampaignInput {
+    const out: Record<string, unknown> = {};
+    for (const k of REUSABLE_FIELDS) {
+      const v = campaign[k];
+      if (v !== null && v !== undefined) out[k] = v;
+    }
+    return out as DraftCampaignInput;
+  }
+
+  // Stored/copied payloads may predate today's limits — drop any field the
+  // current draft schema rejects rather than failing the whole template.
+  private cleanDraftPayload(payload: DraftCampaignInput): DraftCampaignInput {
+    let candidate: Record<string, unknown> = { ...payload };
+    for (let i = 0; i < 3; i++) {
+      const parsed = draftCampaignSchema.safeParse(candidate);
+      if (parsed.success) return parsed.data;
+      const bad = new Set(parsed.error.issues.map((iss) => String(iss.path[0])));
+      candidate = Object.fromEntries(Object.entries(candidate).filter(([k]) => !bad.has(k)));
+    }
+    return {};
+  }
+
+  private async requireBusiness(userId: string) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
+    return business;
+  }
+
+  private draftFields(input: DraftCampaignInput, locationType: 'ONSITE' | 'REMOTE'): Record<string, unknown> {
+    const {
+      locations: _l, locationScope: _ls, deliverableItems: _d, brief: _b, startDate: _s,
+      applicationDeadline: _a, aiProvenance: _p, draftStep: _ds, deadline, ...plain
+    } = input;
+    return {
+      ...plain,
+      ...(deadline ? { deadline: new Date(deadline) } : {}),
+      ...guidedPersistFields({ ...input, locationType }),
+      ...(locationType === 'REMOTE' ? { location: null, locationLat: null, locationLng: null } : {}),
+    };
+  }
+
+  private async findOwnedCampaign(id: string, userId: string) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
+    const campaign = await this.repo.findById(id);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorizedToUpdateCampaign, HttpStatus.FORBIDDEN);
     return campaign;
   }
 
@@ -720,9 +960,34 @@ export class CampaignService {
       resolvedIsFeatured = quota.remaining > 0;
     }
 
+    // Shared publish rules (campaign.rules.ts), on the campaign as it will be
+    // after this edit: all of them when it's going live now, only the fields
+    // being changed when it's already live (UX spec: editing behaves the same
+    // as creating).
+    const guided = guidedPersistFields({ ...input, locationType: input.locationType ?? (campaign.locationType as 'ONSITE' | 'REMOTE') });
+    const merged = { ...campaign, ...input, ...guided };
+    if ((campaign as { campaignType?: string }).campaignType === 'PAID_CAMPAIGN') {
+      const goingLive = input.status === 'ACTIVE' && campaign.status !== 'ACTIVE';
+      const isLive = campaign.status === 'ACTIVE' || campaign.status === 'PENDING_APPROVAL';
+      if (goingLive) {
+        assertPublishable(merged);
+      } else if (isLive && input.status === undefined) {
+        const touched = new Set(Object.keys(input).filter((k) => (input as Record<string, unknown>)[k] !== undefined)
+          .flatMap((k) => RULE_FIELDS_BY_INPUT[k] ?? []));
+        if (touched.size) assertPublishable(merged, touched);
+      }
+    }
+
+    const {
+      locations: _locations, locationScope: _locationScope, deliverableItems: _deliverableItems, brief: _brief,
+      startDate: _startDate, applicationDeadline: _applicationDeadline, aiProvenance: _aiProvenance, draftStep: _draftStep,
+      ...plainInput
+    } = input;
     const updated = await this.repo.update(id, {
-      ...input,
+      ...plainInput,
       ...this.budgetUpdateFields(input, campaign),
+      ...guided,
+      complexity: assessCampaign(merged).complexity,
       isFeatured: resolvedIsFeatured,
       status:    resolvedStatus,
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
@@ -818,9 +1083,17 @@ export class CampaignService {
       ? await this.resolvePublishStatus('ACTIVE')
       : input.status;
 
+    const {
+      locations: _locations, locationScope: _locationScope, deliverableItems: _deliverableItems, brief: _brief,
+      startDate: _startDate, applicationDeadline: _applicationDeadline, aiProvenance: _aiProvenance, draftStep: _draftStep,
+      ...plainInput
+    } = input;
+    const guided = guidedPersistFields({ ...input, locationType: input.locationType ?? (campaign.locationType as 'ONSITE' | 'REMOTE') });
     const updated = await this.repo.update(id, {
-      ...input,
+      ...plainInput,
       ...this.budgetUpdateFields(input, campaign),
+      ...guided,
+      complexity: assessCampaign({ ...campaign, ...input, ...guided }).complexity,
       status:    resolvedStatus,
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,

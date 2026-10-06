@@ -1,4 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { CampaignBriefSections } from '@/components/CampaignBriefSections';
+import { SaveTemplateButton } from '@/features/business/guided/templates';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
@@ -351,8 +353,10 @@ export default function CampaignDetailScreen() {
                 ) : null}
               </>
             )}
-            {campaign.locationType === 'REMOTE' ? (
-              <DetailRow icon="globe" label={t('campaignDetail.detailLocation')} value={t('createEvent.locationRemote')} C={C} />
+            {!isOpenEvent && (campaign.locations?.length ?? 0) > 1 ? (
+              <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailLocation')} value={t('guided.placesCount', { count: campaign.locations!.length })} C={C} />
+            ) : campaign.locationType === 'REMOTE' ? (
+              <DetailRow icon="globe" label={t('campaignDetail.detailLocation')} value={!isOpenEvent && campaign.locationScope === 'NATIONWIDE' ? t('guided.scopeNationwide') : t('createEvent.locationRemote')} C={C} />
             ) : isOpenEvent && campaign.venue ? (
               <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailVenue')} value={campaign.venue} C={C} />
             ) : (
@@ -434,12 +438,21 @@ export default function CampaignDetailScreen() {
               </View>
             </View>
           )
-        ) : campaign.deliverables ? (
+        ) : campaign.deliverables && !(campaign.deliverableItems?.length) ? (
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDeliverables')}</Text>
             {campaign.deliverables.split(/,\s*|\s*\+\s*/).filter(Boolean).map((d, i) => (
               <ReqItem key={i} text={d.trim()} C={C} />
             ))}
+          </View>
+        ) : null}
+
+        {/* Guided-creator data: places, structured deliverables, timeline,
+            advanced brief (content guidelines, requirements, terms…). */}
+        {!isOpenEvent ? <CampaignBriefSections c={campaign} /> : null}
+        {isBusiness && !isOpenEvent ? (
+          <View style={{ marginHorizontal: SCREEN_GUTTER, marginTop: 8 }}>
+            <SaveTemplateButton campaignId={campaign.id} defaultName={campaign.title} />
           </View>
         ) : null}
 

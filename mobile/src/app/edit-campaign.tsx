@@ -274,6 +274,12 @@ export default function EditCampaignScreen() {
     if (!campaignId) { Promise.resolve().then(() => setLoading(false)); return; }
     campaignService.getById(campaignId)
       .then((c) => {
+        // Paid campaigns edit in the same guided flow they were created in
+        // (guided-campaign.tsx, opened on review); free events stay here.
+        if (c.campaignType !== 'OPEN_EVENT') {
+          router.replace({ pathname: '/guided-campaign', params: { campaignId: c.id } });
+          return;
+        }
         setCampaign(c);
         setEditForm({
           title:        c.title,

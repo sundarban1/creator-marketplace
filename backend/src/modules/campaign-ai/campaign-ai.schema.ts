@@ -172,6 +172,30 @@ const aiRequirementSchema = z.object({
 });
 export type AiRequirementDraft = z.infer<typeof aiRequirementSchema>;
 
+export const LOCATION_SCOPES = ['SPECIFIC', 'NATIONWIDE', 'ANYWHERE', 'UNSURE'] as const;
+
+// Content formats the guided creator offers as structured deliverables. Kept
+// broader than the legacy DELIVERABLE_KEYS counts object (which stays for old
+// clients and is derived into these when the model omits them).
+export const DELIVERABLE_ITEM_TYPES = [
+  'REEL', 'TIKTOK_VIDEO', 'STORY', 'PHOTO_POST', 'YOUTUBE_VIDEO', 'YOUTUBE_SHORT',
+  'UGC_VIDEO', 'PRODUCT_REVIEW', 'EVENT_COVERAGE', 'GOOGLE_REVIEW', 'BLOG_POST', 'LIVE_STREAM',
+] as const;
+
+export const aiDeliverableItemSchema = z.object({
+  type:     z.enum(DELIVERABLE_ITEM_TYPES),
+  platform: z.string().max(40).nullable().default(null),
+  quantity: z.number().int().min(1).max(10),
+});
+
+export const STATED_FIELDS = [
+  'title', 'goal', 'category', 'platforms', 'creatorsNeeded', 'budget', 'deliverables',
+  'locations', 'creatorsVisit', 'timeline', 'creatorRequirements',
+] as const;
+export type StatedField = (typeof STATED_FIELDS)[number];
+
+export const SUGGESTABLE_FIELDS = ['creatorsNeeded', 'deliverables', 'platforms', 'timeline', 'category'] as const;
+
 export const aiCampaignDraftSchema = z.object({
   title: z.string().min(3).max(120),
   description: z.string().min(10).max(2000),
@@ -217,8 +241,79 @@ export const aiCampaignDraftSchema = z.object({
   // Legacy — always empty now. New drafts describe a single content-creator ask
   // via the top-level category/creatorsNeeded/budget/deliverables fields.
   requirements: z.array(aiRequirementSchema).max(10).default([]),
+  // ── Guided creator extraction (UX spec §4, §11, §29, §30) ────────────────
+  // Each uses .catch(default) so one malformed extra field never discards an
+  // otherwise good draft (the model sees more keys now; old keys stay strict).
+  locations:     z.array(z.string().trim().min(1).max(120)).max(10).default([]).catch([]),
+  locationScope: z.enum(LOCATION_SCOPES).default('UNSURE').catch('UNSURE'),
+  // true = creators must visit; false = remote content is fine; null = unclear.
+  creatorsVisit: z.boolean().nullable().default(null).catch(null),
+  deliverableItems: z.array(aiDeliverableItemSchema).max(10).default([]).catch([]),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().default(null).catch(null),
+  endDate:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().default(null).catch(null),
+  // Fields the brand explicitly said (vs filled in by the model) — drives
+  // provenance: stated → AI_EXTRACTED, otherwise → AI_SUGGESTED.
+  statedFields: z.array(z.string()).max(20).default([]).catch([])
+    .transform((a) => a.filter((k): k is StatedField => (STATED_FIELDS as readonly string[]).includes(k))),
+  // Only requirements the brand actually stated — never invented (§30).
+  statedRequirements: z.object({
+    minFollowers: z.number().int().min(0).nullable().default(null).catch(null),
+    languages:    z.array(z.string().max(40)).max(5).default([]).catch([]),
+    tiers:        z.array(z.enum(['NANO', 'MICRO', 'MID', 'MACRO'])).max(4).default([]).catch([]),
+    notes:        z.string().max(300).default('').catch(''),
+  }).default({}).catch({ minFollowers: null, languages: [], tiers: [], notes: '' }),
+  // Why a suggested value was chosen, in the brand's language (≤1 line each).
+  suggestionNotes: z.array(z.object({
+    field: z.enum(SUGGESTABLE_FIELDS),
+    note:  z.string().min(3).max(200),
+  })).max(4).default([]).catch([]),
 }).refine((d) => d.budgetMax >= d.budgetMin, {
   message: 'budgetMax must be >= budgetMin',
   path: ['budgetMax'],
 });
 export type AiCampaignDraft = z.infer<typeof aiCampaignDraftSchema>;
+
+
+// ── Guided creator helper endpoints ─────────────────────────────────────────
+// Partial current draft — what the business has so far — sent as context.
+// Loose on purpose (it's mid-creation); only shapes/lengths are checked.
+const draftContextSchema = z.object({
+  title:            z.string().max(200).optional(),
+  description:      z.string().max(2000).optional(),
+  category:         z.string().max(60).optional(),
+  goal:             z.string().max(60).optional(),
+  platforms:        z.array(z.string().max(40)).max(5).optional(),
+  creatorsNeeded:   z.number().int().min(1).max(50).optional(),
+  budgetMin:        z.number().min(0).optional(),
+  budgetMax:        z.number().min(0).optional(),
+  locations:        z.array(z.object({ name: z.string().max(120) }).passthrough()).max(20).optional(),
+  locationType:     z.enum(['ONSITE', 'REMOTE']).optional(),
+  deliverableItems: z.array(z.object({
+    type: z.string().max(40), platform: z.string().max(40).nullable().optional(), quantity: z.number().int().min(1).max(50),
+  })).max(20).optional(),
+  deadline:         z.string().max(40).optional(),
+}).default({});
+
+export const RECOMMEND_FIELDS = ['creatorsNeeded', 'budget', 'deliverables'] as const;
+
+export const recommendSchema = z.object({
+  field: z.enum(RECOMMEND_FIELDS),
+  draft: draftContextSchema,
+});
+export type RecommendInput = z.infer<typeof recommendSchema>;
+
+export const improveTextSchema = z.object({
+  // Which text is being improved: the opening idea, or the campaign description.
+  field: z.enum(['idea', 'description']),
+  text:  z.string().trim().min(3, 'Write a few words first, then Kolab can help make it clearer').max(2000),
+  draft: draftContextSchema,
+});
+export type ImproveTextInput = z.infer<typeof improveTextSchema>;
+
+export const askKolabSchema = z.object({
+  question: z.string().trim().min(3, 'Ask Kolab a question').max(500),
+  // Which step the business is on — focuses the answer.
+  step:  z.string().max(40).optional(),
+  draft: draftContextSchema,
+});
+export type AskKolabInput = z.infer<typeof askKolabSchema>;

@@ -377,6 +377,13 @@ export interface EventCard {
   createdAt: string;
   business: { id?: string; slug?: string | null; businessName: string; logoUrl: string | null; website?: string | null; description?: string | null };
   _count: { applications: number };
+  // Guided campaign creator data (empty for older campaigns).
+  locations?: { name: string; lat?: number | null; lng?: number | null }[];
+  locationScope?: 'SPECIFIC' | 'NATIONWIDE' | 'ANYWHERE';
+  deliverableItems?: { type: string; platform?: string | null; quantity: number; notes?: string | null }[];
+  brief?: import('./business').CampaignBrief;
+  startDate?: string | null;
+  applicationDeadline?: string | null;
   requirements?: Array<{
     id: string;
     category: { id: string; name: string; key: string; icon: string; color: string };

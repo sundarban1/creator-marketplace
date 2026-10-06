@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useT } from '../i18n';
@@ -12,6 +12,7 @@ import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { BizEventCard } from './BizEventCard';
+import { Alert } from '../ui/Alert';
 
 const TABS = ['active', 'draft', 'closed'] as const;
 type Tab = (typeof TABS)[number];
@@ -33,15 +34,19 @@ export function BusinessEventsPage() {
     const list = campaigns.data?.items ?? [];
     return {
       active: list.filter((c) => MATCH.active(c.status)),
-      draft: list.filter((c) => MATCH.draft(c.status)),
+      // "Continue where you left off" — most recently edited draft first.
+      draft: list.filter((c) => MATCH.draft(c.status))
+        .sort((a, b) => Date.parse(b.updatedAt ?? b.createdAt) - Date.parse(a.updatedAt ?? a.createdAt)),
       closed: list.filter((c) => MATCH.closed(c.status)),
     };
   }, [campaigns.data]);
 
   const list = buckets[tab];
+  const flash = (useLocation().state as { flash?: string } | null)?.flash;
 
   return (
     <>
+      {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
       <PageHeader
         title={t('biz.eventsTitle')}
         description={t('biz.eventsSubtitle')}

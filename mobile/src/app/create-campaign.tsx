@@ -1953,7 +1953,11 @@ export default function CreateCampaignScreen() {
                 ).map((opt) => (
                   <Pressable
                     key={opt.key}
-                    onPress={() => resetFormForType(opt.key, opt.key === 'PAID_CAMPAIGN' ? 'describe' : 'inviteOffer')}
+                    // Paid campaigns use the guided, AI-first creator
+                    // (guided-campaign.tsx); free invitations stay here.
+                    onPress={() => (opt.key === 'PAID_CAMPAIGN'
+                      ? router.replace('/guided-campaign')
+                      : resetFormForType(opt.key, 'inviteOffer'))}
                     style={({ pressed }) => [
                       s.typeCard,
                       { backgroundColor: C.surface, borderColor: pressed ? opt.tone.color : C.border },

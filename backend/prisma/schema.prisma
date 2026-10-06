@@ -787,6 +787,7 @@ model BusinessProfile {
   purpose                  BusinessPurpose?
   user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaigns                Campaign[]
+  campaignTemplates        CampaignTemplate[]
   conversations            Conversation[]          @relation("BusinessConversations")
   favoritedBy              FavoriteBusiness[]
   savedCreators            SavedCreator[]
@@ -934,6 +935,28 @@ model Campaign {
   // campaigns use each CampaignRequirement's own completionType instead.
   completionType        CompletionType?
   completionReason      String?
+  // ── Guided campaign creator (campaign creation UX spec) ─────────────────
+  // All optional/defaulted so every existing campaign and client is valid.
+  // `locations[0]` is mirrored into location/locationLat/locationLng and
+  // `deliverableItems` summarised into `deliverables` on save, so creator
+  // listings, search and matching keep reading the legacy columns unchanged.
+  // [{ name, lat?, lng? }] — where creators should be based / visit.
+  locations             Json                  @default("[]")
+  locationScope         LocationScope         @default(SPECIFIC)
+  // [{ type, platform?, quantity, format?, durationSec?, notes? }]
+  deliverableItems      Json                  @default("[]")
+  // Advanced brief sections (audience, creatorRequirements, content,
+  // commercial, approval, attachments) — shape in campaign.brief.ts.
+  brief                 Json                  @default("{}")
+  startDate             DateTime?
+  applicationDeadline   DateTime?
+  // Internal only (QUICK/STANDARD/ADVANCED), derived on save — never asked.
+  complexity            CampaignComplexity?
+  // field → USER | AI_EXTRACTED | AI_SUGGESTED, so the review screen can show
+  // what the business said vs what AI filled in or proposed.
+  aiProvenance          Json                  @default("{}")
+  // Last step the business was on — "Continue your campaign" resumes here.
+  draftStep             String?
   applications          Application[]
   business              BusinessProfile       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversations         Conversation[]
@@ -1476,6 +1499,26 @@ model CreatorReliability {
 //   PAYOUT          Kolab escrow → creator    (release, RELEASED)
 //   REFUND          Kolab escrow → business   (full refund, REFUNDED)
 //   PARTIAL_REFUND  Kolab escrow → business   (split settlement, PARTIALLY_REFUNDED)
+// A business's own reusable campaign setup ("Save as template", UX spec §23).
+// `payload` is a guided-creator draft body (campaign.schema draftCampaignSchema
+// shape) minus dates/draft state, validated on write; built-in templates live
+// in code (campaign.templates.ts), not here.
+model CampaignTemplate {
+  id               String   @id @default(cuid())
+  businessId       String
+  name             String
+  payload          Json
+  // Campaign it was saved from, for "Saved from …" — not a hard reference.
+  sourceCampaignId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  business BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, updatedAt(sort: Desc)])
+  @@map("campaign_templates")
+}
+
 enum ConnectIpsPaymentStatus {
   INITIATED // form built / user may still be on connectIPS — not conclusive
   SUCCESS // validatetxn said SUCCESS for this TXNID + amount
@@ -2071,6 +2114,20 @@ enum Role {
   CREATOR
   BUSINESS
   ADMIN
+}
+
+// Where creators should be based: specific place(s), anywhere in Nepal, or
+// location doesn't matter (remote/online content).
+enum LocationScope {
+  SPECIFIC
+  NATIONWIDE
+  ANYWHERE
+}
+
+enum CampaignComplexity {
+  QUICK
+  STANDARD
+  ADVANCED
 }
 
 enum CampaignStatus {

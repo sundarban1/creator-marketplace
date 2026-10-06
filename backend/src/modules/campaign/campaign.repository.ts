@@ -29,7 +29,8 @@ export class CampaignRepository {
   async create(data: {
     businessId: string;
     title: string;
-    slug: string;
+    // Null for autosaved drafts — minted from the title on publish.
+    slug: string | null;
     description: string;
     template?: string;
     featureImageUrl?: string;
@@ -84,6 +85,16 @@ export class CampaignRepository {
       completionReason?: string;
     }[];
     creditsApplied?: number;
+    // Guided campaign creator (see campaign.guided.ts guidedPersistFields).
+    locations?: Prisma.InputJsonValue;
+    locationScope?: 'SPECIFIC' | 'NATIONWIDE' | 'ANYWHERE';
+    deliverableItems?: Prisma.InputJsonValue;
+    brief?: Prisma.InputJsonValue;
+    startDate?: Date | null;
+    applicationDeadline?: Date | null;
+    complexity?: 'QUICK' | 'STANDARD' | 'ADVANCED';
+    aiProvenance?: Prisma.InputJsonValue;
+    draftStep?: string | null;
   }, client: Prisma.TransactionClient | typeof prisma = prisma) {
     const { requirements, ...campaignData } = data;
     return client.campaign.create({
@@ -543,7 +554,9 @@ export class CampaignRepository {
         // fully deterministic sort, Postgres can return the same row on two
         // different pages (or skip one entirely) as the result set shifts
         // between paginated queries.
-        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        // Drafts list as "continue where you left off" — most recently
+        // edited first (autosave bumps updatedAt).
+        orderBy: status === 'DRAFT' ? [{ updatedAt: 'desc' }, { id: 'asc' }] : [{ createdAt: 'desc' }, { id: 'asc' }],
         include: { _count: { select: { applications: true } } },
       }),
       prisma.campaign.count({ where }),
@@ -609,6 +622,16 @@ export class CampaignRepository {
     hashtags: string[];
     completionType: 'SERVICE' | 'DELIVERABLE' | null;
     completionReason: string | null;
+    slug: string;
+    locations: Prisma.InputJsonValue;
+    locationScope: 'SPECIFIC' | 'NATIONWIDE' | 'ANYWHERE';
+    deliverableItems: Prisma.InputJsonValue;
+    brief: Prisma.InputJsonValue;
+    startDate: Date | null;
+    applicationDeadline: Date | null;
+    complexity: 'QUICK' | 'STANDARD' | 'ADVANCED';
+    aiProvenance: Prisma.InputJsonValue;
+    draftStep: string | null;
   }>) {
     return prisma.campaign.update({
       where: { id },
@@ -618,6 +641,15 @@ export class CampaignRepository {
 
   async delete(id: string) {
     return prisma.campaign.delete({ where: { id } });
+  }
+
+  // The business's most recently edited, non-deleted draft (guided-creator
+  // autosave → "Continue your campaign").
+  async findLatestDraft(businessId: string) {
+    return prisma.campaign.findFirst({
+      where: { businessId, status: 'DRAFT', deletedAt: null, campaignType: 'PAID_CAMPAIGN' },
+      orderBy: { updatedAt: 'desc' },
+    });
   }
 
   // Lightweight id-only fetch — used to exclude campaigns a creator already

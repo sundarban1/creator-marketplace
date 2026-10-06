@@ -231,7 +231,11 @@ export function toCampaign(api: ApiCampaign): Campaign {
     brandLogoUrl: api.business.logoUrl ?? undefined,
     platforms:     api.platforms,
     platformIcons: api.platforms.map((p) => PLATFORM_ICONS[p] ?? '📱'),
-    budget:       formatBudget(api.budgetMin, api.budgetMax, api.paymentType),
+    // An unfinished draft with no amount yet isn't an exchange — it just
+    // hasn't been set (older live campaigns keep the 0/0 = exchange reading).
+    budget:       api.status === 'DRAFT' && !api.budgetMax && api.paymentType !== 'Product Exchange'
+      ? 'Budget not set'
+      : formatBudget(api.budgetMin, api.budgetMax, api.paymentType),
     budgetRaw:    api.budgetMin,
     budgetMax:    api.budgetMax,
     budgetRateType:  api.budgetRateType ?? null,
@@ -275,6 +279,14 @@ export function toCampaign(api: ApiCampaign): Campaign {
     requirements:          api.requirements,
     completionType:   api.completionType ?? null,
     completionReason: api.completionReason ?? null,
+    // Guided campaign creator data — passed through as-is (empty for older campaigns).
+    locations:           Array.isArray((api as any).locations) ? (api as any).locations : [],
+    locationScope:       (api as any).locationScope ?? 'SPECIFIC',
+    deliverableItems:    Array.isArray((api as any).deliverableItems) ? (api as any).deliverableItems : [],
+    brief:               (api as any).brief ?? {},
+    startDate:           (api as any).startDate ?? null,
+    applicationDeadline: (api as any).applicationDeadline ?? null,
+    draftStep:           (api as any).draftStep ?? null,
   };
 }
 

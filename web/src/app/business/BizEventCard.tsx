@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Users, CalendarClock, Gift, ArrowUpRight, Sparkles } from 'lucide-react';
+import { Users, CalendarClock, Gift, ArrowUpRight, Sparkles, History } from 'lucide-react';
 import { useT } from '../i18n';
 import { perCreatorBudget } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
@@ -30,10 +30,14 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
   const deadline = fmtDeadline(event.deadline);
   const isOpenEvent = event.campaignType === 'OPEN_EVENT';
   const perks = (event.benefits ?? []).filter(Boolean);
+  // An unpublished paid campaign reopens in the guided creator where the
+  // business left off ("Continue your campaign"), not the details page.
+  const isResumableDraft = event.status === 'DRAFT' && !isOpenEvent;
+  const title = isResumableDraft && event.title === 'Untitled campaign' ? t('guided.untitled') : event.title;
 
   return (
     <Link
-      to={`/business/events/${event.id}`}
+      to={isResumableDraft ? `/business/events/create?draft=${event.id}` : `/business/events/${event.id}`}
       className={cn(
         'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface',
         'transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/30',
@@ -81,7 +85,7 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
           </span>
         </div>
 
-        <h3 className="mt-2.5 line-clamp-2 text-[16px] font-semibold leading-snug text-ink">{event.title}</h3>
+        <h3 className="mt-2.5 line-clamp-2 text-[16px] font-semibold leading-snug text-ink">{title}</h3>
 
         {/* Paid events show the per-creator budget; free events show what the
             business offers in kind instead of "Rs. 0". */}
@@ -92,12 +96,22 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
               {perks.length > 0 ? perks.join(' · ') : t('public.freeEventPerks')}
             </span>
           </p>
-        ) : (
+        ) : event.budgetMax > 0 ? (
           <p className="mt-3 text-[15px] font-bold text-ink">
             {t('public.budgetPerCreator', { amount: budget.amount })}
           </p>
-        )}
+        ) : null}
 
+        {isResumableDraft ? (
+          <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-3">
+            <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-violet-dark">
+              <History size={13} />
+              {t('guided.continue')}
+              {event.draftStep && <span className="font-normal text-ink-soft">· {t('guided.leftOff', { step: t(`guided.stepLabel_${event.draftStep}`) })}</span>}
+            </span>
+            {event.updatedAt && <span className="text-[12px] text-ink-soft">{new Date(event.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}
+          </div>
+        ) : (
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-3">
           <div className="flex items-center gap-4 text-[12px] text-ink-soft">
             <span className="inline-flex items-center gap-1">
@@ -115,6 +129,7 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
             aria-hidden
           />
         </div>
+        )}
       </div>
     </Link>
   );

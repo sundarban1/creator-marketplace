@@ -8,6 +8,7 @@ import { Avatar } from '../ui/Avatar';
 import { cn } from '../ui/cn';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import type { EventCard as EventData } from '../api/publicMarketplace';
+import { CampaignBriefSections } from './CampaignBriefSections';
 
 /**
  * Shared visual layout for an event's detail page — a hero card (image, title,
@@ -150,7 +151,13 @@ export function EventDetailBody({
             <Fact
               icon={<MapPin size={15} />}
               label={t('public.location')}
-              value={event.locationType === 'REMOTE' ? t('public.remote') : event.location || t('public.onsite')}
+              value={
+                event.locations && event.locations.length > 1
+                  ? t('guided.placesCount', { count: event.locations.length })
+                  : event.locationType === 'REMOTE'
+                    ? event.locationScope === 'NATIONWIDE' ? t('guided.scopeNationwide') : t('public.remote')
+                    : event.location || t('public.onsite')
+              }
             />
             {event.minFollowers > 0 && (
               <Fact
@@ -191,11 +198,14 @@ export function EventDetailBody({
         </Section>
       )}
 
-      {event.deliverables && (
+      {/* Structured deliverables replace the legacy text when present. */}
+      {event.deliverables && !(event.deliverableItems && event.deliverableItems.length) && (
         <Section title={t('public.deliverablesHeading')}>
           <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink-soft">{event.deliverables}</p>
         </Section>
       )}
+
+      {!isOpenEvent && <CampaignBriefSections c={event} Section={Section} />}
 
       <Section title={t('public.aboutBusinessHeading')}>
         {event.business.id ? (

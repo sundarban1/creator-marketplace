@@ -77,6 +77,14 @@ export type Campaign = {
   requirements?: import('@/lib/api').ApiCampaignRequirement[];
   completionType?:   'SERVICE' | 'DELIVERABLE' | null;
   completionReason?: string | null;
+  // Guided campaign creator (see services/guidedCampaign.ts for the shapes).
+  locations?: import('@/services/guidedCampaign').CampaignLocation[];
+  locationScope?: import('@/services/guidedCampaign').LocationScope;
+  deliverableItems?: import('@/services/guidedCampaign').DeliverableItem[];
+  brief?: import('@/services/guidedCampaign').CampaignBrief;
+  startDate?: string | null;
+  applicationDeadline?: string | null;
+  draftStep?: string | null;
 };
 
 export type Proposal = {

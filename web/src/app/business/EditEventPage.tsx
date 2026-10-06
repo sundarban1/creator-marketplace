@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Camera, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -20,6 +20,7 @@ import { ApiError } from '../lib/apiClient';
 import { cn } from '../ui/cn';
 import { OFFERING_OPTIONS, ROLE_TYPE_OPTIONS } from './eventFormConstants';
 import { ChipGroup } from './eventFormShared';
+import { GuidedCampaignCreator } from './guided/GuidedCampaignCreator';
 
 type Status = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED';
 
@@ -53,6 +54,13 @@ export function EditEventPage() {
   // not a background refetch of the same one) remounts with fresh initial
   // state — the form's local state is otherwise seeded once via lazy
   // initializers below, never copied in from an effect.
+  // Paid campaigns edit in the same guided flow they were created in (opened
+  // on the review summary); an unpublished draft resumes in the creator.
+  if (campaign.data.campaignType !== 'OPEN_EVENT') {
+    if (campaign.data.status === 'DRAFT') return <Navigate to={`/business/events/create?draft=${campaign.data.id}`} replace />;
+    return <GuidedCampaignCreator key={campaign.data.id} mode="edit" campaign={campaign.data} />;
+  }
+
   return <EditEventForm key={campaign.data.id} id={id} initial={campaign.data} />;
 }
 

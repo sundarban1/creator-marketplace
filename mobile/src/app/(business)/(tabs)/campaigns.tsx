@@ -568,10 +568,14 @@ export default function CampaignsScreen() {
                 <View style={styles.cardBody}>
                 <Pressable
                   style={({ pressed }) => [styles.cardContent, hasFooterActions && styles.cardContentTightFooter, pressed && { opacity: 0.92 }]}
-                  onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
+                  // Unpublished paid campaigns reopen in the guided creator at
+                  // the step they were left on ("Continue your campaign").
+                  onPress={() => (c.status === 'draft' && c.campaignType !== 'OPEN_EVENT'
+                    ? router.push({ pathname: '/guided-campaign', params: { draftId: c.id } })
+                    : router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } }))}>
                   {/* Header — title on its own row, thumbnail + tags below */}
                   <View style={styles.cardHeader}>
-                    <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
+                    <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={1}>{c.title === 'Untitled campaign' ? t('guided.untitled') : c.title}</Text>
                     <View style={styles.cardHeaderRow}>
                     <View style={styles.thumbColumn}>
                       <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
@@ -633,7 +637,11 @@ export default function CampaignsScreen() {
                   {c.status === 'draft' && (
                     <View style={[styles.tagBadge, styles.draftNote, { backgroundColor: TabColors.warning.bg, alignSelf: 'flex-start' }]}>
                       <FontAwesome5 name="edit" size={11} color={TabColors.warning.color} />
-                      <Text style={[styles.tagBadgeText, { color: TabColors.warning.color }]}>{t('campaigns.tapToEdit')}</Text>
+                      <Text style={[styles.tagBadgeText, { color: TabColors.warning.color }]}>
+                        {c.campaignType !== 'OPEN_EVENT'
+                          ? `${t('guided.continue')}${c.draftStep ? ` · ${t('guided.leftOff', { step: t(`guided.stepLabel_${c.draftStep}`) })}` : ''}`
+                          : t('campaigns.tapToEdit')}
+                      </Text>
                     </View>
                   )}
                 </Pressable>
