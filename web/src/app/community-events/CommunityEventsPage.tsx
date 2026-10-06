@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom';
-import { MotionConfig, motion } from 'framer-motion';
 import { ArrowRight, CalendarPlus } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { SEO } from '../../lib/seo/SEO';
 import { webPageSchema } from '../../lib/seo/schema';
-import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { SectionHeading } from '../public/detailKit';
@@ -19,7 +17,7 @@ export function CommunityEventsPage() {
   const { data, loading, error, reload } = useAsync((s) => fetchCommunityEvents(s), []);
 
   return (
-    <MotionConfig reducedMotion="user">
+    <>
       <SEO
         title={t('communityEvents.seoTitle')}
         description={t('communityEvents.seoDescription')}
@@ -31,39 +29,9 @@ export function CommunityEventsPage() {
         })}
       />
 
-      {/* Compact hero — same editorial treatment as BrowseHero, minus search. */}
-      <section className="relative overflow-hidden border-b border-line bg-paper">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-          <div className="mesh-blob absolute left-[6%] top-[-30%] h-[380px] w-[380px] rounded-full bg-violet/[0.10] blur-[110px]" />
-          <div
-            className="mesh-blob absolute right-[-4%] top-[-10%] h-[320px] w-[320px] rounded-full bg-brand-orange/[0.09] blur-[110px]"
-            style={{ animationDelay: '3s' }}
-          />
-        </div>
-        <motion.div
-          initial="hidden"
-          animate="show"
-          variants={stagger()}
-          className="mx-auto max-w-6xl px-4 pb-10 pt-12 sm:px-6 lg:pb-12 lg:pt-16"
-        >
-          <motion.span
-            variants={fadeUp}
-            className="mb-5 inline-flex items-center gap-2 rounded-full border border-violet/20 bg-violet/[0.06] px-3.5 py-1.5 font-serif text-[13px] italic text-violet"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
-            {t('communityEvents.eyebrow')}
-          </motion.span>
-          <motion.h1
-            variants={fadeUp}
-            className="text-balance max-w-3xl font-serif text-4xl font-medium leading-[1.1] tracking-tight text-ink sm:text-5xl"
-          >
-            {t('communityEvents.heroTitle')}
-          </motion.h1>
-          <motion.p variants={fadeUp} className="mt-4 max-w-2xl text-[16px] leading-relaxed text-ink-soft sm:text-[17px]">
-            {t('communityEvents.heroSub')}
-          </motion.p>
-        </motion.div>
-      </section>
+      {/* No visible hero — the page opens straight on the event lists; the
+          h1 stays for screen readers and search engines. */}
+      <h1 className="sr-only">{t('communityEvents.seoTitle')}</h1>
 
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
         {error ? (
@@ -111,7 +79,7 @@ export function CommunityEventsPage() {
           </>
         )}
       </div>
-    </MotionConfig>
+    </>
   );
 }
 

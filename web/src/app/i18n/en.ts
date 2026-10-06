@@ -1479,9 +1479,6 @@ export const en = {
     issue_BUDGET_MISSING: "How much will you pay each creator? (at least Rs. 500)",
   },
   communityEvents: {
-    eyebrow: 'Kolab Events',
-    heroTitle: 'Creators. Connections. Opportunities.',
-    heroSub: "Meet creators, businesses and the people building Nepal's creator community.",
     seoTitle: 'Kolab Events — Creator Meetups & Workshops in Nepal',
     seoDescription: "Kolab creator meetups, workshops and community events across Nepal. Meet creators, businesses and the people building Nepal's creator community.",
     upcomingTitle: 'Upcoming Events',

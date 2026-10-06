@@ -7,7 +7,11 @@
 //
 // Usage: npm run db:seed:community-events
 import { PrismaClient } from '@prisma/client';
-import { zonedToUtc } from '../src/modules/community-event/community-event.time';
+
+// Self-contained on purpose: the production image ships only dist/ + prisma/,
+// so importing from ../src breaks `npm run db:seed:community-events` there.
+// Asia/Kathmandu is a fixed UTC+05:45 with no DST.
+const kathmanduToUtc = (date: string, time: string) => new Date(`${date}T${time}:00+05:45`);
 
 const prisma = new PrismaClient();
 const TZ = 'Asia/Kathmandu';
@@ -32,7 +36,7 @@ async function main() {
         'Creators introduced themselves and the work they make, the Kolab team shared how the platform connects creators with ' +
         'businesses and paid opportunities, and the afternoon wrapped up with games, challenges and plenty of time to network.',
       eventType: 'MEETUP',
-      startDateTime: zonedToUtc('2026-10-04', '13:00', TZ),
+      startDateTime: kathmanduToUtc('2026-10-04', '13:00'),
       endDateTime: null,
       timezone: TZ,
       venueName: 'Aroma By Ocean',
