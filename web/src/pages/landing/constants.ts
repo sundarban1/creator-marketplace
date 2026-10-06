@@ -37,10 +37,10 @@ export const NAV_LINKS: {
   offset?: number;
 }[] = [
   { key: 'discover', id: SECTION_IDS.liveOnKolab },
-  { key: 'events', to: '/community/events' },
   { key: 'forCreators', id: SECTION_IDS.creatorStory },
   { key: 'forBusinesses', id: SECTION_IDS.businessStory },
   { key: 'howItWorks', id: SECTION_IDS.security },
+  { key: 'events', to: '/community/events' },
   { key: 'about', to: '/about' },
   { key: 'trustSafety', to: '/trust-and-safety' },
 ];
