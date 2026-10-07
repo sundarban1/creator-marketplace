@@ -164,7 +164,10 @@ export interface CreatorApplication {
   revisionNotes?: { note: string; createdAt: string }[];
   submittedAt: string | null;
   submittedLate?: boolean;
+  paymentDueAt?: string | null;
+  creatorConfirmationDueAt?: string | null;
   contentDeadline: string | null;
+  contentGraceDeadline?: string | null;
   businessReviewDueAt?: string | null;
   paymentReleaseAt: string | null;
   createdAt: string;

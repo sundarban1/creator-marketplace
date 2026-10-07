@@ -14,7 +14,7 @@ describe('getEscrowTimings', () => {
     const t = await getEscrowTimings();
     expect(t).toEqual({
       paymentWindowHours: 24,
-      creatorConfirmWindowHours: 24,
+      creatorConfirmWindowHours: 48,
       minContentWindowHours: 24,
       contentGraceHours: 6,
       businessReviewHours: 72,

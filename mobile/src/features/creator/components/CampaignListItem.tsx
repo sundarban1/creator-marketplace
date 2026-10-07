@@ -57,17 +57,23 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         onPressIn={() => prefetchCampaign(queryClient, campaign.id)}
         onPress={goToDetail}>
 
-        {/* ── Photo (left) ── */}
-        <View style={[styles.thumb, { backgroundColor: catMeta.bg }]}>
-          <FontAwesome5 name={catMeta.icon} size={28} color={catMeta.color} style={styles.thumbIcon} />
-          {cardImage && (
-            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" recyclingKey={cardImage} />
-          )}
-          {campaign.isNew && (
-            <View style={[styles.ribbon, { backgroundColor: C.badgeNew }]}>
-              <Text style={styles.ribbonText}>{t('campaignCard.new')}</Text>
-            </View>
-          )}
+        {/* ── Photo (left), with Save + Share centred just below it ── */}
+        <View style={styles.media}>
+          <View style={[styles.thumb, { backgroundColor: catMeta.bg }]}>
+            <FontAwesome5 name={catMeta.icon} size={28} color={catMeta.color} style={styles.thumbIcon} />
+            {cardImage && (
+              <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" recyclingKey={cardImage} />
+            )}
+            {campaign.isNew && (
+              <View style={[styles.ribbon, { backgroundColor: C.badgeNew }]}>
+                <Text style={styles.ribbonText}>{t('campaignCard.new')}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.actions}>
+            <ShortlistButton campaignId={campaign.id} size="xs" style={styles.actionBtn} />
+            <ShareOpportunityButton campaignId={campaign.id} size="xs" style={styles.actionBtn} />
+          </View>
         </View>
 
         {/* ── Body (right) ── */}
@@ -104,8 +110,6 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
                 {campaign.locationType === 'REMOTE' ? t('createEvent.locationRemote') : (campaign.location ?? t('campaignCard.nepalFallback'))}
               </Text>
             </View>
-            {/* Negative margin keeps the 32px square from growing this thin row. */}
-            <ShareOpportunityButton campaignId={campaign.id} size="xs" style={styles.shareBtn} />
           </View>
         </View>
 
@@ -113,11 +117,6 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         <View style={styles.chevronWrap}>
           <FontAwesome5 name="chevron-right" solid size={14} color={C.textSecondary} />
         </View>
-
-        {/* Save-for-later — pinned to the card's top-right corner, above the
-            chevron. Absolute rather than stacked in the chevron column so the
-            chevron keeps its own centering against the full card height. */}
-        <ShortlistButton campaignId={campaign.id} size="xs" style={styles.shortlistBtn} />
       </Pressable>
     </View>
   );
@@ -128,7 +127,12 @@ const styles = StyleSheet.create({
   card:   { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1 },
 
   // Inset 16:9 tile (not a full-height column) so the whole feature image shows.
-  thumb:  { width: 112, aspectRatio: FEATURE_IMAGE_ASPECT, alignSelf: 'center', marginLeft: 12, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, position: 'relative' },
+  // Left column: inset photo with the Save/Share row stacked below it. Top-
+  // aligned so the photo's top edge sits level with the title (both 12 down).
+  media:   { width: 112, marginLeft: 12, paddingVertical: 12, justifyContent: 'flex-start', gap: 12, flexShrink: 0 },
+  actions: { flexDirection: 'row', justifyContent: 'center', gap: 20 },
+  actionBtn: { width: 28, height: 28 },
+  thumb:  { width: 112, aspectRatio: FEATURE_IMAGE_ASPECT, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, position: 'relative' },
   thumbIcon: { opacity: 0.35 },
   ribbon: { position: 'absolute', top: 8, left: 8, borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },
   ribbonText: { fontSize: 9, color: '#fff', letterSpacing: 0.3, fontFamily: F.semibold },
@@ -149,12 +153,10 @@ const styles = StyleSheet.create({
   metaLine: { fontSize: 11.5, fontFamily: F.regular, flexShrink: 1 },
 
   detailsRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderTopWidth: 1, paddingTop: 6, marginTop: 2 },
-  shareBtn:    { marginVertical: -6, width: 28, height: 28 },
   detailItem:  { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, minWidth: 0 },
   detailText:  { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
 
   chevronWrap: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
-  shortlistBtn: { position: 'absolute', top: 8, right: 6 },
   tagBadge:     { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
   tagBadgeText: { fontSize: 11, fontFamily: F.bold },
 });

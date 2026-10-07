@@ -24,7 +24,7 @@ export interface ReminderTimings {
 const FALLBACK: ReminderTimings = {
   enabled:                     true,
   paymentLeadHours:            12,
-  confirmationLeadHours:       12,
+  confirmationLeadHours:       24,
   deliverableDueLeadHours:     24,
   deliverableDueSoonLeadHours:  3,
   minStageAgeHours:             1,

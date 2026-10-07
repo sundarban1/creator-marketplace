@@ -83,25 +83,12 @@ function fmtDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-// Terms card + markdown body + optional PDF download — the read-only core of
-// a contract, extracted so it can be shown both inside ContractModal's
-// one-time "review & sign" sheet and, unchanged, in the Collaboration
-// screen's persistent Agreement tab (§52) once already signed.
-export function ContractBody({ filledBody, terms, contractId, downloadTitle }: {
-  filledBody: string; terms: ContractTerms; contractId?: string; downloadTitle?: string;
-}) {
-  const C = useAppColors();
+// Fetches the contract's PDF and hands it to the share sheet — shared by
+// ContractBody's full-width button and ContractModal's footer icon button.
+function useContractDownload(contractId?: string, downloadTitle?: string) {
   const [downloading, setDownloading] = useState(false);
 
-  const rows: [string, string][] = [
-    ...(terms.role ? ([['Role', terms.role]] as [string, string][]) : []),
-    ['Price', terms.price],
-    ['Deadline', fmtDate(terms.deadline)],
-    ['Timeline', terms.timeline],
-    ['Content', terms.deliverables],
-  ];
-
-  async function handleDownload() {
+  async function download() {
     if (!contractId || downloading) return;
     setDownloading(true);
     try {
@@ -120,6 +107,27 @@ export function ContractBody({ filledBody, terms, contractId, downloadTitle }: {
       setDownloading(false);
     }
   }
+
+  return { downloading, download };
+}
+
+// Terms card + markdown body + optional PDF download — the read-only core of
+// a contract, extracted so it can be shown both inside ContractModal's
+// one-time "review & sign" sheet and, unchanged, in the Collaboration
+// screen's persistent Agreement tab (§52) once already signed.
+export function ContractBody({ filledBody, terms, contractId, downloadTitle }: {
+  filledBody: string; terms: ContractTerms; contractId?: string; downloadTitle?: string;
+}) {
+  const C = useAppColors();
+  const { downloading, download: handleDownload } = useContractDownload(contractId, downloadTitle);
+
+  const rows: [string, string][] = [
+    ...(terms.role ? ([['Role', terms.role]] as [string, string][]) : []),
+    ['Price', terms.price],
+    ['Deadline', fmtDate(terms.deadline)],
+    ['Timeline', terms.timeline],
+    ['Content', terms.deliverables],
+  ];
 
   return (
     <View style={{ gap: 16 }}>
@@ -156,6 +164,7 @@ export function ContractBody({ filledBody, terms, contractId, downloadTitle }: {
 export function ContractModal({ visible, title, subtitle, filledBody, terms, contractId, agreeLabel, agreeing, onAgree, onClose }: Props) {
   const C = useAppColors();
   const [agreed, setAgreed] = useState(false);
+  const { downloading, download } = useContractDownload(contractId, title);
 
   return (
     <BottomSheet
@@ -176,17 +185,32 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
             <Text style={[s.agreeText, { color: C.text }]}>I have read and agree to the terms above</Text>
           </Pressable>
 
-          <Pressable
-            style={[s.agreeBtn, { backgroundColor: (!agreed || agreeing) ? C.border : C.brinjal1 }]}
-            onPress={onAgree}
-            disabled={!agreed || agreeing}>
-            {agreeing
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={s.agreeBtnText}>{agreeLabel}</Text>}
-          </Pressable>
+          <View style={s.actionRow}>
+            {contractId && (
+              <Pressable
+                style={[s.downloadIconBtn, { borderColor: C.brinjal1, opacity: downloading ? 0.6 : 1 }]}
+                onPress={download}
+                disabled={downloading || agreeing}
+                accessibilityRole="button"
+                accessibilityLabel="Download Contract">
+                {downloading
+                  ? <ActivityIndicator size="small" color={C.brinjal1} />
+                  : <FontAwesome5 name="download" solid size={18} color={C.brinjal1} />}
+              </Pressable>
+            )}
+            <Pressable
+              style={[s.agreeBtn, { backgroundColor: (!agreed || agreeing) ? C.border : C.brinjal1 }]}
+              onPress={onAgree}
+              disabled={!agreed || agreeing}>
+              {agreeing
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={s.agreeBtnText}>{agreeLabel}</Text>}
+            </Pressable>
+          </View>
         </View>
       }>
-        <ContractBody filledBody={filledBody} terms={terms} contractId={contractId} downloadTitle={title} />
+        {/* No contractId here — the modal's download lives in the footer, beside the agree button. */}
+        <ContractBody filledBody={filledBody} terms={terms} />
     </BottomSheet>
   );
 }
@@ -202,6 +226,8 @@ const s = StyleSheet.create({
   agreeRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   checkbox:  { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   agreeText: { fontSize: 13, fontFamily: F.medium, flex: 1 },
-  agreeBtn:  { height: 52, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
+  actionRow: { flexDirection: 'row', gap: 10 },
+  downloadIconBtn: { width: 52, height: 52, borderRadius: RADIUS.md, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  agreeBtn:  { flex: 1, height: 52, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   agreeBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 });

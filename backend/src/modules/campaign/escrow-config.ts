@@ -31,7 +31,7 @@ export interface EscrowTimings {
 
 const FALLBACK: EscrowTimings = {
   paymentWindowHours:          24,
-  creatorConfirmWindowHours:   24,
+  creatorConfirmWindowHours:   48,
   minContentWindowHours:       24,
   contentGraceHours:            6,
   businessReviewHours:         72,

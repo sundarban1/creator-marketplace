@@ -77,7 +77,7 @@ const DEFAULTS: Record<string, unknown> = {
   // the change — existing deadlines are stored as absolute timestamps and are
   // never recalculated from "now".
   'escrow.paymentWindowHours':          24, // business must fund after being selected
-  'escrow.creatorConfirmWindowHours':   24, // creator must confirm after escrow is funded
+  'escrow.creatorConfirmWindowHours':   48, // creator must confirm after escrow is funded (2 days)
   'escrow.minContentWindowHours':       24, // floor for the content deadline snapshotted at confirmation
   'escrow.contentGraceHours':            6, // grace period after the content deadline
   'escrow.businessReviewHours':         72, // review window after a submission (3 days)
@@ -101,7 +101,7 @@ const DEFAULTS: Record<string, unknown> = {
   // started the stage (e.g. a 12h-window engagement funded a minute ago).
   'reminders.enabled':                    true,
   'reminders.paymentLeadHours':            12, // business: fund escrow (B9)
-  'reminders.confirmationLeadHours':       12, // creator: "Let's Create Content" (C2) + business FYI (B3)
+  'reminders.confirmationLeadHours':       24, // creator: "Let's Create Content" (C2) + business FYI (B3)
   'reminders.deliverableDueLeadHours':     24, // creator + business: due tomorrow (C4/B5)
   'reminders.deliverableDueSoonLeadHours':  3, // creator: due soon (C5)
   'reminders.minStageAgeHours':             1,

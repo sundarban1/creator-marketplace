@@ -19,6 +19,8 @@ import {
   reportIssue,
   type BusinessApplication,
 } from '../api/business';
+import { fetchContractForApplication, type Contract } from '../api/contract';
+import { ContractModal } from '../events/ContractModal';
 import { fetchPaymentMethods, type PublicPaymentMethod } from '../api/paymentMethods';
 import { fetchPlatformFlags } from '../api/platformFlags';
 import { ApiError } from '../lib/apiClient';
@@ -35,6 +37,8 @@ import { EngagementBadge } from '../creator/EngagementBadge';
 import { DisputeStatusCard } from '../creator/DisputeStatus';
 import { ReviewSection } from '../creator/ReviewSection';
 import { cn } from '../ui/cn';
+import { StatusStrip } from '../ui/StatusStrip';
+import { stageInfo } from '../lib/engagementStage';
 
 // Mirrors CreatorWorkDetailPage.tsx's CAN_REPORT — same shared engagement
 // states, just viewed from the business side.
@@ -96,6 +100,11 @@ export function BusinessEventDetailPage() {
   const [payBusy, setPayBusy] = useState(false);
   const [payError, setPayError] = useState('');
   const [reportTarget, setReportTarget] = useState<BusinessApplication | null>(null);
+  // Paid campaigns only: the contract the business agrees to as part of
+  // accepting — same gate as mobile's campaign-proposals.tsx.
+  const [contractTarget, setContractTarget] = useState<{ app: BusinessApplication; contract: Contract } | null>(null);
+  const [contractAgreeing, setContractAgreeing] = useState(false);
+  const [contractError, setContractError] = useState('');
   const esewaPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => {
@@ -157,6 +166,43 @@ export function BusinessEventDetailPage() {
       setBusyId('');
     }
   };
+
+  // Free events accept in one click; paid campaigns first open the contract.
+  // The backend lazily creates it if the application predates contracts, so
+  // this always has one to agree to.
+  async function handleAccept(a: BusinessApplication) {
+    if (campaign.data?.campaignType === 'OPEN_EVENT') {
+      act(() => acceptApplication(id, a.id), a.id, t('biz.proposalAccepted'));
+      return;
+    }
+    setBusyId(a.id);
+    setError('');
+    try {
+      const contract = await fetchContractForApplication(a.id);
+      setContractError('');
+      setContractTarget({ app: a, contract });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('contract.loadFailed'));
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function handleAgreeAndAccept() {
+    if (!contractTarget) return;
+    setContractAgreeing(true);
+    setContractError('');
+    try {
+      await acceptApplication(id, contractTarget.app.id);
+      setContractTarget(null);
+      setFlash(t('biz.proposalAccepted'));
+      apps.reload();
+    } catch (err) {
+      setContractError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setContractAgreeing(false);
+    }
+  }
 
   // Polls the applications list until this one shows as paid. eSewa's own
   // success/failure callback redirects the popup tab straight to a Kolab
@@ -332,7 +378,7 @@ export function BusinessEventDetailPage() {
                 key={a.id}
                 a={a}
                 busy={busyId === a.id}
-                onAccept={() => act(() => acceptApplication(id, a.id), a.id, t('biz.proposalAccepted'))}
+                onAccept={() => handleAccept(a)}
                 onReject={() => {
                   if (!window.confirm(t('biz.confirmReject'))) return;
                   act(() => rejectApplication(id, a.id), a.id, t('biz.rejected'));
@@ -383,18 +429,24 @@ export function BusinessEventDetailPage() {
                     )}
                   </div>
 
+                  {/* Status line + the stage countdown (pay / confirm / content
+                      due / review …) in one block — same information as the
+                      mobile activity-timeline card. */}
                   {!a.dispute && (() => {
                     const info = statusLine(a.engagementState, id, t);
-                    if (!info) return null;
+                    const stage = stageInfo(a, 'BUSINESS', t);
+                    if (!info && !stage) return null;
                     return (
-                      <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-surface-dim px-3 py-2">
-                        <p className="text-[12px] text-ink-soft">{info.text}</p>
-                        {info.link && (
-                          <Link to={info.link.to} className="flex-shrink-0 text-[12px] font-semibold text-violet-dark hover:underline">
+                      <StatusStrip
+                        className="mt-2"
+                        text={info?.text}
+                        action={info?.link && (
+                          <Link to={info.link.to} className="text-[12px] font-semibold text-violet-dark hover:underline">
                             {info.link.label}
                           </Link>
                         )}
-                      </div>
+                        stage={stage}
+                      />
                     );
                   })()}
 
@@ -532,6 +584,22 @@ export function BusinessEventDetailPage() {
           </div>
         )}
       </Card>
+
+      {contractTarget && (
+        <ContractModal
+          open
+          title={contractTarget.contract.title}
+          subtitle={t('contract.businessSubtitle', { name: contractTarget.app.creator?.fullName ?? t('contract.thisCreator') })}
+          filledBody={contractTarget.contract.filledBody}
+          terms={contractTarget.contract.terms}
+          contractId={contractTarget.contract.id}
+          agreeLabel={t('contract.agreeAndAccept')}
+          agreeing={contractAgreeing}
+          error={contractError}
+          onAgree={handleAgreeAndAccept}
+          onClose={() => setContractTarget(null)}
+        />
+      )}
 
       <Modal open={!!payTarget} onClose={() => (payBusy ? null : setPayTarget(null))} title={t('biz.payModalTitle')}>
         {payTarget && (

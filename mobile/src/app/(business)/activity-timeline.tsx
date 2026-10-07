@@ -469,7 +469,19 @@ function ActionBtn({ label, color, icon, onPress, loading = false, disabled = fa
 
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
-function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, submitting, deliverableVideos, deliverableFiles, submittedUrls, onPay, onStartWork, onUpload, onMarkComplete, onApprove, onRevision, onPlayVideo, onViewImage, onViewDoc, onOpenLink }: {
+// The current step as one card: what to do next (ActionCardBody) with the
+// stage countdown / dispute status (StageStrip) folded in underneath.
+function ActionCard({ status, ...props }: React.ComponentProps<typeof ActionCardBody> & { status?: React.ReactNode }) {
+  const C = useAppColors();
+  return (
+    <View style={[ac.card, { backgroundColor: C.surface }]}>
+      <ActionCardBody {...props} />
+      {status}
+    </View>
+  );
+}
+
+function ActionCardBody({ ws, paid, paymentStatus, isCreator, isFree, isService, submitting, deliverableVideos, deliverableFiles, submittedUrls, onPay, onStartWork, onUpload, onMarkComplete, onApprove, onRevision, onPlayVideo, onViewImage, onViewDoc, onOpenLink }: {
   ws: WS; paid: boolean; paymentStatus: PS; isCreator: boolean; isFree: boolean; isService: boolean; submitting: boolean;
   deliverableVideos: DeliverableVideo[]; deliverableFiles: DeliverableFile[]; submittedUrls: string[];
   onPay: () => void; onStartWork: () => void; onUpload: () => void; onMarkComplete: () => void;
@@ -484,7 +496,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Business: payment required
   if (!paid && ws === 'NONE' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FEF2F2', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="credit-card" size={16} color="#EF4444" solid /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
@@ -500,7 +512,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Creator: waiting for payment
   if (!paid && ws === 'NONE' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="clock" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
@@ -511,9 +523,9 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Business: payment done, waiting on creator
   if (paid && ws === 'NONE' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass-half" solid size={18} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingCreatorTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acWaitingCreatorSubFree') : t('activityTimeline.acWaitingCreatorSubPaid')}</Text>
@@ -522,7 +534,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Creator: ready to start
   if (paid && ws === 'NONE' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="rocket" size={16} color="#7C3AED" solid /></View>
         <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
@@ -534,7 +546,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Business: creator working
   if (ws === 'IN_PROGRESS' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="play-circle" solid size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
@@ -546,7 +558,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // Creator: SERVICE jobs skip the upload step entirely — no file/link UI,
   // just a direct "mark as completed" action (§24 — no upload screen).
   if (ws === 'IN_PROGRESS' && isCreator && isService) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-circle" solid size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acServiceInProgressTitle')}</Text>
@@ -558,7 +570,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Creator: upload deliverables (DELIVERABLE jobs only)
   if (ws === 'IN_PROGRESS' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="cloud-upload-alt" solid size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
@@ -571,7 +583,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // Business: SERVICE job marked complete by the provider — confirm or
   // report an issue, no file review section (§27 — nothing was submitted).
   if (ws === 'SUBMITTED' && !isCreator && isService) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-circle" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acServiceCompletedTitle')}</Text>
@@ -589,7 +601,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
     const imageFiles = deliverableFiles.filter(f => f.fileType === 'IMAGE');
     const docFiles    = deliverableFiles.filter(f => f.fileType !== 'IMAGE');
     return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="eye" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
@@ -662,7 +674,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // Creator: SERVICE job awaiting the client's confirmation — nothing to view.
   if (ws === 'SUBMITTED' && isCreator && isService) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingConfirmationTitle')}</Text>
@@ -676,7 +688,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
     const imageFiles = deliverableFiles.filter(f => f.fileType === 'IMAGE');
     const docFiles    = deliverableFiles.filter(f => f.fileType !== 'IMAGE');
     return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
@@ -746,7 +758,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // support reviews it. Shown before the payment-released check since a
   // disputed job never reaches that state on its own.
   if (ws === 'DISPUTED') return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#FEF2F2', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="exclamation-triangle" solid size={18} color="#EF4444" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acIssueReportedTitle')}</Text>
@@ -760,7 +772,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // will never come for a free event (paymentStatus stays UNPAID forever;
   // approving one flips it straight to COMPLETED server-side).
   if (isFree && (ws === 'APPROVED' || ws === 'COMPLETED')) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acFreeCompleteTitle')}</Text>
@@ -772,7 +784,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   // Payment released — the final stage, both roles see the same completion
   // card immediately (no separate "confirm receipt" step required).
   if (paymentStatus === 'RELEASED') return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
@@ -783,7 +795,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // APPROVED, payment still held — business: admin will release it
   if (!isCreator) return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
@@ -794,7 +806,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
 
   // APPROVED, payment still held — creator: admin will release it
   return (
-    <View style={[ac.card, { backgroundColor: C.surface }]}>
+    <View style={ac.cardBody}>
       <View style={ac.headerRow}>
         <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="trophy" size={16} color="#16A34A" solid /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedCreatorTitle')}</Text>
@@ -804,126 +816,114 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, isService, sub
   );
 }
 
-// ─── Escrow state-machine status banner ───────────────────────────────────────
-// A read-only card above the action card: the countdown for whatever timed
-// stage the engagement is in, or the dispute status. Returns null when there's
-// nothing time-sensitive to surface (the action card covers the rest).
-function EngagementStatusBanner({ app, isCreator, onRaiseDispute }: {
+// ─── Stage strip (inside the action card) ───────────────────────────────────
+// The countdown for whatever timed stage the engagement is in — or the dispute
+// status — rendered as a tinted block at the bottom of the action card, so
+// each step is one card. Same stages, labels and notes as web's StatusStrip
+// (web/src/app/lib/engagementStage.ts). Returns null when nothing is timed.
+const STRIP_PALETTE = {
+  red:   { bg: '#FEF2F2', fg: '#EF4444' },
+  blue:  { bg: '#E0F2FE', fg: '#0284C7' },
+  green: { bg: '#ECFDF5', fg: '#059669' },
+};
+
+function Strip({ tone = 'blue', icon = 'clock', label, value, note, late }: {
+  tone?: keyof typeof STRIP_PALETTE; icon?: string; label: string; value?: string; note?: string; late?: boolean;
+}) {
+  const C = useAppColors();
+  const { t } = useLanguage();
+  const palette = STRIP_PALETTE[tone];
+  return (
+    <View style={[ac.stripBox, { backgroundColor: palette.bg }]}>
+      <View style={ac.stripRow}>
+        <View style={ac.stripLabelRow}>
+          <FontAwesome5 name={icon as never} solid size={12} color={palette.fg} />
+          <Text style={[ac.stripLabel, { color: palette.fg }]}>{label}</Text>
+        </View>
+        {!!value && <Text style={[ac.stripValue, { color: palette.fg }]}>{value}</Text>}
+      </View>
+      {!!note && <Text style={[ac.stripNote, { color: C.textSecondary }]}>{note}</Text>}
+      {late && <Text style={[ac.stripNote, { color: '#D97706', fontFamily: F.semibold }]}>{t('activityTimeline.banLateFlag')}</Text>}
+    </View>
+  );
+}
+
+function StageStrip({ app, isCreator, onRaiseDispute }: {
   app: AppInfo;
   isCreator: boolean;
   onRaiseDispute: () => void;
 }) {
-  const C = useAppColors();
   const { t } = useLanguage();
 
   const state = app.engagementState;
   const dispute = app.dispute;
-
-  function Card({ tone, icon, title, sub, extra }: {
-    tone: 'red' | 'amber' | 'green' | 'blue';
-    icon: string; title: string; sub: string; extra?: React.ReactNode;
-  }) {
-    const palette = {
-      red:   { bg: '#FEF2F2', fg: '#EF4444' },
-      amber: { bg: '#FFF7ED', fg: '#D97706' },
-      green: { bg: '#ECFDF5', fg: '#059669' },
-      blue:  { bg: '#EFF6FF', fg: '#2563EB' },
-    }[tone];
-    return (
-      <View style={[ac.card, { backgroundColor: C.surface }]}>
-        <View style={ac.headerRow}>
-          <View style={[ac.iconBg, { backgroundColor: palette.bg }]}>
-            <FontAwesome5 name={icon as never} solid size={16} color={palette.fg} />
-          </View>
-          <Text style={[ac.heading, { color: C.text }]}>{title}</Text>
-        </View>
-        <Text style={[ac.sub, { color: C.textSecondary }]}>{sub}</Text>
-        {app.submittedLate && (
-          <Text style={[ac.sub, { color: '#D97706', fontFamily: F.semibold }]}>
-            {t('activityTimeline.banLateFlag')}
-          </Text>
-        )}
-        {extra}
-      </View>
-    );
-  }
-
-  const disputeBtn = (
-    <ActionBtn label={t('activityTimeline.disputeBtn')} color="#EF4444" icon="flag" onPress={onRaiseDispute} />
-  );
-
-  // ── Dispute takes precedence over any countdown ──
-  if (dispute) {
-    if (dispute.status === 'RESOLVED') {
-      return (
-        <Card
-          tone="blue"
-          icon="gavel"
-          title={t('activityTimeline.banDisputeDoneTitle')}
-          sub={t('activityTimeline.banDisputeDoneSub', {
-            outcome: (dispute.resolution ?? '').replace('_', ' ').toLowerCase(),
-            note: dispute.resolutionNote ?? '',
-          })}
-        />
-      );
-    }
-    return (
-      <Card
-        tone="red"
-        icon="balance-scale"
-        title={t('activityTimeline.banDisputeOpenTitle')}
-        sub={t('activityTimeline.banDisputeOpenSub', { reason: dispute.reason })}
-      />
-    );
-  }
+  const late = app.submittedLate;
 
   // Either party may raise a dispute while the money is held / settling.
   const showDisputeBtn =
+    !dispute &&
     state != null &&
     DISPUTABLE_STATES.has(state) &&
     (app.escrowStatus === 'HELD' || app.escrowStatus === 'RELEASE_PENDING');
 
-  switch (state) {
-    case 'CREATOR_SELECTED': {
-      const cd = countdownLabel(app.paymentDueAt, t);
-      if (!app.paymentDueAt) return null;
-      return isCreator
-        ? <Card tone="amber" icon="clock" title={t('activityTimeline.banPayTitleCreator')} sub={t('activityTimeline.banPaySubCreator', { left: cd.text })} />
-        : <Card tone={cd.overdue ? 'red' : 'amber'} icon="credit-card" title={t('activityTimeline.banPayTitleBiz')} sub={t('activityTimeline.banPaySubBiz', { left: cd.text })} />;
-    }
-    case 'ESCROW_FUNDED': {
-      if (!app.creatorConfirmationDueAt) return null;
-      const cd = countdownLabel(app.creatorConfirmationDueAt, t);
-      return isCreator
-        ? <Card tone={cd.overdue ? 'red' : 'amber'} icon="hand-point-right" title={t('activityTimeline.banConfirmTitleCreator')} sub={t('activityTimeline.banConfirmSubCreator', { left: cd.text })} />
-        : <Card tone="blue" icon="hourglass-half" title={t('activityTimeline.banConfirmTitleBiz')} sub={t('activityTimeline.banConfirmSubBiz', { left: cd.text })} />;
-    }
-    case 'IN_PROGRESS': {
-      if (!app.contentDeadline) return null;
-      return <Card tone="blue" icon="calendar-alt" title={t('activityTimeline.banContentTitle')} sub={t('activityTimeline.banContentSub', { when: fmtNPT(app.contentDeadline) })} extra={showDisputeBtn ? disputeBtn : undefined} />;
-    }
-    case 'REVISION_REQUESTED': {
-      return <Card tone="amber" icon="redo" title={t('activityTimeline.banRevisionTitle')} sub={t('activityTimeline.banRevisionSub', { when: fmtNPT(app.contentDeadline) })} extra={showDisputeBtn ? disputeBtn : undefined} />;
-    }
-    case 'CONTENT_OVERDUE': {
-      const cd = countdownLabel(app.contentGraceDeadline, t);
-      return <Card tone="red" icon="exclamation-triangle" title={t('activityTimeline.banOverdueTitle')} sub={isCreator ? t('activityTimeline.banOverdueSubCreator', { left: cd.text }) : t('activityTimeline.banOverdueSubBiz', { left: cd.text })} />;
-    }
-    case 'CREATOR_FAILED': {
-      return <Card tone="red" icon="times-circle" title={t('activityTimeline.banFailedTitle')} sub={t('activityTimeline.banFailedSub')} />;
-    }
-    case 'BUSINESS_REVIEW': {
-      if (!app.businessReviewDueAt) return null;
-      const cd = countdownLabel(app.businessReviewDueAt, t);
-      return <Card tone={cd.overdue ? 'amber' : 'blue'} icon="search" title={t('activityTimeline.banReviewTitle')} sub={isCreator ? t('activityTimeline.banReviewSubCreator', { left: cd.text }) : t('activityTimeline.banReviewSubBiz', { left: cd.text })} extra={showDisputeBtn ? disputeBtn : undefined} />;
-    }
-    case 'PAYMENT_RELEASE_PENDING': {
-      if (!app.paymentReleaseAt) return null;
-      return <Card tone="green" icon="check-circle" title={t('activityTimeline.banSettlementTitle')} sub={t('activityTimeline.banSettlementSub', { when: fmtNPT(app.paymentReleaseAt) })} extra={showDisputeBtn ? disputeBtn : undefined} />;
-    }
-    default:
-      return null;
+  function timed(iso: string | null | undefined, label: string, note?: string) {
+    if (!iso) return null;
+    const cd = countdownLabel(iso, t);
+    return <Strip late={late} tone={cd.overdue ? 'red' : 'blue'} label={label} value={cd.text} note={note} />;
   }
+
+  let strip: React.ReactNode = null;
+  if (dispute) {
+    strip = dispute.status === 'RESOLVED'
+      ? <Strip late={late} icon="gavel" label={t('activityTimeline.banDisputeDoneTitle')} note={t('activityTimeline.banDisputeDoneSub', {
+          outcome: (dispute.resolution ?? '').replace('_', ' ').toLowerCase(),
+          note: dispute.resolutionNote ?? '',
+        })} />
+      : <Strip late={late} tone="red" icon="balance-scale" label={t('activityTimeline.banDisputeOpenTitle')} note={t('activityTimeline.banDisputeOpenSub', { reason: dispute.reason })} />;
+  } else {
+    switch (state) {
+      case 'CREATOR_SELECTED':
+        strip = isCreator
+          ? timed(app.paymentDueAt, t('activityTimeline.stCreatorPayLabel'), t('activityTimeline.stCreatorPayNote'))
+          : timed(app.paymentDueAt, t('activityTimeline.stBizPayLabel'), t('activityTimeline.stBizPayNote'));
+        break;
+      case 'ESCROW_FUNDED':
+        strip = isCreator
+          ? timed(app.creatorConfirmationDueAt, t('activityTimeline.stCreatorConfirmLabel'), t('activityTimeline.stCreatorConfirmNote'))
+          : timed(app.creatorConfirmationDueAt, t('activityTimeline.stBizConfirmLabel'), t('activityTimeline.stBizConfirmNote'));
+        break;
+      case 'IN_PROGRESS':
+      case 'REVISION_REQUESTED':
+        strip = timed(app.contentDeadline, t('activityTimeline.stContentDueLabel'), app.contentDeadline ? fmtNPT(app.contentDeadline) : undefined);
+        break;
+      case 'CONTENT_OVERDUE':
+        strip = timed(app.contentGraceDeadline, t('activityTimeline.stGraceLabel'), isCreator ? t('activityTimeline.stCreatorGraceNote') : t('activityTimeline.stBizGraceNote'));
+        break;
+      case 'CREATOR_FAILED':
+        strip = <Strip late={late} tone="red" icon="times-circle" label={t('activityTimeline.banFailedTitle')} note={t('activityTimeline.banFailedSub')} />;
+        break;
+      case 'BUSINESS_REVIEW':
+        strip = isCreator
+          ? timed(app.businessReviewDueAt, t('activityTimeline.stCreatorReviewLabel'))
+          : timed(app.businessReviewDueAt, t('activityTimeline.stBizReviewLabel'), t('activityTimeline.stBizReviewNote'));
+        break;
+      case 'PAYMENT_RELEASE_PENDING':
+        strip = app.paymentReleaseAt
+          ? <Strip late={late} tone="green" icon="check-circle" label={t('activityTimeline.stReleaseLabel')} value={fmtNPT(app.paymentReleaseAt)} />
+          : null;
+        break;
+    }
+  }
+
+  if (!strip && !showDisputeBtn) return null;
+  return (
+    <>
+      {strip}
+      {showDisputeBtn && (
+        <ActionBtn label={t('activityTimeline.disputeBtn')} color="#EF4444" icon="flag" onPress={onRaiseDispute} />
+      )}
+    </>
+  );
 }
 
 // Distinguishes PDF vs Word docs in the deliverables grid (both otherwise
@@ -1886,12 +1886,11 @@ export default function CampaignWorkspaceScreen() {
           <ProgressTracker current={pIdx} scrollRef={progressScrollRef} labels={progressLabels} />
         </View>
 
-        {/* ── Current Action Card ──
-              The action card (what to do next) leads; the escrow status
-              banner (countdown for the current stage) sits directly below it
-              for both roles. ── */}
+        {/* ── Current step — one card: what to do next, with the stage
+              countdown / dispute status folded in underneath. ── */}
         <ActionCard
           ws={ws} paid={paid} paymentStatus={app?.paymentStatus ?? 'UNPAID'} isCreator={isCreator} isFree={isFreeEvent} isService={isService} submitting={submitting}
+          status={app ? <StageStrip app={app} isCreator={isCreator} onRaiseDispute={() => setShowDispute(true)} /> : null}
           deliverableVideos={allDeliverableVideos}
           deliverableFiles={allDeliverableFiles}
           submittedUrls={submittedUrls}
@@ -1912,16 +1911,6 @@ export default function CampaignWorkspaceScreen() {
             }
           }}
         />
-
-        {/* ── Escrow status banner (countdowns / dispute) — sits under the
-              action card so the "do this next" card always leads. ── */}
-        {app && (
-          <EngagementStatusBanner
-            app={app}
-            isCreator={isCreator}
-            onRaiseDispute={() => setShowDispute(true)}
-          />
-        )}
 
         {/* ── Free-event Q&A ("Ask Organizer") — a free event never opens a
               chat, so this shared page is how the organizer and accepted
@@ -2820,6 +2809,13 @@ const ac = StyleSheet.create({
   sub:    { fontSize: 13, fontFamily: F.regular, lineHeight: 20 },
   lockNote:      { backgroundColor: '#FEF2F2', borderRadius: RADIUS.sm, padding: SPACING.md, gap: 4 },
   lockNoteTitle: { fontSize: 13, fontFamily: F.semibold, color: '#EF4444', lineHeight: 19 },
+  cardBody:      { gap: 8 },
+  stripBox:      { borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: 10, gap: 4, marginTop: 4 },
+  stripRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  stripLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  stripLabel:    { fontSize: 12, fontFamily: F.semibold },
+  stripValue:    { fontSize: 14, fontFamily: F.bold },
+  stripNote:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.full, paddingVertical: 13, minHeight: MIN_TOUCH_TARGET },
   btnLg:  { paddingVertical: 15 },

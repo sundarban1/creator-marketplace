@@ -202,16 +202,18 @@ export default function BusinessHomeScreen() {
     return c.campaignType === 'OPEN_EVENT';
   }
 
-  const paidCount = campaigns.filter((c) => !c.campaignType || c.campaignType === 'PAID_CAMPAIGN').length;
-  const openCount = campaigns.filter((c) => c.campaignType === 'OPEN_EVENT').length;
+  // Drafts aren't events yet — keep them out of Recent Events (list + tab counts).
+  const publishedCampaigns = campaigns.filter((c) => c.status !== 'draft');
+  const paidCount = publishedCampaigns.filter((c) => !c.campaignType || c.campaignType === 'PAID_CAMPAIGN').length;
+  const openCount = publishedCampaigns.filter((c) => c.campaignType === 'OPEN_EVENT').length;
 
   const TYPE_TABS = [
-    { key: 'All',  label: t('business.home.tabAll'),      icon: 'layer-group' as const,  color: TabColors.neutral.color, count: campaigns.length },
+    { key: 'All',  label: t('business.home.tabAll'),      icon: 'layer-group' as const,  color: TabColors.neutral.color, count: publishedCampaigns.length },
     { key: 'Paid', label: t('business.home.tabPaid'),     icon: 'money-bill-alt'  as const,   color: TabColors.brand.color,   count: paidCount        },
     { key: 'Open', label: t('business.home.tabOpenFree'), icon: 'gift'  as const,   color: TabColors.info.color,    count: openCount        },
   ];
 
-  const recent = campaigns.filter(matchesType).slice(0, 5);
+  const recent = publishedCampaigns.filter(matchesType).slice(0, 5);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>

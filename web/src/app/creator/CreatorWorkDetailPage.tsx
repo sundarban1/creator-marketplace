@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarClock, MessageCircle } from 'lucide-react';
+import { ArrowLeft, MessageCircle } from 'lucide-react';
 import { useT } from '../i18n';
 import { useApplications } from './useApplications';
 import { rupees } from '../lib/format';
-import { useDeadlineLabel } from '../lib/useDeadlineLabel';
 import {
   startWork,
   submitWork,
@@ -16,6 +15,8 @@ import {
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Card, CardHeader } from '../ui/Card';
+import { StatusStrip } from '../ui/StatusStrip';
+import { stageInfo } from '../lib/engagementStage';
 import { Alert } from '../ui/Alert';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
@@ -42,7 +43,6 @@ export function CreatorWorkDetailPage() {
   const t = useT();
   const { id = '' } = useParams();
   const { all, loading, error, reload } = useApplications();
-  const fmtDeadline = useDeadlineLabel();
   // Accepts an application id or a campaign id — collaboration notifications
   // and reminder emails link by campaign (a creator has one application each).
   const app = all.find((a) => a.id === id) ?? all.find((a) => a.campaignId === id) ?? null;
@@ -83,7 +83,9 @@ export function CreatorWorkDetailPage() {
   const state = app.engagementState;
   const files = app.deliverableFiles ?? [];
   const videos = app.deliverableVideos ?? [];
-  const deadline = app.contentDeadline ? fmtDeadline(app.contentDeadline) : null;
+  // Countdown for the current timed stage — shown inside the action card,
+  // same labels as the business view and mobile's activity timeline.
+  const stage = stageInfo(app, 'CREATOR', t);
 
   const run = async (fn: () => Promise<CreatorApplication | void>, successMsg: string) => {
     setBusy(true);
@@ -181,17 +183,8 @@ export function CreatorWorkDetailPage() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.7fr_1fr] lg:items-start">
-        {/* Main column — deadline + status-driven action */}
+        {/* Main column — status-driven action (its countdown lives inside the card) */}
         <div className="space-y-6">
-          {deadline && (
-            <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-3">
-              <CalendarClock size={16} className={deadline.urgent ? 'text-warning' : 'text-ink-soft'} />
-              <span className="text-[13px] text-ink-soft">{t('workDetail.deadlineHeading')}:</span>
-              <span className={`text-[13px] font-semibold ${deadline.urgent ? 'text-warning' : 'text-ink'}`}>
-                {deadline.label}
-              </span>
-            </div>
-          )}
           {renderPanel()}
         </div>
 
@@ -243,12 +236,19 @@ export function CreatorWorkDetailPage() {
 
   function renderPanel() {
     if (state === 'PROPOSAL_PENDING') return <Alert tone="info">{t('workDetail.awaitingDecision')}</Alert>;
-    if (state === 'CREATOR_SELECTED') return <Alert tone="info">{t('workDetail.awaitingPayment')}</Alert>;
+    if (state === 'CREATOR_SELECTED') {
+      return (
+        <Card>
+          <StatusStrip text={t('workDetail.awaitingPayment')} stage={stage} />
+        </Card>
+      );
+    }
 
     if (state === 'ESCROW_FUNDED') {
       return (
         <Card>
           <p className="text-[14px] text-ink-soft">{t('workDetail.startWorkNote')}</p>
+          <StatusStrip className="mt-3" stage={stage} />
           <Button className="mt-4" loading={busy} onClick={() => run(() => startWork(app!.id), t('workDetail.workStarted'))}>
             {t('workDetail.startWork')}
           </Button>
@@ -265,6 +265,8 @@ export function CreatorWorkDetailPage() {
               {app!.revisionNotes[0].note}
             </Alert>
           )}
+
+          <StatusStrip className="mb-4" stage={stage} />
 
           <CardHeader title={t('workDetail.deliverablesHeading')} />
           <div className="mb-3">
@@ -314,13 +316,17 @@ export function CreatorWorkDetailPage() {
     if (state === 'BUSINESS_REVIEW') {
       return (
         <Card>
-          <Alert tone="progress" className="mb-4">
-            {t('workDetail.submitted')}
-            {app!.submittedAt &&
-              ` · ${t('workDetail.submittedOn', {
-                date: new Date(app!.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-              })}`}
-          </Alert>
+          <StatusStrip
+            className="mb-4"
+            text={`${t('workDetail.submitted')}${
+              app!.submittedAt
+                ? ` · ${t('workDetail.submittedOn', {
+                    date: new Date(app!.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+                  })}`
+                : ''
+            }`}
+            stage={stage}
+          />
           <CardHeader title={t('workDetail.deliverablesHeading')} />
           <div className="mb-3">
             <DeliverableStrip files={files} videos={videos} />
@@ -333,7 +339,13 @@ export function CreatorWorkDetailPage() {
       return <DisputeStatusCard dispute={app!.dispute} viewerRole="CREATOR" />;
     }
 
-    if (state === 'PAYMENT_RELEASE_PENDING') return <Alert tone="progress">{t('workDetail.paymentOnTheWay')}</Alert>;
+    if (state === 'PAYMENT_RELEASE_PENDING') {
+      return (
+        <Card>
+          <StatusStrip text={t('workDetail.paymentOnTheWay')} stage={stage} />
+        </Card>
+      );
+    }
     if (state === 'PAYMENT_RELEASED' || state === 'COMPLETED') {
       return (
         <>

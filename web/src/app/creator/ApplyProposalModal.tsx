@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Link2, Sparkles } from 'lucide-react';
 import { useT } from '../i18n';
 import { rupees } from '../lib/format';
 import { applyToCampaign, fetchSocialAccounts, type CreatorApplication } from '../api/creator';
+import { previewContract, type ContractPreview } from '../api/contract';
+import { ContractModal } from '../events/ContractModal';
 import { ApiError } from '../lib/apiClient';
 import { generateCoverLetterTemplate } from '../lib/coverLetterTemplates';
 import { Modal } from '../ui/Modal';
@@ -44,9 +46,14 @@ export function ApplyProposalModal({
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ cover?: string; rate?: string }>({});
   const [submitting, setSubmitting] = useState(false);
-  // Set when the creator has no connected social account — re-checked on
-  // every submit, so disconnecting the last account brings it back.
-  const [needsSocial, setNeedsSocial] = useState(false);
+  // Which dialog is up: the proposal form, the "connect a social account
+  // first" prompt (re-checked on every submit, so disconnecting the last
+  // account brings it back), or — paid campaigns only — the contract to agree
+  // to before the proposal is actually sent. Same sequence as mobile's
+  // submit-proposal.tsx.
+  const [step, setStep] = useState<'form' | 'social' | 'contract'>('form');
+  const [contract, setContract] = useState<ContractPreview | null>(null);
+  const [contractError, setContractError] = useState('');
 
   const regenerateCoverLetter = () => {
     setCoverLetter(generateCoverLetterTemplate(event.category, event.title, event.business?.businessName ?? ''));
@@ -64,7 +71,6 @@ export function ApplyProposalModal({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
-    setNeedsSocial(false);
 
     const fe: typeof fieldErrors = {};
     if (coverLetter.trim().length < MIN_COVER) fe.cover = t('creatorEvents.coverLetterTooShort');
@@ -94,29 +100,104 @@ export function ApplyProposalModal({
       // least one social account must be connected (backend enforces too).
       const accounts = await fetchSocialAccounts();
       if (accounts.length === 0) {
-        setNeedsSocial(true);
+        setStep('social');
         return;
       }
 
-      const application = await applyToCampaign(event.id, {
-        coverLetter: coverLetter.trim(),
-        proposedRate: numRate,
-        timeline: DEFAULT_TIMELINE,
-        portfolioUrl: portfolioUrl.trim() || undefined,
-        shareToken,
-      });
-      onApplied(application);
-    } catch (err) {
-      if (err instanceof ApiError && err.code === 'SOCIAL_ACCOUNT_REQUIRED') {
-        setNeedsSocial(true);
-      } else if (err instanceof ApiError && err.status === 409) {
-        setError(t('creatorEvents.alreadyApplied'));
-      } else {
-        setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+      // Free events aren't a paid engagement — no contract, submit directly.
+      if (isFree) {
+        onApplied(await submitApplication(numRate));
+        return;
       }
+
+      // Paid campaigns: review + agree to the contract before submitting.
+      setContract(await previewContract({ campaignId: event.id, proposedRate: numRate, timeline: DEFAULT_TIMELINE }));
+      setContractError('');
+      setStep('contract');
+    } catch (err) {
+      handleSubmitError(err, setError);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function submitApplication(numRate: number) {
+    return applyToCampaign(event.id, {
+      coverLetter: coverLetter.trim(),
+      proposedRate: numRate,
+      timeline: DEFAULT_TIMELINE,
+      portfolioUrl: portfolioUrl.trim() || undefined,
+      shareToken,
+    });
+  }
+
+  function handleSubmitError(err: unknown, show: (msg: string) => void) {
+    if (err instanceof ApiError && err.code === 'SOCIAL_ACCOUNT_REQUIRED') {
+      setStep('social');
+    } else if (err instanceof ApiError && err.status === 409) {
+      show(t('creatorEvents.alreadyApplied'));
+    } else {
+      show(err instanceof Error ? err.message : t('common.somethingWrong'));
+    }
+  }
+
+  async function handleAgreeAndSubmit() {
+    setContractError('');
+    setSubmitting(true);
+    try {
+      onApplied(await submitApplication(Number(rate)));
+    } catch (err) {
+      handleSubmitError(err, setContractError);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (step === 'social') {
+    return (
+      <Modal
+        open={open}
+        onClose={() => setStep('form')}
+        title={t('creatorEvents.socialRequiredTitle')}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setStep('form')}>
+              {t('creatorEvents.socialRequiredNotNow')}
+            </Button>
+            <Link
+              to="/creator/profile?connect=social"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-hover"
+            >
+              {t('creatorEvents.socialRequiredCta')}
+            </Link>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <Link2 size={22} />
+          </span>
+          <p className="text-[14px] leading-6 text-ink-soft">{t('creatorEvents.socialRequiredBody')}</p>
+        </div>
+      </Modal>
+    );
+  }
+
+  if (step === 'contract' && contract) {
+    return (
+      <ContractModal
+        open={open}
+        title={contract.title}
+        subtitle={t('contract.creatorSubtitle')}
+        filledBody={contract.filledBody}
+        terms={contract.terms}
+        agreeLabel={t('contract.agreeAndSubmit')}
+        agreeing={submitting}
+        error={contractError}
+        onAgree={handleAgreeAndSubmit}
+        onClose={() => setStep('form')}
+      />
+    );
   }
 
   return (
@@ -138,19 +219,6 @@ export function ApplyProposalModal({
     >
       <form id="apply-form" onSubmit={handleSubmit} noValidate className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
-        {needsSocial && (
-          <Alert tone="error">
-            <span className="block font-semibold">{t('creatorEvents.socialRequiredTitle')}</span>
-            <span className="mt-1 block">{t('creatorEvents.socialRequiredBody')}</span>
-            <Link
-              to="/creator/profile?connect=social"
-              className="mt-2 inline-block font-semibold text-violet-dark underline"
-            >
-              {t('creatorEvents.socialRequiredCta')}
-            </Link>
-          </Alert>
-        )}
-
         <Textarea
           label={t('creatorEvents.coverLetter')}
           hint={t('creatorEvents.coverLetterAutoHint')}
