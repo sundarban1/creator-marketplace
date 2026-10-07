@@ -27,6 +27,7 @@ import successStoryAdminRoutes from '../modules/success-story/success-story.admi
 import communityEventRoutes from '../modules/community-event/community-event.routes';
 import communityEventAdminRoutes from '../modules/community-event/community-event.admin.routes';
 import publicRoutes from '../modules/public/public.routes';
+import opportunityShareRoutes from '../modules/opportunity-share/opportunity-share.routes';
 import visitorChatRoutes from '../modules/visitorChat/visitorChat.routes';
 import visitorChatAdminRoutes from '../modules/visitorChat/visitorChat.admin.routes';
 import helpRoutes         from '../modules/help/help.routes';
@@ -78,6 +79,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/campaigns/ai', campaignAiRoutes);
   app.use('/api/ai-assistant', aiAssistantRoutes);
   app.use('/api/campaigns', campaignRoutes);
+  app.use('/api/opportunity-shares', opportunityShareRoutes);
   app.use('/api/promotions', promotionRoutes);
   app.use('/api/redemptions', redemptionRoutes);
   app.use('/api/meetups', meetupRoutes);

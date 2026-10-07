@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ChangeEvent } from 'react';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import type { PaymentMethod, PaymentMethodStatus } from '../../context/PaymentMethodsContext';
 import { usePaymentMethods } from '../../context/PaymentMethodsContext';
+import { confirmImageUpload } from '../../app/ui/uploadPreview';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -67,6 +68,7 @@ export function PaymentMethodModal({ initial, onClose }: PaymentMethodModalProps
     }
 
     setErrors((p) => ({ ...p, icon: '' }));
+    if (!(await confirmImageUpload(file))) return;
     setUploading(true);
     try {
       const url = await uploadIcon(file);

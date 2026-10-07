@@ -1,6 +1,7 @@
 import { useRef, useState, type DragEvent } from 'react';
 import { UploadCloud, Camera } from 'lucide-react';
 import { cn } from './cn';
+import { confirmImageUpload } from './uploadPreview';
 
 /** Rough "is this a phone/tablet with a camera" check — drives the capture UI. */
 const IS_MOBILE =
@@ -45,12 +46,13 @@ export function FileUpload({
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState('');
 
-  const accept = (file: File | undefined) => {
+  const accept = async (file: File | undefined) => {
     if (!file) return;
     setError('');
     const okType = ACCEPT_MIME.has(file.type) || /\.(jpe?g|png|pdf|docx)$/i.test(file.name);
     if (!okType) return setError(errorLabel);
     if (file.size > MAX_BYTES) return setError(sizeErrorLabel);
+    if (!(await confirmImageUpload(file))) return;
     onFile(file);
   };
 

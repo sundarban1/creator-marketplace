@@ -3,6 +3,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
 import { compressImage } from '@/utilities/uploadImage';
+import { requestImagePreview } from '@/components/UploadPreviewModal';
 import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
 
 export type PickedAttachment = { uri: string; name: string; mimeType: string };
@@ -46,7 +47,8 @@ async function toPickedImage(asset: ImagePicker.ImagePickerAsset): Promise<Picke
   return { uri, name: `photo_${Date.now()}.${ext}`, mimeType };
 }
 
-export async function pickImageFromLibrary(): Promise<PickedAttachment | null> {
+// `confirmLabel` overrides the preview's "Upload" button (chat passes "Send").
+export async function pickImageFromLibrary(confirmLabel?: string): Promise<PickedAttachment | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
     showPermissionDeniedAlert('Permission required', 'Please allow access to your photo library in Settings.');
@@ -54,10 +56,11 @@ export async function pickImageFromLibrary(): Promise<PickedAttachment | null> {
   }
   const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
   if (result.canceled) return null;
+  if (!(await requestImagePreview({ uris: [result.assets[0]!.uri], confirmLabel }))) return null;
   return toPickedImage(result.assets[0]!);
 }
 
-export async function pickImageFromCamera(): Promise<PickedAttachment | null> {
+export async function pickImageFromCamera(confirmLabel?: string): Promise<PickedAttachment | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
     showPermissionDeniedAlert('Permission required', 'Please allow camera access in Settings.');
@@ -65,6 +68,7 @@ export async function pickImageFromCamera(): Promise<PickedAttachment | null> {
   }
   const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
   if (result.canceled) return null;
+  if (!(await requestImagePreview({ uris: [result.assets[0]!.uri], confirmLabel }))) return null;
   return toPickedImage(result.assets[0]!);
 }
 
@@ -191,6 +195,7 @@ export async function pickDeliverableImagesFromLibrary(remainingSlots: number): 
     selectionLimit: remainingSlots,
   });
   if (result.canceled) return [];
+  if (!(await requestImagePreview({ uris: result.assets.map((a) => a.uri) }))) return [];
 
   const picked: PickedFile[] = [];
   for (const asset of result.assets) {
@@ -208,6 +213,7 @@ export async function pickDeliverableImageFromCamera(): Promise<PickedFile | nul
   }
   const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
   if (result.canceled) return null;
+  if (!(await requestImagePreview({ uris: [result.assets[0]!.uri] }))) return null;
   return toPickedDeliverableImage(result.assets[0]!);
 }
 
@@ -257,7 +263,7 @@ export function promptDeliverableUploadChoice(): Promise<DeliverableUploadChoice
   });
 }
 
-export async function pickDocumentAttachment(): Promise<PickedAttachment | null> {
+export async function pickDocumentAttachment(confirmLabel?: string): Promise<PickedAttachment | null> {
   const result = await DocumentPicker.getDocumentAsync({
     type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -270,6 +276,8 @@ export async function pickDocumentAttachment(): Promise<PickedAttachment | null>
     Alert.alert('File too large', 'Please choose a file under 20 MB.');
     return null;
   }
+  // Images picked via Files still get the photo preview; other documents don't.
+  if (asset.mimeType?.startsWith('image/') && !(await requestImagePreview({ uris: [asset.uri], confirmLabel }))) return null;
   return { uri: asset.uri, name: asset.name, mimeType: asset.mimeType ?? 'application/octet-stream' };
 }
 

@@ -5,6 +5,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { Pagination } from '../../components/Pagination';
 import { api, type ApiAdminWithdrawal, type ApiAdminWithdrawalDetail } from '../../lib/api';
 import { useApi } from '../../lib/useApi';
+import { confirmImageUpload } from '../../app/ui/uploadPreview';
 
 const PAGE_SIZE = 10;
 
@@ -325,7 +326,16 @@ function WithdrawalDetailModal({
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500">Transaction screenshot * (JPG/PNG, ≤5 MB)</label>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={async (e) => {
+                      const input = e.currentTarget;
+                      const f = input.files?.[0] ?? null;
+                      if (f && !(await confirmImageUpload(f, { confirmLabel: 'Use image' }))) {
+                        input.value = '';
+                        setFile(null);
+                        return;
+                      }
+                      setFile(f);
+                    }}
                       className="mt-1 w-full text-sm" />
                   </div>
                   <div>

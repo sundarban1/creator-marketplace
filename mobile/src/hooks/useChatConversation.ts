@@ -654,14 +654,14 @@ export function useChatConversation({
   }
 
   async function handleCameraPress() {
-    const file = await pickImageFromCamera();
+    const file = await pickImageFromCamera(t('imagePreview.send'));
     if (file) void handleSendAttachment(file, 'IMAGE');
   }
 
   async function handleAttachmentPress() {
     const choice = await promptAttachmentChoice(allowVideo);
     if (choice === 'gallery') {
-      const file = await pickImageFromLibrary();
+      const file = await pickImageFromLibrary(t('imagePreview.send'));
       if (file) void handleSendAttachment(file, 'IMAGE');
     } else if (choice === 'video-library') {
       const video = await pickVideoFromLibrary();
@@ -670,7 +670,7 @@ export function useChatConversation({
       const video = await pickVideoFromCamera();
       if (video) void handleSendVideoAttachment(video);
     } else if (choice === 'document') {
-      const file = await pickDocumentAttachment();
+      const file = await pickDocumentAttachment(t('imagePreview.send'));
       if (file) void handleSendAttachment(file, file.mimeType.startsWith('image/') ? 'IMAGE' : 'FILE');
     }
   }

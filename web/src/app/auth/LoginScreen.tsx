@@ -4,9 +4,10 @@ import { AtSign, Lock } from 'lucide-react';
 import { useAppAuth } from './AppAuthContext';
 import { toIdentifier } from './identifier';
 import { useT } from '../i18n';
-import { paths, roleHome } from '../routes';
+import { paths } from '../routes';
 import { ApiError } from '../lib/apiClient';
 import { AuthShell } from './AuthShell';
+import { postAuthPath } from './postAuthNav';
 import { SocialAuth } from './SocialAuth';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
@@ -43,7 +44,7 @@ export function LoginScreen() {
     setSubmitting(true);
     try {
       const user = await loginWithPassword(id, password);
-      navigate(from && from.startsWith('/') ? from : roleHome(user.role), { replace: true });
+      navigate(from && from.startsWith('/') ? from : await postAuthPath(user), { replace: true });
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
         // Backend blocks login until the account is verified — and has already

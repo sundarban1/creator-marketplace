@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp, ImagePlus, Loader2, Plus, Trash2, X } from 'lucide-react';
 import type { CommunityEventUploadKind } from '../../lib/api';
 import { checkImages, uploadImages } from './formUtils';
+import { confirmImageUpload } from '../../app/ui/uploadPreview';
 
 /** Shared building blocks for the Community Events admin form. */
 
@@ -102,6 +103,7 @@ export function ImageField({
     if (!file) return;
     const problem = checkImages([file]);
     if (problem) return setErr(problem);
+    if (!(await confirmImageUpload(file))) return;
     setErr(null);
     setBusy(true);
     try {

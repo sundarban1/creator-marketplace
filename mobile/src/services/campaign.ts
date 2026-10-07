@@ -631,6 +631,10 @@ export const campaignService = {
     });
   },
 
+  async delete(id: string): Promise<void> {
+    await request('DELETE', `/api/campaigns/${id}`);
+  },
+
   async getBusinessProposals(params?: {
     page?: number;
     limit?: number;

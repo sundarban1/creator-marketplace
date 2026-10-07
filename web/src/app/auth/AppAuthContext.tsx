@@ -23,6 +23,8 @@ import {
 import { clearSession, getRefreshToken, readStoredUser, writeStoredUser } from '../lib/apiClient';
 import * as authApi from '../api/auth';
 import type { AuthUser, Identifier, RegisterInput, SocialAuthResult } from '../api/auth';
+import { claimShareSignup } from '../api/opportunityShare';
+import { takeShareReceipt } from '../lib/shareContext';
 
 type Status = 'loading' | 'authenticated' | 'anonymous';
 
@@ -106,6 +108,17 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safety);
     };
   }, []);
+
+  // Share Opportunity: once any auth path (password, OTP, Google redirect,
+  // TikTok…) lands a session, hand back the click receipt from a shared link
+  // opened while signed out. The server only credits it to an account created
+  // after that click, so an existing account logging in is a harmless no-op.
+  const userId = user?.id;
+  useEffect(() => {
+    if (status !== 'authenticated' || !userId) return;
+    const receipt = takeShareReceipt();
+    if (receipt) claimShareSignup(receipt).catch(() => {});
+  }, [status, userId]);
 
   const adoptSession = useCallback((next: AuthUser) => {
     writeStoredUser(next);

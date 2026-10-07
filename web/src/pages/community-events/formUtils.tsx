@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { api, type CommunityEventUploadKind } from '../../lib/api';
+import { confirmImageUpload } from '../../app/ui/uploadPreview';
 
 /** Non-component helpers for the Community Events admin form. */
 
@@ -50,10 +51,10 @@ export function useMultiFilePicker(onFiles: (files: File[]) => void) {
       multiple
       accept="image/jpeg,image/png,image/webp"
       className="hidden"
-      onChange={(e) => {
+      onChange={async (e) => {
         const files = Array.from(e.target.files ?? []);
         e.target.value = '';
-        if (files.length) onFiles(files);
+        if (files.length && (await confirmImageUpload(files))) onFiles(files);
       }}
     />
   );

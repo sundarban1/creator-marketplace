@@ -50,6 +50,20 @@ const en = {
   // Shared strings for campaign/event card components (FeaturedCard, NearbyCard,
   // CampaignListItem) — these render identical relative-time/expiry/distance/CTA
   // text across all three, so they share one set of keys instead of tripling.
+  shareOpportunity: {
+    button: 'Share Opportunity',
+    a11y: 'Share this opportunity',
+    title: 'Share Opportunity',
+    description: 'Know a creator who might be a great fit? Share this opportunity with them.',
+    whatsapp: 'WhatsApp',
+    sms: 'SMS',
+    copyLink: 'Copy Link',
+    more: 'More',
+    linkCopied: 'Link copied!',
+    message: '🚀 I found an opportunity on Kolab that might be a great fit for you.\n\nCheck it out and apply here:\n{{link}}',
+    failed: 'Couldn’t create a share link. Please try again.',
+    whatsappMissing: 'WhatsApp isn’t installed on this device.',
+  },
   campaignCard: {
     justNow: 'Just now',
     minsAgo: '{{n}}m ago',
@@ -1512,6 +1526,13 @@ const en = {
     publishDraft: 'Publish',
     draftPublished: 'Event published!',
     draftPublishFailed: 'Failed to publish this draft.',
+    deleteDraft: 'Delete draft',
+    deleteDraftTitle: 'Delete this draft?',
+    deleteDraftBody: 'Are you sure you want to delete this draft? This cannot be undone.',
+    deleteDraftConfirm: 'Yes, delete',
+    deleteDraftCancel: 'No',
+    draftDeleted: 'Draft deleted',
+    draftDeleteFailed: 'Failed to delete this draft.',
     deadline: 'Deadline',
     budget: 'Budget',
     loadingMore: 'Loading more...',
@@ -4650,6 +4671,13 @@ const en = {
     genericError: "Something went wrong. Please try again.",
     close: "Close",
     aiWorking: "Kolab is organising your campaign…",
+  },
+  imagePreview: {
+    title: 'Preview',
+    hint: 'Check your photo before it uploads',
+    upload: 'Upload',
+    uploadCount: 'Upload {{count}}',
+    send: 'Send',
   },
   imageCrop: {
     title: 'Adjust photo',

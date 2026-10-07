@@ -10,6 +10,7 @@ import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
 import { requestImageCrop } from '@/components/ImageCropModal';
+import { requestImagePreview } from '@/components/UploadPreviewModal';
 
 export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' | 'business-cover' | 'creator-citizenship' | 'creator-pan' | 'creator-company-reg' | 'business-pan' | 'business-company-reg' | 'business-identity' | 'campaign-feature' | 'portfolio-item';
 
@@ -209,8 +210,11 @@ export async function pickAndUpload(target: UploadTarget): Promise<UploadResult 
   const { aspect } = TARGET_CONFIG[target];
   const picked = source === 'library' ? await pickFromLibrary() : await pickFromCamera();
   if (!picked) return null;
+  // Aspect-bound targets already confirm on the crop screen; everything else
+  // (documents, portfolio) gets an explicit preview before it uploads.
   const asset = aspect ? await cropToAspect(picked, aspect) : picked;
   if (!asset) return null;
+  if (!aspect && !(await requestImagePreview({ uris: [asset.uri] }))) return null;
 
   return uploadAsset(asset, target);
 }

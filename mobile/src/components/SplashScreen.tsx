@@ -4,7 +4,7 @@ import * as ExpoSplashScreen from 'expo-splash-screen';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { useLanguage } from '@/context/LanguageContext';
-import { RADIUS, SHADOW } from '@/utilities/constants';
+import { RADIUS } from '@/utilities/constants';
 
 const TOTAL = 2400;
 // The splash overlay is dismissed by this timer, NOT by the reanimated
@@ -23,11 +23,11 @@ const containerKf = new Keyframe({
   100: { opacity: 0, easing: Easing.in(Easing.ease) },
 });
 
-// The logo card deliberately does NOT animate in — the native splash
-// (app.json → expo-splash-screen) already shows this exact white wordmark
-// card, centred on the same #4F46E5, so this overlay has to continue from
-// that frame unchanged. Any scale/fade-in here would read as the logo
-// popping a second time right after launch.
+// The logo deliberately does NOT animate in — the native splash
+// (app.json → expo-splash-screen) already shows this exact outlined wordmark
+// (splash-icon.png, rendered from kolab-outlined.svg), centred on the same
+// #4F46E5, so this overlay has to continue from that frame unchanged.
+// Any scale/fade-in here would read as the logo popping a second time right after launch.
 
 const textKf = new Keyframe({
   0: { opacity: 0, transform: [{ translateY: 20 }] },
@@ -78,9 +78,9 @@ export function SplashScreen() {
       <View style={styles.bubble4} />
 
       {/* Logo — static, matching the native splash frame it hands off from */}
-      <View style={styles.logoCard}>
-        <Image source={require('@/assets/images/kolab.svg')} style={styles.logoImage} contentFit="contain" />
-      </View>
+      {/* No card — like the login page, the wordmark carries its own white
+          outline (kolab-outlined.svg) so it reads straight on the indigo */}
+      <Image source={require('@/assets/images/kolab-outlined.svg')} style={styles.logoImage} contentFit="contain" />
 
       {/* Tagline — sits just below the logo card, absolutely positioned off
           the vertical centre so revealing it never nudges the centred logo
@@ -136,27 +136,21 @@ const styles = StyleSheet.create({
     bottom: '28%',
     right: 18,
   },
-  logoCard: {
-    borderRadius: RADIUS.xl,
-    backgroundColor: '#fff',
-    paddingHorizontal: 24,
-    paddingVertical: 18,
-    ...SHADOW.floating,
-    shadowColor: '#000',
-  },
   logoImage: {
-    width: 200,
-    height: 200 * (102 / 375), // kolab.svg viewBox aspect
+    // Matches the native splash: splash-icon.png is 942px wide shown at
+    // imageWidth 248, with the wordmark filling 840px of it → ~221pt.
+    width: 221,
+    height: 221 * (114 / 387), // kolab-outlined.svg viewBox aspect
   },
   textBlock: {
     position: 'absolute',
     left: 0,
     right: 0,
-    // Anchored to the screen's vertical centre (where the logo card sits) and
-    // pushed down past the card's lower edge so the tagline reads directly
+    // Anchored to the screen's vertical centre (where the logo sits) and
+    // pushed down past the logo's lower edge so the tagline reads directly
     // below the logo instead of near the bottom of the screen.
     top: '50%',
-    marginTop: 84,
+    marginTop: 60,
     alignItems: 'center',
     gap: 8,
   },

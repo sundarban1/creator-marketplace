@@ -130,6 +130,7 @@ export interface BackendDict {
     notAuthorized: string;
     notAuthorizedToUpdateCampaign: string;
     notAuthorizedToDeleteCampaign: string;
+    onlyDraftCanBeDeleted: string;
     notAuthorizedToViewApplications: string;
     locationRequiredForOnsite: string;
     budgetRequiredToPublish: string;

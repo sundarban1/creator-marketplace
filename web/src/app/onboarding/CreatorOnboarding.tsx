@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Users, AtSign, Mail, Sparkles, Handshake, Wallet } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
-import { roleHome } from '../routes';
+import { afterAuthHome } from '../auth/postAuthNav';
 import { useAsync } from '../lib/useAsync';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
 import { updateCreatorProfile, isUsernameAvailable } from '../api/creator';
@@ -208,10 +208,16 @@ export function CreatorOnboarding() {
     }
   }
 
+  // Dashboard — or, when signup started from a shared opportunity, straight
+  // back to it. Resolved once (it's a one-shot read) and reused by both the
+  // auto-advance timer and the Continue button.
+  const doneTo = useRef<string | null>(null);
+  const finishPath = () => (doneTo.current ??= afterAuthHome('CREATOR'));
+
   useEffect(() => {
     if (!finished) return;
     const id = setTimeout(
-      () => navigate(roleHome('CREATOR'), { replace: true, state: { welcomeToast: true } }),
+      () => navigate(finishPath(), { replace: true, state: { welcomeToast: true } }),
       3000,
     );
     return () => clearTimeout(id);
@@ -223,7 +229,7 @@ export function CreatorOnboarding() {
         title={t('onboarding.successTitle')}
         body={t('onboarding.successBody')}
         cta={t('onboarding.successBtn')}
-        onContinue={() => navigate(roleHome('CREATOR'), { replace: true, state: { welcomeToast: true } })}
+        onContinue={() => navigate(finishPath(), { replace: true, state: { welcomeToast: true } })}
       />
     );
   }

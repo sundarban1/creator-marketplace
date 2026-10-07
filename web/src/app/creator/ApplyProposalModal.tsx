@@ -23,11 +23,14 @@ export function ApplyProposalModal({
   open,
   onClose,
   onApplied,
+  shareToken,
 }: {
   event: EventData;
   open: boolean;
   onClose: () => void;
   onApplied: (application: CreatorApplication) => void;
+  /** `?ref=` from a shared link — attribution only. */
+  shareToken?: string;
 }) {
   const t = useT();
   const isFree = event.campaignType === 'OPEN_EVENT';
@@ -100,6 +103,7 @@ export function ApplyProposalModal({
         proposedRate: numRate,
         timeline: DEFAULT_TIMELINE,
         portfolioUrl: portfolioUrl.trim() || undefined,
+        shareToken,
       });
       onApplied(application);
     } catch (err) {

@@ -23,6 +23,7 @@ import { cn } from '../ui/cn';
 import { CHAT_EMOJIS } from './chatEmojis';
 import { CHAT_FILE_ACCEPT, validateChatFile } from './chatAttachments';
 import { AttachmentPreviewModal, type AttachmentPreview } from './AttachmentPreviewModal';
+import { confirmImageUpload } from '../ui/uploadPreview';
 
 function timeAgo(iso: string | null): string {
   if (!iso) return '';
@@ -347,6 +348,7 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
       setError(validation.reason === 'size' ? t('chat.attachmentTooLarge') : t('chat.attachmentUnsupportedType'));
       return;
     }
+    if (!(await confirmImageUpload(file, { confirmLabel: t('uploadPreview.send') }))) return;
 
     const caption = text.trim();
     setText('');

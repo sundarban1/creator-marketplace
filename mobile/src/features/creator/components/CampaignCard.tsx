@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useQueryClient } from '@tanstack/react-query';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ShortlistButton } from '@/components/ShortlistButton';
+import { ShareOpportunityButton } from '@/components/ShareOpportunityButton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
@@ -142,10 +143,11 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
             </View>
           </View>
 
-          {/* Save-for-later sits before Apply, so the two ways out of a card
-              are side by side. */}
+          {/* Save-for-later and Share sit before Apply as quiet squares, so
+              Apply stays the one prominent way out of the card. */}
           <View style={styles.ctaRow}>
             <ShortlistButton campaignId={campaign.id} size="sm" />
+            <ShareOpportunityButton campaignId={campaign.id} size="sm" />
             <Pressable
               style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
               onPressIn={() => prefetchCampaign(queryClient, campaign.id)}

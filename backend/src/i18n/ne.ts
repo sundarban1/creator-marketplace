@@ -144,6 +144,7 @@ export const ne: BackendDict = {
     notAuthorized:                     'अनुमति छैन',
     notAuthorizedToUpdateCampaign:     'तपाईंलाई यो क्याम्पेन अपडेट गर्ने अनुमति छैन',
     notAuthorizedToDeleteCampaign:     'तपाईंलाई यो क्याम्पेन मेटाउने अनुमति छैन',
+    onlyDraftCanBeDeleted:             'ड्राफ्ट क्याम्पेन मात्र मेटाउन सकिन्छ',
     notAuthorizedToViewApplications:   'तपाईंलाई यी आवेदनहरू हेर्ने अनुमति छैन',
     locationRequiredForOnsite:         'अनसाइट इभेन्टका लागि स्थान आवश्यक छ',
     budgetRequiredToPublish:           'पब्लिस गर्नु अघि प्रति क्रिएटर भुक्तानी राख्नुहोस्।',

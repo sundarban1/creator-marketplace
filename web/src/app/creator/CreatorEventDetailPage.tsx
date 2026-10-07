@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -12,11 +12,15 @@ import { EmptyState } from '../ui/EmptyState';
 import { EventDetailBody, EventDetailSkeleton } from '../events/EventDetailBody';
 import { ApplyProposalModal } from './ApplyProposalModal';
 import { EngagementBadge } from './EngagementBadge';
+import { ShareOpportunityButton } from '../events/ShareOpportunity';
+import { shareTokenFor } from '../lib/shareContext';
 
 export function CreatorEventDetailPage() {
   const t = useT();
   const navigate = useNavigate();
   const { id = '' } = useParams();
+  const [searchParams] = useSearchParams();
+  const ref = searchParams.get('ref');
 
   const event = useAsync((s) => fetchPublicEvent(id, s), [id]);
   const myApps = useAsync((s) => fetchMyApplications({ limit: 100 }, s), []);
@@ -84,13 +88,21 @@ export function CreatorEventDetailPage() {
     );
   }
 
+  // Submit Proposal stays primary; Share sits beside it (stacked on mobile).
+  const ctaWithShare = (
+    <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
+      {cta}
+      <ShareOpportunityButton campaignId={ev.id} isOpen={isOpen} variant="button" />
+    </div>
+  );
+
   return (
     <div className="mx-auto max-w-4xl">
       <EventDetailBody
         event={ev}
         backTo="/creator/events"
         backLabel={t('public.backToEvents')}
-        cta={cta}
+        cta={ctaWithShare}
       />
 
       {justApplied && (
@@ -102,6 +114,8 @@ export function CreatorEventDetailPage() {
 
       <ApplyProposalModal
         event={ev}
+        // Share attribution — validated server-side; never affects eligibility.
+        shareToken={ref ?? shareTokenFor(ev.id)}
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onApplied={(application) => {

@@ -283,6 +283,8 @@ export interface ApplyInput {
   socialHandles?: Record<string, string>;
   portfolioUrl?: string;
   requirementId?: string;
+  /** Share Opportunity `?ref=` token — analytics attribution only. */
+  shareToken?: string;
 }
 
 export function applyToCampaign(campaignId: string, input: ApplyInput): Promise<CreatorApplication> {

@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { useQueryClient } from '@tanstack/react-query';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ShortlistButton } from '@/components/ShortlistButton';
+import { ShareOpportunityButton } from '@/components/ShareOpportunityButton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
@@ -103,6 +104,8 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
                 {campaign.locationType === 'REMOTE' ? t('createEvent.locationRemote') : (campaign.location ?? t('campaignCard.nepalFallback'))}
               </Text>
             </View>
+            {/* Negative margin keeps the 32px square from growing this thin row. */}
+            <ShareOpportunityButton campaignId={campaign.id} size="xs" style={styles.shareBtn} />
           </View>
         </View>
 
@@ -145,7 +148,8 @@ const styles = StyleSheet.create({
   metaRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   metaLine: { fontSize: 11.5, fontFamily: F.regular, flexShrink: 1 },
 
-  detailsRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: 1, paddingTop: 6, marginTop: 2 },
+  detailsRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderTopWidth: 1, paddingTop: 6, marginTop: 2 },
+  shareBtn:    { marginVertical: -6, width: 28, height: 28 },
   detailItem:  { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, minWidth: 0 },
   detailText:  { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
 

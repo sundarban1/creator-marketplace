@@ -11,6 +11,13 @@
  */
 
 export const en = {
+  uploadPreview: {
+    title: 'Preview',
+    hint: 'Check your image before it uploads.',
+    upload: 'Upload',
+    uploadCount: 'Upload {count}',
+    send: 'Send',
+  },
   common: {
     appName: 'Kolab',
     continue: 'Continue',
@@ -734,6 +741,13 @@ export const en = {
     errBudgetMinMax: 'Maximum budget must be at least the minimum.',
     eventTabActive: 'Active',
     eventTabDraft: 'Drafts',
+    deleteDraft: 'Delete draft',
+    deleteDraftTitle: 'Delete this draft?',
+    deleteDraftBody: 'Are you sure you want to delete this draft? This cannot be undone.',
+    deleteDraftConfirm: 'Yes, delete',
+    deleteDraftCancel: 'No',
+    draftDeleted: 'Draft deleted',
+    draftDeleteFailed: 'Failed to delete this draft.',
     eventTabClosed: 'Closed',
     noEventsTitle: 'No events yet',
     noEventsBody: 'Create your first campaign to start working with creators.',
@@ -1537,6 +1551,23 @@ export const en = {
     typeNETWORKING: 'Networking',
     typeCOMMUNITY_EVENT: 'Community Event',
     typeOTHER: 'Event',
+  },
+  shareOpportunity: {
+    share: 'Share',
+    button: 'Share Opportunity',
+    title: 'Share Opportunity',
+    description: 'Know a creator who might be a great fit? Share this opportunity with them.',
+    whatsapp: 'WhatsApp',
+    sms: 'SMS',
+    copyLink: 'Copy link',
+    more: 'More',
+    linkCopied: 'Link copied!',
+    message: '🚀 I found an opportunity on Kolab that might be a great fit for you.\n\nCheck it out and apply here:\n{link}',
+    failed: 'Couldn’t create a share link. Please try again.',
+    gateTitle: 'Create your Kolab account to apply',
+    gateBody: 'Join Kolab to discover opportunities and connect with businesses.',
+    createAccount: 'Create Account',
+    login: 'Login',
   },
   public: {
     // header — mirrors the landing nav

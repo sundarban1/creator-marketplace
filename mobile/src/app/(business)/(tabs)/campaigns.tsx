@@ -30,6 +30,7 @@ import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { FilterSheet, FilterSectionHeader } from '@/components/FilterSheet';
 import { BottomSheet } from '@/components/BottomSheet';
+import { AppModal } from '@/components/AppModal';
 import type { Campaign } from '@/types';
 import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -121,6 +122,8 @@ export default function CampaignsScreen() {
   const [tempCategoryFilter, setTempCategoryFilter] = useState('');
   const [categorySheetVisible, setCategorySheetVisible] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Campaign | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const loadingMoreRef = useRef(false);
   const loadSeqRef = useRef(0);
   const hasLoadedOnceRef = useRef(false);
@@ -376,6 +379,24 @@ export default function CampaignsScreen() {
       toast.error(err instanceof Error ? err.message : t('campaigns.draftPublishFailed'));
     } finally {
       setPublishingId(null);
+      setLoading(false);
+    }
+  }
+
+  async function handleConfirmDeleteDraft() {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      await campaignService.delete(deleteTarget.id);
+      toast.success(t('campaigns.draftDeleted'));
+      setDeleteTarget(null);
+      invalidateAllTabs();
+      setLoading(true);
+      await loadTab(activeFilter, 1, true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('campaigns.draftDeleteFailed'));
+    } finally {
+      setDeleting(false);
       setLoading(false);
     }
   }
@@ -673,6 +694,17 @@ export default function CampaignsScreen() {
                     )}
                     {c.status === 'draft' && (
                       <Pressable
+                        style={({ pressed }) => [styles.deleteIconBtn, { borderColor: C.border }, pressed && { opacity: 0.7 }]}
+                        disabled={publishingId === c.id}
+                        onPress={() => setDeleteTarget(c)}
+                        hitSlop={4}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('campaigns.deleteDraft')}>
+                        <FontAwesome5 name="trash-alt" size={14} color="#DC2626" />
+                      </Pressable>
+                    )}
+                    {c.status === 'draft' && (
+                      <Pressable
                         style={({ pressed }) => [styles.buttonSecondary, { borderColor: C.border, opacity: publishingId === c.id ? 0.6 : 1 }, pressed && { opacity: 0.7 }]}
                         disabled={publishingId === c.id}
                         onPress={() => handlePublishDraft(c)}>
@@ -733,6 +765,18 @@ export default function CampaignsScreen() {
           </View>
         </View>
       </FilterSheet>
+
+      <AppModal
+        visible={!!deleteTarget}
+        type="danger"
+        title={t('campaigns.deleteDraftTitle')}
+        body={t('campaigns.deleteDraftBody')}
+        confirmLabel={t('campaigns.deleteDraftConfirm')}
+        cancelLabel={t('campaigns.deleteDraftCancel')}
+        loading={deleting}
+        onConfirm={handleConfirmDeleteDraft}
+        onCancel={() => { if (!deleting) setDeleteTarget(null); }}
+      />
 
       {/* Invite Creators bottom sheet */}
       <BottomSheet
@@ -952,6 +996,7 @@ const styles = StyleSheet.create({
   buttonContainer: { flexDirection: 'row', gap: SPACING.sm, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md },
   buttonPrimary: { flex: 1, minHeight: 42, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SPACING.md },
   buttonTextPrimary: { color: '#fff', fontSize: FONT_SIZE.sm, fontFamily: F.bold },
+  deleteIconBtn: { width: 42, minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   buttonSecondary: { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.md },
   buttonTextSecondary: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 

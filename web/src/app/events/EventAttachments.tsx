@@ -5,6 +5,7 @@ import { useT } from '../i18n';
 import { uploadCampaignAttachment, type CampaignAttachment } from '../api/business';
 import { DeliverableGallery, type DeliverableMedia } from '../ui/DeliverableGallery';
 import { cn } from '../ui/cn';
+import { confirmImageUpload } from '../ui/uploadPreview';
 
 /**
  * Reference images (PNG/JPG/WebP) and PDFs a business attaches to an event
@@ -199,7 +200,7 @@ export function EventAttachmentsEditor({
     }
   }
 
-  function addFiles(files: FileList | File[]) {
+  async function addFiles(files: FileList | File[]) {
     setError('');
     const list = Array.from(files);
     const pdfsNow = valueRef.current.filter(isPdfAttachment).length + pending.filter((p) => p.isPdf).length;
@@ -227,6 +228,10 @@ export function EventAttachmentsEditor({
       });
     }
     if (!accepted.length) return;
+    if (!(await confirmImageUpload(accepted.map((p) => p.file)))) {
+      accepted.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+      return;
+    }
     setPending((prev) => [...prev, ...accepted]);
     accepted.forEach((p) => void upload(p));
   }

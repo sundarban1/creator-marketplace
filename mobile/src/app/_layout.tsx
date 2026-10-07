@@ -25,6 +25,7 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { PlatformSettingsProvider, usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { SplashScreen } from '@/components/SplashScreen';
 import { ImageCropHost } from '@/components/ImageCropModal';
+import { UploadPreviewHost } from '@/components/UploadPreviewModal';
 import { BiometricGateScreen } from '@/components/BiometricGateScreen';
 import { BiometricEnrollPrompt } from '@/components/BiometricEnrollPrompt';
 import { ForceUpdateScreen } from '@/components/ForceUpdateScreen';
@@ -497,6 +498,8 @@ function RootLayout() {
                   <RootLayoutInner />
                   {/* Crop step for aspect-bound uploads (utilities/uploadImage.ts). */}
                   <ImageCropHost />
+                  {/* Confirm-before-upload preview for every picked photo. */}
+                  <UploadPreviewHost />
                   <SplashScreen />
                 </View>
               </PersistQueryClientProvider>

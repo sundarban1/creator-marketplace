@@ -97,6 +97,17 @@ export function useAppLanguage(): AppLanguageValue {
   return ctx;
 }
 
+/**
+ * Like `useT()`, but safe outside <AppLanguageProvider> (e.g. app-root hosts
+ * that also serve /admin) — falls back to the visitor's stored language.
+ */
+export function useOptionalT(): TFn {
+  const ctx = useContext(AppLanguageContext);
+  if (ctx) return ctx.t;
+  const dict = DICTS[readStoredLang()];
+  return (path, vars) => interpolate(resolve(dict, path), vars);
+}
+
 /** Shorthand — most components only need the translate function. */
 export function useT(): TFn {
   return useAppLanguage().t;

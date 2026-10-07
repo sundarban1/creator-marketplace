@@ -5,6 +5,7 @@ import { perCreatorBudget } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
 import { Avatar } from '../ui/Avatar';
 import { cn } from '../ui/cn';
+import { ShareOpportunityButton } from '../events/ShareOpportunity';
 import type { EventCard as EventCardData } from '../api/publicMarketplace';
 
 export function EventCard({
@@ -135,9 +136,13 @@ export function EventCard({
           <span className="text-[12px] text-ink-soft">
             {t('public.applicationsCount', { count: event._count.applications })}
           </span>
-          <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-violet opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            {t('public.viewEvent')}
-            <ArrowUpRight size={14} />
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-violet opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              {t('public.viewEvent')}
+              <ArrowUpRight size={14} />
+            </span>
+            {/* Creator-only (renders nothing otherwise); stays quieter than the card's own CTA. */}
+            <ShareOpportunityButton campaignId={event.id} variant="icon" className="-my-1.5 -mr-1.5" />
           </span>
         </div>
       </div>

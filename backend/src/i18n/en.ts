@@ -144,6 +144,7 @@ export const en: BackendDict = {
     notAuthorized:                     'Not authorized',
     notAuthorizedToUpdateCampaign:     'You are not authorized to update this campaign',
     notAuthorizedToDeleteCampaign:     'You are not authorized to delete this campaign',
+    onlyDraftCanBeDeleted:             'Only draft campaigns can be deleted',
     notAuthorizedToViewApplications:   'You are not authorized to view these applications',
     locationRequiredForOnsite:         'Location is required for onsite events',
     budgetRequiredToPublish:           'Set the payment per creator before publishing.',

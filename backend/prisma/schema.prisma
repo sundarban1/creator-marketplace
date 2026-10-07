@@ -65,8 +65,14 @@ model User {
   reportsFiled              Report[]               @relation("ReportsFiled")
   authAccounts              AuthAccount[]
   biometricCredentials      BiometricCredential[]
+  // Share Opportunity analytics — the share whose link this account clicked
+  // before registering (set once, never overwritten). Attribution only: no
+  // reward or entitlement of any kind hangs off it. See OpportunityShare.
+  signupShareId             String?
+  signupShare               OpportunityShare?      @relation("OpportunitySignups", fields: [signupShareId], references: [id], onDelete: SetNull)
 
   @@index([role])
+  @@index([signupShareId])
   @@map("users")
 }
 
@@ -296,6 +302,7 @@ model CreatorProfile {
   savedBy                  SavedCreator[]
   receivedInvitations      CampaignInvitation[]
   referralsMade            Referral[]                  @relation("ReferralsMade")
+  opportunitySharesMade    OpportunityShare[]
   referralsReceived        Referral?                   @relation("ReferralsReceived")
   withdrawals              Withdrawal[]
   payoutMethods            PayoutMethod[]
@@ -969,6 +976,7 @@ model Campaign {
   eventQuestions        EventQuestion[]
   events                CampaignEvent[]
   disputes              Dispute[]
+  opportunityShares     OpportunityShare[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -1251,6 +1259,11 @@ model Application {
   events                       CampaignEvent[]
   submissionVersions           CampaignSubmissionVersion[]
   dispute                      Dispute?
+  // Share Opportunity analytics — set when the proposal was submitted from a
+  // validated share link for this same campaign (never the applicant's own
+  // share). Attribution only; appliedAt is this row's createdAt.
+  opportunityShareId           String?
+  opportunityShare             OpportunityShare?           @relation(fields: [opportunityShareId], references: [id], onDelete: SetNull)
 
   // True uniqueness is enforced by two hand-written partial indexes, not a
   // plain @@unique — Prisma can't express "unique except when null" and a
@@ -1268,6 +1281,7 @@ model Application {
   @@index([creatorId, createdAt(sort: Desc)])
   @@index([campaignId, status])
   @@index([escrowStatus])
+  @@index([opportunityShareId])
   @@map("applications")
 }
 
@@ -2936,4 +2950,50 @@ model CommunityEventPartner {
 
   @@index([eventId, order])
   @@map("community_event_partners")
+}
+
+// ── Share Opportunity ─────────────────────────────────────────────────────────
+// A creator sharing an event/campaign with other creators (WhatsApp, SMS, copied
+// link, native share sheet). This is opportunity distribution, NOT a referral
+// program: nothing here ever creates a reward, points or entitlement for the
+// sharer. Rows exist purely for product analytics — shares → clicks →
+// registrations (User.signupShareId) → applications (Application.opportunityShareId).
+//
+// Events and campaigns are both `Campaign` rows (campaignType OPEN_EVENT vs
+// PAID_CAMPAIGN), so this is a plain FK, not a polymorphic reference.
+//
+// One row (one token) per sharer × campaign × platform — re-sharing on the same
+// channel reuses the existing link instead of minting a new row each tap.
+model OpportunityShare {
+  id            String        @id @default(cuid())
+  // 96-bit crypto-random, base64url. The only identifier that ever leaves the
+  // server in a share URL — never the sharer's profile/user id.
+  token         String        @unique
+  campaignId    String
+  sharerId      String
+  platform      SharePlatform
+  // Lightweight click tracking — deduplicated per viewer in Redis (see
+  // OpportunityShareService.recordVisit), no IPs or fingerprints persisted.
+  clickCount    Int           @default(0)
+  lastClickedAt DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  campaign     Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sharer       CreatorProfile @relation(fields: [sharerId], references: [id], onDelete: Cascade)
+  signups      User[]         @relation("OpportunitySignups")
+  applications Application[]
+
+  @@unique([campaignId, sharerId, platform])
+  @@index([sharerId, createdAt])
+  @@index([campaignId])
+  @@map("opportunity_shares")
+}
+
+enum SharePlatform {
+  WHATSAPP
+  SMS
+  COPY_LINK
+  NATIVE_SHARE
+  OTHER
 }

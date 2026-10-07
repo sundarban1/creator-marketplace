@@ -8,6 +8,13 @@
 import type { AppDict } from './en';
 
 export const ne: AppDict = {
+  uploadPreview: {
+    title: 'पूर्वावलोकन',
+    hint: 'अपलोड गर्नु अघि तस्बिर जाँच गर्नुहोस्।',
+    upload: 'अपलोड गर्नुहोस्',
+    uploadCount: '{count} वटा अपलोड गर्नुहोस्',
+    send: 'पठाउनुहोस्',
+  },
   common: {
     appName: 'Kolab',
     continue: 'अगाडि बढ्नुहोस्',
@@ -703,6 +710,13 @@ export const ne: AppDict = {
     errBudgetMinMax: 'अधिकतम बजेट न्यूनतम भन्दा बढी हुनुपर्छ।',
     eventTabActive: 'सक्रिय',
     eventTabDraft: 'ड्राफ्ट',
+    deleteDraft: 'ड्राफ्ट मेटाउनुहोस्',
+    deleteDraftTitle: 'यो ड्राफ्ट मेटाउने?',
+    deleteDraftBody: 'के तपाईं यो ड्राफ्ट मेटाउन निश्चित हुनुहुन्छ? यो पूर्ववत गर्न सकिँदैन।',
+    deleteDraftConfirm: 'हो, मेटाउनुहोस्',
+    deleteDraftCancel: 'होइन',
+    draftDeleted: 'ड्राफ्ट मेटाइयो',
+    draftDeleteFailed: 'यो ड्राफ्ट मेटाउन सकिएन।',
     eventTabClosed: 'बन्द',
     noEventsTitle: 'अझै कुनै इभेन्ट छैन',
     noEventsBody: 'क्रिएटरहरूसँग काम सुरु गर्न आफ्नो पहिलो क्याम्पेन बनाउनुहोस्।',
@@ -1493,6 +1507,23 @@ export const ne: AppDict = {
     typeNETWORKING: 'नेटवर्किङ',
     typeCOMMUNITY_EVENT: 'सामुदायिक इभेन्ट',
     typeOTHER: 'इभेन्ट',
+  },
+  shareOpportunity: {
+    share: 'सेयर',
+    button: 'अवसर सेयर गर्नुहोस्',
+    title: 'अवसर सेयर गर्नुहोस्',
+    description: 'यो अवसरमा राम्रो मिल्ने कुनै क्रिएटर चिन्नुहुन्छ? उहाँसँग सेयर गर्नुहोस्।',
+    whatsapp: 'WhatsApp',
+    sms: 'SMS',
+    copyLink: 'लिंक कपी गर्नुहोस्',
+    more: 'थप',
+    linkCopied: 'लिंक कपी भयो!',
+    message: '🚀 मैले Kolab मा तपाईंलाई राम्रो मिल्न सक्ने एउटा अवसर भेटें।\n\nहेर्नुहोस् र यहाँबाट आवेदन दिनुहोस्:\n{link}',
+    failed: 'सेयर लिंक बनाउन सकिएन। कृपया फेरि प्रयास गर्नुहोस्।',
+    gateTitle: 'आवेदन दिन Kolab खाता बनाउनुहोस्',
+    gateBody: 'अवसरहरू पत्ता लगाउन र व्यवसायहरूसँग जोडिन Kolab मा सामेल हुनुहोस्।',
+    createAccount: 'खाता बनाउनुहोस्',
+    login: 'लगइन',
   },
   public: {
     navDiscover: 'खोज',

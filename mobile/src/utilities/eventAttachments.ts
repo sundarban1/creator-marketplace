@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
 import { compressImage } from '@/utilities/uploadImage';
+import { requestImagePreview } from '@/components/UploadPreviewModal';
 import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
 import type { PickedFile } from '@/utilities/chatAttachments';
 import type { CampaignAttachment } from '@/services/guidedCampaign';
@@ -43,6 +44,7 @@ async function toPickedImage(asset: ImagePicker.ImagePickerAsset, i: number): Pr
 }
 
 async function collect(assets: ImagePicker.ImagePickerAsset[]): Promise<PickResult> {
+  if (!(await requestImagePreview({ uris: assets.map((a) => a.uri) }))) return { files: [], tooLarge: false };
   const files: PickedFile[] = [];
   let tooLarge = false;
   for (const [i, asset] of assets.entries()) {

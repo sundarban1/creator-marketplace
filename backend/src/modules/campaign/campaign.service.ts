@@ -172,6 +172,7 @@ import type {
   DraftCampaignInput,
 } from './campaign.schema';
 import { draftCampaignSchema } from './campaign.schema';
+import { opportunityShareService } from '../opportunity-share/opportunity-share.service';
 import {
   SYSTEM_TEMPLATES, SYSTEM_TEMPLATE_KEYS, REUSABLE_FIELDS, MAX_TEMPLATES_PER_BUSINESS, systemTemplatePayload,
   type SystemTemplateKey,
@@ -1135,6 +1136,13 @@ export class CampaignService {
       throw new AppError(getDict().campaign.notAuthorizedToDeleteCampaign, HttpStatus.FORBIDDEN);
     }
 
+    // Businesses may only discard unpublished drafts. Anything that has been
+    // published may carry applications, escrow or chats — those go through
+    // close/cancel flows (or admin deletion), never a hard delete.
+    if (campaign.status !== CampaignStatus.DRAFT) {
+      throw new AppError(getDict().campaign.onlyDraftCanBeDeleted, HttpStatus.CONFLICT);
+    }
+
     await this.repo.delete(id);
     return { message: getDict().campaign.campaignDeletedSuccessfully };
   }
@@ -1267,13 +1275,23 @@ export class CampaignService {
       }
     }
 
+    // shareToken is attribution metadata, not an Application column.
+    const { shareToken, ...applicationInput } = input;
     const rawApp = await this.repo.createApplication({
       campaignId,
       creatorId: creator.id,
-      ...input,
+      ...applicationInput,
       socialHandles: input.socialHandles as Record<string, string>,
     });
     const application = toApplicationDto(rawApp);
+
+    // Share Opportunity attribution — strictly after the proposal exists and
+    // never able to fail it.
+    if (shareToken) {
+      await opportunityShareService
+        .attributeApplication({ applicationId: application.id, campaignId, applicantCreatorId: creator.id, shareToken })
+        .catch((err) => logger.warn({ err: err instanceof Error ? err.message : err, applicationId: application.id }, 'opportunity-share application attribution failed'));
+    }
 
     logActivity({ userId, action: ActivityAction.APPLICATION_CREATED, entityType: EntityType.APPLICATION, entityId: application.id, metadata: { campaignId, proposedRate: input.proposedRate, isFreeEvent: isFreeCampaign } });
 

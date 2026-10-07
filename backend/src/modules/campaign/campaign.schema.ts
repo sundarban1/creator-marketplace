@@ -264,6 +264,11 @@ export const applyToCampaignSchema = z.object({
   // Set only when applying to one role of a multi-requirement campaign —
   // omitted entirely for the simple single-category case (the common one).
   requirementId: z.string().optional(),
+  // Share Opportunity — the `?ref=` token the creator arrived through, if any.
+  // Analytics attribution only (validated server-side against this campaign,
+  // see OpportunityShareService.attributeApplication); never affects
+  // eligibility, and an invalid token is silently ignored.
+  shareToken: z.string().max(128).optional(),
 });
 
 export const submitReviewSchema = z.object({

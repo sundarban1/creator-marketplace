@@ -57,6 +57,39 @@ function toForm(m?: ApiMeetup): FormState {
   };
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  title: 'Title',
+  city: 'City',
+  district: 'District',
+  province: 'Province',
+  country: 'Country',
+  description: 'Description',
+  registrationStatus: 'Status',
+  status: 'Status',
+  registrationStartsAt: 'Registration start',
+  registrationEndsAt: 'Registration end',
+  eventDate: 'Event date',
+  eventStartTime: 'Start time',
+  eventEndTime: 'End time',
+  venueName: 'Venue name',
+  venueAddress: 'Venue address',
+  capacity: 'Capacity',
+};
+
+// Turns the server's 422 `errors` array into "Field: message" lines so the
+// admin sees what to fix instead of a bare "Validation failed".
+function describeSaveError(err: unknown): { summary: string; fieldErrors: Record<string, string> } {
+  const e = err as Error & { errors?: Array<{ field: string; message: string }> };
+  const fieldErrors: Record<string, string> = {};
+  if (!e.errors?.length) return { summary: e.message || 'Failed to save meetup', fieldErrors };
+  const lines = e.errors.map(({ field, message }) => {
+    fieldErrors[field] = message;
+    const label = FIELD_LABELS[field] ?? field;
+    return label ? `${label}: ${message}` : message;
+  });
+  return { summary: lines.join('\n'), fieldErrors };
+}
+
 const inputClass = (hasError?: boolean) =>
   `w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${hasError ? 'border-red-400' : 'border-gray-200'}`;
 const labelClass = 'block text-xs font-semibold text-gray-600 mb-1.5';
@@ -82,6 +115,9 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
     if (!f.title.trim() || f.title.trim().length < 3) e['title'] = 'At least 3 characters';
     if (!f.city.trim()) e['city'] = 'Required';
     if (f.capacity !== '' && (isNaN(Number(f.capacity)) || Number(f.capacity) <= 0)) e['capacity'] = 'Must be a positive number';
+    if (f.registrationStartsAt && f.registrationEndsAt && new Date(f.registrationEndsAt) <= new Date(f.registrationStartsAt)) {
+      e['registrationEndsAt'] = 'Registration end must be after registration start';
+    }
     return e;
   }
 
@@ -118,7 +154,9 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
       }
       onSaved();
     } catch (err) {
-      setSaveError((err as Error).message ?? 'Failed to save meetup');
+      const { summary, fieldErrors } = describeSaveError(err);
+      setErrors((prev) => ({ ...prev, ...fieldErrors }));
+      setSaveError(summary);
     } finally {
       setSaving(false);
     }
@@ -192,7 +230,8 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
             </div>
             <div>
               <label className={labelClass}>Registration End</label>
-              <input type="datetime-local" value={form.registrationEndsAt} onChange={(e) => update('registrationEndsAt', e.target.value)} className={inputClass()} />
+              <input type="datetime-local" value={form.registrationEndsAt} onChange={(e) => update('registrationEndsAt', e.target.value)} className={inputClass(!!errors['registrationEndsAt'])} />
+              {errors['registrationEndsAt'] && <p className="text-xs text-red-500 mt-1">{errors['registrationEndsAt']}</p>}
             </div>
           </div>
 
@@ -230,7 +269,7 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
           </div>
 
           {saveError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{saveError}</div>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 whitespace-pre-line">{saveError}</div>
           )}
         </form>
 

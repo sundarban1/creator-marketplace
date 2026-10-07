@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
 import type { SuccessStory, SuccessStoryStatus } from '../../context/SuccessStoriesContext';
 import { useSuccessStories } from '../../context/SuccessStoriesContext';
+import { confirmImageUpload } from '../../app/ui/uploadPreview';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -54,6 +55,7 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
     }
 
     setErrors((p) => ({ ...p, photo: '' }));
+    if (!(await confirmImageUpload(file))) return;
     setUploading(true);
     try {
       const url = await uploadPhoto(file);

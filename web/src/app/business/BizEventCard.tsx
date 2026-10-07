@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Users, CalendarClock, Gift, ArrowUpRight, Sparkles, History } from 'lucide-react';
+import type { MouseEvent } from 'react';
+import { Users, CalendarClock, Gift, ArrowUpRight, Sparkles, History, Trash2 } from 'lucide-react';
 import { useT } from '../i18n';
 import { perCreatorBudget } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
@@ -23,7 +24,7 @@ const STATUS_TONE: Record<string, BadgeTone> = {
  * public marketplace's `EventCard`, so "my events" reads as one polished
  * card system instead of a flatter admin-style list.
  */
-export function BizEventCard({ event }: { event: MyCampaign }) {
+export function BizEventCard({ event, onDelete }: { event: MyCampaign; onDelete?: (event: MyCampaign) => void }) {
   const t = useT();
   const fmtDeadline = useDeadlineLabel();
   const budget = perCreatorBudget(event);
@@ -34,6 +35,23 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
   // business left off ("Continue your campaign"), not the details page.
   const isResumableDraft = event.status === 'DRAFT' && !isOpenEvent;
   const title = isResumableDraft && event.title === 'Untitled campaign' ? t('guided.untitled') : event.title;
+  // Drafts can be discarded straight from the list. The card itself is a
+  // link, so the click must not bubble into navigation.
+  const deleteBtn = event.status === 'DRAFT' && onDelete ? (
+    <button
+      type="button"
+      aria-label={t('biz.deleteDraft')}
+      title={t('biz.deleteDraft')}
+      onClick={(e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onDelete(event);
+      }}
+      className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-line text-danger transition-colors hover:border-danger/40 hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
+    >
+      <Trash2 size={14} />
+    </button>
+  ) : null;
 
   return (
     <Link
@@ -109,7 +127,10 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
               {t('guided.continue')}
               {event.draftStep && <span className="font-normal text-ink-soft">· {t('guided.leftOff', { step: t(`guided.stepLabel_${event.draftStep}`) })}</span>}
             </span>
-            {event.updatedAt && <span className="text-[12px] text-ink-soft">{new Date(event.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}
+            <span className="flex items-center gap-2">
+              {event.updatedAt && <span className="text-[12px] text-ink-soft">{new Date(event.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}
+              {deleteBtn}
+            </span>
           </div>
         ) : (
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-3">
@@ -123,11 +144,13 @@ export function BizEventCard({ event }: { event: MyCampaign }) {
               {deadline.label}
             </span>
           </div>
+          {deleteBtn ?? (
           <ArrowUpRight
             size={14}
             className="flex-shrink-0 -translate-x-1 text-violet opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
             aria-hidden
           />
+          )}
         </div>
         )}
       </div>

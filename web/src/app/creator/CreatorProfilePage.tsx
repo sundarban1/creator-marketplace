@@ -49,6 +49,7 @@ import { ImageCropModal } from '../ui/ImageCropModal';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { cn } from '../ui/cn';
+import { confirmImageUpload } from '../ui/uploadPreview';
 
 const CONNECTABLE_PLATFORMS = ['tiktok', 'youtube', 'instagram', 'facebook'] as const;
 const MAX_NICHE = 5;
@@ -752,6 +753,7 @@ function AddPortfolioModal({ open, onClose, onDone }: { open: boolean; onClose: 
   }
 
   const onPickFile = async (file: File) => {
+    if (!(await confirmImageUpload(file))) return;
     setUploading(true);
     setError('');
     try {

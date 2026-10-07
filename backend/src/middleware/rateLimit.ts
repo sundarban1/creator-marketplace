@@ -135,6 +135,28 @@ export const perUserMessageLimiter = limiter({
   legacyHeaders: false,
 });
 
+// Share Opportunity — minting share links is per signed-in creator (a person
+// tapping Share a few times a minute is normal; hundreds is a script).
+export const opportunityShareCreateLimiter = limiter({
+  windowMs: 60 * 1000,
+  limit: isProd ? 30 : 300,
+  keyGenerator: (req: Request) => req.user!.id,
+  message: { success: false, message: 'Too many share requests. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Share-link visits are public, so per-IP — generous for real browsing, tight
+// enough that a loop can't meaningfully inflate click counts (which are also
+// de-duplicated per viewer, see OpportunityShareService.recordVisit).
+export const opportunityShareVisitLimiter = limiter({
+  windowMs: 60 * 1000,
+  limit: isProd ? 30 : 300,
+  message: { success: false, message: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Messaging routes need a much higher ceiling for real-time chat
 const messagingLimiter = limiter({
   windowMs: 60 * 1000,

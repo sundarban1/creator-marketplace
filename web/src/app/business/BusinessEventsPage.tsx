@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useT } from '../i18n';
 import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { useAsync } from '../lib/useAsync';
-import { fetchMyCampaigns } from '../api/business';
+import { deleteCampaign, fetchMyCampaigns, type MyCampaign } from '../api/business';
 import { PageHeader } from '../ui/PageHeader';
 import { Tabs } from '../ui/Tabs';
 import { Button } from '../ui/Button';
@@ -13,6 +13,8 @@ import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { BizEventCard } from './BizEventCard';
 import { Alert } from '../ui/Alert';
+import { Modal } from '../ui/Modal';
+import { useToast } from '../ui/Toast';
 
 const TABS = ['active', 'draft', 'closed'] as const;
 type Tab = (typeof TABS)[number];
@@ -29,6 +31,24 @@ export function BusinessEventsPage() {
   const tab = (TABS.includes(params.get('tab') as Tab) ? params.get('tab') : 'active') as Tab;
 
   const campaigns = useAsync((s) => fetchMyCampaigns({ limit: 100 }, s), []);
+  const toast = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<MyCampaign | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDeleteDraft() {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteCampaign(deleteTarget.id);
+      toast.success(t('biz.draftDeleted'));
+      setDeleteTarget(null);
+      campaigns.reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('biz.draftDeleteFailed'));
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const buckets = useMemo(() => {
     const list = campaigns.data?.items ?? [];
@@ -96,12 +116,30 @@ export function BusinessEventsPage() {
           >
             {list.map((c) => (
               <motion.div key={c.id} variants={fadeUp} className="min-w-0">
-                <BizEventCard event={c} />
+                <BizEventCard event={c} onDelete={setDeleteTarget} />
               </motion.div>
             ))}
           </motion.div>
         )}
       </div>
+
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => (deleting ? null : setDeleteTarget(null))}
+        title={t('biz.deleteDraftTitle')}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+              {t('biz.deleteDraftCancel')}
+            </Button>
+            <Button variant="danger" loading={deleting} onClick={confirmDeleteDraft}>
+              {t('biz.deleteDraftConfirm')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-[14px] text-ink-soft">{t('biz.deleteDraftBody')}</p>
+      </Modal>
     </>
   );
 }

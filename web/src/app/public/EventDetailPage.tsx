@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useT } from '../i18n';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
@@ -11,13 +11,35 @@ import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { EventDetailBody, EventDetailSkeleton } from '../events/EventDetailBody';
 import { SignupGateModal } from './SignupGateModal';
+import { ShareOpportunityButton } from '../events/ShareOpportunity';
+import { recordShareVisit } from '../api/opportunityShare';
+import { markShareReturnPending, rememberSharedOpportunity, shareTokenFor } from '../lib/shareContext';
+
+// Share-link opens already recorded in this page load — StrictMode's double
+// effect run (and re-renders) must not double-count a click.
+const visitedShareTokens = new Set<string>();
 
 export function EventDetailPage() {
   const t = useT();
   const { user } = useAppAuth();
   const { id = '' } = useParams();
+  const [searchParams] = useSearchParams();
+  const ref = searchParams.get('ref');
   const { data: event, loading, error } = useAsync((s) => fetchPublicEvent(id, s), [id]);
   const [gateOpen, setGateOpen] = useState(false);
+
+  // Share Opportunity: record the click and keep the attribution (and, for an
+  // anonymous visitor, a signed click receipt) through any login/signup that
+  // follows. Fire-and-forget — tracking never blocks or alters the page.
+  useEffect(() => {
+    if (!ref || visitedShareTokens.has(ref)) return;
+    visitedShareTokens.add(ref);
+    recordShareVisit(ref)
+      .then((v) => {
+        if (v.valid) rememberSharedOpportunity(ref, v.campaignId, v.receipt);
+      })
+      .catch(() => {});
+  }, [ref]);
 
   if (loading) {
     return (
@@ -42,16 +64,30 @@ export function EventDetailPage() {
   }
 
   const isOpen = event.status === 'ACTIVE';
+  // The `?ref=` this visitor arrived with (or remembered from an earlier open
+  // of the same link) rides along into the creator app so the proposal is
+  // attributed to the share.
+  const shareRef = ref ?? shareTokenFor(event.id);
   let cta: React.ReactNode = null;
   if (user?.role === 'CREATOR') {
     cta = (
-      <Link to={`/creator/events/${event.id}`}>
-        <Button size="lg">{t('public.applyNow')}</Button>
-      </Link>
+      <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
+        <Link to={`/creator/events/${event.id}${shareRef ? `?ref=${encodeURIComponent(shareRef)}` : ''}`}>
+          <Button size="lg" fullWidth>{t('public.applyNow')}</Button>
+        </Link>
+        <ShareOpportunityButton campaignId={event.id} isOpen={isOpen} variant="button" />
+      </div>
     );
   } else if (!user && isOpen) {
     cta = (
-      <Button size="lg" onClick={() => setGateOpen(true)}>
+      <Button
+        size="lg"
+        onClick={() => {
+          // Login/signup (and onboarding) return here instead of the dashboard.
+          markShareReturnPending(event.id);
+          setGateOpen(true);
+        }}
+      >
         {t('public.applyNow')}
       </Button>
     );
@@ -97,8 +133,10 @@ export function EventDetailPage() {
       <SignupGateModal
         open={gateOpen}
         onClose={() => setGateOpen(false)}
-        title={t('public.eventGateTitle')}
-        body={t('public.eventGateBody')}
+        title={t('shareOpportunity.gateTitle')}
+        body={t('shareOpportunity.gateBody')}
+        signupLabel={t('shareOpportunity.createAccount')}
+        loginLabel={t('shareOpportunity.login')}
       />
     </div>
   );

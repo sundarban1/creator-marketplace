@@ -5,6 +5,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
 import { ShortlistButton } from '@/components/ShortlistButton';
+import { ShareOpportunityButton } from '@/components/ShareOpportunityButton';
 import { useQuery } from '@tanstack/react-query';
 import {
   ActivityIndicator,
@@ -604,17 +605,26 @@ export default function CampaignDetailScreen() {
               })}
             </ScrollView>
           </View>
-        ) : hasApplied ? (
-          <View style={s.appliedBadge}>
-            <FontAwesome5 name="check-circle" solid size={18} color="#059669" />
-            <Text style={s.appliedBadgeTxt}>{t('campaignDetail.alreadyApplied')}</Text>
-          </View>
         ) : (
-          <Pressable
-            style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-            onPress={() => campaign && router.push({ pathname: '/submit-proposal', params: { campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand, budget: campaign.budget, budgetMin: String(campaign.budgetRaw), budgetMax: String(campaign.budgetMax ?? campaign.budgetRaw), category: campaign.category, campaignType: campaign.campaignType ?? 'PAID_CAMPAIGN' } })}>
-            <Text style={s.applyBtnTxt}>{t('campaignDetail.submitProposal')}</Text>
-          </Pressable>
+          // Submit Proposal stays primary; Share Opportunity stacks under it
+          // as a quiet secondary (creator-only, open opportunities only).
+          <View style={s.ctaStack}>
+            {hasApplied ? (
+              <View style={s.appliedBadge}>
+                <FontAwesome5 name="check-circle" solid size={18} color="#059669" />
+                <Text style={s.appliedBadgeTxt}>{t('campaignDetail.alreadyApplied')}</Text>
+              </View>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [s.applyBtn, s.applyBtnFull, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+                onPress={() => campaign && router.push({ pathname: '/submit-proposal', params: { campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand, budget: campaign.budget, budgetMin: String(campaign.budgetRaw), budgetMax: String(campaign.budgetMax ?? campaign.budgetRaw), category: campaign.category, campaignType: campaign.campaignType ?? 'PAID_CAMPAIGN' } })}>
+                <Text style={s.applyBtnTxt}>{t('campaignDetail.submitProposal')}</Text>
+              </Pressable>
+            )}
+            {(!campaign.status || campaign.status === 'active') && (
+              <ShareOpportunityButton campaignId={campaign.id} variant="button" />
+            )}
+          </View>
         )}
       </View>
       </MaxWidthContainer>
@@ -796,6 +806,8 @@ const s = StyleSheet.create({
   ctaInfo:       { flex: 1 },
   ctaBudget:     { fontSize: 18, fontFamily: F.bold },
   ctaLabel:      { fontSize: 11, marginTop: 1, fontFamily: F.regular },
+  ctaStack:      { flex: 1, gap: 10, alignItems: 'stretch' },
+  applyBtnFull:  { justifyContent: 'center' },
   applyBtn:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.md, paddingHorizontal: 22, paddingVertical: 15, ...SHADOW.raised },
   applyBtnTxt:   { color: '#fff', fontSize: 15, fontFamily: F.bold },
   appliedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ECFDF5', borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 14, borderWidth: 1.5, borderColor: '#A7F3D0' },

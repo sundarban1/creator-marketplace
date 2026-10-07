@@ -56,6 +56,7 @@ const CitiesHubPage = named(() => import('./pages/landing/content/CitiesHubPage'
 const NichePage = named(() => import('./pages/landing/content/niche/NichePage'), 'NichePage');
 import { INDUSTRY_PAGES } from './pages/landing/content/niche/industries.data';
 import { CITY_PAGES } from './pages/landing/content/niche/cities.data';
+import { UploadPreviewHost } from './app/ui/UploadPreviewDialog';
 
 const Login = named(() => import('./pages/Login'), 'Login');
 const DashboardLayout = named(() => import('./layouts/DashboardLayout'), 'DashboardLayout');
@@ -119,6 +120,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        {/* Confirm-before-upload preview for every image upload (app + admin). */}
+        <UploadPreviewHost />
        <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
