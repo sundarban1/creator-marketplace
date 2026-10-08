@@ -13,7 +13,7 @@ import {
   clearSession,
   getRefreshToken,
   readStoredUser,
-  refreshAccessToken,
+  ensureFreshAccessToken,
   setTokens,
   writeStoredUser,
 } from '../lib/apiClient';
@@ -235,10 +235,12 @@ export async function restoreSession(): Promise<AuthUser | null> {
     return null;
   }
 
-  // refreshAccessToken clears the stored tokens itself when the server
-  // genuinely rejects the refresh token; any other failure (network blip,
-  // cold/restarting backend) leaves them in place, and the session is kept.
-  const token = await refreshAccessToken();
+  // The refresh clears the stored tokens itself when the server genuinely
+  // rejects the refresh token. Any other failure (network blip, cold or
+  // restarting backend) leaves them in place, and the session is kept. It is
+  // single-flight, so a request that 401s while this runs joins this refresh
+  // instead of starting a second one.
+  const token = await ensureFreshAccessToken();
   if (!token) return getRefreshToken() ? stored : null;
 
   try {

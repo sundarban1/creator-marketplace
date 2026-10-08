@@ -134,7 +134,17 @@ export const authService = {
 
   async getStoredUser(): Promise<User | null> {
     await storage.hydrate([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY, APPLE_USER_ID_KEY]);
-    return storage.getJSON<User>(USER_KEY);
+    const user = storage.getJSON<User>(USER_KEY);
+    // A stored user with no refresh token can't make a single authenticated
+    // call. This happens with a "don't remember me" session whose profile was
+    // later re-persisted, or a partially wiped keychain. Treating it as signed
+    // in left every protected request failing with "No token provided" and no
+    // way to recover, so restore it as signed out instead.
+    if (user && !storage.get(REFRESH_TOKEN_KEY)) {
+      await storage.remove(USER_KEY).catch(() => {});
+      return null;
+    }
+    return user;
   },
 
   async sendWelcomeEmail(email: string): Promise<void> {

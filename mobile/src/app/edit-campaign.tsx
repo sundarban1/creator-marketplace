@@ -239,6 +239,14 @@ export default function EditCampaignScreen() {
   async function handlePickFeatureImage() {
     if (featureImageUploading) return;
     setFeatureImageUploading(true);
+    // From the tap-to-edit sheet, iOS silently refuses to present the crop
+    // screen (a root-level <Modal>) over the sheet's own Modal and the pick
+    // hangs — so the sheet closes for the pick and reopens afterwards.
+    const fromSheet = editingField === 'image';
+    if (fromSheet) {
+      setEditingField(null);
+      await new Promise((r) => setTimeout(r, 300));
+    }
     try {
       const result = await pickAndUpload('campaign-feature');
       if (result?.url) updateEdit('featureImageUrl', result.url);
@@ -246,6 +254,7 @@ export default function EditCampaignScreen() {
       showToast(err instanceof Error ? err.message : t('createEvent.featureImageUploadFailed'), 'error');
     } finally {
       setFeatureImageUploading(false);
+      if (fromSheet) setEditingField('image');
     }
   }
 

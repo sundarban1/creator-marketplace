@@ -22,7 +22,7 @@ import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
-import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -141,107 +141,116 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
     });
   }
 
+  // Same chip-card language as the My Work tab (campaigns.tsx): hairline-bordered
+  // raised card, title on its own row, tag/stat chips, square footer buttons.
+  const workspace = item.accepted > 0
+    ? workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus, t, isFree)
+    : null;
+
   return (
-    <Pressable
-      style={[styles.card, { backgroundColor: C.surface, borderLeftColor: accent }]}
-      onPress={handlePress}>
-      {/* Type + platform row */}
-      <View style={styles.cardTopRow}>
-        <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
-          <FontAwesome5 name={isFree ? 'gift' : 'money-bill-wave'} size={10} color={accent} solid />
-          <Text style={[styles.typeBadgeText, { color: accent }]}>
-            {isFree ? t('proposal.business.typeFreeEvent') : t('proposal.business.typePaidCampaign')}
-          </Text>
-        </View>
-        {platformLabel ? (
-          <View style={[styles.platformPill, { backgroundColor: C.background }]}>
-            <Text style={[styles.platformText, { color: C.textSecondary }]}>{platformLabel}</Text>
+    <View style={styles.cardWrap}>
+      <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <Pressable
+          style={({ pressed }) => [styles.cardContent, pressed && { opacity: 0.92 }]}
+          onPress={handlePress}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={2}>{item.title}</Text>
+            <FontAwesome5 name="chevron-right" solid size={14} color={C.textSecondary} style={styles.titleChevron} />
           </View>
-        ) : null}
-        <View style={styles.cardTopSpacer} />
-        <FontAwesome5 name="chevron-right" solid size={16} color={C.textSecondary} />
+
+          <View style={styles.tagContainer}>
+            <View style={[styles.tagBadge, { backgroundColor: accentBg }]}>
+              <FontAwesome5 name={isFree ? 'gift' : 'money-bill-wave'} size={9} color={accent} solid />
+              <Text style={[styles.tagBadgeText, { color: accent }]}>
+                {isFree ? t('proposal.business.typeFreeEvent') : t('proposal.business.typePaidCampaign')}
+              </Text>
+            </View>
+            {platformLabel ? (
+              <View style={[styles.tagBadge, { backgroundColor: C.background }]}>
+                <Text style={[styles.tagBadgeText, { color: C.textSecondary }]} numberOfLines={1}>{platformLabel}</Text>
+              </View>
+            ) : null}
+            <View style={[styles.tagBadge, { backgroundColor: C.background }]}>
+              <FontAwesome5 name="clock" size={9} color={C.textSecondary} />
+              <Text style={[styles.tagBadgeText, { color: C.textSecondary }]}>{timeAgo(item.latestAt)}</Text>
+            </View>
+          </View>
+
+          <View style={[styles.tagContainer, styles.statsRow]}>
+            <View style={[styles.statChip, { backgroundColor: C.background }]}>
+              <FontAwesome5 name="users" solid size={12} color={C.textSecondary} />
+              <Text style={[styles.statText, { color: C.textSecondary }]} numberOfLines={1}>
+                <Text style={[styles.statNum, { color: C.text }]}>{item.total}</Text> {t('proposal.business.statTotal')}
+              </Text>
+            </View>
+            <View style={[styles.statChip, { backgroundColor: TabColors.warning.bg }]}>
+              <Text style={[styles.statText, { color: TabColors.warning.color }]} numberOfLines={1}>
+                <Text style={styles.statNum}>{item.pending}</Text> {t('proposal.business.statPending')}
+              </Text>
+            </View>
+            <View style={[styles.statChip, { backgroundColor: TabColors.positive.bg }]}>
+              <Text style={[styles.statText, { color: TabColors.positive.color }]} numberOfLines={1}>
+                <Text style={styles.statNum}>{item.accepted}</Text> {isFree ? t('proposal.business.statApproved') : t('proposal.business.statAccepted')}
+              </Text>
+            </View>
+            {item.rejected > 0 && (
+              <View style={[styles.statChip, { backgroundColor: TabColors.danger.bg }]}>
+                <Text style={[styles.statText, { color: TabColors.danger.color }]} numberOfLines={1}>
+                  <Text style={styles.statNum}>{item.rejected}</Text> {t('proposal.business.statDeclined')}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Pending action nudge */}
+          {item.pending > 0 && (
+            <View style={[styles.tagBadge, styles.nudge, { backgroundColor: TabColors.warning.bg }]}>
+              <FontAwesome5 name="clock" size={11} color={TabColors.warning.color} />
+              <Text style={[styles.tagBadgeText, { color: TabColors.warning.color }]}>
+                {t('proposal.business.nudge', { n: item.pending })}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+
+        {/* Footer — project status once someone is accepted, otherwise a plain
+            way into the proposal list. */}
+        <View style={styles.buttonContainer}>
+          {workspace ? (
+            <Pressable
+              style={({ pressed }) => [styles.buttonPrimary, { backgroundColor: workspace.color }, pressed && { opacity: 0.88 }]}
+              onPress={handlePress}>
+              <FontAwesome5 name={workspace.icon} size={13} color="#fff" />
+              <View style={styles.btnTextBlock}>
+                <Text style={styles.buttonTextPrimary} numberOfLines={1}>{workspace.label}</Text>
+                {workspace.sub ? <Text style={styles.buttonSubPrimary} numberOfLines={1}>{workspace.sub}</Text> : null}
+              </View>
+              <FontAwesome5 name="chevron-right" solid size={12} color="#fff" />
+            </Pressable>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [styles.buttonPrimary, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+              onPress={handlePress}>
+              <Text style={styles.buttonTextPrimary} numberOfLines={1}>
+                {t(item.total === 1 ? 'campaigns.viewProposalsBtn' : 'campaigns.viewProposalsBtnPlural', { n: item.total })}
+              </Text>
+            </Pressable>
+          )}
+        </View>
       </View>
-
-      {/* Title */}
-      <Text style={[styles.cardTitle, { color: C.text }]} numberOfLines={2}>
-        {item.title}
-      </Text>
-
-      {/* Stats row */}
-      <View style={[styles.statsRow, { borderTopColor: C.border }]}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: C.text }]}>{item.total}</Text>
-          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('proposal.business.statTotal')}</Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: C.border }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: TabColors.warning.color }]}>{item.pending}</Text>
-          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('proposal.business.statPending')}</Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: C.border }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: TabColors.positive.color }]}>{item.accepted}</Text>
-          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{isFree ? t('proposal.business.statApproved') : t('proposal.business.statAccepted')}</Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: C.border }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: TabColors.danger.color }]}>{item.rejected}</Text>
-          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('proposal.business.statDeclined')}</Text>
-        </View>
-      </View>
-
-      {/* Pending action nudge */}
-      {item.pending > 0 && (
-        <View style={[styles.nudge, { backgroundColor: TabColors.warning.bg }]}>
-          <FontAwesome5 name="clock" size={13} color={TabColors.warning.color} />
-          <Text style={[styles.nudgeText, { color: TabColors.warning.color }]}>
-            {t('proposal.business.nudge', { n: item.pending })}
-          </Text>
-        </View>
-      )}
-
-      {/* Dynamic project status button for accepted campaigns */}
-      {item.accepted > 0 && (() => {
-        const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus, t, isFree);
-        return (
-          <Pressable
-            style={({ pressed }) => [
-              styles.startWorkBtn,
-              {
-                backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1, shadowColor: cfg.color,
-                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-              },
-            ]}
-            onPress={(e) => {
-              e.stopPropagation();
-              router.push({
-                pathname: '/(business)/campaign-proposals',
-                params: {
-                  campaignId:    item.id,
-                  campaignTitle: item.title,
-                  campaignType:  item.campaignType,
-                  platform:      platformLabel,
-                },
-              });
-            }}>
-            {/* Icon badge */}
-            <View style={styles.btnIconBadge}>
-              <FontAwesome5 name={cfg.icon} size={20} color="#fff" />
-            </View>
-            {/* Text */}
-            <View style={styles.btnTextBlock}>
-              <Text style={styles.startWorkBtnTxt}>{cfg.label}</Text>
-              {cfg.sub ? <Text style={styles.startWorkBtnSub}>{cfg.sub}</Text> : null}
-            </View>
-            {/* Arrow */}
-            <View style={styles.btnArrow}>
-              <FontAwesome5 name="chevron-right" solid size={16} color="#fff" />
-            </View>
-          </Pressable>
-        );
-      })()}
-    </Pressable>
+    </View>
   );
+}
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 const PAGE_SIZE = 30;
@@ -392,35 +401,30 @@ const styles = StyleSheet.create({
   listEmpty: { flexGrow: 1 },
   footerLoading: { paddingVertical: 20 },
 
-  card: {
-    borderRadius: RADIUS.lg,
-    borderLeftWidth: 4,
-    overflow: 'hidden',
-    ...SHADOW.card,
-  },
-  cardTopRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
-  cardTopSpacer: { flex: 1 },
-  typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
-  typeBadgeText: { fontSize: 11, fontFamily: F.bold },
-  platformPill:  { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
-  platformText:  { fontSize: 11, fontFamily: F.semibold },
+  // Card — mirrors the My Work card in campaigns.tsx.
+  cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  card:     { borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1 },
+  cardContent: { padding: SPACING.lg, paddingBottom: SPACING.sm, gap: SPACING.sm },
 
-  cardTitle: { fontSize: 15, lineHeight: 23, paddingHorizontal: 16, paddingBottom: 10, fontFamily: F.bold },
+  titleRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm },
+  titleChevron: { marginTop: 6 },
+  eventTitle:   { flex: 1, fontSize: FONT_SIZE.lg, fontFamily: F.bold, lineHeight: 26 },
 
-  statsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  statItem:    { flex: 1, alignItems: 'center', gap: 2 },
-  statNum:     { fontSize: 16, fontFamily: F.bold },
-  statLabel:   { fontSize: 11, fontFamily: F.medium },
-  statDivider: { width: StyleSheet.hairlineWidth, height: 28 },
+  tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },
+  tagBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 4, flexShrink: 1 },
+  tagBadgeText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold },
 
-  nudge:     { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4, marginHorizontal: 16, marginTop: 8 },
-  nudgeText: { fontSize: 12, fontFamily: F.semibold },
+  statsRow: { marginTop: 2 },
+  statChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm, paddingVertical: 7, flexShrink: 1, minWidth: 0 },
+  statText: { fontSize: FONT_SIZE.sm, fontFamily: F.medium },
+  statNum:  { fontFamily: F.bold },
 
-  startWorkBtn:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, marginTop: 6, paddingVertical: 13, paddingHorizontal: 14, borderRadius: RADIUS.full },
-  btnIconBadge:     { width: 40, height: 40, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.22)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  btnTextBlock:     { flex: 1, gap: 2 },
-  startWorkBtnTxt:  { fontSize: 14, color: '#fff', fontFamily: F.bold },
-  startWorkBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
-  btnArrow:         { width: 28, height: 28, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  nudge: { alignSelf: 'flex-start' },
+
+  buttonContainer:   { flexDirection: 'row', gap: SPACING.sm, paddingHorizontal: SPACING.lg, paddingTop: SPACING.xs, paddingBottom: SPACING.md },
+  buttonPrimary:     { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', gap: SPACING.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+  btnTextBlock:      { flexShrink: 1, alignItems: 'center' },
+  buttonTextPrimary: { color: '#fff', fontSize: FONT_SIZE.sm, fontFamily: F.bold },
+  buttonSubPrimary:  { color: 'rgba(255,255,255,0.8)', fontSize: FONT_SIZE.xs, fontFamily: F.regular },
 
 });

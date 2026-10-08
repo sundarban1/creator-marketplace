@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -263,7 +262,7 @@ const MIN_BUDGET_PER_CREATOR = 500;
 
 // "Need Help?" walkthrough scripts. English is read aloud via on-device TTS
 // from the help modal below. Nepali plays a recorded voiceover instead
-// (NEED_HELP_NE_AUDIO_URL) — on-device Nepali TTS voices are rarely installed
+// (NEED_HELP_NE_AUDIO) — on-device Nepali TTS voices are rarely installed
 // and a Hindi voice mispronounces the script — and only falls back to this
 // Nepali text (via a Hindi voice) if that audio can't start at all.
 const NEED_HELP_SCRIPT_EN = `Welcome to Kolab!
@@ -390,37 +389,11 @@ async function speakAloud(text: string, language: string, onEnd: () => void) {
 }
 
 // The Nepali "Need Help?" walkthrough is a real recorded voiceover (the
-// English one is still on-device TTS). It lives on Cloudinary — a versioned
-// delivery URL, which Cloudinary serves permanently and never signs/expires,
-// so it keeps working indefinitely. On top of that we copy the file into the
-// app's document directory on the first successful play: every later play
-// then reads the local copy, so it works with no connectivity and can't be
-// broken by a CDN hiccup days or weeks later.
-const NEED_HELP_NE_AUDIO_URL =
-  'https://res.cloudinary.com/drpuqrfyn/video/upload/v1788886374/final_nepali_help_f3wtha.wav';
-const NEED_HELP_NE_AUDIO_CACHE = `${FileSystem.documentDirectory ?? ''}kolab-need-help-ne.wav`;
-
-// Resolves to a locally cached, playable file URI. Throws if the audio can't
-// be obtained (no network on the first play, or the remote URL is 404/gone) so
-// the caller can fall back to reading the script via TTS.
-async function resolveNeedHelpNeAudioUri(): Promise<string> {
-  const info = await FileSystem.getInfoAsync(NEED_HELP_NE_AUDIO_CACHE).catch(() => null);
-  if (info?.exists && info.size > 0) return info.uri;
-
-  let dl: { status: number; uri: string } | null = null;
-  try {
-    dl = await FileSystem.downloadAsync(NEED_HELP_NE_AUDIO_URL, NEED_HELP_NE_AUDIO_CACHE);
-  } catch {
-    dl = null;
-  }
-  if (dl?.status === 200) return dl.uri;
-
-  // downloadAsync writes the body to disk even on a 4xx/5xx (or a partial file
-  // on a dropped connection) — drop it so a later call doesn't trust it as the
-  // cached audio, then signal failure.
-  await FileSystem.deleteAsync(NEED_HELP_NE_AUDIO_CACHE, { idempotent: true }).catch(() => {});
-  throw new Error(`need-help audio unavailable (status ${dl?.status ?? 'network error'})`);
-}
+// English one is still on-device TTS). It ships inside the app bundle as a
+// ~0.9 MB AAC file (re-encoded from the original 10.6 MB WAV on Cloudinary),
+// so it plays instantly on the first tap and works with no connectivity —
+// downloading the WAV on first tap left the button looking dead for seconds.
+const NEED_HELP_NE_AUDIO = require('../../assets/audio/need-help-ne.m4a');
 
 // Used when generateWithAi() throws outright (network down, request timeout, backend
 // error unrelated to the AI call itself) — the backend's own dummy-template fallback
@@ -970,6 +943,14 @@ export default function CreateCampaignScreen() {
   async function handlePickFeatureImage() {
     if (featureImageUploading) return;
     setFeatureImageUploading(true);
+    // From the tap-to-edit sheet, iOS silently refuses to present the crop
+    // screen (a root-level <Modal>) over the sheet's own Modal and the pick
+    // hangs — so the sheet closes for the pick and reopens afterwards.
+    const fromSheet = editingField === 'image';
+    if (fromSheet) {
+      setEditingField(null);
+      await new Promise((r) => setTimeout(r, 300));
+    }
     try {
       const result = await pickAndUpload('campaign-feature');
       if (result?.url) update('featureImageUrl', result.url);
@@ -977,6 +958,7 @@ export default function CreateCampaignScreen() {
       showToast(err instanceof Error ? err.message : t('createEvent.featureImageUploadFailed'), 'error');
     } finally {
       setFeatureImageUploading(false);
+      if (fromSheet) setEditingField('image');
     }
   }
 
@@ -1478,17 +1460,14 @@ export default function CreateCampaignScreen() {
       return;
     }
 
-    // Nepali — recorded voiceover, cached locally after the first play. If the
-    // player can't start at all (no network on the very first play, native
-    // audio object not ready), fall back to reading the script via TTS so the
+    // Nepali — recorded voiceover bundled with the app. If the player can't
+    // start at all (native audio object not ready), fall back to reading the script via TTS so the
     // button still does something.
     try {
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
-      const uri = await resolveNeedHelpNeAudioUri();
-      // replace() always resets a fresh source to position 0 — no seekTo()
-      // here: seeking before the (first-play, ~10 MB) source finishes loading
-      // can leave iOS's player stalled instead of playing.
-      helpAudioPlayer.replace({ uri });
+      // replace() always resets the source to position 0 — no seekTo() here,
+      // seeking before the source finishes loading can stall iOS's player.
+      helpAudioPlayer.replace(NEED_HELP_NE_AUDIO);
       helpAudioPlayer.play();
     } catch {
       setHelpTtsLang('ne');

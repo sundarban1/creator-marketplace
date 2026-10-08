@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Role } from '@prisma/client';
 import { verifyAccessToken, verifyVisitorChatToken } from '../utils/jwt';
-import { AppError } from './error';
+import { AppError, AuthErrorCode } from './error';
 
 import { HttpStatus } from '../constants/httpStatus';
 
@@ -9,7 +9,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    next(new AppError('No token provided. Please authenticate.', HttpStatus.UNAUTHORIZED));
+    next(new AppError('No token provided. Please authenticate.', HttpStatus.UNAUTHORIZED, true, { code: AuthErrorCode.AUTHENTICATION_REQUIRED }));
     return;
   }
 
@@ -65,7 +65,7 @@ export function verifyVisitorChat(req: Request, _res: Response, next: NextFuncti
 export function authorize(...roles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
-      next(new AppError('Not authenticated', HttpStatus.UNAUTHORIZED));
+      next(new AppError('Not authenticated', HttpStatus.UNAUTHORIZED, true, { code: AuthErrorCode.AUTHENTICATION_REQUIRED }));
       return;
     }
 
@@ -73,7 +73,9 @@ export function authorize(...roles: Role[]) {
       next(
         new AppError(
           `Access denied. Required role: ${roles.join(' or ')}. Your role: ${req.user.role}`,
-          HttpStatus.FORBIDDEN
+          HttpStatus.FORBIDDEN,
+          true,
+          { code: AuthErrorCode.FORBIDDEN },
         )
       );
       return;

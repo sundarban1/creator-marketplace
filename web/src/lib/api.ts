@@ -936,11 +936,20 @@ export async function ensureFreshAccessToken(): Promise<string | null> {
   }
 }
 
+// Ends the admin session. Only redirects when the user is actually inside the
+// dashboard: this client also serves public landing-page reads, and an
+// anonymous visitor must never be bounced to /admin/login.
+function endAdminSession(): void {
+  clearTokens();
+  if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
+    window.location.href = '/admin/login';
+  }
+}
+
 async function refreshAccessToken(): Promise<string> {
   const rt = getRefreshToken();
   if (!rt) {
-    clearTokens();
-    window.location.href = '/admin/login';
+    endAdminSession();
     throw new Error('Session expired');
   }
 
@@ -954,13 +963,14 @@ async function refreshAccessToken(): Promise<string> {
     // A 5xx/429 from a restarting backend isn't an expired session — only an
     // explicit rejection of the refresh token should sign the admin out.
     if (res.status !== 401 && res.status !== 403) throw new Error('Could not refresh session');
-    clearTokens();
-    window.location.href = '/admin/login';
+    endAdminSession();
     throw new Error('Session expired');
   }
 
   const json = await res.json() as ApiResponse<{ accessToken: string }>;
   const token = json.data.accessToken;
+  // A logout that landed while this refresh was in flight wins.
+  if (getRefreshToken() !== rt) throw new Error('Session expired');
   localStorage.setItem(KEY_ACCESS, token);
   return token;
 }
@@ -991,7 +1001,10 @@ async function request<T>(
     body:    body != null ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401 && !AUTH_PATHS_WITHOUT_REFRESH_RETRY.includes(path)) {
+  // No refresh token means there is no admin session to recover (an anonymous
+  // landing-page visitor, or already signed out) — surface the 401 as-is
+  // instead of "refreshing" into a redirect.
+  if (res.status === 401 && getRefreshToken() && !AUTH_PATHS_WITHOUT_REFRESH_RETRY.includes(path)) {
     if (!pendingRefresh) {
       pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
     }

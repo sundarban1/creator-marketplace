@@ -23,7 +23,6 @@ import {
   DEFAULT_CREATOR_FILTER,
   creatorFilterActiveCount,
   isCreatorFilterActive,
-  formatCreatorRate,
   CREATOR_SLIDER_MIN,
   CREATOR_SLIDER_MAX,
   type CreatorFilterState,
@@ -36,12 +35,10 @@ import { creatorService, type ApiCreatorListItem, type SavedCreatorItem } from '
 import { serviceService, type ApiService } from '@/services/service';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta, sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { STALE } from '@/lib/queryClient';
 import { prefetchCreatorPublic } from '@/lib/prefetch';
-import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ApiCategory } from '@/services/category';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
@@ -209,7 +206,6 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
-  const { platforms: allPlatforms } = usePlatforms();
   const queryClient = useQueryClient();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -263,14 +259,6 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const pillCategories = sortOtherLast(sortSelectedFirst(adminCategories, businessIndustries));
 
   const filterActive = isCreatorFilterActive(activeFilter);
-  // Categories are shown as highlighted pills in the row above, never as
-  // chips, so counting them here would render a chip row holding nothing but
-  // the Clear-all pill the moment a category is tapped.
-  const chipFilterActive =
-    activeFilter.locations.length > 0 ||
-    activeFilter.platforms.length > 0 ||
-    activeFilter.priceMin > CREATOR_SLIDER_MIN ||
-    activeFilter.priceMax < CREATOR_SLIDER_MAX;
   const filterCount  = creatorFilterActiveCount(activeFilter);
 
   // Saved-ids is its own small cache — every card everywhere on this screen
@@ -410,18 +398,6 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
       ? activeFilter.categories.filter((c) => c !== label)
       : [...activeFilter.categories, label];
     setActiveFilter({ ...activeFilter, categories: next });
-  }
-
-  function removeActiveFilter<K extends keyof CreatorFilterState>(key: K, value?: unknown) {
-    if (key === 'locations' && value !== undefined) {
-      setActiveFilter({ ...activeFilter, locations: activeFilter.locations.filter((l) => l.label !== value) });
-    } else if (key === 'platforms' && value !== undefined) {
-      setActiveFilter({ ...activeFilter, platforms: activeFilter.platforms.filter((p) => p !== value) });
-    } else if (key === 'categories' && value !== undefined) {
-      setActiveFilter({ ...activeFilter, categories: activeFilter.categories.filter((c) => c !== value) });
-    } else if (key === 'priceMin' || key === 'priceMax') {
-      setActiveFilter({ ...activeFilter, priceMin: CREATOR_SLIDER_MIN, priceMax: CREATOR_SLIDER_MAX });
-    }
   }
 
   const creators: ApiCreatorListItem[] = (() => {
@@ -574,46 +550,6 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
         />
       )}
 
-      {/* Active filter chips — wraps to multiple lines, doesn't scroll, so
-          the row's height is deterministic and the content below it
-          (empty state / list) never gets pushed around unpredictably.
-          Categories are deliberately excluded here since the CategoryPillRow
-          above already highlights the selected ones; repeating them as
-          chips+Clear-all was redundant — which is also why the row keys off
-          chipFilterActive rather than filterActive. */}
-      {entityTab === 'people' && chipFilterActive && (
-        <View style={s.chipRow}>
-          {activeFilter.locations.map((loc) => (
-            <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <FontAwesome5 name={loc.label === 'Remote' ? 'globe' : 'map-marker-alt'} solid size={12} color={C.brinjal1} />
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
-            </Pressable>
-          ))}
-          {(activeFilter.priceMin > CREATOR_SLIDER_MIN || activeFilter.priceMax < CREATOR_SLIDER_MAX) && (
-            <Pressable onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <FontAwesome5 name="wallet" solid size={11} color={getIconColor('wallet')} />
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{formatCreatorRate(activeFilter.priceMin)}–{activeFilter.priceMax >= CREATOR_SLIDER_MAX ? `${formatCreatorRate(CREATOR_SLIDER_MAX)}+` : formatCreatorRate(activeFilter.priceMax)}</Text>
-              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
-            </Pressable>
-          )}
-          {activeFilter.platforms.map((p) => {
-            const meta = getPlatformMeta(allPlatforms, p);
-            const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
-            return (
-              <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-                <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
-                <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
-              </Pressable>
-            );
-          })}
-          <Pressable onPress={() => setActiveFilter(DEFAULT_CREATOR_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
-            <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
-          </Pressable>
-        </View>
-      )}
-
       {/* Content — always a stable flex:1 region below the header/chips, so
           the empty state reliably centers regardless of how tall the chip
           row above it is. */}
@@ -748,9 +684,6 @@ const s = StyleSheet.create({
   entityPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, borderRadius: RADIUS.full, paddingHorizontal: 14, borderWidth: 1 },
   entityPillText: { fontSize: 13, fontFamily: F.semibold },
 
-  chipRow: { paddingHorizontal: SCREEN_GUTTER, paddingBottom: 8, gap: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
-  chipText: { fontSize: 12, fontFamily: F.semibold },
 
 
   loadingText: { fontSize: 14, fontFamily: F.regular },

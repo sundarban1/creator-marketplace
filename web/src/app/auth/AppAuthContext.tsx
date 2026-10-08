@@ -20,7 +20,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { clearSession, getRefreshToken, readStoredUser, writeStoredUser } from '../lib/apiClient';
+import { clearSession, getRefreshToken, onSessionChange, readStoredUser, writeStoredUser } from '../lib/apiClient';
 import * as authApi from '../api/auth';
 import type { AuthUser, Identifier, RegisterInput, SocialAuthResult } from '../api/auth';
 import { claimShareSignup } from '../api/opportunityShare';
@@ -108,6 +108,29 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safety);
     };
   }, []);
+
+  // Keep `status` in step with the stored session when it changes outside this
+  // context: a rejected refresh, a 401 with no refresh token left, or a
+  // sign-out/sign-in in another tab. Flipping to 'anonymous' unmounts every
+  // RequireAuth tree, so the AppShell's pollers and sockets stop and the user
+  // lands on login. Before this, the UI stayed 'authenticated' over wiped
+  // storage, and every protected call failed with "No token provided".
+  useEffect(
+    () =>
+      onSessionChange((e) => {
+        if (e === 'ended') {
+          setUser(null);
+          setStatus('anonymous');
+          return;
+        }
+        const stored = readStoredUser<AuthUser>();
+        if (stored && (stored.role === 'CREATOR' || stored.role === 'BUSINESS')) {
+          setUser(stored);
+          setStatus('authenticated');
+        }
+      }),
+    [],
+  );
 
   // Share Opportunity: once any auth path (password, OTP, Google redirect,
   // TikTok…) lands a session, hand back the click receipt from a shared link

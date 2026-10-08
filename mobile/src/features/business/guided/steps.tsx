@@ -79,6 +79,7 @@ function MakeClearer({ field, text, form, onUse }: { field: 'idea' | 'descriptio
 // ── Start (§3) ───────────────────────────────────────────────────────────────
 
 const QUICK_STARTS = ['promote', 'launch', 'event', 'ugc', 'awareness', 'other'] as const;
+type QuickStart = (typeof QUICK_STARTS)[number];
 
 export function StartStep({ form, update, onCreateWithAi, onManual, busy, onInputSource, header, onStartFrom, startingFrom }: {
   form: GuidedForm;
@@ -96,6 +97,19 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onInpu
   const [transcribing, setTranscribing] = useState(false);
   const [voiceError, setVoiceError] = useState('');
   const text = form.aiPrompt;
+  // Quick-start pills can be switched freely: the previous pill's seed is
+  // swapped for the new one (anything typed after it is kept); text the
+  // business wrote from scratch is never overwritten.
+  const seedOf = (k: QuickStart) => t(`guided.quickStartSeed_${k}`);
+  const [quickStart, setQuickStart] = useState<QuickStart | null>(() => QUICK_STARTS.find((k) => seedOf(k) && text.startsWith(seedOf(k))) ?? null);
+  const pickQuickStart = (k: QuickStart) => {
+    const prevSeed = QUICK_STARTS.map(seedOf).find((s) => s && text.startsWith(s));
+    const rest = prevSeed ? text.slice(prevSeed.length) : text;
+    const aiPrompt = prevSeed || !text.trim() ? seedOf(k) + rest.trimStart() : text;
+    const goal = k === 'awareness' ? 'Brand Awareness' : quickStart === 'awareness' && form.goal === 'Brand Awareness' ? '' : form.goal;
+    setQuickStart(k);
+    update({ aiPrompt, goal });
+  };
   return (
     <StepShell
       header={header}
@@ -145,9 +159,9 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onInpu
       */}
 
       <Field label={t('guided.quickStartLabel')}>
-        <ChoiceChips<(typeof QUICK_STARTS)[number]>
-          value={null}
-          onChange={(k) => update({ aiPrompt: text.trim() ? text : t(`guided.quickStartSeed_${k}`), goal: k === 'awareness' ? 'Brand Awareness' : form.goal })}
+        <ChoiceChips<QuickStart>
+          value={quickStart}
+          onChange={pickQuickStart}
           options={QUICK_STARTS.map((k) => ({ value: k, label: t(`guided.quickStart_${k}`) }))}
         />
       </Field>

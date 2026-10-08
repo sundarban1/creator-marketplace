@@ -44,6 +44,16 @@ export class AppError extends Error {
   }
 }
 
+// Machine-readable codes on auth failures, so clients branch on `code` and not
+// on message text. 401 means "who are you?" (missing, invalid or expired
+// token: refresh or sign in). 403 means "you're known but not allowed".
+export const AuthErrorCode = {
+  AUTHENTICATION_REQUIRED: 'AUTHENTICATION_REQUIRED',
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  TOKEN_INVALID: 'TOKEN_INVALID',
+  FORBIDDEN: 'FORBIDDEN',
+} as const;
+
 export function errorHandler(
   err: Error,
   req: Request,
@@ -85,6 +95,7 @@ export function errorHandler(
     res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: 'Token has expired',
+      code: AuthErrorCode.TOKEN_EXPIRED,
     });
     return;
   }
@@ -93,6 +104,7 @@ export function errorHandler(
     res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: 'Invalid token',
+      code: AuthErrorCode.TOKEN_INVALID,
     });
     return;
   }

@@ -14,7 +14,7 @@ import { Button } from '../../ui/Button';
 import { Skeleton, SkeletonText } from '../../ui/Skeleton';
 import { getCampaignIssues, blockingIssues, type CampaignStep } from '../campaignRules';
 import {
-  FLOW_STEPS, applyAiDraft, diffForUpdate, emptyForm, formFromCampaign, plannedSteps, toPayload, toRulesInput,
+  FLOW_STEPS, applyAiDraft, diffForUpdate, emptyForm, formFromCampaign, hasAnyInput, plannedSteps, toPayload, toRulesInput,
   type GuidedForm, type GuidedStep,
 } from './guidedModel';
 import { useAutosave, readLocalBackup, clearLocalBackup } from './useAutosave';
@@ -82,9 +82,11 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
     setParams((p) => { const n = new URLSearchParams(p); n.set('draft', id); return n; }, { replace: true });
   }, [setParams]);
 
-  // Autosave only once there's something worth keeping (§22) — never an
-  // empty "Untitled" draft just from opening the page.
-  const worthSaving = mode === 'create' && !loadingDraft && (form.aiPrompt.trim().length >= 3 || step !== 'idea');
+  // Autosave only once there's something worth keeping (§22): nothing is
+  // saved while still on the idea step (typing / picking a pill) — the draft
+  // is created on leaving it (Create with AI, or "I'll fill it in myself"
+  // with something entered). Once a draft exists, every change is saved.
+  const worthSaving = mode === 'create' && !loadingDraft && (!!draftId || (step !== 'idea' && hasAnyInput(form)));
   const autosave = useAutosave({ enabled: worthSaving, ready: !loadingDraft, draftId, onDraftCreated, form, step, localKey });
 
   // ── Resume (§22) ─────────────────────────────────────────────────────────

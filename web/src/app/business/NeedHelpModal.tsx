@@ -86,9 +86,11 @@ const NEED_HELP_SCRIPT_NE = `कोल्याबमा स्वागत छ!
 आउनुहोस्, सँगै उत्कृष्ट सहकार्यहरू सिर्जना गरौं!`;
 
 // Same recorded voiceover the mobile app plays for the Nepali script —
-// Cloudinary serves it permanently at this versioned URL.
+// Cloudinary serves it permanently at this versioned URL. The `.mp3`
+// extension makes Cloudinary transcode the 10.6 MB source WAV to ~1 MB, so
+// playback starts right away instead of stalling on the WAV.
 const NEED_HELP_NE_AUDIO_URL =
-  'https://res.cloudinary.com/drpuqrfyn/video/upload/v1788886374/final_nepali_help_f3wtha.wav';
+  'https://res.cloudinary.com/drpuqrfyn/video/upload/v1788886374/final_nepali_help_f3wtha.mp3';
 
 type PlayLang = 'en' | 'ne' | null;
 

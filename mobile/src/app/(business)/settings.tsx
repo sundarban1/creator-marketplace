@@ -22,8 +22,6 @@ import {
 import { AppModal } from '@/components/AppModal';
 import { LoginMethodsCard } from '@/components/LoginMethodsCard';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
-import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
-import { paymentMethodService, type ApiPaymentMethod } from '@/services/paymentMethod';
 import { formatPhoneDisplay, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -353,8 +351,6 @@ export default function BusinessSettingsScreen() {
   const [emailNotifEnabled, setEmailNotifEnabled] = useState(true);
 
   // ── Section 4: Payment ──
-  const [nepalPayments, setNepalPayments] = useState<string[]>(['esewa']);
-  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<ApiPaymentMethod[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryEntry[]>([]);
   const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(true);
 
@@ -682,11 +678,6 @@ export default function BusinessSettingsScreen() {
     queryFn: () => businessService.getPaymentHistory(),
     staleTime: STALE.profile,
   });
-  const paymentMethodsQuery = useQuery({
-    queryKey: ['paymentMethods'],
-    queryFn: () => paymentMethodService.getPaymentMethods(),
-    staleTime: STALE.static,
-  });
 
   const seededPrivacyRef = useRef(false);
   function seedFromPrivacySettings(p: { showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean; hideSocialLinks: boolean }) {
@@ -733,7 +724,6 @@ export default function BusinessSettingsScreen() {
     if (p.defaultPlatforms?.length)         setPrefPlatforms(p.defaultPlatforms);
     if (p.defaultCreatorCategories?.length)  setPrefCreatorCats(p.defaultCreatorCategories);
     if (p.defaultBudgetRange)               setPrefBudget(p.defaultBudgetRange);
-    if (p.paymentMethods?.length)            setNepalPayments(p.paymentMethods);
   }
   useEffect(() => {
     if (seededProfileRef.current || !businessProfileQuery.data) return;
@@ -752,15 +742,6 @@ export default function BusinessSettingsScreen() {
     seedFromPaymentHistory(paymentHistoryQuery.data ?? null);
   }, [paymentHistoryQuery.data, paymentHistoryQuery.isError]);
 
-  const seededPaymentMethodsRef = useRef(false);
-  function seedFromPaymentMethods(methods: ApiPaymentMethod[]) {
-    setAvailablePaymentMethods(methods);
-  }
-  useEffect(() => {
-    if (seededPaymentMethodsRef.current || !paymentMethodsQuery.data) return;
-    seededPaymentMethodsRef.current = true;
-    seedFromPaymentMethods(paymentMethodsQuery.data);
-  }, [paymentMethodsQuery.data]);
 
   // ── Support forms ──
   const [supportTopic, setSupportTopic] = useState('');
@@ -1729,33 +1710,11 @@ export default function BusinessSettingsScreen() {
     );
   }
 
-  // ── Section: Payment Settings ─────────────────────────────────
+  // ── Section: Payment History ──────────────────────────────────
 
   function renderPayment() {
     return (
       <>
-        <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.paymentMethodsHint')}</Text>
-        </HintCard>
-        <Card>
-          {availablePaymentMethods.map((m, idx) => {
-            const selected = nepalPayments.includes(m.key);
-            return (
-              <Pressable
-                key={m.key}
-                style={[styles.row, idx < availablePaymentMethods.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-                onPress={() => toggleAndSave(nepalPayments, setNepalPayments, m.key, (next) => profileService.updateBusinessProfile({ paymentMethods: next }))}>
-                <PaymentMethodIcon method={m.key} label={m.name} iconUrl={m.iconUrl} color={m.color} size={38} />
-                <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{m.name}</Text>
-                <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
-                  {selected ? <FontAwesome5 name="check" solid size={13} color="#fff" /> : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </Card>
-
-        <SectionHeader title={t('businessSettings.paymentHistorySection')} />
         <Card>
           {paymentHistoryLoading ? (
             <View style={{ paddingVertical: 20, alignItems: 'center' }}>

@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Inbox,
   SearchX,
@@ -100,9 +101,11 @@ export function EmptyState({
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
           {action &&
             (action.href ? (
-              <a href={action.href}>
+              // Router <Link>, not <a>: a plain anchor reloads the whole app
+              // (full-page loader) instead of switching routes in place.
+              <Link to={action.href}>
                 <Button size="sm">{action.label}</Button>
-              </a>
+              </Link>
             ) : (
               <Button size="sm" onClick={action.onClick}>
                 {action.label}
@@ -110,11 +113,11 @@ export function EmptyState({
             ))}
           {secondaryAction &&
             (secondaryAction.href ? (
-              <a href={secondaryAction.href}>
+              <Link to={secondaryAction.href}>
                 <Button size="sm" variant="secondary">
                   {secondaryAction.label}
                 </Button>
-              </a>
+              </Link>
             ) : (
               <Button size="sm" variant="secondary" onClick={secondaryAction.onClick}>
                 {secondaryAction.label}

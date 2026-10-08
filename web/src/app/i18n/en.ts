@@ -105,7 +105,7 @@ export const en = {
     events: 'Events',
     promotions: 'Promotions',
     deliverables: 'Deliverables',
-    payments: 'Payments',
+    payments: 'Payment History',
     referBusiness: 'Refer a business',
     help: 'Help',
     // Shell chrome
@@ -859,7 +859,7 @@ export const en = {
     revisionSent: 'Revision requested.',
     submittedFiles: 'Submitted files',
     // payments
-    payTitle: 'Payments',
+    payTitle: 'Payment History',
     paySubtitle: 'Everything you’ve paid, and what’s next.',
     payStatusHeld: 'Held in escrow',
     payStatusReleased: 'Released',

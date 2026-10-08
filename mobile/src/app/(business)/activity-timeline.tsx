@@ -471,18 +471,26 @@ function ActionBtn({ label, color, icon, onPress, loading = false, disabled = fa
 
 // The current step as one card: what to do next (ActionCardBody) with the
 // stage countdown / dispute status (StageStrip) folded in underneath.
-function ActionCard({ status, ...props }: React.ComponentProps<typeof ActionCardBody> & { status?: React.ReactNode }) {
+function ActionCard({ status, statusAction, ...props }: Omit<React.ComponentProps<typeof ActionCardBody>, 'inlineStatus'> & {
+  status?: React.ReactNode; statusAction?: React.ReactNode;
+}) {
   const C = useAppColors();
+  // The creator's upload step places the countdown above its Upload button,
+  // so the Upload button sits directly over "Raise an issue".
+  const inline = props.ws === 'IN_PROGRESS' && props.isCreator && !props.isService;
   return (
     <View style={[ac.card, { backgroundColor: C.surface }]}>
-      <ActionCardBody {...props} />
-      {status}
+      <ActionCardBody {...props} inlineStatus={inline ? status : undefined} />
+      {!inline && status}
+      {statusAction}
     </View>
   );
 }
 
-function ActionCardBody({ ws, paid, paymentStatus, isCreator, isFree, isService, submitting, deliverableVideos, deliverableFiles, submittedUrls, onPay, onStartWork, onUpload, onMarkComplete, onApprove, onRevision, onPlayVideo, onViewImage, onViewDoc, onOpenLink }: {
+function ActionCardBody({ ws, paid, paymentStatus, isCreator, isFree, isService, submitting, inlineStatus, deliverableVideos, deliverableFiles, submittedUrls, onPay, onStartWork, onUpload, onMarkComplete, onApprove, onRevision, onPlayVideo, onViewImage, onViewDoc, onOpenLink }: {
   ws: WS; paid: boolean; paymentStatus: PS; isCreator: boolean; isFree: boolean; isService: boolean; submitting: boolean;
+  /** Status strip rendered inside the body (upload step: above its button). */
+  inlineStatus?: React.ReactNode;
   deliverableVideos: DeliverableVideo[]; deliverableFiles: DeliverableFile[]; submittedUrls: string[];
   onPay: () => void; onStartWork: () => void; onUpload: () => void; onMarkComplete: () => void;
   onApprove: () => void; onRevision: () => void;
@@ -576,6 +584,7 @@ function ActionCardBody({ ws, paid, paymentStatus, isCreator, isFree, isService,
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acUploadSub')}</Text>
+      {inlineStatus}
       <ActionBtn label={t('activityTimeline.acUploadBtn')} color="#7C3AED" icon="cloud-upload-alt" onPress={onUpload} />
     </View>
   );
@@ -848,10 +857,12 @@ function Strip({ tone = 'blue', icon = 'clock', label, value, note, late }: {
   );
 }
 
-function StageStrip({ app, isCreator, onRaiseDispute }: {
+function StageStrip({ app, isCreator, onRaiseDispute, part }: {
   app: AppInfo;
   isCreator: boolean;
   onRaiseDispute: () => void;
+  /** 'strip' = the countdown/dispute block, 'dispute' = the "Raise an issue" button. */
+  part: 'strip' | 'dispute';
 }) {
   const { t } = useLanguage();
 
@@ -915,15 +926,12 @@ function StageStrip({ app, isCreator, onRaiseDispute }: {
     }
   }
 
-  if (!strip && !showDisputeBtn) return null;
-  return (
-    <>
-      {strip}
-      {showDisputeBtn && (
-        <ActionBtn label={t('activityTimeline.disputeBtn')} color="#EF4444" icon="flag" onPress={onRaiseDispute} />
-      )}
-    </>
-  );
+  if (part === 'dispute') {
+    return showDisputeBtn
+      ? <ActionBtn label={t('activityTimeline.disputeBtn')} color="#EF4444" icon="flag" onPress={onRaiseDispute} />
+      : null;
+  }
+  return strip;
 }
 
 // Distinguishes PDF vs Word docs in the deliverables grid (both otherwise
@@ -1186,12 +1194,25 @@ export default function CampaignWorkspaceScreen() {
       topToast.error(t('activityTimeline.fileLimitReached'));
       return;
     }
-    if (choice === 'photo-camera') {
-      const image = await pickDeliverableImageFromCamera();
-      if (image) fileUploads.addFiles([image]);
-    } else if (choice === 'photo-library') {
-      const images = await pickDeliverableImagesFromLibrary(fileUploads.remainingSlots);
-      if (images.length > 0) fileUploads.addFiles(images);
+    if (choice === 'photo-camera' || choice === 'photo-library') {
+      // The photo pickers show the root-level confirm preview (a <Modal>),
+      // which iOS silently refuses to present over this sheet — the preview
+      // promise then never resolves and nothing uploads. Same two-modal hang
+      // as previewReturnTo above, so the sheet closes for the pick and
+      // reopens afterwards to show the upload progress.
+      setShowUpload(false);
+      await new Promise((r) => setTimeout(r, 300));
+      try {
+        if (choice === 'photo-camera') {
+          const image = await pickDeliverableImageFromCamera();
+          if (image) fileUploads.addFiles([image]);
+        } else {
+          const images = await pickDeliverableImagesFromLibrary(fileUploads.remainingSlots);
+          if (images.length > 0) fileUploads.addFiles(images);
+        }
+      } finally {
+        setShowUpload(true);
+      }
     } else {
       const doc = await pickDeliverableDocument();
       if (doc) fileUploads.addFiles([doc]);
@@ -1766,21 +1787,21 @@ export default function CampaignWorkspaceScreen() {
           {chatUnavailable ? (
             // Free event — no chat is ever opened for it.
             <Pressable style={s.iconBtn} onPress={() => topToast.info(t('activityTimeline.chatFreeEventUnavailable'))} hitSlop={6}>
-              <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
+              <FontAwesome5 name="comment" size={22} color="#D1D5DB" />
             </Pressable>
           ) : app?.paymentStatus === 'RELEASED' ? (
             <View style={s.iconBtn}>
-              <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
+              <FontAwesome5 name="comment" size={22} color="#D1D5DB" />
             </View>
           ) : chatLocked ? (
             // Paid campaign, escrow not funded yet — chat only unlocks once the
             // business completes payment (see the payment-required action card).
             <Pressable style={s.iconBtn} onPress={() => topToast.info(t('activityTimeline.acPaymentRequiredChatLockBody'))} hitSlop={6}>
-              <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
+              <FontAwesome5 name="comment" size={22} color="#D1D5DB" />
             </Pressable>
           ) : (
             <Pressable style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
-              <FontAwesome5 name="comment-alt" solid size={22} color="#7C3AED" />
+              <FontAwesome5 name="comment" size={22} color="#7C3AED" />
             </Pressable>
           )}
         </View>
@@ -1890,7 +1911,8 @@ export default function CampaignWorkspaceScreen() {
               countdown / dispute status folded in underneath. ── */}
         <ActionCard
           ws={ws} paid={paid} paymentStatus={app?.paymentStatus ?? 'UNPAID'} isCreator={isCreator} isFree={isFreeEvent} isService={isService} submitting={submitting}
-          status={app ? <StageStrip app={app} isCreator={isCreator} onRaiseDispute={() => setShowDispute(true)} /> : null}
+          status={app ? <StageStrip part="strip" app={app} isCreator={isCreator} onRaiseDispute={() => setShowDispute(true)} /> : null}
+          statusAction={app ? <StageStrip part="dispute" app={app} isCreator={isCreator} onRaiseDispute={() => setShowDispute(true)} /> : null}
           deliverableVideos={allDeliverableVideos}
           deliverableFiles={allDeliverableFiles}
           submittedUrls={submittedUrls}

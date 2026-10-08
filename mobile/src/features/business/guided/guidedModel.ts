@@ -64,6 +64,12 @@ export function emptyForm(): GuidedForm {
   };
 }
 
+// True once the business has entered anything at all — an untouched form is
+// never worth a server draft.
+export function hasAnyInput(form: GuidedForm): boolean {
+  return JSON.stringify(form) !== JSON.stringify(emptyForm());
+}
+
 export function formFromCampaign(c: MyCampaign): GuidedForm {
   const base = emptyForm();
   return {

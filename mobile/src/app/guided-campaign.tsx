@@ -12,7 +12,7 @@ import { F, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { guidedCampaignService, type AiClarifyingQuestion, type GuidedCampaign } from '@/services/guidedCampaign';
 import { getCampaignIssues, blockingIssues, type CampaignStep } from '@/features/business/utils/campaignRules';
 import {
-  FLOW_STEPS, applyAiDraft, diffForUpdate, emptyForm, formFromCampaign, plannedSteps, toPayload, toRulesInput,
+  FLOW_STEPS, applyAiDraft, diffForUpdate, emptyForm, formFromCampaign, hasAnyInput, plannedSteps, toPayload, toRulesInput,
   type GuidedForm, type GuidedStep,
 } from '@/features/business/guided/guidedModel';
 import { useAutosave, readLocalBackup, clearLocalBackup } from '@/features/business/guided/useAutosave';
@@ -57,7 +57,10 @@ export default function GuidedCampaignScreen() {
 
   const localKey = mode === 'edit' ? `edit-${params.campaignId}` : draftId ?? 'new';
   const onDraftCreated = useCallback((id: string) => { setDraftId(id); clearLocalBackup('new'); }, []);
-  const worthSaving = mode === 'create' && !loading && (form.aiPrompt.trim().length >= 3 || step !== 'idea');
+  // Nothing is saved while still on the idea step (typing / picking a pill);
+  // the draft is created on leaving it (Create with AI, or "I'll fill it in
+  // myself" with something entered). Once a draft exists, every change saves.
+  const worthSaving = mode === 'create' && !loading && (!!draftId || (step !== 'idea' && hasAnyInput(form)));
   const autosave = useAutosave({ enabled: worthSaving, ready: !loading, draftId, onDraftCreated, form, step, localKey });
 
   // ── Load: resume a draft, open a campaign for editing, or offer the latest draft.

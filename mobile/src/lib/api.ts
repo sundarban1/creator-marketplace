@@ -509,6 +509,13 @@ export async function request<T>(
     }
 
     // ── Token refresh on 401 ───────────────────────────────────────────────
+    // A 401 on a request that carried a token, with no refresh token left to
+    // try, is a session that can't recover. End it here (same once-guarded
+    // path as a rejected refresh) instead of letting every screen keep
+    // re-firing protected calls.
+    if (res.status === 401 && !path.startsWith('/api/auth/') && !storage.get(REFRESH_TOKEN_KEY) && storage.get(ACCESS_TOKEN_KEY)) {
+      fireSessionExpired();
+    }
     if (res.status === 401 && storage.get(REFRESH_TOKEN_KEY)) {
       // De-duplicate concurrent refresh calls
       if (!pendingRefresh) {

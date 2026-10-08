@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Globe, ShieldCheck, LogOut, UserX, Trash2, Mail, Gift, LifeBuoy, Info, ChevronRight, BadgeCheck, Eye, Phone, Share2, Check } from 'lucide-react';
+import { Globe, ShieldCheck, LogOut, UserX, Trash2, Mail, Gift, LifeBuoy, Info, ChevronRight, BadgeCheck, Eye, Phone, Share2 } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
@@ -9,7 +9,6 @@ import { isPhonePlaceholderEmail } from '../lib/identity';
 import { fetchAuthMethods, deactivateAccount, deleteAccount } from '../api/auth';
 import { fetchNotificationSettings, updateNotificationSettings } from '../api/creator';
 import { fetchBusinessProfile, updateBusinessProfile } from '../api/business';
-import { fetchPaymentMethods } from '../api/catalog';
 import { paths } from '../routes';
 import { PageHeader } from '../ui/PageHeader';
 import { Card, CardHeader } from '../ui/Card';
@@ -34,10 +33,8 @@ export function AccountSettingsPage() {
   const methods = useAsync((s) => fetchAuthMethods(s), []);
   const notifSettings = useAsync((s) => fetchNotificationSettings(s), []);
   const bizProfile = useAsync((s) => fetchBusinessProfile(s), []);
-  const paymentMethodsCatalog = useAsync((s) => fetchPaymentMethods(s), []);
   const [emailNotifOverride, setEmailNotifOverride] = useState<boolean | null>(null);
   const [privacyOverride, setPrivacyOverride] = useState<Partial<Record<'showPublicProfile' | 'hideContactDetails' | 'hideSocialLinks', boolean>>>({});
-  const [paymentMethodsOverride, setPaymentMethodsOverride] = useState<string[] | null>(null);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const emailNotif = emailNotifOverride ?? notifSettings.data?.emailNotificationsEnabled ?? null;
@@ -48,7 +45,6 @@ export function AccountSettingsPage() {
         hideSocialLinks: privacyOverride.hideSocialLinks ?? bizProfile.data.hideSocialLinks,
       }
     : null;
-  const selectedPaymentMethods = paymentMethodsOverride ?? bizProfile.data?.paymentMethods ?? null;
 
   function toggleEmailNotif(next: boolean) {
     setEmailNotifOverride(next);
@@ -58,13 +54,6 @@ export function AccountSettingsPage() {
   function togglePrivacy(key: 'showPublicProfile' | 'hideContactDetails' | 'hideSocialLinks', next: boolean) {
     setPrivacyOverride((prev) => ({ ...prev, [key]: next }));
     updateBusinessProfile({ [key]: next }).catch(() => setPrivacyOverride((prev) => ({ ...prev, [key]: !next })));
-  }
-
-  function togglePaymentMethod(key: string) {
-    const current = selectedPaymentMethods ?? [];
-    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
-    setPaymentMethodsOverride(next);
-    updateBusinessProfile({ paymentMethods: next }).catch(() => setPaymentMethodsOverride(current));
   }
 
   const m = methods.data;
@@ -201,49 +190,6 @@ export function AccountSettingsPage() {
               </span>
               <Switch checked={privacy.hideSocialLinks} onChange={(v) => togglePrivacy('hideSocialLinks', v)} label={t('settings.hideSocialLinks')} />
             </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Payment methods */}
-      <Card className="mt-6">
-        <CardHeader title={t('settings.paymentMethodsHeading')} />
-        <p className="mb-3 text-[12.5px] text-ink-soft">{t('settings.paymentMethodsHint')}</p>
-        {paymentMethodsCatalog.loading || bizProfile.loading || !selectedPaymentMethods ? (
-          <Skeleton className="h-24 w-full" />
-        ) : (
-          <div className="divide-y divide-line">
-            {(paymentMethodsCatalog.data ?? []).map((pm) => {
-              const selected = selectedPaymentMethods.includes(pm.key);
-              return (
-                <button
-                  key={pm.key}
-                  type="button"
-                  onClick={() => togglePaymentMethod(pm.key)}
-                  className="flex w-full items-center gap-3 py-3 text-left first:pt-0 last:pb-0"
-                >
-                  {pm.iconUrl ? (
-                    <img src={pm.iconUrl} alt="" className="h-9 w-9 flex-shrink-0 rounded-lg object-contain" />
-                  ) : (
-                    <span
-                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-[13px] font-bold text-white"
-                      style={{ backgroundColor: pm.color }}
-                    >
-                      {pm.name[0]}
-                    </span>
-                  )}
-                  <span className="min-w-0 flex-1 text-[14px] font-medium text-ink">{pm.name}</span>
-                  <span
-                    className={cn(
-                      'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2',
-                      selected ? 'border-brand bg-brand' : 'border-line-strong',
-                    )}
-                  >
-                    {selected && <Check size={13} className="text-white" strokeWidth={3} />}
-                  </span>
-                </button>
-              );
-            })}
           </div>
         )}
       </Card>

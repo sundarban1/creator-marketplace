@@ -110,6 +110,51 @@ export function writeStoredUser(user: unknown): void {
   localStorage.setItem(KEY_USER, JSON.stringify(user));
 }
 
+// ── Session lifecycle events ──────────────────────────────────────────────────
+
+/**
+ * - `ended`: the stored session is gone. A refresh token was rejected, a 401
+ *   came back with no refresh token left to try, or another tab signed out.
+ * - `started`: another tab signed in, so its session is now in shared storage.
+ *
+ * The React auth context (AppAuthContext) subscribes to these events. Without
+ * them, this module could wipe the tokens while the UI still thought it was
+ * `authenticated`. Every protected poll (notifications, badge, …) and every
+ * user action (payment initiate, …) then went out with no Authorization header
+ * and failed with "No token provided" on every window focus until a reload.
+ */
+export type SessionEvent = 'ended' | 'started';
+
+const sessionListeners = new Set<(e: SessionEvent) => void>();
+
+function emitSession(e: SessionEvent): void {
+  sessionListeners.forEach((fn) => fn(e));
+}
+
+export function onSessionChange(fn: (e: SessionEvent) => void): () => void {
+  sessionListeners.add(fn);
+  return () => {
+    sessionListeners.delete(fn);
+  };
+}
+
+/** Clears the stored session and tells the auth context it is over. */
+function endSession(): void {
+  clearSession();
+  emitSession('ended');
+}
+
+// localStorage is shared by every tab, but a `storage` event fires only in the
+// *other* tabs. That makes it the cross-tab signal: a logout or rejected
+// refresh in one tab must stop this tab's pollers too.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== KEY_REFRESH && e.key !== null) return; // null = storage.clear()
+    if (!localStorage.getItem(KEY_REFRESH)) emitSession('ended');
+    else if (e.oldValue === null && e.key === KEY_REFRESH) emitSession('started');
+  });
+}
+
 // ── Core fetch ────────────────────────────────────────────────────────────────
 
 /**
@@ -161,15 +206,28 @@ export async function refreshAccessToken(): Promise<string | null> {
     // Only an explicit rejection of the refresh token ends the session. A 5xx
     // from a restarting/cold backend or a 429 is transient — wiping the tokens
     // there logged users out after a few idle hours for no real reason.
-    if (res.status === 401 || res.status === 403) clearSession();
+    if (res.status === 401 || res.status === 403) endSession();
     return null;
   }
 
-  const json = (await res.json()) as ApiEnvelope<{ accessToken: string; refreshToken?: string }>;
+  let json: ApiEnvelope<{ accessToken: string; refreshToken?: string }>;
+  try {
+    json = (await res.json()) as typeof json;
+  } catch {
+    return null; // garbled body (proxy error page) — transient, keep the session
+  }
+  // A logout (here or in another tab) that landed while this refresh was in
+  // flight already ended the session — don't resurrect it with a fresh token.
+  if (getRefreshToken() !== rt) return null;
   setTokens(json.data.accessToken, json.data.refreshToken);
   return json.data.accessToken;
 }
 
+/**
+ * Single-flight refresh: every caller that arrives while a refresh is running
+ * (a burst of parallel 401s, the socket, session restore) shares the same
+ * request instead of firing its own.
+ */
 export function ensureFreshAccessToken(): Promise<string | null> {
   if (!pendingRefresh) {
     pendingRefresh = refreshAccessToken().finally(() => {
@@ -177,6 +235,19 @@ export function ensureFreshAccessToken(): Promise<string | null> {
     });
   }
   return pendingRefresh;
+}
+
+/**
+ * Shared 401 path for every transport (JSON, multipart, XHR). Returns a fresh
+ * token to retry with once, or `null` to give up. If no refresh token is left
+ * (it was never there, or the refresh was just rejected), nothing can recover
+ * this session, so the auth context is told it ended. A network failure during
+ * refresh keeps the refresh token and so never ends the session.
+ */
+async function recoverFrom401(): Promise<string | null> {
+  const fresh = await ensureFreshAccessToken();
+  if (!fresh && !getRefreshToken()) emitSession('ended');
+  return fresh;
 }
 
 type QueryParams = Record<string, string | number | boolean | undefined | null>;
@@ -254,7 +325,7 @@ export async function apiRequest<T>(
   }
 
   if (res.status === 401 && !opts.anonymous && !NO_REFRESH_RETRY.has(path)) {
-    const fresh = await ensureFreshAccessToken();
+    const fresh = await recoverFrom401();
     if (fresh) {
       try {
         res = await send(fresh);
@@ -306,7 +377,7 @@ export async function apiUpload<T>(
   }
 
   if (res.status === 401) {
-    const fresh = await ensureFreshAccessToken();
+    const fresh = await recoverFrom401();
     if (fresh) {
       try {
         res = await send(fresh);
@@ -355,7 +426,7 @@ export async function apiUploadWithProgress<T>(
   let res = await send(getAccessToken());
 
   if (res.status === 401) {
-    const fresh = await ensureFreshAccessToken();
+    const fresh = await recoverFrom401();
     if (fresh) res = await send(fresh);
   }
 
