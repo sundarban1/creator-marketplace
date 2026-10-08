@@ -20,6 +20,14 @@ import { HttpStatus } from '../../constants/httpStatus';
 const campaignService = new CampaignService();
 const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
 
+// Web landing for eSewa / connectIPS results — see web's PaymentResultPage.
+function webPaymentResultUrl(payment: 'success' | 'failed' | 'pending', campaignId?: string, error?: string): string {
+  const qs = new URLSearchParams({ payment });
+  if (campaignId) qs.set('campaignId', campaignId);
+  if (error) qs.set('paymentError', error);
+  return `${frontendBaseUrl}/payment-result?${qs.toString()}`;
+}
+
 export class CampaignController {
   async uploadFeatureImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -324,11 +332,13 @@ export class CampaignController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as ApplicationStatus | undefined;
+      const needsAction = req.query.filter === 'action';
       const { applications, total } = await campaignService.getMyApplications(
         req.user!.id,
         page,
         limit,
         status,
+        needsAction,
       );
       paginated(res, applications, total, page, limit);
     } catch (err) {
@@ -627,21 +637,18 @@ export class CampaignController {
     }
   }
 
-  // Mobile lands back on the app via its custom URL scheme; web lands on a
-  // real page of the marketplace app (the specific event when we know which
-  // one, else the events list) with a `payment` query param it reads to show
-  // a flash message and refresh the applications list.
+  // Mobile lands back on the app via its custom URL scheme; web lands on the
+  // marketplace app's /payment-result page (checkout ran in its own tab), which
+  // hands the result back to the tab the business paid from and closes itself
+  // — or, if no tab claims it, forwards to the event page with the same
+  // `payment` query param.
   private redirectEsewaResult(
     res: Response,
     platform: 'web' | 'mobile',
     result: { success: boolean; error?: string; campaignId?: string },
   ): void {
     if (platform === 'web') {
-      const base = frontendBaseUrl;
-      const path = result.campaignId ? `/business/events/${result.campaignId}` : '/business/events';
-      const qs = new URLSearchParams({ payment: result.success ? 'success' : 'failed' });
-      if (result.error) qs.set('paymentError', result.error);
-      res.redirect(`${base}${path}?${qs.toString()}`);
+      res.redirect(webPaymentResultUrl(result.success ? 'success' : 'failed', result.campaignId, result.error));
       return;
     }
     const qs = new URLSearchParams({ success: String(result.success) });
@@ -728,10 +735,7 @@ export class CampaignController {
     result: { outcome: 'success' | 'failed' | 'pending'; error?: string; campaignId?: string },
   ): void {
     if (platform === 'web') {
-      const path = result.campaignId ? `/business/events/${result.campaignId}` : '/business/events';
-      const qs = new URLSearchParams({ payment: result.outcome });
-      if (result.outcome === 'failed' && result.error) qs.set('paymentError', result.error);
-      res.redirect(`${frontendBaseUrl}${path}?${qs.toString()}`);
+      res.redirect(webPaymentResultUrl(result.outcome, result.campaignId, result.outcome === 'failed' ? result.error : undefined));
       return;
     }
     const qs = new URLSearchParams({ success: String(result.outcome === 'success') });

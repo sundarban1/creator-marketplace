@@ -974,6 +974,8 @@ export const campaignService = {
     page?:   number;
     limit?:  number;
     status?: 'PENDING' | 'SHORTLISTED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+    /** 'action' = only paid work waiting on the creator (start or upload). */
+    filter?: 'action';
   }): Promise<{
     proposals: Array<{
       id:               string;
@@ -1053,6 +1055,7 @@ export const campaignService = {
       page:   params?.page  ?? 1,
       limit:  params?.limit ?? 10,
       status: params?.status,
+      filter: params?.filter,
     });
 
     return {

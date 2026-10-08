@@ -232,6 +232,7 @@ export const en = {
     cta: 'Browse all events',
     paidBadge: 'Paid',
     freeBadge: 'Open',
+    remote: 'Remote',
     modalTitle: 'Ready to explore more opportunities? ✨',
     modalBody: 'Create an account to browse paid collaborations and open events on Kolab, and start applying to the ones that fit you.',
     modalCta: 'Create an account',

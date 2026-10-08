@@ -55,7 +55,7 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
         key: e.id,
         title: e.title,
         business: e.business?.businessName ?? null,
-        location: e.location ?? null,
+        location: e.locationType === 'REMOTE' ? d.events.remote : (e.location ?? null),
         isPaid,
         meta: isPaid ? perCreatorBudget(e).amount : (perks[0] ?? d.events.freeBadge),
         imageUrl: e.featureImageUrl ?? e.business?.logoUrl ?? null,

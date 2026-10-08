@@ -894,9 +894,21 @@ export class CampaignRepository {
     });
   }
 
-  async findApplicationsByCreator(creatorId: string, page: number, limit: number, status?: ApplicationStatus) {
+  async findApplicationsByCreator(creatorId: string, page: number, limit: number, status?: ApplicationStatus, needsAction = false) {
     const skip = (page - 1) * limit;
-    const where: Prisma.ApplicationWhereInput = { creatorId, ...(status ? { status } : {}) };
+    // needsAction = paid work the creator has to move forward right now:
+    // escrow funded, and work not started yet or started but not submitted.
+    // Mirrors the creator home "Action Required" banner. Free events never
+    // wait on the creator, so they're excluded.
+    const where: Prisma.ApplicationWhereInput = needsAction
+      ? {
+          creatorId,
+          status: 'ACCEPTED',
+          paymentStatus: 'PAID',
+          workStatus: { in: ['NONE', 'IN_PROGRESS'] },
+          campaign: { campaignType: 'PAID_CAMPAIGN' },
+        }
+      : { creatorId, ...(status ? { status } : {}) };
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
         where,

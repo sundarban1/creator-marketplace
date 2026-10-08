@@ -23,6 +23,7 @@ import { fetchContractForApplication, type Contract } from '../api/contract';
 import { ContractModal } from '../events/ContractModal';
 import { fetchPaymentMethods, type PublicPaymentMethod } from '../api/paymentMethods';
 import { fetchPlatformFlags } from '../api/platformFlags';
+import { listenForPaymentResults } from '../lib/paymentHandoff';
 import { ApiError } from '../lib/apiClient';
 import { PageHeader } from '../ui/PageHeader';
 import { Card, CardHeader } from '../ui/Card';
@@ -81,9 +82,9 @@ export function BusinessEventDetailPage() {
   const campaign = useAsync((s) => fetchCampaign(id, s), [id]);
   const apps = useAsync((s) => fetchBusinessApplications({ limit: 100 }, s), []);
 
-  // Landing back here after an eSewa redirect (see backend's
-  // esewaSuccessCallbackWeb / esewaFailureCallbackWeb) — the query string
-  // carries the result. Read once via a lazy initializer (plain render-time
+  // Landing back here with the result in the query string — only when the
+  // gateway ran in this same tab (popup blocked) or the paying tab was gone;
+  // otherwise PaymentResultPage hands it to the listener below instead. Read once via a lazy initializer (plain render-time
   // logic, not a setState-in-effect) so the flash survives the effect below
   // scrubbing the query string a moment later.
   const routeState = useLocation().state as { flash?: string } | null;
@@ -93,7 +94,7 @@ export function BusinessEventDetailPage() {
   );
   // connectIPS only: NCHL couldn't be reached to verify yet — the backend's
   // reconciliation job finishes it, so this is neither success nor failure.
-  const [notice] = useState(() => (searchParams.get('payment') === 'pending' ? t('biz.paymentPendingFlash') : ''));
+  const [notice, setNotice] = useState(() => (searchParams.get('payment') === 'pending' ? t('biz.paymentPendingFlash') : ''));
   const [busyId, setBusyId] = useState('');
   const [payTarget, setPayTarget] = useState<BusinessApplication | null>(null);
   const [payMethodChoice, setPayMethodChoice] = useState('');
@@ -106,10 +107,40 @@ export function BusinessEventDetailPage() {
   const [contractAgreeing, setContractAgreeing] = useState(false);
   const [contractError, setContractError] = useState('');
   const esewaPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Set while this tab has a gateway checkout open in another tab, so the
+  // result handed back by PaymentResultPage is claimed here.
+  const hostedPayPendingRef = useRef(false);
 
   useEffect(() => () => {
     if (esewaPollRef.current) clearInterval(esewaPollRef.current);
   }, []);
+
+  // The gateway tab's result, handed back via lib/paymentHandoff.ts. Claiming
+  // it makes that tab close itself, so the business is back here with the
+  // modal closed and the outcome shown — no second copy of the page.
+  const reloadApps = apps.reload;
+  useEffect(
+    () =>
+      listenForPaymentResults((result) => {
+        if (!hostedPayPendingRef.current) return false;
+        if (result.campaignId && result.campaignId !== id) return false;
+        hostedPayPendingRef.current = false;
+        if (esewaPollRef.current) clearInterval(esewaPollRef.current);
+        esewaPollRef.current = null;
+        setPayBusy(false);
+        if (result.payment === 'failed') {
+          setPayError(result.paymentError || t('biz.paymentFailedFlash'));
+        } else {
+          setPayTarget(null);
+          if (result.payment === 'success') setFlash(t('biz.paymentSuccessFlash'));
+          else setNotice(t('biz.paymentPendingFlash'));
+          reloadApps();
+        }
+        window.focus();
+        return true;
+      }),
+    [id, t, reloadApps],
+  );
 
   // Admin-enabled payment methods + Kolab Rewards credits balance — mirrors
   // mobile's activity-timeline.tsx pay modal (methodCatalog + creditsAvailable).
@@ -218,6 +249,7 @@ export function BusinessEventDetailPage() {
         if (updated && (updated.paymentStatus === 'PAID' || updated.paymentStatus === 'RELEASED')) {
           clearInterval(poll);
           esewaPollRef.current = null;
+          hostedPayPendingRef.current = false;
           popup.close();
           setPayTarget(null);
           setPayBusy(false);
@@ -229,8 +261,10 @@ export function BusinessEventDetailPage() {
         // Transient network hiccup — retry on the next tick.
       }
       if (popup.closed) {
-        // The business closed the eSewa tab without finishing (or without
-        // us having seen it finish yet) — stop polling and let them retry.
+        // The business closed the eSewa tab without finishing — or the
+        // gateway's COOP header severed our handle (reads as closed). Stop
+        // polling and let them retry; a result that does arrive still lands
+        // through the paymentHandoff listener.
         clearInterval(poll);
         esewaPollRef.current = null;
         setPayBusy(false);
@@ -276,6 +310,7 @@ export function BusinessEventDetailPage() {
           return;
         }
         popup.location.href = paymentUrl;
+        hostedPayPendingRef.current = true;
         watchEsewaPopup(payTarget.id, popup);
       } catch (err) {
         popup?.close();
@@ -522,10 +557,10 @@ export function BusinessEventDetailPage() {
           <DetailField
             label={t('public.location')}
             value={
-              isPaid && c.locations && c.locations.length > 1
-                ? c.locations.map((l) => l.name).join(' · ')
-                : c.locationType === 'REMOTE'
-                  ? (isPaid && c.locationScope === 'NATIONWIDE' ? t('guided.scopeNationwide') : t('public.remote'))
+              c.locationType === 'REMOTE'
+                ? t('public.remote')
+                : isPaid && c.locations && c.locations.length > 1
+                  ? c.locations.map((l) => l.name).join(' · ')
                   : (isPaid ? c.location : c.venue) || '—'
             }
           />

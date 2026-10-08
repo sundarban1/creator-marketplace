@@ -37,6 +37,7 @@ const SupportPage = named(() => import('./pages/landing/SupportPage'), 'SupportP
 const AboutPage = named(() => import('./pages/landing/AboutPage'), 'AboutPage');
 const NotFoundPage = named(() => import('./pages/landing/NotFoundPage'), 'NotFoundPage');
 const OAuthCallbackPage = named(() => import('./app/oauth/OAuthCallbackPage'), 'OAuthCallbackPage');
+const PaymentResultPage = named(() => import('./app/payments/PaymentResultPage'), 'PaymentResultPage');
 const CreatorMarketplaceNepalPage = named(() => import('./pages/landing/content/CreatorMarketplaceNepalPage'), 'CreatorMarketplaceNepalPage');
 const ContentCreatorsPage = named(() => import('./pages/landing/content/ContentCreatorsPage'), 'ContentCreatorsPage');
 const BrandsPage = named(() => import('./pages/landing/content/BrandsPage'), 'BrandsPage');
@@ -154,6 +155,9 @@ export default function App() {
           {/* Transient popup page for OAuth providers that redirect through our
               backend (TikTok) — see lib/oauthPopup.ts. No auth/i18n needed. */}
           <Route path="/oauth/callback/:platform" element={<OAuthCallbackPage />} />
+          {/* eSewa / connectIPS checkout lands here in its own tab and hands the
+              result back to the paying tab — see app/lib/paymentHandoff.ts. */}
+          <Route path="/payment-result" element={<PaymentResultPage />} />
 
           {/* The admin dashboard lives under /admin/* so the marketplace web
               app can own the clean top-level paths (/login, /creators, /events).

@@ -711,6 +711,28 @@ export function CreatorProfileView({
             </InfoCard>
           )}
 
+          {/* Social Accounts (owner) — HIDDEN for now. Re-enable = uncomment this
+              block + populate `platforms` in toOwnerVm (creatorProfileVm.ts).
+              "Manage" opens the already-wired settings ?section=social. */}
+          {/* {isOwner && (
+            <InfoCard
+              title={t('profile.socialAccounts')}
+              icon="share-alt"
+              action={{ label: t('profile.manage'), onPress: () => router.push('/(creator)/settings?section=social' as never) }}>
+              {vm.platforms.length > 0 ? (
+                <PlatformList platforms={vm.platforms} />
+              ) : (
+                <SectionEmptyState
+                  icon="share-alt"
+                  title={t('profile.noSocialLinked')}
+                  hint={t('profile.noSocialAccounts')}
+                  cta={t('profile.addAccount')}
+                  onPress={() => router.push('/(creator)/settings?section=social' as never)}
+                />
+              )}
+            </InfoCard>
+          )} */}
+
           {/* Preferred platforms (visitor only) */}
           {isVisitor && vm.prefPlatforms.length > 0 && (
             <InfoCard title={t('creatorDetailExtra.sectionPreferredPlatforms')} icon="heart">

@@ -38,6 +38,8 @@ export type BusinessProfileVM = {
   location: string | null;
   description: string | null;
   website: string | null;
+  // Social Accounts owner card is hidden (BusinessProfileView) — uncomment when re-enabling:
+  // socialLinks: Record<string, string | null>;
   phone: string | null;
   email: string | null;
   // owner: always true · visitor: !hideContactDetails
@@ -70,6 +72,7 @@ export function toOwnerVm(
     location: profile.location,
     description: profile.description,
     website: profile.website,
+    // socialLinks: profile.socialLinks ?? {},
     phone: profile.user?.phone ?? profile.phone,
     email: profile.user?.email ?? null,
     showContact: true,

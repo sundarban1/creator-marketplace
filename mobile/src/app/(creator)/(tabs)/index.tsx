@@ -82,6 +82,15 @@ export default function HomeScreen() {
     staleTime: STALE.list,
   });
 
+  // Paid work waiting on the creator — same server-side filter as the
+  // Applications "Action Required" tab, so the banner's count always matches it.
+  const actionQuery = useQuery({
+    queryKey: ['applications', 'creator', 'paginated', 'action', 'home'],
+    queryFn: () => campaignService.getMyApplications({ filter: 'action', limit: 10 }),
+    enabled: user?.role === 'CREATOR',
+    staleTime: STALE.list,
+  });
+
   const recommendedQuery = useQuery({
     queryKey: ['campaigns', 'recommended', { limit: 5 }],
     queryFn: () => campaignService.recommended({ limit: 5 }),
@@ -99,7 +108,7 @@ export default function HomeScreen() {
     staleTime: STALE.profile,
   });
 
-  useRefetchOnFocusIfStale(profileQuery, applicationsQuery, recommendedQuery, teamQuery);
+  useRefetchOnFocusIfStale(profileQuery, applicationsQuery, actionQuery, recommendedQuery, teamQuery);
 
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTopOnTabPress('index', () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
@@ -122,15 +131,11 @@ export default function HomeScreen() {
     if (!profile.categories?.length) missingFields.push(t('creator.home.fieldCategories'));
   }
 
-  // Actions actually waiting on the creator — derived from the same ACCEPTED
-  // applications fetch, no separate call. Free events (OPEN_EVENT) never wait
-  // on the creator: being accepted is the end of that flow.
-  const pendingActions: { type: 'start_work' | 'upload_work'; title: string }[] = [];
-  for (const app of proposals) {
-    if (app.campaignType !== 'PAID_CAMPAIGN' || app.paymentStatus !== 'PAID') continue;
-    if (app.workStatus === 'NONE') pendingActions.push({ type: 'start_work', title: app.campaignTitle });
-    else if (app.workStatus === 'IN_PROGRESS') pendingActions.push({ type: 'upload_work', title: app.campaignTitle });
-  }
+  // Actions actually waiting on the creator (paid, funded, not yet submitted)
+  // — filtered server-side; `total` is the full count, not just this page.
+  const pendingActions: { type: 'start_work' | 'upload_work'; title: string }[] = (actionQuery.data?.proposals ?? NO_PROPOSALS)
+    .map((app) => ({ type: app.workStatus === 'NONE' ? 'start_work' as const : 'upload_work' as const, title: app.campaignTitle }));
+  const pendingActionCount = actionQuery.data?.total ?? pendingActions.length;
 
   const loading = profileQuery.isPending || applicationsQuery.isPending || recommendedQuery.isPending;
 
@@ -231,6 +236,7 @@ export default function HomeScreen() {
       await Promise.all([
         profileQuery.refetch(),
         applicationsQuery.refetch(),
+        actionQuery.refetch(),
         recommendedQuery.refetch(),
         teamQuery.refetch(),
         currentLocationQuery.refetch(),
@@ -328,7 +334,7 @@ export default function HomeScreen() {
                 defaults would otherwise double the horizontal inset (making
                 it narrower than the search bar above, and misaligned) and
                 stack an extra top margin on top of heroGroup's own gap. */}
-            {pendingActions.length > 0 ? (
+            {pendingActionCount > 0 && pendingActions.length > 0 ? (
               <AttentionBanner
                 icon="exclamation-circle"
                 title={t('creator.home.actionRequired')}
@@ -336,13 +342,13 @@ export default function HomeScreen() {
                 subtitleColor={C.text}
                 iconColor="#A0522D"
                 subtitle={
-                  pendingActions.length === 1
+                  pendingActionCount === 1
                     ? pendingActions[0]!.type === 'start_work'
                       ? t('creator.home.actionStartWork', { title: pendingActions[0]!.title })
                       : t('creator.home.actionUploadWork', { title: pendingActions[0]!.title })
-                    : t('creator.home.actionMultiple', { n: pendingActions.length })
+                    : t('creator.home.actionMultiple', { n: pendingActionCount })
                 }
-                onPress={() => router.push('/(creator)/(tabs)/proposals')}
+                onPress={() => router.push({ pathname: '/(creator)/(tabs)/proposals', params: { tab: 'action' } })}
                 style={{ marginHorizontal: 0, marginTop: 0 }}
               />
             ) : !bannerDismissed && missingFields.length > 0 && (

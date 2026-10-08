@@ -640,6 +640,35 @@ export function BusinessProfileView({
             </InfoCard>
           ) : null}
 
+          {/* Social Accounts (owner) — HIDDEN for now. Re-enable = uncomment this
+              block + the `socialLinks` field in businessProfileVm.ts.
+              "Manage" opens the already-wired settings ?section=social. */}
+          {/* {isOwner && (
+            <InfoCard
+              title={t('profile.socialAccounts')}
+              icon="share-alt"
+              action={{ label: t('profile.manage'), onPress: () => router.push('/(business)/settings?section=social' as never) }}>
+              {Object.entries(vm.socialLinks).some(([, h]) => !!h) ? (
+                <View style={styles.cardList}>
+                  {Object.entries(vm.socialLinks).filter(([, h]) => !!h).map(([platform, handle]) => (
+                    <View key={platform} style={[styles.contactRow, { backgroundColor: C.background, borderColor: C.border }]}>
+                      <ContactBubble icon="share-alt" />
+                      <Text style={[styles.contactText, { color: C.text, flex: 1 }]} numberOfLines={1}>
+                        {platform.charAt(0).toUpperCase() + platform.slice(1)} · {handle}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Pressable
+                  style={[styles.emptyField, { borderColor: C.border }]}
+                  onPress={() => router.push('/(business)/settings?section=social' as never)}>
+                  <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addAccount')}</Text>
+                </Pressable>
+              )}
+            </InfoCard>
+          )} */}
+
           {/* Phone (visitor only — owner phone lives in the Contact card) */}
           {!isOwner && vm.phone && vm.showContact ? (
             <InfoCard title={t('businessDetail.sectionPhone')} icon="phone">

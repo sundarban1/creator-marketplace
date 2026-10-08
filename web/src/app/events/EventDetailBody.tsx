@@ -153,10 +153,10 @@ export function EventDetailBody({
               icon={<MapPin size={15} />}
               label={t('public.location')}
               value={
-                event.locations && event.locations.length > 1
-                  ? t('guided.placesCount', { count: event.locations.length })
-                  : event.locationType === 'REMOTE'
-                    ? event.locationScope === 'NATIONWIDE' ? t('guided.scopeNationwide') : t('public.remote')
+                event.locationType === 'REMOTE'
+                  ? t('public.remote')
+                  : event.locations && event.locations.length > 1
+                    ? t('guided.placesCount', { count: event.locations.length })
                     : event.location || t('public.onsite')
               }
             />

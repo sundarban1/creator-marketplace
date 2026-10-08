@@ -369,10 +369,10 @@ export default function CampaignDetailScreen() {
                 ) : null}
               </>
             )}
-            {!isOpenEvent && (campaign.locations?.length ?? 0) > 1 ? (
+            {campaign.locationType === 'REMOTE' ? (
+              <DetailRow icon="globe" label={t('campaignDetail.detailLocation')} value={t('createEvent.locationRemote')} C={C} />
+            ) : !isOpenEvent && (campaign.locations?.length ?? 0) > 1 ? (
               <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailLocation')} value={t('guided.placesCount', { count: campaign.locations!.length })} C={C} />
-            ) : campaign.locationType === 'REMOTE' ? (
-              <DetailRow icon="globe" label={t('campaignDetail.detailLocation')} value={!isOpenEvent && campaign.locationScope === 'NATIONWIDE' ? t('guided.scopeNationwide') : t('createEvent.locationRemote')} C={C} />
             ) : isOpenEvent && campaign.venue ? (
               <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailVenue')} value={campaign.venue} C={C} />
             ) : (

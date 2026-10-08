@@ -31,7 +31,7 @@ import { TabColors } from '@/utilities/tabColors';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED' | 'REVISION' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED';
 type AppStatus = 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
-type TabKey = 'all' | AppStatus;
+type TabKey = 'all' | 'action' | AppStatus;
 
 type Proposal = {
   id:              string;
@@ -324,7 +324,7 @@ function ProposalCard({ proposal }: {
 const PAGE_SIZE = 10;
 
 const STATUS_PARAM: Record<TabKey, 'PENDING' | 'SHORTLISTED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | undefined> = {
-  all: undefined, pending: 'PENDING', shortlisted: 'SHORTLISTED', accepted: 'ACCEPTED', rejected: 'REJECTED', expired: 'EXPIRED',
+  all: undefined, action: undefined, pending: 'PENDING', shortlisted: 'SHORTLISTED', accepted: 'ACCEPTED', rejected: 'REJECTED', expired: 'EXPIRED',
 };
 
 type ApplicationsPage = Awaited<ReturnType<typeof campaignService.getMyApplications>>;
@@ -337,7 +337,11 @@ const EMPTY_PROPOSALS: Proposal[] = [];
 function useTabQuery(tab: TabKey, enabled: boolean) {
   return useInfiniteQuery({
     queryKey: ['applications', 'creator', 'paginated', tab],
-    queryFn: ({ pageParam }) => campaignService.getMyApplications({ page: pageParam, limit: PAGE_SIZE, status: STATUS_PARAM[tab] }),
+    queryFn: ({ pageParam }) => campaignService.getMyApplications({
+      page: pageParam, limit: PAGE_SIZE, status: STATUS_PARAM[tab],
+      // Action Required = paid work waiting on the creator (filtered server-side).
+      filter: tab === 'action' ? 'action' : undefined,
+    }),
     initialPageParam: 1,
     getNextPageParam: (last, all) => {
       const loaded = all.reduce((n, p) => n + p.proposals.length, 0);
@@ -373,13 +377,15 @@ export default function ProposalsScreen() {
   // One query per tab (see useTabQuery) so every tab's count is visible in
   // the strip at once — only `visitedTabs` are actually enabled/fetched.
   const allQuery         = useTabQuery('all', visitedTabs.has('all'));
+  // Always enabled — its count is the point of the tab, even before it's opened.
+  const actionQuery      = useTabQuery('action', true);
   const pendingQuery     = useTabQuery('pending', visitedTabs.has('pending'));
   const shortlistedQuery = useTabQuery('shortlisted', visitedTabs.has('shortlisted'));
   const acceptedQuery    = useTabQuery('accepted', visitedTabs.has('accepted'));
   const rejectedQuery    = useTabQuery('rejected', visitedTabs.has('rejected'));
   const expiredQuery     = useTabQuery('expired', visitedTabs.has('expired'));
   const queryByTab: Record<TabKey, UseInfiniteQueryResult<InfiniteData<ApplicationsPage>>> = {
-    all: allQuery, pending: pendingQuery, shortlisted: shortlistedQuery,
+    all: allQuery, action: actionQuery, pending: pendingQuery, shortlisted: shortlistedQuery,
     accepted: acceptedQuery, rejected: rejectedQuery, expired: expiredQuery,
   };
   const activeQuery = queryByTab[activeTab];
@@ -417,6 +423,7 @@ export default function ProposalsScreen() {
 
   const tabs = [
     { key: 'all',         label: t('proposal.creator.tabAll'),         icon: 'copy'          as const, color: TabColors.neutral.color,  count: allQuery.data?.pages[0]?.total ?? 0 },
+    { key: 'action',      label: t('proposal.creator.tabAction'),      icon: 'exclamation-circle' as const, color: TabColors.warning.color, count: actionQuery.data?.pages[0]?.total ?? 0 },
     { key: 'pending',     label: t('proposal.creator.tabPending'),     icon: 'clock'          as const, color: TabColors.brand.color,    count: pendingQuery.data?.pages[0]?.total ?? 0 },
     { key: 'shortlisted', label: t('proposal.creator.tabShortlisted'), icon: 'star'           as const, color: TabColors.info.color,     count: shortlistedQuery.data?.pages[0]?.total ?? 0 },
     { key: 'accepted',    label: t('proposal.creator.tabAccepted'),    icon: 'check-circle'   as const, color: TabColors.positive.color, count: acceptedQuery.data?.pages[0]?.total ?? 0 },
@@ -426,6 +433,7 @@ export default function ProposalsScreen() {
 
   const emptyMessages: Record<TabKey, { faIcon: string; title: string; sub: string }> = {
     all:         { faIcon: 'inbox',          title: t('proposal.creator.emptyTitle'),            sub: t('proposal.creator.emptySub')            },
+    action:      { faIcon: 'check-double',   title: t('proposal.creator.emptyActionTitle'),      sub: t('proposal.creator.emptyActionSub')      },
     pending:     { faIcon: 'hourglass-half', title: t('proposal.creator.emptyPendingTitle'),     sub: t('proposal.creator.emptyPendingSub')     },
     shortlisted: { faIcon: 'star',           title: t('proposal.creator.emptyShortlistedTitle'), sub: t('proposal.creator.emptyShortlistedSub') },
     accepted:    { faIcon: 'check-circle',   title: t('proposal.creator.emptyAcceptedTitle'),    sub: t('proposal.creator.emptyAcceptedSub')    },
