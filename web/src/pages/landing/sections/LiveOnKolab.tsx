@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, MapPin, Users } from 'lucide-react';
+import { BadgeCheck, CalendarClock, Loader2, MapPin, RotateCw, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { useLandingSession } from '../hooks/useLandingSession';
 import { H2, KICKER, LEAD, band } from '../lib/surfaces';
 import { PillCta } from '../components/PillCta';
 import { perCreatorBudget } from '../../../app/lib/format';
@@ -25,6 +26,9 @@ export function selectLiveTab(tab: LiveTab) {
 
 interface Props {
   events: EventCardData[] | null;
+  /** Showcase fetch state — opportunities render loading / error / empty from it. */
+  eventsStatus: 'loading' | 'ready' | 'error';
+  onRetryEvents: () => void;
   creators: PublicCreatorLite[] | null;
   businesses: PublicBusinessLite[] | null;
   categoryMeta: (name: string) => CategoryMeta;
@@ -36,7 +40,7 @@ type PeopleCell = { key: string; name: string; categories: string[]; location: s
 const fmtCount = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n));
 const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
 
-export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Props) {
+export function LiveOnKolab({ events, eventsStatus, onRetryEvents, creators, businesses, categoryMeta }: Props) {
   const { d } = useLandingLanguage();
   const [tab, setTab] = useState<Tab>('opportunities');
   useEffect(() => {
@@ -45,35 +49,36 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
     return () => window.removeEventListener(LIVE_TAB_EVENT, onSelect);
   }, []);
   const copy = d.liveOnKolab;
+  const sessionRole = useLandingSession();
 
-  let eventCells: EventCell[];
-  if (events && events.length) {
-    eventCells = events.slice(0, 4).map((e) => {
-      const isPaid = e.campaignType !== 'OPEN_EVENT';
-      const perks = (e.benefits ?? []).filter(Boolean);
-      return {
-        key: e.id,
-        title: e.title,
-        business: e.business?.businessName ?? null,
-        location: e.locationType === 'REMOTE' ? d.events.remote : (e.location ?? null),
-        isPaid,
-        meta: isPaid ? perCreatorBudget(e).amount : (perks[0] ?? d.events.freeBadge),
-        imageUrl: e.featureImageUrl ?? e.business?.logoUrl ?? null,
-        to: `/events/${e.slug || e.id}`,
-      };
-    });
-  } else {
-    eventCells = d.events.fallback.map((f, i) => ({
-      key: `fallback-${i}`,
-      title: f.title,
-      business: f.business,
-      location: f.location,
-      isPaid: f.badge !== d.events.freeBadge,
-      meta: f.meta,
-      imageUrl: null,
-      to: '/events',
-    }));
-  }
+  // Real events only — an empty list shows the "coming soon" state, never
+  // placeholder cards.
+  const eventCells: EventCell[] = (events ?? []).slice(0, 4).map((e) => {
+    const isPaid = e.campaignType !== 'OPEN_EVENT';
+    const perks = (e.benefits ?? []).filter(Boolean);
+    return {
+      key: e.id,
+      title: e.title,
+      business: e.business?.businessName ?? null,
+      location: e.locationType === 'REMOTE' ? d.events.remote : (e.location ?? null),
+      isPaid,
+      meta: isPaid ? perCreatorBudget(e).amount : (perks[0] ?? d.events.freeBadge),
+      imageUrl: e.featureImageUrl ?? e.business?.logoUrl ?? null,
+      to: `/events/${e.slug || e.id}`,
+    };
+  });
+  const opportunitiesView: 'loading' | 'error' | 'empty' | 'list' =
+    eventCells.length ? 'list' : eventsStatus === 'ready' ? 'empty' : eventsStatus;
+  // Empty-state copy + CTA by session: guests sign up, creators polish their
+  // profile, businesses are pitched to post the first opportunity. Route
+  // guards on the targets handle unfinished onboarding.
+  const ec = copy.opportunitiesEmpty;
+  const emptyState =
+    sessionRole === 'BUSINESS'
+      ? { ...ec.business, to: '/business/events/create' }
+      : sessionRole === 'CREATOR'
+        ? { heading: ec.heading, body: ec.body, readyTitle: ec.readyTitle, readyBody: ec.memberBody, cta: ec.memberCta, to: '/creator/profile' }
+        : { heading: ec.heading, body: ec.body, readyTitle: ec.readyTitle, readyBody: ec.guestBody, cta: ec.guestCta, to: '/signup' };
 
   function peopleCells(kind: 'creators' | 'businesses'): PeopleCell[] {
     const isCreators = kind === 'creators';
@@ -165,7 +170,67 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
         </motion.div>
 
         <AnimatePresence mode="wait">
-          {tab === 'opportunities' && (
+          {tab === 'opportunities' && opportunitiesView !== 'list' && (
+            <motion.div
+              key={`opportunities-${opportunitiesView}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+              className="mt-12"
+            >
+              {/* Full grid width, at least one creator-card row tall (218px)
+                  so switching tabs doesn't collapse the section. */}
+              {opportunitiesView === 'loading' && (
+                <div role="status" className="flex min-h-[218px] items-center justify-center gap-2 text-[15px] text-lp-fg/70">
+                  <Loader2 size={18} className="animate-spin" aria-hidden />
+                  {copy.opportunitiesLoading}
+                </div>
+              )}
+
+              {opportunitiesView === 'error' && (
+                <div role="alert" className="flex min-h-[218px] flex-col items-center justify-center rounded-2xl lp-glass px-6 py-8 text-center">
+                  <p className="lp-heading text-lg text-lp-fg">{copy.opportunitiesError.heading}</p>
+                  <p className="mt-2 text-[15px] text-lp-fg/70">{copy.opportunitiesError.body}</p>
+                  <button
+                    type="button"
+                    onClick={onRetryEvents}
+                    className="mt-5 inline-flex h-11 items-center gap-2 rounded-full border border-lp-fg/30 px-6 text-[15px] text-lp-fg transition-colors hover:border-lp-fg/60"
+                  >
+                    <RotateCw size={15} aria-hidden />
+                    {copy.opportunitiesError.retry}
+                  </button>
+                </div>
+              )}
+
+              {opportunitiesView === 'empty' && (
+                <div className="grid min-h-[218px] rounded-2xl lp-glass px-6 py-8 text-center lg:grid-cols-2 lg:items-center lg:gap-x-10 lg:gap-y-6 lg:px-10 lg:py-6 lg:text-left">
+                  <div className="flex flex-col items-center lg:flex-row lg:items-start lg:gap-4">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-lp-brinjal/30 text-lp-fg">
+                      <CalendarClock size={20} aria-hidden />
+                    </span>
+                    <div>
+                      <h3 className="lp-heading mt-4 text-xl text-lp-fg lg:mt-0 lg:text-2xl">{emptyState.heading}</h3>
+                      <p className="mt-2 text-[15px] leading-relaxed text-lp-fg/70">{emptyState.body}</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 border-t border-lp-fg/10 pt-6 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
+                    <p className="lp-heading text-[17px] text-lp-fg">{emptyState.readyTitle}</p>
+                    <p className="mt-2 text-[15px] leading-relaxed text-lp-fg/70">
+                      {emptyState.readyBody}
+                    </p>
+                  </div>
+                  <div className="mt-6 flex justify-center lg:col-span-2 lg:mt-0">
+                    <PillCta to={emptyState.to} tone="brinjal" size="lg">
+                      {emptyState.cta}
+                    </PillCta>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {tab === 'opportunities' && opportunitiesView === 'list' && (
             <motion.div
               key="opportunities"
               initial={{ opacity: 0, y: 12 }}
@@ -276,11 +341,13 @@ export function LiveOnKolab({ events, creators, businesses, categoryMeta }: Prop
           )}
         </AnimatePresence>
 
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp} className="mt-12 flex justify-center">
-          <PillCta to={TAB_META[tab].to} tone="brinjal" size="lg">
-            {TAB_META[tab].cta}
-          </PillCta>
-        </motion.div>
+        {(tab !== 'opportunities' || opportunitiesView === 'list') && (
+          <motion.div initial="hidden" whileInView="show" viewport={VP} variants={fadeUp} className="mt-12 flex justify-center">
+            <PillCta to={TAB_META[tab].to} tone="brinjal" size="lg">
+              {TAB_META[tab].cta}
+            </PillCta>
+          </motion.div>
+        )}
       </div>
     </section>
   );

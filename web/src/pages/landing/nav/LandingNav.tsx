@@ -9,6 +9,7 @@ import { useLandingLanguage } from '../context/LanguageContext';
 import { useLandingTheme } from '../context/ThemeContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { pillCtaClass } from '../components/PillCta';
+import { useLandingSession } from '../hooks/useLandingSession';
 
 const LANGUAGE_NAMES: Record<'en' | 'ne', string> = { en: 'English', ne: 'नेपाली' };
 
@@ -91,6 +92,9 @@ export function LandingNav() {
   const lenis = useLenisScrollOptional();
   const navigate = useNavigate();
   const { d } = useLandingLanguage();
+  // Signed in → one "My Dashboard" pill in place of Join Kolab / Log in.
+  const sessionRole = useLandingSession();
+  const dashboardPath = sessionRole === 'BUSINESS' ? '/business' : sessionRole === 'CREATOR' ? '/creator' : null;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -162,13 +166,21 @@ export function LandingNav() {
             <div className="hidden flex-shrink-0 items-center gap-3 lg:flex">
               <LanguageSwitch dark />
               <ThemeToggle dark />
-              <Link to="/signup" className={pillCtaClass('gradient')}>
-                {d.nav.getStarted}
-              </Link>
-              <span aria-hidden className="h-5 w-px bg-lp-fg/25" />
-              <Link to="/login" className="text-[15px] font-medium text-lp-fg/90 transition-colors hover:text-lp-fg">
-                {d.nav.login}
-              </Link>
+              {dashboardPath ? (
+                <Link to={dashboardPath} className={pillCtaClass('gradient')}>
+                  {d.nav.dashboard}
+                </Link>
+              ) : (
+                <>
+                  <Link to="/signup" className={pillCtaClass('gradient')}>
+                    {d.nav.getStarted}
+                  </Link>
+                  <span aria-hidden className="h-5 w-px bg-lp-fg/25" />
+                  <Link to="/login" className="text-[15px] font-medium text-lp-fg/90 transition-colors hover:text-lp-fg">
+                    {d.nav.login}
+                  </Link>
+                </>
+              )}
             </div>
 
             <button
@@ -229,20 +241,32 @@ export function LandingNav() {
                 transition={{ delay: 0.08 + NAV_LINKS.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 className="mt-6 flex flex-wrap items-center gap-3"
               >
-                <Link
-                  to="/login"
-                  onClick={() => setOpen(false)}
-                  className={pillCtaClass('outline-ink', 'lg')}
-                >
-                  {d.nav.login}
-                </Link>
-                <Link
-                  to="/signup"
-                  onClick={() => setOpen(false)}
-                  className={pillCtaClass('gradient', 'lg')}
-                >
-                  {d.nav.getStarted}
-                </Link>
+                {dashboardPath ? (
+                  <Link
+                    to={dashboardPath}
+                    onClick={() => setOpen(false)}
+                    className={pillCtaClass('gradient', 'lg')}
+                  >
+                    {d.nav.dashboard}
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={() => setOpen(false)}
+                      className={pillCtaClass('outline-ink', 'lg')}
+                    >
+                      {d.nav.login}
+                    </Link>
+                    <Link
+                      to="/signup"
+                      onClick={() => setOpen(false)}
+                      className={pillCtaClass('gradient', 'lg')}
+                    >
+                      {d.nav.getStarted}
+                    </Link>
+                  </>
+                )}
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, x: -16 }}

@@ -83,7 +83,7 @@ function LandingPageInner() {
   useScrollToTop();
   const stats = useLandingStats();
   const { status: storiesStatus, stories: successStories } = useSuccessStories();
-  const { events, creators, businesses, categoryMeta } = useLandingShowcase();
+  const { events, creators, businesses, categoryMeta, status: showcaseStatus, retry: retryShowcase } = useLandingShowcase();
   const { lang } = useLandingLanguage();
 
   return (
@@ -130,7 +130,14 @@ function LandingPageInner() {
       <LandingNav />
       <Hero stats={stats} creators={creators} categoryMeta={categoryMeta} />
       <OldWay />
-      <LiveOnKolab events={events} creators={creators} businesses={businesses} categoryMeta={categoryMeta} />
+      <LiveOnKolab
+        events={events}
+        eventsStatus={showcaseStatus}
+        onRetryEvents={retryShowcase}
+        creators={creators}
+        businesses={businesses}
+        categoryMeta={categoryMeta}
+      />
       <CreatorStory />
       <BusinessStory />
       <TrustStats stats={stats} />

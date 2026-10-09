@@ -1662,6 +1662,7 @@ export const en = {
     menu: 'Menu',
     logIn: 'Log in',
     getStarted: 'Get started',
+    myDashboard: 'My Dashboard',
     footerTagline: 'Nepal’s creator marketplace — connecting brands with content creators.',
     footerRights: '© {year} Kolab. All rights reserved.',
 

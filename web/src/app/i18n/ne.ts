@@ -1617,6 +1617,7 @@ export const ne: AppDict = {
     menu: 'मेनु',
     logIn: 'लग इन',
     getStarted: 'सुरु गर्नुहोस्',
+    myDashboard: 'मेरो ड्यासबोर्ड',
     footerTagline: 'नेपालको क्रिएटर मार्केटप्लेस — ब्रान्डहरूलाई कन्टेन्ट क्रिएटरहरूसँग जोड्दै।',
     footerRights: '© {year} Kolab. सर्वाधिकार सुरक्षित।',
 

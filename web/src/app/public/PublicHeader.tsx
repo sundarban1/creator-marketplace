@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAppLanguage, useT, type Lang } from '../i18n';
 import { useLandingTheme } from '../../pages/landing/context/ThemeContext';
 import { NAV_LINKS } from '../../pages/landing/constants';
+import { useLandingSession } from '../../pages/landing/hooks/useLandingSession';
 
 /**
  * Header for the public marketplace pages (/creators, /events, …). Carries the
@@ -76,13 +77,16 @@ export function PublicHeader() {
     </button>
   );
 
+  // Signed in → "My Dashboard" instead of the sign-up pill.
+  const sessionRole = useLandingSession();
+  const dashboardPath = sessionRole === 'BUSINESS' ? '/business' : sessionRole === 'CREATOR' ? '/creator' : null;
   const getStartedPill = (
     <Link
-      to="/login"
+      to={dashboardPath ?? '/login'}
       onClick={() => setOpen(false)}
       className="inline-flex items-center rounded-full bg-gradient-to-r from-violet to-brand-orange px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition-transform duration-300 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet/40"
     >
-      {t('public.getStarted')}
+      {dashboardPath ? t('public.myDashboard') : t('public.getStarted')}
     </Link>
   );
 

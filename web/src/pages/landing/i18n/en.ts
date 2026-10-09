@@ -14,6 +14,8 @@ export const en = {
     languageLabel: 'Language',
     appearanceLabel: 'Appearance',
     getStarted: 'Join Kolab',
+    // Replaces the Join/Log in pair when a session is stored.
+    dashboard: 'My Dashboard',
     getStartedModalTitle: 'Ready to get started? ✨',
     getStartedModalBody: 'Create a free account to find creators, discover opportunities, and start working together on Kolab.',
     getStartedModalCta: 'Create an account',
@@ -198,6 +200,31 @@ export const en = {
     heading: "See what's already happening.",
     sub: 'Real campaigns, creators and businesses — right now on the platform.',
     tabs: { opportunities: 'Opportunities', creators: 'Creators', businesses: 'Businesses' },
+    // Shown in place of the opportunity cards when there are no live events
+    // (never fake ones). `guest*` vs `member*` follows the stored session.
+    opportunitiesEmpty: {
+      heading: 'New Opportunities Are Coming Soon!',
+      body: 'New brands and businesses are onboarding to Kolab and will soon be creating paid events and campaigns for creators like you.',
+      readyTitle: 'Get Ready for Your Next Opportunity',
+      guestBody: 'Create your Kolab account, build your creator profile, and get ready to submit proposals when new opportunities become available.',
+      guestCta: 'Create Your Account',
+      memberBody: 'New opportunities are on the way! Make sure your creator profile is complete and up to date so businesses can discover you and you are ready to submit proposals.',
+      memberCta: 'Update Your Profile',
+      // Signed-in business accounts get a "create your event" pitch instead.
+      business: {
+        heading: 'Create Your Event on Kolab',
+        body: 'Creators across Nepal are joining Kolab and building their profiles. Create your event and put it in front of them.',
+        readyTitle: 'Find the Right Creators for Your Brand',
+        readyBody: 'Create a paid campaign or an open event, set your budget and requirements, and start receiving proposals from creators.',
+        cta: 'Create a New Opportunity or Event',
+      },
+    },
+    opportunitiesError: {
+      heading: "We couldn't load opportunities.",
+      body: 'Check your connection and try again.',
+      retry: 'Try again',
+    },
+    opportunitiesLoading: 'Loading opportunities…',
   },
 
   // The creator-home replica in AppHomePreview. Strings are the app's own
@@ -238,12 +265,6 @@ export const en = {
     modalCta: 'Create an account',
     modalLoginPrompt: 'Already have an account?',
     modalLogin: 'Log in',
-    fallback: [
-      { badge: 'Paid', title: 'Food Creator Needed', business: 'Everest Cafe', location: 'Kathmandu', meta: 'NPR 20,000' },
-      { badge: 'Paid', title: 'Fashion Reel Creators', business: 'Urban Threads', location: 'Lalitpur', meta: 'NPR 15,000' },
-      { badge: 'Open', title: 'Grand Opening Collab', business: 'The Beauty Bar', location: 'Pokhara', meta: 'Free food + experience' },
-      { badge: 'Paid', title: 'Travel Vlog Partner', business: 'Himalaya Treks', location: 'Pokhara', meta: 'NPR 25,000' },
-    ],
   },
 
   categories: {
