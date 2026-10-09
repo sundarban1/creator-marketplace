@@ -40,8 +40,8 @@ import { buildEsewaSignedFields, decodeEsewaResponse, verifyEsewaSignature, chec
 import { buildConnectIpsSignedFields, validateConnectIpsTxn, friendlyConnectIpsStatusMessage, newConnectIpsTxnId, isConnectIpsConfigured, toPaisa, type ConnectIpsFormFields } from '../../utils/connectips';
 import { HttpStatus } from '../../constants/httpStatus';
 import { assertPublishable, assessCampaign, guidedPersistFields } from './campaign.guided';
-import { campaignReviewService, SUBMITTED_FOR_REVIEW_MESSAGE } from './campaign-review.service';
-import { APPROVED_STATUSES, isCreatorVisible, materialChanges } from './campaign-review.rules';
+import { campaignReviewService, skipsReview, SUBMITTED_FOR_REVIEW_MESSAGE } from './campaign-review.service';
+import { APPROVED_STATUSES, contentChanges, isCreatorVisible, materialChanges } from './campaign-review.rules';
 import {
   sendPaymentSecuredEmail,
   sendWorkStartedEmail,
@@ -394,7 +394,10 @@ export class CampaignService {
       }
     }
 
-    const resolvedStatus: 'DRAFT' | 'PENDING_APPROVAL' = input.status === 'DRAFT' ? 'DRAFT' : 'PENDING_APPROVAL';
+    // Verified businesses skip the review queue and publish straight to ACTIVE.
+    const autoApprove = input.status !== 'DRAFT' && skipsReview(business);
+    const resolvedStatus: 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' =
+      input.status === 'DRAFT' ? 'DRAFT' : autoApprove ? 'ACTIVE' : 'PENDING_APPROVAL';
     const [commissionRate, featuredAllowed] = await Promise.all([
       this.adminRepo.getSetting('platform.commission').then((v) => Number(v) || 0),
       // No payment flow yet, so a request to feature beyond the free quota
@@ -425,7 +428,8 @@ export class CampaignService {
       ...campaignInput,
       isFeatured: input.isFeatured && featuredAllowed,
       status:     resolvedStatus,
-      ...(resolvedStatus === 'PENDING_APPROVAL' ? { submittedForReviewAt: new Date(), reviewRevision: 1 } : {}),
+      ...(resolvedStatus !== 'DRAFT' ? { submittedForReviewAt: new Date(), reviewRevision: 1 } : {}),
+      ...(autoApprove ? { reviewedAt: new Date() } : {}),
       commissionRate,
       // Structured budget: budgetMin/budgetMax are the per-creator bounds the
       // client sends; the rate shape is derived when omitted and the
@@ -464,7 +468,7 @@ export class CampaignService {
           throw new AppError(getDict().campaign.insufficientCredits, HttpStatus.BAD_REQUEST);
         }
         const created = await this.repo.create({ ...campaignData, creditsApplied: creditsToApply }, tx);
-        if (resolvedStatus === 'PENDING_APPROVAL') await campaignReviewService.recordInitialSubmission(tx, created.id, userId);
+        if (resolvedStatus !== 'DRAFT') await campaignReviewService.recordInitialSubmission(tx, created.id, userId, autoApprove);
         await recordCreditsTransaction(tx, {
           businessId:    business.id,
           type:          'CAMPAIGN_BUDGET_SPEND',
@@ -479,7 +483,7 @@ export class CampaignService {
     } else {
       raw = await prisma.$transaction(async (tx) => {
         const created = await this.repo.create(campaignData, tx);
-        if (resolvedStatus === 'PENDING_APPROVAL') await campaignReviewService.recordInitialSubmission(tx, created.id, userId);
+        if (resolvedStatus !== 'DRAFT') await campaignReviewService.recordInitialSubmission(tx, created.id, userId, autoApprove);
         return created;
       });
     }
@@ -491,6 +495,8 @@ export class CampaignService {
       campaignReviewService.notifyAdminsOfSubmission(
         { id: raw.id, title: raw.title, campaignType: raw.campaignType, businessName: business.businessName }, 1, false,
       );
+    } else if (raw.status === 'ACTIVE') {
+      this.fanOutNewCampaign(campaign, business, userId);
     }
 
     return campaign;
@@ -900,7 +906,8 @@ export class CampaignService {
       throw new AppError(getDict().campaign.notAuthorizedToUpdateCampaign, HttpStatus.FORBIDDEN);
     }
 
-    const review = this.planReviewTransition(campaign, input);
+    const verified = skipsReview(business);
+    const review = this.planReviewTransition(campaign, input, verified);
 
     if (campaign._count.applications > 0) {
       for (const field of FIELDS_LOCKED_AFTER_PROPOSALS) {
@@ -1019,6 +1026,13 @@ export class CampaignService {
       ...(input.locationType === 'REMOTE' ? { location: null, locationLat: null, locationLng: null } : {}),
     };
 
+    // A verified business's submission publishes straight away — except a
+    // resubmission after an admin requested changes or rejected the event,
+    // which goes back to the admin who made that call.
+    const autoApprove = !!review.submit
+      && campaign.status !== 'CHANGES_REQUESTED' && campaign.status !== 'REJECTED'
+      && verified;
+
     let updated;
     let submittedRevision: number | null = null;
     if (review.submit) {
@@ -1030,6 +1044,7 @@ export class CampaignService {
         await this.repo.update(id, updateData, tx);
         submittedRevision = await campaignReviewService.submitForReview(tx, {
           campaignId: id, actorId: userId, from: campaign.status, action: submit.action, changedFields: submit.changedFields,
+          autoApprove,
         });
         return tx.campaign.findUniqueOrThrow({ where: { id } });
       });
@@ -1039,7 +1054,7 @@ export class CampaignService {
 
     const dto = toCampaignDto(updated);
 
-    if (submittedRevision !== null) {
+    if (submittedRevision !== null && !autoApprove) {
       campaignReviewService.notifyAdminsOfSubmission(
         { id, title: updated.title, campaignType: updated.campaignType, businessName: business.businessName },
         submittedRevision, review.submit!.action === 'RESUBMITTED',
@@ -1047,8 +1062,9 @@ export class CampaignService {
     }
 
     // Reactivating an already-approved (paused) event — same fan-out as a
-    // fresh publish. First-time publication fans out from the admin approval.
-    if (review.status === 'ACTIVE' && campaign.status !== 'ACTIVE') {
+    // fresh publish. First-time publication fans out from the admin approval,
+    // or right here when a verified business publishes a draft.
+    if ((review.status === 'ACTIVE' && campaign.status !== 'ACTIVE') || (autoApprove && campaign.status === 'DRAFT')) {
       this.fanOutNewCampaign(dto, business, userId);
     }
 
@@ -1062,11 +1078,14 @@ export class CampaignService {
   //  - DRAFT → "publish" (ACTIVE) is a first submission → PENDING_APPROVAL
   //  - CHANGES_REQUESTED / resubmittable REJECTED: saving the edit resubmits
   //  - PENDING_APPROVAL: edits allowed, stays pending; only withdraw (CANCELLED)
-  //  - approved (ACTIVE/PAUSED/CLOSED/EXPIRED) + a material change → back to review
+  //  - approved (ACTIVE/PAUSED/CLOSED/EXPIRED) + a change → back to review: any
+  //    content change for an unverified business, a material one for a verified
+  //    business (whose submission then auto-publishes anyway)
   //  - otherwise the usual pause/close/reactivate lifecycle of an approved event
   private planReviewTransition(
     campaign: Record<string, unknown> & { status: CampaignStatus; resubmissionAllowed: boolean },
     input: UpdateCampaignInput,
+    verified: boolean,
   ): { status?: CampaignStatus; submit: { action: 'SUBMITTED' | 'RESUBMITTED'; changedFields?: string[] } | null } {
     const from = campaign.status;
     const requested = input.status;
@@ -1096,7 +1115,9 @@ export class CampaignService {
         return { submit: null };
       default: {
         // Approved at least once: ACTIVE / PAUSED / CLOSED / EXPIRED.
-        const changed = materialChanges(campaign, input as Record<string, unknown>);
+        const changed = verified
+          ? materialChanges(campaign, input as Record<string, unknown>)
+          : contentChanges(campaign, input as Record<string, unknown>);
         if (changed.length > 0) return { submit: { action: 'RESUBMITTED', changedFields: changed } };
         if (requested === 'DRAFT') throw conflict('A published event cannot be turned back into a draft.');
         if (requested === 'PAUSED' && !(APPROVED_STATUSES as readonly string[]).includes(from)) {

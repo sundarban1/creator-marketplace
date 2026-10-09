@@ -166,12 +166,19 @@ d('event review workflow', () => {
     await vi.waitFor(() => expect(sent.find((m) => m.subject === 'Update Regarding Your Kolab Event' && m.html.includes('prohibited product'))?.html).toContain('Resubmission is not available'));
   });
 
-  it('material edits to a published event send it back to review; harmless edits do not', async () => {
+  it('any content edit by an unverified business sends a published event back to review; operational toggles do not', async () => {
     const c = await createPending();
     await admin.approveCampaign(c.id, u.admin.id);
 
-    const harmless = await campaigns.update(c.id, u.bizUser.id, { hashtags: ['winter'], title: c.title } as never);
-    expect(harmless.status).toBe('ACTIVE');
+    const unchanged = await campaigns.update(c.id, u.bizUser.id, { title: c.title } as never);
+    expect(unchanged.status).toBe('ACTIVE');
+    const paused = await campaigns.update(c.id, u.bizUser.id, { status: 'PAUSED' } as never);
+    expect(paused.status).toBe('PAUSED');
+    expect((await campaigns.update(c.id, u.bizUser.id, { status: 'ACTIVE' } as never)).status).toBe('ACTIVE');
+
+    const minor = await campaigns.update(c.id, u.bizUser.id, { hashtags: ['winter'] } as never);
+    expect(minor.status).toBe('PENDING_APPROVAL');
+    expect((await admin.approveCampaign(c.id, u.admin.id)).status).toBe('ACTIVE');
 
     const material = await campaigns.update(c.id, u.bizUser.id, { budgetMin: 5000, budgetMax: 5000 } as never);
     expect(material.status).toBe('PENDING_APPROVAL');
@@ -181,6 +188,35 @@ d('event review workflow', () => {
 
     // Re-approval republishes.
     expect((await admin.approveCampaign(c.id, u.admin.id)).status).toBe('ACTIVE');
+  });
+
+  it('a verified business skips review: new events and material edits publish straight away', async () => {
+    await prisma.businessProfile.update({ where: { id: u.business.id }, data: { isVerified: true } });
+    const c = await createPending();
+    expect(c.status).toBe('ACTIVE');
+    const history = await campaignReviewService.history(c.id, { id: u.admin.id, role: 'ADMIN' });
+    expect(history.map((h) => h.action)).toEqual(['APPROVED', 'SUBMITTED']);
+    expect(history[0].actor).toBeNull();
+    await expect(campaigns.getById(c.id, 'en', { id: u.creatorUser.id, role: 'CREATOR' })).resolves.toMatchObject({ id: c.id });
+
+    const edited = await campaigns.update(c.id, u.bizUser.id, { budgetMin: 5000, budgetMax: 5000 } as never);
+    expect(edited.status).toBe('ACTIVE');
+
+    // Admins aren't asked to review anything.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sent.some((m) => m.subject.startsWith('New Event Awaiting Review'))).toBe(false);
+  });
+
+  it('a verified business publishing a draft goes live; a resubmission after requested changes still goes to the admin', async () => {
+    const pending = await createPending();
+    await admin.requestCampaignChanges(pending.id, u.admin.id, FEEDBACK);
+    await prisma.businessProfile.update({ where: { id: u.business.id }, data: { isVerified: true } });
+
+    const draft = await campaigns.create(u.bizUser.id, { ...paidInput(), status: 'DRAFT' });
+    expect((await campaigns.publishDraft(draft.id, u.bizUser.id)).status).toBe('ACTIVE');
+
+    const resubmitted = await campaigns.update(pending.id, u.bizUser.id, { title: 'Menu launch shoot v2' } as never);
+    expect(resubmitted.status).toBe('PENDING_APPROVAL');
   });
 
   it('admins cannot bypass review through the raw status endpoint', async () => {

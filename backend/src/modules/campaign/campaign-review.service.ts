@@ -10,6 +10,7 @@ import {
   eventAdminActionEmail, eventApprovedEmail, eventChangesRequestedEmail, eventRejectedEmail, eventSubmittedAdminEmail,
   sendEventReviewEmail, type EventReviewEmail,
 } from '../../utils/email/eventReview';
+import { isBusinessFullyVerified } from '../../utils/verification';
 import { canDecide, canResubmit, DECISION_TARGET, normalizeFeedback, MIN_REVIEW_FEEDBACK, type ReviewDecision } from './campaign-review.rules';
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -25,6 +26,23 @@ import { canDecide, canResubmit, DECISION_TARGET, normalizeFeedback, MIN_REVIEW_
 export const REVIEW_ETA_TEXT = 'within 2–3 hours';
 export const SUBMITTED_FOR_REVIEW_MESSAGE =
   `Your event has been submitted for review. A Kolab admin will review it ${REVIEW_ETA_TEXT}. You can track its status from your dashboard.`;
+export const PUBLISHED_VERIFIED_MESSAGE =
+  'Your business is verified, so your event skipped review and is now live for creators.';
+const VERIFIED_AUTO_APPROVAL_NOTE = 'Published instantly — verified business.';
+
+/**
+ * Verified businesses skip the review queue: their submissions publish
+ * straight to ACTIVE. "Verified" is the admin-toggled badge or the derived
+ * full verification (contacts + approved documents) — the same two signals
+ * the apps show as the verified badge.
+ */
+export function skipsReview(b: {
+  isVerified: boolean; panDocStatus: string; companyRegDocStatus: string;
+  identityDocStatus?: string; representingType?: string | null;
+  user?: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
+}): boolean {
+  return b.isVerified || (!!b.user && isBusinessFullyVerified(b.user, b));
+}
 
 type Tx = Prisma.TransactionClient;
 
@@ -132,10 +150,23 @@ const ADMIN_ACTION_COPY: Record<AdminEventAction, { bell: string; subject: strin
 export class CampaignReviewService {
   // ── Submission (business side) ─────────────────────────────────────────────
 
-  /** History row for a brand-new event created straight into the queue. Call inside the create transaction. */
-  recordInitialSubmission(tx: Tx, campaignId: string, actorId: string) {
-    return recordReview(tx, {
+  /**
+   * History rows for a brand-new event created straight into the queue — or,
+   * for a verified business (`autoApprove`), created straight into ACTIVE.
+   * Call inside the create transaction.
+   */
+  async recordInitialSubmission(tx: Tx, campaignId: string, actorId: string, autoApprove = false) {
+    await recordReview(tx, {
       campaignId, actorId, action: 'SUBMITTED', fromStatus: null, toStatus: 'PENDING_APPROVAL', revision: 1,
+    });
+    if (autoApprove) await this.recordAutoApproval(tx, campaignId, 1);
+  }
+
+  /** System approval row (no admin actor) for a verified business's submission. */
+  private recordAutoApproval(tx: Tx, campaignId: string, revision: number) {
+    return recordReview(tx, {
+      campaignId, actorId: null, action: 'APPROVED', fromStatus: 'PENDING_APPROVAL', toStatus: 'ACTIVE',
+      feedback: VERIFIED_AUTO_APPROVAL_NOTE, revision,
     });
   }
 
@@ -144,19 +175,22 @@ export class CampaignReviewService {
    * after CHANGES_REQUESTED/REJECTED, or a material edit to a published event).
    * Conditional on the status still being `from`, so it can't race a decision.
    * Extra `data` (the edit itself) is written in the same UPDATE.
+   * `autoApprove` (verified business) publishes it straight to ACTIVE instead,
+   * recording the submission plus a system approval.
    */
   async submitForReview(tx: Tx, opts: {
     campaignId: string; actorId: string; from: CampaignStatus; action: CampaignReviewAction;
-    changedFields?: string[]; data?: Prisma.CampaignUpdateManyMutationInput;
+    changedFields?: string[]; data?: Prisma.CampaignUpdateManyMutationInput; autoApprove?: boolean;
   }) {
     const now = new Date();
     const res = await tx.campaign.updateMany({
       where: { id: opts.campaignId, status: opts.from, deletedAt: null },
       data: {
         ...(opts.data ?? {}),
-        status: 'PENDING_APPROVAL',
+        status: opts.autoApprove ? 'ACTIVE' : 'PENDING_APPROVAL',
         submittedForReviewAt: now,
         reviewRevision: { increment: 1 },
+        ...(opts.autoApprove ? { reviewedAt: now, reviewFeedback: null, resubmissionAllowed: true } : {}),
       },
     });
     if (res.count === 0) throw new AppError('This event changed while you were editing it. Refresh and try again.', HttpStatus.CONFLICT);
@@ -165,6 +199,7 @@ export class CampaignReviewService {
       campaignId: opts.campaignId, actorId: opts.actorId, action: opts.action,
       fromStatus: opts.from, toStatus: 'PENDING_APPROVAL', revision: reviewRevision, changedFields: opts.changedFields,
     });
+    if (opts.autoApprove) await this.recordAutoApproval(tx, opts.campaignId, reviewRevision);
     return reviewRevision;
   }
 

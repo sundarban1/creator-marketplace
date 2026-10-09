@@ -81,6 +81,22 @@ function normalize(v: unknown): unknown {
   return v;
 }
 
+// Operational toggles that never need review, even for an unverified business:
+// lifecycle status, featured slot, open-event capacity flag, draft bookkeeping.
+const OPERATIONAL_FIELDS = new Set(['status', 'isFeatured', 'eventStatus', 'draftStep']);
+
+/**
+ * Every non-operational field whose value actually differs between the stored
+ * event and the edit. An unverified business's edit to a published event goes
+ * back to review on any such change, not only a material one.
+ */
+export function contentChanges(before: Record<string, unknown>, input: Record<string, unknown>): string[] {
+  return Object.keys(input).filter((f) => {
+    if (OPERATIONAL_FIELDS.has(f) || input[f] === undefined) return false;
+    return JSON.stringify(normalize(input[f])) !== JSON.stringify(normalize(before[f]));
+  });
+}
+
 /**
  * Material fields whose value actually differs between the stored event and
  * the edit. Clients typically send the whole form, so presence alone isn't a

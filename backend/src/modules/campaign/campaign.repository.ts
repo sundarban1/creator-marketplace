@@ -59,9 +59,11 @@ export class CampaignRepository {
     eventTime?: string | null;
     venue?: string;
     benefits?: string[];
-    status?: 'DRAFT' | 'PENDING_APPROVAL';
-    // Event review — set when a create goes straight into the review queue.
+    // ACTIVE only for a verified business, which skips the review queue.
+    status?: 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE';
+    // Event review — set when a create goes into the review queue (or is auto-approved).
     submittedForReviewAt?: Date;
+    reviewedAt?: Date;
     reviewRevision?: number;
     commissionRate?: number;
     targetAudience?: string[];

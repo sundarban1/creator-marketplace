@@ -31,6 +31,7 @@ import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { FilterSheet, FilterSectionHeader } from '@/components/FilterSheet';
 import { BottomSheet } from '@/components/BottomSheet';
 import { AppModal } from '@/components/AppModal';
+import { EventSubmittedModal } from '@/components/EventSubmittedModal';
 import type { Campaign } from '@/types';
 import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -370,12 +371,15 @@ export default function CampaignsScreen() {
   }
 
   const [showSubmittedModal, setShowSubmittedModal] = useState(false);
+  // Verified businesses skip review — the publish lands straight on ACTIVE.
+  const [submittedPublished, setSubmittedPublished] = useState(false);
 
   async function handlePublishDraft(c: Campaign) {
     if (publishingId) return;
     setPublishingId(c.id);
     try {
-      await campaignService.update(c.id, { status: 'active' });
+      const saved = await campaignService.update(c.id, { status: 'active' });
+      setSubmittedPublished(saved.status === 'active');
       setShowSubmittedModal(true);
       invalidateAllTabs();
       setLoading(true);
@@ -786,16 +790,10 @@ export default function CampaignsScreen() {
         onCancel={() => { if (!deleting) setDeleteTarget(null); }}
       />
 
-      <AppModal
+      <EventSubmittedModal
         visible={showSubmittedModal}
-        type="success"
-        icon="clipboard-check"
-        title={t('eventReview.submittedModalTitle')}
-        body={t('eventReview.submittedModalBody')}
-        confirmLabel={t('eventReview.submittedModalOk')}
-        hideCancel
-        onConfirm={() => setShowSubmittedModal(false)}
-        onCancel={() => setShowSubmittedModal(false)}
+        published={submittedPublished}
+        onClose={() => setShowSubmittedModal(false)}
       />
 
       {/* Invite Creators bottom sheet */}

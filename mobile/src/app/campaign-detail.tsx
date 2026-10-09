@@ -6,6 +6,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
 import { AppModal } from '@/components/AppModal';
+import { EventSubmittedModal } from '@/components/EventSubmittedModal';
 import { ShortlistButton } from '@/components/ShortlistButton';
 import { ShareOpportunityButton } from '@/components/ShareOpportunityButton';
 import { useQuery } from '@tanstack/react-query';
@@ -648,16 +649,10 @@ export default function CampaignDetailScreen() {
         )}
       </View>
       </MaxWidthContainer>
-      <AppModal
+      <EventSubmittedModal
         visible={showSubmittedModal}
-        type="success"
-        icon="clipboard-check"
-        title={t('eventReview.submittedModalTitle')}
-        body={t('eventReview.submittedModalBody')}
-        confirmLabel={t('eventReview.submittedModalOk')}
-        hideCancel
-        onConfirm={closeSubmittedModal}
-        onCancel={closeSubmittedModal}
+        published={campaign?.status === 'active'}
+        onClose={closeSubmittedModal}
       />
     </SafeAreaView>
   );

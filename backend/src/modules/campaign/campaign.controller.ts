@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { CampaignStatus, ApplicationStatus, CampaignType } from '@prisma/client';
 import { CampaignService } from './campaign.service';
-import { campaignReviewService, SUBMITTED_FOR_REVIEW_MESSAGE } from './campaign-review.service';
+import { campaignReviewService, PUBLISHED_VERIFIED_MESSAGE, SUBMITTED_FOR_REVIEW_MESSAGE } from './campaign-review.service';
 import { toCampaignDto } from './campaign.dto';
 import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
@@ -115,7 +115,10 @@ export class CampaignController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.create(req.user!.id, req.body);
-      success(res, campaign, campaign.status === 'PENDING_APPROVAL' ? SUBMITTED_FOR_REVIEW_MESSAGE : 'Campaign created successfully', 201);
+      const message = campaign.status === 'PENDING_APPROVAL' ? SUBMITTED_FOR_REVIEW_MESSAGE
+        : campaign.status === 'ACTIVE' ? PUBLISHED_VERIFIED_MESSAGE
+        : 'Campaign created successfully';
+      success(res, campaign, message, 201);
     } catch (err) {
       next(err);
     }

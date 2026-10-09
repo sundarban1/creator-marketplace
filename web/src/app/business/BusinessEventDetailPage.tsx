@@ -415,17 +415,30 @@ export function BusinessEventDetailPage() {
         onResubmitted={() => { setFlash(t('eventReview.submittedFlash')); campaign.reload(); }}
       />
 
+      {/* Verified businesses skip review, so a fresh submission lands ACTIVE. */}
       <Modal
         open={showSubmittedModal}
         onClose={closeSubmittedModal}
-        title={t('eventReview.submittedModalTitle')}
+        title={c.status === 'ACTIVE' ? t('eventReview.publishedModalTitle') : t('eventReview.submittedModalTitle')}
         footer={
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {c.status !== 'ACTIVE' && (
+              <Button variant="secondary" onClick={() => navigate('/business/verification')}>
+                {t('eventReview.verifyBusinessCta')}
+              </Button>
+            )}
             <Button onClick={closeSubmittedModal}>{t('eventReview.submittedModalOk')}</Button>
           </div>
         }
       >
-        <p className="text-sm leading-relaxed">{t('eventReview.submittedModalBody')}</p>
+        {c.status === 'ACTIVE' ? (
+          <p className="text-sm leading-relaxed">{t('eventReview.publishedModalBody')}</p>
+        ) : (
+          <div className="space-y-3 text-sm leading-relaxed">
+            <p>{t('eventReview.submittedModalBody')}</p>
+            <p>{t('eventReview.verifiedSkipNote')}</p>
+          </div>
+        )}
       </Modal>
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}

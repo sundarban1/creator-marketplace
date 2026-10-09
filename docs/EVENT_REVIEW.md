@@ -127,3 +127,11 @@ Push notifications respect the user's push setting. Review and admin-action emai
 The backfill only stamps events already in `PENDING_APPROVAL` as revision 1. Published and historical events are untouched. Earlier admin rejections were stored as `CANCELLED`; they are left as they are, because they can't be told apart from cancellations by the business.
 
 The `campaign.autoApproval` admin setting has been removed, because review is now mandatory.
+
+**Verified businesses skip review.** A business whose profile is verified (the admin-toggled
+`isVerified` badge, or full derived verification: email + phone + approved documents — see
+`skipsReview()` in `campaign-review.service.ts`) publishes straight to `ACTIVE`: a new event,
+a draft publish, and a material edit to a published event all go live immediately. History
+still records `SUBMITTED` plus a system `APPROVED` row (no actor, note "Published instantly —
+verified business"), and admins get no review bell/email. Exception: a resubmission after an
+admin requested changes or rejected the event still goes back to the review queue.
