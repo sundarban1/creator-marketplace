@@ -75,7 +75,7 @@ export function HelpSupportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <PageHeader title={t('helpSupport.title')} description={t('helpSupport.subtitle')} />
 
       <Card>

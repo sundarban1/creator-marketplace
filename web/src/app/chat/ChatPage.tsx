@@ -81,7 +81,7 @@ export function ChatPage() {
 
   if (conversations.loading || jumpTarget) {
     return (
-      <div className="mx-auto max-w-6xl">
+      <div>
         <Skeleton className="h-8 w-1/3" />
         <div className="mt-5 space-y-3">
           <Skeleton className="h-16 w-full" />
@@ -102,7 +102,7 @@ export function ChatPage() {
   const activeConversation = id ? conversations.data?.items.find((c) => c.id === id) : undefined;
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-6xl overflow-hidden rounded-2xl border border-line bg-surface">
+    <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-2xl border border-line bg-surface">
       <div
         className={cn(
           'flex-col border-r border-line lg:flex lg:w-[360px] lg:flex-shrink-0',

@@ -288,7 +288,7 @@ export const en = {
 
   referrals: {
     title: 'Refer a friend',
-    subtitle: 'Invite a creator to Kolab and earn Rs. {amount} once they’re verified and complete their first event.',
+    subtitle: 'Invite a creator to Kolab and earn {amount} Reward Points once they’re verified and complete their first event.',
     loadError: 'Could not load referral info. Please try again.',
     yourCodeLabel: 'Your referral code',
     copyCode: 'Copy code',
@@ -301,9 +301,9 @@ export const en = {
     step3: 'They get the verified creator badge',
     step4: 'They complete their profile',
     step5: 'They complete their first event',
-    conditionNote: 'All steps must be completed within 3 months of signing up. Once verified by our team, you’ll earn Rs. {amount}.',
+    conditionNote: 'All steps must be completed within 3 months of signing up. Once verified by our team, you’ll earn {amount} Reward Points.',
     referredByLabel: 'Referred by {name}',
-    referredBonusHint: 'Complete your first event within 3 months and earn Rs. 200!',
+    referredBonusHint: 'Complete your first event within 3 months and earn 200 Reward Points!',
     applyCodeHeading: 'Have a referral code?',
     applyCodePlaceholder: 'Enter a referral code',
     applyCodeButton: 'Apply code',
@@ -1004,7 +1004,7 @@ export const en = {
 
   bizReferrals: {
     title: 'Refer a business',
-    subtitle: 'Invite a business to Kolab and earn Rs. {amount} once they’re verified and publish a funded event.',
+    subtitle: 'Invite a business to Kolab and earn {amount} Reward Points once they’re verified and publish a funded event.',
     loadError: 'Could not load referral info. Please try again.',
     yourCodeLabel: 'Your referral code',
     copyCode: 'Copy code',
@@ -1017,7 +1017,7 @@ export const en = {
     step3: 'They get the verified business badge',
     step4: 'They complete their business profile',
     step5: 'They publish a funded event',
-    conditionNote: 'All steps must be completed within 3 months of signing up. Once verified by our team, you’ll earn Rs. {amount}.',
+    conditionNote: 'All steps must be completed within 3 months of signing up. Once verified by our team, you’ll earn {amount} Reward Points.',
     referredByLabel: 'Referred by {name}',
     applyCodeHeading: 'Have a referral code?',
     applyCodePlaceholder: 'Enter a referral code',

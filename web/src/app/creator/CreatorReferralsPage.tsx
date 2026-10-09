@@ -68,7 +68,7 @@ export function CreatorReferralsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <DashPageHeader title={t('referrals.title')} description={o ? t('referrals.subtitle', { amount: o.rewardAmount }) : undefined} />
 
       {overview.loading ? (

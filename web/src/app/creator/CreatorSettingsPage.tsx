@@ -56,7 +56,7 @@ export function CreatorSettingsPage() {
         : 'neutral';
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <DashPageHeader title={t('settings.title')} />
 
       {/* Account */}

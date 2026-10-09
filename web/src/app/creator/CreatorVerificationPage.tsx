@@ -34,7 +34,7 @@ export function CreatorVerificationPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <PageHeader title={t('creatorVerification.title')} />
 
       <ContactVerificationCard />
