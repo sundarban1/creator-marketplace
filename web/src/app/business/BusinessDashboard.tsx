@@ -20,22 +20,13 @@ import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { AttentionBanner } from '../ui/AttentionBanner';
-import { StatusBadge, type BadgeTone } from '../ui/StatusBadge';
+import { StatusBadge } from '../ui/StatusBadge';
+import { EVENT_STATUS_TONE, eventStatusLabel } from './eventReviewStatus';
 import { Avatar } from '../ui/Avatar';
 import { makeCategoryLookup } from '../public/categoryLookup';
 import { cn } from '../ui/cn';
 import { BizApplicationCard } from './BizApplicationCard';
 import { BizCreatorCard } from './BizCreatorCard';
-
-const CAMPAIGN_STATUS_TONE: Record<string, BadgeTone> = {
-  ACTIVE: 'success',
-  DRAFT: 'neutral',
-  PENDING_APPROVAL: 'warning',
-  PAUSED: 'warning',
-  CLOSED: 'neutral',
-  CANCELLED: 'danger',
-  EXPIRED: 'neutral',
-};
 
 export function BusinessDashboard() {
   const { user } = useAppAuth();
@@ -68,7 +59,7 @@ export function BusinessDashboard() {
   const liveCampaigns = useMemo(() => {
     const items = campaigns.data?.items ?? [];
     return items
-      .filter((c) => c.status === 'ACTIVE' || c.status === 'PENDING_APPROVAL' || c.status === 'PAUSED')
+      .filter((c) => ['ACTIVE', 'PENDING_APPROVAL', 'CHANGES_REQUESTED', 'REJECTED', 'PAUSED'].includes(c.status))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 5);
   }, [campaigns.data]);
@@ -229,7 +220,7 @@ export function BusinessDashboard() {
                         </span>
                       </p>
                     </div>
-                    <StatusBadge label={c.status} tone={CAMPAIGN_STATUS_TONE[c.status] ?? 'neutral'} dot={false} />
+                    <StatusBadge label={eventStatusLabel(t, c.status)} tone={EVENT_STATUS_TONE[c.status] ?? 'neutral'} dot={false} />
                   </Link>
                 </motion.li>
               );

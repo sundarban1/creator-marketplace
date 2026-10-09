@@ -5,6 +5,8 @@ import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { fetchCategories } from '../api/catalog';
 import { fetchCampaign, updateCampaign, uploadCampaignFeatureImage, type MyCampaign } from '../api/business';
+import { EventReviewBanner } from './EventReviewBanner';
+import { canResubmitEvent, eventStatusLabel } from './eventReviewStatus';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { PageHeader } from '../ui/PageHeader';
 import { Card } from '../ui/Card';
@@ -79,6 +81,10 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
   const [description, setDescription] = useState(c.description);
   const [category, setCategory] = useState(c.category);
   const [status, setStatus] = useState<Status>((c.status as Status) ?? 'ACTIVE');
+  // Review statuses aren't business-settable: an event in review shows no
+  // status picker, and saving a changes-requested event resubmits it.
+  const inReview = c.status === 'PENDING_APPROVAL' || c.status === 'CHANGES_REQUESTED' || c.status === 'REJECTED';
+  const approved = ['ACTIVE', 'PAUSED', 'CLOSED', 'EXPIRED'].includes(c.status);
   const [budgetMin, setBudgetMin] = useState(c.budgetMin ? String(c.budgetMin) : '');
   const [budgetMax, setBudgetMax] = useState(c.budgetMax ? String(c.budgetMax) : '');
   const [creatorsNeeded, setCreatorsNeeded] = useState(String(c.creatorsNeeded ?? 1));
@@ -160,11 +166,13 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
 
     setSubmitting(true);
     try {
-      await updateCampaign(id, {
+      const saved = await updateCampaign(id, {
         title: title.trim(),
         description: description.trim(),
         category,
-        status,
+        // Only send a status the business actually changed — the server owns
+        // every review transition.
+        status: !inReview && status !== c.status ? status : undefined,
         featureImageUrl: featureImageUrl || null,
         budgetMin: isFree ? undefined : min,
         budgetMax: isFree ? undefined : max,
@@ -185,7 +193,8 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
         // Whole-brief replace on the server — keep every other section.
         brief: { ...(c.brief ?? {}), attachments },
       });
-      navigate(`/business/events/${id}`);
+      const submitted = saved.status === 'PENDING_APPROVAL' && c.status !== 'PENDING_APPROVAL';
+      navigate(`/business/events/${id}`, submitted ? { state: { flash: t('eventReview.submittedFlash') } } : undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.somethingWrong'));
       setSubmitting(false);
@@ -203,6 +212,9 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
 
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
+
+      {canResubmitEvent(c) && <EventReviewBanner campaign={c} compact />}
+      {approved && <Alert tone="info" className="mb-5">{t('eventReview.materialEditNote')}</Alert>}
 
       <form onSubmit={submit} className="space-y-4">
         {/* Cover image — always editable in edit mode, empty state included. */}
@@ -267,18 +279,24 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
             placeholder="—"
             options={(categories.data ?? []).map((cat) => ({ value: cat.name, label: cat.name }))}
           />
-          <Select
-            label={t('biz.statusLabel')}
-            value={status}
-            onChange={(e) => setStatus(e.target.value as Status)}
-            options={[
-              { value: 'DRAFT', label: t('biz.eventTabDraft') },
-              { value: 'ACTIVE', label: t('biz.eventTabActive') },
-              { value: 'PAUSED', label: t('biz.statusPaused') },
-              { value: 'CLOSED', label: t('biz.eventTabClosed') },
-              { value: 'CANCELLED', label: t('biz.statusCancelled') },
-            ]}
-          />
+          {inReview ? (
+            <div>
+              <p className="mb-1.5 text-[13px] font-semibold text-ink">{t('eventReview.reviewStatusLabel')}</p>
+              <p className="rounded-xl border border-line bg-surface-dim px-3 py-2.5 text-[14px] text-ink">{eventStatusLabel(t, c.status)}</p>
+            </div>
+          ) : (
+            <Select
+              label={t('biz.statusLabel')}
+              value={status}
+              onChange={(e) => setStatus(e.target.value as Status)}
+              options={[
+                { value: 'ACTIVE', label: t('biz.eventTabActive') },
+                { value: 'PAUSED', label: t('biz.statusPaused') },
+                { value: 'CLOSED', label: t('biz.eventTabClosed') },
+                { value: 'CANCELLED', label: t('biz.statusCancelled') },
+              ]}
+            />
+          )}
         </div>
 
         {isFree ? (

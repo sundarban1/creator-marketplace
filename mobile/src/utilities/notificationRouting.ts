@@ -94,17 +94,19 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
     };
   }
 
-  // Admin approved / rejected a business's own event → open it so they see it
-  // is live (or cancelled). campaign-detail.tsx is shared by both roles.
-  if ((n.type === 'campaign_approved' || n.type === 'campaign_rejected') && n.refId) {
+  // Admin reviewed a business's own event (approved / changes requested /
+  // rejected) → open it; its review banner shows the feedback and next step.
+  // campaign-detail.tsx is shared by both roles.
+  if ((n.type === 'campaign_approved' || n.type === 'campaign_rejected' || n.type === 'campaign_changes_requested' || n.type === 'campaign_status_changed') && n.refId) {
     return { pathname: '/campaign-detail', params: { campaignId: n.refId } };
   }
 
   // Admin removed an event the creator had an accepted proposal / work on. The
   // campaign row is soft-deleted, so send them to their proposals list rather
   // than a detail screen that would come back empty.
+  // The business whose event an admin removed lands on their events list.
   if (n.type === 'campaign_deleted') {
-    return isCreator ? '/(creator)/(tabs)/proposals' : null;
+    return isCreator ? '/(creator)/(tabs)/proposals' : '/(business)/(tabs)/campaigns';
   }
 
   // Verification was rejected → the Verification section of Settings, which

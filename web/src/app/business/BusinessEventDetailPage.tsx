@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Pencil, MessageCircle, Check, Gift } from 'lucide-react';
 import { useT, type TFn } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -7,6 +7,8 @@ import { CampaignBriefSections } from '../events/CampaignBriefSections';
 import { EventAttachmentsView } from '../events/EventAttachments';
 import { SaveTemplateButton } from './guided/templates';
 import { rupees, perCreatorBudget } from '../lib/format';
+import { EventReviewBanner } from './EventReviewBanner';
+import { canResubmitEvent } from './eventReviewStatus';
 import {
   fetchCampaign,
   fetchBusinessApplications,
@@ -87,7 +89,17 @@ export function BusinessEventDetailPage() {
   // otherwise PaymentResultPage hands it to the listener below instead. Read once via a lazy initializer (plain render-time
   // logic, not a setState-in-effect) so the flash survives the effect below
   // scrubbing the query string a moment later.
-  const routeState = useLocation().state as { flash?: string } | null;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const routeState = location.state as { flash?: string; submittedForReview?: boolean } | null;
+  // Set by the create flows right after a new event is submitted — a one-time
+  // "submitted for review" modal; closing it drops the route state so a reload
+  // doesn't show it again.
+  const [showSubmittedModal, setShowSubmittedModal] = useState(() => !!routeState?.submittedForReview);
+  function closeSubmittedModal() {
+    setShowSubmittedModal(false);
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+  }
   const [flash, setFlash] = useState(() => (searchParams.get('payment') === 'success' ? t('biz.paymentSuccessFlash') : routeState?.flash ?? ''));
   const [error, setError] = useState(() =>
     searchParams.get('payment') === 'failed' ? searchParams.get('paymentError') || t('biz.paymentFailedFlash') : '',
@@ -385,15 +397,36 @@ export function BusinessEventDetailPage() {
         title={c.title}
         description={isPaid ? `${c.category} · ${t('public.budgetPerCreator', { amount: budget.amount })}` : c.category}
         actions={
-          <Link
-            to={`/business/events/${id}/edit`}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-line-strong px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-surface-dim"
-          >
-            <Pencil size={14} />
-            {t('common.edit')}
-          </Link>
+          // A permanently rejected event can't be edited (or resubmitted).
+          c.status === 'REJECTED' && !canResubmitEvent(c) ? undefined : (
+            <Link
+              to={`/business/events/${id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-line-strong px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-surface-dim"
+            >
+              <Pencil size={14} />
+              {canResubmitEvent(c) ? t('eventReview.editAndResubmit') : t('common.edit')}
+            </Link>
+          )
         }
       />
+
+      <EventReviewBanner
+        campaign={c}
+        onResubmitted={() => { setFlash(t('eventReview.submittedFlash')); campaign.reload(); }}
+      />
+
+      <Modal
+        open={showSubmittedModal}
+        onClose={closeSubmittedModal}
+        title={t('eventReview.submittedModalTitle')}
+        footer={
+          <div className="flex justify-end">
+            <Button onClick={closeSubmittedModal}>{t('eventReview.submittedModalOk')}</Button>
+          </div>
+        }
+      >
+        <p className="text-sm leading-relaxed">{t('eventReview.submittedModalBody')}</p>
+      </Modal>
 
       {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
       {notice && <Alert tone="info" className="mb-5">{notice}</Alert>}

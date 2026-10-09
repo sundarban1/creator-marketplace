@@ -16,7 +16,6 @@ const DEFAULTS: Record<string, unknown> = {
   'creator.registrationEnabled':   true,
   'creator.onboarding':            true,
   'business.onboarding':           true,
-  'campaign.autoApproval':         true,
   'payment.escrow':                true,
   // Per-platform switches for the OAuth "Connect Accounts" flow on creator
   // and business, mobile and web. Off = that platform's connect button is
@@ -347,7 +346,10 @@ export class AdminRepository {
         where,
         skip:    (page - 1) * limit,
         take:    limit,
-        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        // The review queue is first-come-first-served (oldest submission first).
+        orderBy: status === 'PENDING_APPROVAL'
+          ? [{ submittedForReviewAt: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }, { id: 'asc' }]
+          : [{ createdAt: 'desc' }, { id: 'asc' }],
         include: {
           business: { select: { businessName: true, logoUrl: true } },
           _count:   { select: { applications: true } },
@@ -634,12 +636,6 @@ export class AdminRepository {
     });
   }
 
-  async approveCampaign(campaignId: string) {
-    return prisma.campaign.update({
-      where: { id: campaignId },
-      data:  { status: 'ACTIVE' },
-    });
-  }
 
   // Applications with an ACCEPTED status are the only ones worth notifying a
   // creator about before wiping them (see softDeleteCampaignCascade) — a

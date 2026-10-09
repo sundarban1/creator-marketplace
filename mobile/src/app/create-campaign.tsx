@@ -32,7 +32,6 @@ import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { EventAttachmentsField } from '@/components/EventAttachmentsField';
 import type { CampaignAttachment } from '@/services/guidedCampaign';
-import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
 import { VoicePromptInput } from '@/features/business/components/VoicePromptInput';
 import { VoiceTranscriptReview } from '@/features/business/components/VoiceTranscriptReview';
 import { eventOptionLabel, eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
@@ -788,11 +787,13 @@ export default function CreateCampaignScreen() {
   // that falls below the Rs. 500-per-creator floor. Shows a warning modal and
   // keeps the brand on the prompt screen so they can fix the amount and retry.
   const [budgetWarn, setBudgetWarn] = useState<{ creators: number; isTotal: boolean } | null>(null);
-  const [publishedCampaign, setPublishedCampaign] = useState<{ id: string; category: string; lat: number | null; lng: number | null; budgetMin?: number; budgetMax?: number } | null>(null);
 
-  function handleRecommendedDone() {
-    setPublishedCampaign(null);
-    router.replace('/(business)/');
+  // Every new event goes to admin review first, so there's nothing to invite
+  // creators to yet — land on the event, whose banner explains the review
+  // (and the 2–3 hour turnaround). Inviting opens up once it's published.
+  function openSubmittedEvent(id: string) {
+    // campaign-detail shows the "submitted for review" modal on `submitted=1`.
+    router.replace({ pathname: '/campaign-detail', params: { campaignId: id, submitted: '1' } });
   }
   const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
   const scrollRef = useRef<ScrollView>(null);
@@ -1695,8 +1696,7 @@ export default function CreateCampaignScreen() {
       setLoading(true);
       try {
         const campaign = await campaignService.create({ ...buildPaidCampaignPayload(), status: 'ACTIVE' });
-        showToast(t('createEvent.toastPublished'));
-        setPublishedCampaign({ id: campaign.id, category: form.template, lat: locationLat, lng: locationLng, budgetMin: form.aiBudgetMin, budgetMax: form.aiBudgetMax });
+        openSubmittedEvent(campaign.id);
       } catch (err) {
         showToast(err instanceof Error ? err.message : t('createEvent.toastPublishFailed'), 'error');
       } finally {
@@ -1716,8 +1716,7 @@ export default function CreateCampaignScreen() {
       setLoading(true);
       try {
         const campaign = await campaignService.create({ ...buildOpenEventPayload(), status: 'ACTIVE' });
-        showToast(t('createEvent.toastPublished'));
-        setPublishedCampaign({ id: campaign.id, category: form.template, lat: locationLat, lng: locationLng });
+        openSubmittedEvent(campaign.id);
       } catch (err) {
         showToast(err instanceof Error ? err.message : t('createEvent.toastPublishFailed'), 'error');
       } finally {
@@ -3939,18 +3938,6 @@ export default function CreateCampaignScreen() {
       </BottomSheet>
 
       <AiGeneratingOverlay visible={aiLoading} t={t} />
-
-      {/* Recommended creators — shown right after publishing */}
-      <RecommendedCreatorsModal
-        visible={!!publishedCampaign}
-        campaignId={publishedCampaign?.id ?? null}
-        category={publishedCampaign?.category ?? ''}
-        lat={publishedCampaign?.lat}
-        lng={publishedCampaign?.lng}
-        budgetMin={publishedCampaign?.budgetMin}
-        budgetMax={publishedCampaign?.budgetMax}
-        onDone={handleRecommendedDone}
-      />
 
       {/* Toast */}
       {toast && (

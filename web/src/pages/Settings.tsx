@@ -172,7 +172,6 @@ const DEFAULTS: PlatformSettings = {
   'creator.registrationEnabled':  true,
   'creator.onboarding':          true,
   'business.onboarding':         true,
-  'campaign.autoApproval':       true,
   'payment.escrow':              true,
   'socialAccounts.tiktok.enabled':    true,
   'socialAccounts.facebook.enabled':  true,
@@ -324,7 +323,6 @@ export function Settings() {
           <Toggle label="Creator Registration"  description="Allow new creators to sign up on the platform"                   value={bool('creator.registrationEnabled')}  onChange={(v) => toggle('creator.registrationEnabled', v)} />
           <Toggle label="Creator Onboarding"    description="Enable the creator onboarding flow for new users"                value={bool('creator.onboarding')}    onChange={(v) => toggle('creator.onboarding', v)} />
           <Toggle label="Business Onboarding"   description="Enable the business onboarding flow for new users"               value={bool('business.onboarding')}   onChange={(v) => toggle('business.onboarding', v)} />
-          <Toggle label="Event Auto-Approval"    description="When off, new events go into a pending-review queue and stay hidden from creators until an admin approves them" value={bool('campaign.autoApproval')} onChange={(v) => toggle('campaign.autoApproval', v)} />
           <Toggle label="Payment Escrow"         description="Hold payments in escrow until event completion is confirmed"      value={bool('payment.escrow')}        onChange={(v) => toggle('payment.escrow', v)} />
           <Toggle label="TikTok Connect"    description="When on, creators and businesses (mobile + web) can connect their TikTok account. When off, the platform is hidden from the Connect Accounts list entirely." value={bool('socialAccounts.tiktok.enabled')} onChange={(v) => toggle('socialAccounts.tiktok.enabled', v)} />
           <Toggle label="Facebook Connect"  description="When on, creators and businesses (mobile + web) can connect their Facebook account. When off, the platform is hidden from the Connect Accounts list entirely." value={bool('socialAccounts.facebook.enabled')} onChange={(v) => toggle('socialAccounts.facebook.enabled', v)} />

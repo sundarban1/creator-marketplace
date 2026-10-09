@@ -20,7 +20,9 @@ const TABS = ['active', 'draft', 'closed'] as const;
 type Tab = (typeof TABS)[number];
 
 const MATCH: Record<Tab, (s: string) => boolean> = {
-  active: (s) => s === 'ACTIVE' || s === 'PENDING_APPROVAL' || s === 'PAUSED',
+  // Events in review sit with the live ones — that's where the business looks
+  // for "what needs my attention" (changes requested / rejected).
+  active: (s) => ['ACTIVE', 'PENDING_APPROVAL', 'CHANGES_REQUESTED', 'REJECTED', 'PAUSED'].includes(s),
   draft: (s) => s === 'DRAFT',
   closed: (s) => s === 'CLOSED' || s === 'CANCELLED' || s === 'EXPIRED',
 };

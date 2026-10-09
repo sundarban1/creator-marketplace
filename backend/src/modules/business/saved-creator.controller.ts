@@ -82,10 +82,15 @@ export class SavedCreatorController {
 
       const campaign = await prisma.campaign.findUnique({
         where: { id: campaignId },
-        select: { id: true, title: true, businessId: true },
+        select: { id: true, title: true, businessId: true, status: true },
       });
       if (!campaign || campaign.businessId !== business.id) {
         throw new AppError(getDict().business.campaignNotFound, HttpStatus.NOT_FOUND);
+      }
+      // Creators can only be invited to a published event — an event in
+      // review (or a draft) isn't visible to them and can't take proposals.
+      if (campaign.status !== 'ACTIVE') {
+        throw new AppError('Creators can be invited once your event has been approved and published.', HttpStatus.CONFLICT);
       }
 
       // A creator can only be invited to a campaign once. Anyone who already has

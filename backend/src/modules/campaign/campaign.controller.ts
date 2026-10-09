@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { CampaignStatus, ApplicationStatus, CampaignType } from '@prisma/client';
 import { CampaignService } from './campaign.service';
+import { campaignReviewService, SUBMITTED_FOR_REVIEW_MESSAGE } from './campaign-review.service';
+import { toCampaignDto } from './campaign.dto';
 import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
@@ -113,7 +115,7 @@ export class CampaignController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.create(req.user!.id, req.body);
-      success(res, campaign, 'Campaign created successfully', 201);
+      success(res, campaign, campaign.status === 'PENDING_APPROVAL' ? SUBMITTED_FOR_REVIEW_MESSAGE : 'Campaign created successfully', 201);
     } catch (err) {
       next(err);
     }
@@ -176,7 +178,7 @@ export class CampaignController {
 
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const campaign = await campaignService.getById(req.params.id, req.language);
+      const campaign = await campaignService.getById(req.params.id, req.language, req.user ?? null);
       success(res, campaign, 'Campaign retrieved successfully');
     } catch (err) {
       next(err);
@@ -211,7 +213,27 @@ export class CampaignController {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.update(req.params.id, req.user!.id, req.body);
-      success(res, campaign, 'Campaign updated successfully');
+      success(res, campaign, campaign.status === 'PENDING_APPROVAL' ? SUBMITTED_FOR_REVIEW_MESSAGE : 'Campaign updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /api/campaigns/:id/resubmit — CHANGES_REQUESTED / resubmittable
+  // REJECTED → PENDING_APPROVAL without further edits.
+  async resubmitForReview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const raw = await campaignReviewService.resubmit(req.params.id, req.user!.id);
+      success(res, toCampaignDto(raw), SUBMITTED_FOR_REVIEW_MESSAGE);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /api/campaigns/:id/review-history — owner business or admin only.
+  async getReviewHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      success(res, await campaignReviewService.history(req.params.id, req.user!));
     } catch (err) {
       next(err);
     }
@@ -230,7 +252,12 @@ export class CampaignController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const status = req.query.status as CampaignStatus | undefined;
+      // `status=REVIEW` = every event in moderation (pending, changes
+      // requested, rejected) — the business "In review" tab.
+      const rawStatus = req.query.status as string | undefined;
+      const status: CampaignStatus | CampaignStatus[] | undefined = rawStatus === 'REVIEW'
+        ? [CampaignStatus.PENDING_APPROVAL, CampaignStatus.CHANGES_REQUESTED, CampaignStatus.REJECTED]
+        : rawStatus && (Object.values(CampaignStatus) as string[]).includes(rawStatus) ? rawStatus as CampaignStatus : undefined;
       const search = (req.query.search as string)?.trim() || undefined;
       const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit, req.language, status, search);
       paginated(res, campaigns, total, page, limit);

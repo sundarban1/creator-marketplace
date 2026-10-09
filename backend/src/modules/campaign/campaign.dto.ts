@@ -119,6 +119,15 @@ export interface CampaignDto {
   complexity: 'QUICK' | 'STANDARD' | 'ADVANCED' | null;
   aiProvenance: Record<string, 'USER' | 'AI_EXTRACTED' | 'AI_SUGGESTED'>;
   draftStep: string | null;
+  // Event review state — feedback is cleared on approval, so a creator-visible
+  // (ACTIVE/PAUSED/…) event never carries one. See campaign-review.service.ts.
+  review: {
+    feedback: string | null;
+    reviewedAt: string | null;
+    submittedAt: string | null;
+    resubmissionAllowed: boolean;
+    revision: number;
+  };
   createdAt: string;
   updatedAt: string | null;
   business?: {
@@ -320,6 +329,11 @@ type RawCampaign = {
   complexity?: string | null;
   aiProvenance?: Prisma.JsonValue;
   draftStep?: string | null;
+  reviewFeedback?: string | null;
+  reviewedAt?: Date | null;
+  submittedForReviewAt?: Date | null;
+  resubmissionAllowed?: boolean;
+  reviewRevision?: number;
   createdAt: Date;
   updatedAt?: Date;
   business?: { id?: string; slug?: string | null; businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
@@ -406,6 +420,13 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     complexity:       (c.complexity as CampaignDto['complexity']) ?? null,
     aiProvenance:     c.aiProvenance && typeof c.aiProvenance === 'object' && !Array.isArray(c.aiProvenance) ? (c.aiProvenance as CampaignDto['aiProvenance']) : {},
     draftStep:        c.draftStep ?? null,
+    review: {
+      feedback:            c.reviewFeedback ?? null,
+      reviewedAt:          c.reviewedAt ? c.reviewedAt.toISOString() : null,
+      submittedAt:         c.submittedForReviewAt ? c.submittedForReviewAt.toISOString() : null,
+      resubmissionAllowed: c.resubmissionAllowed ?? true,
+      revision:            c.reviewRevision ?? 0,
+    },
     createdAt:      c.createdAt.toISOString(),
     updatedAt:      c.updatedAt ? c.updatedAt.toISOString() : null,
   };

@@ -68,6 +68,8 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
   payment_refunded:         { icon: 'undo',             iconColor: '#D97706', iconBg: '#FFFBEB', accentColor: '#D97706', labelKey: 'notifications.typePaymentRefunded' },
   campaign_approved:        { icon: 'check-circle',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeEventApproved' },
   campaign_rejected:        { icon: 'ban',              iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeEventRejected' },
+  campaign_changes_requested: { icon: 'edit',           iconColor: '#D97706', iconBg: '#FEF3C7', accentColor: '#D97706', labelKey: 'notifications.typeEventChangesRequested' },
+  campaign_status_changed:  { icon: 'info-circle',      iconColor: '#2563EB', iconBg: '#EFF6FF', accentColor: '#2563EB', labelKey: 'notifications.typeEventStatusChanged' },
   campaign_deleted:         { icon: 'trash-alt',        iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeEventRemoved' },
   // Collaboration reminders (backend modules/notifications/notify.ts) + the
   // escrow sweep's existing reminder/expiry rows (jobs/escrowStateMachine.ts).

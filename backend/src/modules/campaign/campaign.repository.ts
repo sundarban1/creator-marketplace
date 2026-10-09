@@ -59,7 +59,10 @@ export class CampaignRepository {
     eventTime?: string | null;
     venue?: string;
     benefits?: string[];
-    status?: 'DRAFT' | 'ACTIVE' | 'PENDING_APPROVAL';
+    status?: 'DRAFT' | 'PENDING_APPROVAL';
+    // Event review — set when a create goes straight into the review queue.
+    submittedForReviewAt?: Date;
+    reviewRevision?: number;
     commissionRate?: number;
     targetAudience?: string[];
     hashtags?: string[];
@@ -105,7 +108,8 @@ export class CampaignRepository {
         eventDate:    data.eventDate ?? null,
         venue:        data.venue ?? null,
         benefits:     data.benefits ?? [],
-        status:       data.status ?? 'ACTIVE',
+        // Never ACTIVE on create: every event goes through admin review.
+        status:       data.status ?? 'PENDING_APPROVAL',
         eventStatus:  'OPEN',
         // Nested create — same transaction as the campaign row itself, so a
         // campaign is never left half-created if a requirement fails validation.
@@ -521,13 +525,13 @@ export class CampaignRepository {
     });
   }
 
-  async findByBusinessId(businessId: string, page: number, limit: number, status?: CampaignStatus, search?: string) {
+  async findByBusinessId(businessId: string, page: number, limit: number, status?: CampaignStatus | CampaignStatus[], search?: string) {
     const skip = (page - 1) * limit;
     const term = search?.trim();
     const where: Prisma.CampaignWhereInput = {
       businessId,
       deletedAt: null,
-      ...(status ? { status } : {}),
+      ...(Array.isArray(status) ? { status: { in: status } } : status ? { status } : {}),
       // A business searching its own "My Work" list — a small set — so a
       // straightforward case-insensitive match across the fields it would
       // recognise a campaign by (title first, then description/category/venue)
@@ -632,8 +636,10 @@ export class CampaignRepository {
     complexity: 'QUICK' | 'STANDARD' | 'ADVANCED';
     aiProvenance: Prisma.InputJsonValue;
     draftStep: string | null;
-  }>) {
-    return prisma.campaign.update({
+    submittedForReviewAt: Date;
+    reviewRevision: number;
+  }>, client: Prisma.TransactionClient | typeof prisma = prisma) {
+    return client.campaign.update({
       where: { id },
       data,
     });

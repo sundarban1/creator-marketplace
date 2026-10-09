@@ -9,7 +9,7 @@ const TABLES = [
   'wallet_transactions', 'payment_transactions', 'creator_reliability',
   'redemption_sessions', 'promotions',
   'business_credits_ledger', 'business_credits_accounts',
-  'opportunity_shares', 'social_accounts',
+  'opportunity_shares', 'social_accounts', 'campaign_reviews',
   'applications', 'campaigns', 'creator_profiles', 'business_profiles',
   'platform_settings', 'activity_logs', 'audit_logs', 'notification_deliveries', 'notifications', 'users',
 ];

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { CampaignController } from './campaign.controller';
-import { authenticate, authorize } from '../../middleware/auth';
+import { authenticate, authorize, optionalAuthenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { uploadImage, uploadDeliverableFile, uploadCampaignAttachment } from '../../middleware/upload';
 import {
@@ -549,7 +549,7 @@ router.put(
  *       404:
  *         description: Campaign not found
  */
-router.get('/:id', ctrl.getById.bind(ctrl));
+router.get('/:id', optionalAuthenticate, ctrl.getById.bind(ctrl));
 
 /**
  * @swagger
@@ -635,6 +635,10 @@ router.put(
  *         description: Campaign not found
  */
 router.delete('/:id', authenticate, authorize('BUSINESS'), ctrl.delete.bind(ctrl));
+
+// Event review workflow (campaign-review.service.ts).
+router.post('/:id/resubmit', authenticate, authorize('BUSINESS'), ctrl.resubmitForReview.bind(ctrl));
+router.get('/:id/review-history', authenticate, authorize('BUSINESS', 'ADMIN'), ctrl.getReviewHistory.bind(ctrl));
 
 /**
  * @swagger

@@ -65,6 +65,7 @@ model User {
   reportsFiled              Report[]               @relation("ReportsFiled")
   authAccounts              AuthAccount[]
   biometricCredentials      BiometricCredential[]
+  campaignReviews           CampaignReview[]       @relation("CampaignReviewActor")
   // Share Opportunity analytics — the share whose link this account clicked
   // before registering (set once, never overwritten). Attribution only: no
   // reward or entitlement of any kind hangs off it. See OpportunityShare.
@@ -965,6 +966,19 @@ model Campaign {
   aiProvenance          Json                  @default("{}")
   // Last step the business was on — "Continue your campaign" resumes here.
   draftStep             String?
+  // ── Event review (moderation) ───────────────────────────────────────────
+  // Current-state mirror of the latest CampaignReview row, so dashboards can
+  // show the decision without reading history. reviewFeedback is the admin's
+  // business-facing text for CHANGES_REQUESTED / REJECTED (cleared on approve).
+  reviewFeedback        String?
+  reviewedAt            DateTime?
+  // Last time the business (re)submitted for review — the queue's sort key.
+  submittedForReviewAt  DateTime?
+  // An admin may reject permanently (policy violation); false blocks resubmit.
+  resubmissionAllowed   Boolean               @default(true)
+  // Bumped on every (re)submission so each history row names the revision it judged.
+  reviewRevision        Int                   @default(0)
+  reviews               CampaignReview[]
   applications          Application[]
   business              BusinessProfile       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversations         Conversation[]
@@ -991,7 +1005,38 @@ model Campaign {
   @@index([campaignType, status])
   @@index([locationLat, locationLng])
   @@index([deletedAt])
+  @@index([status, submittedForReviewAt])
   @@map("campaigns")
+}
+
+enum CampaignReviewAction {
+  SUBMITTED
+  RESUBMITTED
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+}
+
+// Append-only moderation history for a campaign — one row per submission and
+// per admin decision; never updated or deleted on edit/resubmit.
+model CampaignReview {
+  id            String               @id @default(cuid())
+  campaignId    String
+  // Admin for decisions; the business owner's user for (re)submissions.
+  actorId       String?
+  action        CampaignReviewAction
+  fromStatus    CampaignStatus?
+  toStatus      CampaignStatus
+  feedback      String?
+  revision      Int
+  // Material fields changed when a published event was sent back to review.
+  changedFields String[]             @default([])
+  createdAt     DateTime             @default(now())
+  campaign      Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  actor         User?                @relation("CampaignReviewActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, createdAt(sort: Desc)])
+  @@map("campaign_reviews")
 }
 
 // Shared per-event Q&A for free events (campaignType OPEN_EVENT), which never
@@ -2175,9 +2220,17 @@ enum CampaignComplexity {
   ADVANCED
 }
 
+// Moderation mapping (event review workflow, docs/EVENT_REVIEW.md):
+//   PENDING_APPROVAL  = "Pending Review" — submitted, hidden from creators
+//   ACTIVE            = "Published"      — approved, discoverable, accepts proposals
+//   CHANGES_REQUESTED = admin asked for corrections; business edits + resubmits
+//   REJECTED          = admin declined; resubmittable unless
+//                       Campaign.resubmissionAllowed is false
 enum CampaignStatus {
   DRAFT
   PENDING_APPROVAL
+  CHANGES_REQUESTED
+  REJECTED
   ACTIVE
   PAUSED
   CLOSED

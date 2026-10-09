@@ -22,9 +22,11 @@ import { sortOtherLast, useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { canResubmitEvent } from '@/services/campaign';
+import { EventReviewBanner } from '@/features/business/components/EventReviewBanner';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { EventAttachmentsField } from '@/components/EventAttachmentsField';
 import type { CampaignAttachment } from '@/services/guidedCampaign';
@@ -265,6 +267,9 @@ export default function EditCampaignScreen() {
   // Once a proposal has been submitted, the terms it was submitted against
   // (price, platform, deliverables, status) are locked — everything else stays editable.
   const hasProposals = (campaign?.proposals ?? 0) > 0;
+  // Review statuses aren't business-settable — no status picker while the
+  // event is in moderation (the server owns those transitions).
+  const inReview = campaign?.status === 'pending_approval' || campaign?.status === 'changes_requested' || campaign?.status === 'rejected';
   const isOpenEvent = campaign?.campaignType === 'OPEN_EVENT';
 
   // Best-effort reverse-parse of the persisted "1 Reel, 2 Story" deliverables string
@@ -391,8 +396,9 @@ export default function EditCampaignScreen() {
     if (Object.keys(errs).length > 0) { setEditErrors(errs); return; }
     setSaving(true);
     try {
+      let saved: Campaign;
       if (isOpenEvent) {
-        await campaignService.update(campaign!.id, {
+        saved = await campaignService.update(campaign!.id, {
           title:       editForm.title.trim(),
           description: editForm.description.trim() || undefined,
           featureImageUrl: editForm.featureImageUrl,
@@ -416,7 +422,7 @@ export default function EditCampaignScreen() {
           }),
         });
       } else {
-        await campaignService.update(campaign!.id, {
+        saved = await campaignService.update(campaign!.id, {
           title:        editForm.title.trim(),
           description:  editForm.description.trim() || undefined,
           featureImageUrl: editForm.featureImageUrl,
@@ -449,7 +455,11 @@ export default function EditCampaignScreen() {
       // immediately instead of waiting out their staleTime.
       void queryClient.invalidateQueries({ queryKey: ['campaign', campaign!.id] });
       void queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-      showToast(t('campaignDetail.toastUpdated'));
+      // Saving a changes-requested event resubmits it; a material edit to a
+      // published one sends it back to review — say so, not just "updated".
+      const submitted = saved.status === 'pending_approval' && campaign!.status !== 'pending_approval';
+      if (submitted) void queryClient.invalidateQueries({ queryKey: ['campaign-review-history', campaign!.id] });
+      showToast(submitted ? t('eventReview.submittedToast') : t('campaignDetail.toastUpdated'));
       setTimeout(goBack, 700);
     } catch (e) {
       showToast(e instanceof Error ? e.message : t('campaignDetail.toastFailed'), 'error');
@@ -494,6 +504,15 @@ export default function EditCampaignScreen() {
       </View>
 
       <ScrollView contentContainerStyle={s.bodyContent} showsVerticalScrollIndicator={false}>
+        {/* Event review: the admin's feedback while correcting, or a note that
+            material edits to a published event go back through review. */}
+        {campaign && canResubmitEvent(campaign) && <EventReviewBanner campaign={campaign} compact />}
+        {campaign && (campaign.status === 'active' || campaign.status === 'draft' || campaign.status === 'closed' || campaign.status === 'expired') && (
+          <View style={[s.reviewNote, { backgroundColor: C.primaryLight, borderColor: C.border }]}>
+            <FontAwesome5 name="info-circle" size={13} color={C.brinjal1} />
+            <Text style={[s.reviewNoteTxt, { color: C.text }]}>{t('eventReview.materialEditNote')}</Text>
+          </View>
+        )}
 
         <ListingHeroCard
           featureImageUrl={editForm.featureImageUrl}
@@ -666,7 +685,7 @@ export default function EditCampaignScreen() {
           </>
         )}
 
-        <SectionCard
+        {!inReview && <SectionCard
           title={t('campaignDetail.fieldStatus')}
           sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
           colors={C}>
@@ -683,7 +702,7 @@ export default function EditCampaignScreen() {
             colors={C}
             disabled={hasProposals || editForm.status === 'expired'}
           />
-        </SectionCard>
+        </SectionCard>}
 
         {/* ── Featured ── */}
         <View>
@@ -914,6 +933,8 @@ const cal = StyleSheet.create({
 });
 
 const s = StyleSheet.create({
+  reviewNote: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm, borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.lg },
+  reviewNoteTxt: { flex: 1, fontFamily: F.regular, fontSize: FONT_SIZE.sm, lineHeight: lineHeightFor(FONT_SIZE.sm) },
   container: { flex: 1 },
   centered:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   goBackBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },

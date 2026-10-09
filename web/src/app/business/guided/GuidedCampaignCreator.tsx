@@ -5,8 +5,10 @@ import { useT } from '../../i18n';
 import { ApiError } from '../../lib/apiClient';
 import {
   createDraftFrom, createGuidedDraft, deleteCampaign, fetchCampaign, fetchLatestDraft, generateAiDraft, publishGuidedDraft,
-  updateCampaign, type AiClarifyingQuestion, type MyCampaign,
+  updateCampaign, resubmitCampaign, type AiClarifyingQuestion, type MyCampaign,
 } from '../../api/business';
+import { EventReviewBanner } from '../EventReviewBanner';
+import { canResubmitEvent } from '../eventReviewStatus';
 import { AiGeneratingOverlay } from '../AiGeneratingOverlay';
 import { NeedHelpButton } from '../NeedHelpModal';
 import { Alert } from '../../ui/Alert';
@@ -216,9 +218,14 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
     try {
       if (mode === 'edit' && campaign) {
         const changes = diffForUpdate(initialForm, form);
-        if (Object.keys(changes).length) await updateCampaign(campaign.id, changes);
+        let saved: MyCampaign | null = null;
+        if (Object.keys(changes).length) saved = await updateCampaign(campaign.id, changes);
+        // Changes requested / resubmittable rejection: saving IS the
+        // resubmission, even when the business decided nothing needed editing.
+        else if (canResubmitEvent(campaign)) saved = await resubmitCampaign(campaign.id);
         clearLocalBackup(localKey);
-        navigate(`/business/events/${campaign.id}`, { state: { flash: t('guided.changesSaved') } });
+        const submitted = saved?.status === 'PENDING_APPROVAL' && campaign.status !== 'PENDING_APPROVAL';
+        navigate(`/business/events/${campaign.id}`, { state: { flash: submitted ? t('eventReview.submittedFlash') : t('guided.changesSaved') } });
         return;
       }
       await autosave.flush();
@@ -231,7 +238,7 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
       const published = await publishGuidedDraft(id);
       clearLocalBackup(id);
       clearLocalBackup('new');
-      navigate(`/business/events/${published.id}`, { replace: true, state: { flash: t('guided.publishedFlash') } });
+      navigate(`/business/events/${published.id}`, { replace: true, state: { submittedForReview: true } });
     } catch (err) {
       setError(mapServerError(err));
     } finally {
@@ -323,6 +330,11 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
       )}
 
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
+
+      {mode === 'edit' && campaign && canResubmitEvent(campaign) && <EventReviewBanner campaign={campaign} compact />}
+      {mode === 'edit' && campaign && ['ACTIVE', 'PAUSED', 'CLOSED', 'EXPIRED'].includes(campaign.status) && (
+        <Alert tone="info" className="mb-5">{t('eventReview.materialEditNote')}</Alert>
+      )}
 
       {step !== 'idea' && step !== 'clarify' && planned.length > 0 && (
         <ProgressRail steps={railSteps} current={railCurrent} onJump={(k) => setStep(k as GuidedStep)} />

@@ -26,7 +26,10 @@ export interface MyCampaign {
   totalBudget?: number | null;
   creatorsNeeded?: number;
   campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
-  status: 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED';
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'CHANGES_REQUESTED' | 'REJECTED' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED';
+  // Event review state — feedback is the admin's text for CHANGES_REQUESTED /
+  // REJECTED (cleared on approval). Absent on responses from older servers.
+  review?: EventReviewState;
   isFeatured: boolean;
   minFollowers: number;
   paymentStatus: string;
@@ -297,6 +300,32 @@ export interface UpdateCampaignInput {
   startDate?: string | null;
   applicationDeadline?: string | null;
   aiProvenance?: Record<string, Provenance>;
+}
+
+export interface EventReviewState {
+  feedback: string | null;
+  reviewedAt: string | null;
+  submittedAt: string | null;
+  resubmissionAllowed: boolean;
+  revision: number;
+}
+
+export interface EventReviewHistoryItem {
+  id: string;
+  action: 'SUBMITTED' | 'RESUBMITTED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED';
+  toStatus: string;
+  feedback: string | null;
+  revision: number;
+  createdAt: string;
+}
+
+/** CHANGES_REQUESTED / resubmittable REJECTED → back into the review queue as-is. */
+export function resubmitCampaign(id: string): Promise<MyCampaign> {
+  return apiRequest<MyCampaign>('POST', `/api/campaigns/${id}/resubmit`).then((r) => r.data);
+}
+
+export function fetchEventReviewHistory(id: string, signal?: AbortSignal): Promise<EventReviewHistoryItem[]> {
+  return apiRequest<EventReviewHistoryItem[]>('GET', `/api/campaigns/${id}/review-history`, undefined, { signal }).then((r) => r.data);
 }
 
 export function updateCampaign(id: string, input: UpdateCampaignInput): Promise<MyCampaign> {

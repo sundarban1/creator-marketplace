@@ -38,13 +38,14 @@ import { TabColors } from '@/utilities/tabColors';
 
 type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
-const FILTERS = ['All', 'Active', 'Draft', 'Closed', 'Expired'] as const;
+const FILTERS = ['All', 'Active', 'Review', 'Draft', 'Closed', 'Expired'] as const;
 
 const EMPTY_CFG: Record<typeof FILTERS[number], {
   icon: IoniconName; iconColor: string; iconBg: string; showCreate: boolean;
 }> = {
   All:     { icon: 'bullhorn',    iconColor: TabColors.neutral.color,  iconBg: TabColors.neutral.bg,  showCreate: true  },
   Active:  { icon: 'bolt',        iconColor: TabColors.positive.color, iconBg: TabColors.positive.bg, showCreate: true  },
+  Review:  { icon: 'clipboard-check', iconColor: TabColors.warning.color, iconBg: TabColors.warning.bg, showCreate: false },
   Draft:   { icon: 'edit',       iconColor: TabColors.warning.color,  iconBg: TabColors.warning.bg,  showCreate: true  },
   Closed:  { icon: 'lock',  iconColor: TabColors.closed.color,   iconBg: TabColors.closed.bg,   showCreate: false },
   Expired: { icon: 'hourglass-end', iconColor: TabColors.closed.color, iconBg: TabColors.closed.bg, showCreate: false },
@@ -55,6 +56,8 @@ const STATUS_CFG = {
   draft:  { bg: TabColors.warning.bg,  color: TabColors.warning.color  },
   closed: { bg: TabColors.closed.bg,   color: TabColors.closed.color   },
   pending_approval: { bg: TabColors.warning.bg, color: TabColors.warning.color },
+  changes_requested: { bg: TabColors.warning.bg, color: TabColors.warning.color },
+  rejected: { bg: '#FEE2E2', color: '#DC2626' },
   // Reuses "closed"'s neutral gray — expired vs. closed only needs to be
   // distinguishable via label text here, not a separate color.
   expired: { bg: TabColors.closed.bg, color: TabColors.closed.color },
@@ -85,8 +88,8 @@ type FilterKey = typeof FILTERS[number];
 type TabState = { items: Campaign[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
 const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
 
-const STATUS_PARAM: Record<FilterKey, 'ACTIVE' | 'DRAFT' | 'CLOSED' | 'EXPIRED' | undefined> = {
-  All: undefined, Active: 'ACTIVE', Draft: 'DRAFT', Closed: 'CLOSED', Expired: 'EXPIRED',
+const STATUS_PARAM: Record<FilterKey, 'ACTIVE' | 'REVIEW' | 'DRAFT' | 'CLOSED' | 'EXPIRED' | undefined> = {
+  All: undefined, Active: 'ACTIVE', Review: 'REVIEW', Draft: 'DRAFT', Closed: 'CLOSED', Expired: 'EXPIRED',
 };
 
 export default function CampaignsScreen() {
@@ -102,7 +105,7 @@ export default function CampaignsScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
   const [tabData, setTabData] = useState<Record<FilterKey, TabState>>({
-    All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(), Expired: emptyTabState(),
+    All: emptyTabState(), Active: emptyTabState(), Review: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(), Expired: emptyTabState(),
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -261,7 +264,7 @@ export default function CampaignsScreen() {
   // between tabs — invalidate everything and refetch the tab in view rather
   // than trying to patch each cached tab's items/counts individually.
   function invalidateAllTabs() {
-    setTabData({ All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(), Expired: emptyTabState() });
+    setTabData({ All: emptyTabState(), Active: emptyTabState(), Review: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(), Expired: emptyTabState() });
   }
 
   async function loadRecommended(c: Campaign) {
@@ -366,12 +369,14 @@ export default function CampaignsScreen() {
     }
   }
 
+  const [showSubmittedModal, setShowSubmittedModal] = useState(false);
+
   async function handlePublishDraft(c: Campaign) {
     if (publishingId) return;
     setPublishingId(c.id);
     try {
       await campaignService.update(c.id, { status: 'active' });
-      toast.success(t('campaigns.draftPublished'));
+      setShowSubmittedModal(true);
       invalidateAllTabs();
       setLoading(true);
       await loadTab(activeFilter, 1, true);
@@ -415,6 +420,7 @@ export default function CampaignsScreen() {
   const CAMP_TABS = [
     { key: 'All',    label: t('campaigns.all'),    icon: 'layer-group'      as const, color: TabColors.neutral.color,  count: tabData.All.total },
     { key: 'Active', label: t('campaigns.active'), icon: 'bolt'       as const, color: TabColors.positive.color, count: tabData.Active.total },
+    { key: 'Review', label: t('eventReview.tabInReview'), icon: 'clipboard-check' as const, color: TabColors.warning.color, count: tabData.Review.total },
     { key: 'Draft',  label: t('campaigns.draft'),  icon: 'edit'      as const, color: TabColors.warning.color,  count: tabData.Draft.total },
     { key: 'Closed', label: t('campaigns.closed'), icon: 'lock' as const, color: TabColors.closed.color,   count: tabData.Closed.total },
     { key: 'Expired', label: t('campaigns.expired'), icon: 'hourglass-end' as const, color: TabColors.closed.color, count: tabData.Expired.total },
@@ -551,10 +557,10 @@ export default function CampaignsScreen() {
 
                 {/* Text */}
                 <Text style={[styles.emptyTitle, { color: C.text }]}>
-                  {activeFilter === 'All' ? t('campaigns.emptyNoEvents') : activeFilter === 'Active' ? t('campaigns.emptyNoActive') : activeFilter === 'Draft' ? t('campaigns.emptyNoDrafts') : activeFilter === 'Expired' ? t('campaigns.emptyNoExpired') : t('campaigns.emptyNoClosed')}
+                  {activeFilter === 'All' ? t('campaigns.emptyNoEvents') : activeFilter === 'Active' ? t('campaigns.emptyNoActive') : activeFilter === 'Review' ? t('eventReview.emptyInReview') : activeFilter === 'Draft' ? t('campaigns.emptyNoDrafts') : activeFilter === 'Expired' ? t('campaigns.emptyNoExpired') : t('campaigns.emptyNoClosed')}
                 </Text>
                 <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                  {activeFilter === 'All' ? t('campaigns.emptyNoEventsSub') : activeFilter === 'Active' ? t('campaigns.emptyNoActiveSub') : activeFilter === 'Draft' ? t('campaigns.emptyNoDraftsSub') : activeFilter === 'Expired' ? t('campaigns.emptyNoExpiredSub') : t('campaigns.emptyNoClosedSub')}
+                  {activeFilter === 'All' ? t('campaigns.emptyNoEventsSub') : activeFilter === 'Active' ? t('campaigns.emptyNoActiveSub') : activeFilter === 'Review' ? t('eventReview.emptyInReviewSub') : activeFilter === 'Draft' ? t('campaigns.emptyNoDraftsSub') : activeFilter === 'Expired' ? t('campaigns.emptyNoExpiredSub') : t('campaigns.emptyNoClosedSub')}
                 </Text>
 
                 {/* Create button */}
@@ -636,7 +642,9 @@ export default function CampaignsScreen() {
                           <View style={[styles.tagBadge, { backgroundColor: st.bg }]}>
                             <Text style={[styles.tagBadgeText, { color: st.color }]}>
                               {c.status === 'active' ? t('campaigns.statusActive')
-                                : c.status === 'pending_approval' ? t('campaigns.statusPendingApproval')
+                                : c.status === 'pending_approval' ? t('eventReview.statusPending')
+                                : c.status === 'changes_requested' ? t('eventReview.statusChanges')
+                                : c.status === 'rejected' ? t('eventReview.statusRejected')
                                 : c.status === 'expired' ? t('campaigns.statusExpired')
                                 : t('campaigns.statusClosed')}
                             </Text>
@@ -776,6 +784,18 @@ export default function CampaignsScreen() {
         loading={deleting}
         onConfirm={handleConfirmDeleteDraft}
         onCancel={() => { if (!deleting) setDeleteTarget(null); }}
+      />
+
+      <AppModal
+        visible={showSubmittedModal}
+        type="success"
+        icon="clipboard-check"
+        title={t('eventReview.submittedModalTitle')}
+        body={t('eventReview.submittedModalBody')}
+        confirmLabel={t('eventReview.submittedModalOk')}
+        hideCancel
+        onConfirm={() => setShowSubmittedModal(false)}
+        onCancel={() => setShowSubmittedModal(false)}
       />
 
       {/* Invite Creators bottom sheet */}

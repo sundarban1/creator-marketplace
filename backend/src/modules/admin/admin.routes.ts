@@ -18,6 +18,9 @@ import {
   updateCampaign,
   updateCampaignStatus,
   approveCampaign,
+  requestCampaignChanges,
+  getCampaignReviewHistory,
+  getCampaignReviewCounts,
   rejectCampaign,
   deleteCampaign,
   getSettings,
@@ -73,11 +76,14 @@ router.get('/activity-logs', getActivityLogs);
 router.get('/audit-logs',    getAuditLogs);
 
 router.get('/campaigns', getCampaigns);
+router.get('/campaigns/review-counts', getCampaignReviewCounts);
 router.get('/campaigns/:id', getCampaignDetail);
+router.get('/campaigns/:id/review-history', getCampaignReviewHistory);
 router.put('/campaigns/:id', validate(updateCampaignSchema), updateCampaign);
 router.patch('/campaigns/:id/status', updateCampaignStatus);
 router.post('/campaigns/:id/approve', approveCampaign);
 router.post('/campaigns/:id/reject', rejectCampaign);
+router.post('/campaigns/:id/request-changes', requestCampaignChanges);
 router.delete('/campaigns/:id', deleteCampaign);
 
 router.get('/analytics/:userId', getUserAnalytics);

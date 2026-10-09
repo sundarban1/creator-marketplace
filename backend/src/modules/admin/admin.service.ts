@@ -8,6 +8,12 @@ import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-refer
 import { CampaignService } from '../campaign/campaign.service';
 import { escrowService } from '../campaign/escrow.service';
 import { toCampaignDto } from '../campaign/campaign.dto';
+import { campaignReviewService, type AdminEventAction } from '../campaign/campaign-review.service';
+
+const ADMIN_EVENT_ACTIONS = new Set<string>(['ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED', 'EXPIRED']);
+function isAdminEventAction(status: string): status is Exclude<AdminEventAction, 'DELETED'> {
+  return ADMIN_EVENT_ACTIONS.has(status);
+}
 import type { UpdateCampaignInput } from '../campaign/campaign.schema';
 import { notificationService } from '../notifications/notification.service';
 import { sendAccountVerifiedEmail, sendVerificationRejectedEmail } from '../../utils/email';
@@ -96,11 +102,26 @@ export class AdminService {
     return this.repo.getCampaignDetail(campaignId);
   }
 
-  updateCampaign(campaignId: string, input: UpdateCampaignInput) {
-    return this.campaignService.updateAsAdmin(campaignId, input);
+  async updateCampaign(campaignId: string, input: UpdateCampaignInput) {
+    const before = await this.repo.findCampaignForApproval(campaignId);
+    const updated = await this.campaignService.updateAsAdmin(campaignId, input);
+    // A status change made through the admin edit form reaches the business
+    // like one made from the status control.
+    if (before && updated.status !== before.status && isAdminEventAction(updated.status)) {
+      campaignReviewService.notifyBusinessOfAdminAction(campaignId, updated.status, updated.updatedAt ?? String(Date.now()));
+    }
+    return updated;
   }
 
   async setCampaignStatus(campaignId: string, status: CampaignStatus) {
+    // Moderation statuses only move through approve / request-changes / reject,
+    // so every decision has a reason, history row and business email.
+    const REVIEW: CampaignStatus[] = ['DRAFT', 'PENDING_APPROVAL', 'CHANGES_REQUESTED', 'REJECTED'];
+    const current = await this.repo.findCampaignForApproval(campaignId);
+    if (!current) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
+    if (REVIEW.includes(status) || (REVIEW.includes(current.status) && status !== 'CANCELLED')) {
+      throw new AppError('Use Approve, Request Changes or Reject to change the review status of an event.', HttpStatus.CONFLICT);
+    }
     if (status === 'CLOSED') {
       const campaign = await this.repo.findCampaignForClose(campaignId);
       if (!campaign) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
@@ -120,51 +141,43 @@ export class AdminService {
         );
       }
     }
-    return this.repo.updateCampaignStatus(campaignId, status);
+    const updated = await this.repo.updateCampaignStatus(campaignId, status);
+    if (status !== current.status && isAdminEventAction(status)) {
+      const { updatedAt } = await this.repo.findCampaignForApproval(campaignId) ?? {};
+      campaignReviewService.notifyBusinessOfAdminAction(campaignId, status, updatedAt?.toISOString() ?? String(Date.now()));
+    }
+    return updated;
   }
 
-  async approveCampaign(campaignId: string) {
-    const campaign = await this.repo.findCampaignForApproval(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
-    if (campaign.status !== 'PENDING_APPROVAL') {
-      throw new AppError('Campaign is not pending approval', HttpStatus.BAD_REQUEST);
+  // ── Event review (campaign-review.service.ts owns the transition, history,
+  // concurrency guard and business email/bell) ───────────────────────────────
+
+  async approveCampaign(campaignId: string, adminId: string) {
+    const { campaign, previouslyApproved } = await campaignReviewService.decide(campaignId, adminId, 'APPROVE');
+    const dto = toCampaignDto(campaign);
+    // Followers hear about an event once — not again when a material edit is re-approved.
+    if (!previouslyApproved) {
+      this.campaignService.fanOutNewCampaign(dto, campaign.business, campaign.business.userId);
     }
-
-    const updated = await this.repo.approveCampaign(campaignId);
-    const dto = toCampaignDto(updated);
-    this.campaignService.fanOutNewCampaign(dto, campaign.business, campaign.business.userId);
-
-    notificationService.create({
-      userId:  campaign.business.userId,
-      type:    'campaign_approved',
-      title:   'Event Approved',
-      body:    `Your event "${campaign.title}" has been approved and is now live.`,
-      refId:   campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
-
     return dto;
   }
 
-  async rejectCampaign(campaignId: string, reason: string) {
-    const campaign = await this.repo.findCampaignForApproval(campaignId);
-    if (!campaign) throw new AppError('Campaign not found', HttpStatus.NOT_FOUND);
-    if (campaign.status !== 'PENDING_APPROVAL') {
-      throw new AppError('Campaign is not pending approval', HttpStatus.BAD_REQUEST);
-    }
+  async requestCampaignChanges(campaignId: string, adminId: string, feedback: unknown) {
+    const { campaign } = await campaignReviewService.decide(campaignId, adminId, 'REQUEST_CHANGES', { feedback });
+    return toCampaignDto(campaign);
+  }
 
-    const updated = await this.repo.updateCampaignStatus(campaignId, 'CANCELLED');
+  async rejectCampaign(campaignId: string, adminId: string, reason: unknown, allowResubmission: unknown) {
+    const { campaign } = await campaignReviewService.decide(campaignId, adminId, 'REJECT', { feedback: reason, allowResubmission });
+    return toCampaignDto(campaign);
+  }
 
-    notificationService.create({
-      userId:  campaign.business.userId,
-      type:    'campaign_rejected',
-      title:   'Event Not Approved',
-      body:    `Your event "${campaign.title}" was not approved: ${reason}`,
-      refId:   campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
+  getCampaignReviewHistory(campaignId: string, adminId: string) {
+    return campaignReviewService.history(campaignId, { id: adminId, role: 'ADMIN' });
+  }
 
-    return updated;
+  getCampaignReviewCounts() {
+    return campaignReviewService.queueCounts();
   }
 
   // Force-delete — no status guard (unlike setCampaignStatus('CLOSED')
@@ -178,6 +191,8 @@ export class AdminService {
     const affectedUserIds = campaign.applications.map((a) => a.creator.userId);
 
     const result = await this.repo.softDeleteCampaignCascade(campaignId);
+    // Once per event — a soft-deleted event can't be deleted again.
+    campaignReviewService.notifyBusinessOfAdminAction(campaignId, 'DELETED', 'once');
 
     if (affectedUserIds.length > 0) {
       notificationService.createMany(

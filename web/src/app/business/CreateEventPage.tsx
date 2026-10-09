@@ -313,7 +313,7 @@ export function CreateEventPage() {
         targetAudience: isFree ? roleTypes : undefined,
         brief: attachments.length ? { attachments } : undefined,
       });
-      navigate(`/business/events/${id}`);
+      navigate(`/business/events/${id}`, status === 'DRAFT' ? undefined : { state: { submittedForReview: true } });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.somethingWrong'));
     } finally {

@@ -5,19 +5,10 @@ import { useT } from '../i18n';
 import { perCreatorBudget } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
 import { Avatar } from '../ui/Avatar';
-import { StatusBadge, type BadgeTone } from '../ui/StatusBadge';
+import { StatusBadge } from '../ui/StatusBadge';
+import { EVENT_STATUS_TONE, eventStatusLabel } from './eventReviewStatus';
 import { cn } from '../ui/cn';
 import type { MyCampaign } from '../api/business';
-
-const STATUS_TONE: Record<string, BadgeTone> = {
-  ACTIVE: 'success',
-  DRAFT: 'neutral',
-  PENDING_APPROVAL: 'warning',
-  PAUSED: 'warning',
-  CLOSED: 'neutral',
-  CANCELLED: 'danger',
-  EXPIRED: 'neutral',
-};
 
 /**
  * Same rounded-2xl / gradient-hairline / lift-on-hover card language as the
@@ -89,8 +80,8 @@ export function BizEventCard({ event, onDelete }: { event: MyCampaign; onDelete?
           </span>
         )}
         <StatusBadge
-          label={event.status}
-          tone={STATUS_TONE[event.status] ?? 'neutral'}
+          label={eventStatusLabel(t, event.status)}
+          tone={EVENT_STATUS_TONE[event.status] ?? 'neutral'}
           dot={false}
           className="absolute right-3 top-3 bg-surface shadow-sm"
         />

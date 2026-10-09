@@ -50,7 +50,9 @@ export type Campaign = {
   recentProposals?: number;
   isNew: boolean;
   isFeatured: boolean;
-  status?: 'active' | 'draft' | 'closed' | 'pending_approval' | 'expired';
+  status?: 'active' | 'draft' | 'closed' | 'pending_approval' | 'changes_requested' | 'rejected' | 'expired';
+  // Event review (admin moderation) — feedback/reason, when the business must act.
+  review?: import('@/lib/api').ApiCampaign['review'];
   location?: string;
   locationLat?: number | null;
   locationLng?: number | null;
@@ -205,6 +207,8 @@ export type AppNotification = {
     | 'payment_refunded'
     | 'campaign_approved'
     | 'campaign_rejected'
+    | 'campaign_changes_requested'
+    | 'campaign_status_changed'
     | 'campaign_deleted'
     | 'confirmation_pending'
     | 'deliverable_due_24h'

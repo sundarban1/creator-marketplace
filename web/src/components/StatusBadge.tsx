@@ -23,6 +23,10 @@ type Status =
   | 'new'
   | 'under_review'
   | 'action_taken'
+  | 'pending_review'
+  | 'changes_requested'
+  | 'rejected'
+  | 'published'
   | 'deleted';
 
 const styles: Record<Status, string> = {
@@ -51,6 +55,10 @@ const styles: Record<Status, string> = {
   under_review:   'bg-blue-100 text-blue-700',
   action_taken:   'bg-emerald-100 text-emerald-700',
   deleted:        'bg-red-100 text-red-700',
+  pending_review:    'bg-amber-100 text-amber-700',
+  changes_requested: 'bg-orange-100 text-orange-700',
+  rejected:          'bg-red-100 text-red-700',
+  published:         'bg-emerald-100 text-emerald-700',
 };
 
 interface StatusBadgeProps {

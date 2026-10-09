@@ -9,8 +9,8 @@ import {
 // reused here for the SHORTLISTED application status badge.
 import { StatusBadge }  from '../components/StatusBadge';
 import { Avatar }       from '../components/Avatar';
-import { ConfirmModal } from '../components/ConfirmModal';
 import { EditEventModal } from '../components/EditEventModal';
+import { EventReviewPanel } from '../components/EventReviewPanel';
 import { api, type ApiCampaignDetail, type ApiApplication } from '../lib/api';
 import { useApi }       from '../lib/useApi';
 import { displayEmailOrPhone, displayBusinessName } from '../lib/identity';
@@ -316,10 +316,6 @@ export function CampaignDetail() {
   const navigate   = useNavigate();
   const [statusChanging, setStatusChanging] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
-  const [approving, setApproving] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [rejecting, setRejecting] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
   const { data, loading, error, refetch } = useApi(() => api.admin.campaignDetail(id!));
@@ -344,34 +340,6 @@ export function CampaignDetail() {
     }
   }
 
-  async function handleApprove() {
-    setApproving(true);
-    try {
-      await api.admin.approveCampaign(id!);
-      showToast('Event approved and is now live.');
-      refetch();
-    } catch (e) {
-      showToast((e as Error).message ?? 'Failed to approve event.', false);
-    } finally {
-      setApproving(false);
-    }
-  }
-
-  async function handleReject() {
-    if (!rejectReason.trim()) return;
-    setRejecting(true);
-    try {
-      await api.admin.rejectCampaign(id!, rejectReason.trim());
-      showToast('Event rejected.');
-      setShowRejectModal(false);
-      setRejectReason('');
-      refetch();
-    } catch (e) {
-      showToast((e as Error).message ?? 'Failed to reject event.', false);
-    } finally {
-      setRejecting(false);
-    }
-  }
 
   if (loading) {
     return (
@@ -417,7 +385,7 @@ export function CampaignDetail() {
                   <Star size={11} /> Featured
                 </span>
               )}
-              <StatusBadge status={campaign.status === 'PENDING_APPROVAL' ? 'pending' : campaign.status.toLowerCase()} />
+              <StatusBadge status={campaign.status === 'PENDING_APPROVAL' ? 'pending_review' : campaign.status === 'ACTIVE' ? 'published' : campaign.status.toLowerCase()} />
             </div>
             <p className="text-sm text-gray-500 mt-0.5">{displayBusinessName(campaign.business.businessName)} · {isEvent ? 'Open Event' : 'Paid Event'}</p>
           </div>
@@ -431,24 +399,10 @@ export function CampaignDetail() {
           >
             Edit
           </button>
-          {campaign.status === 'PENDING_APPROVAL' ? (
-            <>
-              <button
-                onClick={handleApprove}
-                disabled={approving}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition-colors"
-              >
-                <CheckCircle2 size={14} />
-                {approving ? 'Approving…' : 'Approve'}
-              </button>
-              <button
-                onClick={() => setShowRejectModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-              >
-                <XCircle size={14} />
-                Reject
-              </button>
-            </>
+          {['PENDING_APPROVAL', 'CHANGES_REQUESTED', 'REJECTED', 'DRAFT'].includes(campaign.status) ? (
+            <a href="#event-review" className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              {campaign.status === 'PENDING_APPROVAL' ? 'Review event' : 'Review status'}
+            </a>
           ) : campaign.status === 'EXPIRED' || campaign.status === 'CANCELLED' ? (
             <>
               <span className="text-xs text-gray-500">Status:</span>
@@ -472,28 +426,6 @@ export function CampaignDetail() {
         </div>
       </div>
 
-      <ConfirmModal
-        open={showRejectModal}
-        title="Reject this event?"
-        body="The business will be notified with the reason below. This cannot be undone."
-        confirmLabel="Reject event"
-        variant="danger"
-        loading={rejecting}
-        confirmDisabled={!rejectReason.trim()}
-        extra={
-          <textarea
-            autoFocus
-            rows={3}
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Reason for rejection (shown to the business)…"
-            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
-          />
-        }
-        onConfirm={handleReject}
-        onCancel={() => { setShowRejectModal(false); setRejectReason(''); }}
-      />
-
       {showEditModal && (
         <EditEventModal
           campaignId={id!}
@@ -501,6 +433,10 @@ export function CampaignDetail() {
           onSaved={() => { setShowEditModal(false); showToast('Event updated.'); refetch(); }}
         />
       )}
+
+      <div id="event-review" className="scroll-mt-4">
+        <EventReviewPanel campaign={campaign} onDecided={refetch} toast={showToast} />
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 

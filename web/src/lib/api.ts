@@ -545,9 +545,29 @@ export interface HelpArticle {
   updatedAt: string;
 }
 
+export interface ApiCampaignReview {
+  id:            string;
+  action:        'SUBMITTED' | 'RESUBMITTED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED';
+  fromStatus:    string | null;
+  toStatus:      string;
+  feedback:      string | null;
+  revision:      number;
+  changedFields: string[];
+  createdAt:     string;
+  actor:         { id: string; email: string } | null;
+}
+
 export interface ApiCampaign {
   id:        string;
   title:     string;
+  campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+  // Event review state (raw admin rows) — see backend campaign-review.service.ts.
+  submittedForReviewAt?: string | null;
+  reviewedAt?:           string | null;
+  reviewFeedback?:       string | null;
+  resubmissionAllowed?:  boolean;
+  reviewRevision?:       number;
+  updatedAt?:            string;
   category:  string;
   platforms: string[];
   // Per-creator bounds (equal for a flat fee); totalBudget is the campaign-wide
@@ -758,6 +778,22 @@ export interface ApiCampaignDetail {
   aiPrompt?:              string | null;
   aiSuggestedCategories?: string[];
   commissionRate?: number | null;
+  featureImageUrl?:     string | null;
+  minFollowers?:        number;
+  startDate?:           string | null;
+  applicationDeadline?: string | null;
+  eventTime?:           string | null;
+  locationType?:        'ONSITE' | 'REMOTE';
+  brief?: {
+    attachments?: Array<{ url: string; name: string; kind?: 'IMAGE' | 'PDF' }>;
+    creatorRequirements?: { tiers?: string[]; languages?: string[]; notes?: string };
+  } | null;
+  // Event review state (see backend campaign-review.service.ts).
+  reviewFeedback?:       string | null;
+  reviewedAt?:           string | null;
+  submittedForReviewAt?: string | null;
+  resubmissionAllowed?:  boolean;
+  reviewRevision?:       number;
   createdAt:      string;
   updatedAt:      string;
   business: {
@@ -1220,8 +1256,17 @@ export const api = {
     approveCampaign: (id: string) =>
       request<ApiCampaign>('POST', `/api/admin/campaigns/${id}/approve`),
 
-    rejectCampaign: (id: string, reason: string) =>
-      request<ApiCampaign>('POST', `/api/admin/campaigns/${id}/reject`, { reason }),
+    rejectCampaign: (id: string, reason: string, allowResubmission = true) =>
+      request<ApiCampaign>('POST', `/api/admin/campaigns/${id}/reject`, { reason, allowResubmission }),
+
+    requestCampaignChanges: (id: string, feedback: string) =>
+      request<ApiCampaign>('POST', `/api/admin/campaigns/${id}/request-changes`, { feedback }),
+
+    campaignReviewHistory: (id: string) =>
+      request<ApiCampaignReview[]>('GET', `/api/admin/campaigns/${id}/review-history`),
+
+    campaignReviewCounts: () =>
+      request<Record<'PENDING_APPROVAL' | 'CHANGES_REQUESTED' | 'REJECTED' | 'ACTIVE', number>>('GET', '/api/admin/campaigns/review-counts'),
 
     // Soft delete — the event row is kept (audit trail) but every proposal/
     // requirement/invitation tied to it is force-deleted regardless of

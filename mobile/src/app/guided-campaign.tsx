@@ -206,8 +206,7 @@ export default function GuidedCampaignScreen() {
       const published = await guidedCampaignService.publishDraft(id);
       clearLocalBackup(id);
       clearLocalBackup('new');
-      toast.success(t('guided.publishedFlash'));
-      router.replace({ pathname: '/campaign-detail', params: { campaignId: published.id } });
+      router.replace({ pathname: '/campaign-detail', params: { campaignId: published.id, submitted: '1' } });
     } catch (err) {
       setError(serverMessage(err));
     } finally {

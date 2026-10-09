@@ -217,8 +217,8 @@ export async function updateCampaignStatus(req: Request, res: Response, next: Ne
 export async function approveCampaign(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const campaign = await service.approveCampaign(id);
-    return success(res, campaign, 'Campaign approved');
+    const campaign = await service.approveCampaign(id!, req.user!.id);
+    return success(res, campaign, 'Event approved and published');
   } catch (err) {
     next(err);
   }
@@ -228,12 +228,38 @@ export async function approveCampaign(req: Request, res: Response, next: NextFun
 export async function rejectCampaign(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const { reason } = req.body as { reason?: string };
-    if (!reason || !reason.trim()) {
-      throw new AppError('Rejection reason is required', HttpStatus.BAD_REQUEST);
-    }
-    const campaign = await service.rejectCampaign(id, reason.trim());
-    return success(res, campaign, 'Campaign rejected');
+    const { reason, allowResubmission } = (req.body ?? {}) as { reason?: unknown; allowResubmission?: unknown };
+    const campaign = await service.rejectCampaign(id!, req.user!.id, reason, allowResubmission);
+    return success(res, campaign, 'Event rejected');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/admin/campaigns/:id/request-changes — body { feedback }
+export async function requestCampaignChanges(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { feedback } = (req.body ?? {}) as { feedback?: unknown };
+    const campaign = await service.requestCampaignChanges(req.params['id']!, req.user!.id, feedback);
+    return success(res, campaign, 'Changes requested');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/campaigns/:id/review-history
+export async function getCampaignReviewHistory(req: Request, res: Response, next: NextFunction) {
+  try {
+    return success(res, await service.getCampaignReviewHistory(req.params['id']!, req.user!.id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/campaigns/review-counts — tab badges for the Event Reviews queue
+export async function getCampaignReviewCounts(_req: Request, res: Response, next: NextFunction) {
+  try {
+    return success(res, await service.getCampaignReviewCounts());
   } catch (err) {
     next(err);
   }

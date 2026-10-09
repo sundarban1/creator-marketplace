@@ -206,10 +206,12 @@ function formatFollowers(n: number): string {
   return String(n);
 }
 
-function mapStatus(s: 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'EXPIRED'): Campaign['status'] {
+function mapStatus(s: ApiCampaign['status']): Campaign['status'] {
   if (s === 'ACTIVE') return 'active';
   if (s === 'CLOSED') return 'closed';
   if (s === 'PENDING_APPROVAL') return 'pending_approval';
+  if (s === 'CHANGES_REQUESTED') return 'changes_requested';
+  if (s === 'REJECTED') return 'rejected';
   if (s === 'EXPIRED') return 'expired';
   return 'draft'; // DRAFT and PAUSED both surface as 'draft' in the mobile UI
 }
@@ -288,8 +290,24 @@ export function toCampaign(api: ApiCampaign): Campaign {
     startDate:           (api as any).startDate ?? null,
     applicationDeadline: (api as any).applicationDeadline ?? null,
     draftStep:           (api as any).draftStep ?? null,
+    review:              api.review,
   };
 }
+
+/** Whether the business can (re)submit this event: edit-and-resubmit or resubmit as-is. */
+export function canResubmitEvent(c: Pick<Campaign, 'status' | 'review'>): boolean {
+  if (c.status === 'changes_requested') return true;
+  return c.status === 'rejected' && c.review?.resubmissionAllowed !== false;
+}
+
+export type EventReviewHistoryItem = {
+  id: string;
+  action: 'SUBMITTED' | 'RESUBMITTED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED';
+  toStatus: string;
+  feedback: string | null;
+  revision: number;
+  createdAt: string;
+};
 
 // Single-file multipart POST via XHR instead of fetch — XHR is what lets
 // onProgress report real upload percentage; the optional AbortSignal lets
@@ -343,10 +361,13 @@ async function uploadFileWithProgress<T>(
   throw new Error(json?.message ?? 'Upload failed');
 }
 
-function toApiStatus(s: Campaign['status']): 'ACTIVE' | 'PAUSED' | 'CLOSED' {
+// Review statuses (and expired) are never business-settable — the server owns
+// those transitions, so they're simply not sent.
+function toApiStatus(s: Campaign['status']): 'ACTIVE' | 'PAUSED' | 'CLOSED' | undefined {
   if (s === 'active') return 'ACTIVE';
   if (s === 'closed') return 'CLOSED';
-  return 'PAUSED';
+  if (s === 'draft') return 'PAUSED';
+  return undefined;
 }
 
 // ── Service ─────────────────────────────────────────────────────────────────────
@@ -355,7 +376,8 @@ export const campaignService = {
   async listMy(params?: {
     page?:   number;
     limit?:  number;
-    status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED';
+    // REVIEW = every event in admin moderation (pending / changes requested / rejected).
+    status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED' | 'REVIEW';
     search?: string;
   }): Promise<{ campaigns: Campaign[]; total: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns/my', undefined, {
@@ -624,11 +646,23 @@ export const campaignService = {
     // edit screen still allows changing it.
     completionType?: 'SERVICE' | 'DELIVERABLE';
     completionReason?: string;
-  }): Promise<void> {
-    await request('PUT', `/api/campaigns/${id}`, {
+  }): Promise<Campaign> {
+    const res = await request<ApiCampaign>('PUT', `/api/campaigns/${id}`, {
       ...data,
       status: data.status !== undefined ? toApiStatus(data.status) : undefined,
     });
+    return toCampaign({ ...res.data, business: res.data.business ?? { businessName: '', logoUrl: null } });
+  },
+
+  /** CHANGES_REQUESTED / resubmittable REJECTED → back into admin review as-is. */
+  async resubmitForReview(id: string): Promise<Campaign> {
+    const res = await request<ApiCampaign>('POST', `/api/campaigns/${id}/resubmit`);
+    return toCampaign({ ...res.data, business: res.data.business ?? { businessName: '', logoUrl: null } });
+  },
+
+  async getReviewHistory(id: string): Promise<EventReviewHistoryItem[]> {
+    const res = await request<EventReviewHistoryItem[]>('GET', `/api/campaigns/${id}/review-history`);
+    return res.data;
   },
 
   async delete(id: string): Promise<void> {

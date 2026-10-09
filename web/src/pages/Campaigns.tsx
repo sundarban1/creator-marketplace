@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useNavigate }       from 'react-router-dom';
-import { ChevronDown, ToggleLeft, ToggleRight, Eye, Pencil, Trash2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ChevronDown, ToggleLeft, ToggleRight, Eye, Pencil, Trash2, Search } from 'lucide-react';
 import { DataTable }    from '../components/DataTable';
 import { StatusBadge }  from '../components/StatusBadge';
 import { PageHeader }   from '../components/PageHeader';
@@ -21,18 +21,29 @@ const PLATFORM_COLORS: Record<string, string> = {
   Twitter:   'text-sky-600 bg-sky-50 border-sky-200',
 };
 
-const STATUS_FILTERS = ['All', 'PENDING_APPROVAL', 'ACTIVE', 'PAUSED', 'CLOSED'] as const;
-const STATUS_FILTER_LABELS: Record<(typeof STATUS_FILTERS)[number], string> = {
+const STATUS_FILTERS = ['All', 'PENDING_APPROVAL', 'CHANGES_REQUESTED', 'REJECTED', 'ACTIVE', 'PAUSED', 'CLOSED'] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
   All: 'All',
   PENDING_APPROVAL: 'Pending Review',
-  ACTIVE: 'ACTIVE',
-  PAUSED: 'PAUSED',
-  CLOSED: 'CLOSED',
+  CHANGES_REQUESTED: 'Changes Requested',
+  REJECTED: 'Rejected',
+  ACTIVE: 'Published',
+  PAUSED: 'Paused',
+  CLOSED: 'Closed',
 };
+// Event Reviews tabs — these switch the table to the review-queue columns.
+const REVIEW_FILTERS = new Set<string>(['PENDING_APPROVAL', 'CHANGES_REQUESTED', 'REJECTED']);
 
 function mapStatus(s: string): string {
-  if (s === 'PENDING_APPROVAL') return 'pending';
+  if (s === 'PENDING_APPROVAL') return 'pending_review';
+  if (s === 'ACTIVE') return 'published';
   return s.toLowerCase();
+}
+
+function formatDateTime(iso?: string | null): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 function formatBudget(min: number, max: number): string {
@@ -50,10 +61,19 @@ function formatCampaignTotal(row: ApiCampaign): string | null {
   return `${isRange ? '≤ ' : ''}Rs. ${total.toLocaleString()} total`;
 }
 
-export function Campaigns() {
+// `reviewQueue` = the /admin/event-reviews entry point: same page, opened on
+// the Pending Review tab.
+export function Campaigns({ reviewQueue = false }: { reviewQueue?: boolean } = {}) {
   const navigate = useNavigate();
-  const [statusFilter,   setStatusFilter]   = useState<string>('All');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialStatus = searchParams.get('status');
+  const [statusFilter,   setStatusFilter]   = useState<string>(
+    initialStatus && (STATUS_FILTERS as readonly string[]).includes(initialStatus) ? initialStatus
+      : reviewQueue ? 'PENDING_APPROVAL' : 'All',
+  );
   const [businessFilter, setBusinessFilter] = useState<string>('All');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [editId, setEditId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -63,8 +83,12 @@ export function Campaigns() {
     api.admin.campaigns({
       limit:  200,
       status: statusFilter === 'All' ? undefined : statusFilter,
+      search: search || undefined,
     })
   );
+  const { data: countsRes, refetch: refetchCounts } = useApi(() => api.admin.campaignReviewCounts());
+  const reviewCounts = countsRes?.data;
+  const isReviewView = REVIEW_FILTERS.has(statusFilter);
 
   const allCampaigns = data?.data ?? [];
 
@@ -91,6 +115,14 @@ export function Campaigns() {
   function handleStatusChange(s: string) {
     setStatusFilter(s);
     setBusinessFilter('All');
+    setPage(1);
+    setSearchParams(s === 'All' ? {} : { status: s }, { replace: true });
+    setTimeout(() => { refetch(); refetchCounts(); }, 0);
+  }
+
+  function submitSearch(e: React.FormEvent) {
+    e.preventDefault();
+    setSearch(searchInput.trim());
     setPage(1);
     setTimeout(() => refetch(), 0);
   }
@@ -135,6 +167,61 @@ export function Campaigns() {
       setDeletingId(null);
     }
   }
+
+  const titleColumn = {
+    key:    'title',
+    header: 'Event',
+    render: (row: ApiCampaign) => (
+      <button onClick={() => navigate(`/admin/campaigns/${row.id}`)} className="min-w-0 text-left group">
+        <p className="font-medium text-gray-900 truncate max-w-[260px] group-hover:text-indigo-600 group-hover:underline">{row.title}</p>
+        <p className="text-xs text-gray-500 truncate">{displayBusinessName(row.business.businessName)}</p>
+      </button>
+    ),
+  };
+
+  // Review queue: title, business, type, submitted, last updated, status, action.
+  const reviewColumns = [
+    titleColumn,
+    {
+      key:    'type',
+      header: 'Type',
+      render: (row: ApiCampaign) => (
+        <span className="text-sm text-gray-700">{row.campaignType === 'OPEN_EVENT' ? 'Open Event' : 'Paid Event'}</span>
+      ),
+    },
+    {
+      key:    'submitted',
+      header: 'Submitted',
+      render: (row: ApiCampaign) => (
+        <span className="text-sm text-gray-600">
+          {formatDateTime(row.submittedForReviewAt ?? row.createdAt)}
+          {(row.reviewRevision ?? 0) > 1 && <span className="block text-xs text-gray-400">Revision {row.reviewRevision}</span>}
+        </span>
+      ),
+    },
+    {
+      key:    'updated',
+      header: 'Last updated',
+      render: (row: ApiCampaign) => <span className="text-sm text-gray-600">{formatDateTime(row.updatedAt)}</span>,
+    },
+    {
+      key:    'status',
+      header: 'Review status',
+      render: (row: ApiCampaign) => <StatusBadge status={mapStatus(row.status)} />,
+    },
+    {
+      key:    'review',
+      header: 'Action',
+      render: (row: ApiCampaign) => (
+        <button
+          onClick={() => navigate(`/admin/campaigns/${row.id}`)}
+          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+        >
+          {row.status === 'PENDING_APPROVAL' ? 'Review' : 'View'}
+        </button>
+      ),
+    },
+  ];
 
   const columns = [
     {
@@ -257,18 +344,30 @@ export function Campaigns() {
   return (
     <div>
       <PageHeader
-        title="Events"
+        title={isReviewView ? 'Event Reviews' : 'Events'}
         subtitle={
           loading
             ? 'Loading...'
-            : `${total} total · ${activeCnt} active`
+            : isReviewView
+              ? `${total} ${STATUS_FILTER_LABELS[statusFilter as StatusFilter].toLowerCase()}`
+              : `${total} total · ${activeCnt} published`
         }
       />
+
+      <form onSubmit={submitSearch} className="relative mb-3 max-w-md">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search by event title or business name"
+          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </form>
 
       {/* Filters */}
       <div className="flex items-center justify-between gap-3 mb-4">
         {/* Status tabs */}
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+        <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
           {STATUS_FILTERS.map((s) => (
             <button
               key={s}
@@ -280,6 +379,13 @@ export function Campaigns() {
               }`}
             >
               {STATUS_FILTER_LABELS[s]}
+              {reviewCounts && s in reviewCounts && REVIEW_FILTERS.has(s) && reviewCounts[s as keyof typeof reviewCounts] > 0 && (
+                <span className={`ml-1.5 inline-flex min-w-[18px] justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                  s === 'PENDING_APPROVAL' ? 'bg-amber-500 text-white' : 'bg-gray-300 text-gray-700'
+                }`}>
+                  {reviewCounts[s as keyof typeof reviewCounts]}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -314,7 +420,7 @@ export function Campaigns() {
         </div>
       ) : (
         <>
-          <DataTable columns={columns} data={pageCampaigns} keyField="id" />
+          <DataTable columns={isReviewView ? reviewColumns : columns} data={pageCampaigns} keyField="id" />
           <Pagination page={page} totalPages={totalPages} total={total} limit={PAGE_SIZE} onChange={setPage} />
         </>
       )}

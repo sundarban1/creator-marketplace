@@ -173,6 +173,7 @@ export default function App() {
                 <Route path="/admin/creators" element={<Creators />} />
                 <Route path="/admin/businesses" element={<Businesses />} />
                 <Route path="/admin/campaigns" element={<Campaigns />} />
+                <Route path="/admin/event-reviews" element={<Campaigns key="reviews" reviewQueue />} />
                 <Route path="/admin/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/admin/creator-meetups" element={<CreatorMeetups />} />
                 <Route path="/admin/creator-meetups/:meetupId" element={<CreatorMeetupDetail />} />

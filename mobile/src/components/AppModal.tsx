@@ -14,6 +14,8 @@ type Props = {
   warning?:      string;
   confirmLabel:  string;
   cancelLabel?:  string;
+  // Single-button acknowledgement (e.g. "Got it") — hides the Cancel button.
+  hideCancel?:   boolean;
   loading?:      boolean;
   onConfirm:     () => void;
   onCancel:      () => void;
@@ -35,6 +37,7 @@ export function AppModal({
   warning,
   confirmLabel,
   cancelLabel = 'Cancel',
+  hideCancel = false,
   loading = false,
   onConfirm,
   onCancel,
@@ -73,15 +76,17 @@ export function AppModal({
 
           {/* Buttons */}
           <View style={s.actions}>
-            <Pressable
-              style={[s.cancelBtn, { borderColor: C.border, backgroundColor: C.background }]}
-              onPress={onCancel}
-              disabled={loading}
-              accessibilityRole="button"
-              accessibilityLabel={cancelLabel}
-              accessibilityState={{ disabled: loading }}>
-              <Text style={[s.cancelText, { color: C.text }]}>{cancelLabel}</Text>
-            </Pressable>
+            {!hideCancel && (
+              <Pressable
+                style={[s.cancelBtn, { borderColor: C.border, backgroundColor: C.background }]}
+                onPress={onCancel}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel={cancelLabel}
+                accessibilityState={{ disabled: loading }}>
+                <Text style={[s.cancelText, { color: C.text }]}>{cancelLabel}</Text>
+              </Pressable>
+            )}
             <Pressable
               style={[s.confirmBtn, { backgroundColor: cfg.btnColor, opacity: loading ? 0.7 : 1 }]}
               onPress={onConfirm}

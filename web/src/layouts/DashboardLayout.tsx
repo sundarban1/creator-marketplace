@@ -16,6 +16,7 @@ function resolveTitle(pathname: string): string {
     '/admin/creators': 'Creators',
     '/admin/businesses': 'Businesses',
     '/admin/campaigns': 'Events',
+    '/admin/event-reviews': 'Event Reviews',
     '/admin/categories': 'Categories',
     '/admin/platforms': 'Platforms',
     '/admin/payments':    'Payments',

@@ -40,6 +40,8 @@ import { buildEsewaSignedFields, decodeEsewaResponse, verifyEsewaSignature, chec
 import { buildConnectIpsSignedFields, validateConnectIpsTxn, friendlyConnectIpsStatusMessage, newConnectIpsTxnId, isConnectIpsConfigured, toPaisa, type ConnectIpsFormFields } from '../../utils/connectips';
 import { HttpStatus } from '../../constants/httpStatus';
 import { assertPublishable, assessCampaign, guidedPersistFields } from './campaign.guided';
+import { campaignReviewService, SUBMITTED_FOR_REVIEW_MESSAGE } from './campaign-review.service';
+import { APPROVED_STATUSES, isCreatorVisible, materialChanges } from './campaign-review.rules';
 import {
   sendPaymentSecuredEmail,
   sendWorkStartedEmail,
@@ -262,14 +264,10 @@ export class CampaignService {
     this.creditsRepo  = new CreditsRepository();
   }
 
-  // A requested 'ACTIVE' publish is downgraded to 'PENDING_APPROVAL' when the
-  // admin has turned off campaign.autoApproval — the event then stays
-  // invisible to creators until an admin approves it (see AdminService).
-  private async resolvePublishStatus(requested: 'DRAFT' | 'ACTIVE'): Promise<'DRAFT' | 'ACTIVE' | 'PENDING_APPROVAL'> {
-    if (requested !== 'ACTIVE') return requested;
-    const autoApproval = await this.adminRepo.getSetting('campaign.autoApproval');
-    return autoApproval === false ? 'PENDING_APPROVAL' : 'ACTIVE';
-  }
+  // Every event goes through admin review before creators can see it (event
+  // review workflow — campaign-review.service.ts). A client "publish"
+  // (status ACTIVE) is a submission: it lands on PENDING_APPROVAL, and only
+  // CampaignReviewService.decide() ever moves an event to ACTIVE for the first time.
 
   // Admin-configured free-feature allowance for a business, how many it's
   // already used, and the price to feature beyond that (no charge is taken
@@ -307,7 +305,7 @@ export class CampaignService {
   }
 
   // Broadcasts a newly-live campaign to creators — shared by create(), the
-  // publish-a-draft path in update(), and AdminService.approveCampaign().
+  // reactivation path in update(), and AdminService.approveCampaign().
   fanOutNewCampaign(campaign: ReturnType<typeof toCampaignDto>, business: { id: string; businessName: string | null }, userId: string) {
     analyticsService.incrCampaignPublished(userId);
     emitToRole('CREATOR', 'campaign:new', campaign);
@@ -396,8 +394,8 @@ export class CampaignService {
       }
     }
 
-    const [resolvedStatus, commissionRate, featuredAllowed] = await Promise.all([
-      this.resolvePublishStatus(input.status),
+    const resolvedStatus: 'DRAFT' | 'PENDING_APPROVAL' = input.status === 'DRAFT' ? 'DRAFT' : 'PENDING_APPROVAL';
+    const [commissionRate, featuredAllowed] = await Promise.all([
       this.adminRepo.getSetting('platform.commission').then((v) => Number(v) || 0),
       // No payment flow yet, so a request to feature beyond the free quota
       // is silently downgraded rather than rejected — the mobile UI already
@@ -427,6 +425,7 @@ export class CampaignService {
       ...campaignInput,
       isFeatured: input.isFeatured && featuredAllowed,
       status:     resolvedStatus,
+      ...(resolvedStatus === 'PENDING_APPROVAL' ? { submittedForReviewAt: new Date(), reviewRevision: 1 } : {}),
       commissionRate,
       // Structured budget: budgetMin/budgetMax are the per-creator bounds the
       // client sends; the rate shape is derived when omitted and the
@@ -465,6 +464,7 @@ export class CampaignService {
           throw new AppError(getDict().campaign.insufficientCredits, HttpStatus.BAD_REQUEST);
         }
         const created = await this.repo.create({ ...campaignData, creditsApplied: creditsToApply }, tx);
+        if (resolvedStatus === 'PENDING_APPROVAL') await campaignReviewService.recordInitialSubmission(tx, created.id, userId);
         await recordCreditsTransaction(tx, {
           businessId:    business.id,
           type:          'CAMPAIGN_BUDGET_SPEND',
@@ -477,22 +477,20 @@ export class CampaignService {
         return created;
       }, { isolationLevel: 'Serializable' });
     } else {
-      raw = await this.repo.create(campaignData);
+      raw = await prisma.$transaction(async (tx) => {
+        const created = await this.repo.create(campaignData, tx);
+        if (resolvedStatus === 'PENDING_APPROVAL') await campaignReviewService.recordInitialSubmission(tx, created.id, userId);
+        return created;
+      });
     }
     const campaign = toCampaignDto(raw);
 
     logActivity({ userId, action: ActivityAction.CAMPAIGN_CREATED, entityType: EntityType.CAMPAIGN, entityId: raw.id, metadata: { campaignType: raw.campaignType, status: raw.status } });
 
-    notificationService.createForAdmins({
-      type:    'campaign_created',
-      title:   'New Event Created',
-      body:    `${business.businessName} created "${raw.title}".`,
-      refId:   raw.id,
-      refType: 'campaign',
-    }).catch(() => {});
-
-    if (raw.status === 'ACTIVE') {
-      this.fanOutNewCampaign(campaign, business, userId);
+    if (raw.status === 'PENDING_APPROVAL') {
+      campaignReviewService.notifyAdminsOfSubmission(
+        { id: raw.id, title: raw.title, campaignType: raw.campaignType, businessName: business.businessName }, 1, false,
+      );
     }
 
     return campaign;
@@ -717,6 +715,9 @@ export class CampaignService {
   async list(query: CampaignListQuery, lang = 'en') {
     const { page = 1, limit = 10, ...filters } = query;
     const validatedLimit = Math.min(limit, 50);
+    // Public listing: a status filter can only narrow among creator-visible
+    // statuses — drafts and events in review are never listable here.
+    if (filters.status && !isCreatorVisible(filters.status)) filters.status = 'ACTIVE';
 
     const { campaigns: raw, total } = await this.repo.findMany({
       ...filters,
@@ -854,13 +855,34 @@ export class CampaignService {
     return byId ? byId.id : null;
   }
 
-  async getById(id: string, lang = 'en') {
+  // `viewer` null = anonymous / internal public read. An event that isn't
+  // creator-visible (draft or in review) 404s for everyone except its owner,
+  // an admin, or a creator who already has a proposal on it (history stays
+  // reachable after a published event goes back to review).
+  async getById(id: string, lang = 'en', viewer: { id: string; role: string } | null = null) {
     const campaign = await this.repo.findById(id);
     if (!campaign) {
       throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
+    if (!isCreatorVisible(campaign.status) && !(await this.canSeeUnpublished(campaign, viewer))) {
+      throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    }
     const dto = toCampaignDto(campaign);
     return translateFields(dto, [...CAMPAIGN_FIELDS], lang);
+  }
+
+  private async canSeeUnpublished(campaign: { id: string; businessId: string }, viewer: { id: string; role: string } | null) {
+    if (!viewer) return false;
+    if (viewer.role === 'ADMIN') return true;
+    if (viewer.role === 'BUSINESS') {
+      const business = await this.businessRepo.findByUserId(viewer.id);
+      return business?.id === campaign.businessId;
+    }
+    if (viewer.role === 'CREATOR') {
+      const creator = await this.creatorRepo.findByUserId(viewer.id);
+      return !!creator && (await prisma.application.count({ where: { campaignId: campaign.id, creatorId: creator.id } })) > 0;
+    }
+    return false;
   }
 
   async update(id: string, userId: string, input: UpdateCampaignInput) {
@@ -877,6 +899,8 @@ export class CampaignService {
     if (campaign.businessId !== business.id) {
       throw new AppError(getDict().campaign.notAuthorizedToUpdateCampaign, HttpStatus.FORBIDDEN);
     }
+
+    const review = this.planReviewTransition(campaign, input);
 
     if (campaign._count.applications > 0) {
       for (const field of FIELDS_LOCKED_AFTER_PROPOSALS) {
@@ -933,15 +957,9 @@ export class CampaignService {
       }
     }
 
-    // Publishing a draft (or reactivating a non-active campaign) goes through the
-    // same auto-approval gate as a brand-new campaign.
-    const resolvedStatus = input.status === 'ACTIVE'
-      ? await this.resolvePublishStatus('ACTIVE')
-      : input.status;
-
-    // Same publish gate as create(): a cash paid campaign can't go ACTIVE
+    // Same publish gate as create(): a cash paid campaign can't be submitted
     // without a per-creator amount (AI paid-event budget spec §2).
-    if (input.status === 'ACTIVE' && campaign.status !== 'ACTIVE'
+    if (review.submit
       && (campaign as { campaignType?: string }).campaignType === 'PAID_CAMPAIGN'
       && campaign.requirements.length === 0
       && (input.paymentType ?? campaign.paymentType) !== 'Product Exchange') {
@@ -970,7 +988,7 @@ export class CampaignService {
     const guided = guidedPersistFields({ ...input, locationType: input.locationType ?? (campaign.locationType as 'ONSITE' | 'REMOTE') });
     const merged = { ...campaign, ...input, ...guided };
     if ((campaign as { campaignType?: string }).campaignType === 'PAID_CAMPAIGN') {
-      const goingLive = input.status === 'ACTIVE' && campaign.status !== 'ACTIVE';
+      const goingLive = review.submit !== null;
       const isLive = campaign.status === 'ACTIVE' || campaign.status === 'PENDING_APPROVAL';
       if (goingLive) {
         assertPublishable(merged);
@@ -986,31 +1004,107 @@ export class CampaignService {
       startDate: _startDate, applicationDeadline: _applicationDeadline, aiProvenance: _aiProvenance, draftStep: _draftStep,
       ...plainInput
     } = input;
-    const updated = await this.repo.update(id, {
-      ...plainInput,
+    const { status: _requestedStatus, ...fieldInput } = plainInput;
+    const updateData = {
+      ...fieldInput,
       ...this.budgetUpdateFields(input, campaign),
       ...guided,
       complexity: assessCampaign(merged).complexity,
       isFeatured: resolvedIsFeatured,
-      status:    resolvedStatus,
+      ...(review.status !== undefined ? { status: review.status } : {}),
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
       // Never leave a stale address behind when switching to REMOTE — same
       // normalization as create().
       ...(input.locationType === 'REMOTE' ? { location: null, locationLat: null, locationLng: null } : {}),
-    });
+    };
+
+    let updated;
+    let submittedRevision: number | null = null;
+    if (review.submit) {
+      const submit = review.submit;
+      // The edit and the move into the review queue commit together; the
+      // queue move is conditional on the status we planned from, so a
+      // concurrent admin decision makes this whole save fail with 409.
+      updated = await prisma.$transaction(async (tx) => {
+        await this.repo.update(id, updateData, tx);
+        submittedRevision = await campaignReviewService.submitForReview(tx, {
+          campaignId: id, actorId: userId, from: campaign.status, action: submit.action, changedFields: submit.changedFields,
+        });
+        return tx.campaign.findUniqueOrThrow({ where: { id } });
+      });
+    } else {
+      updated = await this.repo.update(id, updateData);
+    }
 
     const dto = toCampaignDto(updated);
 
-    // Same fan-out as a brand-new campaign — only fires once the resolved status
-    // actually lands on ACTIVE (i.e. auto-approval didn't downgrade it to pending).
-    if (resolvedStatus === 'ACTIVE' && campaign.status !== 'ACTIVE') {
+    if (submittedRevision !== null) {
+      campaignReviewService.notifyAdminsOfSubmission(
+        { id, title: updated.title, campaignType: updated.campaignType, businessName: business.businessName },
+        submittedRevision, review.submit!.action === 'RESUBMITTED',
+      );
+    }
+
+    // Reactivating an already-approved (paused) event — same fan-out as a
+    // fresh publish. First-time publication fans out from the admin approval.
+    if (review.status === 'ACTIVE' && campaign.status !== 'ACTIVE') {
       this.fanOutNewCampaign(dto, business, userId);
     }
 
     this.maybeRegenerateInvitations(campaign, input);
 
     return dto;
+  }
+
+  // Decides what a business save does to moderation state (event review
+  // workflow). The client's `status` is a request, never trusted as-is:
+  //  - DRAFT → "publish" (ACTIVE) is a first submission → PENDING_APPROVAL
+  //  - CHANGES_REQUESTED / resubmittable REJECTED: saving the edit resubmits
+  //  - PENDING_APPROVAL: edits allowed, stays pending; only withdraw (CANCELLED)
+  //  - approved (ACTIVE/PAUSED/CLOSED/EXPIRED) + a material change → back to review
+  //  - otherwise the usual pause/close/reactivate lifecycle of an approved event
+  private planReviewTransition(
+    campaign: Record<string, unknown> & { status: CampaignStatus; resubmissionAllowed: boolean },
+    input: UpdateCampaignInput,
+  ): { status?: CampaignStatus; submit: { action: 'SUBMITTED' | 'RESUBMITTED'; changedFields?: string[] } | null } {
+    const from = campaign.status;
+    const requested = input.status;
+    const dict = getDict().campaign;
+    const conflict = (msg: string) => new AppError(msg, HttpStatus.CONFLICT);
+
+    if (requested === 'CANCELLED') {
+      if (from === 'DRAFT') throw conflict(dict.onlyDraftCanBeDeleted);
+      return { status: 'CANCELLED', submit: null };
+    }
+
+    switch (from) {
+      case 'DRAFT':
+        if (requested === 'ACTIVE') return { submit: { action: 'SUBMITTED' } };
+        if (requested && requested !== 'DRAFT') throw conflict('Submit this draft for review before changing its status.');
+        return { submit: null };
+      case 'PENDING_APPROVAL':
+        if (requested && requested !== 'ACTIVE') throw conflict('This event is awaiting review — its status can change once the Kolab team has reviewed it.');
+        return { submit: null };
+      case 'CHANGES_REQUESTED':
+      case 'REJECTED':
+        if (requested && requested !== 'ACTIVE') throw conflict('Edit and resubmit this event for review first.');
+        campaignReviewService.assertResubmittable(from, campaign.resubmissionAllowed);
+        return { submit: { action: 'RESUBMITTED' } };
+      case 'CANCELLED':
+        if (requested) throw conflict('A cancelled event cannot be reopened.');
+        return { submit: null };
+      default: {
+        // Approved at least once: ACTIVE / PAUSED / CLOSED / EXPIRED.
+        const changed = materialChanges(campaign, input as Record<string, unknown>);
+        if (changed.length > 0) return { submit: { action: 'RESUBMITTED', changedFields: changed } };
+        if (requested === 'DRAFT') throw conflict('A published event cannot be turned back into a draft.');
+        if (requested === 'PAUSED' && !(APPROVED_STATUSES as readonly string[]).includes(from)) {
+          throw conflict('Only a published event can be paused.');
+        }
+        return { status: requested, submit: null };
+      }
+    }
   }
 
   // Recomputes the derived budget columns when an edit changes a budget input.
@@ -1082,9 +1176,15 @@ export class CampaignService {
       }
     }
 
-    const resolvedStatus = input.status === 'ACTIVE'
-      ? await this.resolvePublishStatus('ACTIVE')
-      : input.status;
+    // Review statuses move only through CampaignReviewService.decide() (so
+    // every decision has history, feedback and an email) — an admin edit can
+    // fix fields, but can't publish an unreviewed event or skip the queue.
+    if (input.status !== undefined && input.status !== campaign.status
+      && (['DRAFT', 'PENDING_APPROVAL', 'CHANGES_REQUESTED', 'REJECTED'] as string[]).includes(campaign.status)
+      && input.status !== 'CANCELLED') {
+      throw new AppError('Use Approve, Request Changes or Reject to change the status of an event under review.', HttpStatus.CONFLICT);
+    }
+    const resolvedStatus = input.status;
 
     const {
       locations: _locations, locationScope: _locationScope, deliverableItems: _deliverableItems, brief: _brief,
@@ -1147,7 +1247,7 @@ export class CampaignService {
     return { message: getDict().campaign.campaignDeletedSuccessfully };
   }
 
-  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en', status?: CampaignStatus, search?: string) {
+  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en', status?: CampaignStatus | CampaignStatus[], search?: string) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
       throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);

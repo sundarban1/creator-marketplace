@@ -122,7 +122,15 @@ export interface ApiCampaign {
   budgetRateType?:  'FIXED' | 'RANGE' | null;
   budgetInputType?: 'PER_CREATOR' | 'TOTAL' | null;
   totalBudget?:     number | null;
-  status:        'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'EXPIRED';
+  status:        'DRAFT' | 'PENDING_APPROVAL' | 'CHANGES_REQUESTED' | 'REJECTED' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'EXPIRED';
+  // Event review state (admin moderation) — absent on older servers.
+  review?: {
+    feedback: string | null;
+    reviewedAt: string | null;
+    submittedAt: string | null;
+    resubmissionAllowed: boolean;
+    revision: number;
+  };
   isFeatured:    boolean;
   creatorsNeeded?: number;
   createdAt:     string;

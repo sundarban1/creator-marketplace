@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CampaignBriefSections } from '@/components/CampaignBriefSections';
 import { SaveTemplateButton } from '@/features/business/guided/templates';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
+import { AppModal } from '@/components/AppModal';
 import { ShortlistButton } from '@/components/ShortlistButton';
 import { ShareOpportunityButton } from '@/components/ShareOpportunityButton';
 import { useQuery } from '@tanstack/react-query';
@@ -28,7 +30,8 @@ import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { STALE } from '@/lib/queryClient';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { campaignService } from '@/services/campaign';
+import { campaignService, canResubmitEvent } from '@/services/campaign';
+import { EventReviewBanner } from '@/features/business/components/EventReviewBanner';
 import { creatorService, type ApiCampaignInvitation } from '@/services/creator';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 import { EventAttachmentsField } from '@/components/EventAttachmentsField';
@@ -51,12 +54,20 @@ function formatDeadline(iso: string) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CampaignDetailScreen() {
-  const { campaignId } = useLocalSearchParams<{ campaignId: string }>();
+  const { campaignId, submitted } = useLocalSearchParams<{ campaignId: string; submitted?: string }>();
   const { user } = useAuth();
   const { t } = useLanguage();
   const C = useAppColors();
   const isBusiness = user?.role === 'BUSINESS';
   const { categories: allCategories } = useAllCategories();
+  // Set by the create flows right after a new event is submitted — show the
+  // one-time "submitted for review" modal, then drop the param so a re-render
+  // or back-navigation doesn't show it again.
+  const [showSubmittedModal, setShowSubmittedModal] = useState(submitted === '1');
+  function closeSubmittedModal() {
+    setShowSubmittedModal(false);
+    router.setParams({ submitted: undefined });
+  }
 
   // ── Server state — cache-first, background refresh (see queryClient.ts) ────
   // Revisiting a campaign (back from a message thread, from edit-campaign,
@@ -287,6 +298,12 @@ export default function CampaignDetailScreen() {
             )}
           </View>
         </View>
+
+        {isBusiness && (
+          <View style={{ paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg }}>
+            <EventReviewBanner campaign={campaign} />
+          </View>
+        )}
 
         {/* 1. About the Event */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
@@ -521,12 +538,15 @@ export default function CampaignDetailScreen() {
       {/* Sticky CTA */}
       <View style={[s.ctaBar, { justifyContent: 'center' }, !isBusiness && campaign.requirements && campaign.requirements.length > 0 && s.ctaBarRoles]}>
         {isBusiness ? (
-          <Pressable
-            style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-            onPress={() => router.push({ pathname: '/edit-campaign', params: { campaignId: campaign.id } })}>
-            <FontAwesome5 name="edit" size={16} color="#fff" />
-            <Text style={s.applyBtnTxt}>{t('campaignDetail.editEvent')}</Text>
-          </Pressable>
+          // A permanently rejected event can't be edited or resubmitted.
+          campaign.status === 'rejected' && !canResubmitEvent(campaign) ? null : (
+            <Pressable
+              style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+              onPress={() => router.push({ pathname: '/edit-campaign', params: { campaignId: campaign.id } })}>
+              <FontAwesome5 name="edit" size={16} color="#fff" />
+              <Text style={s.applyBtnTxt}>{canResubmitEvent(campaign) ? t('eventReview.editAndResubmit') : t('campaignDetail.editEvent')}</Text>
+            </Pressable>
+          )
         ) : pendingInvitation ? (
           // The business invited this creator directly — don't offer "Submit
           // Proposal", send them to the Invitations screen to accept/decline.
@@ -628,6 +648,17 @@ export default function CampaignDetailScreen() {
         )}
       </View>
       </MaxWidthContainer>
+      <AppModal
+        visible={showSubmittedModal}
+        type="success"
+        icon="clipboard-check"
+        title={t('eventReview.submittedModalTitle')}
+        body={t('eventReview.submittedModalBody')}
+        confirmLabel={t('eventReview.submittedModalOk')}
+        hideCancel
+        onConfirm={closeSubmittedModal}
+        onCancel={closeSubmittedModal}
+      />
     </SafeAreaView>
   );
 }
