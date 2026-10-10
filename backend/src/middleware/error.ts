@@ -52,6 +52,10 @@ export const AuthErrorCode = {
   TOKEN_EXPIRED: 'TOKEN_EXPIRED',
   TOKEN_INVALID: 'TOKEN_INVALID',
   FORBIDDEN: 'FORBIDDEN',
+  // Login-time 403s. The message is localized (x-language), so clients must
+  // branch on these, not on the text.
+  ACCOUNT_NOT_VERIFIED: 'ACCOUNT_NOT_VERIFIED',
+  ACCOUNT_SUSPENDED: 'ACCOUNT_SUSPENDED',
 } as const;
 
 export function errorHandler(

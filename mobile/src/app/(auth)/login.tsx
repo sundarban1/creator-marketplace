@@ -52,6 +52,19 @@ WebBrowser.maybeCompleteAuthSession();
 
 const LANG_LABELS: Record<Lang, string> = { en: 'Eng', ne: 'ने' };
 
+// Login 403s carry a machine-readable `code` — the message is localized via
+// x-language, so matching its English text broke for Nepali users. The regex
+// fallback only covers older backends that don't send the code yet.
+function isSuspendedError(e: unknown, message: string): boolean {
+  if (e instanceof ApiError && e.code) return e.code === 'ACCOUNT_SUSPENDED';
+  return /suspended/i.test(message);
+}
+
+function isNotVerifiedError(e: unknown, message: string): boolean {
+  if (e instanceof ApiError && e.code) return e.code === 'ACCOUNT_NOT_VERIFIED';
+  return /verify your (email|phone number)/i.test(message);
+}
+
 // Facebook Login is wired up but hidden for now (Meta app config isn't ready
 // yet) — flip this back on once that's sorted, no other code changes needed.
 const FACEBOOK_LOGIN_ENABLED = false;
@@ -516,7 +529,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       // On success RootNavigator's redirect effect takes it from here.
     } catch (e) {
       const message = e instanceof Error ? e.message : t('auth.login.biometricFailed');
-      if (/suspended/i.test(message)) {
+      if (isSuspendedError(e, message)) {
         setSuspendedModal(true);
       } else {
         setApiError(message);
@@ -545,9 +558,9 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       await onLoginSuccess?.();
     } catch (e) {
       const message = e instanceof Error ? e.message : t('auth.login.requiredError');
-      if (/suspended/i.test(message)) {
+      if (isSuspendedError(e, message)) {
         setSuspendedModal(true);
-      } else if (/verify your (email|phone number)/i.test(message)) {
+      } else if (isNotVerifiedError(e, message)) {
         // Account exists but was never verified after signup — the backend
         // already sent a fresh OTP as part of this same login attempt (see
         // AuthService.login), so just take the user back to the OTP screen
