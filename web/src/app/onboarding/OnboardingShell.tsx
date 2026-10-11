@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, Info } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 import { cn } from '../ui/cn';
 import { ThemeToggle } from '../../pages/landing/components/ThemeToggle';
@@ -13,8 +13,8 @@ export interface OnboardingPanelPoint {
 /**
  * Chrome shared by the creator and business onboarding flows — no `AppShell`
  * sidebar here (onboarding runs before there's a profile worth navigating
- * around). Two-pane on desktop (photo + brand copy on the left, mirroring
- * `AuthShell`'s split), single centred column on mobile. Landing design
+ * around). Form centred, with the brand headline + info cards in one row along
+ * the bottom on desktop (hidden on mobile). Landing design
  * language: theme-aware lavender/navy base with brand glows (+ starfield in
  * dark), thin display headlines with a gradient closing word, the form in a
  * glass card and the gradient pill for progress. `.app-scope` + the role
@@ -28,8 +28,7 @@ export function OnboardingShell({
   title,
   subtitle,
   onBack,
-  panelImage,
-  panelImageAlt,
+  wide = false,
   panelHeadline,
   panelPoints,
   children,
@@ -42,9 +41,9 @@ export function OnboardingShell({
   title: string;
   subtitle: string;
   onBack?: () => void;
-  /** Desktop-only brand panel — photo + a few pre-translated info rows. */
-  panelImage: string;
-  panelImageAlt: string;
+  /** Wider form card — for steps with a long pill list (CategoryPicker). */
+  wide?: boolean;
+  /** Desktop-only brand panel — a few pre-translated info rows. */
   panelHeadline: string;
   panelPoints: OnboardingPanelPoint[];
   children: ReactNode;
@@ -53,46 +52,16 @@ export function OnboardingShell({
     <div className="lp-stars relative isolate flex min-h-screen overflow-hidden bg-paper text-ink">
       <Glows />
 
-      <aside className="relative m-3 hidden w-[42%] max-w-[560px] flex-col justify-between overflow-hidden rounded-[28px] lg:flex">
-        <img src={panelImage} alt={panelImageAlt} className="absolute inset-0 h-full w-full object-cover" />
-        {/* Fixed navy scrims (not `ink`, which flips to white in dark). */}
-        <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-lp-black/80 via-lp-black/45 to-lp-black/90" />
-        <div aria-hidden className="absolute inset-0 bg-gradient-to-tr from-brand/35 via-transparent to-lp-orange/20 mix-blend-multiply" />
-
-        <div className="relative flex h-full flex-col justify-between p-10 text-white">
-          <Logo className="h-8" />
-
-          <div>
-            <h2 className="lp-display text-balance text-[2.2rem] leading-[1.12]">
-              <GradientTail text={panelHeadline} />
-            </h2>
-            <ul className="mt-8 space-y-4">
-              {panelPoints.map((point, i) => (
-                <li key={i} className="flex items-start gap-3.5 rounded-2xl border border-white/10 bg-white/[0.06] p-3.5 backdrop-blur-md">
-                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/15">
-                    {point.icon}
-                  </span>
-                  <span>
-                    <span className="block text-[14.5px] font-medium">{point.title}</span>
-                    <span className="mt-0.5 block text-[13px] font-light leading-relaxed text-white/75">{point.desc}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </aside>
-
       <div className="relative flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 px-5 py-5 sm:px-8">
-          <Logo className="h-7 lg:invisible" />
+          <Logo className="h-7" />
           <div className="flex items-center gap-3">
             <StepDots step={step} total={total} />
             <ThemeToggle className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:bg-surface-dim hover:text-ink" />
           </div>
         </header>
 
-        <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col justify-center px-5 pb-16 pt-2 sm:px-6">
+        <main className={cn('mx-auto flex w-full flex-1 flex-col justify-center px-5 pb-16 pt-2 sm:px-6', wide ? 'max-w-[1000px]' : 'max-w-[520px]')}>
           <div className="lp-glass rounded-[28px] p-6 shadow-[0_0_60px_-24px_var(--app-glow)] sm:p-8">
             {onBack && step > 1 ? (
               <button
@@ -114,6 +83,38 @@ export function OnboardingShell({
             <div className="mt-7">{children}</div>
           </div>
         </main>
+
+        <section className="mx-auto hidden w-full max-w-6xl px-8 pb-12 lg:block">
+          <h2 className="lp-display text-balance text-center text-[1.6rem] leading-[1.15] text-ink">
+            <GradientTail text={panelHeadline} />
+          </h2>
+          <ul className="mt-6 grid grid-cols-3 gap-4">
+            {panelPoints.map((point, i) => (
+              <li key={i} className="lp-glass flex items-center gap-3.5 rounded-2xl p-4">
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                  {point.icon}
+                </span>
+                <span className="text-[14.5px] font-medium text-ink">{point.title}</span>
+                {/* Description lives in a hover/focus tooltip on the info icon. */}
+                <span className="group relative flex">
+                  <button
+                    type="button"
+                    aria-label={point.desc}
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-ink-soft transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                  >
+                    <Info size={15} />
+                  </button>
+                  <span
+                    role="tooltip"
+                    className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-64 -translate-x-1/2 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[13px] font-light leading-relaxed text-ink-soft opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                  >
+                    {point.desc}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );

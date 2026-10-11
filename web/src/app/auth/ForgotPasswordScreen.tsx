@@ -8,6 +8,7 @@ import { paths } from '../routes';
 import { AuthShell } from './AuthShell';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
+import { IdentifierField } from './IdentifierField';
 import { Alert } from '../ui/Alert';
 import { OtpInput } from '../ui/OtpInput';
 import type { Identifier } from '../api/auth';
@@ -81,14 +82,14 @@ export function ForgotPasswordScreen() {
 
       {step === 'request' ? (
         <form onSubmit={handleRequest} noValidate className="space-y-4">
-          <TextField
+          <IdentifierField
             label={t('auth.emailOrPhone')}
             icon={<AtSign />}
             placeholder={t('auth.emailOrPhonePlaceholder')}
             autoComplete="username"
             inputMode="email"
             value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
+            onValueChange={setIdentifier}
           />
           <Button type="submit" size="lg" fullWidth loading={submitting}>
             {t('auth.sendCode')}

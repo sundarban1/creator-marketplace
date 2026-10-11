@@ -256,8 +256,7 @@ export function CreatorOnboarding() {
       title={title}
       subtitle={subtitle}
       onBack={() => setStep((s) => s - 1)}
-      panelImage="/landing/photographer.jpeg"
-      panelImageAlt=""
+      wide={step === 3}
       panelHeadline={t('onboarding.panelHeadline')}
       panelPoints={[
         { icon: <Sparkles size={16} />, title: t('onboarding.panelPoint1Title'), desc: t('onboarding.panelPoint1Desc') },
@@ -390,9 +389,11 @@ export function CreatorOnboarding() {
 
           <CategoryPicker categories={categoryOptions} selected={selectedCategories} onToggle={toggleCategory} max={MAX_CATEGORIES} />
 
-          <Button size="lg" fullWidth loading={step3Loading} onClick={handleStep3Continue}>
-            {t('onboarding.completeBtn')}
-          </Button>
+          <div className="flex justify-center">
+            <Button size="lg" className="w-full max-w-[456px]" loading={step3Loading} onClick={handleStep3Continue}>
+              {t('onboarding.completeBtn')}
+            </Button>
+          </div>
         </div>
       )}
     </OnboardingShell>

@@ -251,8 +251,7 @@ export function BusinessOnboarding() {
       title={title}
       subtitle={subtitle}
       onBack={() => setStep((s) => s - 1)}
-      panelImage="/landing/people.jpg"
-      panelImageAlt=""
+      wide={stepKey === 'INDUSTRY' || stepKey === 'INTERESTS'}
       panelHeadline={t('businessOnboarding.panelHeadline')}
       panelPoints={[
         { icon: <Search size={16} />, title: t('businessOnboarding.panelPoint1Title'), desc: t('businessOnboarding.panelPoint1Desc') },
@@ -346,9 +345,11 @@ export function BusinessOnboarding() {
           {industrySubmitted && industries.length === 0 && <Alert>{t('businessOnboarding.industryError')}</Alert>}
           {industryError && <Alert>{industryError}</Alert>}
           <CategoryPicker categories={industryOptions} selected={industries} onToggle={toggleIndustry} max={MAX_INDUSTRIES} />
-          <Button size="lg" fullWidth loading={industryLoading} onClick={handleIndustryContinue}>
-            {t('businessOnboarding.completeBtn')}
-          </Button>
+          <div className="flex justify-center">
+            <Button size="lg" className="w-full max-w-[456px]" loading={industryLoading} onClick={handleIndustryContinue}>
+              {t('businessOnboarding.completeBtn')}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -362,9 +363,11 @@ export function BusinessOnboarding() {
           {interestsSubmitted && interests.length === 0 && <Alert>{t('businessOnboarding.interestsError')}</Alert>}
           {interestsError && <Alert>{interestsError}</Alert>}
           <CategoryPicker categories={interestOptions} selected={interests} onToggle={toggleInterest} max={MAX_INTERESTS} />
-          <Button size="lg" fullWidth loading={interestsLoading} onClick={handleInterestsContinue}>
-            {t('businessOnboarding.completeBtn')}
-          </Button>
+          <div className="flex justify-center">
+            <Button size="lg" className="w-full max-w-[456px]" loading={interestsLoading} onClick={handleInterestsContinue}>
+              {t('businessOnboarding.completeBtn')}
+            </Button>
+          </div>
         </div>
       )}
     </OnboardingShell>

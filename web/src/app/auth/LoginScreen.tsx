@@ -72,8 +72,6 @@ export function LoginScreen() {
         </>
       }
     >
-      <SocialAuth onError={setError} />
-
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {flash && !error && <Alert tone="success">{flash}</Alert>}
         {error && (
@@ -130,6 +128,8 @@ export function LoginScreen() {
           {t('auth.signInCta')}
         </Button>
       </form>
+
+      <SocialAuth onError={setError} />
     </AuthShell>
   );
 }

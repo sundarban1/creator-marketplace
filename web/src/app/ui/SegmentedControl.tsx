@@ -6,7 +6,7 @@ interface Option<T extends string> {
   label: string;
   description?: string;
   icon?: ReactNode;
-  /** `cards` variant only — overrides the active-state accent from the default
+  /** `cards`/`chips` variants only — overrides the active-state accent from the default
    * brand indigo to green, for role pickers where a role (e.g. BUSINESS) has
    * its own brand color elsewhere in the app (see mobile's green business
    * theme in mobile/src/utilities/constants.ts BUSINESS_COLORS). */
@@ -14,8 +14,9 @@ interface Option<T extends string> {
 }
 
 /**
- * Accessible segmented control. Two layouts: `pill` (compact inline toggle) and
- * `cards` (side-by-side options with a description — used for role selection).
+ * Accessible segmented control. Three layouts: `pill` (compact inline toggle),
+ * `cards` (side-by-side options with a description — used for role selection)
+ * and `chips` (side-by-side icon + label pills, no description).
  */
 export function SegmentedControl<T extends string>({
   options,
@@ -27,9 +28,56 @@ export function SegmentedControl<T extends string>({
   options: Option<T>[];
   value: T;
   onChange: (value: T) => void;
-  variant?: 'pill' | 'cards';
+  variant?: 'pill' | 'cards' | 'chips';
   ariaLabel: string;
 }) {
+  if (variant === 'chips') {
+    return (
+      <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-2 gap-3">
+        {options.map((opt) => {
+          const active = opt.value === value;
+          const isSuccess = opt.accent === 'success';
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onChange(opt.value)}
+              className={cn(
+                'flex h-12 items-center justify-center gap-2 rounded-full border px-4 transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2',
+                isSuccess ? 'focus-visible:ring-success/40' : 'focus-visible:ring-brand/40',
+                active
+                  ? isSuccess
+                    ? 'border-success bg-success/[0.08]'
+                    : 'border-brand bg-brand/[0.08]'
+                  : 'border-line-strong hover:bg-surface-dim',
+              )}
+            >
+              {opt.icon && (
+                <span
+                  className={cn(
+                    'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full',
+                    active
+                      ? isSuccess
+                        ? 'bg-success text-white'
+                        : 'bg-brand text-white'
+                      : 'bg-surface-dim text-ink-soft',
+                  )}
+                  aria-hidden
+                >
+                  {opt.icon}
+                </span>
+              )}
+              <span className="text-[15px] font-semibold text-ink">{opt.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   if (variant === 'cards') {
     return (
       <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-2 gap-6">

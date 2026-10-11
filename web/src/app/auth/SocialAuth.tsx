@@ -167,37 +167,40 @@ export function SocialAuth({ onError }: { onError: (msg: string) => void }) {
 
   return (
     <>
-      <Button
-        variant="secondary"
-        fullWidth
-        size="lg"
-        loading={busyProvider === 'google'}
-        disabled={busyProvider === 'tiktok'}
-        onClick={handleGoogle}
-      >
-        <FcGoogle size={18} />
-        {t('auth.continueGoogle')}
-      </Button>
-
-      <Button
-        variant="secondary"
-        fullWidth
-        size="lg"
-        className="mt-3"
-        loading={busyProvider === 'tiktok'}
-        disabled={busyProvider === 'google'}
-        onClick={handleTiktok}
-      >
-        <FaTiktok size={18} />
-        {t('auth.continueTiktok')}
-      </Button>
-
       <div className="my-5 flex items-center gap-3">
         <span className="h-px flex-1 bg-line" />
         <span className="text-[12px] font-medium uppercase tracking-wide text-ink-soft">
-          {t('auth.or')}
+          {t('auth.orContinueWith')}
         </span>
         <span className="h-px flex-1 bg-line" />
+      </div>
+
+      <div className="flex justify-center gap-3">
+        <Button
+          variant="secondary"
+          size="lg"
+          className="w-12 rounded-xl px-0"
+          aria-label={t('auth.continueGoogle')}
+          title={t('auth.continueGoogle')}
+          loading={busyProvider === 'google'}
+          disabled={busyProvider === 'tiktok'}
+          onClick={handleGoogle}
+        >
+          <FcGoogle size={22} />
+        </Button>
+
+        <Button
+          variant="secondary"
+          size="lg"
+          className="w-12 rounded-xl px-0"
+          aria-label={t('auth.continueTiktok')}
+          title={t('auth.continueTiktok')}
+          loading={busyProvider === 'tiktok'}
+          disabled={busyProvider === 'google'}
+          onClick={handleTiktok}
+        >
+          <FaTiktok size={20} />
+        </Button>
       </div>
 
       <GoogleRoleModal
