@@ -1,10 +1,10 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Camera, X } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { fetchCategories, fetchActivePlatforms } from '../api/catalog';
-import { createCampaign, generateAiDraft, generateEventAiDraft, uploadCampaignFeatureImage } from '../api/business';
+import { createCampaign, generateAiDraft, generateEventAiDraft } from '../api/business';
 import { AiGeneratingOverlay } from './AiGeneratingOverlay';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { PageHeader } from '../ui/PageHeader';
@@ -17,8 +17,7 @@ import { Alert } from '../ui/Alert';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { FeaturedEventToggle } from './FeaturedEventToggle';
 import { NeedHelpButton } from './NeedHelpModal';
-import { cn } from '../ui/cn';
-import { ImageCropModal } from '../ui/ImageCropModal';
+import { EventCoverPicker } from './EventCoverPicker';
 import { OFFERING_OPTIONS, MIN_BUDGET_PER_CREATOR, isoInDays } from './eventFormConstants';
 import { ChipGroup } from './eventFormShared';
 import { BudgetPicker } from './BudgetPicker';
@@ -47,9 +46,7 @@ export function CreateEventPage() {
   const [phase, setPhase] = useState<Phase>('prompt');
 
   const [featureImageUrl, setFeatureImageUrl] = useState('');
-  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [featureImageCredit, setFeatureImageCredit] = useState<{ name: string; profileUrl: string } | null>(null);
-  const [imageUploading, setImageUploading] = useState(false);
   const [imageIsCustom, setImageIsCustom] = useState(false);
 
   const [cType, setCType] = useState<CType>('PAID_CAMPAIGN');
@@ -238,30 +235,6 @@ export function CreateEventPage() {
     setPhase('details');
   }
 
-  // Picking opens the 16:9 crop step; the upload runs on confirm, so the
-  // image always matches the 16:9 frame event cards render it in.
-  function onPickImage(file: File) {
-    setCropSrc(URL.createObjectURL(file));
-  }
-  function closeCrop() {
-    if (cropSrc) URL.revokeObjectURL(cropSrc);
-    setCropSrc(null);
-  }
-  async function onImageCropped(blob: Blob) {
-    setImageUploading(true);
-    try {
-      const { imageUrl } = await uploadCampaignFeatureImage(new File([blob], 'feature.jpg', { type: 'image/jpeg' }));
-      setFeatureImageUrl(imageUrl);
-      setFeatureImageCredit(null);
-      setImageIsCustom(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
-    } finally {
-      setImageUploading(false);
-      closeCrop();
-    }
-  }
-
   async function submit(e: FormEvent, status: 'DRAFT' | 'ACTIVE') {
     e.preventDefault();
     setError('');
@@ -442,61 +415,18 @@ export function CreateEventPage() {
             {aiUsed && <p className="mt-0.5 text-[13px] text-ink-soft">{t('biz.detailsHint')}</p>}
           </div>
 
-          {/* Cover image — only appears once there's one to show (AI-suggested
-              or previously uploaded); no empty "add an image" prompt upfront. */}
-          {featureImageUrl && (
-            <Card padded={false}>
-              <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-2xl bg-surface-dim">
-                <img src={featureImageUrl} alt="" className="h-full w-full object-cover" />
-
-                <button
-                  type="button"
-                  aria-label={t('biz.removeCoverImage')}
-                  onClick={() => {
-                    setFeatureImageUrl('');
-                    setFeatureImageCredit(null);
-                    setImageIsCustom(true);
-                  }}
-                  className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur transition-colors hover:bg-black/50"
-                >
-                  <X size={15} />
-                </button>
-
-                <label
-                  className={cn(
-                    'absolute bottom-4 right-4 flex cursor-pointer items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-[13px] font-medium text-white backdrop-blur transition-colors hover:bg-black/50',
-                    imageUploading ? 'pointer-events-none opacity-70' : '',
-                  )}
-                >
-                  {imageUploading ? (
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
-                  ) : (
-                    <Camera size={14} />
-                  )}
-                  {t('biz.changeCoverImage')}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    className="hidden"
-                    disabled={imageUploading}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) onPickImage(f);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-              </div>
-              {featureImageCredit && (
-                <p className="px-4 py-2 text-[11px] text-ink-soft">
-                  Photo by{' '}
-                  <a href={featureImageCredit.profileUrl} target="_blank" rel="noreferrer" className="underline">
-                    {featureImageCredit.name}
-                  </a>
-                </p>
-              )}
-            </Card>
-          )}
+          {/* Cover image — AI-suggested when available; the business can
+              always add, change or remove it. */}
+          <EventCoverPicker
+            value={featureImageUrl}
+            credit={featureImageCredit}
+            onError={setError}
+            onChange={(url) => {
+              setFeatureImageUrl(url);
+              setFeatureImageCredit(null);
+              setImageIsCustom(true);
+            }}
+          />
 
           <TextField label={t('biz.fieldTitle')} value={title} onChange={(e) => setTitle(e.target.value)} />
           <Textarea label={t('public.eventAboutHeading')} rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
@@ -653,14 +583,6 @@ export function CreateEventPage() {
         </form>
       )}
 
-      <ImageCropModal
-        open={!!cropSrc}
-        imageSrc={cropSrc}
-        aspect={16 / 9}
-        title={t('biz.cropEventImageTitle')}
-        onCancel={closeCrop}
-        onConfirm={onImageCropped}
-      />
     </div>
   );
 }

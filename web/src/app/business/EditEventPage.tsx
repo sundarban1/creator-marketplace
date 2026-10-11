@@ -1,15 +1,14 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Camera, X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { fetchCategories, fetchActivePlatforms } from '../api/catalog';
-import { fetchCampaign, updateCampaign, uploadCampaignFeatureImage, type MyCampaign } from '../api/business';
+import { fetchCampaign, updateCampaign, type MyCampaign } from '../api/business';
 import { EventReviewBanner } from './EventReviewBanner';
 import { canResubmitEvent, eventStatusLabel } from './eventReviewStatus';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { PageHeader } from '../ui/PageHeader';
-import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
 import { Textarea } from '../ui/Textarea';
@@ -19,8 +18,7 @@ import { FeaturedEventToggle } from './FeaturedEventToggle';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { ApiError } from '../lib/apiClient';
-import { cn } from '../ui/cn';
-import { ImageCropModal } from '../ui/ImageCropModal';
+import { EventCoverPicker } from './EventCoverPicker';
 import { OFFERING_OPTIONS, ROLE_TYPE_OPTIONS } from './eventFormConstants';
 import { ChipGroup } from './eventFormShared';
 import { GuidedCampaignCreator } from './guided/GuidedCampaignCreator';
@@ -75,8 +73,6 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
   const platformList = useAsync((s) => fetchActivePlatforms(s), []);
 
   const [featureImageUrl, setFeatureImageUrl] = useState(c.featureImageUrl ?? '');
-  const [cropSrc, setCropSrc] = useState<string | null>(null);
-  const [imageUploading, setImageUploading] = useState(false);
 
   const [title, setTitle] = useState(c.title);
   const [description, setDescription] = useState(c.description);
@@ -126,28 +122,6 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       addHashtag();
-    }
-  }
-
-  // Picking opens the 16:9 crop step; the upload runs on confirm, so the
-  // image always matches the 16:9 frame event cards render it in.
-  function onPickImage(file: File) {
-    setCropSrc(URL.createObjectURL(file));
-  }
-  function closeCrop() {
-    if (cropSrc) URL.revokeObjectURL(cropSrc);
-    setCropSrc(null);
-  }
-  async function onImageCropped(blob: Blob) {
-    setImageUploading(true);
-    try {
-      const { imageUrl } = await uploadCampaignFeatureImage(new File([blob], 'feature.jpg', { type: 'image/jpeg' }));
-      setFeatureImageUrl(imageUrl);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
-    } finally {
-      setImageUploading(false);
-      closeCrop();
     }
   }
 
@@ -223,56 +197,7 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
       {approved && <Alert tone="info" className="mb-5">{t('eventReview.materialEditNote')}</Alert>}
 
       <form onSubmit={submit} className="space-y-4">
-        {/* Cover image — always editable in edit mode, empty state included. */}
-        <Card padded={false}>
-          <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-2xl bg-surface-dim">
-            {featureImageUrl ? (
-              <img src={featureImageUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark">
-                <span aria-hidden className="pointer-events-none absolute -right-10 -top-14 h-48 w-48 rounded-full bg-brand-orange/25 blur-3xl" />
-                <span aria-hidden className="pointer-events-none absolute -bottom-10 left-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-              </div>
-            )}
-
-            {featureImageUrl && (
-              <button
-                type="button"
-                aria-label={t('biz.removeCoverImage')}
-                onClick={() => setFeatureImageUrl('')}
-                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur transition-colors hover:bg-black/50"
-              >
-                <X size={15} />
-              </button>
-            )}
-
-            <label
-              className={cn(
-                'absolute flex cursor-pointer items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-[13px] font-medium text-white backdrop-blur transition-colors hover:bg-black/50',
-                featureImageUrl ? 'bottom-4 right-4' : 'inset-x-0 bottom-4 mx-auto w-fit',
-                imageUploading ? 'pointer-events-none opacity-70' : '',
-              )}
-            >
-              {imageUploading ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
-              ) : (
-                <Camera size={14} />
-              )}
-              {featureImageUrl ? t('biz.changeCoverImage') : t('biz.addCoverImage')}
-              <input
-                type="file"
-                accept="image/jpeg,image/png"
-                className="hidden"
-                disabled={imageUploading}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onPickImage(f);
-                  e.target.value = '';
-                }}
-              />
-            </label>
-          </div>
-        </Card>
+        <EventCoverPicker value={featureImageUrl} onChange={setFeatureImageUrl} onError={setError} />
 
         <TextField label={t('biz.fieldTitle')} value={title} onChange={(e) => setTitle(e.target.value)} />
         <Textarea label={t('public.eventAboutHeading')} rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
@@ -443,14 +368,6 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
         </div>
       </form>
 
-      <ImageCropModal
-        open={!!cropSrc}
-        imageSrc={cropSrc}
-        aspect={16 / 9}
-        title={t('biz.cropEventImageTitle')}
-        onCancel={closeCrop}
-        onConfirm={onImageCropped}
-      />
     </div>
   );
 }

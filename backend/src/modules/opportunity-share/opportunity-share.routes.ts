@@ -68,7 +68,7 @@ router.get('/admin/summary', authenticate, authorize('ADMIN'), validate(summaryQ
  *   post:
  *     tags: [Opportunity Share]
  *     summary: Record that a share link was opened (public; auth optional)
- *     description: Always 200. `{ valid: false }` for an unknown token; otherwise `{ valid, campaignId, receipt }` — `receipt` only for anonymous visitors, to be passed to /attribution/signup after registering.
+ *     description: "Always 200. `{ valid: false }` for an unknown token; otherwise `{ valid, campaignId, receipt }` — `receipt` only for anonymous visitors, to be passed to /attribution/signup after registering."
  */
 router.post('/:token/visit', opportunityShareVisitLimiter, optionalAuthenticate, ctrl.visit.bind(ctrl));
 

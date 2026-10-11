@@ -12,6 +12,9 @@ import { StepShell, ProvenanceTag, SuggestionNote, deliverableLine, st } from '.
 import { SaveTemplateButton } from './templates';
 import { EventAttachmentsField } from '@/components/EventAttachmentsField';
 import type { CampaignAttachment } from '@/services/guidedCampaign';
+import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
+import { useToast } from '@/components/Toast';
+import { pickAndUpload } from '@/utilities/uploadImage';
 
 const rupees = (n: number) => `Rs. ${Math.round(n).toLocaleString('en-IN')}`;
 const fmtDate = (d: string) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
@@ -47,7 +50,7 @@ function Row({ icon, label, value, provenance, onEdit, attention }: {
   );
 }
 
-export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, publishing, serverError, onAnswerVisit, header, campaignId, beforeSaveTemplate, onAttachmentsChange }: {
+export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, publishing, serverError, onAnswerVisit, header, campaignId, beforeSaveTemplate, onAttachmentsChange, onFeatureImageChange }: {
   form: GuidedForm;
   issues: CampaignRuleIssue[];
   mode: 'create' | 'edit';
@@ -62,10 +65,26 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
   campaignId?: string | null;
   beforeSaveTemplate?: () => Promise<void>;
   onAttachmentsChange: (next: CampaignAttachment[]) => void;
+  onFeatureImageChange: (url: string) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const [attachmentsBusy, setAttachmentsBusy] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+
+  async function pickCover() {
+    if (coverUploading) return;
+    setCoverUploading(true);
+    try {
+      const result = await pickAndUpload('campaign-feature');
+      if (result?.url) onFeatureImageChange(result.url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('createEvent.featureImageUploadFailed'));
+    } finally {
+      setCoverUploading(false);
+    }
+  }
   const blocking = issues.filter((i) => i.severity === 'required');
   const suggestions = issues.filter((i) => i.severity === 'recommended');
   const creators = form.creatorsNeeded ?? 0;
@@ -94,6 +113,19 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
         </View>
       }>
       {form.description ? <Text style={[st.body, { color: C.textSecondary }]}>{form.description}</Text> : null}
+
+      {/* Cover image — AI may have suggested one; the business can add, change or remove it. */}
+      <View style={{ gap: SPACING.sm }}>
+        <Text style={[st.fieldLabel, { color: C.text }]}>{t('createEvent.secFeatureImageTitle')}</Text>
+        <FeatureImagePicker
+          imageUrl={form.featureImageUrl || null}
+          category={form.category}
+          uploading={coverUploading}
+          onPick={pickCover}
+          onClear={() => onFeatureImageChange('')}
+          colors={C}
+        />
+      </View>
 
       {visitUnknown ? (
         <SuggestionNote actions={<>

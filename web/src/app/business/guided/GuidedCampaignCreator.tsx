@@ -372,6 +372,7 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
           campaignId={mode === 'edit' ? campaign?.id ?? null : draftId}
           beforeSaveTemplate={mode === 'create' ? () => autosave.flush() : undefined}
           onAttachmentsChange={(attachments) => setForm((f) => ({ ...f, brief: { ...f.brief, attachments } }))}
+          onFeatureImageChange={(featureImageUrl) => setForm((f) => ({ ...f, featureImageUrl }))}
           onAnswerVisit={(visit) => update(visit ? { locationType: 'ONSITE', locationScope: 'SPECIFIC' } : { locationType: 'REMOTE' }, ['locationType'])}
         />
       )}

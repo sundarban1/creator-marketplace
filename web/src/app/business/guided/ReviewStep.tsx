@@ -12,6 +12,7 @@ import { SaveTemplateButton } from './templates';
 import { ProvenanceTag, SuggestionNote } from './parts';
 import { EventAttachmentsEditor } from '../../events/EventAttachments';
 import type { CampaignAttachment } from '../../api/business';
+import { EventCoverPicker } from '../EventCoverPicker';
 
 function fmtDate(d: string) {
   return d ? new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
@@ -46,7 +47,7 @@ function Row({ icon, label, value, provenance, onEdit, attention }: {
 }
 
 export function ReviewStep({
-  form, issues, onEdit, onPublish, onSaveExit, publishing, mode, serverError, onAnswerVisit, campaignId, beforeSaveTemplate, onAttachmentsChange,
+  form, issues, onEdit, onPublish, onSaveExit, publishing, mode, serverError, onAnswerVisit, campaignId, beforeSaveTemplate, onAttachmentsChange, onFeatureImageChange,
 }: {
   form: GuidedForm;
   issues: CampaignRuleIssue[];
@@ -61,9 +62,11 @@ export function ReviewStep({
   campaignId?: string | null;
   beforeSaveTemplate?: () => Promise<void>;
   onAttachmentsChange: (next: CampaignAttachment[]) => void;
+  onFeatureImageChange: (url: string) => void;
 }) {
   const t = useT();
   const [attachmentsBusy, setAttachmentsBusy] = useState(false);
+  const [coverError, setCoverError] = useState('');
   const blocking = issues.filter((i) => i.severity === 'required');
   const suggestions = issues.filter((i) => i.severity === 'recommended');
   const creators = form.creatorsNeeded ?? 0;
@@ -91,6 +94,12 @@ export function ReviewStep({
       </p>
       <h2 className="mt-1 font-serif text-[26px] font-medium leading-tight tracking-tight text-ink sm:text-[30px]">{form.title || t('guided.untitled')}</h2>
       {form.description && <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-ink-soft">{form.description}</p>}
+
+      {/* Cover image — AI may have suggested one; the business can add, change or remove it. */}
+      <div className="mt-6">
+        <EventCoverPicker value={form.featureImageUrl} onChange={(url) => { setCoverError(''); onFeatureImageChange(url); }} onError={setCoverError} />
+        {coverError && <Alert tone="error" className="mt-2">{coverError}</Alert>}
+      </div>
 
       {/* Questions still open — assistance, not errors (§20) */}
       {visitUnknown && (
