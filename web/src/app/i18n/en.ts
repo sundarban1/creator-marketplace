@@ -70,6 +70,11 @@ export const en = {
     signOut: 'Sign out',
     welcomeToast: "Welcome to Kolab. Let's create beautiful content together!",
     copyright: '© {year} Kolab Technologies. All rights reserved.',
+    close: 'Close',
+    confirm: 'Confirm',
+    ok: 'OK',
+    areYouSure: 'Are you sure?',
+    remove: 'Remove',
   },
 
   roles: {
@@ -621,6 +626,10 @@ export const en = {
     deactivateHint: 'Hides your profile and pauses your account. Sign in again to reactivate.',
     deleteAccount: 'Delete account',
     deleteHint: 'Permanently removes your account and data. This can’t be undone.',
+    deactivateTitle: 'Deactivate your account?',
+    deactivateBody: 'Your profile will be hidden and you will be signed out. You can reactivate anytime by signing in again.',
+    deleteTitle: 'Delete your account permanently?',
+    deleteBody: 'All your data, profile and history will be removed. This cannot be undone.',
     confirmDeactivate: 'Deactivate your account? You can reactivate by signing in again.',
     confirmDelete: 'Permanently delete your account? This cannot be undone.',
     deactivated: 'Account deactivated.',

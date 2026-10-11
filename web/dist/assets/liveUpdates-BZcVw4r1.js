@@ -1,0 +1,1 @@
+import{n as e,s as t}from"./jsx-runtime-BseJUIpC.js";var n=t(e(),1),r=new Set;function i(...e){for(let t of e)for(let e of r)e(t)}function a(e,t){let i=(0,n.useRef)(t);(0,n.useEffect)(()=>{i.current=t});let a=e.join(`|`);(0,n.useEffect)(()=>{let e=new Set(a.split(`|`)),t=t=>{e.has(t)&&i.current()};return r.add(t),()=>{r.delete(t)}},[a])}export{a as n,i as t};

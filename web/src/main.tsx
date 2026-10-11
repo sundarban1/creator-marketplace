@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.tsx'
 import { ErrorFallback } from './components/ErrorFallback.tsx'
+import { holdPrerenderSnapshot } from './lib/prerenderHold'
 
 const SENSITIVE_KEY_PATTERN = /password|token|otp|secret/i
 
@@ -30,7 +31,11 @@ Sentry.init({
   },
 })
 
-createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById('root')!
+// Keep the prerendered snapshot visible until the live page is ready (no blink).
+holdPrerenderSnapshot(rootEl)
+
+createRoot(rootEl).render(
   <StrictMode>
     <Sentry.ErrorBoundary
       fallback={({ eventId }) => <ErrorFallback eventId={eventId} />}

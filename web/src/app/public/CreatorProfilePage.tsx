@@ -4,6 +4,7 @@ import { BadgeCheck, MapPin, Star, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
+import { useReleasePrerenderWhen } from '../../components/PrerenderRelease';
 import { compactNumber } from '../lib/format';
 import { fetchCreatorByHandle } from '../api/publicMarketplace';
 import { fetchCategories } from '../api/catalog';
@@ -45,6 +46,9 @@ export function CreatorProfilePage() {
   const categoryMeta = useMemo(() => makeCategoryLookup(categories ?? []), [categories]);
 
   const [gateOpen, setGateOpen] = useState(false);
+
+  // Hand over from the prerendered snapshot only once real data is in (no skeleton blink).
+  useReleasePrerenderWhen(!loading);
 
   if (loading) return <ProfileSkeleton />;
 

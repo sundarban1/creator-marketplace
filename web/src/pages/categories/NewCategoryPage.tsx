@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useCategories, type Category } from '../../context/CategoriesContext';
 import { CategoryForm } from './CategoryForm';
+import { alertDialog } from '../../app/ui/confirmDialog';
 
 export function NewCategoryPage() {
   const { addCategory } = useCategories();
@@ -12,7 +13,7 @@ export function NewCategoryPage() {
       await addCategory(data);
       navigate('/admin/categories');
     } catch (e) {
-      window.alert((e as Error).message ?? 'Failed to create category.');
+      void alertDialog({ title: 'Something went wrong', message: (e as Error).message ?? 'Failed to create category.', confirmLabel: 'OK' });
     }
   }
 

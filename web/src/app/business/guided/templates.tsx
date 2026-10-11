@@ -13,6 +13,7 @@ import { Alert } from '../../ui/Alert';
 import {
   fetchTemplates, fetchMyCampaigns, deleteCampaignTemplate, saveCampaignTemplate,
 } from '../../api/business';
+import { confirmDialog } from '../../ui/confirmDialog';
 
 // Templates & "start from a previous campaign" (UX spec §23) for the guided
 // creator's start screen, plus the "Save as template" dialog.
@@ -81,7 +82,7 @@ export function StartFromTemplates({ onPick, busyId }: { onPick: (s: StartSource
                       type="button"
                       aria-label={t('guided.tplDelete')}
                       onClick={async () => {
-                        if (!window.confirm(t('guided.tplDeleteConfirm'))) return;
+                        if (!(await confirmDialog({ title: t('guided.tplDelete'), message: t('guided.tplDeleteConfirm'), confirmLabel: t('common.delete') }))) return;
                         await deleteCampaignTemplate(m.id).catch(() => undefined);
                         setRemoved((r) => [...r, m.id]);
                       }}

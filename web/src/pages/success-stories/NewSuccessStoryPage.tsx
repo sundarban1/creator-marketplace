@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useSuccessStories, type SuccessStory } from '../../context/SuccessStoriesContext';
 import { SuccessStoryForm } from './SuccessStoryForm';
+import { alertDialog } from '../../app/ui/confirmDialog';
 
 export function NewSuccessStoryPage() {
   const { addStory } = useSuccessStories();
@@ -12,7 +13,7 @@ export function NewSuccessStoryPage() {
       await addStory(data);
       navigate('/admin/success-stories');
     } catch (e) {
-      window.alert((e as Error).message ?? 'Failed to create success story.');
+      void alertDialog({ title: 'Something went wrong', message: (e as Error).message ?? 'Failed to create success story.', confirmLabel: 'OK' });
     }
   }
 

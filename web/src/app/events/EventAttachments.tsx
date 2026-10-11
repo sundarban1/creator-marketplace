@@ -6,6 +6,7 @@ import { uploadCampaignAttachment, type CampaignAttachment } from '../api/busine
 import { DeliverableGallery, type DeliverableMedia } from '../ui/DeliverableGallery';
 import { cn } from '../ui/cn';
 import { confirmImageUpload } from '../ui/uploadPreview';
+import { confirmDialog } from '../ui/confirmDialog';
 
 /**
  * Reference images (PNG/JPG/WebP) and PDFs a business attaches to an event
@@ -323,7 +324,7 @@ export function EventAttachmentsEditor({
               isPdf={isPdfAttachment(a)}
               sizeBytes={a.sizeBytes}
               onOpen={() => setViewer(i)}
-              onRemove={disabled ? undefined : () => { if (window.confirm(t('biz.attachmentsRemoveConfirm', { name: a.name }))) removeUploaded(i); }}
+              onRemove={disabled ? undefined : async () => { if (await confirmDialog({ title: t('biz.attachmentsRemoveConfirm', { name: a.name }), confirmLabel: t('common.delete') })) removeUploaded(i); }}
               removeLabel={t('biz.attachmentsRemove', { name: a.name })}
             />
           ))}
@@ -337,7 +338,7 @@ export function EventAttachmentsEditor({
               progress={p.progress}
               error={p.error}
               onOpen={() => setViewer(value.length + i)}
-              onRemove={() => { if (window.confirm(t('biz.attachmentsRemoveConfirm', { name: p.file.name }))) removePending(p.id); }}
+              onRemove={async () => { if (await confirmDialog({ title: t('biz.attachmentsRemoveConfirm', { name: p.file.name }), confirmLabel: t('common.delete') })) removePending(p.id); }}
               onRetry={() => void upload(p)}
               removeLabel={t('biz.attachmentsRemove', { name: p.file.name })}
             />

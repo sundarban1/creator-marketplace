@@ -8,6 +8,7 @@ import { SuccessStoriesProvider } from './context/SuccessStoriesContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RouteFallback } from './components/RouteFallback';
+import { PrerenderRelease } from './components/PrerenderRelease';
 import { marketplaceRoutes } from './app/AppRoutes';
 import { withChunkRetry } from './lib/chunkRetry';
 
@@ -58,6 +59,7 @@ const NichePage = named(() => import('./pages/landing/content/niche/NichePage'),
 import { INDUSTRY_PAGES } from './pages/landing/content/niche/industries.data';
 import { CITY_PAGES } from './pages/landing/content/niche/cities.data';
 import { UploadPreviewHost } from './app/ui/UploadPreviewDialog';
+import { ConfirmDialogHost } from './app/ui/ConfirmDialogHost';
 
 const Login = named(() => import('./pages/Login'), 'Login');
 const DashboardLayout = named(() => import('./layouts/DashboardLayout'), 'DashboardLayout');
@@ -123,7 +125,10 @@ export default function App() {
       <AuthProvider>
         {/* Confirm-before-upload preview for every image upload (app + admin). */}
         <UploadPreviewHost />
+        {/* App-styled confirm/alert dialogs replacing window.confirm/alert (app + admin). */}
+        <ConfirmDialogHost />
        <Suspense fallback={<RouteFallback />}>
+        <PrerenderRelease />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

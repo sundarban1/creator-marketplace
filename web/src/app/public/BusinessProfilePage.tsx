@@ -4,6 +4,7 @@ import { BadgeCheck, MapPin, Star, Globe } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
+import { useReleasePrerenderWhen } from '../../components/PrerenderRelease';
 import { fetchPublicBusiness } from '../api/publicMarketplace';
 import { fetchCategories } from '../api/catalog';
 import { ApiError } from '../lib/apiClient';
@@ -41,6 +42,9 @@ export function BusinessProfilePage() {
 
   const { data: categories } = useAsync((signal) => fetchCategories(signal), []);
   const categoryMeta = useMemo(() => makeCategoryLookup(categories ?? []), [categories]);
+
+  // Hand over from the prerendered snapshot only once real data is in (no skeleton blink).
+  useReleasePrerenderWhen(!loading);
 
   if (loading) return <ProfileSkeleton />;
 

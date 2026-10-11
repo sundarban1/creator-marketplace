@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Globe, ShieldCheck, BadgeCheck, LogOut, UserX, Trash2, Link2, User, Mail, Gift, LifeBuoy, Info } from 'lucide-react';
+import { Globe, ShieldCheck, BadgeCheck, UserX, Trash2, Link2, User, Mail, Gift, LifeBuoy, Info } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
@@ -12,12 +12,12 @@ import { paths } from '../routes';
 import { DashPageHeader } from './dash-ui/DashPageHeader';
 import { DashCard, DashCardHeader } from './dash-ui/DashCard';
 import { DashListRow } from './dash-ui/DashListRow';
-import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
 import { Switch } from '../ui/Switch';
 import { StatusBadge } from '../ui/StatusBadge';
 import { useToast } from '../ui/Toast';
 import { cn } from '../ui/cn';
+import { confirmDialog } from '../ui/confirmDialog';
 
 const LANGS: { value: Lang; label: string }[] = [
   { value: 'en', label: 'English' },
@@ -145,8 +145,14 @@ export function CreatorSettingsPage() {
             subtitle={t('settings.deactivateHint')}
             chevron
             onClick={async () => {
-              if (!window.confirm(t('settings.confirmDeactivate'))) return;
-              await deactivateAccount();
+              const ok = await confirmDialog({
+                title: t('settings.deactivateTitle'),
+                message: t('settings.deactivateBody'),
+                confirmLabel: t('settings.deactivate'),
+                tone: 'warning',
+                action: deactivateAccount,
+              });
+              if (!ok) return;
               await logout();
               navigate(paths.login);
             }}
@@ -159,8 +165,13 @@ export function CreatorSettingsPage() {
             subtitle={t('settings.deleteHint')}
             chevron
             onClick={async () => {
-              if (!window.confirm(t('settings.confirmDelete'))) return;
-              await deleteAccount();
+              const ok = await confirmDialog({
+                title: t('settings.deleteTitle'),
+                message: t('settings.deleteBody'),
+                confirmLabel: t('settings.deleteAccount'),
+                action: deleteAccount,
+              });
+              if (!ok) return;
               await logout();
               navigate(paths.login);
             }}
@@ -222,16 +233,6 @@ export function CreatorSettingsPage() {
           </Link>
         </div>
       </DashCard>
-
-      <Button
-        variant="secondary"
-        fullWidth
-        className="mt-6 border-danger-soft bg-danger-soft text-danger hover:bg-danger-soft/80"
-        onClick={() => logout().then(() => navigate(paths.login))}
-      >
-        <LogOut size={15} />
-        {t('settings.signOut')}
-      </Button>
 
       <ChangePasswordModal
         open={changePasswordOpen}

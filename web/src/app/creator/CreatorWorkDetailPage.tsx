@@ -28,6 +28,7 @@ import { EngagementBadge } from './EngagementBadge';
 import { DisputeStatusCard } from './DisputeStatus';
 import { ReviewSection } from './ReviewSection';
 import { WorkStepper } from './WorkStepper';
+import { confirmDialog } from '../ui/confirmDialog';
 
 const CAN_UPLOAD = new Set(['IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE']);
 const CAN_REPORT = new Set([
@@ -115,7 +116,7 @@ export function CreatorWorkDetailPage() {
   };
 
   const handleRemove = async (fileId: string) => {
-    if (!window.confirm(t('workDetail.confirmRemoveFile'))) return;
+    if (!(await confirmDialog({ title: t('workDetail.confirmRemoveFile'), confirmLabel: t('common.remove') }))) return;
     setActionError('');
     setBusy(true);
     try {

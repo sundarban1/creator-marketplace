@@ -1,0 +1,1 @@
+import{St as e,_n as t,_t as n,xt as r}from"./index-cHVYupqc.js";async function i(t){if(t.role!==`CREATOR`&&t.role!==`BUSINESS`)return e(t.role);if(t.isOnboarded)return a(t.role);let i=await n();return(t.role===`CREATOR`?i.creatorOnboardingEnabled:i.businessOnboardingEnabled)?r.onboarding:a(t.role)}function a(n){return t(n)??e(n)}export{i as n,a as t};

@@ -15,6 +15,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { Modal } from '../ui/Modal';
 import { Textarea } from '../ui/Textarea';
 import { DeliverableStrip } from '../ui/DeliverableGallery';
+import { confirmDialog } from '../ui/confirmDialog';
 
 const TABS = ['review', 'approved'] as const;
 type Tab = (typeof TABS)[number];
@@ -127,8 +128,8 @@ export function BusinessDeliverablesPage() {
                   <Button
                     size="sm"
                     loading={busyId === a.id}
-                    onClick={() => {
-                      if (!window.confirm(t('biz.approveConfirm'))) return;
+                    onClick={async () => {
+                      if (!(await confirmDialog({ title: t('biz.approve'), message: t('biz.approveConfirm'), confirmLabel: t('biz.approve'), tone: 'default' }))) return;
                       act(() => approveWork(a.id), a.id, t('biz.workApproved'));
                     }}
                   >

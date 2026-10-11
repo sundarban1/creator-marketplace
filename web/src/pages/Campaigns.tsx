@@ -10,6 +10,7 @@ import { ActionButton } from '../components/ActionButton';
 import { api, type ApiCampaign } from '../lib/api';
 import { useApi }       from '../lib/useApi';
 import { displayBusinessName } from '../lib/identity';
+import { confirmDialog, alertDialog } from '../app/ui/confirmDialog';
 
 const PAGE_SIZE = 10;
 
@@ -143,7 +144,7 @@ export function Campaigns({ reviewQueue = false }: { reviewQueue?: boolean } = {
       await api.admin.updateCampaignStatus(row.id, next);
       refetch();
     } catch (e) {
-      window.alert((e as Error).message ?? 'Failed to update event status.');
+      void alertDialog({ title: 'Something went wrong', message: (e as Error).message ?? 'Failed to update event status.', confirmLabel: 'OK' });
     } finally {
       setTogglingId(null);
     }
@@ -153,16 +154,19 @@ export function Campaigns({ reviewQueue = false }: { reviewQueue?: boolean } = {
   // requirement/invitation tied to it is force-deleted regardless of status
   // (accepted, paid, in progress...), so this needs an explicit confirmation.
   async function handleDelete(row: ApiCampaign) {
-    const confirmed = window.confirm(
-      `Delete "${row.title}"? This permanently removes all of its proposals (accepted, paid, or in progress included) and can't be undone.`
-    );
+    const confirmed = await confirmDialog({
+      title: `Delete "${row.title}"?`,
+      message: "This permanently removes all of its proposals (accepted, paid, or in progress included) and can't be undone.",
+      confirmLabel: 'Delete event',
+      cancelLabel: 'Cancel',
+    });
     if (!confirmed) return;
     setDeletingId(row.id);
     try {
       await api.admin.deleteCampaign(row.id);
       refetch();
     } catch (e) {
-      window.alert((e as Error).message ?? 'Failed to delete event.');
+      void alertDialog({ title: 'Something went wrong', message: (e as Error).message ?? 'Failed to delete event.', confirmLabel: 'OK' });
     } finally {
       setDeletingId(null);
     }

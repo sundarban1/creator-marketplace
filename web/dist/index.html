@@ -14,22 +14,25 @@
       // Applied before first paint so the landing page never flashes the
       // wrong theme. Mirrors the logic in ThemeContext.tsx exactly — keep
       // the two in sync if the storage key or default ever changes.
-      // Defaults to light for first-time visitors (no stored preference) —
-      // not driven by prefers-color-scheme, so it stays light even for
-      // visitors whose OS is set to dark.
+      // Defaults to DARK for first-time visitors (no stored preference) —
+      // not driven by prefers-color-scheme, so it stays dark even for
+      // visitors whose OS is set to light. The theme toggle's choice, once
+      // made, is stored and wins from then on.
       (function () {
         try {
           var stored = localStorage.getItem('kolab-landing-theme');
-          var dark = stored ? stored === 'dark' : false;
-          if (dark) document.documentElement.classList.add('dark');
+          var dark = stored ? stored === 'dark' : true;
+          // toggle, not add: a prerendered page may already carry a
+          // `dark` class, which must be removed for a stored light choice.
+          document.documentElement.classList.toggle('dark', dark);
         } catch (e) {}
       })();
     </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations</title>
-    <meta name="description" content="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations." />
+    <title>Kolab – Nepal's Creator Marketplace for Brands & Influencers</title>
+    <meta name="description" content="Kolab is Nepal's creator marketplace. Hire verified influencers, launch campaigns, and grow your brand — or find paid collaborations as a content creator." />
     <link rel="canonical" href="https://kolab.com.np/" />
 
     <!-- Static fallback for the "/" route only — every page's <SEO> component
@@ -41,32 +44,35 @@
     <meta property="og:site_name" content="Kolab" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:url" content="https://kolab.com.np/" />
-    <meta property="og:title" content="Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations" />
-    <meta property="og:description" content="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations." />
+    <meta property="og:title" content="Kolab – Nepal's Creator Marketplace for Brands & Influencers" />
+    <meta property="og:description" content="Kolab is Nepal's creator marketplace. Hire verified influencers, launch campaigns, and grow your brand — or find paid collaborations as a content creator." />
     <meta property="og:image" content="https://kolab.com.np/icon.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations" />
-    <meta name="twitter:description" content="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations." />
+    <meta name="twitter:title" content="Kolab – Nepal's Creator Marketplace for Brands & Influencers" />
+    <meta name="twitter:description" content="Kolab is Nepal's creator marketplace. Hire verified influencers, launch campaigns, and grow your brand — or find paid collaborations as a content creator." />
     <meta name="twitter:image" content="https://kolab.com.np/icon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Loaded non-render-blocking: fetched as a preload, then flipped to a
+         stylesheet on load. display=swap already paints text in the fallback
+         font first, so blocking first paint on this request bought nothing. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:opsz,wght@9..40,300..700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
-    <script type="module" crossorigin src="/assets/index-DVj04raR.js"></script>
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:opsz,wght@9..40,300..700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" /></noscript>
+    <script type="module" crossorigin src="/assets/index-cHVYupqc.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/jsx-runtime-BseJUIpC.js">
-    <link rel="modulepreload" crossorigin href="/assets/chunk-6CSD65Y2-BssU3dZc.js">
     <link rel="modulepreload" crossorigin href="/assets/clsx-CjueKrWZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/proxy-D-7EC5zJ.js">
     <link rel="modulepreload" crossorigin href="/assets/createLucideIcon-Wra8TdHx.js">
-    <link rel="modulepreload" crossorigin href="/assets/arrow-up-right-DXOmBLCj.js">
-    <link rel="modulepreload" crossorigin href="/assets/circle-check-CaMhNJBB.js">
-    <link rel="modulepreload" crossorigin href="/assets/mail-B2QumKdC.js">
-    <link rel="modulepreload" crossorigin href="/assets/map-pin-DpxjNSvT.js">
     <link rel="modulepreload" crossorigin href="/assets/iconBase-C-vUe174.js">
-    <link rel="modulepreload" crossorigin href="/assets/api-CbLjtmVa.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-BPjz8bzi.css">
+    <link rel="modulepreload" crossorigin href="/assets/errorMessage-xP4djNdc.js">
+    <link rel="modulepreload" crossorigin href="/assets/api-LtlrYrSR.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-DZARNhu3.css">
   </head>
   <body>
     <div id="root"></div>

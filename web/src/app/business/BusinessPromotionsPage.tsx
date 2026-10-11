@@ -18,6 +18,7 @@ import { Alert } from '../ui/Alert';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { BizPromotionCard } from './BizPromotionCard';
+import { confirmDialog } from '../ui/confirmDialog';
 
 const STATUSES: PromotionStatus[] = ['ACTIVE', 'DRAFT', 'PAUSED', 'EXPIRED'];
 
@@ -78,7 +79,7 @@ export function BusinessPromotionsPage() {
   }
 
   async function handleDelete(p: ManagedPromotion) {
-    if (!window.confirm(t('biz.deletePromotionConfirmBody'))) return;
+    if (!(await confirmDialog({ title: t('biz.deletePromotionConfirmTitle'), message: t('biz.deletePromotionConfirmBody'), confirmLabel: t('biz.deletePromotionConfirmButton') }))) return;
     setDeletingId(p.id);
     setError('');
     try {

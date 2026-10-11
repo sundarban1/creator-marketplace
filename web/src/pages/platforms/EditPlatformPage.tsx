@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { usePlatforms, type Platform } from '../../context/PlatformsContext';
 import { PlatformForm } from './PlatformForm';
+import { alertDialog } from '../../app/ui/confirmDialog';
 
 export function EditPlatformPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,7 +40,7 @@ export function EditPlatformPage() {
       await updatePlatform(platform!.id, data);
       navigate('/admin/platforms');
     } catch (e) {
-      window.alert((e as Error).message ?? 'Failed to update platform.');
+      void alertDialog({ title: 'Something went wrong', message: (e as Error).message ?? 'Failed to update platform.', confirmLabel: 'OK' });
     }
   }
 

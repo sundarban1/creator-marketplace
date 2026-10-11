@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { ProfileCoverImage } from '@/components/ProfileCoverImage';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
@@ -83,7 +84,7 @@ function HeroCover({ coverUri, topBar }: { coverUri: string | null; topBar?: Rea
   return (
     <View style={styles.cover}>
       {coverUri ? (
-        <Image source={{ uri: coverUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <ProfileCoverImage uri={coverUri} />
       ) : (
         <LinearGradient
           colors={['#7C3AED', '#EC4899', '#F97316']}

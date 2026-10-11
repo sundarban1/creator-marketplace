@@ -7,6 +7,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { StatusBadge } from '../../ui/StatusBadge';
 import { respondToInvitation, type Invitation } from '../../api/creator';
+import { confirmDialog } from '../../ui/confirmDialog';
 
 /**
  * Free events (OPEN_EVENT) are accepted/declined right here. Paid campaigns
@@ -28,7 +29,7 @@ export function DashInvitationCard({
   const isPaidInvite = !isFreeEvent;
 
   async function respond(status: 'ACCEPTED' | 'DECLINED') {
-    if (status === 'DECLINED' && !window.confirm(t('applications.invitedConfirmDecline'))) return;
+    if (status === 'DECLINED' && !(await confirmDialog({ title: t('applications.invitedConfirmDecline'), confirmLabel: t('applications.invitedDecline') }))) return;
     setSubmitting(status);
     try {
       const updated = await respondToInvitation(invitation.id, status);

@@ -52,11 +52,12 @@ import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { cn } from '../ui/cn';
 import { confirmImageUpload } from '../ui/uploadPreview';
+import { confirmDialog } from '../ui/confirmDialog';
 
 const CONNECTABLE_PLATFORMS = ['tiktok', 'youtube', 'instagram', 'facebook'] as const;
 const MAX_NICHE = 5;
-/** Cover crop ratio — must match the band's `aspect-[4/1]` below. */
-const COVER_ASPECT = 4;
+/** Cover crop ratio — must match the band's `aspect-[3/1]` below and mobile ProfileCoverImage. */
+const COVER_ASPECT = 3;
 
 export function CreatorProfilePage() {
   const t = useT();
@@ -213,7 +214,7 @@ export function CreatorProfilePage() {
       {/* Identity — cover band (photo or gradient fallback) + overlapping avatar.
           The band is a fixed COVER_ASPECT so the crop is exactly what shows. */}
       <div className="overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] ring-1 ring-ink/[0.04]">
-        <div className="relative aspect-[4/1] min-h-28 overflow-hidden bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark">
+        <div className="relative aspect-[3/1] min-h-28 overflow-hidden bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark">
           {p.coverImageUrl ? (
             <img src={p.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
@@ -360,7 +361,7 @@ export function CreatorProfilePage() {
                   </div>
                   <button
                     onClick={async () => {
-                      if (!window.confirm(t('profile.confirmRemove'))) return;
+                      if (!(await confirmDialog({ title: t('profile.confirmRemove'), confirmLabel: t('profile.remove') }))) return;
                       await deleteSocialAccount(s.id);
                       socials.reload();
                     }}
@@ -422,7 +423,7 @@ export function CreatorProfilePage() {
                   </div>
                   <button
                     onClick={async () => {
-                      if (!window.confirm(t('profile.confirmRemove'))) return;
+                      if (!(await confirmDialog({ title: t('profile.confirmRemove'), confirmLabel: t('profile.remove') }))) return;
                       await deletePortfolioItem(item.id);
                       portfolioItems.reload();
                     }}
@@ -680,7 +681,7 @@ function ConnectSocialModal({
   };
 
   const disconnect = async (id: string) => {
-    if (!window.confirm(t('profile.confirmRemove'))) return;
+    if (!(await confirmDialog({ title: t('profile.confirmRemove'), confirmLabel: t('profile.remove') }))) return;
     await deleteSocialAccount(id);
     onChange();
   };

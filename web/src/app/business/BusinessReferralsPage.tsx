@@ -95,40 +95,42 @@ export function BusinessReferralsPage() {
         <EmptyState variant="error" title={t('bizReferrals.loadError')} action={{ label: t('common.retry'), onClick: overview.reload }} />
       ) : (
         <>
-          {/* Your code */}
-          <Card>
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-soft">{t('bizReferrals.yourCodeLabel')}</p>
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-brand px-5 py-4">
-              <span className="font-mono text-[22px] font-bold tracking-[0.2em] text-white">{o.code}</span>
-              <Share2 size={18} className="flex-shrink-0 cursor-pointer text-white/90" onClick={shareCode} />
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Button variant="secondary" size="sm" fullWidth onClick={copyCode}>
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? t('bizReferrals.copied') : t('bizReferrals.copyCode')}
-              </Button>
-              <Button size="sm" fullWidth onClick={shareCode}>
-                <Share2 size={14} />
-                {t('bizReferrals.share')}
-              </Button>
-            </div>
-          </Card>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Your code */}
+            <Card className="flex flex-col justify-center">
+              <h1 className="lp-heading mb-1 text-center text-[22px] text-ink">{t('bizReferrals.yourCodeLabel')}</h1>
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-brand px-5 py-4">
+                <span className="font-mono text-[22px] font-bold tracking-[0.2em] text-white">{o.code}</span>
+                <Share2 size={18} className="flex-shrink-0 cursor-pointer text-white/90" onClick={shareCode} />
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button variant="secondary" size="sm" fullWidth onClick={copyCode}>
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? t('bizReferrals.copied') : t('bizReferrals.copyCode')}
+                </Button>
+                <Button size="sm" fullWidth onClick={shareCode}>
+                  <Share2 size={14} />
+                  {t('bizReferrals.share')}
+                </Button>
+              </div>
+            </Card>
 
-          {/* How it works */}
-          <Card className="mt-6">
-            <CardHeader title={t('bizReferrals.howItWorksHeading')} />
-            <ol className="space-y-1.5 text-[13.5px] text-ink-soft">
-              {(['step1', 'step2', 'step3', 'step4', 'step5'] as const).map((key, i) => (
-                <li key={key} className="flex gap-2">
-                  <span className="flex-shrink-0 font-semibold text-violet-dark">{i + 1}.</span>
-                  {t(`bizReferrals.${key}`)}
-                </li>
-              ))}
-            </ol>
-            <p className="mt-3 rounded-xl bg-violet/[0.06] px-3 py-2.5 text-[12.5px] font-medium text-violet-dark">
-              {t('bizReferrals.conditionNote', { amount: o.rewardAmount })}
-            </p>
-          </Card>
+            {/* How it works */}
+            <Card>
+              <CardHeader title={t('bizReferrals.howItWorksHeading')} />
+              <ol className="space-y-1.5 text-[13.5px] text-ink-soft">
+                {(['step1', 'step2', 'step3', 'step4', 'step5'] as const).map((key, i) => (
+                  <li key={key} className="flex gap-2">
+                    <span className="flex-shrink-0 font-semibold text-violet-dark">{i + 1}.</span>
+                    {t(`bizReferrals.${key}`)}
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 rounded-xl bg-violet/[0.06] px-3 py-2.5 text-[12.5px] font-medium text-violet-dark">
+                {t('bizReferrals.conditionNote', { amount: o.rewardAmount })}
+              </p>
+            </Card>
+          </div>
 
           {/* Referred by / apply a code */}
           {o.referredBy ? (

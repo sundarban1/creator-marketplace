@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useT, useAppLanguage } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useReleasePrerenderWhen } from '../../components/PrerenderRelease';
 import { ApiError } from '../lib/apiClient';
 import { SEO } from '../../lib/seo/SEO';
 import { absoluteUrl } from '../../lib/seo/config';
@@ -43,6 +44,9 @@ export function CommunityEventDetailPage() {
     (s) => (previewId ? loadPreview(previewId) : fetchCommunityEvent(slug, s)),
     [slug, previewId],
   );
+
+  // Hand over from the prerendered snapshot only once real data is in (no skeleton blink).
+  useReleasePrerenderWhen(!loading);
 
   if (loading) return <DetailSkeleton />;
 

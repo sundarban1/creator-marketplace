@@ -82,40 +82,42 @@ export function CreatorReferralsPage() {
         <EmptyState variant="error" title={t('referrals.loadError')} action={{ label: t('common.retry'), onClick: overview.reload }} />
       ) : (
         <>
-          {/* Your code */}
-          <DashCard>
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-soft">{t('referrals.yourCodeLabel')}</p>
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-violet to-dash-pink px-5 py-4">
-              <span className="font-mono text-[22px] font-bold tracking-[0.2em] text-white">{o.code}</span>
-              <Share2 size={18} className="flex-shrink-0 cursor-pointer text-white/90" onClick={shareCode} />
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Button variant="secondary" size="sm" fullWidth onClick={copyCode}>
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? t('referrals.copied') : t('referrals.copyCode')}
-              </Button>
-              <Button size="sm" fullWidth onClick={shareCode}>
-                <Share2 size={14} />
-                {t('referrals.share')}
-              </Button>
-            </div>
-          </DashCard>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Your code */}
+            <DashCard className="flex flex-col justify-center">
+              <h1 className="lp-heading mb-1 text-center text-[22px] text-ink">{t('referrals.yourCodeLabel')}</h1>
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-violet to-dash-pink px-5 py-4">
+                <span className="font-mono text-[22px] font-bold tracking-[0.2em] text-white">{o.code}</span>
+                <Share2 size={18} className="flex-shrink-0 cursor-pointer text-white/90" onClick={shareCode} />
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button variant="secondary" size="sm" fullWidth onClick={copyCode}>
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? t('referrals.copied') : t('referrals.copyCode')}
+                </Button>
+                <Button size="sm" fullWidth onClick={shareCode}>
+                  <Share2 size={14} />
+                  {t('referrals.share')}
+                </Button>
+              </div>
+            </DashCard>
 
-          {/* How it works */}
-          <DashCard className="mt-6">
-            <DashCardHeader title={t('referrals.howItWorksHeading')} />
-            <ol className="space-y-1.5 text-[13.5px] text-ink-soft">
-              {(['step1', 'step2', 'step3', 'step4', 'step5'] as const).map((key, i) => (
-                <li key={key} className="flex gap-2">
-                  <span className="flex-shrink-0 font-semibold text-violet-dark">{i + 1}.</span>
-                  {t(`referrals.${key}`)}
-                </li>
-              ))}
-            </ol>
-            <p className="mt-3 rounded-xl bg-violet/[0.06] px-3 py-2.5 text-[12.5px] font-medium text-violet-dark">
-              {t('referrals.conditionNote', { amount: o.rewardAmount })}
-            </p>
-          </DashCard>
+            {/* How it works */}
+            <DashCard>
+              <DashCardHeader title={t('referrals.howItWorksHeading')} />
+              <ol className="space-y-1.5 text-[13.5px] text-ink-soft">
+                {(['step1', 'step2', 'step3', 'step4', 'step5'] as const).map((key, i) => (
+                  <li key={key} className="flex gap-2">
+                    <span className="flex-shrink-0 font-semibold text-violet-dark">{i + 1}.</span>
+                    {t(`referrals.${key}`)}
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 rounded-xl bg-violet/[0.06] px-3 py-2.5 text-[12.5px] font-medium text-violet-dark">
+                {t('referrals.conditionNote', { amount: o.rewardAmount })}
+              </p>
+            </DashCard>
+          </div>
 
           {/* Referred by / apply a code */}
           {o.referredBy ? (

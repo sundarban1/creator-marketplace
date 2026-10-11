@@ -25,6 +25,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { StatusBadge, type BadgeTone } from '../ui/StatusBadge';
 import { cn } from '../ui/cn';
 import { WithdrawModal } from './WithdrawModal';
+import { confirmDialog } from '../ui/confirmDialog';
 
 export function CreatorWalletPage() {
   const t = useT();
@@ -40,7 +41,7 @@ export function CreatorWalletPage() {
   const [cancelError, setCancelError] = useState('');
 
   const handleCancelWithdrawal = async (id: string) => {
-    if (!window.confirm(t('wallet.confirmCancelWithdrawal'))) return;
+    if (!(await confirmDialog({ title: t('wallet.cancelWithdrawal'), message: t('wallet.confirmCancelWithdrawal'), confirmLabel: t('wallet.cancelWithdrawal'), tone: 'warning' }))) return;
     setCancelError('');
     setCancellingId(id);
     try {

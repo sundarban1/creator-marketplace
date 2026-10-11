@@ -3,6 +3,7 @@ import { Check, X, Search, UserCheck, Undo2 } from 'lucide-react';
 import { StatusBadge } from '../../components/StatusBadge';
 import { api, type ApiMeetupRegistration } from '../../lib/api';
 import { useApi } from '../../lib/useApi';
+import { alertDialog } from '../../app/ui/confirmDialog';
 
 const STATUS_FILTERS = [
   { key: '', label: 'All' },
@@ -111,7 +112,7 @@ export function RegistrationsTab({ meetupId }: { meetupId: string }) {
       await api.admin.acceptMeetupRegistration(meetupId, id);
       refetch();
     } catch (err) {
-      window.alert((err as Error).message ?? 'Failed to accept registration.');
+      void alertDialog({ title: 'Something went wrong', message: (err as Error).message ?? 'Failed to accept registration.', confirmLabel: 'OK' });
     } finally {
       setBusyId(null);
     }
@@ -123,7 +124,7 @@ export function RegistrationsTab({ meetupId }: { meetupId: string }) {
       await api.admin.rejectMeetupRegistration(meetupId, id);
       refetch();
     } catch (err) {
-      window.alert((err as Error).message ?? 'Failed to reject registration.');
+      void alertDialog({ title: 'Something went wrong', message: (err as Error).message ?? 'Failed to reject registration.', confirmLabel: 'OK' });
     } finally {
       setBusyId(null);
     }
@@ -135,7 +136,7 @@ export function RegistrationsTab({ meetupId }: { meetupId: string }) {
       await api.admin.checkInMeetupRegistration(meetupId, id);
       refetch();
     } catch (err) {
-      window.alert((err as Error).message ?? 'Failed to check in.');
+      void alertDialog({ title: 'Something went wrong', message: (err as Error).message ?? 'Failed to check in.', confirmLabel: 'OK' });
     } finally {
       setBusyId(null);
     }
@@ -147,7 +148,7 @@ export function RegistrationsTab({ meetupId }: { meetupId: string }) {
       await api.admin.undoCheckInMeetupRegistration(meetupId, id);
       refetch();
     } catch (err) {
-      window.alert((err as Error).message ?? 'Failed to undo check-in.');
+      void alertDialog({ title: 'Something went wrong', message: (err as Error).message ?? 'Failed to undo check-in.', confirmLabel: 'OK' });
     } finally {
       setBusyId(null);
     }

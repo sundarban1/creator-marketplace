@@ -25,6 +25,7 @@ import { AskKolabButton } from './AskKolab';
 import { StartStep, ClarifyStep, BasicsStep, CreatorsStep, ContentStep, BudgetStep, RequirementsStep, type Update } from './steps';
 import { ReviewStep } from './ReviewStep';
 import type { StartSource } from './templates';
+import { confirmDialog } from '../../ui/confirmDialog';
 
 type Mode = 'create' | 'edit';
 
@@ -253,7 +254,7 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
   };
 
   const discard = async () => {
-    if (!window.confirm(t('guided.discardConfirm'))) return;
+    if (!(await confirmDialog({ title: t('guided.discard'), message: t('guided.discardConfirm'), confirmLabel: t('guided.discard') }))) return;
     autosave.markClean();
     if (draftId) await deleteCampaign(draftId).catch(() => undefined);
     clearLocalBackup(draftId ?? 'new');

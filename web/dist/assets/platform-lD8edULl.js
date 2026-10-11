@@ -1,0 +1,1 @@
+function e(){return typeof navigator>`u`?!1:/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)}export{e as t};

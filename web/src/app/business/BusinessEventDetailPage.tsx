@@ -42,6 +42,7 @@ import { ReviewSection } from '../creator/ReviewSection';
 import { cn } from '../ui/cn';
 import { StatusStrip } from '../ui/StatusStrip';
 import { stageInfo } from '../lib/engagementStage';
+import { confirmDialog } from '../ui/confirmDialog';
 
 // Mirrors CreatorWorkDetailPage.tsx's CAN_REPORT — same shared engagement
 // states, just viewed from the business side.
@@ -460,8 +461,8 @@ export function BusinessEventDetailPage() {
                 a={a}
                 busy={busyId === a.id}
                 onAccept={() => handleAccept(a)}
-                onReject={() => {
-                  if (!window.confirm(t('biz.confirmReject'))) return;
+                onReject={async () => {
+                  if (!(await confirmDialog({ title: t('biz.confirmReject'), confirmLabel: t('biz.reject') }))) return;
                   act(() => rejectApplication(id, a.id), a.id, t('biz.rejected'));
                 }}
               />

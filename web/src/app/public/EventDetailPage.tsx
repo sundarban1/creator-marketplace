@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useT } from '../i18n';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
+import { useReleasePrerenderWhen } from '../../components/PrerenderRelease';
 import { fetchPublicEvent } from '../api/publicMarketplace';
 import { ApiError } from '../lib/apiClient';
 import { SEO } from '../../lib/seo/SEO';
@@ -40,6 +41,9 @@ export function EventDetailPage() {
       })
       .catch(() => {});
   }, [ref]);
+
+  // Hand over from the prerendered snapshot only once real data is in (no skeleton blink).
+  useReleasePrerenderWhen(!loading);
 
   if (loading) {
     return (

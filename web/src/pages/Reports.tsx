@@ -6,6 +6,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Pagination } from '../components/Pagination';
 import { api, type ApiReport } from '../lib/api';
 import { useApi } from '../lib/useApi';
+import { alertDialog } from '../app/ui/confirmDialog';
 
 const PAGE_SIZE = 10;
 
@@ -116,7 +117,7 @@ export function Reports() {
       await api.admin.updateReportStatus(id, status);
       refetch();
     } catch (err) {
-      window.alert((err as Error).message ?? 'Failed to update report.');
+      void alertDialog({ title: 'Something went wrong', message: (err as Error).message ?? 'Failed to update report.', confirmLabel: 'OK' });
     }
   }
 

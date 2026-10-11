@@ -18,6 +18,7 @@ import { Switch } from '../ui/Switch';
 import { StatusBadge } from '../ui/StatusBadge';
 import { useToast } from '../ui/Toast';
 import { cn } from '../ui/cn';
+import { confirmDialog } from '../ui/confirmDialog';
 
 const LANGS: { value: Lang; label: string }[] = [
   { value: 'en', label: 'English' },
@@ -271,8 +272,14 @@ export function AccountSettingsPage() {
 
           <button
             onClick={async () => {
-              if (!window.confirm(t('settings.confirmDeactivate'))) return;
-              await deactivateAccount();
+              const ok = await confirmDialog({
+                title: t('settings.deactivateTitle'),
+                message: t('settings.deactivateBody'),
+                confirmLabel: t('settings.deactivate'),
+                tone: 'warning',
+                action: deactivateAccount,
+              });
+              if (!ok) return;
               await logout();
               navigate(paths.login);
             }}
@@ -285,8 +292,13 @@ export function AccountSettingsPage() {
 
           <button
             onClick={async () => {
-              if (!window.confirm(t('settings.confirmDelete'))) return;
-              await deleteAccount();
+              const ok = await confirmDialog({
+                title: t('settings.deleteTitle'),
+                message: t('settings.deleteBody'),
+                confirmLabel: t('settings.deleteAccount'),
+                action: deleteAccount,
+              });
+              if (!ok) return;
               await logout();
               navigate(paths.login);
             }}

@@ -57,9 +57,10 @@ import { Alert } from '../ui/Alert';
 import { Modal } from '../ui/Modal';
 import { ImageCropModal } from '../ui/ImageCropModal';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
+import { confirmDialog } from '../ui/confirmDialog';
 
-/** Cover crop ratio — matches the creator profile and the band's `aspect-[4/1]` below. */
-const COVER_ASPECT = 4;
+/** Cover crop ratio — matches the creator profile, mobile ProfileCoverImage and the band's `aspect-[3/1]` below. */
+const COVER_ASPECT = 3;
 
 const MAX_INDUSTRIES = 5;
 const CONNECTABLE_PLATFORMS = ['tiktok', 'youtube', 'instagram', 'facebook'] as const;
@@ -202,7 +203,7 @@ export function BusinessProfilePage() {
       <Card padded={false} className="overflow-hidden">
         {/* Same band as the creator profile: a fixed COVER_ASPECT, so the crop
             is exactly what shows at every screen width. */}
-        <div className="relative aspect-[4/1] min-h-28 overflow-hidden">
+        <div className="relative aspect-[3/1] min-h-28 overflow-hidden">
           {p.coverImageUrl ? (
             <img src={p.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
@@ -392,7 +393,7 @@ export function BusinessProfilePage() {
                   </div>
                   <button
                     onClick={async () => {
-                      if (!window.confirm(t('profile.confirmRemove'))) return;
+                      if (!(await confirmDialog({ title: t('profile.confirmRemove'), confirmLabel: t('profile.remove') }))) return;
                       await deleteBusinessSocialAccount(s.id);
                       socials.reload();
                     }}
@@ -754,7 +755,7 @@ function ConnectSocialModal({
   };
 
   const disconnect = async (id: string) => {
-    if (!window.confirm(t('profile.confirmRemove'))) return;
+    if (!(await confirmDialog({ title: t('profile.confirmRemove'), confirmLabel: t('profile.remove') }))) return;
     await deleteBusinessSocialAccount(id);
     onChange();
   };

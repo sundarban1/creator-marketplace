@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { cn } from './cn';
 
 /**
@@ -18,6 +18,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   fullWidth?: boolean;
   children?: ReactNode;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 const VARIANTS: Record<Variant, string> = {

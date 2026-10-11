@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useSuccessStories, type SuccessStory } from '../../context/SuccessStoriesContext';
 import { SuccessStoryForm } from './SuccessStoryForm';
+import { alertDialog } from '../../app/ui/confirmDialog';
 
 export function EditSuccessStoryPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,7 +40,7 @@ export function EditSuccessStoryPage() {
       await updateStory(story!.id, data);
       navigate('/admin/success-stories');
     } catch (e) {
-      window.alert((e as Error).message ?? 'Failed to update success story.');
+      void alertDialog({ title: 'Something went wrong', message: (e as Error).message ?? 'Failed to update success story.', confirmLabel: 'OK' });
     }
   }
 

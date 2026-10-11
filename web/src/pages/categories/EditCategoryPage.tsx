@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useCategories, type Category } from '../../context/CategoriesContext';
 import { CategoryForm } from './CategoryForm';
+import { alertDialog } from '../../app/ui/confirmDialog';
 
 export function EditCategoryPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,7 +40,7 @@ export function EditCategoryPage() {
       await updateCategory(category!.id, data);
       navigate('/admin/categories');
     } catch (e) {
-      window.alert((e as Error).message ?? 'Failed to update category.');
+      void alertDialog({ title: 'Something went wrong', message: (e as Error).message ?? 'Failed to update category.', confirmLabel: 'OK' });
     }
   }
 

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { usePlatforms, type Platform } from '../../context/PlatformsContext';
 import { PlatformForm } from './PlatformForm';
+import { alertDialog } from '../../app/ui/confirmDialog';
 
 export function NewPlatformPage() {
   const { addPlatform } = usePlatforms();
@@ -12,7 +13,7 @@ export function NewPlatformPage() {
       await addPlatform(data);
       navigate('/admin/platforms');
     } catch (e) {
-      window.alert((e as Error).message ?? 'Failed to create platform.');
+      void alertDialog({ title: 'Something went wrong', message: (e as Error).message ?? 'Failed to create platform.', confirmLabel: 'OK' });
     }
   }
 

@@ -7,6 +7,7 @@ import { fetchEventReviewHistory, resubmitCampaign, type MyCampaign } from '../a
 import { canResubmitEvent } from './eventReviewStatus';
 import { Button } from '../ui/Button';
 import { cn } from '../ui/cn';
+import { confirmDialog } from '../ui/confirmDialog';
 
 // Banner on the business event page (and edit screens) explaining where an
 // event stands in admin review and what to do next. Mirrors mobile's
@@ -49,7 +50,7 @@ export function EventReviewBanner({ campaign, onResubmitted, compact = false }: 
   const permanent = status === 'REJECTED' && !resubmittable;
 
   async function resubmitAsIs() {
-    if (busy || !window.confirm(t('eventReview.resubmitConfirm'))) return;
+    if (busy || !(await confirmDialog({ title: t('eventReview.resubmitAsIs'), message: t('eventReview.resubmitConfirm'), confirmLabel: t('eventReview.resubmitAsIs'), tone: 'default' }))) return;
     setBusy(true);
     setErr('');
     try {

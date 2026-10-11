@@ -1,3 +1,4 @@
+import { COVER_ASPECT } from '@/components/ProfileCoverImage';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 // SDK 56 moved the function-based API (getInfoAsync etc.) to this subpath —
@@ -16,13 +17,13 @@ export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' 
 
 const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?: [number, number]; isDocument?: boolean }> = {
   'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   aspect: [1, 1]  },
-  // Cover renders in a full-width × 180pt box (≈2:1), the bottom ~60pt of which
-  // sits behind the profile card — so the crop frame is 2:1 (what fills the box
-  // with no extra clipping) and the user learns the lower third tucks behind the
-  // avatar card. Keep the focal subject in the upper-centre of the crop.
-  'creator-cover':       { path: '/api/creator/cover',       field: 'cover',    aspect: [2, 1]  },
+  // Covers crop at COVER_ASPECT (3:1) on web and mobile alike. On mobile the
+  // exact crop sits at the top of the 180pt hero box — the part not tucked
+  // behind the profile card (see ProfileCoverImage) — so what's cropped is
+  // what shows.
+  'creator-cover':       { path: '/api/creator/cover',       field: 'cover',    aspect: [COVER_ASPECT, 1] },
   'business-logo':       { path: '/api/business/logo',       field: 'logo',     aspect: [1, 1]  },
-  'business-cover':      { path: '/api/business/cover',      field: 'cover',    aspect: [2, 1]  },
+  'business-cover':      { path: '/api/business/cover',      field: 'cover',    aspect: [COVER_ASPECT, 1] },
   'creator-citizenship': { path: '/api/creator/citizenship', field: 'document', isDocument: true },
   'creator-pan':             { path: '/api/creator/pan',                       field: 'document', isDocument: true },
   'creator-company-reg':     { path: '/api/creator/company-registration',      field: 'document', isDocument: true },
