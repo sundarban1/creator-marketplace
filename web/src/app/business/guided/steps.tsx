@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Sparkles, ChevronDown, Lightbulb, Wand2 } from 'lucide-react';
 import { useT } from '../../i18n';
 import { useAsync } from '../../lib/useAsync';
-import { fetchCategories, fetchCampaignPlatforms } from '../../api/catalog';
+import { fetchCategories, fetchActivePlatforms } from '../../api/catalog';
 import {
   improveCampaignText, recommendForCampaign,
   type AiClarifyingQuestion, type CampaignBrief, type DeliverableItem,
@@ -286,7 +286,7 @@ const COUNT_BUCKETS = [
 export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel }: StepProps) {
   const t = useT();
   const categories = useAsync((s) => fetchCategories(s), []);
-  const platformList = useAsync((s) => fetchCampaignPlatforms(s), []);
+  const platformList = useAsync((s) => fetchActivePlatforms(s), []);
   const [rec, setRec] = useState<{ reason: string } | null>(null);
   const [recBusy, setRecBusy] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
@@ -304,7 +304,7 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel }
   const topCats = Array.from(new Set([form.category, ...allCats].filter(Boolean))).slice(0, showCategories ? 60 : 8);
   const count = form.creatorsNeeded;
   const bucket = count == null ? null : count <= 3 ? '1-3' : count <= 10 ? '4-10' : '10+';
-  const platforms = Array.from(new Set([...(platformList.data ?? ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...form.platforms]));
+  const platforms = Array.from(new Set([...(platformList.data?.length ? platformList.data : ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...form.platforms]));
 
   return (
     <StepShell title={t('guided.creatorsTitle')} subtitle={t('guided.creatorsSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>

@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Camera, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
-import { fetchCategories, fetchCampaignPlatforms } from '../api/catalog';
+import { fetchCategories, fetchActivePlatforms } from '../api/catalog';
 import { fetchCampaign, updateCampaign, uploadCampaignFeatureImage, type MyCampaign } from '../api/business';
 import { EventReviewBanner } from './EventReviewBanner';
 import { canResubmitEvent, eventStatusLabel } from './eventReviewStatus';
@@ -72,7 +72,7 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
   const t = useT();
   const navigate = useNavigate();
   const categories = useAsync((s) => fetchCategories(s), []);
-  const platformList = useAsync((s) => fetchCampaignPlatforms(s), []);
+  const platformList = useAsync((s) => fetchActivePlatforms(s), []);
 
   const [featureImageUrl, setFeatureImageUrl] = useState(c.featureImageUrl ?? '');
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -312,7 +312,7 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
           ) : (
             <>
               <ChipGroup
-                options={Array.from(new Set([...(platformList.data ?? ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...platforms]))}
+                options={Array.from(new Set([...(platformList.data?.length ? platformList.data : ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...platforms]))}
                 values={platforms}
                 onChange={(v) => setPlatforms(v.slice(-3))}
               />

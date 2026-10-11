@@ -23,6 +23,16 @@ export function fetchCategories(
   }).then((r) => r.data.filter((c) => c.status === 'ACTIVE'));
 }
 
+/** Admin-managed active platform catalog (names) — the source for every
+ *  platform *picker*. fetchCampaignPlatforms below only lists platforms that
+ *  live campaigns already use, so it's for browse filters, not pickers. */
+export function fetchActivePlatforms(signal?: AbortSignal): Promise<string[]> {
+  return apiRequest<{ name: string }[]>('GET', '/api/platforms', undefined, {
+    anonymous: true,
+    signal,
+  }).then((r) => r.data.map((p) => p.name));
+}
+
 export function fetchCampaignPlatforms(signal?: AbortSignal): Promise<string[]> {
   return apiRequest<string[]>('GET', '/api/campaigns/platforms', undefined, {
     anonymous: true,
