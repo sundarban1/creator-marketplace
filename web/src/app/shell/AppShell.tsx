@@ -12,7 +12,8 @@ import { Avatar } from '../ui/Avatar';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { NotificationsProvider } from '../notifications/NotificationsContext';
 import { NotificationsBell } from '../notifications/NotificationsBell';
-import { TestPhasePill } from './TestPhasePill';
+// Test-phase pill hidden for now — kept for later.
+// import { TestPhasePill } from './TestPhasePill';
 import { LandingThemeProvider } from '../../pages/landing/context/ThemeContext';
 import { ThemeToggle } from '../../pages/landing/components/ThemeToggle';
 
@@ -148,7 +149,7 @@ function AppShellInner() {
           </form>
 
           <div className="ml-auto flex items-center gap-1.5">
-            <TestPhasePill />
+            {/* <TestPhasePill /> */}
             <LanguageSwitcher />
             <ThemeToggle className="hidden h-9 w-9 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:bg-surface-dim hover:text-ink sm:flex" />
             <NavLink

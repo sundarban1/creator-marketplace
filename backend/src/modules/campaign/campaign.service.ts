@@ -311,6 +311,62 @@ export class CampaignService {
     emitToRole('CREATOR', 'campaign:updated', { id });
   }
 
+  // A cancelled event ends every engagement on it, so the chat with each paid
+  // creator closes (even one that began as a real chat request), which also
+  // removes "Open Chat" from both profiles. Conversations are per
+  // creator↔business pair, so one that's still carrying a funded engagement
+  // on another live event is left open. Only an
+  // ACCEPTED conversation gets the in-chat notice — sendSystemMessage would
+  // otherwise create/reopen one.
+  async closeChatsForCancelledCampaign(campaignId: string) {
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: {
+        businessId: true,
+        title: true,
+        business: { select: { userId: true } },
+        applications: {
+          where: { status: 'ACCEPTED', paymentStatus: { not: 'UNPAID' } },
+          select: { creatorId: true, creator: { select: { userId: true } } },
+        },
+      },
+    });
+    if (!campaign) return;
+
+    const businessId = campaign.businessId;
+    const businessUserId = campaign.business.userId;
+    const seen = new Set<string>();
+
+    for (const app of campaign.applications) {
+      if (seen.has(app.creatorId)) continue;
+      seen.add(app.creatorId);
+
+      const otherLive = await prisma.application.count({
+        where: {
+          creatorId: app.creatorId,
+          campaignId: { not: campaignId },
+          status: 'ACCEPTED',
+          escrowStatus: { in: ['HELD', 'RELEASE_PENDING', 'REFUND_PENDING', 'FROZEN'] },
+          campaign: { businessId, status: { not: 'CANCELLED' } },
+        },
+      });
+      if (otherLive > 0) continue;
+
+      const conversation = await prisma.conversation.findUnique({
+        where: { creatorId_businessId: { creatorId: app.creatorId, businessId } },
+        select: { status: true },
+      });
+      if (conversation?.status !== 'ACCEPTED') continue;
+
+      await messagingService
+        .sendSystemMessage(app.creatorId, businessId, campaignId, businessUserId, 'BUSINESS', `"${campaign.title}" was cancelled.`)
+        .catch(() => {});
+      await messagingService
+        .closeConversationForCancelledEvent(app.creator.userId, businessUserId, app.creatorId, businessId)
+        .catch(() => {});
+    }
+  }
+
   // Broadcasts a newly-live campaign to creators — shared by create(), the
   // reactivation path in update(), and AdminService.approveCampaign().
   fanOutNewCampaign(campaign: ReturnType<typeof toCampaignDto>, business: { id: string; businessName: string | null }, userId: string) {
@@ -1075,6 +1131,10 @@ export class CampaignService {
       this.fanOutNewCampaign(dto, business, userId);
     }
 
+    if (review.status === 'CANCELLED' && campaign.status !== 'CANCELLED') {
+      this.closeChatsForCancelledCampaign(id).catch(() => {});
+    }
+
     this.maybeRegenerateInvitations(campaign, input);
     this.broadcastCampaignUpdated(id);
 
@@ -1237,6 +1297,10 @@ export class CampaignService {
     if (resolvedStatus === 'ACTIVE' && campaign.status !== 'ACTIVE') {
       const business = await this.businessRepo.findById(campaign.businessId);
       if (business) this.fanOutNewCampaign(dto, business, business.userId);
+    }
+
+    if (resolvedStatus === 'CANCELLED' && campaign.status !== 'CANCELLED') {
+      this.closeChatsForCancelledCampaign(id).catch(() => {});
     }
 
     this.maybeRegenerateInvitations(campaign, input);
@@ -3109,6 +3173,9 @@ export class CampaignService {
     if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
 
     const updated = await this.repo.cancelCampaign(campaignId);
+    if (campaign.status !== 'CANCELLED') {
+      this.closeChatsForCancelledCampaign(campaignId).catch(() => {});
+    }
 
     recordCampaignEvent({
       campaignId,

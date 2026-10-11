@@ -193,6 +193,23 @@ export class MessagingRepository {
     return existing.id;
   }
 
+  // A cancelled event ends the engagement outright, so unlike
+  // closeAfterCompletion this also closes a conversation that began as a real
+  // chat request — the "Open Chat" option shouldn't outlive the event.
+  async closeForCancelledEvent(creatorId: string, businessId: string): Promise<string | null> {
+    const existing = await prisma.conversation.findUnique({
+      where: { creatorId_businessId: { creatorId, businessId } },
+      select: { id: true, status: true },
+    });
+    if (!existing || existing.status !== 'ACCEPTED') return null;
+
+    await prisma.conversation.update({
+      where: { id: existing.id },
+      data: { status: 'CLOSED', autoAccepted: false, requestMessage: null },
+    });
+    return existing.id;
+  }
+
   async findConversationsByCreator(creatorId: string, status?: ConversationStatus, page = 1, limit = 50) {
     const where = {
       OR: [

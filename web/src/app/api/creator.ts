@@ -517,6 +517,12 @@ export function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
   return apiUpload<{ avatarUrl: string }>('/api/creator/avatar', form);
 }
 
+export function uploadCreatorCover(file: File): Promise<{ coverImageUrl: string }> {
+  const form = new FormData();
+  form.append('cover', file);
+  return apiUpload<{ coverImageUrl: string }>('/api/creator/cover', form);
+}
+
 export function fetchSocialAccounts(signal?: AbortSignal): Promise<CreatorSocialAccount[]> {
   return apiRequest<CreatorSocialAccount[]>('GET', '/api/creator/social-accounts', undefined, {
     signal,

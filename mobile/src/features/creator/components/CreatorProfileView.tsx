@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
+import { getSocket } from '@/lib/socket';
 import {
   ActivityIndicator,
   Image,
@@ -287,10 +288,20 @@ export function CreatorProfileView({
     if (isOwner || !creatorId || isPrivate) return;
     let cancelled = false;
     const check = isBusiness ? chatService.checkConversation : chatService.checkCreatorConversation;
-    check(creatorId)
-      .then((conv) => { if (!cancelled && conv) { setConvId(conv.id); setConvStatus(conv.status); } })
-      .catch(() => {});
-    return () => { cancelled = true; };
+    // Re-check whenever a conversation changes (e.g. closed because the
+    // event was cancelled) so "Open Chat" doesn't linger on a closed chat.
+    const load = () => {
+      check(creatorId)
+        .then((conv) => { if (!cancelled && conv) { setConvId(conv.id); setConvStatus(conv.status); } })
+        .catch(() => {});
+    };
+    load();
+    const socket = getSocket();
+    socket?.on('conversation:update', load);
+    return () => {
+      cancelled = true;
+      socket?.off('conversation:update', load);
+    };
   }, [isOwner, isBusiness, creatorId, isPrivate]);
 
   // ── Business: service-request flow ──

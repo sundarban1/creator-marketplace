@@ -563,6 +563,7 @@ export const en = {
     verificationPending: 'Verification pending',
     uploadFailed: 'Upload failed — try again.',
     cropTitle: 'Crop photo',
+    addCoverPhoto: 'Add cover photo',
     cropSave: 'Save photo',
     cropZoom: 'Zoom',
   },

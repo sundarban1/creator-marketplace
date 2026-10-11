@@ -985,6 +985,20 @@ export class MessagingService {
     }
   }
 
+  // Called when an event is cancelled — see MessagingRepository.closeForCancelledEvent.
+  async closeConversationForCancelledEvent(
+    creatorUserId: string,
+    businessUserId: string,
+    creatorId: string,
+    businessId: string,
+  ) {
+    const conversationId = await this.repo.closeForCancelledEvent(creatorId, businessId);
+    if (conversationId) {
+      emitToUser(creatorUserId,  'conversation:update', { conversationId });
+      emitToUser(businessUserId, 'conversation:update', { conversationId });
+    }
+  }
+
   // ── Seen / badge ───────────────────────────────────────────────────────────
 
   async markSeen(conversationId: string, userId: string, role: Role) {

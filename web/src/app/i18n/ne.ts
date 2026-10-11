@@ -539,6 +539,7 @@ export const ne: AppDict = {
     verificationPending: 'प्रमाणीकरण विचाराधीन',
     uploadFailed: 'अपलोड असफल भयो — फेरि प्रयास गर्नुहोस्।',
     cropTitle: 'फोटो क्रप गर्नुहोस्',
+    addCoverPhoto: 'कभर फोटो थप्नुहोस्',
     cropSave: 'फोटो सुरक्षित गर्नुहोस्',
     cropZoom: 'जुम',
   },

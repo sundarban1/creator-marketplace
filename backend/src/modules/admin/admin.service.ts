@@ -153,6 +153,9 @@ export class AdminService {
     }
     const updated = await this.repo.updateCampaignStatus(campaignId, status);
     this.campaignService.broadcastCampaignUpdated(campaignId);
+    if (status === 'CANCELLED' && current.status !== 'CANCELLED') {
+      this.campaignService.closeChatsForCancelledCampaign(campaignId).catch(() => {});
+    }
     if (status !== current.status && isAdminEventAction(status)) {
       const { updatedAt } = await this.repo.findCampaignForApproval(campaignId) ?? {};
       campaignReviewService.notifyBusinessOfAdminAction(campaignId, status, updatedAt?.toISOString() ?? String(Date.now()));

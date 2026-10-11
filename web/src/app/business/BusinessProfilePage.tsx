@@ -58,6 +58,9 @@ import { Modal } from '../ui/Modal';
 import { ImageCropModal } from '../ui/ImageCropModal';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 
+/** Cover crop ratio — matches the creator profile and the band's `aspect-[4/1]` below. */
+const COVER_ASPECT = 4;
+
 const MAX_INDUSTRIES = 5;
 const CONNECTABLE_PLATFORMS = ['tiktok', 'youtube', 'instagram', 'facebook'] as const;
 
@@ -197,9 +200,11 @@ export function BusinessProfilePage() {
 
       {/* Identity — cover band + overlapping ringed avatar, editorial style */}
       <Card padded={false} className="overflow-hidden">
-        <div className="relative h-32 sm:h-40">
+        {/* Same band as the creator profile: a fixed COVER_ASPECT, so the crop
+            is exactly what shows at every screen width. */}
+        <div className="relative aspect-[4/1] min-h-28 overflow-hidden">
           {p.coverImageUrl ? (
-            <img src={p.coverImageUrl} alt="" className="h-full w-full object-cover" />
+            <img src={p.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
             <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark">
               <span aria-hidden className="pointer-events-none absolute -right-10 -top-14 h-48 w-48 rounded-full bg-brand-orange/25 blur-3xl" />
@@ -207,14 +212,14 @@ export function BusinessProfilePage() {
             </div>
           )}
           <label
-            className={`absolute right-4 top-4 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/35 text-white backdrop-blur transition-colors hover:bg-black/50 ${coverUploading ? 'pointer-events-none opacity-70' : ''}`}
-            aria-label={t('biz.changeCoverPhoto')}
+            className={`absolute right-4 top-4 inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-black/40 px-3.5 text-[13px] font-semibold text-white backdrop-blur transition-colors hover:bg-black/55 ${coverUploading ? 'pointer-events-none opacity-70' : ''}`}
           >
             {coverUploading ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
             ) : (
               <Camera size={15} />
             )}
+            {p.coverImageUrl ? t('biz.changeCoverPhoto') : t('profile.addCoverPhoto')}
             <input
               type="file"
               accept="image/jpeg,image/png"
@@ -231,7 +236,7 @@ export function BusinessProfilePage() {
 
         <div className="px-5 pb-5 sm:px-7 sm:pb-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="-mt-10 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end">
+            <div className="-mt-10 flex flex-col gap-3 sm:-mt-5 sm:flex-row sm:items-end">
               <div className="relative w-fit">
                 {p.logoUrl ? (
                   <Avatar name={p.businessName ?? 'Business'} src={p.logoUrl} size="xl" className="h-20 w-20 sm:h-24 sm:w-24" />
@@ -475,7 +480,7 @@ export function BusinessProfilePage() {
       <ImageCropModal
         open={!!coverCropSrc}
         imageSrc={coverCropSrc}
-        aspect={3}
+        aspect={COVER_ASPECT}
         cropShape="rect"
         title={t('biz.cropCoverTitle')}
         onCancel={closeCoverCrop}

@@ -21,7 +21,8 @@ import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { CreatorCard } from './CreatorCard';
 import { BrowseHero } from './BrowseHero';
-import { TestPhaseBanner } from './TestPhaseBanner';
+// Test-phase banner hidden for now — kept for later.
+// import { TestPhaseBanner } from './TestPhaseBanner';
 import { LocationAutocomplete } from './LocationAutocomplete';
 import { makeCategoryLookup } from './categoryLookup';
 
@@ -134,9 +135,9 @@ export function CreatorsPage() {
         searchPlaceholder={t('public.searchCreatorsPlaceholder')}
       />
 
-      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+      {/* <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
         <TestPhaseBanner />
-      </div>
+      </div> */}
 
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
         {/* Filters */}
