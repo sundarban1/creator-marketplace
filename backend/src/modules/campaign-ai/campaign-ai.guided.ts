@@ -191,7 +191,7 @@ export function buildGuidedExtras(draft: AiCampaignDraft, now: number = Date.now
 
 // Typical per-piece creator rates in Nepal (NPR), small/mid creators.
 const RATE_NPR: Record<string, number> = {
-  REEL: 3000, TIKTOK_VIDEO: 3000, YOUTUBE_SHORT: 2500, STORY: 800, PHOTO_POST: 1500,
+  VIDEO: 3000, REEL: 3000, TIKTOK_VIDEO: 3000, YOUTUBE_SHORT: 2500, STORY: 800, PHOTO_POST: 1500,
   YOUTUBE_VIDEO: 8000, UGC_VIDEO: 2500, PRODUCT_REVIEW: 3000, EVENT_COVERAGE: 4000,
   GOOGLE_REVIEW: 500, BLOG_POST: 3000, LIVE_STREAM: 5000,
 };

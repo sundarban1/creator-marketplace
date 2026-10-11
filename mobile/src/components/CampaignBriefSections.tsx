@@ -5,7 +5,16 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
 import type { CampaignBrief, CampaignLocation, DeliverableItem, LocationScope } from '@/services/guidedCampaign';
-import { BRIEF_SECTIONS, sectionFilled, shownPlatform, type BriefFieldDef } from '@/features/business/guided/briefSections';
+import { BRIEF_SECTIONS, sectionFilled, type BriefFieldDef } from '@/features/business/guided/briefSections';
+import { deliverableLabel, deliverablePlatforms, simplifyDeliverables } from '@/features/business/guided/deliverableKinds';
+
+// TikTok's brand black is left to the theme text colour so it shows in dark mode.
+const PLATFORM_ICON: Record<string, { icon: 'instagram' | 'tiktok' | 'facebook' | 'youtube'; color?: string }> = {
+  instagram: { icon: 'instagram', color: '#E1306C' },
+  tiktok:    { icon: 'tiktok' },
+  facebook:  { icon: 'facebook', color: '#1877F2' },
+  youtube:   { icon: 'youtube', color: '#FF0000' },
+};
 
 /**
  * Everything the guided creator captures beyond the basics, for reading on
@@ -24,6 +33,7 @@ export interface BriefSource {
   startDate?: string | null;
   applicationDeadline?: string | null;
   deadline?: string;
+  platforms?: string[];
 }
 
 const fmt = (iso?: string | null) =>
@@ -42,7 +52,9 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 export function CampaignBriefSections({ c }: { c: BriefSource }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const items = c.deliverableItems ?? [];
+  // Simple kinds (video / story / post), platforms listed once, separately.
+  const items = simplifyDeliverables(c.deliverableItems ?? []);
+  const platforms = deliverablePlatforms(c.platforms, c.deliverableItems ?? []);
   const brief = c.brief ?? {};
   const locations = c.locations?.length ? c.locations : [];
   const sections = BRIEF_SECTIONS.filter((sec) => sectionFilled(brief, sec.key));
@@ -69,21 +81,36 @@ export function CampaignBriefSections({ c }: { c: BriefSource }) {
         </Card>
       ) : null}
 
-      {items.length ? (
+      {items.length || platforms.length ? (
         <Card title={t('guided.dDeliverables')}>
-          {items.map((d, i) => {
-            const p = shownPlatform(d.type, d.platform);
-            return (
-              <View key={i} style={s.itemRow}>
-                <FontAwesome5 name="film" size={13} color={C.brinjal1} />
-                <Text style={[s.body, { color: C.text, flex: 1 }]}>
-                  <Text style={{ fontFamily: F.semibold }}>{d.quantity}×</Text> {t(`guided.deliv_${d.type}`)}
-                </Text>
-                {p ? <View style={[s.tag, { backgroundColor: C.primaryLight }]}><Text style={[s.small, { color: C.brinjal1, fontFamily: F.semibold }]}>{p}</Text></View> : null}
+          {items.length ? (
+            <View style={s.wrap}>
+              {items.map((d) => (
+                <View key={d.type} style={[s.pill, { borderColor: C.border }]}>
+                  <Text style={[s.body, { color: C.text }]}>
+                    <Text style={{ fontFamily: F.semibold }}>{d.quantity}×</Text> {deliverableLabel(d.type, t)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {platforms.length ? (
+            <View style={{ gap: 6 }}>
+              <Text style={[s.small, { color: C.textSecondary, fontFamily: F.semibold }]}>{t('guided.dPlatforms')}</Text>
+              <View style={s.wrap}>
+                {platforms.map((p) => {
+                  const brand = PLATFORM_ICON[p.toLowerCase()];
+                  return (
+                    <View key={p} style={[s.pill, { borderColor: 'transparent', backgroundColor: C.primaryLight }]}>
+                      {brand ? <FontAwesome5 name={brand.icon} brand size={12} color={brand.color ?? C.text} /> : null}
+                      <Text style={[s.body, { color: C.text, fontFamily: F.semibold }]}>{p}</Text>
+                    </View>
+                  );
+                })}
               </View>
-            );
-          })}
-          <Text style={[s.small, { color: C.textSecondary }]}>{t('guided.dPerCreator')}</Text>
+            </View>
+          ) : null}
+          <Text style={[s.small, { color: C.textSecondary }]}>{t('guided.dPerCreator')} {t('guided.dDiscussLater')}</Text>
         </Card>
       ) : null}
 

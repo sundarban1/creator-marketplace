@@ -8,7 +8,8 @@ import { F, SPACING } from '@/utilities/constants';
 import type { CampaignRuleIssue, CampaignStep } from '../utils/campaignRules';
 import { locationSummary, type GuidedForm, type GuidedStep } from './guidedModel';
 import { BRIEF_SECTIONS, sectionFilled } from './briefSections';
-import { StepShell, ProvenanceTag, SuggestionNote, deliverableLine, st } from './parts';
+import { StepShell, ProvenanceTag, SuggestionNote, st } from './parts';
+import { deliverableSummary } from './deliverableKinds';
 import { SaveTemplateButton } from './templates';
 import { EventAttachmentsField } from '@/components/EventAttachmentsField';
 import type { CampaignAttachment } from '@/services/guidedCampaign';
@@ -154,12 +155,12 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
           onEdit={() => onEdit('basics')}
         />
         <Row icon="users" label={t('guided.rCreators')} value={creators ? t('guided.creatorsOfType', { count: creators, type: form.category || '—' }) : t('guided.notSet')} provenance={form.aiProvenance.creatorsNeeded} onEdit={() => onEdit('creators')} attention={blocking.some((i) => i.step === 'creators')} />
-        <Row icon="mobile-alt" label={t('guided.rPlatforms')} value={form.platforms.length ? form.platforms.join(' + ') : t('guided.notSet')} provenance={form.aiProvenance.platforms} onEdit={() => onEdit('creators')} />
+        <Row icon="mobile-alt" label={t('guided.rPlatforms')} value={form.platforms.length ? form.platforms.join(' + ') : t('guided.notSet')} provenance={form.aiProvenance.platforms} onEdit={() => onEdit('content')} />
         <Row
           icon="film"
           label={t('guided.rDeliverables')}
           value={form.deliverableItems.length
-            ? <View>{form.deliverableItems.map((d, i) => <Text key={i} style={[st.body, { color: C.text }]}>{deliverableLine(d, t)} <Text style={{ color: C.textSecondary }}>{t('guided.eachCreator')}</Text></Text>)}</View>
+            ? <Text style={[st.body, { color: C.text }]}>{deliverableSummary(form.deliverableItems, t)} <Text style={{ color: C.textSecondary }}>{t('guided.eachCreator')}</Text></Text>
             : t('guided.notSet')}
           provenance={form.aiProvenance.deliverableItems}
           onEdit={() => onEdit('content')}

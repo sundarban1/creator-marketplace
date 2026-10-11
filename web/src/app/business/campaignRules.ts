@@ -119,9 +119,9 @@ export function getCampaignIssues(d: CampaignRulesInput, now: number = Date.now(
   }
   const platforms = d.platforms ?? [];
   if (platforms.length > MAX_PLATFORMS) {
-    add('PLATFORMS_TOO_MANY', 'platforms', 'creators', 'required', `Pick up to ${MAX_PLATFORMS} platforms.`);
+    add('PLATFORMS_TOO_MANY', 'platforms', 'content', 'required', `Pick up to ${MAX_PLATFORMS} platforms.`);
   } else if (platforms.length === 0) {
-    add('PLATFORMS_MISSING', 'platforms', 'creators', 'recommended', 'Where should creators post? Picking a platform helps us match the right creators.');
+    add('PLATFORMS_MISSING', 'platforms', 'content', 'recommended', 'Where should creators post? Picking a platform helps us match the right creators.');
   }
 
   // ── Content ───────────────────────────────────────────────────────────────

@@ -14,6 +14,7 @@ import { F, SPACING } from '@/utilities/constants';
 import { guidedCampaignService, type AiClarifyingQuestion, type CampaignBrief, type DeliverableItem } from '@/services/guidedCampaign';
 import { MIN_BUDGET_PER_CREATOR, type CampaignRuleIssue } from '../utils/campaignRules';
 import { toAiContext, type GuidedForm } from './guidedModel';
+import { simplifyDeliverables } from './deliverableKinds';
 import { StartFromTemplates, type StartSource } from './templates';
 import { BRIEF_SECTIONS, CREATOR_TIERS, sectionFilled, type BriefFieldDef } from './briefSections';
 import {
@@ -245,7 +246,6 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel, 
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories } = useCategories('BOTH');
-  const { platforms: livePlatforms } = usePlatforms();
   const [rec, setRec] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -263,7 +263,6 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel, 
   const cats = Array.from(new Set([form.category, ...allCats].filter(Boolean))).slice(0, showAll ? 80 : 8);
   const count = form.creatorsNeeded;
   const bucket = count == null ? null : count <= 3 ? '1-3' : count <= 10 ? '4-10' : '10+';
-  const platforms = Array.from(new Set([...(livePlatforms.length ? livePlatforms.map((p) => p.name) : ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...form.platforms]));
 
   return (
     <StepShell header={header} title={t('guided.creatorsTitle')} subtitle={t('guided.creatorsSub')} footer={<FooterNav onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>
@@ -291,19 +290,6 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel, 
         <IssueNote issue={issueFor(issues, 'creatorsNeeded')} />
       </Field>
 
-      <Field label={t('guided.platformsLabel')} accessory={<><ProvenanceTag value={form.aiProvenance.platforms} /><WhyAsking text={t('guided.whyPlatforms')} /></>}>
-        <ChoiceChips<string>
-          multi
-          value={form.platforms}
-          onChange={(p) => {
-            const next = form.platforms.includes(p) ? form.platforms.filter((x) => x !== p) : [...form.platforms, p].slice(-3);
-            update({ platforms: next }, ['platforms']);
-          }}
-          options={platforms.map((p) => ({ value: p, label: p }))}
-        />
-        <Text style={[st.small, { color: C.textSecondary, marginTop: 6 }]}>{t('guided.platformsHint')}</Text>
-        <IssueNote issue={issueFor(issues, 'platforms')} />
-      </Field>
 
       <Field label={t('guided.minFollowersLabel')} optional accessory={<WhyAsking text={t('guided.whyMinFollowers')} />}>
         <Input
@@ -322,23 +308,38 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel, 
 export function ContentStep({ form, update, issues, onNext, onBack, onAdvanced, nextLabel, header }: StepProps & { onAdvanced: () => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const { platforms: livePlatforms } = usePlatforms();
+  const platforms = Array.from(new Set([...(livePlatforms.length ? livePlatforms.map((p) => p.name) : ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...form.platforms]));
   const [rec, setRec] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const recommend = async () => {
     setBusy(true);
     try {
       const r = await guidedCampaignService.recommend<DeliverableItem[]>('deliverables', toAiContext(form));
-      update({ deliverableItems: r.value, aiProvenance: { ...form.aiProvenance, deliverableItems: 'AI_SUGGESTED' } });
+      update({ deliverableItems: simplifyDeliverables(r.value) as DeliverableItem[], aiProvenance: { ...form.aiProvenance, deliverableItems: 'AI_SUGGESTED' } });
       setRec(r.reason);
     } catch { /* optional */ } finally { setBusy(false); }
   };
   return (
     <StepShell header={header} title={t('guided.contentTitle')} subtitle={t('guided.contentSub')} example={t('guided.contentExample')} footer={<FooterNav onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>
       <Field label={t('guided.deliverablesLabel')} accessory={<><ProvenanceTag value={form.aiProvenance.deliverableItems} /><WhyAsking label={t('guided.whatsTheDifference')} text={t('guided.helpDeliverableTypes')} onRecommend={recommend} /></>}>
-        <DeliverablesEditor items={form.deliverableItems} platforms={form.platforms} onChange={(items) => { setRec(null); update({ deliverableItems: items }, ['deliverableItems']); }} />
+        <DeliverablesEditor items={form.deliverableItems} onChange={(items) => { setRec(null); update({ deliverableItems: items }, ['deliverableItems']); }} />
         <RecommendButton onPress={recommend} loading={busy} />
         {rec ? <SuggestionNote>{rec}</SuggestionNote> : null}
         <IssueNote issue={issueFor(issues, 'deliverableItems')} />
+      </Field>
+      <Field label={t('guided.platformsLabel')} accessory={<><ProvenanceTag value={form.aiProvenance.platforms} /><WhyAsking text={t('guided.whyPlatforms')} /></>}>
+        <ChoiceChips<string>
+          multi
+          value={form.platforms}
+          onChange={(p) => {
+            const next = form.platforms.includes(p) ? form.platforms.filter((x) => x !== p) : [...form.platforms, p].slice(-3);
+            update({ platforms: next }, ['platforms']);
+          }}
+          options={platforms.map((p) => ({ value: p, label: p }))}
+        />
+        <Text style={[st.small, { color: C.textSecondary, marginTop: 6 }]}>{t('guided.platformsHint')}</Text>
+        <IssueNote issue={issueFor(issues, 'platforms')} />
       </Field>
       <Field label={t('guided.hashtagsLabel')} optional accessory={<ProvenanceTag value={form.aiProvenance.hashtags} />}>
         <ListInput values={form.hashtags} prefix="#" placeholder={t('guided.hashtagsPlaceholder')} onChange={(v) => update({ hashtags: v }, ['hashtags'])} />

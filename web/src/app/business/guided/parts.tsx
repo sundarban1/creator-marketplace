@@ -7,7 +7,7 @@ import { LocationAutocomplete } from '../../public/LocationAutocomplete';
 import type { CampaignLocation, DeliverableItem, LocationScope, Provenance } from '../../api/business';
 import type { CampaignRuleIssue } from '../campaignRules';
 import type { SaveStatus } from './useAutosave';
-import { DELIVERABLE_TYPES } from './briefSections';
+import { SIMPLE_KINDS, simplifyDeliverables } from './deliverableKinds';
 
 // ── Layout ───────────────────────────────────────────────────────────────────
 
@@ -416,54 +416,31 @@ export function LocationPicker({
 
 // ── Deliverables (§8) ────────────────────────────────────────────────────────
 
-export function DeliverablesEditor({ items, onChange, platforms }: { items: DeliverableItem[]; onChange: (items: DeliverableItem[]) => void; platforms: string[] }) {
+export function DeliverablesEditor({ items, onChange }: { items: DeliverableItem[]; onChange: (items: DeliverableItem[]) => void }) {
   const t = useT();
-  const update = (i: number, patch: Partial<DeliverableItem>) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it)));
-  const platformsFor = (type: string) => {
-    const def = DELIVERABLE_TYPES.find((d) => d.type === type);
-    const list = def?.platforms.length ? def.platforms : platforms;
-    return Array.from(new Set(list.length ? list : ['Instagram', 'TikTok', 'YouTube', 'Facebook']));
+  // Just what to make and how many — platforms are picked once for the
+  // whole campaign. Legacy/AI types fold into these kinds (deliverableKinds).
+  const simple = simplifyDeliverables(items);
+  const qty = (kind: string) => simple.find((i) => i.type === kind)?.quantity ?? 0;
+  const others = simple.filter((i) => !(SIMPLE_KINDS as readonly string[]).includes(i.type));
+  const set = (kind: string, n: number) => {
+    const next = simple.filter((i) => i.type !== kind);
+    if (n > 0) next.push({ type: kind, platform: null, quantity: n });
+    onChange(simplifyDeliverables(next) as DeliverableItem[]);
   };
-  const addItem = () => {
-    const p = platforms[0] ?? 'Instagram';
-    const type = /tiktok/i.test(p) ? 'TIKTOK_VIDEO' : /youtube/i.test(p) ? 'YOUTUBE_SHORT' : 'REEL';
-    onChange([...items, { type, platform: p, quantity: 1 }]);
-  };
+  const row = (kind: string, label: string) => (
+    <li key={kind} className="flex items-center justify-between gap-3 px-4 py-2.5">
+      <span className={cn('text-[15px] font-medium', qty(kind) ? 'text-ink' : 'text-ink-soft')}>{label}</span>
+      <Stepper value={qty(kind)} onChange={(n) => set(kind, n)} min={0} max={50} ariaLabel={`${label} — ${t('guided.quantityPerCreator')}`} />
+    </li>
+  );
   return (
     <div>
-      {items.length > 0 && (
-        <ul className="space-y-2.5">
-          {items.map((it, i) => (
-            <li key={i} className="grid grid-cols-[1fr_auto] gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-[1.4fr_1fr_auto_auto] sm:items-center">
-              <select
-                aria-label={t('guided.deliverableType')}
-                value={it.type}
-                onChange={(e) => update(i, { type: e.target.value, platform: platformsFor(e.target.value)[0] ?? it.platform })}
-                className="h-11 rounded-xl border border-line-strong bg-surface px-3 text-[14px] font-medium text-ink"
-              >
-                {DELIVERABLE_TYPES.map((d) => <option key={d.type} value={d.type}>{t(`guided.deliv_${d.type}`)}</option>)}
-              </select>
-              <button type="button" aria-label={t('guided.remove')} onClick={() => onChange(items.filter((_, j) => j !== i))} className="row-span-1 flex h-11 w-11 items-center justify-center justify-self-end rounded-full text-ink-soft hover:bg-ink/[0.04] hover:text-danger sm:order-last">
-                <Trash2 size={15} />
-              </button>
-              <select
-                aria-label={t('guided.platform')}
-                value={it.platform ?? ''}
-                onChange={(e) => update(i, { platform: e.target.value || null })}
-                className="h-11 rounded-xl border border-line-strong bg-surface px-3 text-[14px] text-ink"
-              >
-                <option value="">{t('guided.anyPlatform')}</option>
-                {platformsFor(it.type).map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <Stepper value={it.quantity} onChange={(n) => update(i, { quantity: n })} min={1} max={50} ariaLabel={t('guided.quantityPerCreator')} />
-            </li>
-          ))}
-        </ul>
-      )}
-      <button type="button" onClick={addItem} className="mt-3 inline-flex min-h-[40px] items-center gap-1.5 text-[14px] font-semibold text-violet-dark">
-        <Plus size={15} />
-        {t('guided.addDeliverable')}
-      </button>
+      <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+        {SIMPLE_KINDS.map((k) => row(k, t(`guided.pick_${k}`)))}
+        {others.map((o) => row(o.type, t(`guided.deliv_${o.type}`)))}
+      </ul>
+      <p className="mt-2 text-[12px] text-ink-soft">{t('guided.quantityPerCreator')}</p>
     </div>
   );
 }

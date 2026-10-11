@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
-import { MapPin, Globe2, Flag, Clapperboard, CalendarDays, Check, X as XIcon } from 'lucide-react';
+import { MapPin, Globe2, Flag, CalendarDays, Check, X as XIcon } from 'lucide-react';
 import { useT } from '../i18n';
 import type { CampaignBrief, CampaignLocation, DeliverableItem, LocationScope } from '../api/business';
-import { BRIEF_SECTIONS, sectionFilled, shownPlatform, type BriefFieldDef } from '../business/guided/briefSections';
+import { BRIEF_SECTIONS, sectionFilled, type BriefFieldDef } from '../business/guided/briefSections';
+import { deliverableLabel, deliverablePlatforms, simplifyDeliverables } from '../business/guided/deliverableKinds';
+import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 
 /**
  * Everything the guided creator captures beyond the basics, rendered for
@@ -23,6 +25,7 @@ export interface BriefSource {
   applicationDeadline?: string | null;
   deadline?: string;
   hashtags?: string[];
+  platforms?: string[];
 }
 
 const fmt = (iso?: string | null) =>
@@ -34,7 +37,9 @@ export function CampaignBriefSections({ c, Section }: {
   Section: (p: { title: string; children: ReactNode }) => ReactNode;
 }) {
   const t = useT();
-  const items = c.deliverableItems ?? [];
+  // Simple kinds (video / story / post), platforms listed once, separately.
+  const items = simplifyDeliverables(c.deliverableItems ?? []);
+  const platforms = deliverablePlatforms(c.platforms, c.deliverableItems ?? []);
   const brief = c.brief ?? {};
   const locations = c.locations?.length ? c.locations : c.location && c.locationType === 'ONSITE' ? [{ name: c.location }] : [];
   const hasTimeline = !!(c.startDate || c.applicationDeadline);
@@ -66,21 +71,31 @@ export function CampaignBriefSections({ c, Section }: {
         </Section>
       )}
 
-      {items.length > 0 && (
+      {(items.length > 0 || platforms.length > 0) && (
         <Section title={t('guided.dDeliverables')}>
-          <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
-            {items.map((d, i) => (
-              <li key={i} className="flex items-center gap-3 px-4 py-3">
-                <Clapperboard size={16} className="flex-shrink-0 text-violet" />
-                <span className="min-w-0 flex-1 text-[15px] text-ink">
-                  <span className="font-semibold">{d.quantity}×</span> {t(`guided.deliv_${d.type}`)}
-                  {d.notes && <span className="block text-[13px] text-ink-soft">{d.notes}</span>}
-                </span>
-                {shownPlatform(d.type, d.platform) && <span className="rounded-full bg-violet/[0.07] px-2.5 py-0.5 text-[12px] font-semibold text-violet-dark">{d.platform}</span>}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-[13px] text-ink-soft">{t('guided.dPerCreator')}</p>
+          {items.length > 0 && (
+            <ul className="flex flex-wrap gap-2">
+              {items.map((d) => (
+                <li key={d.type} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[14px] text-ink">
+                  <span className="font-semibold">{d.quantity}×</span> {deliverableLabel(d.type, t)}
+                </li>
+              ))}
+            </ul>
+          )}
+          {platforms.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-ink-soft">{t('guided.dPlatforms')}</p>
+              <ul className="flex flex-wrap gap-2">
+                {platforms.map((p) => (
+                  <li key={p} className="inline-flex items-center gap-1.5 rounded-full bg-violet/[0.07] px-3 py-1.5 text-[13px] font-semibold text-ink">
+                    <PlatformIcon platform={p} size={14} />
+                    {platformMeta(p).label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <p className="mt-3 text-[13px] text-ink-soft">{t('guided.dPerCreator')} {t('guided.dDiscussLater')}</p>
         </Section>
       )}
 

@@ -5,13 +5,12 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/Button';
-import { BottomSheet } from '@/components/BottomSheet';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, FONT_SIZE, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SPACING, lineHeightFor } from '@/utilities/constants';
 import type { CampaignLocation, DeliverableItem, LocationScope, Provenance } from '@/services/guidedCampaign';
 import type { CampaignRuleIssue } from '../utils/campaignRules';
 import type { SaveStatus } from './useAutosave';
-import { DELIVERABLE_TYPES, shownPlatform } from './briefSections';
+import { SIMPLE_KINDS, simplifyDeliverables } from './deliverableKinds';
 
 // Native building blocks of the guided creator — same roles as
 // web/src/app/business/guided/parts.tsx.
@@ -398,67 +397,36 @@ export function LocationPicker({ locationType, locationScope, locations, onChang
 
 // ── Deliverables (§8) ────────────────────────────────────────────────────────
 
-export function DeliverablesEditor({ items, onChange, platforms }: { items: DeliverableItem[]; onChange: (items: DeliverableItem[]) => void; platforms: string[] }) {
+export function DeliverablesEditor({ items, onChange }: { items: DeliverableItem[]; onChange: (items: DeliverableItem[]) => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const [typeSheet, setTypeSheet] = useState<number | null>(null);
-  const update = (i: number, patch: Partial<DeliverableItem>) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it)));
-  const platformsFor = (type: string) => {
-    const def = DELIVERABLE_TYPES.find((d) => d.type === type);
-    const list = def?.platforms.length ? def.platforms : platforms;
-    return Array.from(new Set(list.length ? list : ['Instagram', 'TikTok', 'YouTube', 'Facebook']));
+  // Just what to make and how many — platforms are picked once for the
+  // whole campaign. Legacy/AI types fold into these kinds (deliverableKinds).
+  const simple = simplifyDeliverables(items);
+  const qty = (kind: string) => simple.find((i) => i.type === kind)?.quantity ?? 0;
+  const others = simple.filter((i) => !(SIMPLE_KINDS as readonly string[]).includes(i.type));
+  const set = (kind: string, n: number) => {
+    const next = simple.filter((i) => i.type !== kind);
+    if (n > 0) next.push({ type: kind, platform: null, quantity: n });
+    onChange(simplifyDeliverables(next) as DeliverableItem[]);
   };
-  const addItem = () => {
-    const p = platforms[0] ?? 'Instagram';
-    const type = /tiktok/i.test(p) ? 'TIKTOK_VIDEO' : /youtube/i.test(p) ? 'YOUTUBE_SHORT' : 'REEL';
-    onChange([...items, { type, platform: p, quantity: 1 }]);
-  };
+  const rows = [
+    ...SIMPLE_KINDS.map((k) => ({ kind: k as string, label: t(`guided.pick_${k}`) })),
+    ...others.map((o) => ({ kind: o.type, label: t(`guided.deliv_${o.type}`) })),
+  ];
   return (
-    <View style={{ gap: SPACING.md }}>
-      {items.map((it, i) => (
-        <View key={i} style={[st.card, { borderColor: C.border, backgroundColor: C.surface }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-            <Pressable onPress={() => setTypeSheet(i)} style={[st.select, { borderColor: C.border, flex: 1 }]} accessibilityRole="button" accessibilityLabel={t('guided.deliverableType')}>
-              <Text style={[st.body, { color: C.text, fontFamily: F.semibold, flex: 1 }]}>{t(`guided.deliv_${it.type}`)}</Text>
-              <FontAwesome5 name="chevron-down" size={11} color={C.textSecondary} />
-            </Pressable>
-            <Pressable onPress={() => onChange(items.filter((_, j) => j !== i))} style={st.iconBtn} accessibilityLabel={t('guided.remove')}>
-              <FontAwesome5 name="trash-alt" size={13} color={C.error} />
-            </Pressable>
+    <View style={{ gap: SPACING.sm }}>
+      <View style={[st.card, { borderColor: C.border, backgroundColor: C.surface, gap: 0, paddingVertical: 0 }]}>
+        {rows.map((r, i) => (
+          <View key={r.kind} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACING.sm, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, borderTopColor: C.border }}>
+            <Text style={[st.body, { color: qty(r.kind) ? C.text : C.textSecondary, fontFamily: F.semibold }]}>{r.label}</Text>
+            <Stepper value={qty(r.kind)} onChange={(n) => set(r.kind, n)} min={0} label={`${r.label} — ${t('guided.quantityPerCreator')}`} />
           </View>
-          <ChoiceChips<string>
-            value={it.platform ?? null}
-            onChange={(p) => update(i, { platform: it.platform === p ? null : p })}
-            options={platformsFor(it.type).map((p) => ({ value: p, label: p }))}
-          />
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={[st.small, { color: C.textSecondary }]}>{t('guided.quantityPerCreator')}</Text>
-            <Stepper value={it.quantity} onChange={(n) => update(i, { quantity: n })} label={t('guided.quantityPerCreator')} />
-          </View>
-        </View>
-      ))}
-      <LinkButton icon="plus" label={t('guided.addDeliverable')} onPress={addItem} />
-
-      <BottomSheet visible={typeSheet != null} onClose={() => setTypeSheet(null)} title={t('guided.deliverableType')} maxHeightPct={0.75}>
-        <View style={{ gap: 4 }}>
-          {DELIVERABLE_TYPES.map((d) => (
-            <Pressable
-              key={d.type}
-              onPress={() => { if (typeSheet != null) update(typeSheet, { type: d.type, platform: platformsFor(d.type)[0] ?? null }); setTypeSheet(null); }}
-              style={({ pressed }) => [st.sheetRow, { backgroundColor: pressed ? C.primaryLight : 'transparent' }]}>
-              <Text style={[st.body, { color: C.text }]}>{t(`guided.deliv_${d.type}`)}</Text>
-              {typeSheet != null && items[typeSheet]?.type === d.type ? <FontAwesome5 name="check" size={12} color={C.brinjal1} /> : null}
-            </Pressable>
-          ))}
-        </View>
-      </BottomSheet>
+        ))}
+      </View>
+      <Text style={[st.small, { color: C.textSecondary }]}>{t('guided.quantityPerCreator')}</Text>
     </View>
   );
-}
-
-export function deliverableLine(d: DeliverableItem, t: (k: string) => string): string {
-  const p = shownPlatform(d.type, d.platform);
-  return `${d.quantity}× ${t(`guided.deliv_${d.type}`)}${p ? ` · ${p}` : ''}`;
 }
 
 export const st = StyleSheet.create({

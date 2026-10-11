@@ -6,7 +6,8 @@ import { Button } from '../../ui/Button';
 import { Alert } from '../../ui/Alert';
 import type { CampaignRuleIssue, CampaignStep } from '../campaignRules';
 import type { GuidedForm, GuidedStep } from './guidedModel';
-import { BRIEF_SECTIONS, sectionFilled, shownPlatform } from './briefSections';
+import { BRIEF_SECTIONS, sectionFilled } from './briefSections';
+import { deliverableSummary } from './deliverableKinds';
 import { locationSummary } from './guidedModel';
 import { SaveTemplateButton } from './templates';
 import { ProvenanceTag, SuggestionNote } from './parts';
@@ -128,12 +129,12 @@ export function ReviewStep({
         <Row icon={<Target size={16} />} label={t('guided.rGoal')} value={form.goal ? t(`guided.goal_${form.goal}`) : t('guided.notSure')} provenance={form.aiProvenance.goal} onEdit={() => onEdit('basics')} />
         <Row icon={<MapPin size={16} />} label={t('guided.rLocation')} value={<>{locationSummary(form, t)}{form.locationType === 'ONSITE' && <span className="block text-[13px] text-ink-soft">{t('guided.creatorsVisitYou')}</span>}</>} provenance={form.aiProvenance.locations} onEdit={() => onEdit('basics')} attention={blocking.some((i) => i.field === 'locations')} />
         <Row icon={<Users size={16} />} label={t('guided.rCreators')} value={creators ? t('guided.creatorsOfType', { count: creators, type: form.category || '—' }) : t('guided.notSet')} provenance={form.aiProvenance.creatorsNeeded} onEdit={() => onEdit('creators')} attention={blocking.some((i) => i.step === 'creators')} />
-        <Row icon={<Smartphone size={16} />} label={t('guided.rPlatforms')} value={form.platforms.length ? form.platforms.join(' + ') : t('guided.notSet')} provenance={form.aiProvenance.platforms} onEdit={() => onEdit('creators')} />
+        <Row icon={<Smartphone size={16} />} label={t('guided.rPlatforms')} value={form.platforms.length ? form.platforms.join(' + ') : t('guided.notSet')} provenance={form.aiProvenance.platforms} onEdit={() => onEdit('content')} />
         <Row
           icon={<Clapperboard size={16} />}
           label={t('guided.rDeliverables')}
           value={form.deliverableItems.length
-            ? <ul>{form.deliverableItems.map((d, i) => <li key={i}>{d.quantity}× {t(`guided.deliv_${d.type}`)}{shownPlatform(d.type, d.platform) ? ` · ${shownPlatform(d.type, d.platform)}` : ''} <span className="text-ink-soft">{t('guided.eachCreator')}</span></li>)}</ul>
+            ? <>{deliverableSummary(form.deliverableItems, t)} <span className="text-ink-soft">{t('guided.eachCreator')}</span></>
             : t('guided.notSet')}
           provenance={form.aiProvenance.deliverableItems}
           onEdit={() => onEdit('content')}

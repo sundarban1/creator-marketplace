@@ -4,6 +4,7 @@ import type {
 } from '../../api/business';
 import type { CampaignRulesInput, CampaignStep } from '../campaignRules';
 import { countFilledSections } from './briefSections';
+import { deliverablePlatforms, simplifyDeliverables } from './deliverableKinds';
 
 // The guided creator's form state and every conversion it needs — pure, no
 // React, so create / resume / edit / autosave all agree on one shape.
@@ -77,14 +78,15 @@ export function formFromCampaign(c: MyCampaign): GuidedForm {
     description: c.description ?? '',
     goal: c.goals?.[0] ?? '',
     category: c.category ?? '',
-    platforms: c.platforms ?? [],
+    // Legacy per-item platforms fold into the campaign's platform list.
+    platforms: deliverablePlatforms(c.platforms, c.deliverableItems ?? []).slice(0, 3),
     creatorsNeeded: c.creatorsNeeded ?? null,
     // A brand-new autosaved draft defaults ONSITE server-side; "not answered"
     // is recovered from the brief when the business never chose.
     locationType: c.brief?.content?.creatorsVisit === null && !(c.locations?.length) ? null : (c.locationType ?? null),
     locationScope: c.locationScope ?? null,
     locations: c.locations?.length ? c.locations : c.location ? [{ name: c.location }] : [],
-    deliverableItems: c.deliverableItems ?? [],
+    deliverableItems: simplifyDeliverables(c.deliverableItems ?? []) as DeliverableItem[],
     budgetMin: c.budgetMin ?? 0,
     budgetMax: c.budgetMax ?? 0,
     budgetRateType: c.budgetRateType ?? 'FIXED',
@@ -117,12 +119,12 @@ export function applyAiDraft(prev: GuidedForm, d: AiDraft, prompt: string): Guid
     description: pick('description', d.description, prev.description),
     goal: pick('goal', d.goal ?? prev.goal, prev.goal),
     category: pick('category', d.category, prev.category),
-    platforms: pick('platforms', d.platform ? [d.platform] : prev.platforms, prev.platforms),
+    platforms: pick('platforms', deliverablePlatforms(d.platform ? [d.platform] : prev.platforms, g?.deliverableItems ?? []).slice(0, 3), prev.platforms),
     creatorsNeeded: pick('creatorsNeeded', d.creatorsNeeded || prev.creatorsNeeded, prev.creatorsNeeded),
     locationType: pick('locationType', g?.locationType ?? prev.locationType, prev.locationType),
     locationScope: pick('locations', g?.locationScope ?? prev.locationScope, prev.locationScope),
     locations: pick('locations', g?.locations ?? prev.locations, prev.locations),
-    deliverableItems: pick('deliverableItems', g?.deliverableItems ?? prev.deliverableItems, prev.deliverableItems),
+    deliverableItems: simplifyDeliverables(pick('deliverableItems', g?.deliverableItems ?? prev.deliverableItems, prev.deliverableItems)) as DeliverableItem[],
     budgetMin: userSet('budget') ? prev.budgetMin : budgetKnown ? d.budgetMin : prev.budgetMin,
     budgetMax: userSet('budget') ? prev.budgetMax : budgetKnown ? d.budgetMax : prev.budgetMax,
     budgetRateType: userSet('budget') ? prev.budgetRateType : budgetKnown ? (d.budgetRateType || 'FIXED') : prev.budgetRateType,
