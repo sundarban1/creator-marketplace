@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Check, Copy, Share2, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { useToast } from '../ui/Toast';
 import { fetchReferralOverview, applyReferralCode } from '../api/creator';
 import { DashPageHeader } from './dash-ui/DashPageHeader';
@@ -22,6 +23,7 @@ export function CreatorReferralsPage() {
   const t = useT();
   const toast = useToast();
   const overview = useAsync((s) => fetchReferralOverview(s), []);
+  useLiveRefresh(['referrals'], overview.refresh);
   const [copied, setCopied] = useState(false);
   const [code, setCode] = useState('');
   const [applying, setApplying] = useState(false);

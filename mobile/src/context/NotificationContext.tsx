@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { Alert, AppState, type AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import type { Socket } from 'socket.io-client';
@@ -14,6 +14,8 @@ import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 import { logger } from '@/utilities/logger';
 import { resolveNotificationRoute } from '@/utilities/notificationRouting';
+import { queryClient } from '@/lib/queryClient';
+import { getString, translations } from '@/i18n';
 
 function navigateFromPushData(data: unknown, isCreator: boolean) {
   const d = data as { type?: string; refId?: string; refType?: string; applicationId?: string } | undefined;
@@ -40,8 +42,30 @@ const NotificationContext = createContext<NotificationContextValue>({
   refreshChatBadge:  () => {},
 });
 
+// Admin-side changes that reach the user only as a bell notification — which
+// cached screens each one makes stale, so they refetch instead of waiting out
+// their staleTime (or, for persisted roots, surviving an app restart).
+const NOTIFICATION_INVALIDATES: Record<string, string[][]> = {
+  account_verified:      [['profile']],
+  verification_rejected: [['profile']],
+  withdrawal_processing: [['wallet']],
+  withdrawal_paid:       [['wallet']],
+  withdrawal_rejected:   [['wallet']],
+  referral_reward:       [['wallet']],
+  dispute_resolved:      [['applications'], ['wallet'], ['campaign']],
+  campaign_deleted:      [['applications'], ['campaigns'], ['campaign']],
+};
+
+// Outside LanguageProvider, so read the stored language the same way it does.
+function tStored(key: string): string {
+  const lang = storage.get('app_language') === 'ne' ? 'ne' : 'en';
+  return getString(translations[lang], key) ?? key;
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, forceLogout } = useAuth();
+  const forceLogoutRef = useRef(forceLogout);
+  forceLogoutRef.current = forceLogout;
   const [badgeCount, setBadgeCount]         = useState(0);
   const [chatBadgeCount, setChatBadgeCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
@@ -105,8 +129,35 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (notif?.type !== 'new_message') {
         setBadgeCount((n) => n + 1);
       }
+      for (const queryKey of NOTIFICATION_INVALIDATES[notif?.type ?? ''] ?? []) {
+        void queryClient.invalidateQueries({ queryKey });
+      }
     };
     socket.on('notification:new', onNotificationNew);
+
+    // ── Admin-pushed state ──────────────────────────────────────────────────
+    // Suspended or deleted by an admin: the server already revoked every
+    // session, so sign out now instead of on the next token refresh.
+    const onSessionRevoked = (data: { reason?: string }) => {
+      void forceLogoutRef.current();
+      if (data?.reason === 'suspended') {
+        Alert.alert(tStored('auth.login.suspendedTitle'), tStored('auth.login.suspendedMessage'));
+      }
+    };
+    // Category/platform catalogs are persisted to disk, so an admin edit would
+    // otherwise linger for the 5-min staleTime and across restarts.
+    const onCatalogUpdated = (data: { kind?: 'categories' | 'platforms' }) => {
+      if (data?.kind) void queryClient.invalidateQueries({ queryKey: [data.kind] });
+    };
+    // An event edited/featured/deleted: refresh its detail page if cached.
+    // Broadcast to every creator, so keep this to the one event — a deletion
+    // that touches someone's applications arrives as campaign_deleted above.
+    const onCampaignUpdated = (data: { id?: string }) => {
+      if (data?.id) void queryClient.invalidateQueries({ queryKey: ['campaign', data.id] });
+    };
+    socket.on('session:revoked',  onSessionRevoked);
+    socket.on('catalog:updated',  onCatalogUpdated);
+    socket.on('campaign:updated', onCampaignUpdated);
 
     // ── Chat badge + message forwarding ─────────────────────────────────────
     // The server includes chatBadgeCount in the message:new payload so we can
@@ -181,6 +232,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     return () => {
       socket.off('notification:new', onNotificationNew);
+      socket.off('session:revoked',  onSessionRevoked);
+      socket.off('catalog:updated',  onCatalogUpdated);
+      socket.off('campaign:updated', onCampaignUpdated);
       socket.off('message:new',         onMessageNew);
       socket.off('conversation:update', onConvUpdate);
       unsubMessaging();

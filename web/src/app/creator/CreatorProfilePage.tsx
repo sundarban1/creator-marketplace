@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X, Clock } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { compactNumber } from '../lib/format';
 import { requestYoutubeAccessToken } from '../lib/googleAuth';
@@ -63,6 +64,9 @@ export function CreatorProfilePage() {
   const niches = useAsync((s) => fetchCategories(s, 'BOTH'), []);
   const applications = useAsync((s) => fetchMyApplications({ status: 'ACCEPTED', limit: 50 }, s), []);
   const favoriteBusinesses = useAsync((s) => fetchFavoriteBusinessIds(s), []);
+  useLiveRefresh(['profile'], profile.refresh);
+  useLiveRefresh(['categories'], niches.refresh);
+  useLiveRefresh(['applications'], applications.refresh);
   const completedEvents = (applications.data?.items ?? []).filter(
     (a) => a.workStatus === 'COMPLETED' && a.paymentStatus === 'RELEASED',
   ).length;

@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { useT } from '../i18n';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { fetchPublicEvents, type EventCard as EventCardData, type EventSort } from '../api/publicMarketplace';
 import { fetchCategories, fetchCampaignPlatforms } from '../api/catalog';
 import { Button } from '../ui/Button';
@@ -104,6 +105,38 @@ export function EventsBrowser({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load(1, false);
   }, [load]);
+
+  // Live: an event was published/edited/featured/removed — quietly refetch
+  // everything already loaded (one request), keeping scroll and pagination.
+  const pageRef = useRef(page);
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+  const refreshLoaded = useCallback(async () => {
+    const id = ++reqId.current;
+    const loadedPages = pageRef.current;
+    try {
+      const res = await fetchPublicEvents({
+        search: debouncedSearch || undefined,
+        campaignType: (type as 'PAID_CAMPAIGN' | 'OPEN_EVENT') || undefined,
+        category: category ? [category] : undefined,
+        platform: platform ? [platform] : undefined,
+        minBudget: budgetRange?.min,
+        maxBudget: budgetRange?.max,
+        sort: sort === 'newest' ? undefined : sort,
+        page: 1,
+        limit: loadedPages * PAGE_SIZE,
+      });
+      if (id !== reqId.current) return;
+      setItems(res.items);
+      setTotal(res.pagination?.total ?? res.items.length);
+    } catch {
+      /* keep what's on screen */
+    }
+  }, [debouncedSearch, type, category, platform, budgetRange, sort]);
+  useLiveRefresh(['campaigns'], () => { void refreshLoaded(); });
+  useLiveRefresh(['categories'], categories.refresh);
+  useLiveRefresh(['platforms'], platforms.refresh);
 
   const patch = (key: string, value: string) => {
     setParams(

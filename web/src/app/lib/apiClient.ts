@@ -144,6 +144,11 @@ function endSession(): void {
   emitSession('ended');
 }
 
+/** The server revoked this session (admin suspended/deleted the account). */
+export function endSessionNow(): void {
+  endSession();
+}
+
 // localStorage is shared by every tab, but a `storage` event fires only in the
 // *other* tabs. That makes it the cross-tab signal: a logout or rejected
 // refresh in one tab must stop this tab's pollers too.

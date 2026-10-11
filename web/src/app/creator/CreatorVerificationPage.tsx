@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FileText, IdCard, ShieldCheck } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { useToast } from '../ui/Toast';
 import { fetchCreatorFullProfile, uploadCitizenshipDoc, uploadCreatorPanDoc, type CreatorFullProfile } from '../api/creator';
 import { PageHeader } from '../ui/PageHeader';
@@ -16,6 +17,7 @@ export function CreatorVerificationPage() {
   const t = useT();
   const toast = useToast();
   const profile = useAsync((s) => fetchCreatorFullProfile(s), []);
+  useLiveRefresh(['profile'], profile.refresh);
   const [uploading, setUploading] = useState<'citizenship' | 'pan' | null>(null);
 
   const p = profile.data;

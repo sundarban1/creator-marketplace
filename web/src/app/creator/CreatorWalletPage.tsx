@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Clock, ExternalLink } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { rupees } from '../lib/format';
 import {
   fetchWalletSummary,
@@ -31,6 +32,7 @@ export function CreatorWalletPage() {
   const txns = useAsync((s) => fetchWalletTransactions(s), []);
   const withdrawals = useAsync((s) => fetchWithdrawals(s), []);
   const payoutMethods = useAsync((s) => fetchPayoutMethods(s), []);
+  useLiveRefresh(['wallet'], () => { summary.refresh(); txns.refresh(); withdrawals.refresh(); });
 
   const [modalOpen, setModalOpen] = useState(false);
   const [flash, setFlash] = useState('');

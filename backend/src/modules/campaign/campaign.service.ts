@@ -304,6 +304,13 @@ export class CampaignService {
     return { paywallEnabled, freeQuota, used, remaining, price, unlimited };
   }
 
+  // Tells open creator feeds an existing campaign changed (featured toggle,
+  // edits, pause/close) so they refetch. Id only — the campaign may not be
+  // creator-visible, so its content isn't broadcast.
+  broadcastCampaignUpdated(id: string) {
+    emitToRole('CREATOR', 'campaign:updated', { id });
+  }
+
   // Broadcasts a newly-live campaign to creators — shared by create(), the
   // reactivation path in update(), and AdminService.approveCampaign().
   fanOutNewCampaign(campaign: ReturnType<typeof toCampaignDto>, business: { id: string; businessName: string | null }, userId: string) {
@@ -1069,6 +1076,7 @@ export class CampaignService {
     }
 
     this.maybeRegenerateInvitations(campaign, input);
+    this.broadcastCampaignUpdated(id);
 
     return dto;
   }
@@ -1232,6 +1240,7 @@ export class CampaignService {
     }
 
     this.maybeRegenerateInvitations(campaign, input);
+    this.broadcastCampaignUpdated(id);
 
     return dto;
   }

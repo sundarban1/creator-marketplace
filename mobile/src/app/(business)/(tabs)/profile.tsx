@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
+import { businessService } from '@/services/business';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -35,15 +36,23 @@ export default function BusinessProfileScreen() {
     enabled: user?.role === 'BUSINESS',
     staleTime: STALE.list,
   });
-  useRefetchOnFocusIfStale(profileQuery, campaignsQuery, savedCreatorsQuery);
-  const { refreshing, onRefresh } = usePullToRefresh(profileQuery, campaignsQuery, savedCreatorsQuery);
+  // Same cache entry the settings Social Accounts section uses. Settings edits
+  // its own local copy without invalidating, so stay stale and refetch on focus.
+  const socialAccountsQuery = useQuery({
+    queryKey: ['business', 'socialAccounts'],
+    queryFn: () => businessService.getSocialAccounts(),
+    enabled: user?.role === 'BUSINESS',
+    staleTime: 0,
+  });
+  useRefetchOnFocusIfStale(profileQuery, campaignsQuery, savedCreatorsQuery, socialAccountsQuery);
+  const { refreshing, onRefresh } = usePullToRefresh(profileQuery, campaignsQuery, savedCreatorsQuery, socialAccountsQuery);
 
   const profile = profileQuery.data;
   const activeCampaigns = (campaignsQuery.data?.campaigns ?? []).filter((c) => c.status === 'active').length;
   const savedCreators = savedCreatorsQuery.data?.length ?? 0;
 
   const vm = profile
-    ? toOwnerVm(profile, { activeCampaigns, savedCreators })
+    ? toOwnerVm(profile, { activeCampaigns, savedCreators, socialAccounts: socialAccountsQuery.data })
     : emptyOwnerVm(user?.name ?? 'Business');
 
   return (

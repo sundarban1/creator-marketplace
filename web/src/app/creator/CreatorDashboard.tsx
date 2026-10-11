@@ -6,6 +6,7 @@ import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { useWelcomeToast } from '../lib/useWelcomeToast';
 import { rupees, isFuture, byDateAsc } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
@@ -44,6 +45,10 @@ export function CreatorDashboard() {
   const recommended = useAsync((s) => fetchPublicEvents({ limit: 3 }, s), []);
   const profile = useAsync((s) => fetchCreatorFullProfile(s), []);
   const meetups = useAsync((s) => fetchOpenMeetups(s), []);
+  useLiveRefresh(['wallet'], wallet.refresh);
+  useLiveRefresh(['applications'], apps.refresh);
+  useLiveRefresh(['campaigns'], recommended.refresh);
+  useLiveRefresh(['profile'], profile.refresh);
 
   const { activeWork, pending, upcoming } = useMemo(() => {
     const list = apps.data?.items ?? [];

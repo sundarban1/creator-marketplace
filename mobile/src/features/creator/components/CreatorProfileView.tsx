@@ -182,7 +182,7 @@ function ChipRow({ items, primary }: { items: string[]; primary?: boolean }) {
   );
 }
 
-function PlatformList({ platforms }: { platforms: MergedPlatform[] }) {
+export function PlatformList({ platforms }: { platforms: MergedPlatform[] }) {
   const C = useAppColors();
   const { t } = useLanguage();
   return (
@@ -711,10 +711,8 @@ export function CreatorProfileView({
             </InfoCard>
           )}
 
-          {/* Social Accounts (owner) — HIDDEN for now. Re-enable = uncomment this
-              block + populate `platforms` in toOwnerVm (creatorProfileVm.ts).
-              "Manage" opens the already-wired settings ?section=social. */}
-          {/* {isOwner && (
+          {/* Social Accounts (owner) — "Manage" opens settings ?section=social. */}
+          {isOwner && (
             <InfoCard
               title={t('profile.socialAccounts')}
               icon="share-alt"
@@ -725,13 +723,13 @@ export function CreatorProfileView({
                 <SectionEmptyState
                   icon="share-alt"
                   title={t('profile.noSocialLinked')}
-                  hint={t('profile.noSocialAccounts')}
-                  cta={t('profile.addAccount')}
+                  hint={t('profile.creatorSocialHint')}
+                  cta={t('profile.connectSocialAccount')}
                   onPress={() => router.push('/(creator)/settings?section=social' as never)}
                 />
               )}
             </InfoCard>
-          )} */}
+          )}
 
           {/* Preferred platforms (visitor only) */}
           {isVisitor && vm.prefPlatforms.length > 0 && (

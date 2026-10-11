@@ -19,6 +19,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { sortOtherLast, useCategories } from '@/hooks/useCategories';
+import { usePlatforms } from '@/hooks/usePlatforms';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -165,6 +166,8 @@ type EditForm = {
   venue: string;
   capacity: string;
   benefits: string[];
+  // Locked (with every other proposal-term field) once applications exist.
+  platforms: string[];
 };
 
 type EditErrors = Partial<Record<keyof EditForm, string>>;
@@ -185,6 +188,7 @@ export default function EditCampaignScreen() {
   // BUSINESS-scope rows — with the catch-all "Other" pinned to the end.
   const { categories: liveCategories } = useCategories('BOTH');
   const categoryOptions = sortOtherLast(liveCategories).map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
+  const { platforms: livePlatforms } = usePlatforms();
   const queryClient = useQueryClient();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -198,13 +202,13 @@ export default function EditCampaignScreen() {
   // Location/Venue use LocationSearchModal above instead; Deadline/Event Date
   // use the existing calOpen/eventCalOpen sheets below — same split as
   // create-campaign.tsx's Publish screen.
-  const [editingField, setEditingField] = useState<'title' | 'description' | 'image' | 'category' | 'hashtags' | 'people' | 'budget' | 'capacity' | 'benefits' | null>(null);
+  const [editingField, setEditingField] = useState<'title' | 'description' | 'image' | 'category' | 'hashtags' | 'people' | 'budget' | 'capacity' | 'benefits' | 'platforms' | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
     title: '', description: '', featureImageUrl: null, template: '',
     deliverables: DEFAULT_DELIVERABLES, hashtags: [], creatorsNeeded: '1', completionType: null,
     status: 'active', budgetMin: '', budgetMax: '', budgetRateType: 'FIXED', budgetInputType: 'PER_CREATOR', deadline: null,
     location: '', locationType: 'ONSITE', isFeatured: false,
-    eventDate: null, eventTime: null, venue: '', capacity: '20', benefits: [],
+    eventDate: null, eventTime: null, venue: '', capacity: '20', benefits: [], platforms: [],
   });
   const [editErrors, setEditErrors] = useState<EditErrors>({});
   const [timeSheetOpen, setTimeSheetOpen] = useState(false);
@@ -323,6 +327,7 @@ export default function EditCampaignScreen() {
           venue:        c.venue ?? '',
           capacity:     String(c.capacity ?? 20),
           benefits:     c.benefits ?? [],
+          platforms:    c.platforms ?? [],
         });
         if (!c.isFeatured) {
           campaignService.getFeaturedQuota().then(setFeaturedQuota).catch(() => {});
@@ -417,6 +422,7 @@ export default function EditCampaignScreen() {
           // branch below for the full explanation of why this has to be
           // conditionally omitted rather than sent as false/unchanged.
           ...(hasProposals ? {} : {
+            platforms:  editForm.platforms,
             isFeatured: editForm.isFeatured,
             ...(editForm.completionType ? { completionType: editForm.completionType } : {}),
           }),
@@ -436,6 +442,7 @@ export default function EditCampaignScreen() {
           // the UI actually allows changing them, otherwise the whole update
           // is rejected even for unrelated fields like title/description.
           ...(hasProposals ? {} : {
+            platforms:    editForm.platforms,
             deliverables: summarizeDeliverables(editForm.deliverables, [], t),
             budgetMin:    Number(editForm.budgetMin),
             budgetMax:    Number(editForm.budgetMax),
@@ -573,6 +580,13 @@ export default function EditCampaignScreen() {
               onPress={() => setEditingField('capacity')}
             />
             <PreviewRow
+              icon="share-alt"
+              label={t('campaignDetail.fieldPlatforms')}
+              value={editForm.platforms.join(', ') || '—'}
+              colors={C}
+              onPress={hasProposals ? undefined : () => setEditingField('platforms')}
+            />
+            <PreviewRow
               icon="gift"
               label={t('createInvitation.publishReceiveLabel')}
               value={eventOptionLabels(editForm.benefits, 'offering', t).join(', ') || '—'}
@@ -590,6 +604,13 @@ export default function EditCampaignScreen() {
               value={editForm.template || '—'}
               colors={C}
               onPress={() => setEditingField('category')}
+            />
+            <PreviewRow
+              icon="share-alt"
+              label={t('campaignDetail.fieldPlatforms')}
+              value={editForm.platforms.join(', ') || '—'}
+              colors={C}
+              onPress={hasProposals ? undefined : () => setEditingField('platforms')}
             />
             <PreviewRow
               icon={editForm.locationType === 'REMOTE' ? 'globe' : 'map-marker-alt'}
@@ -763,6 +784,7 @@ export default function EditCampaignScreen() {
           : editingField === 'budget' ? t('createEvent.confirmSectionBudget')
           : editingField === 'capacity' ? t('campaignDetail.fieldCapacity')
           : editingField === 'benefits' ? t('campaignDetail.sectionWhatYouGet')
+          : editingField === 'platforms' ? t('campaignDetail.fieldPlatforms')
           : ''
         }>
         {editingField === 'title' && (
@@ -852,6 +874,19 @@ export default function EditCampaignScreen() {
         )}
         {editingField === 'benefits' && (
           <ChipMultiGroup options={EVENT_BENEFITS} values={editForm.benefits} onChange={(v) => updateEdit('benefits', v)} colors={C} labelFor={(o) => eventOptionLabel(o, 'offering', t)} />
+        )}
+        {editingField === 'platforms' && (
+          <View>
+            <ChipMultiGroup
+              options={Array.from(new Set([...(livePlatforms.length ? livePlatforms.map((p) => p.name) : ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...editForm.platforms]))}
+              values={editForm.platforms}
+              onChange={(v) => updateEdit('platforms', v.slice(-3))}
+              colors={C}
+            />
+            <Text style={{ fontSize: 12, fontFamily: F.regular, color: C.textSecondary, marginTop: SPACING.sm }}>
+              {t('createEvent.platformsEditHint')}
+            </Text>
+          </View>
         )}
       </BottomSheet>
 

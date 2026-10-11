@@ -170,9 +170,9 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
     placeholderHeight: tabFilterPlaceholderHeight,
   } = useStickyBelowHeader();
 
-  // Real-time: a new campaign anywhere may or may not match the active
-  // filters, so invalidate every cached discover-feed variant and let the
-  // active one refetch (§30).
+  // Real-time: a new or edited campaign (e.g. admin marks it featured) may or
+  // may not match the active filters, so invalidate every cached discover-feed
+  // variant and let the active one refetch (§30).
   useFocusEffect(useCallback(() => {
     const socket = getSocket();
     if (!socket) return;
@@ -180,7 +180,11 @@ const CampaignsExplore = forwardRef<CampaignsExploreHandle, { onFilterCountChang
       void queryClient.invalidateQueries({ queryKey: ['campaigns', 'discover'], refetchType: 'active' });
     };
     socket.on('campaign:new', handler);
-    return () => { socket.off('campaign:new', handler); };
+    socket.on('campaign:updated', handler);
+    return () => {
+      socket.off('campaign:new', handler);
+      socket.off('campaign:updated', handler);
+    };
   }, [queryClient]));
 
   const filterActiveCount = [

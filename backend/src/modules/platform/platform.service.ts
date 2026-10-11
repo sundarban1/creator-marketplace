@@ -3,6 +3,7 @@ import { AppError } from '../../middleware/error';
 import { PlatformRepository } from './platform.repository';
 import type { CreatePlatformInput, UpdatePlatformInput } from './platform.schema';
 import { cached, invalidate } from '../../utils/cache';
+import { emitToAll } from '../../socket';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -22,6 +23,12 @@ export class PlatformService {
     return cached(PUBLIC_CACHE_KEY, PUBLIC_CACHE_TTL_SEC, () => this.repo.findManyPublic());
   }
 
+  private async invalidatePublicCache() {
+    await invalidate(PUBLIC_CACHE_KEY);
+    // Open apps hold the list in a persisted client cache — tell them to refetch.
+    emitToAll('catalog:updated', { kind: 'platforms' });
+  }
+
   async listForAdmin() {
     const platforms = await this.repo.findAllForAdmin();
     return Promise.all(platforms.map(async (p) => ({
@@ -34,7 +41,7 @@ export class PlatformService {
     const existing = await this.repo.findByKey(input.key);
     if (existing) throw new AppError('A platform with this key already exists', HttpStatus.CONFLICT);
     const created = await this.repo.create(input);
-    await invalidate(PUBLIC_CACHE_KEY);
+    await this.invalidatePublicCache();
     return created;
   }
 
@@ -47,7 +54,7 @@ export class PlatformService {
       if (existing) throw new AppError('A platform with this key already exists', HttpStatus.CONFLICT);
     }
     const updated = await this.repo.update(id, input);
-    await invalidate(PUBLIC_CACHE_KEY);
+    await this.invalidatePublicCache();
     return updated;
   }
 
@@ -55,7 +62,7 @@ export class PlatformService {
     const platform = await this.repo.findById(id);
     if (!platform) throw new AppError('Platform not found', HttpStatus.NOT_FOUND);
     const updated = await this.repo.updateStatus(id, status);
-    await invalidate(PUBLIC_CACHE_KEY);
+    await this.invalidatePublicCache();
     return updated;
   }
 
@@ -63,6 +70,6 @@ export class PlatformService {
     const platform = await this.repo.findById(id);
     if (!platform) throw new AppError('Platform not found', HttpStatus.NOT_FOUND);
     await this.repo.delete(id);
-    await invalidate(PUBLIC_CACHE_KEY);
+    await this.invalidatePublicCache();
   }
 }

@@ -3,6 +3,7 @@ import { AppError } from '../../middleware/error';
 import { CategoryRepository } from './category.repository';
 import type { CreateCategoryInput, UpdateCategoryInput } from './category.schema';
 import { cached, invalidatePrefix } from '../../utils/cache';
+import { emitToAll } from '../../socket';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -26,6 +27,8 @@ export class CategoryService {
 
   private async invalidatePublicCache() {
     await invalidatePrefix(PUBLIC_CACHE_PREFIX);
+    // Open apps hold the list in a persisted client cache — tell them to refetch.
+    emitToAll('catalog:updated', { kind: 'categories' });
   }
 
   async listForAdmin() {

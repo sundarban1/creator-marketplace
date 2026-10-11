@@ -24,6 +24,8 @@ import { logAudit } from '../logging/audit.service';
 import { ActivityAction, AuditAction, EntityType } from '../logging/logging.constants';
 
 import { HttpStatus } from '../../constants/httpStatus';
+import { AuthRepository } from '../auth/auth.repository';
+import { emitToUser } from '../../socket';
 
 export class AdminService {
   private repo: AdminRepository;
@@ -90,8 +92,16 @@ export class AdminService {
     return this.repo.updateUserVerification(userId, verified);
   }
 
-  suspendUser(userId: string, isActive: boolean) {
-    return this.repo.updateUserActiveStatus(userId, isActive);
+  async suspendUser(userId: string, isActive: boolean) {
+    const updated = await this.repo.updateUserActiveStatus(userId, isActive);
+    if (!isActive) {
+      // Revoke every open session and tell connected apps to sign out now —
+      // refresh() also rejects inactive users, so a client that ignores the
+      // event is still out once its access token expires.
+      await new AuthRepository().deleteAllSessions(userId);
+      emitToUser(userId, 'session:revoked', { reason: 'suspended' });
+    }
+    return updated;
   }
 
   getUser(userId: string) {
@@ -142,6 +152,7 @@ export class AdminService {
       }
     }
     const updated = await this.repo.updateCampaignStatus(campaignId, status);
+    this.campaignService.broadcastCampaignUpdated(campaignId);
     if (status !== current.status && isAdminEventAction(status)) {
       const { updatedAt } = await this.repo.findCampaignForApproval(campaignId) ?? {};
       campaignReviewService.notifyBusinessOfAdminAction(campaignId, status, updatedAt?.toISOString() ?? String(Date.now()));
@@ -158,6 +169,10 @@ export class AdminService {
     // Followers hear about an event once — not again when a material edit is re-approved.
     if (!previouslyApproved) {
       this.campaignService.fanOutNewCampaign(dto, campaign.business, campaign.business.userId);
+    } else {
+      // Re-approved after an edit — it left creator feeds while pending, so
+      // open feeds need to refetch to show it again.
+      this.campaignService.broadcastCampaignUpdated(campaignId);
     }
     return dto;
   }
@@ -193,6 +208,7 @@ export class AdminService {
     const result = await this.repo.softDeleteCampaignCascade(campaignId);
     // Once per event — a soft-deleted event can't be deleted again.
     campaignReviewService.notifyBusinessOfAdminAction(campaignId, 'DELETED', 'once');
+    this.campaignService.broadcastCampaignUpdated(campaignId);
 
     if (affectedUserIds.length > 0) {
       notificationService.createMany(
@@ -210,8 +226,10 @@ export class AdminService {
     return { ...result, title: campaign.title };
   }
 
-  removeUser(userId: string) {
-    return this.repo.deleteUser(userId);
+  async removeUser(userId: string) {
+    const deleted = await this.repo.deleteUser(userId);
+    emitToUser(userId, 'session:revoked', { reason: 'deleted' });
+    return deleted;
   }
 
   // ── Settings ────────────────────────────────────────────────────────────────
@@ -241,8 +259,13 @@ export class AdminService {
     return this.repo.getAllConversations(page, limit, status, search);
   }
 
-  removeConversation(id: string) {
-    return this.repo.deleteConversation(id);
+  async removeConversation(id: string) {
+    const deleted = await this.repo.deleteConversation(id);
+    // Drop it from both participants' open inboxes and chat badges.
+    for (const p of [deleted.creator, deleted.creator2, deleted.business]) {
+      if (p) emitToUser(p.userId, 'conversation:update', { conversationId: id });
+    }
+    return deleted;
   }
 
   // ── Referrals ────────────────────────────────────────────────────────────────
@@ -325,6 +348,22 @@ export class AdminService {
       referenceId:      referral.id,
       createdByAdminId: adminUserId,
     });
+
+    // Both creators' wallets just changed — tell them (and refresh their open
+    // wallet screens via the bell's notification:new).
+    const referrer = await this.referralRepo.findCreatorProfileById(referral.referrerId);
+    const rewards = [
+      referrer && { userId: referrer.userId, amount: Number(referral.rewardAmount), body: 'Your referral reward has been added to your wallet.' },
+      { userId: referred.userId, amount: REFERRED_FIRST_EVENT_BONUS, body: 'Your first event bonus has been added to your wallet.' },
+    ].filter((r): r is { userId: string; amount: number; body: string } => !!r);
+    notificationService.createMany(rewards.map((r) => ({
+      userId:  r.userId,
+      type:    'referral_reward',
+      title:   `Rs. ${r.amount} added to your wallet`,
+      body:    r.body,
+      refId:   referral.id,
+      refType: 'referral',
+    }))).catch(() => {});
 
     return updated;
   }

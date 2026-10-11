@@ -774,7 +774,6 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
 export default function CreateCampaignScreen() {
   const C = useAppColors();
   const { t, language } = useLanguage();
-  const notRequiredLabel = t('createEvent.notRequired');
   const [phase, setPhase] = useState<Phase>('chooseType');
   const [loading, setLoading] = useState(false);
   // Reference images / PDFs (brief.attachments) — added on the final step.
@@ -3388,12 +3387,16 @@ export default function CreateCampaignScreen() {
 
                   {/* Platform (optional) */}
                   <SectionCard title={t('createEvent.secPlatformOptTitle')} sub={t('createEvent.secPlatformOptSub')} icon="share-alt" colors={C}>
-                    <ChipGroup
-                      options={['Instagram', 'TikTok', 'YouTube', 'Facebook', notRequiredLabel]}
-                      value={form.platforms[0] ?? notRequiredLabel}
-                      onChange={(v) => update('platforms', v === notRequiredLabel ? [] : [v])}
+                    {/* AI pre-selects a platform; the business can pick any active one (none = not required). */}
+                    <ChipMultiGroup
+                      options={Array.from(new Set([...(platformOptions.length ? platformOptions : ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...form.platforms]))}
+                      values={form.platforms}
+                      onChange={(v) => update('platforms', v.slice(-3))}
                       colors={C}
                     />
+                    <Text style={{ fontSize: 12, fontFamily: F.regular, color: C.textSecondary, marginTop: SPACING.sm }}>
+                      {t('createEvent.platformsMultiHint')}
+                    </Text>
                   </SectionCard>
 
                   {/* Event Date */}

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { byDateAsc } from '../lib/format';
 import { engagementMeta, type EngagementBucket } from '../lib/engagement';
 import { fetchMyApplications, type CreatorApplication } from '../api/creator';
@@ -17,10 +18,11 @@ export interface ApplicationBuckets {
 
 /** Fetches every application once and groups it by engagement bucket. */
 export function useApplications(): ApplicationBuckets {
-  const { data, loading, error, reload } = useAsync(
+  const { data, loading, error, reload, refresh } = useAsync(
     (s) => fetchMyApplications({ limit: 100 }, s),
     [],
   );
+  useLiveRefresh(['applications'], refresh);
 
   const grouped = useMemo(() => {
     const items = data?.items ?? [];

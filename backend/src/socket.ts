@@ -251,6 +251,10 @@ export function emitToRole(role: string, event: string, data: unknown): void {
   io?.to(`role:${role}`).emit(event, data);
 }
 
+export function emitToAll(event: string, data: unknown): void {
+  io?.emit(event, data);
+}
+
 export function emitToRoom(room: string, event: string, data: unknown): void {
   io?.to(room).emit(event, data);
 }

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { ArrowLeft, Check, X, Send, Smile, Paperclip, FileText, Play, Loader2, MessageCircle } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { useAppAuth } from '../auth/AppAuthContext';
 import {
   fetchConversations,
@@ -52,6 +53,8 @@ export function ChatPage() {
   const base = location.pathname.startsWith('/business') ? '/business' : '/creator';
 
   const conversations = useAsync((s) => fetchConversations({}, s), []);
+  // Live: a conversation was opened, closed or removed (e.g. by an admin).
+  useLiveRefresh(['conversations'], conversations.refresh);
   const [busyId, setBusyId] = useState('');
   const [listError, setListError] = useState('');
 

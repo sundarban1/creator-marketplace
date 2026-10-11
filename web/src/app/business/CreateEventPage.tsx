@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, Camera, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
-import { fetchCategories } from '../api/catalog';
+import { fetchCategories, fetchCampaignPlatforms } from '../api/catalog';
 import { createCampaign, generateAiDraft, generateEventAiDraft, uploadCampaignFeatureImage } from '../api/business';
 import { AiGeneratingOverlay } from './AiGeneratingOverlay';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
@@ -39,6 +39,7 @@ export function CreateEventPage() {
   const t = useT();
   const navigate = useNavigate();
   const categories = useAsync((s) => fetchCategories(s), []);
+  const platformList = useAsync((s) => fetchCampaignPlatforms(s), []);
 
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
@@ -510,6 +511,17 @@ export function CreateEventPage() {
 
           {isFree ? (
             <>
+              {/* AI pre-selects a platform; the business can pick any active one. */}
+              <div>
+                <p className="mb-1.5 text-[13px] font-semibold text-ink">{t('biz.eventPlatformsHeading')}</p>
+                <ChipGroup
+                  options={Array.from(new Set([...(platformList.data ?? ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...selPlatforms]))}
+                  values={selPlatforms}
+                  onChange={(v) => setSelPlatforms(v.slice(-3))}
+                />
+                <p className="mt-1.5 text-[12px] text-ink-soft">{t('biz.eventPlatformsHint')}</p>
+              </div>
+
               <div>
                 <p className="mb-1.5 text-[13px] font-semibold text-ink">{t('biz.offeringHeading')}</p>
                 <ChipGroup options={OFFERING_OPTIONS} values={benefits} onChange={setBenefits} />

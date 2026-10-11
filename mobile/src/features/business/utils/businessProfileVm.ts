@@ -1,6 +1,8 @@
 import type { BusinessProfile } from '@/services/profile';
 import type { BusinessDetail, PrivateBusinessDetail, BusinessActiveCampaign } from '@/services/business';
 import type { ApiReviewReceived } from '@/services/creator';
+import type { ApiSocialAccount } from '@/lib/api';
+import { mergeSocialPlatforms, type MergedPlatform } from '@/features/creator/utils/creatorProfileVm';
 
 // The public payloads (BusinessDetail) ship the review list but no
 // reviewSummary, so <ProfileRatingRow>'s stars had nothing to fill from and
@@ -38,8 +40,8 @@ export type BusinessProfileVM = {
   location: string | null;
   description: string | null;
   website: string | null;
-  // Social Accounts owner card is hidden (BusinessProfileView) — uncomment when re-enabling:
-  // socialLinks: Record<string, string | null>;
+  // Owner-only — connected social accounts merged with legacy socialLinks.
+  platforms: MergedPlatform[];
   phone: string | null;
   email: string | null;
   // owner: always true · visitor: !hideContactDetails
@@ -60,7 +62,7 @@ export type BusinessProfileVM = {
 
 export function toOwnerVm(
   profile: BusinessProfile,
-  extra: { activeCampaigns: number; savedCreators: number },
+  extra: { activeCampaigns: number; savedCreators: number; socialAccounts?: ApiSocialAccount[] },
 ): BusinessProfileVM {
   return {
     id: profile.id,
@@ -72,7 +74,7 @@ export function toOwnerVm(
     location: profile.location,
     description: profile.description,
     website: profile.website,
-    // socialLinks: profile.socialLinks ?? {},
+    platforms: mergeSocialPlatforms(extra.socialAccounts ?? [], profile.socialLinks),
     phone: profile.user?.phone ?? profile.phone,
     email: profile.user?.email ?? null,
     showContact: true,
@@ -95,7 +97,7 @@ export function toOwnerVm(
 export function emptyOwnerVm(name: string): BusinessProfileVM {
   return {
     id: '', userId: null, name, logoUrl: null, coverImageUrl: null,
-    verified: false, location: null, description: null, website: null,
+    verified: false, location: null, description: null, website: null, platforms: [],
     phone: null, email: null, showContact: true, categories: [],
     stats: { activeCampaigns: 0, savedCreators: 0, favoritedBy: 0 },
     performance: null, reviews: [], campaigns: [],
@@ -126,6 +128,7 @@ export function toVisitorVm(detail: BusinessDetail): BusinessProfileVM {
     location,
     description: detail.description,
     website: detail.website,
+    platforms: [],
     phone: detail.phone,
     email: null,
     showContact: !detail.hideContactDetails,

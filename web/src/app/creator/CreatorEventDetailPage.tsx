@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { fetchPublicEvent } from '../api/publicMarketplace';
 import { fetchMyApplications, type CreatorApplication } from '../api/creator';
 import { ApiError } from '../lib/apiClient';
@@ -24,6 +25,9 @@ export function CreatorEventDetailPage() {
 
   const event = useAsync((s) => fetchPublicEvent(id, s), [id]);
   const myApps = useAsync((s) => fetchMyApplications({ limit: 100 }, s), []);
+  // Live: admin edits/removes this event, or the creator's application moves.
+  useLiveRefresh([`campaign:${id}`], event.refresh);
+  useLiveRefresh(['applications'], myApps.refresh);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [justApplied, setJustApplied] = useState<CreatorApplication | null>(null);

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets, type Edge } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
+import { SectionEmptyState } from '@/components/SectionEmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { ProfileRatingRow } from '@/components/ProfileRatingRow';
@@ -34,6 +35,7 @@ import type { BusinessActiveCampaign } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
+import { PlatformList } from '@/features/creator/components/CreatorProfileView';
 import { eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
@@ -640,34 +642,25 @@ export function BusinessProfileView({
             </InfoCard>
           ) : null}
 
-          {/* Social Accounts (owner) — HIDDEN for now. Re-enable = uncomment this
-              block + the `socialLinks` field in businessProfileVm.ts.
-              "Manage" opens the already-wired settings ?section=social. */}
-          {/* {isOwner && (
+          {/* Social Accounts (owner) — "Manage" opens settings ?section=social. */}
+          {isOwner && (
             <InfoCard
               title={t('profile.socialAccounts')}
               icon="share-alt"
               action={{ label: t('profile.manage'), onPress: () => router.push('/(business)/settings?section=social' as never) }}>
-              {Object.entries(vm.socialLinks).some(([, h]) => !!h) ? (
-                <View style={styles.cardList}>
-                  {Object.entries(vm.socialLinks).filter(([, h]) => !!h).map(([platform, handle]) => (
-                    <View key={platform} style={[styles.contactRow, { backgroundColor: C.background, borderColor: C.border }]}>
-                      <ContactBubble icon="share-alt" />
-                      <Text style={[styles.contactText, { color: C.text, flex: 1 }]} numberOfLines={1}>
-                        {platform.charAt(0).toUpperCase() + platform.slice(1)} · {handle}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+              {vm.platforms.length > 0 ? (
+                <PlatformList platforms={vm.platforms} />
               ) : (
-                <Pressable
-                  style={[styles.emptyField, { borderColor: C.border }]}
-                  onPress={() => router.push('/(business)/settings?section=social' as never)}>
-                  <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addAccount')}</Text>
-                </Pressable>
+                <SectionEmptyState
+                  icon="share-alt"
+                  title={t('profile.noSocialLinked')}
+                  hint={t('profile.businessSocialHint')}
+                  cta={t('profile.connectSocialAccount')}
+                  onPress={() => router.push('/(business)/settings?section=social' as never)}
+                />
               )}
             </InfoCard>
-          )} */}
+          )}
 
           {/* Phone (visitor only — owner phone lives in the Contact card) */}
           {!isOwner && vm.phone && vm.showContact ? (

@@ -767,7 +767,14 @@ export class AdminRepository {
   }
 
   async deleteConversation(id: string) {
-    return prisma.conversation.delete({ where: { id } });
+    return prisma.conversation.delete({
+      where:   { id },
+      include: {
+        creator:  { select: { userId: true } },
+        creator2: { select: { userId: true } },
+        business: { select: { userId: true } },
+      },
+    });
   }
 
   // ── Payments ─────────────────────────────────────────────────────────────────

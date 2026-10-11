@@ -369,6 +369,10 @@ export class AuthService {
 
     const user = await this.repo.findUserById(decoded.id);
     if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.UNAUTHORIZED);
+    // A suspension must end sessions already open, not just block new logins.
+    if (!user.isActive) {
+      throw new AppError(getDict().auth.accountSuspended, HttpStatus.UNAUTHORIZED, true, { code: AuthErrorCode.ACCOUNT_SUSPENDED });
+    }
 
     const tokenPayload = { id: user.id, email: user.email, role: user.role };
     const accessToken  = signAccessToken(tokenPayload);

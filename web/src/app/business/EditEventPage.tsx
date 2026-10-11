@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Camera, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
-import { fetchCategories } from '../api/catalog';
+import { fetchCategories, fetchCampaignPlatforms } from '../api/catalog';
 import { fetchCampaign, updateCampaign, uploadCampaignFeatureImage, type MyCampaign } from '../api/business';
 import { EventReviewBanner } from './EventReviewBanner';
 import { canResubmitEvent, eventStatusLabel } from './eventReviewStatus';
@@ -72,6 +72,7 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
   const t = useT();
   const navigate = useNavigate();
   const categories = useAsync((s) => fetchCategories(s), []);
+  const platformList = useAsync((s) => fetchCampaignPlatforms(s), []);
 
   const [featureImageUrl, setFeatureImageUrl] = useState(c.featureImageUrl ?? '');
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -96,6 +97,9 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
   const [hashtags, setHashtags] = useState<string[]>(c.hashtags ?? []);
   const [hashtagInput, setHashtagInput] = useState('');
   const [isFeatured, setIsFeatured] = useState(!!c.isFeatured);
+  // Locked server-side once anyone has applied, like the other proposal terms.
+  const [platforms, setPlatforms] = useState<string[]>(c.platforms ?? []);
+  const platformsLocked = (c._count?.applications ?? 0) > 0;
 
   // Open-event-only fields.
   const [benefits, setBenefits] = useState<string[]>(c.benefits ?? []);
@@ -190,6 +194,8 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
         eventTime: isFree ? eventTime || null : undefined,
         venue: isFree ? location.trim() || undefined : undefined,
         benefits: isFree ? benefits : undefined,
+        // Only send when changed — the server rejects any platforms key once applications exist.
+        platforms: !platformsLocked && platforms.join('|') !== (c.platforms ?? []).join('|') ? platforms : undefined,
         // Whole-brief replace on the server — keep every other section.
         brief: { ...(c.brief ?? {}), attachments },
       });
@@ -297,6 +303,23 @@ function EditEventForm({ id, initial: c }: { id: string; initial: MyCampaign }) 
               ]}
             />
           )}
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-[13px] font-semibold text-ink">{t('biz.eventPlatformsHeading')}</p>
+          {platformsLocked ? (
+            <p className="rounded-xl border border-line bg-surface-dim px-3 py-2.5 text-[14px] text-ink">{platforms.join(', ') || '—'}</p>
+          ) : (
+            <>
+              <ChipGroup
+                options={Array.from(new Set([...(platformList.data ?? ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...platforms]))}
+                values={platforms}
+                onChange={(v) => setPlatforms(v.slice(-3))}
+              />
+              <p className="mt-1.5 text-[12px] text-ink-soft">{t('biz.eventPlatformsEditHint')}</p>
+            </>
+          )}
+          {platformsLocked ? <p className="mt-1.5 text-[12px] text-ink-soft">{t('biz.eventPlatformsLocked')}</p> : null}
         </div>
 
         {isFree ? (

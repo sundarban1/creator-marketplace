@@ -125,9 +125,7 @@ export function toOwnerVm(
     industries: profile.industries ?? [],
     serviceMode: profile.serviceMode,
     website: profile.website,
-    platforms: [],
-    // Social Accounts owner card is hidden (CreatorProfileView) — swap in when re-enabling:
-    // platforms: mergeSocialPlatforms(profile.socialAccounts, profile.socialLinks),
+    platforms: mergeSocialPlatforms(profile.socialAccounts, profile.socialLinks),
     prefPlatforms: profile.prefPlatforms ?? [],
     ownerStats: {
       completedEvents: extra.completedEvents,

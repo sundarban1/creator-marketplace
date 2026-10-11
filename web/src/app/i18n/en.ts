@@ -762,6 +762,10 @@ export const en = {
     detailsHint: 'Generated from your description — review and adjust before publishing.',
     enterManually: 'Prefer to fill this in yourself?',
     offeringHeading: "What are you offering?",
+    eventPlatformsHeading: "Platforms (optional)",
+    eventPlatformsEditHint: "Tap to add or remove platforms (up to 3).",
+    eventPlatformsLocked: "Platforms can't change once creators have applied.",
+    eventPlatformsHint: "AI suggested — tap to add or remove platforms (up to 3).",
     exchangeHeading: 'What do you want in return?',
     expectedContentLabel: 'Content details',
     expectedContentPlaceholder: "Any specifics — angle, hashtags, what to feature…",
@@ -1157,6 +1161,7 @@ export const en = {
   },
 
   auth: {
+    accountSuspended: 'Your account has been suspended by an admin. Please contact support if you believe this is a mistake.',
     // Brand panel
     brandHeadline: 'Nepal’s creator marketplace, now on the web.',
     brandPoint1: 'Get discovered by brands and apply to campaigns.',

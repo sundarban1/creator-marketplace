@@ -254,7 +254,7 @@ export const notificationService = {
     const byUser = new Map<string, typeof data[0]>();
     for (const d of data) byUser.set(d.userId, d);
     for (const [userId, d] of byUser.entries()) {
-      emitToUser(userId, 'notification:new', { userId });
+      emitToUser(userId, 'notification:new', { userId, type: d.type, refId: d.refId, refType: d.refType });
       void sendExpoPush(userId, d.title, d.body, 0, pushDeepLinkData(d));
     }
     return result;
