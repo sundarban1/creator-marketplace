@@ -49,6 +49,7 @@ import { Card, CardHeader } from '../ui/Card';
 import { StatCard } from '../ui/StatCard';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
+import { CoverInitials } from '../ui/CoverInitials';
 import { TextField } from '../ui/TextField';
 import { Textarea } from '../ui/Textarea';
 import { Skeleton } from '../ui/Skeleton';
@@ -210,6 +211,7 @@ export function BusinessProfilePage() {
             <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark">
               <span aria-hidden className="pointer-events-none absolute -right-10 -top-14 h-48 w-48 rounded-full bg-brand-orange/25 blur-3xl" />
               <span aria-hidden className="pointer-events-none absolute -bottom-10 left-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+              <CoverInitials name={p.businessName} />
             </div>
           )}
           <label

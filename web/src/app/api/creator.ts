@@ -627,6 +627,14 @@ export function createPortfolioItem(input: CreatePortfolioItemInput): Promise<Po
   return apiRequest<PortfolioItem>('POST', '/api/creator/portfolio-items', input).then((r) => r.data);
 }
 
+export type UpdatePortfolioItemInput = {
+  [K in keyof CreatePortfolioItemInput]?: CreatePortfolioItemInput[K] | null;
+};
+
+export function updatePortfolioItem(id: string, input: UpdatePortfolioItemInput): Promise<PortfolioItem> {
+  return apiRequest<PortfolioItem>('PUT', `/api/creator/portfolio-items/${id}`, input).then((r) => r.data);
+}
+
 export function deletePortfolioItem(id: string): Promise<void> {
   return apiRequest('DELETE', `/api/creator/portfolio-items/${id}`).then(() => undefined);
 }

@@ -1,4 +1,5 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { F } from '@/utilities/constants';
 
 /**
  * Profile cover ratio, shared with web (CreatorProfilePage / BusinessProfilePage
@@ -23,7 +24,34 @@ export function ProfileCoverImage({ uri, scrim = false }: { uri: string; scrim?:
   );
 }
 
+/** Up to two initials — "Sundar Ban" → "SB", "Kolab" → "K". */
+export function nameInitials(name: string | null | undefined): string {
+  return (name ?? '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+/**
+ * Fallback for a profile hero with no cover photo: the name's initials, large
+ * and translucent, centred in the strip of the cover left visible above the
+ * overlapping profile card (`visibleHeight`). Sits on the gradient fallback.
+ */
+export function CoverInitials({ name, visibleHeight }: { name: string | null | undefined; visibleHeight: number }) {
+  const text = nameInitials(name);
+  if (!text) return null;
+  return (
+    <View pointerEvents="none" style={[s.initialsWrap, { height: visibleHeight }]}>
+      <Text style={s.initials} numberOfLines={1} accessibilityElementsHidden importantForAccessibility="no">{text}</Text>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  initialsWrap: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' },
+  initials: { fontSize: 56, lineHeight: 68, letterSpacing: 6, fontFamily: F.bold, color: 'rgba(255,255,255,0.4)' },
   exact: { position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: COVER_ASPECT },
   scrim: { backgroundColor: 'rgba(0,0,0,0.28)' },
 });

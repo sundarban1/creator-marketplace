@@ -133,24 +133,26 @@ export function CreatorFollowerGrid({
   if (platformStats.length === 0) return null;
 
   return (
-    <div className="mt-auto grid grid-cols-2 gap-y-2 border-t border-line pt-3">
-      {platformStats.map(({ platform, followers }, i) => (
-        <span
-          key={platform}
-          className={cn(
-            'flex min-w-0 items-center gap-1.5 text-[12.5px]',
-            i % 2 === 1 && 'border-l border-line pl-3',
-          )}
-        >
-          <span className="flex-shrink-0">
-            <PlatformIcon platform={platform} size={14} />
+    <div className="mt-auto pt-4">
+      <div className="grid grid-cols-2 gap-y-2 border-t border-line pt-3">
+        {platformStats.map(({ platform, followers }, i) => (
+          <span
+            key={platform}
+            className={cn(
+              'flex min-w-0 items-center gap-1.5 text-[12.5px]',
+              i % 2 === 1 && 'border-l border-line pl-3',
+            )}
+          >
+            <span className="flex-shrink-0">
+              <PlatformIcon platform={platform} size={14} />
+            </span>
+            <span className="font-semibold text-ink">{compactNumber(followers)}</span>
+            <span className="truncate text-ink-soft">
+              {platform === 'youtube' ? t('public.subscribers') : t('public.followers')}
+            </span>
           </span>
-          <span className="font-semibold text-ink">{compactNumber(followers)}</span>
-          <span className="truncate text-ink-soft">
-            {platform === 'youtube' ? t('public.subscribers') : t('public.followers')}
-          </span>
-        </span>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

@@ -11,6 +11,14 @@
  */
 
 export const en = {
+  profileProgress: {
+    stepsDone: '{done} of {total} done',
+    msgStart: "Let's get you started — a few quick details go a long way.",
+    msgEarly: 'Great start! Keep going — every detail helps.',
+    msgMost: "Looking good — you're more than halfway there!",
+    msgLast: "So close! One last step and you're all set. 🎉",
+    progressLabel: 'Profile {pct}% complete',
+  },
   uploadPreview: {
     title: 'Preview',
     hint: 'Check your image before it uploads.',
@@ -552,6 +560,8 @@ export const en = {
     noInstagramPages: 'No Instagram Business account is linked to any of your Facebook Pages.',
     portfolioHeading: 'Portfolio',
     addPortfolio: 'Add work',
+    editPortfolio: 'Edit work',
+    savePortfolio: 'Save changes',
     portfolioPhoto: 'Photo',
     portfolioLink: 'Link',
     portfolioDescription: 'Description',

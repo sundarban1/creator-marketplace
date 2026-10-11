@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SearchInput } from '@/components/SearchInput';
 import { AttentionBanner } from '@/components/AttentionBanner';
+import { ProfileProgressCard } from '@/components/ProfileProgressCard';
 import { PromoBanner } from '@/components/PromoBanner';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -57,6 +58,9 @@ const TYPE_TAB_ORDER = ['All', 'Paid', 'Open'] as const;
 const NO_CAMPAIGNS: Campaign[] = [];
 const NO_PROVIDERS: ApiCreatorListItem[] = [];
 const NO_STRINGS: string[] = [];
+
+// Number of fields checked in `missingFields` — drives the profile progress bar.
+const PROFILE_FIELD_COUNT = 5;
 
 export default function BusinessHomeScreen() {
   const { user } = useAuth();
@@ -302,17 +306,13 @@ export default function BusinessHomeScreen() {
               style={{ marginHorizontal: 0, marginTop: 0 }}
             />
           ) : !bannerDismissed && missingFields.length > 0 && (
-            <AttentionBanner
+            <ProfileProgressCard
               icon="building"
               title={t('business.home.completeProfile')}
-              titleColor="#A0522D"
-              subtitleColor={C.text}
-              iconColor="#A0522D"
-              subtitle={t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
-              numberOfLines={2}
+              missing={missingFields}
+              total={PROFILE_FIELD_COUNT}
               onPress={() => router.push('/(business)/edit-profile' as never)}
               onDismiss={() => setBannerDismissed(true)}
-              style={{ marginHorizontal: 0, marginTop: 0 }}
             />
           )}
 

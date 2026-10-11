@@ -20,6 +20,7 @@ import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { AttentionBanner } from '../ui/AttentionBanner';
+import { ProfileProgressCard } from '../ui/ProfileProgressCard';
 import { StatusBadge } from '../ui/StatusBadge';
 import { EVENT_STATUS_TONE, eventStatusLabel } from './eventReviewStatus';
 import { Avatar } from '../ui/Avatar';
@@ -27,6 +28,9 @@ import { makeCategoryLookup } from '../public/categoryLookup';
 import { cn } from '../ui/cn';
 import { BizApplicationCard } from './BizApplicationCard';
 import { BizCreatorCard } from './BizCreatorCard';
+
+// Number of fields checked in `missingFields` below — drives the progress bar.
+const PROFILE_FIELD_COUNT = 5;
 
 export function BusinessDashboard() {
   const { user } = useAppAuth();
@@ -109,6 +113,8 @@ export function BusinessDashboard() {
     }
   };
 
+  const showProfileCard = needsAction.length === 0 && !profileBannerDismissed && missingFields.length > 0;
+
   const firstName = user?.name && !/^\+?\d+$/.test(user.name) ? user.name.split(' ')[0] : '';
   const hour = new Date().getHours();
   const greetingKey = hour < 12 ? 'biz.greetingMorning' : hour < 17 ? 'biz.greetingAfternoon' : 'biz.greetingEvening';
@@ -129,32 +135,38 @@ export function BusinessDashboard() {
 
       {/* Attention banner — at most one, then the primary CTA below it. */}
       <div className="mb-6 flex flex-col gap-3">
-        {needsAction.length > 0 ? (
+        {needsAction.length > 0 && (
           <AttentionBanner
             icon={AlertCircle}
             title={t('biz.actionNeeded')}
             subtitle={needsAction.length === 1 ? t('biz.actionNeededSingular') : t('biz.actionNeededPlural', { n: needsAction.length })}
             to="/business/applications"
           />
-        ) : (
-          !profileBannerDismissed &&
-          missingFields.length > 0 && (
-            <AttentionBanner
+        )}
+
+        {/* Profile progress + primary CTA share one equal-height row from
+            tablet width up; the CTA goes full width once the profile is done. */}
+        <div className={cn('grid gap-3', showProfileCard && 'md:grid-cols-2')}>
+          {showProfileCard && (
+            <ProfileProgressCard
               icon={Building2}
+              done={PROFILE_FIELD_COUNT - missingFields.length}
+              total={PROFILE_FIELD_COUNT}
               title={t('biz.completeProfileTitle')}
               subtitle={t('biz.completeProfileSubtitle', { fields: missingFields.join(' · ') })}
               to="/business/profile"
               onDismiss={() => setProfileBannerDismissed(true)}
             />
-          )
-        )}
-
-        <DashboardHero
-          title={t('biz.ctaTitle')}
-          subtitle={t('biz.ctaSubtitle')}
-          ctaLabel={t('biz.ctaBtn')}
-          to="/business/events/create"
-        />
+          )}
+          <DashboardHero
+            plain
+            className={showProfileCard ? 'h-full md:flex-col md:items-start md:justify-between md:p-6' : undefined}
+            title={t('biz.ctaTitle')}
+            subtitle={t('biz.ctaSubtitle')}
+            ctaLabel={t('biz.ctaBtn')}
+            to="/business/events/create"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

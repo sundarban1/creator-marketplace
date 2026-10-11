@@ -24,10 +24,10 @@ export function AttentionBanner({
   className?: string;
 }) {
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative h-full', className)}>
       <Link
         to={to}
-        className="flex items-start gap-3 rounded-2xl border border-warning/25 bg-warning-soft/50 p-4 pr-9 transition-colors hover:border-warning/40"
+        className="flex h-full items-start gap-3 rounded-2xl border border-warning/25 bg-warning-soft/50 p-4 pr-9 transition-colors hover:border-warning/40"
       >
         <span className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
           <Icon size={17} strokeWidth={2.25} />

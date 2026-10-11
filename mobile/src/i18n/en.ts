@@ -1,4 +1,13 @@
 const en = {
+  profileProgress: {
+    stepsDone: '{{done}} of {{total}} done',
+    msgStart: "Let's get you started — a few quick details go a long way.",
+    msgEarly: 'Great start! Keep going — every detail helps.',
+    msgMost: "Looking good — you're more than halfway there!",
+    msgLast: "So close! One last step and you're all set. 🎉",
+    progressLabel: 'Profile {{pct}}% complete',
+    stillToAdd: 'Still to add',
+  },
   eventReview: {
     statusPending: 'Pending review',
     statusChanges: 'Changes requested',

@@ -8,6 +8,14 @@
 import type { AppDict } from './en';
 
 export const ne: AppDict = {
+  profileProgress: {
+    stepsDone: '{total} मध्ये {done} पूरा',
+    msgStart: 'सुरु गरौं — केही छोटा विवरणले ठूलो फरक पार्छ।',
+    msgEarly: 'राम्रो सुरुवात! अगाडि बढ्नुहोस् — हरेक विवरणले मद्दत गर्छ।',
+    msgMost: 'राम्रो छ — तपाईं आधाभन्दा बढी पुगिसक्नुभयो!',
+    msgLast: 'झन्डै पुग्नुभयो! एउटा मात्र बाँकी छ। 🎉',
+    progressLabel: 'प्रोफाइल {pct}% पूरा',
+  },
   uploadPreview: {
     title: 'पूर्वावलोकन',
     hint: 'अपलोड गर्नु अघि तस्बिर जाँच गर्नुहोस्।',
@@ -528,6 +536,8 @@ export const ne: AppDict = {
     noInstagramPages: 'तपाईंको कुनै पनि Facebook पेजमा Instagram Business खाता जोडिएको छैन।',
     portfolioHeading: 'पोर्टफोलियो',
     addPortfolio: 'काम थप्नुहोस्',
+    editPortfolio: 'काम सम्पादन गर्नुहोस्',
+    savePortfolio: 'परिवर्तन सुरक्षित गर्नुहोस्',
     portfolioPhoto: 'फोटो',
     portfolioLink: 'लिंक',
     portfolioDescription: 'विवरण',

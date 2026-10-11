@@ -32,7 +32,13 @@ export class PortfolioService {
   }
 
   async update(userId: string, itemId: string, input: UpdatePortfolioItemInput) {
-    await this.findOwned(userId, itemId);
+    const item = await this.findOwned(userId, itemId);
+    // An item must keep a photo or a link after the edit (same rule as create).
+    const mediaUrl = input.mediaUrl === undefined ? item.mediaUrl : input.mediaUrl;
+    const externalUrl = input.externalUrl === undefined ? item.externalUrl : input.externalUrl;
+    if (!mediaUrl && !externalUrl) {
+      throw new AppError('Either mediaUrl or externalUrl is required', HttpStatus.BAD_REQUEST);
+    }
     return this.repo.update(itemId, input);
   }
 

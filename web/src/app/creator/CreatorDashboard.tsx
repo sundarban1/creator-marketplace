@@ -20,6 +20,7 @@ import { DashboardHero } from '../ui/DashboardHero';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { AttentionBanner } from '../ui/AttentionBanner';
+import { ProfileProgressCard } from '../ui/ProfileProgressCard';
 import { DashCard, DashCardHeader } from './dash-ui/DashCard';
 import { DashStatCard } from './dash-ui/DashStatCard';
 import { DashApplicationCard } from './dash-ui/DashApplicationCard';
@@ -30,6 +31,9 @@ import { DashEventCard } from './dash-ui/DashEventCard';
 // derivation (start work once escrow is funded, submit once it's underway).
 const START_WORK_STATES = new Set(['ESCROW_FUNDED']);
 const SUBMIT_WORK_STATES = new Set(['IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE']);
+
+// Number of fields checked in `missingFields` below — drives the progress bar.
+const PROFILE_FIELD_COUNT = 5;
 
 export function CreatorDashboard() {
   const { user } = useAppAuth();
@@ -85,6 +89,8 @@ export function CreatorDashboard() {
     );
   }, [apps.data]);
 
+  const showProfileCard = pendingActions.length === 0 && !profileBannerDismissed && missingFields.length > 0;
+
   const firstName = user?.name && !/^\+?\d+$/.test(user.name) ? user.name.split(' ')[0] : '';
   const hour = new Date().getHours();
   const greetingKey = hour < 12 ? 'dashboard.greetingMorning' : hour < 17 ? 'dashboard.greetingAfternoon' : 'dashboard.greetingEvening';
@@ -97,7 +103,7 @@ export function CreatorDashboard() {
 
       {/* Attention banner — at most one, then the primary CTA below it. */}
       <div className="mb-6 flex flex-col gap-3">
-        {pendingActions.length > 0 ? (
+        {pendingActions.length > 0 && (
           <AttentionBanner
             icon={AlertCircle}
             title={t('dashboard.actionNeeded')}
@@ -110,25 +116,31 @@ export function CreatorDashboard() {
             }
             to="/creator/work"
           />
-        ) : (
-          !profileBannerDismissed &&
-          missingFields.length > 0 && (
-            <AttentionBanner
+        )}
+
+        {/* Profile progress + primary CTA share one equal-height row from
+            tablet width up; the CTA goes full width once the profile is done. */}
+        <div className={cn('grid gap-3', showProfileCard && 'md:grid-cols-2')}>
+          {showProfileCard && (
+            <ProfileProgressCard
               icon={UserRound}
+              done={PROFILE_FIELD_COUNT - missingFields.length}
+              total={PROFILE_FIELD_COUNT}
               title={t('dashboard.completeProfileTitle')}
               subtitle={t('dashboard.completeProfileSubtitle', { fields: missingFields.join(' · ') })}
               to="/creator/profile"
               onDismiss={() => setProfileBannerDismissed(true)}
             />
-          )
-        )}
-
-        <DashboardHero
-          title={t('dashboard.ctaTitle')}
-          subtitle={t('dashboard.ctaSubtitle')}
-          ctaLabel={t('dashboard.ctaBtn')}
-          to="/creator/events"
-        />
+          )}
+          <DashboardHero
+            plain
+            className={showProfileCard ? 'h-full md:flex-col md:items-start md:justify-between md:p-6' : undefined}
+            title={t('dashboard.ctaTitle')}
+            subtitle={t('dashboard.ctaSubtitle')}
+            ctaLabel={t('dashboard.ctaBtn')}
+            to="/creator/events"
+          />
+        </div>
 
         {/* Meetup CTA — every city-facing string comes from the meetup record
             itself (title/city), never hard-coded, so a second city opening

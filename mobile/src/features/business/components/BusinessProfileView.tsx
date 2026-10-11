@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ProfileCoverImage } from '@/components/ProfileCoverImage';
+import { CoverInitials, ProfileCoverImage } from '@/components/ProfileCoverImage';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
@@ -80,7 +80,7 @@ function daysLeft(iso: string): { text: string; urgent: boolean } {
   return { text: new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), urgent: false };
 }
 
-function HeroCover({ coverUri, topBar }: { coverUri: string | null; topBar?: React.ReactNode }) {
+function HeroCover({ coverUri, topBar, name }: { coverUri: string | null; topBar?: React.ReactNode; name?: string | null }) {
   return (
     <View style={styles.cover}>
       {coverUri ? (
@@ -93,6 +93,8 @@ function HeroCover({ coverUri, topBar }: { coverUri: string | null; topBar?: Rea
           <View style={[styles.bubble, styles.bubble1]} />
           <View style={[styles.bubble, styles.bubble2]} />
           <View style={[styles.bubble, styles.bubble3]} />
+          {/* 180 cover − 60 card overlap = the strip left visible. */}
+          <CoverInitials name={name} visibleHeight={120} />
         </LinearGradient>
       )}
       <View style={styles.topBar}>{topBar}</View>
@@ -383,7 +385,7 @@ export function BusinessProfileView({
   if (!isOwner && isPrivate) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={edges}>
-        <HeroCover coverUri={coverUri} topBar={backTopBar} />
+        <HeroCover coverUri={coverUri} topBar={backTopBar} name={vm.name} />
         <MaxWidthContainer>
           <View style={[styles.profileCard, { backgroundColor: C.surface }]}>
             <View style={styles.avatarArea}>
@@ -452,6 +454,7 @@ export function BusinessProfileView({
 
         <HeroCover
           coverUri={coverUri}
+          name={vm.name}
           topBar={
             isOwner ? (
               <Pressable

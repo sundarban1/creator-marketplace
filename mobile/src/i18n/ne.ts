@@ -1,4 +1,13 @@
 const ne = {
+  profileProgress: {
+    stepsDone: '{{total}} मध्ये {{done}} पूरा',
+    msgStart: 'सुरु गरौं — केही छोटा विवरणले ठूलो फरक पार्छ।',
+    msgEarly: 'राम्रो सुरुवात! अगाडि बढ्नुहोस् — हरेक विवरणले मद्दत गर्छ।',
+    msgMost: 'राम्रो छ — तपाईं आधाभन्दा बढी पुगिसक्नुभयो!',
+    msgLast: 'झन्डै पुग्नुभयो! एउटा मात्र बाँकी छ। 🎉',
+    progressLabel: 'प्रोफाइल {{pct}}% पूरा',
+    stillToAdd: 'थप्न बाँकी',
+  },
   eventReview: {
     statusPending: 'समीक्षा बाँकी',
     statusChanges: 'परिवर्तन अनुरोध गरिएको',

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ProfileCoverImage } from '@/components/ProfileCoverImage';
+import { CoverInitials, ProfileCoverImage } from '@/components/ProfileCoverImage';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
@@ -98,7 +98,7 @@ const PRICING_LABEL_KEY: Record<ApiPublicService['pricingModel'], string> = {
   PER_PROJECT: 'PerProject', PER_HOUR: 'PerHour', PER_DAY: 'PerDay', PER_CAMPAIGN: 'PerCampaign', CUSTOM_QUOTE: 'CustomQuote',
 };
 
-function HeroCover({ coverUri, topBar }: { coverUri: string | null; topBar?: React.ReactNode }) {
+function HeroCover({ coverUri, topBar, name }: { coverUri: string | null; topBar?: React.ReactNode; name?: string | null }) {
   return (
     <View style={styles.cover}>
       {coverUri ? (
@@ -111,6 +111,8 @@ function HeroCover({ coverUri, topBar }: { coverUri: string | null; topBar?: Rea
           <View style={[styles.bubble, styles.bubble1]} />
           <View style={[styles.bubble, styles.bubble2]} />
           <View style={[styles.bubble, styles.bubble3]} />
+          {/* 180 cover − 60 card overlap = the strip left visible. */}
+          <CoverInitials name={name} visibleHeight={120} />
         </LinearGradient>
       )}
       <View style={styles.topBar}>{topBar}</View>
@@ -450,6 +452,7 @@ export function CreatorProfileView({
 
         <HeroCover
           coverUri={coverUri}
+          name={vm.fullName ?? vm.username}
           topBar={
             isOwner ? (
               <IconButton

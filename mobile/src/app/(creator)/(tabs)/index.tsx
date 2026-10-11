@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SearchInput } from '@/components/SearchInput';
 import { AttentionBanner } from '@/components/AttentionBanner';
+import { ProfileProgressCard } from '@/components/ProfileProgressCard';
 import { PromoBanner } from '@/components/PromoBanner';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -54,6 +55,9 @@ type WorkItem = Awaited<ReturnType<typeof campaignService.getMyApplications>>['p
 const NO_PROPOSALS: WorkItem[] = [];
 const NO_CAMPAIGNS: Campaign[] = [];
 const NO_MEMBERS: ApiProviderMember[] = [];
+
+// Number of fields checked in `missingFields` — drives the profile progress bar.
+const PROFILE_FIELD_COUNT = 5;
 
 export default function HomeScreen() {
   const C = useAppColors();
@@ -352,16 +356,13 @@ export default function HomeScreen() {
                 style={{ marginHorizontal: 0, marginTop: 0 }}
               />
             ) : !bannerDismissed && missingFields.length > 0 && (
-              <AttentionBanner
+              <ProfileProgressCard
                 icon="user"
                 title={t('creator.home.completeProfile')}
-                titleColor="#A0522D"
-                iconColor="#A0522D"
-                subtitleColor={C.text}
-                subtitle={t('creator.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
+                missing={missingFields}
+                total={PROFILE_FIELD_COUNT}
                 onPress={() => router.push('/(creator)/(tabs)/profile')}
                 onDismiss={() => setBannerDismissed(true)}
-                style={{ marginHorizontal: 0, marginTop: 0 }}
               />
             )}
 

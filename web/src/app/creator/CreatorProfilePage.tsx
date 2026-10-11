@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Trash2, Sparkles, Image as ImageIcon, Link2, X, Clock } from 'lucide-react';
+import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Pencil, Trash2, Sparkles, Image as ImageIcon, Link2, X, Clock } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -29,6 +29,8 @@ import {
   uploadPortfolioMedia,
   createPortfolioItem,
   deletePortfolioItem,
+  updatePortfolioItem,
+  type PortfolioItem,
   type CreatorFullProfile,
   type CreatorSocialAccount,
   type FacebookPageOption,
@@ -41,6 +43,7 @@ import { DashCard, DashCardHeader } from './dash-ui/DashCard';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/Alert';
 import { Avatar } from '../ui/Avatar';
+import { CoverInitials } from '../ui/CoverInitials';
 import { StatCard } from '../ui/StatCard';
 import { TextField } from '../ui/TextField';
 import { Textarea } from '../ui/Textarea';
@@ -84,6 +87,7 @@ export function CreatorProfilePage() {
   const [searchParams] = useSearchParams();
   const [socialModal, setSocialModal] = useState(() => searchParams.get('connect') === 'social');
   const [portfolioModal, setPortfolioModal] = useState(false);
+  const [editingPortfolio, setEditingPortfolio] = useState<PortfolioItem | null>(null);
   const [nicheModal, setNicheModal] = useState(false);
   const [bioGenerating, setBioGenerating] = useState(false);
   const [avatarCropSrc, setAvatarCropSrc] = useState<string | null>(null);
@@ -218,7 +222,10 @@ export function CreatorProfilePage() {
           {p.coverImageUrl ? (
             <img src={p.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
-            <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-dash-pink/30 blur-3xl" />
+            <>
+              <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-dash-pink/30 blur-3xl" />
+              <CoverInitials name={p.fullName} />
+            </>
           )}
           <label
             className={cn(
@@ -382,7 +389,10 @@ export function CreatorProfilePage() {
             title={t('profile.portfolioHeading')}
             action={
               <button
-                onClick={() => setPortfolioModal(true)}
+                onClick={() => {
+                  setEditingPortfolio(null);
+                  setPortfolioModal(true);
+                }}
                 className="inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark hover:underline"
               >
                 <Plus size={13} />
@@ -421,6 +431,16 @@ export function CreatorProfilePage() {
                       </a>
                     )}
                   </div>
+                  <button
+                    onClick={() => {
+                      setEditingPortfolio(item);
+                      setPortfolioModal(true);
+                    }}
+                    className="rounded-lg p-1.5 text-ink-soft hover:text-violet-dark"
+                    aria-label={t('profile.editPortfolio')}
+                  >
+                    <Pencil size={14} />
+                  </button>
                   <button
                     onClick={async () => {
                       if (!(await confirmDialog({ title: t('profile.confirmRemove'), confirmLabel: t('profile.remove') }))) return;
@@ -497,6 +517,7 @@ export function CreatorProfilePage() {
       />
       <AddPortfolioModal
         open={portfolioModal}
+        item={editingPortfolio}
         onClose={() => setPortfolioModal(false)}
         onDone={() => {
           setPortfolioModal(false);
@@ -795,8 +816,19 @@ function ConnectSocialModal({
 
 type PortfolioTab = 'photo' | 'link';
 
-/** Photo OR link + description — same shape as the mobile portfolio-item form. */
-function AddPortfolioModal({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+/** Photo OR link + description — same shape as the mobile portfolio-item form.
+ *  Pass `item` to edit an existing entry instead of adding a new one. */
+function AddPortfolioModal({
+  open,
+  item,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  item?: PortfolioItem | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const t = useT();
   const [tab, setTab] = useState<PortfolioTab>('photo');
   const [mediaUrl, setMediaUrl] = useState('');
@@ -814,10 +846,10 @@ function AddPortfolioModal({ open, onClose, onDone }: { open: boolean; onClose: 
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setTab('photo');
-      setMediaUrl('');
-      setExternalUrl('');
-      setDescription('');
+      setTab(item && !item.mediaUrl && item.externalUrl ? 'link' : 'photo');
+      setMediaUrl(item?.mediaUrl ?? '');
+      setExternalUrl(item?.externalUrl ?? '');
+      setDescription(item?.description ?? '');
       setError('');
     }
   }
@@ -845,12 +877,21 @@ function AddPortfolioModal({ open, onClose, onDone }: { open: boolean; onClose: 
     setBusy(true);
     setError('');
     try {
-      await createPortfolioItem({
-        mediaUrl: mediaUrl || undefined,
-        mediaType: mediaUrl ? 'IMAGE' : undefined,
-        externalUrl: externalUrl.trim() || undefined,
-        description: description.trim() || undefined,
-      });
+      if (item) {
+        await updatePortfolioItem(item.id, {
+          mediaUrl: mediaUrl || null,
+          mediaType: mediaUrl ? (item.mediaUrl === mediaUrl ? item.mediaType ?? 'IMAGE' : 'IMAGE') : null,
+          externalUrl: externalUrl.trim() || null,
+          description: description.trim() || null,
+        });
+      } else {
+        await createPortfolioItem({
+          mediaUrl: mediaUrl || undefined,
+          mediaType: mediaUrl ? 'IMAGE' : undefined,
+          externalUrl: externalUrl.trim() || undefined,
+          description: description.trim() || undefined,
+        });
+      }
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.somethingWrong'));
@@ -860,7 +901,7 @@ function AddPortfolioModal({ open, onClose, onDone }: { open: boolean; onClose: 
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={t('profile.addPortfolio')}>
+    <Modal open={open} onClose={onClose} title={item ? t('profile.editPortfolio') : t('profile.addPortfolio')}>
       <form onSubmit={submit} className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
 
@@ -943,7 +984,7 @@ function AddPortfolioModal({ open, onClose, onDone }: { open: boolean; onClose: 
             {t('common.cancel')}
           </Button>
           <Button type="submit" loading={busy} disabled={uploading}>
-            {t('profile.addPortfolio')}
+            {item ? t('profile.savePortfolio') : t('profile.addPortfolio')}
           </Button>
         </div>
       </form>

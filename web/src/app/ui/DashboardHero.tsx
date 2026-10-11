@@ -15,12 +15,15 @@ export function DashboardHero({
   subtitle,
   ctaLabel,
   to,
+  plain = false,
   className,
 }: {
   title: string;
   subtitle: string;
   ctaLabel: string;
   to: string;
+  /** Flat white surface — no brand tint or decorative blobs. */
+  plain?: boolean;
   className?: string;
 }) {
   return (
@@ -28,17 +31,22 @@ export function DashboardHero({
       to={to}
       className={cn(
         'app-card group relative flex flex-col gap-4 overflow-hidden rounded-[24px] border border-line bg-gradient-to-br from-brand/[0.12] via-surface to-surface p-6 transition-shadow duration-200 hover:shadow-[0_24px_60px_-28px_var(--app-glow)] sm:flex-row sm:items-center sm:justify-between sm:p-8',
+        plain && 'bg-surface bg-none',
         className,
       )}
     >
-      <div
-        className="mesh-blob float-slow pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full bg-brand/20 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="mesh-blob pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-lp-orange/15 blur-3xl"
-        aria-hidden
-      />
+      {!plain && (
+        <>
+          <div
+            className="mesh-blob float-slow pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full bg-brand/20 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="mesh-blob pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-lp-orange/15 blur-3xl"
+            aria-hidden
+          />
+        </>
+      )}
       <div className="relative min-w-0">
         <p className="lp-display text-[1.5rem] leading-snug text-ink">{title}</p>
         <p className="mt-1.5 max-w-md text-[14px] font-light leading-relaxed text-ink-soft">{subtitle}</p>
