@@ -59,6 +59,7 @@ function Tile({
   onRetry,
   onDownload,
   removeLabel,
+  hideMeta,
 }: {
   name: string;
   url: string;
@@ -71,6 +72,8 @@ function Tile({
   onRetry?: () => void;
   onDownload?: () => void;
   removeLabel: string;
+  // Read-only grids show just the tile — no file name / size caption.
+  hideMeta?: boolean;
 }) {
   const t = useT();
   const uploading = progress !== undefined && !error;
@@ -140,10 +143,14 @@ function Tile({
           </button>
         )}
       </div>
-      <p className="mt-1 truncate text-[12px] font-medium text-ink" title={name}>{name}</p>
-      <p className="text-[11px] text-ink-soft">
-        {uploading ? t('biz.attachmentsUploadingPct', { pct: Math.round((progress ?? 0) * 100) }) : fmtSize(sizeBytes)}
-      </p>
+      {!hideMeta && (
+        <>
+          <p className="mt-1 truncate text-[12px] font-medium text-ink" title={name}>{name}</p>
+          <p className="text-[11px] text-ink-soft">
+            {uploading ? t('biz.attachmentsUploadingPct', { pct: Math.round((progress ?? 0) * 100) }) : fmtSize(sizeBytes)}
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -363,6 +370,7 @@ export function EventAttachmentsView({ attachments }: { attachments?: CampaignAt
             onOpen={() => setViewer(i)}
             onDownload={() => void downloadFile(a.url, a.name)}
             removeLabel={t('biz.attachmentsRemove', { name: a.name })}
+            hideMeta
           />
         ))}
       </div>

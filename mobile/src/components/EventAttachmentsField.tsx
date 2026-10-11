@@ -199,8 +199,13 @@ export function EventAttachmentsField(props: Props) {
                   label={t('eventAttachments.downloadA11y', { name: a.name })}
                 />
               )}
-              <Text style={[st.name, { color: C.text }]} numberOfLines={1}>{a.name}</Text>
-              {!!a.sizeBytes && <Text style={[st.meta, { color: C.textPlaceholder }]}>{fmtSize(a.sizeBytes)}</Text>}
+              {/* Read-only grid shows just the tile — no file name / size caption. */}
+              {mode === 'edit' ? (
+                <>
+                  <Text style={[st.name, { color: C.text }]} numberOfLines={1}>{a.name}</Text>
+                  {!!a.sizeBytes && <Text style={[st.meta, { color: C.textPlaceholder }]}>{fmtSize(a.sizeBytes)}</Text>}
+                </>
+              ) : null}
             </View>
           );
         })}
