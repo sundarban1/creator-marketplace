@@ -5,7 +5,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 import { isDevice } from 'expo-device';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
-import { API_BASE, assertOnline, fetchWithTimeout, getApiLanguage, UPLOAD_TIMEOUT_MS } from '@/lib/api';
+import { API_BASE, assertOnline, fetchWithTimeout, getApiLanguage, UPLOAD_TIMEOUT_MS, ApiError } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 import { showPermissionDeniedAlert } from '@/utilities/permissionAlert';
@@ -193,7 +193,7 @@ async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTa
   }, UPLOAD_TIMEOUT_MS);
 
   const json = (text ? JSON.parse(text) : {}) as { success: boolean; data: Record<string, string>; message?: string };
-  if (!res.ok) throw new Error(json.message ?? 'Upload failed');
+  if (!res.ok) throw new ApiError(json.message ?? 'Upload failed', res.status);
 
   return {
     url: json.data.avatarUrl ?? json.data.coverImageUrl ?? json.data.logoUrl ?? json.data.docUrl ?? json.data.imageUrl ?? '',

@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorMessage';
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Search } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
@@ -112,7 +113,7 @@ export function FAQManager() {
   const [showModal, setShowModal]     = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<HelpArticle | null>(null);
   const [saving, setSaving]       = useState(false);
-  const [toast, setToast]         = useState('');
+  const [toast, setToast]         = useState<{ msg: string; error: boolean } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -123,7 +124,7 @@ export function FAQManager() {
 
   useEffect(() => { void load(); }, []);
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 2800); }
+  function showToast(msg: string, error = false) { setToast({ msg, error }); setTimeout(() => setToast(null), 2800); }
 
   async function handleSave(form: typeof EMPTY_FORM) {
     setSaving(true);
@@ -131,13 +132,13 @@ export function FAQManager() {
       if (editTarget?.id) { await api.faq.update(editTarget.id, form); showToast('FAQ updated'); }
       else { await api.faq.create(form); showToast('FAQ created'); }
       setShowModal(false); setEditTarget(null); await load();
-    } catch (err) { showToast((err as Error).message ?? 'Something went wrong'); }
+    } catch (err) { showToast(errorText(err, 'Could not save the FAQ'), true); }
     finally { setSaving(false); }
   }
 
   async function handleDelete(id: string) {
     try { await api.faq.delete(id); setFaqs((prev) => prev.filter((a) => a.id !== id)); showToast('FAQ deleted'); }
-    catch { showToast('Failed to delete'); }
+    catch (err) { showToast(errorText(err, 'Failed to delete'), true); }
     finally { setDeleteTarget(null); }
   }
 
@@ -145,7 +146,7 @@ export function FAQManager() {
     const next = !faq.published;
     setFaqs((prev) => prev.map((a) => a.id === faq.id ? { ...a, published: next } : a));
     try { await api.faq.togglePublish(faq.id, next); showToast(next ? 'FAQ published' : 'FAQ unpublished'); }
-    catch { setFaqs((prev) => prev.map((a) => a.id === faq.id ? { ...a, published: faq.published } : a)); showToast('Failed to update'); }
+    catch (err) { setFaqs((prev) => prev.map((a) => a.id === faq.id ? { ...a, published: faq.published } : a)); showToast(errorText(err, 'Failed to update'), true); }
   }
 
   const categories = ['All', ...CATEGORIES];
@@ -225,7 +226,7 @@ export function FAQManager() {
 
       {showModal && <FaqModal initial={editTarget} onSave={handleSave} onClose={() => { setShowModal(false); setEditTarget(null); }} saving={saving} />}
       {deleteTarget && <DeleteModal question={deleteTarget.question} onConfirm={() => handleDelete(deleteTarget.id)} onCancel={() => setDeleteTarget(null)} />}
-      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">{toast}</div>}
+      {toast && <div role={toast.error ? 'alert' : 'status'} className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ${toast.error ? 'bg-red-600' : 'bg-gray-900'} text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg`}>{toast.msg}</div>}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/api';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -140,8 +141,8 @@ export default function WalletScreen() {
               await queryClient.invalidateQueries({ queryKey: ['wallet', 'transactions'] });
               toast.success(t('wallet.withdrawalCancelled'));
               void withdrawal;
-            } catch {
-              toast.error(t('wallet.cancelWithdrawalFailed'));
+            } catch (e) {
+              toast.error(errorText(e, t('wallet.cancelWithdrawalFailed')));
             } finally {
               setCancellingId(null);
             }

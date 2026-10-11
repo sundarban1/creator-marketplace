@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/api';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -407,8 +408,8 @@ export default function BusinessSettingsScreen() {
         setServerVerificationStatus('PENDING');
         showToast(t('businessSettings.uploadSuccessToast'));
       }
-    } catch {
-      showToast(t('businessSettings.uploadFailedToast'));
+    } catch (e) {
+      toast.error(errorText(e, t('businessSettings.uploadFailedToast')));
     } finally {
       setIdentityUploading(false);
     }
@@ -422,8 +423,8 @@ export default function BusinessSettingsScreen() {
         setPanDocStatus(result.status ?? 'PENDING');
         showToast(t('businessSettings.uploadSuccessToast'));
       }
-    } catch {
-      toast.error(t('businessSettings.uploadFailedToast'));
+    } catch (e) {
+      toast.error(errorText(e, t('businessSettings.uploadFailedToast')));
     } finally {
       setPanUploading(false);
     }
@@ -437,8 +438,8 @@ export default function BusinessSettingsScreen() {
         setCompanyRegDocStatus(result.status ?? 'PENDING');
         showToast(t('businessSettings.uploadSuccessToast'));
       }
-    } catch {
-      toast.error(t('businessSettings.uploadFailedToast'));
+    } catch (e) {
+      toast.error(errorText(e, t('businessSettings.uploadFailedToast')));
     } finally {
       setCompanyRegUploading(false);
     }
@@ -634,7 +635,7 @@ export default function BusinessSettingsScreen() {
           await businessService.deleteSocialAccount(acct.id);
           setSocialAccounts((prev) => prev.filter((a) => a.id !== acct.id));
           showToast(t('businessSettings.socialRemovedToast'));
-        } catch { toast.error(t('businessSettings.socialRemoveFailed')); }
+        } catch (e) { toast.error(errorText(e, t('businessSettings.socialRemoveFailed'))); }
       },
     });
   }
@@ -763,7 +764,7 @@ export default function BusinessSettingsScreen() {
   ) {
     const next = arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
     setArr(next);
-    try { await save(next); } catch { toast.error(t('businessSettings.prefSaveFailed')); }
+    try { await save(next); } catch (e) { toast.error(errorText(e, t('businessSettings.prefSaveFailed'))); }
   }
 
   function toggleBizCategory(val: string) {
@@ -802,7 +803,7 @@ export default function BusinessSettingsScreen() {
       onConfirm: async () => {
         closeAppModal();
         try { await authService.deactivateAccount(); await forceLogout(); }
-        catch { toast.error(t('businessSettings.deactivateFailed')); }
+        catch (e) { toast.error(errorText(e, t('businessSettings.deactivateFailed'))); }
       },
     });
   }
@@ -817,7 +818,7 @@ export default function BusinessSettingsScreen() {
       onConfirm: async () => {
         closeAppModal();
         try { await authService.deleteAccount(); await forceLogout(); }
-        catch { toast.error(t('businessSettings.deleteFailed')); }
+        catch (e) { toast.error(errorText(e, t('businessSettings.deleteFailed'))); }
       },
     });
   }
@@ -925,8 +926,8 @@ export default function BusinessSettingsScreen() {
       setSupportTopic(''); setSupportMsg(''); setSupportAttachments([]);
       showToast(t('businessSettings.supportSentToast'));
       setSubPage(null);
-    } catch {
-      toast.error(t('businessSettings.supportSendFailed'));
+    } catch (e) {
+      toast.error(errorText(e, t('businessSettings.supportSendFailed')));
     }
   }
 
@@ -937,8 +938,8 @@ export default function BusinessSettingsScreen() {
       setReportType(''); setReportDesc(''); setReportAttachments([]);
       showToast(t('businessSettings.reportSentToast'));
       setSubPage(null);
-    } catch {
-      toast.error(t('businessSettings.reportSendFailed'));
+    } catch (e) {
+      toast.error(errorText(e, t('businessSettings.reportSendFailed')));
     }
   }
 
@@ -2118,8 +2119,8 @@ export default function BusinessSettingsScreen() {
   async function saveNotificationSettings(patch: { pushNotificationsEnabled?: boolean; emailNotificationsEnabled?: boolean }) {
     try {
       await notificationService.updateSettings(patch);
-    } catch {
-      toast.error(t('businessSettings.notifSaveFailed'));
+    } catch (e) {
+      toast.error(errorText(e, t('businessSettings.notifSaveFailed')));
     }
   }
 
@@ -2131,8 +2132,8 @@ export default function BusinessSettingsScreen() {
   }) {
     try {
       await businessService.updatePrivacy(patch);
-    } catch {
-      toast.error(t('businessSettings.privacySaveFailed'));
+    } catch (e) {
+      toast.error(errorText(e, t('businessSettings.privacySaveFailed')));
     }
   }
 

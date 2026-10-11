@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorMessage';
 import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Save, X } from 'lucide-react';
 import { api } from '../lib/api';
@@ -80,7 +81,7 @@ export function LegalEditor() {
       }
       closeModal();
     } catch (e: unknown) {
-      notify((e as Error).message ?? 'Save failed', false);
+      notify(errorText(e, 'Save failed'), false);
     } finally { setSaving(false); }
   }
 
@@ -88,7 +89,7 @@ export function LegalEditor() {
     try {
       const updated = await api.legal.togglePublish(s.id, !s.published);
       setSections((prev) => prev.map((x) => x.id === s.id ? updated.data as LegalSection : x));
-    } catch { notify('Toggle failed', false); }
+    } catch (e) { notify(errorText(e, 'Could not change publish status'), false); }
   }
 
   async function handleDelete() {
@@ -99,7 +100,7 @@ export function LegalEditor() {
       setSections((prev) => prev.filter((s) => s.id !== deleteTarget.id));
       setDeleteTarget(null);
       notify('Section deleted');
-    } catch { notify('Delete failed', false); }
+    } catch (e) { notify(errorText(e, 'Delete failed'), false); }
     finally { setDeleting(false); }
   }
 

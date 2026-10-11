@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorMessage';
 import { useEffect, useState } from 'react';
 import { Mail, Clock, CheckCircle, Search } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
@@ -71,10 +72,10 @@ export function GetInTouch() {
   const [loading, setLoading]           = useState(true);
   const [search, setSearch]             = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
-  const [toast, setToast]               = useState('');
+  const [toast, setToast]               = useState<{ msg: string; error: boolean } | null>(null);
   const [page, setPage]                 = useState(1);
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 2800); }
+  function showToast(msg: string, error = false) { setToast({ msg, error }); setTimeout(() => setToast(null), 2800); }
 
   useEffect(() => {
     api.support.listContacts({ guestOnly: true })
@@ -88,7 +89,7 @@ export function GetInTouch() {
       await api.support.updateContactStatus(id, status);
       setMessages((prev) => prev.map((m) => m.id === id ? { ...m, status } : m));
       showToast('Status updated');
-    } catch { showToast('Failed to update'); }
+    } catch (err) { showToast(errorText(err, 'Failed to update'), true); }
   }
 
   const filtered = messages.filter((m) =>
@@ -136,7 +137,7 @@ export function GetInTouch() {
         </>
       )}
 
-      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">{toast}</div>}
+      {toast && <div role={toast.error ? 'alert' : 'status'} className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ${toast.error ? 'bg-red-600' : 'bg-gray-900'} text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg`}>{toast.msg}</div>}
     </div>
   );
 }

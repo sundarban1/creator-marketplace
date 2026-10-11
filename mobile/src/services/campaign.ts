@@ -1,4 +1,4 @@
-import { request, API_BASE, ensureFreshAccessToken, getApiLanguage } from '@/lib/api';
+import { request, API_BASE, ensureFreshAccessToken, getApiLanguage, ApiError } from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign, EventQuestion } from '@/types';
 import type { CampaignAttachment, CampaignBrief } from '@/services/guidedCampaign';
@@ -358,7 +358,7 @@ async function uploadFileWithProgress<T>(
   }
 
   if (status >= 200 && status < 300 && json) return json.data;
-  throw new Error(json?.message ?? 'Upload failed');
+  throw new ApiError(json?.message ?? 'Upload failed', status);
 }
 
 // Review statuses (and expired) are never business-settable — the server owns

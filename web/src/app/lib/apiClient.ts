@@ -15,6 +15,7 @@
  * 401 -> refresh -> retry loop, mirroring mobile's `lib/api.ts` semantics
  * (response envelope, typed errors carrying the backend `code`).
  */
+import { errorMessageFrom } from '../../lib/errorMessage';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -284,8 +285,7 @@ async function parseError(res: Response): Promise<ApiError> {
   } catch {
     /* non-JSON error body */
   }
-  const message =
-    typeof body['message'] === 'string' ? (body['message'] as string) : `Request failed (${res.status})`;
+  const message = errorMessageFrom(body, res.status);
   const code = typeof body['code'] === 'string' ? (body['code'] as string) : undefined;
   const details = { ...body };
   delete details['message'];
@@ -437,7 +437,7 @@ export async function apiUploadWithProgress<T>(
 
   if (res.status < 200 || res.status >= 300) {
     const body = (res.body ?? {}) as Record<string, unknown>;
-    const message = typeof body['message'] === 'string' ? (body['message'] as string) : `Request failed (${res.status})`;
+    const message = errorMessageFrom(body, res.status);
     const code = typeof body['code'] === 'string' ? (body['code'] as string) : undefined;
     const details = { ...body };
     delete details['message'];

@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorMessage';
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Search, GripVertical } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
@@ -156,7 +157,7 @@ export function HelpCenter() {
   const [showModal, setShowModal]   = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<HelpArticle | null>(null);
   const [saving, setSaving]         = useState(false);
-  const [toast, setToast]           = useState('');
+  const [toast, setToast]           = useState<{ msg: string; error: boolean } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -172,9 +173,9 @@ export function HelpCenter() {
 
   useEffect(() => { void load(); }, []);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(''), 2800);
+  function showToast(msg: string, error = false) {
+    setToast({ msg, error });
+    setTimeout(() => setToast(null), 2800);
   }
 
   async function handleSave(form: typeof EMPTY_FORM) {
@@ -191,7 +192,7 @@ export function HelpCenter() {
       setEditTarget(null);
       await load();
     } catch (err) {
-      showToast((err as Error).message ?? 'Something went wrong');
+      showToast(errorText(err, 'Could not save the article'), true);
     } finally {
       setSaving(false);
     }
@@ -202,8 +203,8 @@ export function HelpCenter() {
       await api.help.delete(id);
       setArticles((prev) => prev.filter((a) => a.id !== id));
       showToast('Article deleted');
-    } catch {
-      showToast('Failed to delete');
+    } catch (err) {
+      showToast(errorText(err, 'Failed to delete'), true);
     } finally {
       setDeleteTarget(null);
     }
@@ -215,9 +216,9 @@ export function HelpCenter() {
     try {
       await api.help.togglePublish(article.id, next);
       showToast(next ? 'Article published' : 'Article unpublished');
-    } catch {
+    } catch (err) {
       setArticles((prev) => prev.map((a) => a.id === article.id ? { ...a, published: article.published } : a));
-      showToast('Failed to update');
+      showToast(errorText(err, 'Failed to update'), true);
     }
   }
 
@@ -366,8 +367,8 @@ export function HelpCenter() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
-          {toast}
+        <div role={toast.error ? 'alert' : 'status'} className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ${toast.error ? 'bg-red-600' : 'bg-gray-900'} text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg`}>
+          {toast.msg}
         </div>
       )}
     </div>

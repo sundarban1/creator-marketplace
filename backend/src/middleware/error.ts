@@ -1,11 +1,53 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodError } from 'zod';
+import { ZodError, type ZodIssue } from 'zod';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import multer from 'multer';
 import { reportToSentry, LogEvent } from '../config/observability';
 
 import { HttpStatus } from '../constants/httpStatus';
+
+
+// "businessName" / "brief.audience.ageMin" → "Business name" / "Age min".
+function fieldLabel(path: (string | number)[]): string {
+  const last = [...path].reverse().find((p) => typeof p === 'string') as string | undefined;
+  if (!last) return '';
+  const words = last.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+// Zod's built-in defaults ("Required", "Expected string, received number", …)
+// don't say which field they're about — name the field for those. Custom
+// messages from our schemas are already user-facing and pass through as-is.
+function zodIssueMessage(issue: ZodIssue): string {
+  const label = fieldLabel(issue.path);
+  if (issue.code === 'invalid_type') {
+    if (!label) return issue.message;
+    return issue.received === 'undefined' || issue.received === 'null' ? `${label} is required` : `${label} is invalid`;
+  }
+  if (label && /^(Required|Invalid( input)?)$/i.test(issue.message)) {
+    return /^Required$/i.test(issue.message) ? `${label} is required` : `${label} is invalid`;
+  }
+  return issue.message;
+}
+
+// Unique-constraint clash → plain words: "This email is already in use."
+// Compound/internal keys (userId_campaignId, …) get a neutral sentence rather
+// than leaking column names.
+function duplicateMessage(target: unknown): string {
+  const fields = Array.isArray(target) ? (target as string[]) : typeof target === 'string' ? [target] : [];
+  if (fields.length === 1 && !/id$/i.test(fields[0])) {
+    const label = fieldLabel([fields[0]]).toLowerCase();
+    return `This ${label} is already in use.`;
+  }
+  return 'This already exists.';
+}
+
+export function validationSummary(errors: { message: string }[]): string {
+  const unique = Array.from(new Set(errors.map((e) => e.message.trim()).filter(Boolean)));
+  if (!unique.length) return 'Please check the details you entered.';
+  return unique.slice(0, 3).map((m) => (/[.!?]$/.test(m) ? m : `${m}.`)).join(' ');
+}
 
 // req.log is normally always set by pinoHttp, but errors can originate before it
 // runs (e.g. a malformed body). Falls back to console so logging itself never throws
@@ -75,7 +117,7 @@ export function errorHandler(
   if (err instanceof SyntaxError && 'status' in err && (err as { status?: number }).status === 400 && 'body' in err) {
     res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
-      message: 'Malformed JSON in request body',
+      message: "We couldn't read that request. Please refresh the page and try again.",
     });
     return;
   }
@@ -84,11 +126,13 @@ export function errorHandler(
   if (err instanceof ZodError) {
     const formattedErrors = err.errors.map((e) => ({
       field: e.path.join('.'),
-      message: e.message,
+      message: zodIssueMessage(e),
     }));
+    // The top-level message is what clients show — make it the actual
+    // reason(s), never a bare "Validation failed".
     res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
       success: false,
-      message: 'Validation failed',
+      message: validationSummary(formattedErrors),
       errors: formattedErrors,
     });
     return;
@@ -116,10 +160,9 @@ export function errorHandler(
   // Prisma errors
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
-      const fields = (err.meta?.target as string[])?.join(', ') || 'field';
       res.status(HttpStatus.CONFLICT).json({
         success: false,
-        message: `A record with this ${fields} already exists`,
+        message: duplicateMessage(err.meta?.target),
       });
       return;
     }
@@ -127,7 +170,7 @@ export function errorHandler(
     if (err.code === 'P2025') {
       res.status(HttpStatus.NOT_FOUND).json({
         success: false,
-        message: 'Record not found',
+        message: 'This item no longer exists. Please refresh and try again.',
       });
       return;
     }
@@ -135,7 +178,7 @@ export function errorHandler(
     if (err.code === 'P2003') {
       res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
-        message: 'Related record not found',
+        message: 'Something this refers to no longer exists. Please refresh and try again.',
       });
       return;
     }
@@ -144,7 +187,7 @@ export function errorHandler(
   if (err instanceof Prisma.PrismaClientValidationError) {
     res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
-      message: 'Invalid data provided',
+      message: 'Some of the details sent were not valid. Please check them and try again.',
     });
     return;
   }
@@ -189,7 +232,7 @@ export function errorHandler(
     success: false,
     message:
       process.env.NODE_ENV === 'production'
-        ? 'An internal server error occurred'
+        ? 'Something went wrong on our side. Please try again in a moment.'
         : err.message,
   });
 }

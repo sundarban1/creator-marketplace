@@ -1,3 +1,4 @@
+import { errorText } from '../../lib/errorMessage';
 import { useState, type FormEvent } from 'react';
 import { Check, Copy, RotateCcw, Share2, Users } from 'lucide-react';
 import { useT } from '../i18n';
@@ -74,8 +75,8 @@ export function BusinessReferralsPage() {
       await resendBusinessReferral(id);
       toast.success(t('bizReferrals.resendSuccess'));
       overview.reload();
-    } catch {
-      toast.error(t('bizReferrals.resendError'));
+    } catch (err) {
+      toast.error(errorText(err, t('bizReferrals.resendError')));
     } finally {
       setResendingId(null);
     }

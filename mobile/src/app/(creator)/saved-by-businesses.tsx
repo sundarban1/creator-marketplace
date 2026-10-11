@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/api';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
@@ -108,8 +109,8 @@ export default function SavedByBusinessesScreen() {
     try {
       const isFavorited = await toggle(businessId);
       if (isFavorited) toast.success(t('explore.businesses.addedToFavorites'));
-    } catch {
-      toast.error(wasFavorited ? t('explore.businesses.couldNotRemoveFav') : t('explore.businesses.couldNotAddFav'));
+    } catch (e) {
+      toast.error(errorText(e, wasFavorited ? t('explore.businesses.couldNotRemoveFav') : t('explore.businesses.couldNotAddFav')));
     }
   }
 

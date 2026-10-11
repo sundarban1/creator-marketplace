@@ -1,3 +1,4 @@
+import { errorMessageFrom } from '../../../lib/errorMessage';
 // Deliberately separate from ../../../lib/api's `request()` helper — that one
 // is wired to the ADMIN login/refresh-token flow (Authorization: Bearer +
 // automatic token refresh on 401). An anonymous website visitor has no
@@ -38,7 +39,7 @@ async function request<T>(method: string, path: string, body?: unknown, visitorT
     body: body != null ? JSON.stringify(body) : undefined,
   });
   const json = (await res.json()) as ApiEnvelope<T>;
-  if (!res.ok) throw new Error(json.message ?? `Request failed (${res.status})`);
+  if (!res.ok) throw new Error(errorMessageFrom(json as unknown as Record<string, unknown>, res.status));
   return json.data;
 }
 

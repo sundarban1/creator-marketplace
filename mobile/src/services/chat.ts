@@ -1,4 +1,4 @@
-import { request, API_BASE, assertOnline, fetchWithTimeout, getApiLanguage, UPLOAD_TIMEOUT_MS } from '@/lib/api';
+import { request, API_BASE, assertOnline, fetchWithTimeout, getApiLanguage, UPLOAD_TIMEOUT_MS, ApiError } from '@/lib/api';
 import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -279,7 +279,7 @@ export const chatService = {
       body:    form,
     }, UPLOAD_TIMEOUT_MS);
     const json = (text ? JSON.parse(text) : {}) as { success: boolean; data: ApiMessage; message?: string };
-    if (!res.ok) throw new Error(json.message ?? 'Failed to send attachment');
+    if (!res.ok) throw new ApiError(json.message ?? 'Failed to send attachment', res.status);
     return toMessage(json.data);
   },
 

@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/api';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
@@ -36,8 +37,8 @@ export function ShortlistButton({ campaignId, size = 'md', style }: {
     try {
       const nowSaved = await toggle(campaignId);
       toast.success(nowSaved ? t('campaignCard.shortlistAdded') : t('campaignCard.shortlistRemoved'));
-    } catch {
-      toast.error(t('campaignCard.shortlistFailed'));
+    } catch (e) {
+      toast.error(errorText(e, t('campaignCard.shortlistFailed')));
     }
   }
 

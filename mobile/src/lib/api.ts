@@ -40,6 +40,18 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * What to show the user for a failed request: the server's specific reason
+ * (validation, business rule) when it sent one, the offline/timeout message,
+ * otherwise the screen's own fallback. Server faults (5xx) and unexpected JS
+ * errors fall back, so internals never leak into the UI.
+ */
+export function errorText(err: unknown, fallback: string): string {
+  if (err instanceof OfflineError || err instanceof RequestTimeoutError) return err.message;
+  if (err instanceof ApiError && err.status < 500 && err.message && !/^Request failed \(\d+\)$/.test(err.message)) return err.message;
+  return fallback;
+}
+
 export const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
 
 // ── Response envelope ──────────────────────────────────────────────────────────
@@ -558,9 +570,10 @@ export async function request<T>(
     }
 
     if (!res.ok) {
-      const fieldErrors = json.errors?.map((e) => e.message).join('. ');
+      // Per-field reasons beat a bare "Validation failed" — show what to fix.
+      const fieldErrors = Array.from(new Set((json.errors ?? []).map((e) => e.message?.trim()).filter(Boolean))).join('. ');
       throw new ApiError(
-        fieldErrors ?? json.message ?? `Request failed (${res.status})`,
+        fieldErrors || json.message || `Request failed (${res.status})`,
         res.status,
         json.code,
         json as unknown as Record<string, unknown>,

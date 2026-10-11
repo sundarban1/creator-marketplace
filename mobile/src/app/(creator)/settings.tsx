@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/api';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -358,8 +359,8 @@ export default function CreatorSettingsScreen() {
   async function saveNotificationSettings(patch: { pushNotificationsEnabled?: boolean; emailNotificationsEnabled?: boolean }) {
     try {
       await notificationService.updateSettings(patch);
-    } catch {
-      toast.error(t('creatorSettings.notifSaveFailed'));
+    } catch (e) {
+      toast.error(errorText(e, t('creatorSettings.notifSaveFailed')));
     }
   }
 
@@ -846,7 +847,7 @@ export default function CreatorSettingsScreen() {
           await creatorService.deleteSocialAccount(acct.id);
           setSocialAccounts((prev) => prev.filter((a) => a.id !== acct.id));
           showToast(t('creatorSettings.socialRemovedToast'));
-        } catch { showToast(t('creatorSettings.socialRemoveFailed'), true); }
+        } catch (e) { showToast(errorText(e, t('creatorSettings.socialRemoveFailed')), true); }
       },
     });
   }
@@ -926,7 +927,7 @@ export default function CreatorSettingsScreen() {
           const updated = await creatorService.removePortfolioLink(item.id);
           setPortfolio(updated.portfolioLinks);
           showToast(t('creatorSettings.pastWorkRemovedToast'));
-        } catch { showToast(t('creatorSettings.pastWorkRemoveFailed'), true); }
+        } catch (e) { showToast(errorText(e, t('creatorSettings.pastWorkRemoveFailed')), true); }
       },
     });
   }
@@ -962,8 +963,8 @@ export default function CreatorSettingsScreen() {
       setShowDeactivateModal(false);
       showToast(t('creatorSettings.deactivatedToast'));
       setTimeout(forceLogout, 1800);
-    } catch {
-      showToast(t('creatorSettings.deactivateFailed'));
+    } catch (e) {
+      showToast(errorText(e, t('creatorSettings.deactivateFailed')), true);
     } finally {
       setAccountActionLoading(false);
     }
@@ -976,8 +977,8 @@ export default function CreatorSettingsScreen() {
       setShowDeleteModal(false);
       showToast(t('creatorSettings.deletedToast'));
       setTimeout(forceLogout, 1800);
-    } catch {
-      showToast(t('creatorSettings.deleteFailed'));
+    } catch (e) {
+      showToast(errorText(e, t('creatorSettings.deleteFailed')), true);
     } finally {
       setAccountActionLoading(false);
     }
@@ -991,8 +992,8 @@ export default function CreatorSettingsScreen() {
       setSupportTopic(''); setSupportMsg(''); setSupportAttachments([]);
       showToast(t('creatorSettings.supportSentToast'));
       setSubPage(null);
-    } catch {
-      showToast(t('creatorSettings.supportSendFailed'), true);
+    } catch (e) {
+      showToast(errorText(e, t('creatorSettings.supportSendFailed')), true);
     } finally {
       setSupportSubmitting(false);
     }
@@ -1006,8 +1007,8 @@ export default function CreatorSettingsScreen() {
       setReportType(''); setReportDesc(''); setReportAttachments([]);
       showToast(t('creatorSettings.reportSentToast'));
       setSubPage(null);
-    } catch {
-      showToast(t('creatorSettings.reportSendFailed'), true);
+    } catch (e) {
+      showToast(errorText(e, t('creatorSettings.reportSendFailed')), true);
     } finally {
       setReportSubmitting(false);
     }
@@ -1902,8 +1903,8 @@ export default function CreatorSettingsScreen() {
   }) {
     try {
       await creatorService.updatePrivacy(patch);
-    } catch {
-      showToast(t('creatorSettings.privacySaveFailed'), true);
+    } catch (e) {
+      showToast(errorText(e, t('creatorSettings.privacySaveFailed')), true);
     }
   }
 
@@ -2019,8 +2020,8 @@ export default function CreatorSettingsScreen() {
           setCitizenshipStatus(result.status ?? 'PENDING');
           toast.success(t('creatorSettings.citizenshipUploadSuccess'));
         }
-      } catch {
-        toast.error(t('creatorSettings.citizenshipUploadFailed'));
+      } catch (e) {
+        toast.error(errorText(e, t('creatorSettings.citizenshipUploadFailed')));
       } finally {
         setCitizenshipUploading(false);
       }
@@ -2034,8 +2035,8 @@ export default function CreatorSettingsScreen() {
           setPanStatus(result.status ?? 'PENDING');
           toast.success(t('creatorSettings.panUploadSuccess'));
         }
-      } catch {
-        toast.error(t('creatorSettings.panUploadFailed'));
+      } catch (e) {
+        toast.error(errorText(e, t('creatorSettings.panUploadFailed')));
       } finally {
         setPanUploading(false);
       }
@@ -2490,8 +2491,8 @@ export default function CreatorSettingsScreen() {
       setProviderType(pendingProviderType);
       setPendingProviderType(null);
       showToast(t('creatorSettings.providerTypeChangedToast'));
-    } catch {
-      showToast(t('creatorSettings.providerTypeChangeFailed'), true);
+    } catch (e) {
+      showToast(errorText(e, t('creatorSettings.providerTypeChangeFailed')), true);
     } finally {
       setProviderTypeSaving(false);
     }

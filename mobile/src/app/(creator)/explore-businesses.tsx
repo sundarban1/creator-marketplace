@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/api';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
@@ -263,8 +264,8 @@ const ExploreBusinessesScreen = forwardRef<BusinessesExploreHandle, { embedded?:
       if (isFavorited) toast.success(t('explore.businesses.addedToFavorites'));
       // In the saved-only view, un-favouriting drops it from the list right
       // away — displayItems below filters out anything no longer in favoriteIds.
-    } catch {
-      toast.error(wasFavorited ? t('explore.businesses.couldNotRemoveFav') : t('explore.businesses.couldNotAddFav'));
+    } catch (e) {
+      toast.error(errorText(e, wasFavorited ? t('explore.businesses.couldNotRemoveFav') : t('explore.businesses.couldNotAddFav')));
     }
   }
 

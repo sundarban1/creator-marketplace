@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorMessage';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MessageSquare, AlertTriangle, Clock, CheckCircle, Search } from 'lucide-react';
@@ -142,10 +143,10 @@ export function SupportInbox() {
   const [loading, setLoading]               = useState(true);
   const [search, setSearch]                 = useState('');
   const [filterStatus, setFilterStatus]     = useState('ALL');
-  const [toast, setToast]                   = useState('');
+  const [toast, setToast]                   = useState<{ msg: string; error: boolean } | null>(null);
   const [page, setPage]                     = useState(1);
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 2800); }
+  function showToast(msg: string, error = false) { setToast({ msg, error }); setTimeout(() => setToast(null), 2800); }
 
   async function loadContacts() {
     const res = await api.support.listContacts();
@@ -166,7 +167,7 @@ export function SupportInbox() {
       await api.support.updateContactStatus(id, status);
       setContacts((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
       showToast('Status updated');
-    } catch { showToast('Failed to update'); }
+    } catch (err) { showToast(errorText(err, 'Failed to update'), true); }
   }
 
   async function handleReportStatus(id: string, status: string) {
@@ -174,7 +175,7 @@ export function SupportInbox() {
       await api.support.updateReportStatus(id, status);
       setReports((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
       showToast('Status updated');
-    } catch { showToast('Failed to update'); }
+    } catch (err) { showToast(errorText(err, 'Failed to update'), true); }
   }
 
   const filteredContacts = contacts.filter((c) =>
@@ -245,7 +246,7 @@ export function SupportInbox() {
             </>
       )}
 
-      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">{toast}</div>}
+      {toast && <div role={toast.error ? 'alert' : 'status'} className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ${toast.error ? 'bg-red-600' : 'bg-gray-900'} text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg`}>{toast.msg}</div>}
     </div>
   );
 }

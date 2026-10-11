@@ -1,3 +1,5 @@
+import { errorMessageFrom } from './errorMessage';
+
 const BASE = (import.meta.env['VITE_API_URL'] as string | undefined) ?? 'http://localhost:3000';
 
 // ── Token storage ──────────────────────────────────────────────────────────────
@@ -1057,7 +1059,7 @@ async function request<T>(
     // Keep the server's per-field validation errors (422) on the Error so a
     // form can point at the offending field instead of just "Validation failed".
     const body = json as { message?: string; errors?: Array<{ field: string; message: string }> };
-    throw Object.assign(new Error(body.message ?? `Request failed (${res.status})`), { errors: body.errors });
+    throw Object.assign(new Error(errorMessageFrom(body as Record<string, unknown>, res.status)), { errors: body.errors, status: res.status });
   }
   return json;
 }
@@ -1083,7 +1085,7 @@ async function uploadFile<T>(path: string, file: File, fieldName: string): Promi
   }
 
   const json = await res.json() as ApiResponse<T>;
-  if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
+  if (!res.ok) throw Object.assign(new Error(errorMessageFrom(json as unknown as Record<string, unknown>, res.status)), { status: res.status });
   return json;
 }
 
@@ -1102,7 +1104,7 @@ async function uploadFiles<T>(path: string, files: File[], fieldName: string): P
     res = await send(await ensureFreshAccessToken());
   }
   const json = await res.json() as ApiResponse<T>;
-  if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
+  if (!res.ok) throw Object.assign(new Error(errorMessageFrom(json as unknown as Record<string, unknown>, res.status)), { status: res.status });
   return json;
 }
 
@@ -1119,7 +1121,7 @@ async function uploadForm<T>(path: string, form: FormData): Promise<ApiResponse<
     res = await send(await ensureFreshAccessToken());
   }
   const json = await res.json() as ApiResponse<T>;
-  if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
+  if (!res.ok) throw Object.assign(new Error(errorMessageFrom(json as unknown as Record<string, unknown>, res.status)), { status: res.status });
   return json;
 }
 
