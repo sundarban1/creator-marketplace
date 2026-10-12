@@ -18,8 +18,8 @@ export type LogoMarqueeItem = {
   verified?: boolean;
 };
 
-/** `avatar`: round photo + name chip (people). `logo`: the logo alone on a
- *  light tile, so dark and coloured wordmarks both read on the navy band. */
+/** `avatar`: round photo + name chip (people). `logo`: the logo alone, no
+ *  tile — upload transparent PNGs that read on the navy band. */
 export type LogoMarqueeVariant = 'avatar' | 'logo';
 
 const MARQUEE_SPEED = 28;
@@ -95,12 +95,12 @@ export function LogoMarquee({
 function MarqueeChip({ item, variant }: { item: LogoMarqueeItem; variant: LogoMarqueeVariant }) {
   if (variant === 'logo' && item.imageUrl) {
     return (
-      <div className="flex h-12 w-32 items-center justify-center rounded-xl border border-lp-fg/10 bg-white px-4 py-2 sm:h-14 sm:w-40">
+      <div className="flex h-14 w-40 items-center justify-center px-2 sm:h-16 sm:w-48">
         <img
           src={item.imageUrl}
           alt={item.label}
-          width={128}
-          height={40}
+          width={176}
+          height={64}
           loading="eager"
           decoding="async"
           className="max-h-full max-w-full object-contain"

@@ -255,7 +255,7 @@ function PartnerFormModal({
                 {logoUrl ? 'Replace logo' : 'Upload logo'}
                 <input type="file" accept="image/png,image/webp,image/jpeg" className="hidden" onChange={handleLogoChange} disabled={uploading} />
               </label>
-              <p className="text-xs text-gray-400 mt-1.5">A transparent PNG works best. Up to 5MB.</p>
+              <p className="text-xs text-gray-400 mt-1.5">Use a transparent PNG in a light colour — it sits directly on the dark landing background. Up to 5MB.</p>
             </div>
           </div>
           {errors.logo && <p className="text-xs text-red-500 mt-1">{errors.logo}</p>}
