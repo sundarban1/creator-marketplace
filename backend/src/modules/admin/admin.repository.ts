@@ -156,6 +156,9 @@ const DEFAULTS: Record<string, unknown> = {
   'platform.companyPan':                '',
   'platform.address':          '',
   'platform.phone':            '',
+  // Second number dedicated to inquiries + customer support (footer shows it
+  // below the main phone, labelled).
+  'platform.supportPhone':     '',
   'platform.social.facebook':  '',
   'platform.social.instagram': '',
   'platform.social.tiktok':    '',

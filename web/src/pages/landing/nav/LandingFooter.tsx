@@ -1,7 +1,7 @@
 import { Logo } from '../../../app/ui/Logo';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, Mail, MapPin, Phone } from 'lucide-react';
+import { ArrowUpRight, Mail, Headset, MapPin, Phone } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6';
 import { fadeUp, stagger, VP, PILL_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
@@ -117,7 +117,7 @@ export function LandingFooter() {
                 block runs its own mount animation instead of inheriting the
                 stagger variant, which would otherwise leave it stuck at
                 opacity:0 (in the DOM but invisible). */}
-            {siteInfo && (siteInfo.address || siteInfo.phone || siteInfo.email) && (
+            {siteInfo && (siteInfo.address || siteInfo.phone || siteInfo.supportPhone || siteInfo.email) && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -133,6 +133,15 @@ export function LandingFooter() {
                   <a href={`tel:${siteInfo.phone}`} className="flex items-center gap-2 transition-colors hover:text-lp-fg">
                     <Phone size={14} className="flex-shrink-0 text-lp-accent-ink" />
                     {siteInfo.phone}
+                  </a>
+                )}
+                {siteInfo.supportPhone && (
+                  <a href={`tel:${siteInfo.supportPhone}`} className="flex items-center gap-2 transition-colors hover:text-lp-fg">
+                    <Headset size={14} className="flex-shrink-0 text-lp-accent-ink" />
+                    <span>
+                      {siteInfo.supportPhone}
+                      <span className="ml-1.5 text-xs text-lp-fg/45">Inquiry &amp; Support</span>
+                    </span>
                   </a>
                 )}
                 {siteInfo.email && (

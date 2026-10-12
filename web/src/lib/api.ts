@@ -901,6 +901,7 @@ export type PlatformSettings = Record<string, boolean | string | number | string
 export interface SiteInfo {
   address: string;
   phone:   string;
+  supportPhone: string;
   email:   string;
   companyRegistrationNumber: string;
   companyPan:                string;

@@ -14,6 +14,7 @@ const DEFAULTS: PlatformSettings = {
   'platform.companyPan':                '',
   'platform.address':          '',
   'platform.phone':            '',
+  'platform.supportPhone':     '',
   'platform.supportEmail':     '',
   'platform.social.facebook':  '',
   'platform.social.instagram': '',
@@ -173,6 +174,7 @@ export function ContactInfo() {
         <SectionCard title="Contact Details" subtitle="Shown in the landing page footer — leave blank to hide">
           <InputField label="Address"       settingKey="platform.address"      settings={settings} onChange={setString} placeholder="Kathmandu, Nepal" />
           <InputField label="Phone Number"  settingKey="platform.phone"        settings={settings} onChange={setString} type="tel" placeholder="+977 98XXXXXXXX" />
+          <InputField label="Inquiry & Customer Support Phone" settingKey="platform.supportPhone" settings={settings} onChange={setString} type="tel" placeholder="+977 98XXXXXXXX" />
           <InputField label="Contact Email" settingKey="platform.supportEmail" settings={settings} onChange={setString} type="email" placeholder="support@kolab.com" />
         </SectionCard>
 
