@@ -106,3 +106,25 @@ export function getBadgeCount(signal?: AbortSignal): Promise<{ count: number; pe
     signal,
   }).then((r) => r.data);
 }
+
+/** Sender-only, TEXT messages only (the backend rejects editing an attachment). */
+export function editMessage(conversationId: string, messageId: string, content: string): Promise<ChatMessage> {
+  return apiRequest<ChatMessage>('PATCH', `/api/messaging/conversations/${conversationId}/messages/${messageId}`, { content }).then(
+    (r) => r.data,
+  );
+}
+
+/**
+ * `forEveryone` (sender-only) tombstones the message for both sides; otherwise
+ * it's "delete for me" — hidden from the caller's own view only.
+ */
+export function deleteMessage(conversationId: string, messageId: string, forEveryone: boolean): Promise<void> {
+  return apiRequest('DELETE', `/api/messaging/conversations/${conversationId}/messages/${messageId}`, { forEveryone }).then(
+    () => undefined,
+  );
+}
+
+/** Hides the conversation from the caller's own inbox; it reappears on the next new message. */
+export function deleteConversation(conversationId: string): Promise<void> {
+  return apiRequest('DELETE', `/api/messaging/conversations/${conversationId}`).then(() => undefined);
+}

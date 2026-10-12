@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, X, Send, Smile, Paperclip, FileText, Play, Loader2, MessageCircle } from 'lucide-react';
+import {
+  ArrowLeft, Check, X, Send, Smile, Paperclip, FileText, Play, Loader2, MessageCircle,
+  MoreVertical, MoreHorizontal, Pencil, Trash2, Ban,
+} from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -12,6 +15,9 @@ import {
   sendAttachmentWithProgress,
   markSeen,
   respondToRequest,
+  editMessage,
+  deleteMessage,
+  deleteConversation,
   type Conversation,
   type ChatMessage,
 } from '../api/chat';
@@ -25,6 +31,7 @@ import { CHAT_EMOJIS } from './chatEmojis';
 import { CHAT_FILE_ACCEPT, validateChatFile } from './chatAttachments';
 import { AttachmentPreviewModal, type AttachmentPreview } from './AttachmentPreviewModal';
 import { confirmImageUpload } from '../ui/uploadPreview';
+import { confirmDialog } from '../ui/confirmDialog';
 
 function timeAgo(iso: string | null): string {
   if (!iso) return '';
@@ -34,6 +41,32 @@ function timeAgo(iso: string | null): string {
   return sameDay
     ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
     : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+/** Closes a popover on any mousedown outside `ref` while `open`. */
+function useDismiss(ref: RefObject<HTMLElement | null>, open: boolean, close: () => void) {
+  const cb = useRef(close);
+  useEffect(() => {
+    cb.current = close;
+  });
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) cb.current();
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open, ref]);
+}
+
+/**
+ * The other party's profile inside the caller's own app shell. Creators can
+ * open both creators and businesses; businesses only ever chat with creators.
+ */
+function profileHref(c: Conversation, base: string): string | null {
+  if (!c.otherPartyProfileId) return null;
+  if (c.otherPartyRole === 'BUSINESS') return base === '/creator' ? `/creator/businesses/${c.otherPartyProfileId}` : null;
+  return `${base}/creators/${c.otherPartyProfileId}`;
 }
 
 /**
@@ -141,7 +174,15 @@ export function ChatPage() {
         {!id ? (
           <EmptyThreadPane />
         ) : activeConversation ? (
-          <ConversationThread key={id} conversation={activeConversation} base={base} />
+          <ConversationThread
+            key={id}
+            conversation={activeConversation}
+            base={base}
+            onDeleted={() => {
+              navigate(`${base}/messages`, { replace: true });
+              conversations.reload();
+            }}
+          />
         ) : (
           <div className="flex flex-1 items-center justify-center p-6">
             <EmptyState
@@ -249,7 +290,20 @@ function ConversationRow({
 // mobile's useChatConversation (`msg.id.startsWith('temp-')`).
 type LocalMessage = ChatMessage & { uploadProgress?: number };
 
-function ConversationThread({ conversation, base }: { conversation: Conversation; base: string }) {
+/** Same shape the server returns for a message deleted for everyone. */
+function tombstone(m: LocalMessage): LocalMessage {
+  return { ...m, content: '', attachmentUrl: null, attachmentName: null, attachmentThumbnailUrl: null, isDeleted: true, editedAt: undefined };
+}
+
+function ConversationThread({
+  conversation,
+  base,
+  onDeleted,
+}: {
+  conversation: Conversation;
+  base: string;
+  onDeleted: () => void;
+}) {
   const t = useT();
   const { user } = useAppAuth();
   const id = conversation.id;
@@ -270,16 +324,45 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
   const [error, setError] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [preview, setPreview] = useState<AttachmentPreview | null>(null);
+  // "Delete for me" — hidden locally right away (the server already filters
+  // them out of the next fetch).
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
+  // "Delete for everyone" (by me, or by the other side via socket) — rendered
+  // as a tombstone, matching what the server returns on the next fetch.
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
+  // Text message currently being edited in the composer, Instagram-style.
+  const [editing, setEditing] = useState<ChatMessage | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  // Flip the message menu below its button when there's no room above it
+  // inside the scrolling panel (e.g. the first message in the thread).
+  const [menuBelow, setMenuBelow] = useState(false);
+  const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
+  const messageMenuRef = useRef<HTMLDivElement>(null);
+  const chatMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
+
+  useDismiss(emojiRef, emojiOpen, () => setEmojiOpen(false));
+  useDismiss(messageMenuRef, menuFor !== null, () => setMenuFor(null));
+  useDismiss(chatMenuRef, chatMenuOpen, () => setChatMenuOpen(false));
 
   const messages = useMemo(() => {
     const map = new Map<string, LocalMessage>();
     for (const m of messagesQuery.data?.items ?? []) map.set(m.id, m);
     for (const m of liveMessages) map.set(m.id, m);
-    return Array.from(map.values()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  }, [messagesQuery.data, liveMessages]);
+    return Array.from(map.values())
+      .filter((m) => !hiddenIds.has(m.id))
+      .map((m) => (deletedIds.has(m.id) ? tombstone(m) : m))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }, [messagesQuery.data, liveMessages, hiddenIds, deletedIds]);
+
+  // Edits ride the same liveMessages overlay as new messages — a later entry
+  // with the same id wins in the merge above.
+  function upsertLive(msg: LocalMessage) {
+    setLiveMessages((prev) => [...prev.filter((m) => m.id !== msg.id), msg]);
+  }
 
   useEffect(() => {
     const socket = connectSocket();
@@ -288,10 +371,22 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
       if (payload.conversationId !== id) return;
       setLiveMessages((prev) => (prev.some((m) => m.id === payload.message.id) ? prev : [...prev, payload.message]));
     }
+    function onEdited(payload: { conversationId: string; message: ChatMessage }) {
+      if (payload.conversationId !== id) return;
+      setLiveMessages((prev) => [...prev.filter((m) => m.id !== payload.message.id), payload.message]);
+    }
+    function onDeletedMsg(payload: { conversationId: string; messageId: string }) {
+      if (payload.conversationId !== id) return;
+      setDeletedIds((prev) => new Set(prev).add(payload.messageId));
+    }
     socket.on('message:new', onNew);
+    socket.on('message:edited', onEdited);
+    socket.on('message:deleted', onDeletedMsg);
     return () => {
       socket.emit('leave:conversation', { conversationId: id });
       socket.off('message:new', onNew);
+      socket.off('message:edited', onEdited);
+      socket.off('message:deleted', onDeletedMsg);
     };
   }, [id]);
 
@@ -308,20 +403,15 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
-  useEffect(() => {
-    if (!emojiOpen) return;
-    const onClick = (e: MouseEvent) => {
-      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) setEmojiOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [emojiOpen]);
-
   async function onSend(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
     const content = text.trim();
     if (!content) return;
+    if (editing) {
+      await saveEdit(editing, content);
+      return;
+    }
     setText('');
     setBusy(true);
     setError('');
@@ -333,6 +423,66 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
     } finally {
       setBusy(false);
     }
+  }
+
+  async function saveEdit(target: ChatMessage, content: string) {
+    if (content === target.content) {
+      cancelEdit();
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      upsertLive(await editMessage(id, target.id, content));
+      cancelEdit();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEdit(m: ChatMessage) {
+    setMenuFor(null);
+    setEmojiOpen(false);
+    setEditing(m);
+    setText(m.content);
+    requestAnimationFrame(() => textInputRef.current?.focus());
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setText('');
+  }
+
+  async function onDeleteMessage(m: ChatMessage) {
+    setMenuFor(null);
+    // Own message → removed for both sides (Instagram's "Unsend"); the other
+    // side's message → hidden from my view only.
+    const forEveryone = m.senderId === user?.id;
+    const ok = await confirmDialog({
+      title: t('chat.deleteMessageTitle'),
+      message: forEveryone ? t('chat.deleteForEveryoneBody') : t('chat.deleteForMeBody'),
+      confirmLabel: t('chat.delete'),
+      tone: 'danger',
+      action: () => deleteMessage(id, m.id, forEveryone),
+    });
+    if (!ok) return;
+    if (editing?.id === m.id) cancelEdit();
+    if (forEveryone) setDeletedIds((prev) => new Set(prev).add(m.id));
+    else setHiddenIds((prev) => new Set(prev).add(m.id));
+  }
+
+  async function onDeleteChat() {
+    setChatMenuOpen(false);
+    const ok = await confirmDialog({
+      title: t('chat.deleteChatTitle'),
+      message: t('chat.deleteChatBody'),
+      confirmLabel: t('chat.deleteChat'),
+      tone: 'danger',
+      action: () => deleteConversation(id),
+    });
+    if (ok) onDeleted();
   }
 
   function insertEmoji(emoji: string) {
@@ -397,6 +547,21 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
 
   const name = conversation.otherParty?.fullName ?? '—';
   const isClosed = conversation.status === 'CLOSED';
+  const profileTo = profileHref(conversation, base);
+
+  const identity = (
+    <>
+      <Avatar name={name} src={conversation.otherParty?.avatarUrl} size="md" />
+      <div className="min-w-0">
+        <p className="truncate text-[15px] font-semibold text-ink">{name}</p>
+        {isClosed ? (
+          <p className="truncate text-[12px] text-ink-soft">{t('chat.collaborationClosed')}</p>
+        ) : (
+          conversation.campaign?.title && <p className="truncate text-[12px] text-ink-soft">{conversation.campaign.title}</p>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -404,13 +569,42 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
         <Link to={`${base}/messages`} className="text-ink-soft hover:text-ink lg:hidden">
           <ArrowLeft size={18} />
         </Link>
-        <Avatar name={name} src={conversation.otherParty?.avatarUrl} size="md" />
-        <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold text-ink">{name}</p>
-          {isClosed ? (
-            <p className="truncate text-[12px] text-ink-soft">{t('chat.collaborationClosed')}</p>
-          ) : (
-            conversation.campaign?.title && <p className="truncate text-[12px] text-ink-soft">{conversation.campaign.title}</p>
+        {profileTo ? (
+          <Link
+            to={profileTo}
+            title={t('chat.viewProfile')}
+            className="flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80"
+          >
+            {identity}
+          </Link>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-3">{identity}</div>
+        )}
+
+        <div ref={chatMenuRef} className="relative flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setChatMenuOpen((v) => !v)}
+            aria-label={t('chat.chatOptions')}
+            aria-expanded={chatMenuOpen}
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-full text-ink-soft hover:bg-surface-dim hover:text-ink',
+              chatMenuOpen && 'bg-surface-dim text-ink',
+            )}
+          >
+            <MoreVertical size={18} />
+          </button>
+          {chatMenuOpen && (
+            <div role="menu" className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-xl">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={onDeleteChat}
+                className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] font-medium text-danger hover:bg-surface-dim"
+              >
+                <Trash2 size={15} /> {t('chat.deleteChat')}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -435,8 +629,74 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
             const mine = m.senderId === user?.id;
             const uploading = m.attachmentStatus === 'PROCESSING';
             const pct = Math.round((m.uploadProgress ?? 0) * 100);
+
+            if (m.isDeleted) {
+              return (
+                <div key={m.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
+                  <p className="inline-flex items-center gap-1.5 rounded-2xl border border-line px-3.5 py-2 text-[13px] italic text-ink-soft">
+                    <Ban size={13} /> {t('chat.messageDeleted')}
+                  </p>
+                </div>
+              );
+            }
+
+            // Optimistic sends have no server id yet — nothing to edit/delete.
+            const hasActions = !m.id.startsWith('temp-');
+            const canEdit = mine && m.type === 'TEXT' && !isClosed;
+            const menuOpen = menuFor === m.id;
+            const actions = hasActions && (
+              <div ref={menuOpen ? messageMenuRef : undefined} className="relative flex-shrink-0 self-center">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    const panelTop = messagesRef.current?.getBoundingClientRect().top ?? 0;
+                    setMenuBelow(e.currentTarget.getBoundingClientRect().top - panelTop < 100);
+                    setMenuFor(menuOpen ? null : m.id);
+                  }}
+                  aria-label={t('chat.messageOptions')}
+                  aria-expanded={menuOpen}
+                  className={cn(
+                    'flex h-7 w-7 items-center justify-center rounded-full text-ink-soft transition-opacity hover:bg-surface-dim hover:text-ink focus-visible:opacity-100',
+                    menuOpen ? 'bg-surface-dim text-ink opacity-100' : 'opacity-0 group-hover:opacity-100',
+                  )}
+                >
+                  <MoreHorizontal size={16} />
+                </button>
+                {menuOpen && (
+                  <div
+                    role="menu"
+                    className={cn(
+                      'absolute z-50 w-36 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-xl',
+                      menuBelow ? 'top-full mt-1' : 'bottom-full mb-1',
+                      mine ? 'right-0' : 'left-0',
+                    )}
+                  >
+                    {canEdit && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => startEdit(m)}
+                        className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] font-medium text-ink hover:bg-surface-dim"
+                      >
+                        <Pencil size={14} /> {t('chat.edit')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => onDeleteMessage(m)}
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] font-medium text-danger hover:bg-surface-dim"
+                    >
+                      <Trash2 size={14} /> {t('chat.delete')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+
             return (
-              <div key={m.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
+              <div key={m.id} className={cn('group flex gap-1', mine ? 'justify-end' : 'justify-start')}>
+                {mine && actions}
                 <div
                   className={cn(
                     'max-w-[75%] rounded-2xl px-3.5 py-2 text-[14px] leading-relaxed',
@@ -517,7 +777,11 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
                   )}
 
                   {m.content && <p className="whitespace-pre-line">{m.content}</p>}
+                  {m.editedAt && (
+                    <p className={cn('mt-0.5 text-right text-[10px]', mine ? 'text-white/70' : 'text-ink-soft')}>{t('chat.edited')}</p>
+                  )}
                 </div>
+                {!mine && actions}
               </div>
             );
           })}
@@ -526,8 +790,29 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
 
       {error && <Alert tone="error" className="mx-5 mb-2">{error}</Alert>}
 
+      {!isClosed && editing && (
+        <div className="flex flex-shrink-0 items-center gap-2 border-t border-line bg-surface-dim/60 px-5 py-2">
+          <Pencil size={14} className="flex-shrink-0 text-violet-dark" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] font-semibold text-violet-dark">{t('chat.editingMessage')}</p>
+            <p className="truncate text-[12px] text-ink-soft">{editing.content}</p>
+          </div>
+          <button
+            type="button"
+            onClick={cancelEdit}
+            aria-label={t('chat.cancelEdit')}
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-surface hover:text-ink"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
       {!isClosed ? (
-        <form onSubmit={onSend} className="flex flex-shrink-0 items-center gap-1.5 border-t border-line px-5 py-3">
+        <form
+          onSubmit={onSend}
+          className={cn('flex flex-shrink-0 items-center gap-1.5 px-5 py-3', !editing && 'border-t border-line')}
+        >
           <div ref={emojiRef} className="relative">
             <button
               type="button"
@@ -562,7 +847,7 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={busy}
+            disabled={busy || !!editing}
             aria-label={t('chat.attach')}
             className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-ink-soft hover:bg-surface-dim hover:text-ink disabled:opacity-50"
           >
@@ -571,9 +856,13 @@ function ConversationThread({ conversation, base }: { conversation: Conversation
           <input ref={fileInputRef} type="file" accept={CHAT_FILE_ACCEPT} onChange={onFileChange} className="hidden" />
 
           <input
+            ref={textInputRef}
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && editing) cancelEdit();
+            }}
             placeholder={t('chat.placeholder')}
             className="h-11 flex-1 rounded-xl border border-line-strong bg-surface px-3.5 text-[14px] text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-brand/35"
           />

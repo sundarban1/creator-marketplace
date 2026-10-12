@@ -699,15 +699,15 @@ export function BusinessEventDetailPage() {
       <Modal open={!!payTarget} onClose={() => (payBusy ? null : setPayTarget(null))} title={t('biz.payModalTitle')}>
         {payTarget && (
           <div className="space-y-4">
-            {/* eSewa's sandbox login — only meaningful when eSewa is the chosen method. */}
-            {payMethod === 'esewa' && (
+            {/* eSewa's sandbox login — hidden for now; uncomment to show test creds when eSewa is the chosen method. */}
+            {/* {payMethod === 'esewa' && (
               <div className="w-full space-y-1 border border-[#4A235A]/20 bg-white px-3.5 py-2.5 text-left text-[11.5px] font-bold leading-snug text-[#4A235A]">
                 <p className="text-[14px]">{t('biz.payModalTestCredsLabel')}</p>
                 <p>{t('biz.payModalTestCredsId', { value: '9711111111' })}</p>
                 <p>{t('biz.payModalTestCredsPassword', { value: 'Test@123' })}</p>
                 <p>{t('biz.payModalTestCredsOtp', { value: '123456' })}</p>
               </div>
-            )}
+            )} */}
 
             <div className="flex items-center gap-3">
               <Avatar name={payTarget.creator?.fullName ?? 'Creator'} src={payTarget.creator?.avatarUrl} size="md" />
