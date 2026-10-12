@@ -99,9 +99,13 @@ export function BusinessProfilePage() {
 
       <DetailHero backTo={paths.home} backLabel={t('public.backToHome')}>
         <HeroReveal className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center">
-          <RingAvatar>
+          {business.logoUrl ? (
             <Avatar name={name} src={business.logoUrl} size="xl" className="h-24 w-24" />
-          </RingAvatar>
+          ) : (
+            <RingAvatar>
+              <Avatar name={name} src={business.logoUrl} size="xl" className="h-24 w-24" />
+            </RingAvatar>
+          )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-serif text-3xl font-medium leading-[1.1] tracking-tight text-ink sm:text-4xl">

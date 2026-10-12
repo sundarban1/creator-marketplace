@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SearchInput } from '@/components/SearchInput';
 import { AttentionBanner } from '@/components/AttentionBanner';
-import { ProfileProgressCard } from '@/components/ProfileProgressCard';
+import { ProfileProgressCard, type ProfileStep } from '@/components/ProfileProgressCard';
 import { PromoBanner } from '@/components/PromoBanner';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -58,9 +58,6 @@ const TYPE_TAB_ORDER = ['All', 'Paid', 'Open'] as const;
 const NO_CAMPAIGNS: Campaign[] = [];
 const NO_PROVIDERS: ApiCreatorListItem[] = [];
 const NO_STRINGS: string[] = [];
-
-// Number of fields checked in `missingFields` — drives the profile progress bar.
-const PROFILE_FIELD_COUNT = 5;
 
 export default function BusinessHomeScreen() {
   const { user } = useAuth();
@@ -130,15 +127,37 @@ export default function BusinessHomeScreen() {
   // below so the business doesn't have to scroll to its own niche.
   const businessIndustries = bp?.categories ?? NO_STRINGS;
 
-  // `t` re-runs this on a language switch so the labels stay translated.
-  const missingFields: string[] = [];
-  if (bp) {
-    if (!bp.logoUrl) missingFields.push(t('business.home.fieldLogo'));
-    if (!bp.description) missingFields.push(t('business.home.fieldDescription'));
-    if (!bp.location) missingFields.push(t('business.home.fieldLocation'));
-    if (!bp.categories?.length) missingFields.push(t('business.home.fieldCategories'));
-    if (!bp.website) missingFields.push(t('business.home.fieldWebsite'));
-  }
+  // Verification closes the list. `t` re-runs this on a language switch so
+  // the labels stay translated.
+  const goEditProfile = () => router.push('/(business)/edit-profile' as never);
+  const profileSteps: ProfileStep[] = bp ? [
+    {
+      key: 'logo',
+      done: !!bp.logoUrl,
+      label: t('business.home.stepLogo'),
+      actionLabel: t('business.home.stepLogoAction'),
+      onAction: () => router.push('/(business)/(tabs)/profile'),
+    },
+    { key: 'description', done: !!bp.description, label: t('business.home.stepDescription'), actionLabel: t('business.home.stepDescriptionAction'), onAction: goEditProfile },
+    { key: 'location', done: !!bp.location, label: t('business.home.stepLocation'), actionLabel: t('business.home.stepLocationAction'), onAction: goEditProfile },
+    {
+      key: 'categories',
+      done: !!bp.categories?.length,
+      label: t('business.home.stepCategories'),
+      actionLabel: t('business.home.stepCategoriesAction'),
+      onAction: () => router.push('/(business)/edit-categories'),
+    },
+    { key: 'website', done: !!bp.website, label: t('business.home.stepWebsite'), actionLabel: t('business.home.stepWebsiteAction'), onAction: goEditProfile },
+    {
+      key: 'verification',
+      done: bp.isVerified || bp.verificationStatus === 'VERIFIED',
+      label: t('business.home.stepVerify'),
+      hint: t('business.home.stepVerifyHint'),
+      actionLabel: bp.verificationStatus === 'PENDING' ? t('business.home.stepVerifyPending') : t('business.home.stepVerifyAction'),
+      onAction: () => router.push('/(business)/settings?section=verification' as Parameters<typeof router.push>[0]),
+    },
+  ] : [];
+  const profileIncomplete = profileSteps.some((step) => !step.done);
 
   // Count of accepted applications actually waiting on a business action
   // (payment due, or submitted work awaiting review) — not the raw
@@ -305,12 +324,12 @@ export default function BusinessHomeScreen() {
               onPress={() => router.push('/(business)/proposals')}
               style={{ marginHorizontal: 0, marginTop: 0 }}
             />
-          ) : !bannerDismissed && missingFields.length > 0 && (
+          ) : !bannerDismissed && profileIncomplete && (
             <ProfileProgressCard
-              icon="building"
               title={t('business.home.completeProfile')}
-              missing={missingFields}
-              total={PROFILE_FIELD_COUNT}
+              name={displayName}
+              avatarUrl={bp?.logoUrl}
+              steps={profileSteps}
               onPress={() => router.push('/(business)/edit-profile' as never)}
               onDismiss={() => setBannerDismissed(true)}
             />

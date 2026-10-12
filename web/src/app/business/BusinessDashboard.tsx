@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CalendarDays, FileText, Briefcase, PackageCheck, Plus, ArrowRight, Building2, AlertCircle, Users } from 'lucide-react';
+import { CalendarDays, FileText, Briefcase, PackageCheck, Plus, ArrowRight, AlertCircle, Users } from 'lucide-react';
 import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
@@ -20,7 +20,7 @@ import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { AttentionBanner } from '../ui/AttentionBanner';
-import { ProfileProgressCard } from '../ui/ProfileProgressCard';
+import { ProfileProgressCard, type ProfileStep } from '../ui/ProfileProgressCard';
 import { StatusBadge } from '../ui/StatusBadge';
 import { EVENT_STATUS_TONE, eventStatusLabel } from './eventReviewStatus';
 import { Avatar } from '../ui/Avatar';
@@ -28,9 +28,6 @@ import { makeCategoryLookup } from '../public/categoryLookup';
 import { cn } from '../ui/cn';
 import { BizApplicationCard } from './BizApplicationCard';
 import { BizCreatorCard } from './BizCreatorCard';
-
-// Number of fields checked in `missingFields` below — drives the progress bar.
-const PROFILE_FIELD_COUNT = 5;
 
 export function BusinessDashboard() {
   const { user } = useAppAuth();
@@ -84,19 +81,28 @@ export function BusinessDashboard() {
     };
   }, [apps.data]);
 
-  // Same ordering as the mobile business home's `missingFields` — logo and
-  // about matter most for a creator deciding whether to apply.
-  const missingFields = useMemo(() => {
+  // Same ordering as the mobile business home — logo and about matter most
+  // for a creator deciding whether to apply; verification closes the list.
+  const profileSteps = useMemo<ProfileStep[]>(() => {
     const p = profile.data;
     if (!p) return [];
-    const out: string[] = [];
-    if (!p.logoUrl) out.push(t('biz.fieldLogo'));
-    if (!p.description) out.push(t('biz.fieldAbout'));
-    if (!p.location) out.push(t('biz.fieldLocation'));
-    if (!p.categories.length) out.push(t('biz.fieldIndustry'));
-    if (!p.website) out.push(t('biz.fieldWebsite'));
-    return out;
+    return [
+      { key: 'logo', done: !!p.logoUrl, label: t('biz.stepLogo'), actionLabel: t('biz.stepLogoAction'), to: '/business/profile' },
+      { key: 'about', done: !!p.description, label: t('biz.stepAbout'), actionLabel: t('biz.stepAboutAction'), to: '/business/profile' },
+      { key: 'location', done: !!p.location, label: t('biz.stepLocation'), actionLabel: t('biz.stepLocationAction'), to: '/business/profile' },
+      { key: 'industry', done: !!p.categories.length, label: t('biz.stepIndustry'), actionLabel: t('biz.stepIndustryAction'), to: '/business/profile' },
+      { key: 'website', done: !!p.website, label: t('biz.stepWebsite'), actionLabel: t('biz.stepWebsiteAction'), to: '/business/profile' },
+      {
+        key: 'verification',
+        done: p.isVerified || p.verificationStatus === 'VERIFIED',
+        label: t('biz.stepVerify'),
+        hint: t('biz.stepVerifyHint'),
+        actionLabel: p.verificationStatus === 'PENDING' ? t('biz.stepVerifyPending') : t('biz.stepVerifyAction'),
+        to: '/business/verification',
+      },
+    ];
   }, [profile.data, t]);
+  const profileIncomplete = profileSteps.some((s) => !s.done);
 
   const isSaved = (id: string) => saveOverrides.get(id) ?? (savedIds.data ?? []).includes(id);
   const onToggleSave = async (id: string) => {
@@ -113,7 +119,7 @@ export function BusinessDashboard() {
     }
   };
 
-  const showProfileCard = needsAction.length === 0 && !profileBannerDismissed && missingFields.length > 0;
+  const showProfileCard = needsAction.length === 0 && !profileBannerDismissed && profileIncomplete;
 
   const firstName = user?.name && !/^\+?\d+$/.test(user.name) ? user.name.split(' ')[0] : '';
   const hour = new Date().getHours();
@@ -149,11 +155,10 @@ export function BusinessDashboard() {
         <div className={cn('grid gap-3', showProfileCard && 'md:grid-cols-2')}>
           {showProfileCard && (
             <ProfileProgressCard
-              icon={Building2}
-              done={PROFILE_FIELD_COUNT - missingFields.length}
-              total={PROFILE_FIELD_COUNT}
               title={t('biz.completeProfileTitle')}
-              subtitle={t('biz.completeProfileSubtitle', { fields: missingFields.join(' · ') })}
+              name={profile.data?.businessName || user?.name || 'Business'}
+              avatarUrl={profile.data?.logoUrl}
+              steps={profileSteps}
               to="/business/profile"
               onDismiss={() => setProfileBannerDismissed(true)}
             />

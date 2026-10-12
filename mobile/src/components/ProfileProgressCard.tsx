@@ -1,33 +1,51 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { F, FONT_SIZE, RADIUS, SPACING } from '@/utilities/constants';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
-type IconName = keyof typeof FontAwesome5.glyphMap;
+export type ProfileStep = {
+  key: string;
+  done: boolean;
+  /** What to do and why, e.g. "Add a social link to get discovered". */
+  label: string;
+  /** Optional second line under the label. */
+  hint?: string;
+  /** Inline link that takes the user straight to where the step is done. */
+  actionLabel: string;
+  onAction: () => void;
+};
 
-// "Complete your profile" nudge with a friendly progress bar — replaces the
-// plain AttentionBanner for the profile case on both home screens. The
-// encouragement line steps up as the profile fills in, and each missing field
-// shows as a "+ Field" chip. Mirrors web's ProfileProgressCard.
+// "Finish setting up your profile" nudge with a friendly progress bar —
+// replaces the plain AttentionBanner for the profile case on both home
+// screens. Leads with the user's own avatar (initials until one is uploaded);
+// the encouragement line steps up as the profile fills in, and each step still
+// to do is a row with its own deep link. Mirrors web's ProfileProgressCard.
 type Props = {
-  icon: IconName;
   title: string;
-  missing: string[];
-  total: number;
+  name: string;
+  avatarUrl: string | null | undefined;
+  steps: ProfileStep[];
   onPress: () => void;
   onDismiss?: () => void;
 };
 
-export function ProfileProgressCard({ icon, title, missing, total, onPress, onDismiss }: Props) {
+function initialsOf(name: string): string {
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
+}
+
+export function ProfileProgressCard({ title, name, avatarUrl, steps, onPress, onDismiss }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const done = Math.max(0, total - missing.length);
+  const total = steps.length;
+  const done = steps.filter((s) => s.done).length;
+  const remaining = steps.filter((s) => !s.done);
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const message =
-    missing.length === 1
+    remaining.length === 1
       ? t('profileProgress.msgLast')
       : done === 0
         ? t('profileProgress.msgStart')
@@ -50,8 +68,12 @@ export function ProfileProgressCard({ icon, title, missing, total, onPress, onDi
       accessibilityLabel={`${title}. ${t('profileProgress.progressLabel', { pct })}`}
       style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={s.header}>
-        <View style={[s.iconWrap, { backgroundColor: C.primaryLight }]}>
-          <FontAwesome5 name={icon} solid size={16} color={C.brinjal1} />
+        <View style={[s.avatar, { backgroundColor: C.primaryLight }]}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={s.avatarImage} contentFit="cover" />
+          ) : (
+            <Text style={[s.initials, { color: C.brinjal1 }]}>{initialsOf(name)}</Text>
+          )}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[s.title, { color: C.text }]}>{title}</Text>
@@ -77,12 +99,23 @@ export function ProfileProgressCard({ icon, title, missing, total, onPress, onDi
       </View>
       <Text style={[s.steps, { color: C.textPlaceholder }]}>{t('profileProgress.stepsDone', { done, total })}</Text>
 
-      {missing.length > 0 && (
-        <View style={s.chips}>
-          {missing.map((label) => (
-            <View key={label} style={[s.chip, { backgroundColor: C.primaryLight }]}>
-              <FontAwesome5 name="plus" solid size={9} color={C.brinjal1} />
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
+      {remaining.length > 0 && (
+        <View style={[s.list, { borderTopColor: C.border }]}>
+          {remaining.map((step) => (
+            <View key={step.key} style={s.row}>
+              <View style={[s.dot, { borderColor: C.brinjal1 }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[s.rowLabel, { color: C.text }]}>{step.label}</Text>
+                {step.hint ? <Text style={[s.rowHint, { color: C.textPlaceholder }]}>{step.hint}</Text> : null}
+              </View>
+              <Pressable
+                hitSlop={10}
+                accessibilityRole="link"
+                onPress={(e) => { e.stopPropagation(); step.onAction(); }}
+                style={s.action}>
+                <Text style={[s.actionText, { color: C.brinjal1 }]}>{step.actionLabel}</Text>
+                <FontAwesome5 name="chevron-right" solid size={9} color={C.brinjal1} />
+              </Pressable>
             </View>
           ))}
         </View>
@@ -94,7 +127,9 @@ export function ProfileProgressCard({ icon, title, missing, total, onPress, onDi
 const s = StyleSheet.create({
   card: { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACING.md },
   header: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  iconWrap: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
+  avatar: { width: 40, height: 40, borderRadius: RADIUS.full, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  avatarImage: { width: '100%', height: '100%' },
+  initials: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
   title: { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
   message: { fontSize: FONT_SIZE.xs, fontFamily: F.regular, marginTop: 2, lineHeight: 18 },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
@@ -102,7 +137,11 @@ const s = StyleSheet.create({
   fillWrap: { height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   pct: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, minWidth: 38, textAlign: 'right' },
   steps: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, marginTop: SPACING.xs },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.sm },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full },
-  chipText: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, lineHeight: 17 },
+  list: { marginTop: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: StyleSheet.hairlineWidth, gap: SPACING.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  dot: { width: 8, height: 8, borderRadius: RADIUS.full, borderWidth: 1.5 },
+  rowLabel: { fontSize: FONT_SIZE.xs, fontFamily: F.medium, lineHeight: 18 },
+  rowHint: { fontSize: FONT_SIZE.xs, fontFamily: F.regular, lineHeight: 17, marginTop: 1 },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: '45%' },
+  actionText: { fontSize: FONT_SIZE.xs, fontFamily: F.semibold, lineHeight: 18, textAlign: 'right' },
 });

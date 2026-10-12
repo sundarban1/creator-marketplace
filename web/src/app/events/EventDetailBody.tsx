@@ -84,11 +84,7 @@ export function EventDetailBody({
           </h1>
 
           <div className="mt-3 flex items-center gap-2.5">
-            <span className="inline-flex flex-shrink-0 rounded-full bg-gradient-to-br from-violet/25 to-brand-orange/20 p-[2px]">
-              <span className="rounded-full bg-surface p-0.5">
-                <Avatar name={event.business.businessName} src={event.business.logoUrl} size="sm" />
-              </span>
-            </span>
+            <Avatar name={event.business.businessName} src={event.business.logoUrl} size="sm" />
             <span className="text-[14px] text-ink-soft">
               {t('public.postedBy', { name: event.business.businessName })}
             </span>

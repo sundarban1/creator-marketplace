@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Briefcase, FileText, Wallet, CalendarClock, ArrowRight, UserRound, AlertCircle } from 'lucide-react';
+import { Briefcase, FileText, Wallet, CalendarClock, ArrowRight, AlertCircle } from 'lucide-react';
 import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
@@ -20,7 +20,7 @@ import { DashboardHero } from '../ui/DashboardHero';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { AttentionBanner } from '../ui/AttentionBanner';
-import { ProfileProgressCard } from '../ui/ProfileProgressCard';
+import { ProfileProgressCard, type ProfileStep } from '../ui/ProfileProgressCard';
 import { DashCard, DashCardHeader } from './dash-ui/DashCard';
 import { DashStatCard } from './dash-ui/DashStatCard';
 import { DashApplicationCard } from './dash-ui/DashApplicationCard';
@@ -31,9 +31,6 @@ import { DashEventCard } from './dash-ui/DashEventCard';
 // derivation (start work once escrow is funded, submit once it's underway).
 const START_WORK_STATES = new Set(['ESCROW_FUNDED']);
 const SUBMIT_WORK_STATES = new Set(['IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE']);
-
-// Number of fields checked in `missingFields` below — drives the progress bar.
-const PROFILE_FIELD_COUNT = 5;
 
 export function CreatorDashboard() {
   const { user } = useAppAuth();
@@ -67,18 +64,34 @@ export function CreatorDashboard() {
   }, [apps.data]);
 
   // Photo and social links matter most for discoverability, so they lead —
-  // same ordering the mobile home screen uses.
-  const missingFields = useMemo(() => {
+  // same ordering the mobile home screen uses; verification closes the list.
+  // One connected account OR one saved social link counts as the social step.
+  const profileSteps = useMemo<ProfileStep[]>(() => {
     const p = profile.data;
     if (!p) return [];
-    const out: string[] = [];
-    if (!p.avatarUrl) out.push(t('dashboard.fieldPhoto'));
-    if (!Object.values(p.socialLinks ?? {}).some(Boolean)) out.push(t('dashboard.fieldSocial'));
-    if (!p.bio) out.push(t('dashboard.fieldBio'));
-    if (!p.location) out.push(t('dashboard.fieldLocation'));
-    if (!p.categories?.length) out.push(t('dashboard.fieldCategories'));
-    return out;
+    return [
+      { key: 'photo', done: !!p.avatarUrl, label: t('dashboard.stepPhoto'), actionLabel: t('dashboard.stepPhotoAction'), to: '/creator/profile' },
+      {
+        key: 'social',
+        done: (p.socialAccounts?.length ?? 0) > 0 || Object.values(p.socialLinks ?? {}).some(Boolean),
+        label: t('dashboard.stepSocial'),
+        actionLabel: t('dashboard.stepSocialAction'),
+        to: '/creator/profile?connect=social',
+      },
+      { key: 'bio', done: !!p.bio, label: t('dashboard.stepBio'), actionLabel: t('dashboard.stepBioAction'), to: '/creator/profile' },
+      { key: 'location', done: !!p.location, label: t('dashboard.stepLocation'), actionLabel: t('dashboard.stepLocationAction'), to: '/creator/profile' },
+      { key: 'categories', done: !!p.categories?.length, label: t('dashboard.stepCategories'), actionLabel: t('dashboard.stepCategoriesAction'), to: '/creator/profile' },
+      {
+        key: 'verification',
+        done: p.isVerified || p.verificationStatus === 'VERIFIED',
+        label: t('dashboard.stepVerify'),
+        hint: t('dashboard.stepVerifyHint'),
+        actionLabel: p.verificationStatus === 'PENDING' ? t('dashboard.stepVerifyPending') : t('dashboard.stepVerifyAction'),
+        to: '/creator/verification',
+      },
+    ];
   }, [profile.data, t]);
+  const profileIncomplete = profileSteps.some((s) => !s.done);
 
   // One "needs your attention" banner at most — pending work always wins
   // over the profile nudge since it's the more time-sensitive of the two.
@@ -89,7 +102,7 @@ export function CreatorDashboard() {
     );
   }, [apps.data]);
 
-  const showProfileCard = pendingActions.length === 0 && !profileBannerDismissed && missingFields.length > 0;
+  const showProfileCard = pendingActions.length === 0 && !profileBannerDismissed && profileIncomplete;
 
   const firstName = user?.name && !/^\+?\d+$/.test(user.name) ? user.name.split(' ')[0] : '';
   const hour = new Date().getHours();
@@ -123,11 +136,10 @@ export function CreatorDashboard() {
         <div className={cn('grid gap-3', showProfileCard && 'md:grid-cols-2')}>
           {showProfileCard && (
             <ProfileProgressCard
-              icon={UserRound}
-              done={PROFILE_FIELD_COUNT - missingFields.length}
-              total={PROFILE_FIELD_COUNT}
               title={t('dashboard.completeProfileTitle')}
-              subtitle={t('dashboard.completeProfileSubtitle', { fields: missingFields.join(' · ') })}
+              name={profile.data?.fullName || firstName || 'Creator'}
+              avatarUrl={profile.data?.avatarUrl}
+              steps={profileSteps}
               to="/creator/profile"
               onDismiss={() => setProfileBannerDismissed(true)}
             />

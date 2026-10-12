@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SearchInput } from '@/components/SearchInput';
 import { AttentionBanner } from '@/components/AttentionBanner';
-import { ProfileProgressCard } from '@/components/ProfileProgressCard';
+import { ProfileProgressCard, type ProfileStep } from '@/components/ProfileProgressCard';
 import { PromoBanner } from '@/components/PromoBanner';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -55,9 +55,6 @@ type WorkItem = Awaited<ReturnType<typeof campaignService.getMyApplications>>['p
 const NO_PROPOSALS: WorkItem[] = [];
 const NO_CAMPAIGNS: Campaign[] = [];
 const NO_MEMBERS: ApiProviderMember[] = [];
-
-// Number of fields checked in `missingFields` — drives the profile progress bar.
-const PROFILE_FIELD_COUNT = 5;
 
 export default function HomeScreen() {
   const C = useAppColors();
@@ -123,17 +120,45 @@ export default function HomeScreen() {
   const teamMembers = teamQuery.data ?? NO_MEMBERS;
 
   // Photo and social links matter most for a creator's discoverability, so
-  // they're checked first and lead the list. `t` re-runs this on a language
-  // switch so the labels stay translated.
-  const missingFields: string[] = [];
-  if (profile) {
-    if (!profile.avatarUrl) missingFields.push(t('creator.home.fieldProfilePhoto'));
-    const hasLink = profile.socialLinks && Object.values(profile.socialLinks).some((v) => !!v);
-    if (!hasLink) missingFields.push(t('creator.home.fieldSocialLinks'));
-    if (!profile.bio) missingFields.push(t('creator.home.fieldBio'));
-    if (!profile.location) missingFields.push(t('creator.home.fieldLocation'));
-    if (!profile.categories?.length) missingFields.push(t('creator.home.fieldCategories'));
-  }
+  // they lead the list; verification closes it. One connected account OR one
+  // saved social link counts as the social step done. `t` re-runs this on a
+  // language switch so the labels stay translated.
+  const goEditProfile = () => router.push('/(creator)/edit-profile');
+  const profileSteps: ProfileStep[] = profile ? [
+    {
+      key: 'photo',
+      done: !!profile.avatarUrl,
+      label: t('creator.home.stepPhoto'),
+      actionLabel: t('creator.home.stepPhotoAction'),
+      onAction: () => router.push('/(creator)/(tabs)/profile'),
+    },
+    {
+      key: 'social',
+      done: (profile.socialAccounts?.length ?? 0) > 0
+        || (!!profile.socialLinks && Object.values(profile.socialLinks).some((v) => !!v)),
+      label: t('creator.home.stepSocial'),
+      actionLabel: t('creator.home.stepSocialAction'),
+      onAction: () => router.push('/(creator)/settings?section=social' as never),
+    },
+    { key: 'bio', done: !!profile.bio, label: t('creator.home.stepBio'), actionLabel: t('creator.home.stepBioAction'), onAction: goEditProfile },
+    { key: 'location', done: !!profile.location, label: t('creator.home.stepLocation'), actionLabel: t('creator.home.stepLocationAction'), onAction: goEditProfile },
+    {
+      key: 'categories',
+      done: !!profile.categories?.length,
+      label: t('creator.home.stepCategories'),
+      actionLabel: t('creator.home.stepCategoriesAction'),
+      onAction: () => router.push('/(creator)/edit-categories'),
+    },
+    {
+      key: 'verification',
+      done: profile.isVerified || profile.verificationStatus === 'VERIFIED',
+      label: t('creator.home.stepVerify'),
+      hint: t('creator.home.stepVerifyHint'),
+      actionLabel: profile.verificationStatus === 'PENDING' ? t('creator.home.stepVerifyPending') : t('creator.home.stepVerifyAction'),
+      onAction: () => router.push('/(creator)/settings?section=security' as never),
+    },
+  ] : [];
+  const profileIncomplete = profileSteps.some((step) => !step.done);
 
   // Actions actually waiting on the creator (paid, funded, not yet submitted)
   // — filtered server-side; `total` is the full count, not just this page.
@@ -355,12 +380,12 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: '/(creator)/(tabs)/proposals', params: { tab: 'action' } })}
                 style={{ marginHorizontal: 0, marginTop: 0 }}
               />
-            ) : !bannerDismissed && missingFields.length > 0 && (
+            ) : !bannerDismissed && profileIncomplete && (
               <ProfileProgressCard
-                icon="user"
                 title={t('creator.home.completeProfile')}
-                missing={missingFields}
-                total={PROFILE_FIELD_COUNT}
+                name={profile?.fullName && !/^\+?\d+$/.test(profile.fullName) ? profile.fullName : displayName || 'Creator'}
+                avatarUrl={profile?.avatarUrl}
+                steps={profileSteps}
                 onPress={() => router.push('/(creator)/(tabs)/profile')}
                 onDismiss={() => setBannerDismissed(true)}
               />

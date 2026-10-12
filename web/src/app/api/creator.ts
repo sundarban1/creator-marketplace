@@ -460,6 +460,8 @@ export interface CreatorFullProfile {
   providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
   portfolioLinks: Array<{ id: string; label: string; url: string }>;
   socialLinks: Record<string, string>;
+  /** OAuth-connected accounts — any one of these counts as "has a social link". */
+  socialAccounts?: { id: string }[];
   reviewSummary?: { averageRating: number; reviewCount: number };
   savedByBusinessCount: number;
 }
