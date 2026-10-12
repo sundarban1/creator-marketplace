@@ -15,15 +15,16 @@ import { requestImagePreview } from '@/components/UploadPreviewModal';
 
 export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' | 'business-cover' | 'creator-citizenship' | 'creator-pan' | 'creator-company-reg' | 'business-pan' | 'business-company-reg' | 'business-identity' | 'campaign-feature' | 'portfolio-item';
 
-const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?: [number, number]; isDocument?: boolean }> = {
+const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?: [number, number]; allowFit?: boolean; isDocument?: boolean }> = {
   'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   aspect: [1, 1]  },
   // Covers crop at COVER_ASPECT (3:1) on web and mobile alike. On mobile the
   // exact crop sits at the top of the 180pt hero box — the part not tucked
   // behind the profile card (see ProfileCoverImage) — so what's cropped is
-  // what shows.
-  'creator-cover':       { path: '/api/creator/cover',       field: 'cover',    aspect: [COVER_ASPECT, 1] },
+  // what shows. allowFit: the crop screen can zoom out so a photo of any shape
+  // fits whole (shown with `contain` over a blur) instead of a zoomed-in strip.
+  'creator-cover':       { path: '/api/creator/cover',       field: 'cover',    aspect: [COVER_ASPECT, 1], allowFit: true },
   'business-logo':       { path: '/api/business/logo',       field: 'logo',     aspect: [1, 1]  },
-  'business-cover':      { path: '/api/business/cover',      field: 'cover',    aspect: [COVER_ASPECT, 1] },
+  'business-cover':      { path: '/api/business/cover',      field: 'cover',    aspect: [COVER_ASPECT, 1], allowFit: true },
   'creator-citizenship': { path: '/api/creator/citizenship', field: 'document', isDocument: true },
   'creator-pan':             { path: '/api/creator/pan',                       field: 'document', isDocument: true },
   'creator-company-reg':     { path: '/api/creator/company-registration',      field: 'document', isDocument: true },
@@ -107,8 +108,9 @@ export async function compressImage(
 async function cropToAspect(
   asset: ImagePicker.ImagePickerAsset,
   aspect: [number, number],
+  allowFit = false,
 ): Promise<ImagePicker.ImagePickerAsset | null> {
-  const rect = await requestImageCrop({ uri: asset.uri, width: asset.width, height: asset.height, aspect: aspect[0] / aspect[1] });
+  const rect = await requestImageCrop({ uri: asset.uri, width: asset.width, height: asset.height, aspect: aspect[0] / aspect[1], allowFit });
   if (!rect) return null;
   const rendered = await ImageManipulator.manipulate(asset.uri).crop(rect).renderAsync();
   const saved = await rendered.saveAsync({ compress: 0.92, format: SaveFormat.JPEG });
@@ -208,12 +210,12 @@ export async function pickAndUpload(target: UploadTarget): Promise<UploadResult 
   const source = await promptSource();
   if (!source) return null;
 
-  const { aspect } = TARGET_CONFIG[target];
+  const { aspect, allowFit } = TARGET_CONFIG[target];
   const picked = source === 'library' ? await pickFromLibrary() : await pickFromCamera();
   if (!picked) return null;
   // Aspect-bound targets already confirm on the crop screen; everything else
   // (documents, portfolio) gets an explicit preview before it uploads.
-  const asset = aspect ? await cropToAspect(picked, aspect) : picked;
+  const asset = aspect ? await cropToAspect(picked, aspect, allowFit) : picked;
   if (!asset) return null;
   if (!aspect && !(await requestImagePreview({ uris: [asset.uri] }))) return null;
 

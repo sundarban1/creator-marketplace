@@ -220,7 +220,13 @@ export function CreatorProfilePage() {
       <div className="overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] ring-1 ring-ink/[0.04]">
         <div className="relative aspect-[3/1] min-h-28 overflow-hidden bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark">
           {p.coverImageUrl ? (
-            <img src={p.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <>
+              {/* Covers framed zoomed-out (crop allowFit — mobile uploads them
+                  narrower than 3:1) show whole via `contain`, over a blurred
+                  fill of themselves; a true 3:1 cover fills the band as before. */}
+              <img src={p.coverImageUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-75" />
+              <img src={p.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-contain" />
+            </>
           ) : (
             <>
               <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-dash-pink/30 blur-3xl" />
@@ -549,6 +555,7 @@ export function CreatorProfilePage() {
         imageSrc={coverCropSrc}
         aspect={COVER_ASPECT}
         cropShape="rect"
+        allowFit
         title={t('biz.cropCoverTitle')}
         onCancel={closeCoverCrop}
         onConfirm={onCoverCropped}

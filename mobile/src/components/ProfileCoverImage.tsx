@@ -13,12 +13,16 @@ export const COVER_ASPECT = 3;
  * top at full width — the part of the box not tucked behind the profile card —
  * over a blurred copy of itself that fills the rest of the box, so the strips
  * beside the card read as one continuous picture.
+ *
+ * The exact layer is `contain`: covers uploaded zoomed-out (crop allowFit) are
+ * narrower than 3:1 and show whole, with the blur filling the sides; a true
+ * 3:1 cover fills the band exactly as before.
  */
 export function ProfileCoverImage({ uri, scrim = false }: { uri: string; scrim?: boolean }) {
   return (
     <>
       <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" blurRadius={18} />
-      <Image source={{ uri }} style={s.exact} resizeMode="cover" />
+      <Image source={{ uri }} style={s.exact} resizeMode="contain" />
       {scrim ? <View style={[StyleSheet.absoluteFill, s.scrim]} /> : null}
     </>
   );

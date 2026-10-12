@@ -101,6 +101,7 @@ export function EventCoverPicker({ value, onChange, onError, credit }: {
         open={!!cropSrc}
         imageSrc={cropSrc}
         aspect={16 / 9}
+        allowFit
         title={t('biz.cropEventImageTitle')}
         onCancel={closeCrop}
         onConfirm={onCropped}

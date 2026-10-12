@@ -206,7 +206,13 @@ export function BusinessProfilePage() {
             is exactly what shows at every screen width. */}
         <div className="relative aspect-[3/1] min-h-28 overflow-hidden">
           {p.coverImageUrl ? (
-            <img src={p.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <>
+              {/* Covers framed zoomed-out (crop allowFit — mobile uploads them
+                  narrower than 3:1) show whole via `contain`, over a blurred
+                  fill of themselves; a true 3:1 cover fills the band as before. */}
+              <img src={p.coverImageUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-75" />
+              <img src={p.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-contain" />
+            </>
           ) : (
             <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-violet via-violet-dark to-dash-pink-dark">
               <span aria-hidden className="pointer-events-none absolute -right-10 -top-14 h-48 w-48 rounded-full bg-brand-orange/25 blur-3xl" />
@@ -485,6 +491,7 @@ export function BusinessProfilePage() {
         imageSrc={coverCropSrc}
         aspect={COVER_ASPECT}
         cropShape="rect"
+        allowFit
         title={t('biz.cropCoverTitle')}
         onCancel={closeCoverCrop}
         onConfirm={onCoverCropped}

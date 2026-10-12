@@ -15,6 +15,14 @@ import { F, FONT_SIZE, MIN_TOUCH_TARGET, SCREEN_GUTTER, SPACING } from '@/utilit
 // photo is dragged/pinched underneath it, and the caller gets back the crop
 // rect in the source image's pixel space (applied with expo-image-manipulator).
 //
+// `allowFit` (profile covers): the photo may also be zoomed OUT until it fits
+// inside the frame whole, and it opens that way. Without it a normal 4:3 or
+// portrait photo had to fill a 3:1 cover frame, so all the user could keep was
+// a thin zoomed-in strip. Along the axis where the fitted photo is smaller
+// than the frame it stays centred, and the returned rect is just the visible
+// part of the photo (not 3:1) — cover displays draw it with `contain` over a
+// blurred copy of itself (ProfileCoverImage, web profile bands).
+//
 // It's driven imperatively — `requestImageCrop()` from uploadImage.ts — via a
 // single <ImageCropHost /> mounted in the root layout, so no upload call site
 // has to render anything.
@@ -26,6 +34,7 @@ type CropRequest = {
   width: number;
   height: number;
   aspect: number;
+  allowFit?: boolean;
   resolve: (rect: CropRect | null) => void;
 };
 
@@ -48,14 +57,14 @@ function measure(uri: string): Promise<{ width: number; height: number }> {
  * Lets the user frame `uri` at `aspect` (width / height). Resolves with the
  * crop rect in source pixels, or null if they cancelled.
  */
-export async function requestImageCrop(args: { uri: string; width?: number; height?: number; aspect: number }): Promise<CropRect | null> {
+export async function requestImageCrop(args: { uri: string; width?: number; height?: number; aspect: number; allowFit?: boolean }): Promise<CropRect | null> {
   let { width = 0, height = 0 } = args;
   if (!width || !height) ({ width, height } = await measure(args.uri));
   if (!present) return centerCrop(width, height, args.aspect);
   // iOS can't present a new modal while the photo picker is still animating
   // closed — the presentation is silently dropped and the promise would hang.
   if (Platform.OS === 'ios') await new Promise((r) => setTimeout(r, 400));
-  return new Promise((resolve) => present?.({ uri: args.uri, width, height, aspect: args.aspect, resolve }));
+  return new Promise((resolve) => present?.({ uri: args.uri, width, height, aspect: args.aspect, allowFit: args.allowFit, resolve }));
 }
 
 export function ImageCropHost() {
@@ -106,16 +115,23 @@ function CropEditor({ req, onDone }: { req: CropRequest; onDone: (rect: CropRect
   const baseScale = area ? Math.max(frameW / req.width, frameH / req.height) : 1;
   const dispW = req.width * baseScale;
   const dispH = req.height * baseScale;
+  // Lowest zoom: 1 (photo covers the frame), or with allowFit the zoom at
+  // which the whole photo fits inside it. Fixed by the photo's shape vs the
+  // frame's, so it doesn't depend on the measured area.
+  const minZoom = req.allowFit
+    ? Math.min(1, Math.min(req.aspect * req.height / req.width, req.width / (req.aspect * req.height)))
+    : 1;
 
-  const scale = useSharedValue(1);
+  const scale = useSharedValue(minZoom);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
-  const startScale = useSharedValue(1);
+  const startScale = useSharedValue(minZoom);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
 
   // Keep the frame fully covered: at zoom z the photo overhangs the frame by
-  // (disp*z - frame)/2 on each side, which is how far it may slide.
+  // (disp*z - frame)/2 on each side, which is how far it may slide. Zoomed out
+  // below the frame (allowFit) there's no overhang, so it stays centred.
   const clampT = (v: number, disp: number, frame: number, z: number) => {
     'worklet';
     const max = Math.max(0, (disp * z - frame) / 2);
@@ -137,7 +153,7 @@ function CropEditor({ req, onDone }: { req: CropRequest; onDone: (rect: CropRect
       startScale.set(scale.get());
     })
     .onUpdate((e) => {
-      const z = Math.min(MAX_ZOOM, Math.max(1, startScale.get() * e.scale));
+      const z = Math.min(MAX_ZOOM, Math.max(minZoom, startScale.get() * e.scale));
       scale.set(z);
       tx.set(clampT(tx.get(), dispW, frameW, z));
       ty.set(clampT(ty.get(), dispH, frameH, z));
