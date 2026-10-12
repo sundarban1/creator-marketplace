@@ -7,6 +7,7 @@ import { PaymentMethodsProvider } from './context/PaymentMethodsContext';
 import { SuccessStoriesProvider } from './context/SuccessStoriesContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RouteTitle } from './components/RouteTitle';
 import { RouteFallback } from './components/RouteFallback';
 import { PrerenderRelease } from './components/PrerenderRelease';
 import { marketplaceRoutes } from './app/AppRoutes';
@@ -129,6 +130,8 @@ export default function App() {
         <ConfirmDialogHost />
        <Suspense fallback={<RouteFallback />}>
         <PrerenderRelease />
+        {/* Tab titles for app/admin/auth routes (public pages use <SEO>). */}
+        <RouteTitle />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
