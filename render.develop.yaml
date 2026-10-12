@@ -1,0 +1,217 @@
+# Develop / staging environment — a SEPARATE Render Blueprint from render.yaml.
+#
+# render.yaml       → production (kolab-api, marketplace-web, kolab-db), deploys from `master`
+# render.develop.yaml → this file: develop API + web + Postgres, deploys from `develop`
+#
+# Kept as its own file (and its own Blueprint in the Render dashboard, created
+# with Branch = develop and Blueprint Path = render.develop.yaml) so that:
+#   - editing the dev environment never re-syncs or touches a production service
+#   - changes to this file take effect on a push to `develop`, no merge to master needed
+#
+# Everything here is on Render's FREE plans:
+#   - Web services spin down after ~15 min idle; the first request afterwards
+#     takes ~30-60 s to cold-start. Fine for testing, not for demos.
+#   - Free Postgres EXPIRES 30 days after creation (then a 14-day grace period
+#     before deletion). Upgrade kolab-db-dev to `basic-256mb` if it should persist.
+#   - preDeployCommand is paid-only — migrations run from the backend's
+#     docker-entrypoint.sh on boot instead (`npx prisma migrate deploy`).
+#   - No Redis: every consumer falls back cleanly without REDIS_URL /
+#     REDIS_QUEUE_URL (in-memory Socket.IO adapter + rate limits, queue → inline
+#     send, OTP → Postgres), and with a single instance nothing needs sharing.
+#
+# After the first deploy, seed the empty dev database from the kolab-api-dev
+# Shell tab (Shell is paid-only on free web services — if unavailable, run these
+# locally with DATABASE_URL set to kolab-db-dev's EXTERNAL connection string):
+#   npm run db:seed:essentials
+#   npm run db:seed:admin        (uses SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD)
+#   npm run db:seed:platforms
+#   npm run db:seed              (optional here: fake demo users/campaigns)
+
+databases:
+  - name: kolab-db-dev
+    plan: free
+    region: singapore
+    databaseName: kolab_dev
+    user: kolab_dev_user
+    ipAllowList: [] # internal-only; add your IP here to connect from your machine
+
+services:
+  - type: web
+    name: kolab-api-dev
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: develop
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+        - render.develop.yaml
+
+    envVars:
+      # ── Core ────────────────────────────────────────────────────────────────
+      # NODE_ENV stays `production` so dev behaves like prod (rate limits,
+      # logging, swagger). SENTRY_ENVIRONMENT is what separates it in Sentry/logs.
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: LOG_LEVEL
+        value: debug
+      - key: DB_CONNECTION_LIMIT
+        value: 5
+      - key: SLOW_QUERY_LOG_MS
+        value: 300
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: development
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: 0
+
+      # Resource alerts sized for the free plans (free Postgres = 1 GB).
+      - key: ALERT_EMAIL
+        value: sundarban007@gmail.com
+      - key: DB_STORAGE_ALERT_LIMIT_MB
+        value: 1024
+      - key: WEB_MEMORY_LIMIT_MB
+        value: 512
+
+      # ── Database ────────────────────────────────────────────────────────────
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kolab-db-dev
+          property: connectionString
+
+      # ── Auth — generated per environment, so dev tokens never work on prod ──
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+
+      # ── CORS / links in emails — the dev web service below. If Render
+      # assigned it a suffixed hostname (name already taken), update this.
+      - key: FRONTEND_URL
+        value: https://kolab-web-dev.onrender.com
+
+      # ── Email ───────────────────────────────────────────────────────────────
+      - key: RESEND_API_KEY
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+
+      # ── Uploads (point at a separate dev bucket/folder if you can) ─────────
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false
+      - key: R2_PRESIGNED_URL_EXPIRY
+        value: "900"
+
+      # ── AI ──────────────────────────────────────────────────────────────────
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: UNSPLASH_ACCESS_KEY
+        sync: false
+
+      # ── Social OAuth ────────────────────────────────────────────────────────
+      # Each provider only redirects to URIs registered in its console. Add the
+      # kolab-api-dev callbacks there, or these flows won't work on dev.
+      # (TikTok production allows a single redirect URI = prod, so TikTok
+      # connect is expected not to work here.)
+      - key: APP_SCHEME
+        value: kolab
+      - key: TIKTOK_CLIENT_KEY
+        sync: false
+      - key: TIKTOK_CLIENT_SECRET
+        sync: false
+      - key: TIKTOK_REDIRECT_URI
+        value: https://kolab-api-dev.onrender.com/api/creator/social-accounts/tiktok/callback
+      - key: FACEBOOK_APP_ID
+        value: "1740519673635792"
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: INSTAGRAM_APP_ID
+        sync: false
+      - key: INSTAGRAM_APP_SECRET
+        sync: false
+      - key: INSTAGRAM_REDIRECT_URI
+        value: https://kolab-api-dev.onrender.com/api/creator/social-accounts/instagram-login/callback
+      - key: GOOGLE_WEB_CLIENT_ID
+        value: "543768819635-6mhj10fgm73eboahjnhttogaihn068if.apps.googleusercontent.com"
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ANDROID_CLIENT_ID
+        value: "543768819635-at5jjekqobcots66gl7lv0gufh8b6rp3.apps.googleusercontent.com"
+      - key: GOOGLE_IOS_CLIENT_ID
+        value: "543768819635-fuslrtr8mt6bmi2jslc3h3hcqg4drhdk.apps.googleusercontent.com"
+      - key: APPLE_CLIENT_ID
+        value: com.sundarban.kolab
+
+      # ── Payments — sandbox/UAT only on dev ──────────────────────────────────
+      - key: KHALTI_SECRET_KEY
+        value: "e29ab894b88a403eaab73ca3a8f74fec" # sandbox merchant key (dev.khalti.com only)
+      - key: KHALTI_BASE_URL
+        value: https://dev.khalti.com/api/v2
+      - key: KHALTI_RETURN_URL
+        value: https://kolab-api-dev.onrender.com/api/payments/khalti/callback
+      - key: ESEWA_SECRET_KEY
+        sync: false
+      - key: ESEWA_RETURN_BASE_URL
+        value: https://kolab-api-dev.onrender.com
+      # connectIPS registers ONE success/failure URL pair per app (currently
+      # prod), so it is left unconfigured here — selecting it fails cleanly.
+
+      # ── SMS — leave unset on dev to avoid sending real texts; sendSms() then
+      # logs and no-ops. Set SMSPASAL_API_KEY in the dashboard to test it.
+      - key: SMSPASAL_API_KEY
+        sync: false
+
+      # ── First-run seeding (npm run db:seed:admin) ───────────────────────────
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+
+  - type: web
+    name: kolab-web-dev
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: develop
+    dockerfilePath: ./web/Dockerfile
+    dockerContext: ./web
+    healthCheckPath: /healthz
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - web/**
+        - render.develop.yaml
+    envVars:
+      # Build arg (see web/Dockerfile): bakes the dev API into the bundle instead
+      # of .env.production's prod URL. If Render suffixed the API's hostname,
+      # update this and redeploy.
+      - key: VITE_API_URL
+        value: https://kolab-api-dev.onrender.com
+      # Runtime: X-Robots-Tag noindex so the dev copy is never indexed.
+      - key: ROBOTS_NOINDEX
+        value: "true"

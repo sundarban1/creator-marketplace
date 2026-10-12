@@ -99,6 +99,15 @@ app.use((req, res, next) => {
 // favicons) served exactly as-is. index:false/redirect:false so this
 // middleware never guesses at directory index files or issues trailing-
 // slash redirects — that's handled explicitly below instead.
+// Non-production deploys (the develop environment) set ROBOTS_NOINDEX=true so
+// the *.onrender.com dev copy never competes with kolab.com.np in search.
+if (process.env.ROBOTS_NOINDEX === 'true') {
+  app.use((_req, res, next) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    next();
+  });
+}
+
 app.use(express.static(DIST, { index: false, redirect: false, setHeaders: setAssetHeaders }));
 
 app.get('/healthz', (_req, res) => res.status(200).send('ok'));

@@ -7,7 +7,15 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npx playwright install --with-deps chromium
-RUN npm run build:no-prerender && npm run prerender && npm run sitemap
+# Optional build-time override of the API origin baked into the bundle (and
+# used by prerender/sitemap). Render passes a service's env vars as build args
+# when declared here — the develop service sets it to the dev API. Unset /
+# empty => falls back to .env.production (the prod API). It's unset rather
+# than left empty because Vite lets ANY existing process env var, even "",
+# win over .env files.
+ARG VITE_API_URL
+RUN if [ -z "$VITE_API_URL" ]; then unset VITE_API_URL; fi && \
+    npm run build:no-prerender && npm run prerender && npm run sitemap
 
 # Runner only serves the prebuilt dist/ via server.mjs — no browser/native
 # deps needed here, so alpine is fine and keeps the final image small.
