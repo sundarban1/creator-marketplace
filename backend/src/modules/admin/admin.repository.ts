@@ -1,6 +1,15 @@
 import { Role, CampaignStatus } from '@prisma/client';
 import prisma from '../../prisma';
 
+// Percent-style numeric settings — an admin-entered 0 is a real value, so
+// only a missing/blank/non-numeric entry falls back (a plain `Number(v) || d`
+// would silently turn "0%" back into the default).
+export function numericSetting(value: unknown, fallback: number): number {
+  if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
 // ── Default platform settings ──────────────────────────────────────────────────
 
 const DEFAULTS: Record<string, unknown> = {

@@ -1916,7 +1916,7 @@ export default function CampaignWorkspaceScreen() {
           deliverableVideos={allDeliverableVideos}
           deliverableFiles={allDeliverableFiles}
           submittedUrls={submittedUrls}
-          onPay={() => setShowPay(true)}
+          onPay={() => { void refetchPlatformFlags(); setShowPay(true); }}
           onStartWork={handleStartWork}
           onUpload={() => setShowUpload(true)}
           onMarkComplete={handleMarkComplete}

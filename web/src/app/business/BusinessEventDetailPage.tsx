@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Pencil, MessageCircle, Check, Gift } from 'lucide-react';
 import { useT, type TFn } from '../i18n';
 import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
 import { CampaignBriefSections } from '../events/CampaignBriefSections';
 import { EventAttachmentsView } from '../events/EventAttachments';
 import { SaveTemplateButton } from './guided/templates';
@@ -161,15 +162,27 @@ export function BusinessEventDetailPage() {
   const [creditsBalance, setCreditsBalance] = useState(0);
   const [feePercents, setFeePercents] = useState({ paymentFeePercent: 5, paymentTaxPercent: 13 });
 
+  // Uncached fetch (not the session-memoized getPlatformFlags()) — this is a
+  // live money figure shown right before the business pays into escrow, so
+  // it needs the current admin-set fee/tax. Re-run when the pay modal opens
+  // and whenever the admin saves settings (socket → 'platformFlags'), so an
+  // open tab never shows a stale rate.
+  const loadFeePercents = useCallback(() => {
+    fetchPlatformFlags()
+      .then((f) => setFeePercents({ paymentFeePercent: f.paymentFeePercent, paymentTaxPercent: f.paymentTaxPercent }))
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetchPaymentMethods().then(setMethodCatalog).catch(() => {});
     getBusinessCredits().then((b) => setCreditsBalance(b.balance)).catch(() => {});
-    // Uncached fetch (not the session-memoized getPlatformFlags()) — this is a
-    // live money figure shown right before the business pays into escrow, so
-    // it needs the current admin-set commission, not whatever was cached from
-    // an earlier page in this browser tab's session.
-    fetchPlatformFlags().then((f) => setFeePercents({ paymentFeePercent: f.paymentFeePercent, paymentTaxPercent: f.paymentTaxPercent })).catch(() => {});
-  }, []);
+    loadFeePercents();
+  }, [loadFeePercents]);
+
+  useLiveRefresh(['platformFlags'], loadFeePercents);
+  useEffect(() => {
+    if (payTarget) loadFeePercents();
+  }, [payTarget, loadFeePercents]);
 
   // Defaults to the first admin-enabled method until the business picks one
   // explicitly — derived at render time rather than synced via an effect,

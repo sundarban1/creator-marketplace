@@ -1,5 +1,5 @@
 import { PublicRepository } from './public.repository';
-import { AdminRepository } from '../admin/admin.repository';
+import { AdminRepository, numericSetting } from '../admin/admin.repository';
 import { CampaignService } from '../campaign/campaign.service';
 import { CreatorService } from '../creator/creator.service';
 import { BusinessService } from '../business/business.service';
@@ -47,9 +47,9 @@ export class PublicService {
       socialAccountsInstagramEnabled: s['socialAccounts.instagram.enabled'] as boolean,
       socialAccountsYoutubeEnabled:   s['socialAccounts.youtube.enabled']   as boolean,
       supportEmail:                s['platform.supportEmail'] as string | undefined,
-      platformCommission:          Number(s['platform.commission']) || 0,
-      paymentFeePercent:           Number(s['platform.paymentFeePercent']) || 5,
-      paymentTaxPercent:           Number(s['platform.paymentTaxPercent']) || 13,
+      platformCommission:          numericSetting(s['platform.commission'], 0),
+      paymentFeePercent:           numericSetting(s['platform.paymentFeePercent'], 5),
+      paymentTaxPercent:           numericSetting(s['platform.paymentTaxPercent'], 13),
       comingSoonIos:               comingSoon.ios,
       comingSoonAndroid:           comingSoon.android,
       comingSoon:                  comingSoon.ios && comingSoon.android,

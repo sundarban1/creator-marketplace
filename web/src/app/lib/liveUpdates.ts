@@ -15,7 +15,8 @@ export type LiveTopic =
   | 'referrals'
   | 'conversations'
   | 'categories'
-  | 'platforms';
+  | 'platforms'
+  | 'platformFlags'; // admin settings (e.g. payment fee/tax %)
 
 type Listener = (topic: LiveTopic) => void;
 const listeners = new Set<Listener>();

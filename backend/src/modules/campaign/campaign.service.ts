@@ -14,7 +14,7 @@ import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
 import { FavoriteRepository } from '../creator/favorite.repository';
-import { AdminRepository } from '../admin/admin.repository';
+import { AdminRepository, numericSetting } from '../admin/admin.repository';
 import { CategoryRepository } from '../category/category.repository';
 import { notificationService } from '../notifications/notification.service';
 import { notify, collaborationWebUrl, NotificationEvent, applicationPushWindow, applicationPushKey } from '../notifications/notify';
@@ -73,8 +73,8 @@ const CAMPAIGN_FIELDS = ['description', 'category', 'goals', 'contentType', 'del
 // campaign-creation-time value used only for the contract text).
 async function applicationTotalNpr(adminRepo: AdminRepository, proposedRate: number): Promise<number> {
   const [feePercent, taxPercent] = await Promise.all([
-    adminRepo.getSetting('platform.paymentFeePercent').then((v) => Number(v) || 5),
-    adminRepo.getSetting('platform.paymentTaxPercent').then((v) => Number(v) || 13),
+    adminRepo.getSetting('platform.paymentFeePercent').then((v) => numericSetting(v, 5)),
+    adminRepo.getSetting('platform.paymentTaxPercent').then((v) => numericSetting(v, 13)),
   ]);
   const platformFee = Math.round(proposedRate * (feePercent / 100));
   const tax = Math.round(platformFee * (taxPercent / 100));

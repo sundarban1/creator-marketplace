@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import type { Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { usePlatformFlags } from './PlatformSettingsContext';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import { notificationService } from '@/services/notifications';
 import { chatService } from '@/services/chat';
@@ -66,6 +67,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user, forceLogout } = useAuth();
   const forceLogoutRef = useRef(forceLogout);
   forceLogoutRef.current = forceLogout;
+  const { refetch: refetchPlatformFlags } = usePlatformFlags();
+  const refetchPlatformFlagsRef = useRef(refetchPlatformFlags);
+  refetchPlatformFlagsRef.current = refetchPlatformFlags;
   const [badgeCount, setBadgeCount]         = useState(0);
   const [chatBadgeCount, setChatBadgeCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
@@ -155,8 +159,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const onCampaignUpdated = (data: { id?: string }) => {
       if (data?.id) void queryClient.invalidateQueries({ queryKey: ['campaign', data.id] });
     };
+    // Admin saved platform settings (e.g. payment fee/tax %) — re-pull the
+    // flags so open screens like the pay sheet show the new values live.
+    const onSettingsUpdated = () => { void refetchPlatformFlagsRef.current(); };
     socket.on('session:revoked',  onSessionRevoked);
     socket.on('catalog:updated',  onCatalogUpdated);
+    socket.on('settings:updated', onSettingsUpdated);
     socket.on('campaign:updated', onCampaignUpdated);
 
     // ── Chat badge + message forwarding ─────────────────────────────────────
@@ -234,6 +242,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       socket.off('notification:new', onNotificationNew);
       socket.off('session:revoked',  onSessionRevoked);
       socket.off('catalog:updated',  onCatalogUpdated);
+      socket.off('settings:updated', onSettingsUpdated);
       socket.off('campaign:updated', onCampaignUpdated);
       socket.off('message:new',         onMessageNew);
       socket.off('conversation:update', onConvUpdate);

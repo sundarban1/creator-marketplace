@@ -115,11 +115,13 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const onCatalogUpdated = (data?: { kind?: 'categories' | 'platforms' }) => {
       if (data?.kind) publishLive(data.kind);
     };
+    const onSettingsUpdated = () => publishLive('platformFlags');
     const onConversationUpdate = () => publishLive('conversations');
     socket.on('session:revoked',     onSessionRevoked);
     socket.on('campaign:new',        onCampaignNew);
     socket.on('campaign:updated',    onCampaignUpdated);
     socket.on('catalog:updated',     onCatalogUpdated);
+    socket.on('settings:updated',    onSettingsUpdated);
     socket.on('conversation:update', onConversationUpdate);
 
     const onFocus = () => load();
@@ -131,6 +133,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       socket.off('campaign:new',        onCampaignNew);
       socket.off('campaign:updated',    onCampaignUpdated);
       socket.off('catalog:updated',     onCatalogUpdated);
+      socket.off('settings:updated',    onSettingsUpdated);
       socket.off('conversation:update', onConversationUpdate);
       window.removeEventListener('focus', onFocus);
     };

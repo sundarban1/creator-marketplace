@@ -25,7 +25,7 @@ import { ActivityAction, AuditAction, EntityType } from '../logging/logging.cons
 
 import { HttpStatus } from '../../constants/httpStatus';
 import { AuthRepository } from '../auth/auth.repository';
-import { emitToUser } from '../../socket';
+import { emitToAll, emitToUser } from '../../socket';
 
 export class AdminService {
   private repo: AdminRepository;
@@ -246,6 +246,10 @@ export class AdminService {
     // So a saved change (e.g. a rate-limit max) takes effect immediately
     // rather than waiting out settingsCache's TTL.
     invalidateSettingsCache();
+    // Tell already-open web/mobile sessions to re-pull /public/platform-flags,
+    // so e.g. a new platform fee/tax shows up in a business's pay modal
+    // without them logging out or reloading.
+    emitToAll('settings:updated', {});
   }
 
   getSetting(key: string) {

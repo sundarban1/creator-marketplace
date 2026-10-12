@@ -370,7 +370,9 @@ export function Settings() {
         <SectionCard title="Platform Information" subtitle="Brand details shown across the app">
           <InputField label="Platform Name"            settingKey="platform.name"          settings={settings} onChange={setString} />
           <InputField label="Support Email"            settingKey="platform.supportEmail"  settings={settings} onChange={setString} type="email" />
+          {/* Hidden — checkout fees come from "Payment Fees" below; 'platform.commission' only fed contract text.
           <InputField label="Platform Commission (%)"  settingKey="platform.commission"    settings={settings} onChange={setString} type="number" />
+          */}
           <div className="mb-4">
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Platform Description</label>
             <textarea
@@ -383,7 +385,7 @@ export function Settings() {
         </SectionCard>
 
         {/* Payment Fees */}
-        <SectionCard title="Payment Fees" subtitle="Platform fee and tax added to the total when a business pays a creator — shown live in the mobile app's Complete Payment screen">
+        <SectionCard title="Payment Fees" subtitle="Platform fee and tax added to the total when a business pays a creator — shown live in the web and mobile pay screens">
           <InputField label="Platform Fee (%)" settingKey="platform.paymentFeePercent" settings={settings} onChange={setString} type="number" />
           <InputField label="Tax (%)"          settingKey="platform.paymentTaxPercent" settings={settings} onChange={setString} type="number" />
         </SectionCard>
