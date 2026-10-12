@@ -58,7 +58,7 @@ export function LogoMarquee({
 
   return (
     <section aria-label={ariaLabel ?? heading} className={className}>
-      <h2 className="px-6 text-center text-xs font-medium uppercase tracking-[0.14em] text-lp-fg/55">{heading}</h2>
+      <h2 className="px-6 text-center text-sm font-medium uppercase tracking-[0.14em] text-lp-fg/60 sm:text-base">{heading}</h2>
 
       {reducedMotion ? (
         // Phones: one swipeable row (keeps the band short); wider: wrapped + centred.
@@ -77,7 +77,7 @@ export function LogoMarquee({
               <li key={item.id}>{item.caption ? `${item.label}, ${item.caption}` : item.label}</li>
             ))}
           </ul>
-          <div aria-hidden className="mt-6 overflow-hidden" style={EDGE_FADE}>
+          <div aria-hidden className="mt-4 overflow-hidden py-2" style={EDGE_FADE}>
             <Marquee speed={MARQUEE_SPEED} pauseOnHover autoFill>
               {items.map((item) => (
                 <div key={item.id} className="mx-2 sm:mx-3">
@@ -95,15 +95,15 @@ export function LogoMarquee({
 function MarqueeChip({ item, variant }: { item: LogoMarqueeItem; variant: LogoMarqueeVariant }) {
   if (variant === 'logo' && item.imageUrl) {
     return (
-      <div className="flex h-14 w-40 items-center justify-center px-2 sm:h-16 sm:w-48">
+      <div className="group flex h-16 w-44 items-center justify-center px-2 sm:h-20 sm:w-56">
         <img
           src={item.imageUrl}
           alt={item.label}
-          width={176}
-          height={64}
+          width={208}
+          height={80}
           loading="eager"
           decoding="async"
-          className="max-h-full max-w-full object-contain"
+          className="max-h-full max-w-full object-contain transition duration-300 ease-out group-hover:scale-110 group-hover:drop-shadow-[0_6px_18px_rgba(255,255,255,0.18)] motion-reduce:transition-none"
         />
       </div>
     );

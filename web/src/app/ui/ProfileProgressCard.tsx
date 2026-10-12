@@ -22,7 +22,7 @@ export type ProfileStep = {
  * replaces the plain AttentionBanner for the profile case on both dashboards.
  * Leads with the user's own avatar (initials until one is uploaded); the
  * encouragement line steps up as the profile fills in, and each step still to
- * do is a row with its own deep link. Mirrors mobile's ProfileProgressCard.
+ * do is shown one at a time, with its own deep link. Mirrors mobile's ProfileProgressCard.
  */
 export function ProfileProgressCard({
   title,
@@ -45,6 +45,8 @@ export function ProfileProgressCard({
   const total = steps.length;
   const done = steps.filter((s) => s.done).length;
   const remaining = steps.filter((s) => !s.done);
+  // Only the next step is shown — one ask at a time instead of a checklist.
+  const next = remaining[0];
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const message =
     remaining.length === 1
@@ -90,9 +92,9 @@ export function ProfileProgressCard({
       </div>
       <span className="mt-1.5 text-[12px] font-medium text-ink-soft">{t('profileProgress.stepsDone', { done, total })}</span>
 
-      {remaining.length > 0 && (
+      {next && (
         <ul className="mt-3 flex flex-col gap-2.5 border-t border-line pt-3">
-          {remaining.map((step) => (
+          {[next].map((step) => (
             <li key={step.key} className="flex items-center gap-2.5">
               <span className="h-2 w-2 flex-shrink-0 rounded-full border-[1.5px] border-brand" aria-hidden />
               <span className="min-w-0 flex-1">

@@ -23,7 +23,7 @@ export type ProfileStep = {
 // replaces the plain AttentionBanner for the profile case on both home
 // screens. Leads with the user's own avatar (initials until one is uploaded);
 // the encouragement line steps up as the profile fills in, and each step still
-// to do is a row with its own deep link. Mirrors web's ProfileProgressCard.
+// to do is shown one at a time, with its own deep link. Mirrors web's ProfileProgressCard.
 type Props = {
   title: string;
   name: string;
@@ -43,6 +43,8 @@ export function ProfileProgressCard({ title, name, avatarUrl, steps, onPress, on
   const total = steps.length;
   const done = steps.filter((s) => s.done).length;
   const remaining = steps.filter((s) => !s.done);
+  // Only the next step is shown — one ask at a time instead of a checklist.
+  const next = remaining[0];
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const message =
     remaining.length === 1
@@ -99,9 +101,9 @@ export function ProfileProgressCard({ title, name, avatarUrl, steps, onPress, on
       </View>
       <Text style={[s.steps, { color: C.textPlaceholder }]}>{t('profileProgress.stepsDone', { done, total })}</Text>
 
-      {remaining.length > 0 && (
+      {next && (
         <View style={[s.list, { borderTopColor: C.border }]}>
-          {remaining.map((step) => (
+          {[next].map((step) => (
             <View key={step.key} style={s.row}>
               <View style={[s.dot, { borderColor: C.brinjal1 }]} />
               <View style={{ flex: 1 }}>

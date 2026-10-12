@@ -25,16 +25,16 @@ export function CreatorCommunity({
 
   if (partnersStatus === 'loading' || (status === 'loading' && !partners.length)) {
     return (
-      <div className={`${band('navy')} py-10 sm:py-14`}>
+      <div className={`${band('navy')} pb-2 pt-10 sm:pb-4 sm:pt-14`}>
         {/* Same footprint as the loaded row (heading + chip track). */}
-        <div aria-hidden className="h-[4.5rem] sm:h-[5.25rem]" />
+        <div aria-hidden className="h-[5.5rem] sm:h-[6.5rem]" />
       </div>
     );
   }
 
   if (partners.length) {
     const items: LogoMarqueeItem[] = partners.map((p) => ({ id: p.id, label: p.name, imageUrl: p.logoUrl }));
-    return <LogoMarquee heading={c.partnersHeading} items={items} variant="logo" className={`${band('navy')} py-10 sm:py-14`} />;
+    return <LogoMarquee heading={c.partnersHeading} items={items} variant="logo" className={`${band('navy')} pb-2 pt-10 sm:pb-4 sm:pt-14`} />;
   }
 
   const real: LogoMarqueeItem[] = (creators ?? [])
@@ -50,5 +50,5 @@ export function CreatorCommunity({
     ? real
     : d.marketplace.creators.fallback.map((f) => ({ id: f.name, label: f.name, caption: f.category }));
 
-  return <LogoMarquee heading={c.heading} items={items} className={`${band('navy')} py-10 sm:py-14`} />;
+  return <LogoMarquee heading={c.heading} items={items} className={`${band('navy')} pb-2 pt-10 sm:pb-4 sm:pt-14`} />;
 }
