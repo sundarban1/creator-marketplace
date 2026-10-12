@@ -24,6 +24,8 @@ import paymentMethodRoutes from '../modules/payment-method/payment-method.routes
 import paymentMethodAdminRoutes from '../modules/payment-method/payment-method.admin.routes';
 import successStoryRoutes from '../modules/success-story/success-story.routes';
 import successStoryAdminRoutes from '../modules/success-story/success-story.admin.routes';
+import partnerRoutes from '../modules/partner/partner.routes';
+import partnerAdminRoutes from '../modules/partner/partner.admin.routes';
 import communityEventRoutes from '../modules/community-event/community-event.routes';
 import communityEventAdminRoutes from '../modules/community-event/community-event.admin.routes';
 import publicRoutes from '../modules/public/public.routes';
@@ -89,6 +91,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/admin/platforms', platformAdminRoutes);
   app.use('/api/admin/payment-methods', paymentMethodAdminRoutes);
   app.use('/api/admin/success-stories', successStoryAdminRoutes);
+  app.use('/api/admin/partners', partnerAdminRoutes);
   app.use('/api/admin/community-events', communityEventAdminRoutes);
   app.use('/api/admin/visitor-chats', visitorChatAdminRoutes);
   app.use('/api/admin/services', serviceAdminRoutes);
@@ -102,6 +105,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/service-requests', serviceRequestRoutes);
   app.use('/api/reports', reportRoutes);
   app.use('/api/success-stories', successStoryRoutes);
+  app.use('/api/partners', partnerRoutes);
   app.use('/api/community-events', communityEventRoutes);
   app.use('/api/public', publicRoutes);
   app.use('/api/visitor-chat', visitorChatRoutes);

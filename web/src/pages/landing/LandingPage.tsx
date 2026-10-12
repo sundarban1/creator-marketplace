@@ -35,6 +35,7 @@ import { Security } from './sections/Security';
 import { Stories } from './sections/Stories';
 import { FinalCTA } from './sections/FinalCTA';
 import { OldWay } from './sections/OldWay';
+import { CreatorCommunity } from './sections/CreatorCommunity';
 
 // Section links rendered off the home page (LandingNav, PublicHeader,
 // FooterAnchorLink outside this page's LenisProvider) navigate to `/` with
@@ -129,6 +130,7 @@ function LandingPageInner() {
       <SocialRail />
       <LandingNav />
       <Hero stats={stats} creators={creators} categoryMeta={categoryMeta} />
+      <CreatorCommunity creators={creators} status={showcaseStatus} />
       <OldWay />
       <LiveOnKolab
         events={events}

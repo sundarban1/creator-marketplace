@@ -29,6 +29,7 @@ import {
   CalendarDays,
   CalendarHeart,
   ClipboardCheck,
+  Handshake,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -72,6 +73,7 @@ const navGroups: NavGroup[] = [
       { to: '/admin/help-center',   label: 'Help Center',   icon: HelpCircle    },
       { to: '/admin/faqs',          label: 'FAQs',          icon: BookOpen      },
       { to: '/admin/success-stories', label: 'Success Stories', icon: Quote     },
+      { to: '/admin/partners',      label: 'Partners',      icon: Handshake     },
       { to: '/admin/get-in-touch',  label: 'Get in Touch',  icon: Mail          },
       { to: '/admin/support-inbox', label: 'Support Inbox', icon: MessageCircle },
       { to: '/admin/legal',         label: 'Legal',         icon: Scale         },

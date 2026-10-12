@@ -2581,6 +2581,25 @@ model SuccessStory {
   @@map("success_stories")
 }
 
+// Brand/business partners shown in the landing page logo marquee (admin →
+// Partners). Only ACTIVE rows are public; until at least one exists the
+// marquee shows real creators instead, so nothing implies a partnership that
+// hasn't been added here by an admin.
+model Partner {
+  id         String             @id @default(cuid())
+  name       String
+  logoUrl    String
+  websiteUrl String?
+  order      Int                @default(0)
+  // Reuses the ACTIVE/INACTIVE enum — same publish semantics as stories.
+  status     SuccessStoryStatus @default(ACTIVE)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([status, order])
+  @@map("partners")
+}
+
 enum VisitorChatStatus {
   OPEN
   CLOSED

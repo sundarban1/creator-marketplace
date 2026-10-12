@@ -99,6 +99,7 @@ const CommunityEventsAdminPage = named(() => import('./pages/community-events/Co
 const CommunityEventEditorPage = named(() => import('./pages/community-events/CommunityEventEditorPage'), 'CommunityEventEditorPage');
 const NewSuccessStoryPage = named(() => import('./pages/success-stories/NewSuccessStoryPage'), 'NewSuccessStoryPage');
 const EditSuccessStoryPage = named(() => import('./pages/success-stories/EditSuccessStoryPage'), 'EditSuccessStoryPage');
+const PartnersPage = named(() => import('./pages/partners/PartnersPage'), 'PartnersPage');
 const CreatorMeetups = named(() => import('./pages/CreatorMeetups'), 'CreatorMeetups');
 const CreatorMeetupDetail = named(() => import('./pages/creator-meetups/CreatorMeetupDetail'), 'CreatorMeetupDetail');
 
@@ -198,6 +199,7 @@ export default function App() {
                 <Route path="/admin/success-stories" element={<SuccessStoriesPage />} />
                 <Route path="/admin/success-stories/new" element={<NewSuccessStoryPage />} />
                 <Route path="/admin/success-stories/edit/:id" element={<EditSuccessStoryPage />} />
+                <Route path="/admin/partners" element={<PartnersPage />} />
                 <Route path="/admin/payments" element={<Payments />} />
                 <Route path="/admin/referrals" element={<Referrals />} />
                 <Route path="/admin/reports" element={<Reports />} />

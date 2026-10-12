@@ -1,1 +1,0 @@
-import{In as e}from"./index-cHVYupqc.js";function t(t){return e(`GET`,`/api/community-events`,void 0,{signal:t,anonymous:!0})}function n(t,n){return e(`GET`,`/api/community-events/${encodeURIComponent(t)}`,void 0,{signal:n,anonymous:!0})}export{t as n,n as t};

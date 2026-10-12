@@ -96,6 +96,7 @@ const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/admin/success-stories',            'Success Stories'],
   ['/admin/success-stories/new',        'New Success Story'],
   ['/admin/success-stories/edit/:id',   'Edit Success Story'],
+  ['/admin/partners',                   'Partners'],
   ['/admin/payments',                   'Payments'],
   ['/admin/referrals',                  'Referrals'],
   ['/admin/reports',                    'Reports'],

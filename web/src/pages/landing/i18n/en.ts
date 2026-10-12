@@ -156,6 +156,11 @@ export const en = {
     ],
   },
 
+  creatorCommunity: {
+    heading: "Built for Nepal's creator community",
+    partnersHeading: 'Brands collaborating with creators on Kolab',
+  },
+
   oldWay: {
     problemIntro: "Finding the right creator shouldn't be this hard.",
     eyebrow: 'Challenges with the Current Way of Working',

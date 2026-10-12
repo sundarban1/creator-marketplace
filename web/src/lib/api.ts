@@ -305,6 +305,19 @@ export interface ApiSuccessStory {
   updatedAt: string;
 }
 
+export interface ApiPartner {
+  id: string;
+  name: string;
+  logoUrl: string;
+  websiteUrl: string | null;
+  order: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PartnerInput = Pick<ApiPartner, 'name' | 'logoUrl' | 'websiteUrl' | 'order' | 'status'>;
+
 // ── Community Events (admin → Community Events, public /community/events) ────
 
 export type CommunityEventType = 'MEETUP' | 'WORKSHOP' | 'TRAINING' | 'NETWORKING' | 'COMMUNITY_EVENT' | 'OTHER';
@@ -1433,6 +1446,24 @@ export const api = {
     uploadSuccessStoryPhoto: (file: File) =>
       uploadFile<{ photoUrl: string }>('/api/admin/success-stories/photo', file, 'photo'),
 
+    partners: () =>
+      request<ApiPartner[]>('GET', '/api/admin/partners'),
+
+    createPartner: (data: PartnerInput) =>
+      request<ApiPartner>('POST', '/api/admin/partners', data),
+
+    updatePartner: (id: string, data: PartnerInput) =>
+      request<ApiPartner>('PUT', `/api/admin/partners/${id}`, data),
+
+    setPartnerStatus: (id: string, status: ApiPartner['status']) =>
+      request<ApiPartner>('PATCH', `/api/admin/partners/${id}/status`, { status }),
+
+    deletePartner: (id: string) =>
+      request<null>('DELETE', `/api/admin/partners/${id}`),
+
+    uploadPartnerLogo: (file: File) =>
+      uploadFile<{ logoUrl: string }>('/api/admin/partners/logo', file, 'logo'),
+
     communityEvents: () =>
       request<CommunityEventListRow[]>('GET', '/api/admin/community-events'),
 
@@ -1546,6 +1577,8 @@ export const api = {
       request<HelpArticle[]>('GET', '/api/faq'),
     successStories: () =>
       request<Pick<ApiSuccessStory, 'id' | 'name' | 'role' | 'quote' | 'photoUrl'>[]>('GET', '/api/success-stories'),
+    partners: () =>
+      request<Pick<ApiPartner, 'id' | 'name' | 'logoUrl' | 'websiteUrl'>[]>('GET', '/api/partners'),
     creators: (limit = 12) =>
       request<{ creators: PublicCreatorLite[]; total: number }>(
         'GET', '/api/public/creators', undefined, { limit, sort: 'followers' },

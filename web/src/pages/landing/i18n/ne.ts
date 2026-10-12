@@ -147,6 +147,11 @@ export const ne: LandingDict = {
     ],
   },
 
+  creatorCommunity: {
+    heading: 'नेपालको क्रिएटर समुदायका लागि बनाइएको',
+    partnersHeading: 'Kolab मा क्रिएटरहरूसँग सहकार्य गर्ने ब्रान्डहरू',
+  },
+
   oldWay: {
     problemIntro: 'राम्रो क्रिएटर फेला पार्न यति गाह्रो हुनु हुँदैन।',
     eyebrow: 'हालको काम गर्ने तरिकाका चुनौतीहरू',
