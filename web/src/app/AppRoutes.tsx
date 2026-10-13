@@ -50,6 +50,7 @@ const CreatorApplicationsPage = screen(() => import('./creator/CreatorApplicatio
 const CreatorWorkPage = screen(() => import('./creator/CreatorWorkPage'), 'CreatorWorkPage');
 const CreatorWorkDetailPage = screen(() => import('./creator/CreatorWorkDetailPage'), 'CreatorWorkDetailPage');
 const CreatorWalletPage = screen(() => import('./creator/CreatorWalletPage'), 'CreatorWalletPage');
+const CreatorDealsPage = screen(() => import('./creator/CreatorDealsPage'), 'CreatorDealsPage');
 const CreatorProfileEditPage = screen(() => import('./creator/CreatorProfilePage'), 'CreatorProfilePage');
 const CreatorSettingsPage = screen(() => import('./creator/CreatorSettingsPage'), 'CreatorSettingsPage');
 const CreatorVerificationPage = screen(() => import('./creator/CreatorVerificationPage'), 'CreatorVerificationPage');
@@ -161,7 +162,8 @@ export function marketplaceRoutes() {
               <Route path="verification" element={<CreatorVerificationPage />} />
               <Route path="referrals" element={<CreatorReferralsPage />} />
               <Route path="saved-events" element={<CreatorSavedEventsPage />} />
-              <Route path="rewards" element={<Navigate to="/creator/wallet?tab=deals" replace />} />
+              <Route path="rewards" element={<Navigate to="/creator/wallet" replace />} />
+              <Route path="deals" element={<CreatorDealsPage />} />
               <Route path="team" element={<CreatorTeamPage />} />
               <Route path="analytics" element={<CreatorAnalyticsPage />} />
               <Route path="support" element={<HelpSupportPage />} />

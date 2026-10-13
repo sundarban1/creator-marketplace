@@ -55,6 +55,7 @@ const CREATOR_NAV_GROUPS: NavGroup[] = [
       { key: 'discoverCreators', to: '/creator/creators', icon: Users },
       { key: 'discoverBusinesses', to: '/creator/businesses', icon: Building2 },
       { key: 'savedEvents', to: '/creator/saved-events', icon: Bookmark },
+      { key: 'businessDeals', to: '/creator/deals', icon: Tag },
     ],
   },
   {

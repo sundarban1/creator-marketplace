@@ -130,6 +130,7 @@ export const ne: AppDict = {
     groupAccount: 'खाता',
     profileSettings: 'प्रोफाइल र सेटिङ',
     savedEvents: "सेभ गरिएका इभेन्ट",
+    businessDeals: "व्यापार डिलहरू",
     analytics: "एनालिटिक्स",
     rewards: "Kolab Rewards",
     myTeam: "मेरो टिम",
@@ -241,8 +242,6 @@ export const ne: AppDict = {
   },
 
   wallet: {
-    tabWithdraw: 'पैसा झिक्नुहोस्',
-    tabDeals: 'व्यापार डिलहरू',
     pointsBalance: 'उपलब्ध कोल्याब रिवार्ड पोइन्ट',
     pointsEquivalence: '१ कोल्याब रिवार्ड पोइन्ट = रु. १',
     rewardsSubtitle: 'आफ्नो कमाइ झिक्नुहोस् वा सहभागी व्यवसायहरूमा प्रयोग गर्नुहोस्।',
@@ -2271,12 +2270,12 @@ export const ne: AppDict = {
   },
 
   deals: {
-    headerTitle: "डिल्स",
-    subtitle: "Kolab क्रिएटरहरूका लागि विशेष अफरहरू",
+    headerTitle: "व्यापार डिलहरू",
+    subtitle: "कोल्याब क्रिएटरहरूका लागि मात्र व्यवसायहरूका विशेष छुटहरू।",
     searchPlaceholder: "डिल खोज्नुहोस्...",
     loadError: "डिलहरू लोड गर्न सकिएन। फेरि प्रयास गर्नुहोस्।",
-    emptyTitle: "अहिलेसम्म कुनै डिल छैन",
-    emptyHint: "व्यवसायहरूबाट नयाँ अफरहरू यहाँ देखिनेछन्।",
+    emptyTitle: "अहिले कुनै डिल छैन",
+    emptyHint: "व्यवसायहरूले तपाईं जस्ता क्रिएटरका लागि अफर तयार गर्दैछन्। केही समयपछि फेरि हेर्नुहोस् — नयाँ डिल सुरु हुनेबित्तिकै यहाँ देखिनेछ।",
     exploreEventsButton: "इभेन्टहरू हेर्नुहोस्",
     percentOff: "{n}% छुट",
     amountOff: "रु. {n} छुट",
@@ -2287,6 +2286,11 @@ export const ne: AppDict = {
     termMinSpend: "न्यूनतम खर्च रु. {amount}",
     termMaxDiscount: "अधिकतम छुट रु. {amount}",
     redeemInApp: "रिडिम गर्न, व्यवसायमा Kolab मोबाइल एपमा यो डिल खोल्नुहोस् — उहाँहरूले तपाईंको QR कोड स्क्यान गर्नुहुनेछ।",
+    noResultsTitle: "तपाईंको खोजसँग मिल्ने डिल छैन",
+    noResultsHint: "अर्को व्यवसायको नाम वा शब्द प्रयोग गरी हेर्नुहोस्।",
+    clearSearch: "खोज हटाउनुहोस्",
+    appNoticeTitle: "डिलहरू कोल्याब एपमा प्रयोग गर्नुहोस्",
+    appNoticeBody: "यहाँ डिलहरू हेर्नुहोस्, अनि छुट लिन व्यवसायमा पुगेर कोल्याब मोबाइल एप खोल्नुहोस् — उनीहरूले तपाईंको QR कोड स्क्यान गर्नेछन्।",
   },
   reportModal: {
     title: "रिपोर्ट गर्नुहोस्",

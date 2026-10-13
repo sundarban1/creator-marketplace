@@ -137,6 +137,7 @@ export const en = {
     groupAccount: 'Account',
     profileSettings: 'Profile & Settings',
     savedEvents: "Saved events",
+    businessDeals: "Business Deals",
     analytics: "Analytics",
     rewards: "Kolab Rewards",
     myTeam: "My Team",
@@ -256,8 +257,6 @@ export const en = {
   },
 
   wallet: {
-    tabWithdraw: 'Withdraw Money',
-    tabDeals: 'Business Deals',
     pointsBalance: 'Available Kolab Reward Points',
     pointsEquivalence: '1 Kolab Reward Point = Rs. 1',
     rewardsSubtitle: 'Withdraw your earnings or use them at participating businesses.',
@@ -2323,12 +2322,12 @@ export const en = {
   },
 
   deals: {
-    headerTitle: "Deals",
-    subtitle: "Exclusive offers for Kolab creators",
+    headerTitle: "Business Deals",
+    subtitle: "Exclusive discounts from businesses, just for Kolab creators.",
     searchPlaceholder: "Search deals...",
     loadError: "Could not load deals. Please try again.",
-    emptyTitle: "No deals yet",
-    emptyHint: "New offers from businesses will appear here.",
+    emptyTitle: "No deals right now",
+    emptyHint: "Businesses are cooking up offers for creators like you. Check back soon — new deals show up here as soon as they go live.",
     exploreEventsButton: "Explore Events",
     percentOff: "{n}% OFF",
     amountOff: "Rs. {n} OFF",
@@ -2339,6 +2338,11 @@ export const en = {
     termMinSpend: "Minimum spend Rs. {amount}",
     termMaxDiscount: "Maximum discount Rs. {amount}",
     redeemInApp: "To redeem, open this deal in the Kolab mobile app at the business — they'll scan your QR code.",
+    noResultsTitle: "No deals match your search",
+    noResultsHint: "Try a different business name or keyword.",
+    clearSearch: "Clear search",
+    appNoticeTitle: "Redeem deals in the Kolab app",
+    appNoticeBody: "Browse deals here, then open the Kolab mobile app at the business to claim your discount — they'll scan your QR code at checkout.",
   },
   reportModal: {
     title: "Report",
