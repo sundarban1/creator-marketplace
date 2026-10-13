@@ -45,6 +45,10 @@ const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/creator/settings',            'Settings'],
   ['/creator/verification',        'Verification'],
   ['/creator/referrals',           'Referrals'],
+  ['/creator/saved-events',        'Saved Events'],
+  ['/creator/rewards',             'Kolab Rewards'],
+  ['/creator/team',                'My Team'],
+  ['/creator/analytics',           'Analytics'],
   ['/creator/support',             'Help & Support'],
   ['/creator/about',               'About Kolab'],
 
@@ -68,6 +72,7 @@ const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/business/profile',            'Business Profile'],
   ['/business/settings',           'Settings'],
   ['/business/referrals',          'Referrals'],
+  ['/business/analytics',          'Analytics'],
   ['/business/verification',       'Verification'],
   ['/business/support',            'Help & Support'],
   ['/business/about',              'About Kolab'],

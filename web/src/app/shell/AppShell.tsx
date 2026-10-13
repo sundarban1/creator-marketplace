@@ -4,6 +4,9 @@ import { Menu, X, LogOut, Search, MessageCircle, ChevronDown, User as UserIcon }
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useT } from '../i18n';
 import { displayIdentifier } from '../lib/identity';
+import { useAsync } from '../lib/useAsync';
+import { useLiveRefresh } from '../lib/liveUpdates';
+import { fetchCreatorFullProfile } from '../api/creator';
 import { navGroupsFor, bottomNavFor, type NavGroup } from './nav';
 import { BottomNav } from './BottomNav';
 import { cn } from '../ui/cn';
@@ -42,6 +45,14 @@ function AppShellInner() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
+  // "My Team" only shows for TEAM providers — same gate as mobile's DrawerMenu.
+  const isCreator = user?.role === 'CREATOR';
+  const creatorProfile = useAsync(
+    (sig) => (isCreator ? fetchCreatorFullProfile(sig) : Promise.resolve(null)),
+    [isCreator],
+  );
+  useLiveRefresh(['profile'], creatorProfile.refresh);
+  const isTeamProvider = creatorProfile.data?.providerType === 'TEAM';
   const closeDrawer = () => setDrawerOpen(false);
 
   // Lock body scroll while the drawer is open.
@@ -53,7 +64,10 @@ function AppShellInner() {
   }, [drawerOpen]);
 
   if (!user) return null;
-  const groups = navGroupsFor(user.role);
+  const groups = navGroupsFor(user.role).map((g) => ({
+    ...g,
+    items: g.items.filter((i) => i.key !== 'myTeam' || isTeamProvider),
+  }));
   const messagesPath = user.role === 'BUSINESS' ? '/business/messages' : '/creator/messages';
   const searchTarget = user.role === 'BUSINESS' ? '/business/creators' : '/creator/events';
   const dashboardPath = user.role === 'BUSINESS' ? '/business' : '/creator';

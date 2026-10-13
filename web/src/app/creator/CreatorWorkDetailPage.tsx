@@ -27,6 +27,8 @@ import { DeliverableStrip } from '../ui/DeliverableGallery';
 import { EngagementBadge } from './EngagementBadge';
 import { DisputeStatusCard } from './DisputeStatus';
 import { ReviewSection } from './ReviewSection';
+import { EventQuestionsPanel } from '../events/EventQuestions';
+import { EventInvitationButton } from '../events/EventInvitation';
 import { WorkStepper } from './WorkStepper';
 import { confirmDialog } from '../ui/confirmDialog';
 
@@ -210,6 +212,17 @@ export function CreatorWorkDetailPage() {
           </dl>
         </Card>
       </div>
+
+      {/* Free event, accepted — no chat; the invitation card and the shared
+          organizer Q&A are the post-acceptance surface (mobile activity timeline). */}
+      {c?.campaignType === 'OPEN_EVENT' && app.status === 'ACCEPTED' && (
+        <>
+          <div className="mt-6">
+            <EventInvitationButton campaignId={app.campaignId} campaignTitle={c.title ?? ''} />
+          </div>
+          <EventQuestionsPanel campaignId={app.campaignId} variant="creator" />
+        </>
+      )}
 
       {CAN_REPORT.has(state) && (
         <div className="mt-6 text-center">

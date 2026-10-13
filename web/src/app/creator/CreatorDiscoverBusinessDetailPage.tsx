@@ -1,10 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, MapPin, Star, Globe } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, MapPin, Star, Globe, Heart } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { fetchPublicBusiness } from '../api/publicMarketplace';
 import { fetchCategories } from '../api/catalog';
+import { fetchFavoriteBusinessIds, toggleFavoriteBusiness } from '../api/creator';
+import { Button } from '../ui/Button';
+import { ReportButton } from '../ui/ReportButton';
+import { useToast } from '../ui/Toast';
 import { ApiError } from '../lib/apiClient';
 import { Avatar } from '../ui/Avatar';
 import { Card, CardHeader } from '../ui/Card';
@@ -19,6 +23,11 @@ export function CreatorDiscoverBusinessDetailPage() {
   const business = useAsync((s) => fetchPublicBusiness(id, s), [id]);
   const categories = useAsync((s) => fetchCategories(s), []);
   const categoryMeta = useMemo(() => makeCategoryLookup(categories.data ?? []), [categories.data]);
+  const toast = useToast();
+  const favoriteIds = useAsync((s) => fetchFavoriteBusinessIds(s), []);
+  // Local override flips the heart instantly; null = trust the fetched ids.
+  const [favOverride, setFavOverride] = useState<boolean | null>(null);
+  const [favBusy, setFavBusy] = useState(false);
 
   if (business.loading) {
     return (
@@ -57,6 +66,23 @@ export function CreatorDiscoverBusinessDetailPage() {
   const reviews = b.reviews ?? [];
   const reviewCount = reviews.length;
   const avgRating = reviewCount > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0;
+  const isFavorite = favOverride ?? (favoriteIds.data ?? []).includes(b.id);
+
+  async function toggleFavorite() {
+    const next = !isFavorite;
+    setFavOverride(next);
+    setFavBusy(true);
+    try {
+      const actual = await toggleFavoriteBusiness(b.id);
+      setFavOverride(actual);
+      toast.success(actual ? t('favoriteBusinesses.addedToast') : t('favoriteBusinesses.removedToast'));
+    } catch (err) {
+      setFavOverride(!next);
+      toast.error(err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setFavBusy(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -98,6 +124,19 @@ export function CreatorDiscoverBusinessDetailPage() {
               ))}
             </div>
           )}
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-2 self-start">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={toggleFavorite}
+          disabled={favBusy || favoriteIds.loading}
+          aria-pressed={isFavorite}
+        >
+          <Heart size={14} className={isFavorite ? 'fill-danger text-danger' : ''} />
+          {isFavorite ? t('favoriteBusinesses.favorited') : t('favoriteBusinesses.addFavorite')}
+        </Button>
+        <ReportButton targetType="BUSINESS" targetId={b.userId ?? b.id} />
         </div>
       </div>
 

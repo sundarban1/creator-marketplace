@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, X } from 'lucide-react';
+import { SuggestDescriptionButton } from './SuggestDescriptionButton';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { fetchCategories, fetchActivePlatforms } from '../api/catalog';
@@ -429,7 +430,19 @@ export function CreateEventPage() {
           />
 
           <TextField label={t('biz.fieldTitle')} value={title} onChange={(e) => setTitle(e.target.value)} />
-          <Textarea label={t('public.eventAboutHeading')} rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Textarea
+          label={t('public.eventAboutHeading')}
+          rows={4}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          labelAccessory={
+            <SuggestDescriptionButton
+              input={{ title, category, platform: selPlatforms.join(', '), deliverables }}
+              onSuggested={setDescription}
+              onError={setError}
+            />
+          }
+        />
 
           <Select
             label={t('public.category')}

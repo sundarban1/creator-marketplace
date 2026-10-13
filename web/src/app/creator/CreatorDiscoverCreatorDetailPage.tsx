@@ -16,6 +16,10 @@ import { CategoryPill } from '../public/CategoryPill';
 import { makeCategoryLookup } from '../public/categoryLookup';
 import { PortfolioGrid } from '../public/PortfolioGrid';
 
+// Provider-type badge (Team / Agency) hidden from the profile for now — same as
+// mobile's CreatorProfileView. Flip to true to bring it back.
+const SHOW_PROVIDER_BADGE: boolean = false;
+
 export function CreatorDiscoverCreatorDetailPage() {
   const t = useT();
   const { handle = '' } = useParams();
@@ -55,7 +59,7 @@ export function CreatorDiscoverCreatorDetailPage() {
 
   const c = creator.data;
   const name = c.fullName ?? 'Creator';
-  const isTeam = c.providerType === 'TEAM' || c.providerType === 'AGENCY';
+  const isTeam = SHOW_PROVIDER_BADGE && (c.providerType === 'TEAM' || c.providerType === 'AGENCY');
 
   return (
     <div className="mx-auto max-w-3xl">

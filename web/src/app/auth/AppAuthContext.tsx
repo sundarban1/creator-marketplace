@@ -25,6 +25,7 @@ import * as authApi from '../api/auth';
 import type { AuthUser, Identifier, RegisterInput, SocialAuthResult } from '../api/auth';
 import { claimShareSignup } from '../api/opportunityShare';
 import { takeShareReceipt } from '../lib/shareContext';
+import { resetSavedEvents } from '../lib/useSavedEvents';
 
 type Status = 'loading' | 'authenticated' | 'anonymous';
 
@@ -222,6 +223,7 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await authApi.logout();
     clearSession();
+    resetSavedEvents();
     setUser(null);
     setStatus('anonymous');
   }, []);

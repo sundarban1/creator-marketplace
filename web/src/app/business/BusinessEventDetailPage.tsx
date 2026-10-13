@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Pencil, MessageCircle, Check, Gift } from 'lucide-react';
+import { ArrowLeft, Pencil, MessageCircle, Check, Gift, CheckCheck } from 'lucide-react';
 import { useT, type TFn } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -17,11 +17,16 @@ import {
   rejectApplication,
   initiateEsewaPayment,
   initiateConnectIpsPayment,
+  initiateKhaltiPayment,
   payForApplication,
   getBusinessCredits,
   reportIssue,
+  updateCampaign,
+  fetchCampaignInvitees,
   type BusinessApplication,
 } from '../api/business';
+import { EventQuestionsPanel } from '../events/EventQuestions';
+import { StatusBadge, type BadgeTone } from '../ui/StatusBadge';
 import { fetchContractForApplication, type Contract } from '../api/contract';
 import { ContractModal } from '../events/ContractModal';
 import { fetchPaymentMethods, type PublicPaymentMethod } from '../api/paymentMethods';
@@ -47,6 +52,8 @@ import { confirmDialog } from '../ui/confirmDialog';
 
 // Mirrors CreatorWorkDetailPage.tsx's CAN_REPORT — same shared engagement
 // states, just viewed from the business side.
+const INVITE_TONE: Record<string, BadgeTone> = { PENDING: 'warning', ACCEPTED: 'success', DECLINED: 'neutral' };
+
 const CAN_REPORT = new Set(['ESCROW_FUNDED', 'IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE', 'BUSINESS_REVIEW', 'PAYMENT_RELEASE_PENDING']);
 
 /** A plain-language status line for the "Working on this" row — the badge
@@ -85,6 +92,8 @@ export function BusinessEventDetailPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const campaign = useAsync((s) => fetchCampaign(id, s), [id]);
   const apps = useAsync((s) => fetchBusinessApplications({ limit: 100 }, s), []);
+  const invitees = useAsync((s) => fetchCampaignInvitees(id, s), [id]);
+  const [closing, setClosing] = useState(false);
 
   // Landing back here with the result in the query string — only when the
   // gateway ran in this same tab (popup blocked) or the paying tab was gone;
@@ -202,13 +211,40 @@ export function BusinessEventDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { applicants, accepted } = useMemo(() => {
+  const { applicants, accepted, allResolved } = useMemo(() => {
     const mine = (apps.data?.items ?? []).filter((a) => a.campaignId === id);
     return {
       applicants: mine.filter((a) => a.engagementState === 'PROPOSAL_PENDING'),
       accepted: mine.filter((a) => a.engagementState !== 'PROPOSAL_PENDING' && a.status !== 'REJECTED'),
+      // Same gate as mobile's campaign-proposals.tsx canClose: every proposal
+      // is rejected, expired, or accepted with the work completed.
+      allResolved:
+        mine.length > 0 &&
+        mine.every(
+          (a) => a.status === 'REJECTED' || a.status === 'EXPIRED' || (a.status === 'ACCEPTED' && a.workStatus === 'COMPLETED'),
+        ),
     };
   }, [apps.data, id]);
+
+  async function handleCloseEvent() {
+    const ok = await confirmDialog({
+      title: t('eventExtras.closeEventTitle'),
+      message: t('eventExtras.closeEventBody'),
+      confirmLabel: t('eventExtras.closeEvent'),
+      tone: 'danger',
+    });
+    if (!ok) return;
+    setClosing(true);
+    try {
+      await updateCampaign(id, { status: 'CLOSED' });
+      setFlash(t('eventExtras.closedFlash'));
+      campaign.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('eventExtras.closeEventFailed'));
+    } finally {
+      setClosing(false);
+    }
+  }
 
   const act = async (fn: () => Promise<unknown>, appId: string, msg: string) => {
     setBusyId(appId);
@@ -303,13 +339,14 @@ export function BusinessEventDetailPage() {
     if (!payTarget) return;
     setPayError('');
 
-    // eSewa and connectIPS share one hosted-checkout flow: our backend's
-    // checkout page auto-POSTs a signed form to the gateway, and the gateway's
-    // redirect lands back on this page (see backend redirectEsewaResult /
-    // redirectConnectIpsResult).
+    // eSewa, connectIPS and Khalti share one hosted-checkout flow: the
+    // gateway's checkout opens in a new tab and its redirect lands on
+    // /payment-result (see backend redirectEsewaResult /
+    // redirectConnectIpsResult / handleKhaltiCallback).
     const initiateHosted =
       payMethod === 'esewa' ? initiateEsewaPayment
       : payMethod === 'connectips' ? initiateConnectIpsPayment
+      : payMethod === 'khalti' ? initiateKhaltiPayment
       : null;
     if (initiateHosted) {
       // Opened synchronously, in the same tick as the click, so the browser
@@ -411,16 +448,24 @@ export function BusinessEventDetailPage() {
         title={c.title}
         description={isPaid ? `${c.category} · ${t('public.budgetPerCreator', { amount: budget.amount })}` : c.category}
         actions={
-          // A permanently rejected event can't be edited (or resubmitted).
-          c.status === 'REJECTED' && !canResubmitEvent(c) ? undefined : (
-            <Link
-              to={`/business/events/${id}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-line-strong px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-surface-dim"
-            >
-              <Pencil size={14} />
-              {canResubmitEvent(c) ? t('eventReview.editAndResubmit') : t('common.edit')}
-            </Link>
-          )
+          <div className="flex flex-wrap gap-2">
+            {c.status === 'ACTIVE' && allResolved && (
+              <Button variant="secondary" size="sm" onClick={handleCloseEvent} loading={closing} className="text-danger">
+                <CheckCheck size={14} />
+                {t('eventExtras.closeEvent')}
+              </Button>
+            )}
+            {/* A permanently rejected event can't be edited (or resubmitted). */}
+            {!(c.status === 'REJECTED' && !canResubmitEvent(c)) && (
+              <Link
+                to={`/business/events/${id}/edit`}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-line-strong px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-surface-dim"
+              >
+                <Pencil size={14} />
+                {canResubmitEvent(c) ? t('eventReview.editAndResubmit') : t('common.edit')}
+              </Link>
+            )}
+          </div>
         }
       />
 
@@ -571,6 +616,30 @@ export function BusinessEventDetailPage() {
           </ul>
         )}
       </Card>
+
+      {/* Free events never open a chat — the shared Q&A is the channel. */}
+      {!isPaid && <EventQuestionsPanel campaignId={id} variant="business" />}
+
+      {/* Free events only — same as mobile's campaign-proposals invitee tab. */}
+      {!isPaid && !!invitees.data?.length && (
+        <Card className="mt-6">
+          <CardHeader title={`${t('eventExtras.invitedHeading')} (${invitees.data.length})`} />
+          <ul className="divide-y divide-ink/[0.05]">
+            {invitees.data.map((inv) => (
+              <li key={inv.id} className="flex items-center gap-3 py-3">
+                <Avatar name={inv.creator.fullName} src={inv.creator.avatarUrl} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px] font-medium text-ink">{inv.creator.fullName}</p>
+                  <p className="truncate text-[12px] text-ink-soft">
+                    {t('eventExtras.invitedOn', { date: fmtDate(inv.createdAt) })}
+                  </p>
+                </div>
+                <StatusBadge label={t(`eventExtras.invite${inv.status}`)} tone={INVITE_TONE[inv.status] ?? 'neutral'} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card accent className="mt-6">
         <CardHeader
@@ -773,6 +842,7 @@ export function BusinessEventDetailPage() {
 
             {payMethod === 'esewa' && <p className="text-[12px] text-ink-soft">{t('biz.payModalEsewaNote')}</p>}
             {payMethod === 'connectips' && <p className="text-[12px] text-ink-soft">{t('biz.payModalConnectIpsNote')}</p>}
+            {payMethod === 'khalti' && <p className="text-[12px] text-ink-soft">{t('biz.payModalKhaltiNote')}</p>}
 
             {payError && <Alert tone="error">{payError}</Alert>}
 

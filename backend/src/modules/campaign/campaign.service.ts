@@ -2163,7 +2163,7 @@ export class CampaignService {
   // showed the business, hand back Khalti's hosted checkout URL. Nothing is
   // marked paid here — that only happens once confirmKhaltiPayment verifies the
   // payment actually completed (see khaltiCallback in the controller).
-  async initiateKhaltiPayment(appId: string, userId: string): Promise<{ paymentUrl: string }> {
+  async initiateKhaltiPayment(appId: string, userId: string, platform?: 'web' | 'mobile'): Promise<{ paymentUrl: string }> {
     if (!env.KHALTI_RETURN_URL) throw new AppError(getDict().khalti.notConfigured, HttpStatus.SERVICE_UNAVAILABLE);
 
     const business = await this.businessRepo.findByUserId(userId);
@@ -2187,7 +2187,9 @@ export class CampaignService {
       amountPaisa:       Math.round(totalNpr * 100),
       purchaseOrderId:   appId,
       purchaseOrderName: `Payment for "${campaign.title}"`,
-      returnUrl:         env.KHALTI_RETURN_URL,
+      // Web checkouts return to the /callback/web variant, which redirects to
+      // the web app's /payment-result page instead of the native deep link.
+      returnUrl:         platform === 'web' ? `${env.KHALTI_RETURN_URL.replace(/\/+$/, '')}/web` : env.KHALTI_RETURN_URL,
       websiteUrl:        frontendBaseUrl,
       customerInfo: {
         name:  business.businessName ?? undefined,
@@ -2204,7 +2206,7 @@ export class CampaignService {
   // Step 2: the browser lands back on khaltiCallback with `pidx` — this looks
   // it up against Khalti's own server (never trusting the redirect's query
   // params alone) before finalizing anything.
-  async confirmKhaltiPayment(appId: string, pidx: string): Promise<void> {
+  async confirmKhaltiPayment(appId: string, pidx: string): Promise<{ campaignId: string }> {
     const application = await this.repo.findApplicationById(appId);
     if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
@@ -2212,7 +2214,7 @@ export class CampaignService {
     // as a harmless no-op instead of double-charging the escrow ledger.
     if (application.paymentStatus === 'PAID' || application.paymentStatus === 'RELEASED') {
       logger.info({ event: LogEvent.PAYMENT_CALLBACK_ALREADY_PROCESSED, appId, method: 'khalti' }, 'Khalti callback: payment already processed');
-      return;
+      return { campaignId: application.campaignId };
     }
 
     if (!application.khaltiPidx || application.khaltiPidx !== pidx) {
@@ -2243,6 +2245,7 @@ export class CampaignService {
       proposedRate:   application.proposedRate,
       method:         'khalti',
     });
+    return { campaignId: application.campaignId };
   }
 
   // Shared validation for both payment initiate paths (Khalti above, eSewa

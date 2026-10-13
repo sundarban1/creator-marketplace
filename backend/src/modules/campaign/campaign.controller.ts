@@ -22,7 +22,7 @@ import { HttpStatus } from '../../constants/httpStatus';
 const campaignService = new CampaignService();
 const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
 
-// Web landing for eSewa / connectIPS results — see web's PaymentResultPage.
+// Web landing for eSewa / connectIPS / Khalti results — see web's PaymentResultPage.
 function webPaymentResultUrl(payment: 'success' | 'failed' | 'pending', campaignId?: string, error?: string): string {
   const qs = new URLSearchParams({ payment });
   if (campaignId) qs.set('campaignId', campaignId);
@@ -525,7 +525,8 @@ export class CampaignController {
 
   async initiateKhaltiPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await campaignService.initiateKhaltiPayment(req.params.appId, req.user!.id);
+      const platform = req.query.platform === 'web' ? 'web' : undefined;
+      const result = await campaignService.initiateKhaltiPayment(req.params.appId, req.user!.id, platform);
       success(res, result, 'Khalti payment initiated');
     } catch (err) {
       next(err);
@@ -539,22 +540,41 @@ export class CampaignController {
   // Application.khaltiPidx and re-checked with Khalti's own lookup API before
   // anything is marked paid — see CampaignService.confirmKhaltiPayment.
   async khaltiCallback(req: Request, res: Response): Promise<void> {
+    await this.handleKhaltiCallback(req, res, 'mobile');
+  }
+
+  // Web variant — initiateKhaltiPayment hands Khalti a `/callback/web`
+  // return_url when the web app started the payment.
+  async khaltiCallbackWeb(req: Request, res: Response): Promise<void> {
+    await this.handleKhaltiCallback(req, res, 'web');
+  }
+
+  private async handleKhaltiCallback(req: Request, res: Response, platform: 'web' | 'mobile'): Promise<void> {
     const { pidx, purchase_order_id: appId } = req.query as { pidx?: string; purchase_order_id?: string };
     const redirectBase = `${env.APP_SCHEME}://khalti-callback`;
+    const redirect = (result: { success: boolean; error?: string; campaignId?: string }) => {
+      if (platform === 'web') {
+        res.redirect(webPaymentResultUrl(result.success ? 'success' : 'failed', result.campaignId, result.error));
+        return;
+      }
+      const qs = new URLSearchParams({ success: String(result.success) });
+      if (result.error) qs.set('error', result.error);
+      res.redirect(`${redirectBase}?${qs.toString()}`);
+    };
 
-    logger.info({ event: LogEvent.PAYMENT_KHALTI_CALLBACK_RECEIVED, appId, hasPidx: !!pidx }, 'Khalti callback hit');
+    logger.info({ event: LogEvent.PAYMENT_KHALTI_CALLBACK_RECEIVED, appId, hasPidx: !!pidx, platform }, 'Khalti callback hit');
 
     if (!pidx || !appId) {
-      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent('missing_payment_reference')}`);
+      redirect({ success: false, error: 'missing_payment_reference' });
       return;
     }
     try {
-      await campaignService.confirmKhaltiPayment(appId, pidx);
-      res.redirect(`${redirectBase}?success=true`);
+      const { campaignId } = await campaignService.confirmKhaltiPayment(appId, pidx);
+      redirect({ success: true, campaignId });
     } catch (err) {
       const message = err instanceof AppError ? err.message : 'Could not confirm the Khalti payment';
       logger.warn({ appId, err }, 'Khalti callback: confirmation failed');
-      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
+      redirect({ success: false, error: message });
     }
   }
 

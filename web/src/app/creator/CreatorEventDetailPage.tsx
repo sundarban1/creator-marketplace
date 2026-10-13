@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCircle2 } from 'lucide-react';
+import { Bookmark, BookmarkCheck, CheckCircle2 } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -15,6 +15,10 @@ import { ApplyProposalModal } from './ApplyProposalModal';
 import { EngagementBadge } from './EngagementBadge';
 import { ShareOpportunityButton } from '../events/ShareOpportunity';
 import { shareTokenFor } from '../lib/shareContext';
+import { useSavedEvents } from '../lib/useSavedEvents';
+import { useToast } from '../ui/Toast';
+import { EventQuestionsPanel } from '../events/EventQuestions';
+import { EventInvitationButton } from '../events/EventInvitation';
 
 export function CreatorEventDetailPage() {
   const t = useT();
@@ -29,6 +33,8 @@ export function CreatorEventDetailPage() {
   useLiveRefresh([`campaign:${id}`], event.refresh);
   useLiveRefresh(['applications'], myApps.refresh);
 
+  const saved = useSavedEvents();
+  const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [justApplied, setJustApplied] = useState<CreatorApplication | null>(null);
 
@@ -60,6 +66,19 @@ export function CreatorEventDetailPage() {
   const isMultiRole = (ev.requirements?.length ?? 0) > 0;
   const isOpen = ev.status === 'ACTIVE';
   const isFree = ev.campaignType === 'OPEN_EVENT';
+  // Free event + accepted = terminal (no workspace): the invitation card and
+  // the organizer Q&A are this creator's whole post-acceptance surface.
+  const acceptedFree = isFree && existing?.status === 'ACCEPTED';
+  const isSaved = saved.isSaved(ev.id);
+
+  async function toggleSave() {
+    try {
+      const nowSaved = await saved.toggle(ev.id);
+      toast.success(nowSaved ? t('savedEvents.savedToast') : t('savedEvents.removedToast'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.somethingWrong'));
+    }
+  }
 
   let cta: React.ReactNode;
   if (existing) {
@@ -96,7 +115,17 @@ export function CreatorEventDetailPage() {
   const ctaWithShare = (
     <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
       {cta}
+      {acceptedFree && <EventInvitationButton campaignId={ev.id} campaignTitle={ev.title} />}
       <ShareOpportunityButton campaignId={ev.id} isOpen={isOpen} variant="button" />
+      <Button
+        variant="secondary"
+        onClick={toggleSave}
+        aria-pressed={isSaved}
+        aria-label={isSaved ? t('savedEvents.unsave') : t('savedEvents.save')}
+      >
+        {isSaved ? <BookmarkCheck size={15} className="text-violet-dark" /> : <Bookmark size={15} />}
+        {isSaved ? t('savedEvents.saved') : t('savedEvents.save')}
+      </Button>
     </div>
   );
 
@@ -108,6 +137,8 @@ export function CreatorEventDetailPage() {
         backLabel={t('public.backToEvents')}
         cta={ctaWithShare}
       />
+
+      {acceptedFree && <EventQuestionsPanel campaignId={ev.id} variant="creator" celebrate />}
 
       {justApplied && (
         <div className="mt-10 rounded-2xl border border-success/30 bg-success-soft/40 p-6 text-center">

@@ -8,6 +8,8 @@ import { useDebouncedValue } from '../lib/useDebouncedValue';
 import { fadeUp, stagger } from '../../pages/landing/lib/motion';
 import { fetchPublicBusinesses, type BusinessCard as BusinessCardData } from '../api/publicMarketplace';
 import { fetchCategories } from '../api/catalog';
+import { fetchFavoriteBusinesses, fetchSavedByBusinesses } from '../api/creator';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { SearchInput } from '../ui/SearchInput';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
@@ -24,6 +26,10 @@ export function CreatorDiscoverBusinessesPage() {
   const search = params.get('q') ?? '';
   const category = params.get('category') ?? '';
   const location = params.get('location') ?? '';
+  // Favorites / "Saved me" views — mobile's favorite-businesses and
+  // saved-by-businesses screens, folded into the one browse page.
+  const rawView = params.get('view');
+  const view: 'all' | 'favorites' | 'savedBy' = rawView === 'favorites' || rawView === 'savedBy' ? rawView : 'all';
   const debouncedSearch = useDebouncedValue(search, 350);
   const debouncedLocation = useDebouncedValue(location, 350);
 
@@ -46,6 +52,22 @@ export function CreatorDiscoverBusinessesPage() {
       const id = ++reqId.current;
       setStatus(append ? 'loadingMore' : 'loading');
       try {
+        if (view !== 'all') {
+          const fetchList = view === 'favorites' ? fetchFavoriteBusinesses : fetchSavedByBusinesses;
+          const list = await fetchList({
+            category: category || undefined,
+            locations: debouncedLocation ? [debouncedLocation] : undefined,
+          });
+          if (id !== reqId.current) return;
+          // These endpoints have no text search — filter by name here.
+          const needle = debouncedSearch.trim().toLowerCase();
+          const filtered = needle ? list.filter((b) => (b.businessName ?? '').toLowerCase().includes(needle)) : list;
+          setItems(filtered);
+          setTotal(filtered.length);
+          setPage(1);
+          setStatus('ready');
+          return;
+        }
         const res = await fetchPublicBusinesses({
           search: debouncedSearch || undefined,
           category: category || undefined,
@@ -62,7 +84,7 @@ export function CreatorDiscoverBusinessesPage() {
         setStatus('error');
       }
     },
-    [debouncedSearch, category, debouncedLocation],
+    [view, debouncedSearch, category, debouncedLocation],
   );
 
   useEffect(() => {
@@ -84,10 +106,24 @@ export function CreatorDiscoverBusinessesPage() {
 
   const canLoadMore = items.length < total;
   const hasFilters = Boolean(search || category || location);
+  const clearFilters = () => setParams(view === 'all' ? {} : { view }, { replace: true });
 
   return (
     <>
       <DashPageHeader title={t('nav.discoverBusinesses')} description={t('public.businessesSubtitle')} />
+
+      <div className="mb-4 overflow-x-auto">
+        <SegmentedControl
+          ariaLabel={t('favoriteBusinesses.viewLabel')}
+          value={view}
+          onChange={(v) => patch('view', v === 'all' ? '' : v)}
+          options={[
+            { value: 'all', label: t('favoriteBusinesses.all') },
+            { value: 'favorites', label: t('favoriteBusinesses.favorites') },
+            { value: 'savedBy', label: t('favoriteBusinesses.savedBy') },
+          ]}
+        />
+      </div>
 
       <div className="space-y-3">
         <SearchInput
@@ -115,7 +151,7 @@ export function CreatorDiscoverBusinessesPage() {
           </p>
           {hasFilters && (
             <button
-              onClick={() => setParams({}, { replace: true })}
+              onClick={clearFilters}
               className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-violet-dark hover:underline"
             >
               <SlidersHorizontal size={13} />
@@ -134,12 +170,19 @@ export function CreatorDiscoverBusinessesPage() {
               <Skeleton key={i} className="h-56 w-full rounded-2xl" />
             ))}
           </div>
+        ) : items.length === 0 && view !== 'all' && !hasFilters ? (
+          <EmptyState
+            variant="empty"
+            title={view === 'favorites' ? t('favoriteBusinesses.emptyFavorites') : t('favoriteBusinesses.emptySavedBy')}
+            description={view === 'favorites' ? t('favoriteBusinesses.emptyFavoritesHint') : t('favoriteBusinesses.emptySavedByHint')}
+            action={{ label: t('favoriteBusinesses.browse'), onClick: () => patch('view', '') }}
+          />
         ) : items.length === 0 ? (
           <EmptyState
             variant="no-results"
             title={t('public.noBusinessesTitle')}
             description={t('public.noBusinessesBody')}
-            action={hasFilters ? { label: t('public.clearAll'), onClick: () => setParams({}, { replace: true }) } : undefined}
+            action={hasFilters ? { label: t('public.clearAll'), onClick: clearFilters } : undefined}
           />
         ) : (
           <>

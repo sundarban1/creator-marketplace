@@ -78,3 +78,36 @@ export function pausePromotion(id: string): Promise<Promotion> {
 export function deletePromotion(id: string): Promise<void> {
   return apiRequest('DELETE', `/api/promotions/${id}`).then(() => undefined);
 }
+
+// ── Creator side: discoverable deals + Kolab Points ──────────────────────────
+
+/** Active promotions a creator can redeem (redemption itself is QR, mobile-only). */
+export function fetchDeals(signal?: AbortSignal): Promise<Promotion[]> {
+  return apiRequest<Promotion[]>('GET', '/api/promotions', undefined, { signal }).then((r) => r.data);
+}
+
+export interface PointsBalance {
+  balance: number;
+  lifetimeEarned: number;
+  lifetimeSpent: number;
+  earnedThisMonth: number;
+}
+
+export interface PointsLedgerRow {
+  id: string;
+  type: 'PROMO_REDEMPTION_DEBIT' | 'ADJUSTMENT';
+  direction: 'CREDIT' | 'DEBIT';
+  amount: number;
+  description: string;
+  /** The business's name for a PROMO_REDEMPTION_DEBIT row; null otherwise. */
+  businessName: string | null;
+  createdAt: string;
+}
+
+export function fetchPointsBalance(signal?: AbortSignal): Promise<PointsBalance> {
+  return apiRequest<PointsBalance>('GET', '/api/creator/points', undefined, { signal }).then((r) => r.data);
+}
+
+export function fetchPointsHistory(signal?: AbortSignal): Promise<PointsLedgerRow[]> {
+  return apiRequest<PointsLedgerRow[]>('GET', '/api/creator/points/history', undefined, { signal }).then((r) => r.data);
+}

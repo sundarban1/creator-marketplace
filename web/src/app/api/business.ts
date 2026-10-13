@@ -328,6 +328,22 @@ export function fetchEventReviewHistory(id: string, signal?: AbortSignal): Promi
   return apiRequest<EventReviewHistoryItem[]>('GET', `/api/campaigns/${id}/review-history`, undefined, { signal }).then((r) => r.data);
 }
 
+/** Who the business invited to one event, and how each invite stands — mobile's listCampaignInvitations. */
+export interface CampaignInvitee {
+  id: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  message: string | null;
+  createdAt: string;
+  respondedAt: string | null;
+  creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
+}
+
+export function fetchCampaignInvitees(campaignId: string, signal?: AbortSignal): Promise<CampaignInvitee[]> {
+  return apiRequest<CampaignInvitee[]>('GET', `/api/business/campaigns/${campaignId}/invitations`, undefined, {
+    signal,
+  }).then((r) => r.data);
+}
+
 export function updateCampaign(id: string, input: UpdateCampaignInput): Promise<MyCampaign> {
   return apiRequest<MyCampaign>('PUT', `/api/campaigns/${id}`, input).then((r) => r.data);
 }
@@ -494,6 +510,16 @@ export function initiateEsewaPayment(appId: string): Promise<{ paymentUrl: strin
   ).then((r) => r.data);
 }
 
+/** Starts a Khalti escrow-funding payment; returns Khalti's hosted checkout URL. */
+export function initiateKhaltiPayment(appId: string): Promise<{ paymentUrl: string }> {
+  return apiRequest<{ paymentUrl: string }>(
+    'POST',
+    `/api/campaigns/applications/${appId}/pay/khalti/initiate`,
+    undefined,
+    { params: { platform: 'web' } },
+  ).then((r) => r.data);
+}
+
 /**
  * Starts a connectIPS escrow-funding payment; same checkout-page-URL shape as
  * initiateEsewaPayment. `paymentUrl` is null (with `alreadyPaid`) when the
@@ -580,6 +606,43 @@ export function fetchSavedCreatorIds(signal?: AbortSignal): Promise<string[]> {
   return apiRequest<{ ids: string[] }>('GET', '/api/business/creators/saved-ids', undefined, {
     signal,
   }).then((r) => r.data.ids ?? []);
+}
+
+/** The business's saved creators (slimmer shape than the browse list) — mobile's getSavedCreators. */
+export interface SavedCreatorItem {
+  id: string;
+  createdAt: string;
+  creator: {
+    id: string;
+    fullName: string | null;
+    avatarUrl: string | null;
+    location: string | null;
+    categories: string[];
+    isVerified: boolean;
+    socialAccounts: { platform: string; followers: number }[];
+  };
+}
+
+export function fetchSavedCreators(
+  q: { search?: string; categories?: string[]; platforms?: string[]; location?: string },
+  signal?: AbortSignal,
+): Promise<BusinessCreatorCard[]> {
+  return apiRequest<SavedCreatorItem[]>('GET', '/api/business/creators/saved', undefined, {
+    signal,
+    params: {
+      search: q.search,
+      categories: q.categories?.join(','),
+      platforms: q.platforms?.join(','),
+      location: q.location,
+    },
+  }).then((r) =>
+    r.data.map((row) => ({
+      ...row.creator,
+      bio: null,
+      fullyVerified: row.creator.isVerified,
+      isSaved: true,
+    })),
+  );
 }
 
 export function inviteCreators(campaignId: string, creatorIds: string[]): Promise<unknown> {

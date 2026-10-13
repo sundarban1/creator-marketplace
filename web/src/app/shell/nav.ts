@@ -16,6 +16,10 @@ import {
   Tag,
   Gift,
   BadgeCheck,
+  Bookmark,
+  Sparkles,
+  BarChart3,
+  UsersRound,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from '../api/auth';
@@ -51,6 +55,7 @@ const CREATOR_NAV_GROUPS: NavGroup[] = [
       { key: 'discoverEvents', to: '/creator/events', icon: Compass },
       { key: 'discoverCreators', to: '/creator/creators', icon: Users },
       { key: 'discoverBusinesses', to: '/creator/businesses', icon: Building2 },
+      { key: 'savedEvents', to: '/creator/saved-events', icon: Bookmark },
     ],
   },
   {
@@ -59,18 +64,22 @@ const CREATOR_NAV_GROUPS: NavGroup[] = [
       { key: 'myApplications', to: '/creator/applications', icon: FileText },
       { key: 'myWork', to: '/creator/work', icon: Briefcase },
       { key: 'messages', to: '/creator/messages', icon: MessageCircle },
+      { key: 'analytics', to: '/creator/analytics', icon: BarChart3 },
     ],
   },
   {
     labelKey: 'groupFinance',
     items: [
       { key: 'wallet', to: '/creator/wallet', icon: Wallet },
+      { key: 'rewards', to: '/creator/rewards', icon: Sparkles },
       { key: 'referFriend', to: '/creator/referrals', icon: Gift },
     ],
   },
   {
     labelKey: 'groupAccount',
     items: [
+      // TEAM providers only — AppShell filters it out otherwise (mobile drawer rule).
+      { key: 'myTeam', to: '/creator/team', icon: UsersRound },
       { key: 'settings', to: '/creator/settings', icon: Settings },
       { key: 'verification', to: '/creator/verification', icon: BadgeCheck },
       { key: 'help', to: '/creator/support', icon: HelpCircle },
@@ -100,6 +109,7 @@ const BUSINESS_NAV_GROUPS: NavGroup[] = [
       { key: 'applications', to: '/business/applications', icon: FileText },
       { key: 'messages', to: '/business/messages', icon: MessageCircle },
       { key: 'deliverables', to: '/business/deliverables', icon: PackageCheck },
+      { key: 'analytics', to: '/business/analytics', icon: BarChart3 },
     ],
   },
   {

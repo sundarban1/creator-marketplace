@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent,
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Check, X, Send, Smile, Paperclip, FileText, Play, Loader2, MessageCircle,
-  MoreVertical, MoreHorizontal, Pencil, Trash2, Ban,
+  MoreVertical, MoreHorizontal, Pencil, Trash2, Ban, LockOpen,
 } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -18,6 +18,9 @@ import {
   editMessage,
   deleteMessage,
   deleteConversation,
+  fetchBlockStatus,
+  blockConversation,
+  unblockConversation,
   type Conversation,
   type ChatMessage,
 } from '../api/chat';
@@ -134,7 +137,9 @@ export function ChatPage() {
   // proposal-accept or fresh message request. (A direct link to a closed
   // thread — e.g. from a notification — still opens it; only the list rail
   // hides it.)
-  const items = (conversations.data?.items ?? []).filter((c) => c.status !== 'CLOSED');
+  // Message requests (PENDING) are hidden for now, same as mobile's locked
+  // 'chats' view — restore `&& c.status !== 'PENDING'` removal to show them.
+  const items = (conversations.data?.items ?? []).filter((c) => c.status !== 'CLOSED' && c.status !== 'PENDING');
   const activeConversation = id ? conversations.data?.items.find((c) => c.id === id) : undefined;
 
   return (
@@ -310,6 +315,19 @@ function ConversationThread({
 
   const messagesQuery = useAsync((s) => fetchMessages(id, { limit: 100 }, s), [id]);
 
+  // Blocking exists for creator ↔ creator chats only (same as mobile). Hidden
+  // for now — creator ↔ creator chat is disabled; restore the line below when
+  // it comes back.
+  // const canBlock = user?.role === 'CREATOR' && conversation.otherPartyRole === 'CREATOR';
+  const canBlock = false;
+  const blockQuery = useAsync(
+    (s) => (canBlock ? fetchBlockStatus(id, s) : Promise.resolve({ blockedByMe: false, blockedByOther: false })),
+    [id, canBlock],
+  );
+  const [blockOverride, setBlockOverride] = useState<boolean | null>(null);
+  const blockedByMe = blockOverride ?? blockQuery.data?.blockedByMe ?? false;
+  const blockedByOther = blockQuery.data?.blockedByOther ?? false;
+
   // Messages that arrive after the initial load (my own sends + the other
   // party's socket-delivered ones) — kept separate from the fetched page and
   // merged at render time so nothing here copies async data into state via
@@ -473,6 +491,28 @@ function ConversationThread({
     else setHiddenIds((prev) => new Set(prev).add(m.id));
   }
 
+  async function onToggleBlock() {
+    setChatMenuOpen(false);
+    const name = conversation.otherParty?.fullName ?? '';
+    if (blockedByMe) {
+      try {
+        await unblockConversation(id);
+        setBlockOverride(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('common.somethingWrong'));
+      }
+      return;
+    }
+    const ok = await confirmDialog({
+      title: t('chat.blockConfirmTitle', { name }),
+      message: t('chat.blockConfirmBody', { name }),
+      confirmLabel: t('chat.block'),
+      tone: 'danger',
+      action: () => blockConversation(id),
+    });
+    if (ok) setBlockOverride(true);
+  }
+
   async function onDeleteChat() {
     setChatMenuOpen(false);
     const ok = await confirmDialog({
@@ -596,6 +636,17 @@ function ConversationThread({
           </button>
           {chatMenuOpen && (
             <div role="menu" className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-xl">
+              {canBlock && blockQuery.data && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={onToggleBlock}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] font-medium text-ink hover:bg-surface-dim"
+                >
+                  {blockedByMe ? <LockOpen size={15} /> : <Ban size={15} />}
+                  {blockedByMe ? t('chat.unblock') : t('chat.block')}
+                </button>
+              )}
               <button
                 type="button"
                 role="menuitem"
@@ -808,7 +859,11 @@ function ConversationThread({
         </div>
       )}
 
-      {!isClosed ? (
+      {!isClosed && (blockedByMe || blockedByOther) ? (
+        <p className="flex-shrink-0 border-t border-line px-5 py-3 text-center text-[13px] text-ink-soft">
+          {blockedByMe ? t('chat.youBlockedUser') : t('chat.blockedByOther')}
+        </p>
+      ) : !isClosed ? (
         <form
           onSubmit={onSend}
           className={cn('flex flex-shrink-0 items-center gap-1.5 px-5 py-3', !editing && 'border-t border-line')}

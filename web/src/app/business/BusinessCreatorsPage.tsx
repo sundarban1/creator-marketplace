@@ -11,6 +11,7 @@ import { fetchCategories } from '../api/catalog';
 import {
   listBusinessCreators,
   fetchSavedCreatorIds,
+  fetchSavedCreators,
   toggleSaveCreator,
   type BusinessCreatorCard,
 } from '../api/business';
@@ -20,6 +21,7 @@ import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { makeCategoryLookup } from '../public/categoryLookup';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { BizCreatorCard } from './BizCreatorCard';
@@ -32,6 +34,8 @@ export function BusinessCreatorsPage() {
   const platform = params.get('platform') ?? '';
   const location = params.get('location') ?? '';
   const sort = params.get('sort') ?? 'newest';
+  // "Saved" view — the business's bookmarked creators (mobile's Saved Creators).
+  const view: 'all' | 'saved' = params.get('view') === 'saved' ? 'saved' : 'all';
   const debouncedSearch = useDebouncedValue(search, 350);
   const debouncedLocation = useDebouncedValue(location, 350);
 
@@ -54,6 +58,20 @@ export function BusinessCreatorsPage() {
       const id = ++reqId.current;
       setStatus(append ? 'loadingMore' : 'loading');
       try {
+        if (view === 'saved') {
+          const saved = await fetchSavedCreators({
+            search: debouncedSearch || undefined,
+            categories: category ? [category] : undefined,
+            platforms: platform ? [platform] : undefined,
+            location: debouncedLocation || undefined,
+          });
+          if (id !== reqId.current) return;
+          setItems(saved);
+          setTotal(saved.length);
+          setPage(1);
+          setStatus('ready');
+          return;
+        }
         const res = await listBusinessCreators(
           {
             search: debouncedSearch || undefined,
@@ -74,7 +92,7 @@ export function BusinessCreatorsPage() {
         setStatus('error');
       }
     },
-    [debouncedSearch, category, platform, debouncedLocation, sort],
+    [view, debouncedSearch, category, platform, debouncedLocation, sort],
   );
 
   useEffect(() => {
@@ -99,6 +117,11 @@ export function BusinessCreatorsPage() {
     setOverrides((prev) => new Map(prev).set(id, nextValue));
     try {
       await toggleSaveCreator(id);
+      // Unsaving from the Saved view drops the card from the list.
+      if (view === 'saved' && !nextValue) {
+        setItems((prev) => prev.filter((c) => c.id !== id));
+        setTotal((n) => Math.max(0, n - 1));
+      }
     } catch {
       setOverrides((prev) => {
         const m = new Map(prev);
@@ -110,10 +133,23 @@ export function BusinessCreatorsPage() {
 
   const canLoadMore = items.length < total;
   const hasFilters = Boolean(search || category || platform || location || sort !== 'newest');
+  const clearFilters = () => setParams(view === 'saved' ? { view: 'saved' } : {}, { replace: true });
 
   return (
     <>
       <PageHeader title={t('biz.findTitle')} description={t('biz.findSubtitle')} />
+
+      <div className="mb-4">
+        <SegmentedControl
+          ariaLabel={t('savedCreators.viewLabel')}
+          value={view}
+          onChange={(v) => patch('view', v === 'saved' ? 'saved' : '')}
+          options={[
+            { value: 'all', label: t('savedCreators.all') },
+            { value: 'saved', label: t('savedCreators.saved') },
+          ]}
+        />
+      </div>
 
       <div className="space-y-3">
         <SearchInput
@@ -161,7 +197,7 @@ export function BusinessCreatorsPage() {
           </p>
           {hasFilters && (
             <button
-              onClick={() => setParams({}, { replace: true })}
+              onClick={clearFilters}
               className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-violet-dark hover:underline"
             >
               <SlidersHorizontal size={13} />
@@ -181,12 +217,21 @@ export function BusinessCreatorsPage() {
             ))}
           </div>
         ) : items.length === 0 ? (
+          view === 'saved' && !hasFilters ? (
+            <EmptyState
+              variant="empty"
+              title={t('savedCreators.emptyTitle')}
+              description={t('savedCreators.emptyHint')}
+              action={{ label: t('savedCreators.browse'), onClick: () => patch('view', '') }}
+            />
+          ) : (
           <EmptyState
             variant="no-results"
             title={t('public.noCreatorsTitle')}
             description={t('public.noCreatorsBody')}
-            action={hasFilters ? { label: t('public.clearAll'), onClick: () => setParams({}, { replace: true }) } : undefined}
+            action={hasFilters ? { label: t('public.clearAll'), onClick: clearFilters } : undefined}
           />
+          )
         ) : (
           <>
             <motion.div

@@ -32,6 +32,10 @@ import {
 } from './detailKit';
 import { SignupGateModal } from './SignupGateModal';
 
+// Provider-type badge (Team / Agency) hidden from the profile for now — same as
+// mobile's CreatorProfileView. Flip to true to bring it back.
+const SHOW_PROVIDER_BADGE: boolean = false;
+
 export function CreatorProfilePage() {
   const t = useT();
   const { status } = useAppAuth();
@@ -68,7 +72,7 @@ export function CreatorProfilePage() {
 
   const name = creator.fullName ?? 'Creator';
   const canonicalHandle = creator.username ?? creator.id;
-  const isTeam = creator.providerType === 'TEAM' || creator.providerType === 'AGENCY';
+  const isTeam = SHOW_PROVIDER_BADGE && (creator.providerType === 'TEAM' || creator.providerType === 'AGENCY');
   const metaDesc =
     creator.bio?.slice(0, 155) ??
     `${name}${creator.location ? ` · ${creator.location}` : ''} — content creator on Kolab.`;

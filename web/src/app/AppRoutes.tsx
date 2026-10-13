@@ -55,6 +55,11 @@ const CreatorSettingsPage = screen(() => import('./creator/CreatorSettingsPage')
 const CreatorVerificationPage = screen(() => import('./creator/CreatorVerificationPage'), 'CreatorVerificationPage');
 const CreatorMeetupsPage = screen(() => import('./creator/CreatorMeetupsPage'), 'CreatorMeetupsPage');
 const CreatorMeetupRegisterPage = screen(() => import('./creator/CreatorMeetupRegisterPage'), 'CreatorMeetupRegisterPage');
+const CreatorSavedEventsPage = screen(() => import('./creator/CreatorSavedEventsPage'), 'CreatorSavedEventsPage');
+const CreatorTeamPage = screen(() => import('./creator/CreatorTeamPage'), 'CreatorTeamPage');
+const CreatorRewardsPage = screen(() => import('./creator/CreatorRewardsPage'), 'CreatorRewardsPage');
+const CreatorAnalyticsPage = screen(() => import('./shell/AnalyticsPage'), 'CreatorAnalyticsPage');
+const BusinessAnalyticsPage = screen(() => import('./shell/AnalyticsPage'), 'BusinessAnalyticsPage');
 const CreatorReferralsPage = screen(() => import('./creator/CreatorReferralsPage'), 'CreatorReferralsPage');
 const AccountSettingsPage = screen(() => import('./shell/AccountSettingsPage'), 'AccountSettingsPage');
 const HelpSupportPage = screen(() => import('./shell/HelpSupportPage'), 'HelpSupportPage');
@@ -156,6 +161,10 @@ export function marketplaceRoutes() {
               <Route path="settings" element={<CreatorSettingsPage />} />
               <Route path="verification" element={<CreatorVerificationPage />} />
               <Route path="referrals" element={<CreatorReferralsPage />} />
+              <Route path="saved-events" element={<CreatorSavedEventsPage />} />
+              <Route path="rewards" element={<CreatorRewardsPage />} />
+              <Route path="team" element={<CreatorTeamPage />} />
+              <Route path="analytics" element={<CreatorAnalyticsPage />} />
               <Route path="support" element={<HelpSupportPage />} />
               <Route path="about" element={<AboutKolabPage />} />
             </Route>
@@ -185,6 +194,7 @@ export function marketplaceRoutes() {
               <Route path="profile" element={<BusinessProfilePage />} />
               <Route path="settings" element={<AccountSettingsPage />} />
               <Route path="referrals" element={<BusinessReferralsPage />} />
+              <Route path="analytics" element={<BusinessAnalyticsPage />} />
               <Route path="verification" element={<BusinessVerificationPage />} />
               <Route path="support" element={<HelpSupportPage />} />
               <Route path="about" element={<AboutKolabPage />} />

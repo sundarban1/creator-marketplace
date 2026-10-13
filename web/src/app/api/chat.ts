@@ -128,3 +128,25 @@ export function deleteMessage(conversationId: string, messageId: string, forEver
 export function deleteConversation(conversationId: string): Promise<void> {
   return apiRequest('DELETE', `/api/messaging/conversations/${conversationId}`).then(() => undefined);
 }
+
+// ── Blocking (creator ↔ creator chats) — mobile's chatService block calls ────
+
+export function fetchBlockStatus(
+  conversationId: string,
+  signal?: AbortSignal,
+): Promise<{ blockedByMe: boolean; blockedByOther: boolean }> {
+  return apiRequest<{ blockedByMe: boolean; blockedByOther: boolean }>(
+    'GET',
+    `/api/messaging/conversations/${conversationId}/block-status`,
+    undefined,
+    { signal },
+  ).then((r) => r.data);
+}
+
+export function blockConversation(conversationId: string): Promise<void> {
+  return apiRequest('POST', `/api/messaging/conversations/${conversationId}/block`).then(() => undefined);
+}
+
+export function unblockConversation(conversationId: string): Promise<void> {
+  return apiRequest('DELETE', `/api/messaging/conversations/${conversationId}/block`).then(() => undefined);
+}

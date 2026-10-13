@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Globe, ShieldCheck, BadgeCheck, UserX, Trash2, Link2, User, Mail, Gift, LifeBuoy, Info } from 'lucide-react';
+import { Globe, ShieldCheck, BadgeCheck, UserX, Trash2, Link2, User, Mail, Gift, LifeBuoy, Info, UsersRound } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { isPhonePlaceholderEmail } from '../lib/identity';
 import { fetchAuthMethods, deactivateAccount, deleteAccount } from '../api/auth';
-import { fetchNotificationSettings, updateNotificationSettings, fetchCreatorFullProfile } from '../api/creator';
+import { fetchNotificationSettings, updateNotificationSettings, fetchCreatorFullProfile, updateCreatorProfile } from '../api/creator';
+import { publishLive } from '../lib/liveUpdates';
 import { paths } from '../routes';
 import { DashPageHeader } from './dash-ui/DashPageHeader';
 import { DashCard, DashCardHeader } from './dash-ui/DashCard';
@@ -45,6 +46,34 @@ export function CreatorSettingsPage() {
   function toggleEmailNotif(next: boolean) {
     setEmailNotifOverride(next);
     updateNotificationSettings({ emailNotificationsEnabled: next }).catch(() => setEmailNotifOverride(!next));
+  }
+
+  // How you provide services (Individual / Team) — mobile settings' provider
+  // type picker. AGENCY was withdrawn but older profiles may still report it.
+  const [providerOverride, setProviderOverride] = useState<'INDIVIDUAL' | 'TEAM' | null>(null);
+  const [providerSaving, setProviderSaving] = useState(false);
+  const providerType = providerOverride ?? creatorProfile.data?.providerType ?? null;
+
+  async function changeProviderType(next: 'INDIVIDUAL' | 'TEAM') {
+    if (next === providerType || providerSaving) return;
+    const label = next === 'TEAM' ? t('providerType.team') : t('providerType.individual');
+    const ok = await confirmDialog({
+      title: t('settings.providerTypeConfirmTitle', { type: label }),
+      message: t('settings.providerTypeConfirmBody'),
+      confirmLabel: t('settings.providerTypeConfirmBtn'),
+    });
+    if (!ok) return;
+    setProviderSaving(true);
+    try {
+      await updateCreatorProfile({ providerType: next });
+      setProviderOverride(next);
+      publishLive('profile');
+      toast.success(t('settings.providerTypeChangedToast'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('settings.providerTypeChangeFailed'));
+    } finally {
+      setProviderSaving(false);
+    }
   }
 
   const m = methods.data;
@@ -103,6 +132,37 @@ export function CreatorSettingsPage() {
                   )}
                 >
                   {l.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="py-3">
+            <DashListRow
+              icon={UsersRound}
+              tone="green"
+              title={t('settings.providerTypeLabel')}
+              subtitle={
+                providerType === 'TEAM'
+                  ? t('providerType.teamDesc')
+                  : providerType === 'INDIVIDUAL'
+                    ? t('providerType.individualDesc')
+                    : t('settings.providerTypeNotSet')
+              }
+              className="py-0"
+            />
+            <div className="ml-12 mt-2 flex gap-2">
+              {(['INDIVIDUAL', 'TEAM'] as const).map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => changeProviderType(opt)}
+                  disabled={providerSaving || creatorProfile.loading}
+                  aria-pressed={providerType === opt}
+                  className={cn(
+                    'rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors disabled:opacity-60',
+                    providerType === opt ? 'bg-violet/10 text-violet-dark' : 'bg-ink/[0.04] text-ink-soft',
+                  )}
+                >
+                  {opt === 'TEAM' ? t('providerType.team') : t('providerType.individual')}
                 </button>
               ))}
             </div>

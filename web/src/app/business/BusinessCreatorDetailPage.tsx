@@ -15,6 +15,7 @@ import { fetchCategories } from '../api/catalog';
 import { ApiError } from '../lib/apiClient';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
+import { ReportButton } from '../ui/ReportButton';
 import { Card, CardHeader } from '../ui/Card';
 import { Alert } from '../ui/Alert';
 import { EmptyState } from '../ui/EmptyState';
@@ -120,6 +121,7 @@ export function BusinessCreatorDetailPage() {
           <Bookmark size={15} className={isSaved ? 'fill-current' : ''} />
           {isSaved ? t('biz.saved') : t('biz.save')}
         </Button>
+        <ReportButton targetType="USER" targetId={c.userId ?? c.id} />
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

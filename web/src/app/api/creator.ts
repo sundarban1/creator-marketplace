@@ -5,6 +5,7 @@
 
 import { apiRequest, apiUpload, type ApiPagination } from '../lib/apiClient';
 import type { EngagementState } from '../lib/engagement';
+import type { BusinessCard } from './publicMarketplace';
 
 // ── Wallet ───────────────────────────────────────────────────────────────────
 
@@ -513,6 +514,39 @@ export function fetchFavoriteBusinessIds(signal?: AbortSignal): Promise<string[]
   );
 }
 
+/** Toggles a business in/out of the creator's favorites; resolves to the new state. */
+export function toggleFavoriteBusiness(businessId: string): Promise<boolean> {
+  return apiRequest<{ isFavorited: boolean }>('POST', `/api/creator/businesses/${businessId}/favorite`).then(
+    (r) => r.data.isFavorited,
+  );
+}
+
+type BusinessListQuery = { search?: string; category?: string; locations?: string[] };
+
+function businessListParams(q: BusinessListQuery) {
+  return {
+    search: q.search,
+    category: q.category,
+    locations: q.locations?.length ? q.locations.join(',') : undefined,
+  };
+}
+
+/** The creator's favorited businesses (full cards) — mobile's favorite-businesses screen. */
+export function fetchFavoriteBusinesses(q: BusinessListQuery, signal?: AbortSignal): Promise<BusinessCard[]> {
+  return apiRequest<BusinessCard[]>('GET', '/api/creator/businesses/favorites/list', undefined, {
+    signal,
+    params: businessListParams(q),
+  }).then((r) => r.data);
+}
+
+/** Businesses that saved this creator — mobile's saved-by-businesses screen. */
+export function fetchSavedByBusinesses(q: BusinessListQuery, signal?: AbortSignal): Promise<BusinessCard[]> {
+  return apiRequest<BusinessCard[]>('GET', '/api/creator/businesses/saved-by', undefined, {
+    signal,
+    params: businessListParams(q),
+  }).then((r) => r.data);
+}
+
 export function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
   const form = new FormData();
   form.append('avatar', file);
@@ -660,4 +694,73 @@ export function uploadCreatorPanDoc(file: File): Promise<CreatorDocUploadResult>
   const form = new FormData();
   form.append('document', file);
   return apiUpload<CreatorDocUploadResult>('/api/creator/pan', form);
+}
+
+// ── Team (§4/§7) — mobile's team.tsx contract. `member` is populated on the
+// roster (/team/members), `provider` on the invitee's own list (/team/memberships).
+// Assignments (/team/assignments) are dormant — teams don't assign bookings.
+
+export type ProviderMemberRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'MEMBER';
+export type AssignableMemberRole = Exclude<ProviderMemberRole, 'OWNER'>;
+
+export interface ProviderMember {
+  id: string;
+  providerId: string;
+  memberId: string;
+  jobRole: string | null;
+  accessRole: ProviderMemberRole;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  invitedAt: string;
+  respondedAt: string | null;
+  member?: {
+    id: string;
+    userId: string;
+    fullName: string | null;
+    username: string | null;
+    avatarUrl: string | null;
+    categories: string[];
+    isVerified: boolean;
+  };
+  provider?: {
+    id: string;
+    userId: string;
+    fullName: string | null;
+    avatarUrl: string | null;
+    providerType: 'INDIVIDUAL' | 'TEAM' | 'AGENCY' | null;
+  };
+}
+
+/** Omit providerId for your own team; pass one to act as an ADMIN of someone else's. */
+export function fetchTeamMembers(providerId: string | null, signal?: AbortSignal): Promise<ProviderMember[]> {
+  return apiRequest<ProviderMember[]>('GET', '/api/creator/team/members', undefined, {
+    signal,
+    params: providerId ? { providerId } : undefined,
+  }).then((r) => r.data);
+}
+
+export function inviteTeamMember(data: {
+  providerId?: string;
+  email?: string;
+  phone?: string;
+  jobRole?: string;
+  accessRole?: AssignableMemberRole;
+}): Promise<ProviderMember> {
+  return apiRequest<ProviderMember>('POST', '/api/creator/team/members', data).then((r) => r.data);
+}
+
+export function updateTeamMember(id: string, data: { jobRole?: string | null; accessRole?: AssignableMemberRole }): Promise<ProviderMember> {
+  return apiRequest<ProviderMember>('PATCH', `/api/creator/team/members/${id}`, data).then((r) => r.data);
+}
+
+export function removeTeamMember(id: string): Promise<void> {
+  return apiRequest('DELETE', `/api/creator/team/members/${id}`).then(() => undefined);
+}
+
+/** The invitee's side — invitations to join (and teams joined). */
+export function fetchMyMemberships(signal?: AbortSignal): Promise<ProviderMember[]> {
+  return apiRequest<ProviderMember[]>('GET', '/api/creator/team/memberships', undefined, { signal }).then((r) => r.data);
+}
+
+export function respondToMembership(id: string, status: 'ACCEPTED' | 'DECLINED'): Promise<ProviderMember> {
+  return apiRequest<ProviderMember>('POST', `/api/creator/team/memberships/${id}/respond`, { status }).then((r) => r.data);
 }
