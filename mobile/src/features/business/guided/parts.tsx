@@ -10,7 +10,7 @@ import { F, FONT_SIZE, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SPACING, lineHei
 import type { CampaignLocation, DeliverableItem, LocationScope, Provenance } from '@/services/guidedCampaign';
 import type { CampaignRuleIssue } from '../utils/campaignRules';
 import type { SaveStatus } from './useAutosave';
-import { SIMPLE_KINDS, simplifyDeliverables } from './deliverableKinds';
+import { EXTRA_KINDS, MAX_CUSTOM_LABEL, SIMPLE_KINDS, deliverableLabel, resolveNewDeliverable, simplifyDeliverables } from './deliverableKinds';
 
 // Native building blocks of the guided creator — same roles as
 // web/src/app/business/guided/parts.tsx.
@@ -67,7 +67,7 @@ export function FooterNav({ onBack, onNext, nextLabel, busy, disabled }: { onBac
   const { t } = useLanguage();
   return (
     <View style={{ flexDirection: 'row', gap: SPACING.md, alignItems: 'center' }}>
-      {onBack ? <View style={{ flex: 1 }}><Button label={t('guided.back')} variant="ghost" onPress={onBack} /></View> : null}
+      {onBack ? <View style={{ flex: 1 }}><Button label={t('guided.back')} variant="secondary" icon="arrow-left" onPress={onBack} fullWidth /></View> : null}
       <View style={{ flex: 2 }}>
         <Button label={nextLabel ?? t('guided.continue')} onPress={onNext} loading={busy} disabled={disabled} fullWidth />
       </View>
@@ -113,27 +113,32 @@ export function SaveIndicator({ status }: { status: SaveStatus }) {
 
 // ── Choices ──────────────────────────────────────────────────────────────────
 
-export function ChoiceChips<T extends string>({ options, value, onChange, multi = false }: {
+export function ChoiceChips<T extends string>({ options, value, onChange, multi = false, max }: {
   options: { value: T; label: string; icon?: keyof typeof FontAwesome5.glyphMap }[];
   value: T | T[] | null;
   onChange: (v: T) => void;
   multi?: boolean;
+  // multi only: once `max` are on, the rest are disabled until one is cleared.
+  max?: number;
 }) {
   const C = useAppColors();
   const on = (v: T) => (Array.isArray(value) ? value.includes(v) : value === v);
+  const full = multi && max != null && Array.isArray(value) && value.length >= max;
   return (
     <View style={st.chipWrap} accessibilityRole={multi ? undefined : 'radiogroup'}>
       {options.map((o) => {
         const active = on(o.value);
+        const disabled = full && !active;
         return (
           <Pressable
             key={o.value}
             onPress={() => onChange(o.value)}
+            disabled={disabled}
             accessibilityRole={multi ? 'checkbox' : 'radio'}
-            accessibilityState={multi ? { checked: active } : { selected: active }}
+            accessibilityState={multi ? { checked: active, disabled } : { selected: active }}
             style={({ pressed }) => [
               st.chip,
-              { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface, opacity: pressed ? 0.8 : 1 },
+              { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
             ]}>
             {o.icon ? <FontAwesome5 name={o.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} /> : null}
             <Text style={[st.chipTxt, { color: active ? C.brinjal1 : C.text }]}>{o.label}</Text>
@@ -400,8 +405,13 @@ export function LocationPicker({ locationType, locationScope, locations, onChang
 export function DeliverablesEditor({ items, onChange }: { items: DeliverableItem[]; onChange: (items: DeliverableItem[]) => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const [adding, setAdding] = useState(false);
+  const [custom, setCustom] = useState('');
+  const [error, setError] = useState<string | null>(null);
   // Just what to make and how many — platforms are picked once for the
   // whole campaign. Legacy/AI types fold into these kinds (deliverableKinds).
+  // The three core kinds always show (Kolab's suggestion fills them in);
+  // anything added beyond them gets its own removable row.
   const simple = simplifyDeliverables(items);
   const qty = (kind: string) => simple.find((i) => i.type === kind)?.quantity ?? 0;
   const others = simple.filter((i) => !(SIMPLE_KINDS as readonly string[]).includes(i.type));
@@ -410,21 +420,71 @@ export function DeliverablesEditor({ items, onChange }: { items: DeliverableItem
     if (n > 0) next.push({ type: kind, platform: null, quantity: n });
     onChange(simplifyDeliverables(next) as DeliverableItem[]);
   };
+  const add = (input: string) => {
+    const r = resolveNewDeliverable(input, simple, t);
+    if (!r) return;
+    if ('duplicateOf' in r) { setError(t('guided.deliverableDuplicate', { label: r.duplicateOf })); return; }
+    set(r.type, 1);
+    setCustom('');
+    setError(null);
+    setAdding(false);
+  };
   const rows = [
-    ...SIMPLE_KINDS.map((k) => ({ kind: k as string, label: t(`guided.pick_${k}`) })),
-    ...others.map((o) => ({ kind: o.type, label: t(`guided.deliv_${o.type}`) })),
+    ...SIMPLE_KINDS.map((k) => ({ kind: k as string, label: t(`guided.pick_${k}`), removable: false })),
+    ...others.map((o) => ({ kind: o.type, label: deliverableLabel(o.type, t), removable: true })),
   ];
+  const extras = EXTRA_KINDS.filter((k) => !qty(k));
   return (
     <View style={{ gap: SPACING.sm }}>
       <View style={[st.card, { borderColor: C.border, backgroundColor: C.surface, gap: 0, paddingVertical: 0 }]}>
         {rows.map((r, i) => (
-          <View key={r.kind} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACING.sm, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, borderTopColor: C.border }}>
-            <Text style={[st.body, { color: qty(r.kind) ? C.text : C.textSecondary, fontFamily: F.semibold }]}>{r.label}</Text>
-            <Stepper value={qty(r.kind)} onChange={(n) => set(r.kind, n)} min={0} label={`${r.label} — ${t('guided.quantityPerCreator')}`} />
+          <View key={r.kind} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, paddingVertical: SPACING.sm, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, borderTopColor: C.border }}>
+            <Text numberOfLines={1} style={[st.body, { flex: 1, color: qty(r.kind) ? C.text : C.textSecondary, fontFamily: F.semibold }]}>{r.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Stepper value={qty(r.kind)} onChange={(n) => set(r.kind, n)} min={r.removable ? 1 : 0} label={`${r.label} — ${t('guided.quantityPerCreator')}`} />
+              {r.removable ? (
+                <Pressable onPress={() => set(r.kind, 0)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${t('guided.remove')} ${r.label}`} style={{ width: MIN_TOUCH_TARGET, height: MIN_TOUCH_TARGET, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome5 name="trash-alt" size={13} color={C.error} />
+                </Pressable>
+              ) : null}
+            </View>
           </View>
         ))}
       </View>
       <Text style={[st.small, { color: C.textSecondary }]}>{t('guided.quantityPerCreator')}</Text>
+
+      {!adding ? (
+        <LinkButton icon="plus" label={t('guided.addAnotherDeliverable')} onPress={() => setAdding(true)} />
+      ) : (
+        <View style={[st.card, { borderColor: C.border, backgroundColor: C.surface, gap: SPACING.sm }]}>
+          {extras.length ? (
+            <View style={st.chipWrap}>
+              {extras.map((k) => (
+                <Pressable key={k} onPress={() => add(k)} accessibilityRole="button" style={({ pressed }) => [st.chip, { borderColor: C.border, backgroundColor: C.surface, opacity: pressed ? 0.8 : 1 }]}>
+                  <FontAwesome5 name="plus" size={11} color={C.textSecondary} />
+                  <Text style={[st.chipTxt, { color: C.text }]}>{t(`guided.deliv_${k}`)}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: SPACING.sm, alignItems: 'center' }}>
+            <TextInput
+              value={custom}
+              maxLength={MAX_CUSTOM_LABEL}
+              onChangeText={(v) => { setCustom(v); setError(null); }}
+              onSubmitEditing={() => add(custom)}
+              returnKeyType="done"
+              placeholder={t('guided.addDeliverablePlaceholder')}
+              placeholderTextColor={C.textPlaceholder}
+              accessibilityLabel={t('guided.addAnotherDeliverable')}
+              style={[st.input, { flex: 1, borderColor: error ? C.error : C.border, backgroundColor: C.surface, color: C.text }]}
+            />
+            <Button label={t('guided.add')} size="small" onPress={() => add(custom)} disabled={!custom.trim()} />
+          </View>
+          {error ? <Text accessibilityRole="alert" style={[st.small, { color: C.error, fontFamily: F.medium }]}>{error}</Text> : null}
+          <LinkButton label={t('guided.cancel')} tone={C.textSecondary} onPress={() => { setAdding(false); setCustom(''); setError(null); }} />
+        </View>
+      )}
     </View>
   );
 }

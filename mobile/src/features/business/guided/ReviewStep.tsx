@@ -120,7 +120,7 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
         <Text style={[st.fieldLabel, { color: C.text }]}>{t('createEvent.secFeatureImageTitle')}</Text>
         <FeatureImagePicker
           imageUrl={form.featureImageUrl || null}
-          category={form.category}
+          category={form.categories[0] ?? ''}
           uploading={coverUploading}
           onPick={pickCover}
           onClear={() => onFeatureImageChange('')}
@@ -143,7 +143,7 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
       ))}
 
       <View style={{ borderTopWidth: 1, borderTopColor: C.border }}>
-        <Row icon="bullseye" label={t('guided.rGoal')} value={form.goal ? t(`guided.goal_${form.goal}`) : t('guided.notSure')} provenance={form.aiProvenance.goal} onEdit={() => onEdit('basics')} />
+        <Row icon="bullseye" label={t('guided.rGoal')} value={form.goals.length ? form.goals.map((g) => t(`guided.goal_${g}`)).join(', ') : t('guided.goalNotSure')} provenance={form.aiProvenance.goal} onEdit={() => onEdit('basics')} />
         <Row
           icon="map-marker-alt"
           label={t('guided.rLocation')}
@@ -154,7 +154,7 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
           provenance={form.aiProvenance.locations}
           onEdit={() => onEdit('basics')}
         />
-        <Row icon="users" label={t('guided.rCreators')} value={creators ? t('guided.creatorsOfType', { count: creators, type: form.category || '—' }) : t('guided.notSet')} provenance={form.aiProvenance.creatorsNeeded} onEdit={() => onEdit('creators')} attention={blocking.some((i) => i.step === 'creators')} />
+        <Row icon="users" label={t('guided.rCreators')} value={creators ? t('guided.creatorsOfType', { count: creators, type: form.categories.join(', ') || '—' }) : t('guided.notSet')} provenance={form.aiProvenance.creatorsNeeded} onEdit={() => onEdit('creators')} attention={blocking.some((i) => i.step === 'creators')} />
         <Row icon="mobile-alt" label={t('guided.rPlatforms')} value={form.platforms.length ? form.platforms.join(' + ') : t('guided.notSet')} provenance={form.aiProvenance.platforms} onEdit={() => onEdit('content')} />
         <Row
           icon="film"

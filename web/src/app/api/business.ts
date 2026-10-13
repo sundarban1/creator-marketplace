@@ -15,6 +15,7 @@ export interface MyCampaign {
   description: string;
   featureImageUrl?: string | null;
   category: string;
+  categories?: string[];
   platforms: string[];
   deliverables: string;
   deadline: string;
@@ -99,6 +100,7 @@ export interface GuidedDraftPayload {
   title?: string;
   description?: string;
   featureImageUrl?: string | null;
+  categories?: string[];
   category?: string;
   goals?: string[];
   platforms?: string[];

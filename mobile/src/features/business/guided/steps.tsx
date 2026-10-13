@@ -13,7 +13,7 @@ import { transcribeAudio } from '@/services/audioTranscribe';
 import { F, SPACING } from '@/utilities/constants';
 import { guidedCampaignService, type AiClarifyingQuestion, type CampaignBrief, type DeliverableItem } from '@/services/guidedCampaign';
 import { MIN_BUDGET_PER_CREATOR, type CampaignRuleIssue } from '../utils/campaignRules';
-import { toAiContext, type GuidedForm } from './guidedModel';
+import { toAiContext, GOAL_OPTIONS, MAX_GOALS, MAX_CATEGORIES, type GuidedForm } from './guidedModel';
 import { simplifyDeliverables } from './deliverableKinds';
 import { StartFromTemplates, type StartSource } from './templates';
 import { BRIEF_SECTIONS, CREATOR_TIERS, sectionFilled, type BriefFieldDef } from './briefSections';
@@ -107,9 +107,11 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onInpu
     const prevSeed = QUICK_STARTS.map(seedOf).find((s) => s && text.startsWith(s));
     const rest = prevSeed ? text.slice(prevSeed.length) : text;
     const aiPrompt = prevSeed || !text.trim() ? seedOf(k) + rest.trimStart() : text;
-    const goal = k === 'awareness' ? 'Brand Awareness' : quickStart === 'awareness' && form.goal === 'Brand Awareness' ? '' : form.goal;
+    const goals = k === 'awareness'
+      ? (form.goals.includes('Brand Awareness') ? form.goals : ['Brand Awareness', ...form.goals].slice(0, MAX_GOALS))
+      : quickStart === 'awareness' ? form.goals.filter((g) => g !== 'Brand Awareness') : form.goals;
     setQuickStart(k);
-    update({ aiPrompt, goal });
+    update({ aiPrompt, goals });
   };
   return (
     <StepShell
@@ -208,7 +210,6 @@ export function ClarifyStep({ form, update, questions, onNext, onBack }: StepPro
 
 // ── Basics (Step 2) ──────────────────────────────────────────────────────────
 
-const GOALS = ['Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement'] as const;
 
 export function BasicsStep({ form, update, issues, onNext, onBack, nextLabel, header }: StepProps) {
   const { t } = useLanguage();
@@ -224,11 +225,7 @@ export function BasicsStep({ form, update, issues, onNext, onBack, nextLabel, he
         <IssueNote issue={issueFor(issues, 'description')} />
       </Field>
       <Field label={t('guided.goalLabel')} accessory={<ProvenanceTag value={form.aiProvenance.goal} />}>
-        <ChoiceChips<string>
-          value={form.goal || null}
-          onChange={(v) => update({ goal: v === 'NOT_SURE' ? '' : v }, ['goal'])}
-          options={[...GOALS.map((g) => ({ value: g, label: t(`guided.goal_${g}`) })), { value: 'NOT_SURE', label: t('guided.notSure') }]}
-        />
+        <GoalPicker value={form.goals} onChange={(goals) => update({ goals }, ['goal'])} />
       </Field>
       <View>
         <LocationPicker locationType={form.locationType} locationScope={form.locationScope} locations={form.locations} onChange={(n) => update(n, ['locations', 'locationType'])} />
@@ -236,6 +233,64 @@ export function BasicsStep({ form, update, issues, onNext, onBack, nextLabel, he
       </View>
     </StepShell>
   );
+}
+
+/** Up to MAX_GOALS goals. Touch has no hover, so the explanation of the chip
+ *  last tapped / long-pressed (or hovered, with a pointer) shows below the
+ *  chips — same content as the web hover tooltip. "Not sure yet" clears. */
+function GoalPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const C = useAppColors();
+  const { t } = useLanguage();
+  const [hint, setHint] = useState<string | null>(null);
+  const full = value.length >= MAX_GOALS;
+  const toggle = (g: string) => {
+    setHint(g);
+    if (value.includes(g)) onChange(value.filter((x) => x !== g));
+    else if (!full) onChange([...value, g]);
+  };
+  const chip = (key: string, label: string, on: boolean, disabled: boolean, onPress: () => void) => (
+    <Pressable
+      key={key}
+      onPress={onPress}
+      onLongPress={() => setHint(key)}
+      onHoverIn={() => setHint(key)}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: on, disabled }}
+      accessibilityHint={t(key === 'NOT_SURE' ? 'guided.goalDesc_notSure' : `guided.goalDesc_${key}`)}
+      style={({ pressed }) => [
+        st.chip,
+        { borderColor: on ? C.brinjal1 : C.border, backgroundColor: on ? C.primaryLight : C.surface, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
+      ]}>
+      <Text style={[st.chipTxt, { color: on ? C.brinjal1 : C.text }]}>{label}</Text>
+    </Pressable>
+  );
+  return (
+    <View style={{ gap: SPACING.sm }}>
+      <View style={st.chipWrap}>
+        {GOAL_OPTIONS.map((g) => {
+          const on = value.includes(g);
+          return chip(g, t(`guided.goal_${g}`), on, full && !on, () => toggle(g));
+        })}
+        {chip('NOT_SURE', t('guided.goalNotSure'), value.length === 0, false, () => { setHint('NOT_SURE'); onChange([]); })}
+      </View>
+      {hint ? (
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
+          <FontAwesome5 name="info-circle" size={12} color={C.brinjal1} style={{ marginTop: 3 }} />
+          <Text style={[st.small, { color: C.textSecondary, flex: 1 }]}>
+            <Text style={{ fontFamily: F.semibold, color: C.text }}>{t(hint === 'NOT_SURE' ? 'guided.goalNotSure' : `guided.goal_${hint}`)}: </Text>
+            {t(hint === 'NOT_SURE' ? 'guided.goalDesc_notSure' : `guided.goalDesc_${hint}`)}
+          </Text>
+        </View>
+      ) : null}
+      <Text style={[st.small, { color: full ? C.brinjal1 : C.textPlaceholder }]}>{t('guided.goalLimit', { n: value.length, max: MAX_GOALS })}</Text>
+    </View>
+  );
+}
+
+// Multi-select toggle capped at `max` — adding past the cap is a no-op.
+function toggleUpTo(list: string[], v: string, max: number): string[] {
+  if (list.includes(v)) return list.filter((x) => x !== v);
+  return list.length >= max ? list : [...list, v];
 }
 
 // ── Creators (Step 3) ────────────────────────────────────────────────────────
@@ -260,14 +315,23 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel, 
   };
 
   const allCats = sortOtherLast(categories).map((c) => c.name);
-  const cats = Array.from(new Set([form.category, ...allCats].filter(Boolean))).slice(0, showAll ? 80 : 8);
+  const cats = Array.from(new Set([...form.categories, ...allCats].filter(Boolean))).slice(0, showAll ? 80 : 8);
   const count = form.creatorsNeeded;
   const bucket = count == null ? null : count <= 3 ? '1-3' : count <= 10 ? '4-10' : '10+';
 
   return (
     <StepShell header={header} title={t('guided.creatorsTitle')} subtitle={t('guided.creatorsSub')} footer={<FooterNav onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>
       <Field label={t('guided.creatorTypeLabel')} accessory={<ProvenanceTag value={form.aiProvenance.category} />}>
-        <ChoiceChips<string> value={form.category || null} onChange={(v) => update({ category: v }, ['category'])} options={cats.map((c) => ({ value: c, label: c }))} />
+        <ChoiceChips<string>
+          multi
+          max={MAX_CATEGORIES}
+          value={form.categories}
+          onChange={(v) => update({ categories: toggleUpTo(form.categories, v, MAX_CATEGORIES) }, ['category'])}
+          options={cats.map((c) => ({ value: c, label: c }))}
+        />
+        <Text style={[st.small, { color: form.categories.length >= MAX_CATEGORIES ? C.brinjal1 : C.textPlaceholder }]}>
+          {t('guided.creatorTypeLimit', { n: form.categories.length, max: MAX_CATEGORIES })}
+        </Text>
         {allCats.length > 8 ? <LinkButton icon={showAll ? 'chevron-up' : 'chevron-down'} label={showAll ? t('guided.showFewer') : t('guided.showAllTypes')} onPress={() => setShowAll((v) => !v)} /> : null}
         <IssueNote issue={issueFor(issues, 'category')} />
       </Field>

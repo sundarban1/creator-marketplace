@@ -30,6 +30,7 @@ export interface GuidedCampaign {
   title: string;
   description: string;
   category: string;
+  categories?: string[];
   goals?: string[];
   platforms: string[];
   status: string;
@@ -63,6 +64,7 @@ export interface GuidedDraftPayload {
   title?: string;
   description?: string;
   featureImageUrl?: string | null;
+  categories?: string[];
   category?: string;
   goals?: string[];
   platforms?: string[];

@@ -15,13 +15,24 @@ type UpdateCampaignInput = Record<string, unknown>;
 export type GuidedStep = 'idea' | 'clarify' | 'basics' | 'creators' | 'content' | 'budget' | 'requirements' | 'review';
 export const FLOW_STEPS: CampaignStep[] = ['basics', 'creators', 'content', 'budget'];
 
+// "What is the main goal?" — a business may pick up to MAX_GOALS. Keys are
+// stored verbatim in Campaign.goals; the first four predate the expanded list.
+export const GOAL_OPTIONS = [
+  'Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement', 'Promote Product',
+  'Promote Event', 'Get Content', 'Local Audience', 'Offers & Discounts',
+] as const;
+export const MAX_GOALS = 3;
+export const MAX_CATEGORIES = 3;
+
 export interface GuidedForm {
   aiPrompt: string;
   aiGenerated: boolean;
   title: string;
   description: string;
-  goal: string;
-  category: string;
+  // Up to MAX_GOALS goal keys (GOAL_OPTIONS); [] = "not sure yet".
+  goals: string[];
+  // Up to MAX_CATEGORIES creator types; [0] is the primary `category`.
+  categories: string[];
   platforms: string[];
   creatorsNeeded: number | null;
   // null = not answered yet ("Should creators visit you?")
@@ -57,7 +68,7 @@ const startOfDayIso = (d: string) => (d ? new Date(`${d}T00:00:00`).toISOString(
 
 export function emptyForm(): GuidedForm {
   return {
-    aiPrompt: '', aiGenerated: false, title: '', description: '', goal: '', category: '', platforms: [],
+    aiPrompt: '', aiGenerated: false, title: '', description: '', goals: [], categories: [], platforms: [],
     creatorsNeeded: null, locationType: null, locationScope: null, locations: [], deliverableItems: [],
     budgetMin: 0, budgetMax: 0, budgetRateType: 'FIXED', budgetInputType: 'PER_CREATOR', paymentType: 'Fixed Fee',
     deadline: inDays(14), startDate: '', applicationDeadline: '', minFollowers: 0, hashtags: [], brief: {},
@@ -79,8 +90,8 @@ export function formFromCampaign(c: MyCampaign): GuidedForm {
     aiGenerated: !!c.aiGenerated,
     title: c.title === 'Untitled campaign' ? '' : c.title,
     description: c.description ?? '',
-    goal: c.goals?.[0] ?? '',
-    category: c.category ?? '',
+    goals: (c.goals ?? []).slice(0, MAX_GOALS),
+    categories: (c.categories?.length ? c.categories : c.category ? [c.category] : []).slice(0, MAX_CATEGORIES),
     // Legacy per-item platforms fold into the campaign's platform list.
     platforms: deliverablePlatforms(c.platforms, c.deliverableItems ?? []).slice(0, 3),
     creatorsNeeded: c.creatorsNeeded ?? null,
@@ -120,8 +131,10 @@ export function applyAiDraft(prev: GuidedForm, d: AiDraft, prompt: string): Guid
     aiGenerated: true,
     title: pick('title', d.title, prev.title),
     description: pick('description', d.description, prev.description),
-    goal: pick('goal', d.goal ?? prev.goal, prev.goal),
-    category: pick('category', d.category, prev.category),
+    // The AI suggests one goal; it only fills an empty selection.
+    goals: pick('goal', prev.goals.length || !d.goal ? prev.goals : [d.goal], prev.goals),
+    // AI picks one type; extra types the business chose are kept.
+    categories: pick('category', d.category ? [d.category, ...prev.categories.filter((x) => x !== d.category)].slice(0, MAX_CATEGORIES) : prev.categories, prev.categories),
     platforms: pick('platforms', deliverablePlatforms(d.platform ? [d.platform] : prev.platforms, g?.deliverableItems ?? []).slice(0, 3), prev.platforms),
     creatorsNeeded: pick('creatorsNeeded', d.creatorsNeeded || prev.creatorsNeeded, prev.creatorsNeeded),
     locationType: pick('locationType', g?.locationType ?? prev.locationType, prev.locationType),
@@ -157,8 +170,9 @@ export function toPayload(f: GuidedForm, step: GuidedStep | null): GuidedDraftPa
   return {
     title: f.title.trim() || undefined,
     description: f.description,
-    category: f.category || undefined,
-    goals: f.goal ? [f.goal] : [],
+    category: f.categories[0] || undefined,
+    categories: f.categories.slice(0, MAX_CATEGORIES),
+    goals: f.goals.slice(0, MAX_GOALS),
     platforms: f.platforms.slice(0, 3),
     creatorsNeeded: f.creatorsNeeded ?? undefined,
     // Unanswered visit is stored as REMOTE + brief.content.creatorsVisit=null
@@ -188,7 +202,7 @@ export function toPayload(f: GuidedForm, step: GuidedStep | null): GuidedDraftPa
 
 export function toRulesInput(f: GuidedForm): CampaignRulesInput {
   return {
-    title: f.title, description: f.description, category: f.category, platforms: f.platforms,
+    title: f.title, description: f.description, category: f.categories[0] ?? '', platforms: f.platforms,
     creatorsNeeded: f.creatorsNeeded, deliverableItems: f.deliverableItems, paymentType: f.paymentType,
     budgetMin: f.budgetMin, budgetMax: f.budgetMax, deadline: endOfDayIso(f.deadline) ?? null,
     startDate: startOfDayIso(f.startDate), applicationDeadline: endOfDayIso(f.applicationDeadline) ?? null,
@@ -199,8 +213,8 @@ export function toRulesInput(f: GuidedForm): CampaignRulesInput {
 
 export function toAiContext(f: GuidedForm): GuidedAiContext {
   return {
-    title: f.title || undefined, description: f.description || undefined, category: f.category || undefined,
-    goal: f.goal || undefined, platforms: f.platforms, creatorsNeeded: f.creatorsNeeded ?? undefined,
+    title: f.title || undefined, description: f.description || undefined, category: f.categories.join(', ') || undefined,
+    goal: f.goals.join(', ') || undefined, platforms: f.platforms, creatorsNeeded: f.creatorsNeeded ?? undefined,
     budgetMin: f.budgetMin || undefined, budgetMax: f.budgetMax || undefined,
     locations: f.locations.map((l) => ({ name: l.name })), locationType: f.locationType ?? undefined,
     deliverableItems: f.deliverableItems.map((i) => ({ type: i.type, platform: i.platform ?? null, quantity: i.quantity })),

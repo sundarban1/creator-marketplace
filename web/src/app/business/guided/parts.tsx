@@ -7,7 +7,7 @@ import { LocationAutocomplete } from '../../public/LocationAutocomplete';
 import type { CampaignLocation, DeliverableItem, LocationScope, Provenance } from '../../api/business';
 import type { CampaignRuleIssue } from '../campaignRules';
 import type { SaveStatus } from './useAutosave';
-import { SIMPLE_KINDS, simplifyDeliverables } from './deliverableKinds';
+import { EXTRA_KINDS, MAX_CUSTOM_LABEL, SIMPLE_KINDS, deliverableLabel, resolveNewDeliverable, simplifyDeliverables } from './deliverableKinds';
 
 // ── Layout ───────────────────────────────────────────────────────────────────
 
@@ -105,15 +105,18 @@ export function SaveIndicator({ status }: { status: SaveStatus }) {
 // ── Choices ──────────────────────────────────────────────────────────────────
 
 export function ChoiceChips<T extends string>({
-  options, value, onChange, multi = false, ariaLabel,
+  options, value, onChange, multi = false, max, ariaLabel,
 }: {
   options: { value: T; label: string; icon?: ReactNode }[];
   value: T | T[] | null;
   onChange: (v: T) => void;
   multi?: boolean;
+  // multi only: once `max` are on, the rest are disabled until one is cleared.
+  max?: number;
   ariaLabel?: string;
 }) {
   const isOn = (v: T) => (Array.isArray(value) ? value.includes(v) : value === v);
+  const full = multi && max != null && Array.isArray(value) && value.length >= max;
   return (
     <div role={multi ? 'group' : 'radiogroup'} aria-label={ariaLabel} className="flex flex-wrap gap-2">
       {options.map((o) => (
@@ -122,12 +125,14 @@ export function ChoiceChips<T extends string>({
           type="button"
           role={multi ? 'checkbox' : 'radio'}
           aria-checked={isOn(o.value)}
+          disabled={full && !isOn(o.value)}
           onClick={() => onChange(o.value)}
           className={cn(
             'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 text-[14px] font-medium transition-colors',
             isOn(o.value)
               ? 'border-violet bg-violet/10 text-violet-dark'
               : 'border-line-strong bg-surface text-ink hover:border-violet/40',
+            'disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-line-strong',
           )}
         >
           {o.icon}
@@ -418,8 +423,13 @@ export function LocationPicker({
 
 export function DeliverablesEditor({ items, onChange }: { items: DeliverableItem[]; onChange: (items: DeliverableItem[]) => void }) {
   const t = useT();
+  const [adding, setAdding] = useState(false);
+  const [custom, setCustom] = useState('');
+  const [error, setError] = useState<string | null>(null);
   // Just what to make and how many — platforms are picked once for the
   // whole campaign. Legacy/AI types fold into these kinds (deliverableKinds).
+  // The three core kinds always show (Kolab's suggestion fills them in);
+  // anything added beyond them gets its own removable row.
   const simple = simplifyDeliverables(items);
   const qty = (kind: string) => simple.find((i) => i.type === kind)?.quantity ?? 0;
   const others = simple.filter((i) => !(SIMPLE_KINDS as readonly string[]).includes(i.type));
@@ -428,19 +438,73 @@ export function DeliverablesEditor({ items, onChange }: { items: DeliverableItem
     if (n > 0) next.push({ type: kind, platform: null, quantity: n });
     onChange(simplifyDeliverables(next) as DeliverableItem[]);
   };
-  const row = (kind: string, label: string) => (
+  const add = (input: string) => {
+    const r = resolveNewDeliverable(input, simple, t);
+    if (!r) return;
+    if ('duplicateOf' in r) { setError(t('guided.deliverableDuplicate', { label: r.duplicateOf })); return; }
+    set(r.type, 1);
+    setCustom('');
+    setError(null);
+    setAdding(false);
+  };
+  const row = (kind: string, label: string, removable: boolean) => (
     <li key={kind} className="flex items-center justify-between gap-3 px-4 py-2.5">
-      <span className={cn('text-[15px] font-medium', qty(kind) ? 'text-ink' : 'text-ink-soft')}>{label}</span>
-      <Stepper value={qty(kind)} onChange={(n) => set(kind, n)} min={0} max={50} ariaLabel={`${label} — ${t('guided.quantityPerCreator')}`} />
+      <span className={cn('min-w-0 truncate text-[15px] font-medium', qty(kind) ? 'text-ink' : 'text-ink-soft')}>{label}</span>
+      <span className="flex flex-shrink-0 items-center gap-1">
+        <Stepper value={qty(kind)} onChange={(n) => set(kind, n)} min={removable ? 1 : 0} max={50} ariaLabel={`${label} — ${t('guided.quantityPerCreator')}`} />
+        {removable && (
+          <button type="button" onClick={() => set(kind, 0)} aria-label={`${t('guided.remove')} ${label}`} className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-danger/10 hover:text-danger">
+            <Trash2 size={15} />
+          </button>
+        )}
+      </span>
     </li>
   );
+  const extras = EXTRA_KINDS.filter((k) => !qty(k));
   return (
     <div>
       <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-        {SIMPLE_KINDS.map((k) => row(k, t(`guided.pick_${k}`)))}
-        {others.map((o) => row(o.type, t(`guided.deliv_${o.type}`)))}
+        {SIMPLE_KINDS.map((k) => row(k, t(`guided.pick_${k}`), false))}
+        {others.map((o) => row(o.type, deliverableLabel(o.type, t), true))}
       </ul>
       <p className="mt-2 text-[12px] text-ink-soft">{t('guided.quantityPerCreator')}</p>
+
+      {!adding ? (
+        <button type="button" onClick={() => setAdding(true)} className="mt-2 inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-violet-dark transition-colors hover:bg-violet/[0.07]">
+          <Plus size={14} />{t('guided.addAnotherDeliverable')}
+        </button>
+      ) : (
+        <div className="mt-3 rounded-2xl border border-line bg-surface p-4">
+          {extras.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {extras.map((k) => (
+                <button key={k} type="button" onClick={() => add(k)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3.5 text-[14px] font-medium text-ink transition-colors hover:border-violet/40">
+                  <Plus size={13} />{t(`guided.deliv_${k}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          <form
+            className={cn('flex gap-2', extras.length > 0 && 'mt-3')}
+            onSubmit={(e) => { e.preventDefault(); add(custom); }}
+          >
+            <input
+              value={custom}
+              maxLength={MAX_CUSTOM_LABEL}
+              onChange={(e) => { setCustom(e.target.value); setError(null); }}
+              placeholder={t('guided.addDeliverablePlaceholder')}
+              aria-label={t('guided.addAnotherDeliverable')}
+              aria-invalid={!!error}
+              className={cn('h-11 min-w-0 flex-1 rounded-xl border bg-surface px-3 text-[14px] text-ink outline-none focus:border-violet', error ? 'border-danger' : 'border-line-strong')}
+            />
+            <Button type="submit" size="sm" disabled={!custom.trim()}>{t('guided.add')}</Button>
+          </form>
+          {error && <p role="alert" className="mt-2 text-[12px] font-medium text-danger">{error}</p>}
+          <button type="button" onClick={() => { setAdding(false); setCustom(''); setError(null); }} className="mt-2 text-[13px] font-semibold text-ink-soft hover:text-ink">
+            {t('guided.cancel')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

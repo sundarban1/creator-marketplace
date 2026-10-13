@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, ChevronDown, Lightbulb, Wand2 } from 'lucide-react';
+import { Sparkles, ChevronDown, Lightbulb, Wand2, ArrowLeft } from 'lucide-react';
 import { useT } from '../../i18n';
 import { useAsync } from '../../lib/useAsync';
 import { fetchCategories, fetchActivePlatforms } from '../../api/catalog';
@@ -17,7 +17,7 @@ import { budgetPickerResetKey } from '../budgetPickerTypes';
 import { MIN_BUDGET_PER_CREATOR, type CampaignRuleIssue } from '../campaignRules';
 import type { GuidedForm } from './guidedModel';
 import { StartFromTemplates, type StartSource } from './templates';
-import { toAiContext } from './guidedModel';
+import { toAiContext, GOAL_OPTIONS, MAX_GOALS, MAX_CATEGORIES } from './guidedModel';
 import { simplifyDeliverables } from './deliverableKinds';
 import { BRIEF_SECTIONS, CREATOR_TIERS, sectionFilled, type BriefFieldDef } from './briefSections';
 import {
@@ -42,7 +42,11 @@ function Footer({ onBack, onNext, nextLabel, nextDisabled, busy }: { onBack?: ()
   const t = useT();
   return (
     <div className="flex items-center justify-between gap-3">
-      {onBack ? <Button type="button" variant="ghost" onClick={onBack}>{t('guided.back')}</Button> : <span />}
+      {onBack ? (
+        <Button type="button" variant="secondary" size="lg" onClick={onBack}>
+          <ArrowLeft size={16} aria-hidden />{t('guided.back')}
+        </Button>
+      ) : <span />}
       <Button type="button" size="lg" onClick={onNext} disabled={nextDisabled} loading={busy} className="min-w-[9rem]">
         {nextLabel ?? t('guided.continue')}
       </Button>
@@ -117,9 +121,11 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onSwit
     const prevSeed = QUICK_STARTS.map(seedOf).find((s) => s && text.startsWith(s));
     const rest = prevSeed ? text.slice(prevSeed.length) : text;
     const aiPrompt = prevSeed || !text.trim() ? seedOf(k) + rest.trimStart() : text;
-    const goal = k === 'awareness' ? 'Brand Awareness' : quickStart === 'awareness' && form.goal === 'Brand Awareness' ? '' : form.goal;
+    const goals = k === 'awareness'
+      ? (form.goals.includes('Brand Awareness') ? form.goals : ['Brand Awareness', ...form.goals].slice(0, MAX_GOALS))
+      : quickStart === 'awareness' ? form.goals.filter((g) => g !== 'Brand Awareness') : form.goals;
     setQuickStart(k);
-    update({ aiPrompt, goal });
+    update({ aiPrompt, goals });
   };
   return (
     <StepShell
@@ -226,7 +232,6 @@ export function ClarifyStep({ form, update, questions, onNext, onBack }: StepPro
 
 // ── Basics (Step 2) ──────────────────────────────────────────────────────────
 
-const GOALS = ['Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement'] as const;
 
 export function BasicsStep({ form, update, issues, onNext, onBack, nextLabel }: StepProps) {
   const t = useT();
@@ -258,11 +263,7 @@ export function BasicsStep({ form, update, issues, onNext, onBack, nextLabel }: 
       </div>
 
       <Field label={t('guided.goalLabel')} help={<ProvenanceTag value={form.aiProvenance.goal} />}>
-        <ChoiceChips<string>
-          value={form.goal || null}
-          onChange={(v) => update({ goal: v === 'NOT_SURE' ? '' : v }, ['goal'])}
-          options={[...GOALS.map((g) => ({ value: g, label: t(`guided.goal_${g}`) })), { value: 'NOT_SURE', label: t('guided.notSure') }]}
-        />
+        <GoalPicker value={form.goals} onChange={(goals) => update({ goals }, ['goal'])} />
       </Field>
 
       <div>
@@ -276,6 +277,63 @@ export function BasicsStep({ form, update, issues, onNext, onBack, nextLabel }: 
       </div>
     </StepShell>
   );
+}
+
+/** Up to MAX_GOALS goals; each chip's explanation shows on hover / focus.
+ *  "Not sure yet" clears the selection. */
+function GoalPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const t = useT();
+  const full = value.length >= MAX_GOALS;
+  const toggle = (g: string) => {
+    if (value.includes(g)) onChange(value.filter((x) => x !== g));
+    else if (!full) onChange([...value, g]);
+  };
+  const chip = (key: string, label: string, desc: string, on: boolean, disabled: boolean, onClick: () => void) => (
+    <span key={key} className="group relative">
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={on}
+        aria-disabled={disabled}
+        aria-describedby={`goal-desc-${key}`}
+        onClick={onClick}
+        className={cn(
+          'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 text-[14px] font-medium transition-colors',
+          on ? 'border-violet bg-violet/10 text-violet-dark' : 'border-line-strong bg-surface text-ink hover:border-violet/40',
+          disabled && 'cursor-not-allowed opacity-45 hover:border-line-strong',
+        )}
+      >
+        {label}
+      </button>
+      <span
+        id={`goal-desc-${key}`}
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[220px] -translate-x-1/2 rounded-lg bg-ink px-3 py-2 text-center text-[12px] leading-snug text-surface opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        {desc}
+      </span>
+    </span>
+  );
+  return (
+    <div>
+      <div role="group" aria-label={t('guided.goalLabel')} className="flex flex-wrap gap-2">
+        {GOAL_OPTIONS.map((g) => {
+          const on = value.includes(g);
+          return chip(g.replace(/\W+/g, '-'), t(`guided.goal_${g}`), t(`guided.goalDesc_${g}`), on, full && !on, () => toggle(g));
+        })}
+        {chip('not-sure', t('guided.goalNotSure'), t('guided.goalDesc_notSure'), value.length === 0, false, () => onChange([]))}
+      </div>
+      <p className={cn('mt-2 text-[12px]', full ? 'text-violet-dark' : 'text-ink-soft')}>
+        {t('guided.goalLimit', { n: value.length, max: MAX_GOALS })}
+      </p>
+    </div>
+  );
+}
+
+// Multi-select toggle capped at `max` — adding past the cap is a no-op.
+function toggleUpTo(list: string[], v: string, max: number): string[] {
+  if (list.includes(v)) return list.filter((x) => x !== v);
+  return list.length >= max ? list : [...list, v];
 }
 
 // ── Creators (Step 3) ────────────────────────────────────────────────────────
@@ -301,17 +359,22 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel }
   };
 
   const allCats = (categories.data ?? []).map((c) => c.name);
-  const topCats = Array.from(new Set([form.category, ...allCats].filter(Boolean))).slice(0, showCategories ? 60 : 8);
+  const topCats = Array.from(new Set([...form.categories, ...allCats].filter(Boolean))).slice(0, showCategories ? 60 : 8);
   const count = form.creatorsNeeded;
   const bucket = count == null ? null : count <= 3 ? '1-3' : count <= 10 ? '4-10' : '10+';
   return (
     <StepShell title={t('guided.creatorsTitle')} subtitle={t('guided.creatorsSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>
       <Field label={t('guided.creatorTypeLabel')} help={<ProvenanceTag value={form.aiProvenance.category} />}>
         <ChoiceChips<string>
-          value={form.category || null}
-          onChange={(v) => update({ category: v }, ['category'])}
+          multi
+          max={MAX_CATEGORIES}
+          value={form.categories}
+          onChange={(v) => update({ categories: toggleUpTo(form.categories, v, MAX_CATEGORIES) }, ['category'])}
           options={topCats.map((c) => ({ value: c, label: c }))}
         />
+        <p className={cn('mt-2 text-[12px]', form.categories.length >= MAX_CATEGORIES ? 'text-violet-dark' : 'text-ink-soft')}>
+          {t('guided.creatorTypeLimit', { n: form.categories.length, max: MAX_CATEGORIES })}
+        </p>
         {allCats.length > 8 && (
           <button type="button" onClick={() => setShowCategories((v) => !v)} className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark">
             <ChevronDown size={14} className={cn('transition-transform', showCategories && 'rotate-180')} />

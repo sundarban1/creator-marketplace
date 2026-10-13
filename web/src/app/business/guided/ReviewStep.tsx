@@ -126,9 +126,9 @@ export function ReviewStep({
       )}
 
       <div className="mt-6 rounded-2xl border border-line bg-surface px-4 sm:px-5">
-        <Row icon={<Target size={16} />} label={t('guided.rGoal')} value={form.goal ? t(`guided.goal_${form.goal}`) : t('guided.notSure')} provenance={form.aiProvenance.goal} onEdit={() => onEdit('basics')} />
+        <Row icon={<Target size={16} />} label={t('guided.rGoal')} value={form.goals.length ? form.goals.map((g) => t(`guided.goal_${g}`)).join(', ') : t('guided.goalNotSure')} provenance={form.aiProvenance.goal} onEdit={() => onEdit('basics')} />
         <Row icon={<MapPin size={16} />} label={t('guided.rLocation')} value={<>{locationSummary(form, t)}{form.locationType === 'ONSITE' && <span className="block text-[13px] text-ink-soft">{t('guided.creatorsVisitYou')}</span>}</>} provenance={form.aiProvenance.locations} onEdit={() => onEdit('basics')} attention={blocking.some((i) => i.field === 'locations')} />
-        <Row icon={<Users size={16} />} label={t('guided.rCreators')} value={creators ? t('guided.creatorsOfType', { count: creators, type: form.category || '—' }) : t('guided.notSet')} provenance={form.aiProvenance.creatorsNeeded} onEdit={() => onEdit('creators')} attention={blocking.some((i) => i.step === 'creators')} />
+        <Row icon={<Users size={16} />} label={t('guided.rCreators')} value={creators ? t('guided.creatorsOfType', { count: creators, type: form.categories.join(', ') || '—' }) : t('guided.notSet')} provenance={form.aiProvenance.creatorsNeeded} onEdit={() => onEdit('creators')} attention={blocking.some((i) => i.step === 'creators')} />
         <Row icon={<Smartphone size={16} />} label={t('guided.rPlatforms')} value={form.platforms.length ? form.platforms.join(' + ') : t('guided.notSet')} provenance={form.aiProvenance.platforms} onEdit={() => onEdit('content')} />
         <Row
           icon={<Clapperboard size={16} />}
