@@ -1754,6 +1754,7 @@ export const ne: AppDict = {
     category: 'वर्ग',
     platform: 'प्लेटफर्म',
     location: 'स्थान',
+    totalViews: 'कुल हेराइ',
     allCategories: 'सबै वर्गहरू',
     allPlatforms: 'सबै प्लेटफर्महरू',
     allLocations: 'सबै स्थानहरू',

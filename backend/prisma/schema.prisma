@@ -861,6 +861,9 @@ model Campaign {
   // Up to 3 creator types the business is looking for; `category` mirrors
   // categories[0] so every single-category filter/reader keeps working.
   categories            String[]              @default([])
+  // Public detail-page views, deduped per visitor per 24h (see
+  // campaign-views.ts). Display-only counter, never used for ranking.
+  viewCount             Int                   @default(0)
   goals                 Json                  @default("[]")
   platforms             String[]              @default([])
   minFollowers          Int                   @default(0)

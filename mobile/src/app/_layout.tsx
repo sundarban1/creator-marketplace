@@ -375,16 +375,17 @@ function RootNavigator() {
   // with blank user data) before it slides away to /login. Scoped strictly to
   // those two authenticated groups: the only time you're inside them with no
   // user is that post-logout frame, and the effect is already on its way to
-  // replace('/login'). Render a themed blank in the meantime. onboarding /
+  // replace('/login'). Cover it with a themed blank in the meantime. onboarding /
   // add-email are separate segments that still require a user, so unaffected.
+  // The blank is an overlay ON TOP of the Stack, never a replacement for it:
+  // returning a bare View here used to unmount the root navigator mid-logout,
+  // which remounted the root layout (and with it the branded splash) —
+  // "Logout → splash → login → splash → login".
   const seg0 = (segments as readonly string[])[0];
   const onSplashNow = (segments as readonly string[]).length === 0;
-  if (
+  const coverLoggedOutFrame =
     !isLoading && !user &&
-    (seg0 === '(creator)' || seg0 === '(business)' || (onSplashNow && hasSignedInThisLaunch()))
-  ) {
-    return <View style={{ flex: 1, backgroundColor: C.background }} />;
-  }
+    (seg0 === '(creator)' || seg0 === '(business)' || (onSplashNow && hasSignedInThisLaunch()));
 
   return (
     <>
@@ -425,6 +426,10 @@ function RootNavigator() {
           one-shot enrolment offer can only ever appear over real app content —
           never stacked on top of a blocking screen. */}
       <BiometricEnrollPrompt />
+
+      {coverLoggedOutFrame && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: C.background }]} />
+      )}
     </>
   );
 }

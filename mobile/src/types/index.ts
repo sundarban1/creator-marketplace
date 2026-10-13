@@ -44,6 +44,7 @@ export type Campaign = {
   deliverables: string;
   paymentType: string;
   proposals: number;
+  views?: number;
   // Applications received inside the trending window (last 72h). Undefined
   // when the endpoint that produced this campaign doesn't measure it — the
   // trending scorer falls back to an average-rate estimate in that case.

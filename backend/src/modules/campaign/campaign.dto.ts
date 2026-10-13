@@ -65,6 +65,7 @@ export interface CampaignDto {
   categoryKey: string;
   // Up to 3 creator types; category === categories[0] when set.
   categories: string[];
+  viewCount: number;
   goals: string[];
   platforms: string[];
   minFollowers: number;
@@ -281,6 +282,7 @@ type RawCampaign = {
   featureImageUrl: string | null;
   category: string;
   categories?: string[];
+  viewCount?: number;
   goals: Prisma.JsonValue;
   platforms: string[];
   minFollowers: number;
@@ -376,6 +378,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     category:       c.category,
     categoryKey:    c.category,
     categories:     c.categories?.length ? c.categories : c.category ? [c.category] : [],
+    viewCount:      c.viewCount ?? 0,
     goals:          (c.goals ?? []) as string[],
     platforms:      c.platforms,
     minFollowers:   c.minFollowers,

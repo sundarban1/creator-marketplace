@@ -46,8 +46,15 @@ export function CampaignBriefSections({ c, Section }: {
   const sections = BRIEF_SECTIONS.filter((s) => sectionFilled(brief, s.key));
   const hasWhere = locations.length > 0 || c.locationScope === 'NATIONWIDE' || (c.locationScope === 'ANYWHERE' && c.locationType === 'REMOTE');
 
+  const hasDeliverables = items.length > 0;
+  const hasPlatforms = platforms.length > 0;
+
   return (
     <>
+      {/* Where / Deliverables / Platforms sit side by side on wider screens
+          (two per row) and stack on phones. */}
+      {(hasWhere || hasDeliverables || hasPlatforms) && (
+      <div className="grid gap-x-8 sm:grid-cols-2">
       {hasWhere && (
         <Section title={t('guided.dWhere')}>
           {locations.length > 0 ? (
@@ -71,32 +78,33 @@ export function CampaignBriefSections({ c, Section }: {
         </Section>
       )}
 
-      {(items.length > 0 || platforms.length > 0) && (
+      {hasDeliverables && (
         <Section title={t('guided.dDeliverables')}>
-          {items.length > 0 && (
-            <ul className="flex flex-wrap gap-2">
-              {items.map((d) => (
-                <li key={d.type} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[14px] text-ink">
-                  <span className="font-semibold">{d.quantity}×</span> {deliverableLabel(d.type, t)}
-                </li>
-              ))}
-            </ul>
-          )}
-          {platforms.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-ink-soft">{t('guided.dPlatforms')}</p>
-              <ul className="flex flex-wrap gap-2">
-                {platforms.map((p) => (
-                  <li key={p} className="inline-flex items-center gap-1.5 rounded-full bg-violet/[0.07] px-3 py-1.5 text-[13px] font-semibold text-ink">
-                    <PlatformIcon platform={p} size={14} />
-                    {platformMeta(p).label}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <ul className="flex flex-wrap gap-2">
+            {items.map((d) => (
+              <li key={d.type} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[14px] text-ink">
+                <span className="font-semibold">{d.quantity}×</span> {deliverableLabel(d.type, t)}
+              </li>
+            ))}
+          </ul>
           <p className="mt-3 text-[13px] text-ink-soft">{t('guided.dPerCreator')} {t('guided.dDiscussLater')}</p>
         </Section>
+      )}
+
+      {/* Same pill design as Where. */}
+      {hasPlatforms && (
+        <Section title={t('guided.dPlatforms')}>
+          <ul className="flex flex-wrap gap-2">
+            {platforms.map((p) => (
+              <li key={p} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-[14px] font-medium text-ink">
+                <PlatformIcon platform={p} size={14} />
+                {platformMeta(p).label}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+      </div>
       )}
 
       {hasTimeline && (

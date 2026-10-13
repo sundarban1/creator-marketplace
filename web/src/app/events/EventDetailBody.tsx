@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Users, CalendarClock, MapPin, TrendingUp, ExternalLink, Gift } from 'lucide-react';
+import { ArrowLeft, Users, CalendarClock, MapPin, Eye, TrendingUp, ExternalLink, Gift } from 'lucide-react';
 import { useT } from '../i18n';
 import { perCreatorBudget, rupees } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
@@ -155,6 +155,11 @@ export function EventDetailBody({
                     ? t('guided.placesCount', { count: event.locations.length })
                     : event.location || t('public.onsite')
               }
+            />
+            <Fact
+              icon={<Eye size={15} />}
+              label={t('public.totalViews')}
+              value={(event.viewCount ?? 0).toLocaleString('en-IN')}
             />
             {event.minFollowers > 0 && (
               <Fact

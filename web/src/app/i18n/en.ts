@@ -1801,6 +1801,7 @@ export const en = {
     category: 'Category',
     platform: 'Platform',
     location: 'Location',
+    totalViews: 'Total Views',
     allCategories: 'All categories',
     allPlatforms: 'All platforms',
     allLocations: 'All locations',

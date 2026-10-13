@@ -1913,6 +1913,8 @@ const ne = {
     remoteLocation: 'रिमोट',
     proposalCount: '{{n}} प्रपोजल',
     proposalsCount: '{{n}} प्रपोजल',
+    viewCount: '{{n}} हेराइ',
+    viewsCount: '{{n}} हेराइ',
     viewProposalsBtn: '{{n}} प्रपोजल हेर्नुहोस्',
     viewProposalsBtnPlural: '{{n}} प्रपोजलहरू हेर्नुहोस्',
     noProposalsBtn: 'अहिलेसम्म प्रपोजल छैन',

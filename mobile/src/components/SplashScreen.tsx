@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import * as ExpoSplashScreen from 'expo-splash-screen';
-import { AppState, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, Keyframe } from 'react-native-reanimated';
+import { AppState, Platform, StyleSheet, Text, View } from 'react-native';
+import Animated, { Easing, Keyframe, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useLanguage } from '@/context/LanguageContext';
 import { RADIUS } from '@/utilities/constants';
 
@@ -16,12 +16,16 @@ const TOTAL = 2400;
 // top of the real app forever. The timer is the source of truth; the
 // keyframe below is now purely the fade-out visual.
 const DISMISS_AFTER = TOTAL + 400;
+const FADE_START = TOTAL * 0.72;
 
-const containerKf = new Keyframe({
-  0: { opacity: 1 },
-  72: { opacity: 1 },
-  100: { opacity: 0, easing: Easing.in(Easing.ease) },
-});
+// Keep the native splash up until this overlay has actually laid out —
+// otherwise expo-router's auto-hide can drop it a few frames before the
+// overlay paints, flashing the welcome screen underneath.
+ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
+
+// The branded splash belongs to a cold start only. If anything above it ever
+// remounts the root tree mid-session (logout used to), it must not replay.
+let shownThisLaunch = false;
 
 // The logo deliberately does NOT animate in — the native splash
 // (app.json → expo-splash-screen) already shows this exact outlined wordmark
@@ -38,15 +42,30 @@ const textKf = new Keyframe({
 
 export function SplashScreen() {
   const { t } = useLanguage();
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => !shownThisLaunch);
+  // The container must NOT use a reanimated `entering` animation: on the new
+  // architecture a view with `entering` stays hidden until the animation
+  // kicks off, so for a few frames the welcome screen showed through, then
+  // the indigo overlay popped in on top ("Get Started → blink → splash →
+  // Get Started"). Plain opacity 1 from the first frame, fade driven here.
+  const opacity = useSharedValue(1);
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+
+  // This branded overlay is now covering the screen, so the native splash
+  // underneath has nothing left to do — hide it explicitly rather than
+  // relying on expo-router's auto-hide, which has been seen to no-op on
+  // Android and leave the native splash wedged on top of everything.
+  const hideNative = () => { ExpoSplashScreen.hideAsync().catch(() => {}); };
 
   useEffect(() => {
-    // This branded overlay is now covering the screen, so the native splash
-    // underneath has nothing left to do — hide it explicitly rather than
-    // relying on expo-router's auto-hide, which has been seen to no-op on
-    // Android and leave the native splash wedged on top of everything.
-    ExpoSplashScreen.hideAsync().catch(() => {});
-
+    if (!visible) { hideNative(); return; }
+    shownThisLaunch = true;
+    opacity.set(withDelay(
+      FADE_START,
+      withTiming(0, { duration: TOTAL - FADE_START, easing: Easing.in(Easing.ease) }),
+    ));
+    // Backstop in case onLayout never fires — never leave the native splash up.
+    const hideTimer = setTimeout(hideNative, 1000);
     const timer = setTimeout(() => setVisible(false), DISMISS_AFTER);
     // Safety net: if the app is backgrounded while the splash is up (the
     // biometric system dialog taking focus on a fingerprint cold-start login),
@@ -59,17 +78,18 @@ export function SplashScreen() {
       }
     });
     return () => {
+      clearTimeout(hideTimer);
       clearTimeout(timer);
       sub.remove();
     };
+    // Mount-only: decides once whether this launch's splash plays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;
 
   return (
-    <Animated.View
-      entering={containerKf.duration(TOTAL)}
-      style={styles.container}>
+    <Animated.View style={[styles.container, fadeStyle]} onLayout={hideNative}>
 
       {/* Background decoration */}
       <View style={styles.bubble1} />
@@ -91,6 +111,8 @@ export function SplashScreen() {
     </Animated.View>
   );
 }
+
+const LOGO_W = Platform.OS === 'android' ? 175 : 221;
 
 const styles = StyleSheet.create({
   container: {
@@ -137,10 +159,12 @@ const styles = StyleSheet.create({
     right: 18,
   },
   logoImage: {
-    // Matches the native splash: splash-icon.png is 942px wide shown at
-    // imageWidth 248, with the wordmark filling 840px of it → ~221pt.
-    width: 221,
-    height: 221 * (114 / 387), // kolab-outlined.svg viewBox aspect
+    // Matches the native splash: splash-icon.png is 942px wide, with the
+    // wordmark filling 840px of it. iOS shows it at imageWidth 248 → ~221pt.
+    // Android 12+ masks the splash icon to a 192dp circle, so app.json gives
+    // Android imageWidth 196 → ~175dp, small enough that "k" and "b" aren't clipped.
+    width: LOGO_W,
+    height: LOGO_W * (114 / 387), // kolab-outlined.svg viewBox aspect
   },
   textBlock: {
     position: 'absolute',

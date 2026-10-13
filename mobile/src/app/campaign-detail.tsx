@@ -261,6 +261,7 @@ export default function CampaignDetailScreen() {
             ) : (
               <View style={{ flex: 1 }} />
             )}
+            <View style={s.statsGroup}>
             {isBusiness ? (
               <Pressable
                 disabled={!campaign.proposals}
@@ -297,6 +298,13 @@ export default function CampaignDetailScreen() {
                 </Text>
               </View>
             )}
+            <View style={[s.proposalsBadge, s.viewsPill, { backgroundColor: C.primaryLight }]}>
+              <FontAwesome5 name="eye" solid size={11} color={C.brinjal1} />
+              <Text style={[s.proposalsTxt, { color: C.brinjal1 }]}>
+                {t((campaign.views ?? 0) === 1 ? 'campaignDetail.viewCount' : 'campaignDetail.viewsCount', { n: (campaign.views ?? 0).toLocaleString('en-IN') })}
+              </Text>
+            </View>
+            </View>
           </View>
         </View>
 
@@ -792,6 +800,8 @@ const s = StyleSheet.create({
   typeBadgeText: { fontSize: 12, fontFamily: F.bold },
   proposalsBadge:{ borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   proposalsTxt:  { fontSize: 12, fontFamily: F.semibold },
+  statsGroup:    { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+  viewsPill:     { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
   // marginHorizontal matches titleBlock/ctaBar's own 20px inset (SCREEN_GUTTER)
   // below — this used to be a stray 16, so card content sat 4px narrower than

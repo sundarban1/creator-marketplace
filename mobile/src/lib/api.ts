@@ -162,6 +162,8 @@ export interface ApiCampaign {
   distanceKm?:   number;
   business:      { businessName: string; logoUrl: string | null };
   _count:        { applications: number };
+  // Detail-page views, deduped per visitor per 24h (backend campaign-views.ts).
+  viewCount?:    number;
   // Applications received in the last 72h — the velocity signal the Discover
   // feed's Trending tab ranks on. Only the list/nearby endpoints compute it;
   // absent (not 0) elsewhere. See CampaignRepository.countRecentApplications.

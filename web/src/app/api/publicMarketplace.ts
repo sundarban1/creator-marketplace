@@ -353,6 +353,8 @@ export interface EventCard {
   description: string;
   featureImageUrl?: string | null;
   category: string;
+  /** Public detail-page views, deduped per visitor per 24h. */
+  viewCount?: number;
   goals?: string[];
   platforms: string[];
   contentType?: string;

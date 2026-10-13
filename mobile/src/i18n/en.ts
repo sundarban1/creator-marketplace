@@ -1925,6 +1925,8 @@ const en = {
     remoteLocation: 'Remote',
     proposalCount: '{{n}} proposal',
     proposalsCount: '{{n}} proposals',
+    viewCount: '{{n}} view',
+    viewsCount: '{{n}} views',
     viewProposalsBtn: 'View {{n}} Proposal',
     viewProposalsBtnPlural: 'View {{n}} Proposals',
     noProposalsBtn: 'No Proposal Yet',

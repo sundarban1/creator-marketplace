@@ -4,7 +4,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import { ProviderTypeBadge } from '@/components/ProviderTypeBadge';
+// import { ProviderTypeBadge } from '@/components/ProviderTypeBadge';
 import type { ProviderType } from '@/services/creator';
 import { F, RADIUS, SHADOW, SPACING } from '@/utilities/constants';
 
@@ -167,7 +167,9 @@ export function EntityCard({
             <View style={styles.nameGroup}>
               <Text style={[styles.name, { color: C.text }]} numberOfLines={1}>{name}</Text>
               {verified && <VerifiedBadge size={14} />}
-              <ProviderTypeBadge type={providerType} teamSize={teamSize} size="sm" />
+              {/* Individual/Team badge hidden from creator lists (2026-10-13) —
+                  props still accepted so callers don't need to change. */}
+              {/* <ProviderTypeBadge type={providerType} teamSize={teamSize} size="sm" /> */}
             </View>
             {statInHeader && stat && (
               <View style={styles.headerStat}>

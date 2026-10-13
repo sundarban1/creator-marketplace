@@ -254,6 +254,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     deadline:     api.deadline,
     contentType:  api.contentType,
     proposals:    api._count?.applications ?? 0,
+    views:        api.viewCount ?? 0,
     recentProposals: api.recentProposals,
     isNew:        isNewCampaign(api.createdAt),
     isFeatured:   api.isFeatured,

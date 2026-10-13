@@ -3,6 +3,8 @@ import { CampaignStatus, ApplicationStatus, CampaignType } from '@prisma/client'
 import { CampaignService } from './campaign.service';
 import { campaignReviewService, PUBLISHED_VERIFIED_MESSAGE, SUBMITTED_FOR_REVIEW_MESSAGE } from './campaign-review.service';
 import { toCampaignDto } from './campaign.dto';
+import { recordCampaignView } from './campaign-views';
+import { isCreatorVisible } from './campaign-review.rules';
 import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
@@ -182,6 +184,10 @@ export class CampaignController {
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.getById(req.params.id, req.language, req.user ?? null);
+      // App views count too — but only creators browsing a live event, so the
+      // owning business (or an admin) checking its own page doesn't inflate it.
+      if (req.user?.role === 'CREATOR' && isCreatorVisible(campaign.status)
+        && (await recordCampaignView(campaign.id, req, req.user.id))) campaign.viewCount += 1;
       success(res, campaign, 'Campaign retrieved successfully');
     } catch (err) {
       next(err);
@@ -207,6 +213,8 @@ export class CampaignController {
       if (!PUBLIC_STATUSES.includes(campaign.status as CampaignStatus)) {
         throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
       }
+      // Reflect this visit in the count we return, so a first-time viewer sees it tick.
+      if (await recordCampaignView(id, req)) campaign.viewCount += 1;
       success(res, campaign, 'Campaign retrieved successfully');
     } catch (err) {
       next(err);

@@ -9,6 +9,9 @@ import type { CreatorCard as CreatorCardData } from '../api/publicMarketplace';
 import type { CategoryMeta } from './categoryLookup';
 import { CategoryPill } from './CategoryPill';
 
+// Individual/Team badge hidden in creator lists, same as mobile EntityCard.
+const SHOW_PROVIDER_BADGE: boolean = false;
+
 // Display order for the per-platform follower grid; anything else trails.
 const PLATFORM_ORDER = ['instagram', 'tiktok', 'facebook', 'youtube'];
 const orderOf = (p: string) => {
@@ -33,7 +36,7 @@ export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators', fol
   const t = useT();
   const handle = creator.username ?? creator.id;
   const name = creator.fullName ?? 'Creator';
-  const isTeam = creator.providerType === 'TEAM' || creator.providerType === 'AGENCY';
+  const isTeam = SHOW_PROVIDER_BADGE && (creator.providerType === 'TEAM' || creator.providerType === 'AGENCY');
 
   return (
     <Link
