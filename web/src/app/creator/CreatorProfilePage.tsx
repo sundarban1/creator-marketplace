@@ -283,7 +283,7 @@ export function CreatorProfilePage() {
               <div className="min-w-0 pb-1">
                 <div className="flex items-center gap-2">
                   <h2 className="text-[20px] font-bold tracking-tight text-ink">{p.fullName ?? '—'}</h2>
-                  {p.fullyVerified && <BadgeCheck size={17} className="text-brand" />}
+                  {(p.fullyVerified || p.isVerified) && <BadgeCheck size={17} className="flex-shrink-0 text-[#3B82F6]" aria-label={t('profile.verified')} />}
                 </div>
                 {p.username && <p className="text-[13px] text-ink-soft">@{p.username}</p>}
                 {p.location && <p className="mt-0.5 text-[13px] text-ink-soft">{p.location}</p>}
