@@ -32,6 +32,8 @@ import { ForceUpdateScreen } from '@/components/ForceUpdateScreen';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { GlobalUploadBanner } from '@/components/GlobalUploadBanner';
 import { ToastProvider } from '@/components/Toast';
+import { SupportContactProvider } from '@/context/SupportContactContext';
+import { SupportFab } from '@/components/SupportFab';
 import { syncBiometricLoginWithDevice } from '@/services/biometric';
 import { authService } from '@/services/auth';
 import { useAppleCredentialWatch } from '@/hooks/useAppleCredentialWatch';
@@ -422,6 +424,10 @@ function RootNavigator() {
         <Stack.Screen name="video-player" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
       </Stack>
 
+      {/* WhatsApp support button over every signed-in creator/business screen;
+          decides its own visibility from auth state + current route. */}
+      <SupportFab />
+
       {/* Sits after the force-update and biometric-gate early returns above, so the
           one-shot enrolment offer can only ever appear over real app content —
           never stacked on top of a blocking screen. */}
@@ -444,7 +450,9 @@ function RootLayoutInner() {
             {/* Default status bar for plain-background screens — light-headered
                 auth screens override this locally with their own <StatusBar style="light" />. */}
             <StatusBar style={isDark ? 'light' : 'dark'} />
-            <RootNavigator />
+            <SupportContactProvider>
+              <RootNavigator />
+            </SupportContactProvider>
             <OfflineBanner />
             <GlobalUploadBanner />
           </ThemeProvider>

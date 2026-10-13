@@ -5,6 +5,7 @@ import { LandingThemeProvider } from '../../pages/landing/context/ThemeContext';
 import { LandingLanguageProvider, useLandingLanguage } from '../../pages/landing/context/LanguageContext';
 import { LandingFooter } from '../../pages/landing/nav/LandingFooter';
 import { LandingNav } from '../../pages/landing/nav/LandingNav';
+import { FloatingSupportWidget } from '../shell/FloatingSupportWidget';
 
 /**
  * Layout for the public marketplace pages (/creators, /events and their detail
@@ -36,6 +37,7 @@ export function PublicLayout() {
             <div className="footer-landing-scope">
               <LandingFooter />
             </div>
+            <FloatingSupportWidget />
           </div>
         </LanguageBridge>
       </LandingLanguageProvider>

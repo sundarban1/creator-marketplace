@@ -9,6 +9,7 @@ import { useLiveRefresh } from '../lib/liveUpdates';
 import { fetchCreatorFullProfile } from '../api/creator';
 import { navGroupsFor, bottomNavFor, type NavGroup } from './nav';
 import { BottomNav } from './BottomNav';
+import { FloatingSupportWidget } from './FloatingSupportWidget';
 import { cn } from '../ui/cn';
 import { Logo } from '../ui/Logo';
 import { Avatar } from '../ui/Avatar';
@@ -203,6 +204,7 @@ function AppShellInner() {
       </div>
 
       <BottomNav items={bottomNavFor(user.role)} />
+      <FloatingSupportWidget aboveBottomNav />
     </div>
     </NotificationsProvider>
   );

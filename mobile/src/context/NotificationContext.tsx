@@ -161,7 +161,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     };
     // Admin saved platform settings (e.g. payment fee/tax %) — re-pull the
     // flags so open screens like the pay sheet show the new values live.
-    const onSettingsUpdated = () => { void refetchPlatformFlagsRef.current(); };
+    const onSettingsUpdated = () => {
+      void refetchPlatformFlagsRef.current();
+      // Support phone/WhatsApp/email shown in the Contact Support sheet.
+      void queryClient.invalidateQueries({ queryKey: ['siteInfo'] });
+    };
     socket.on('session:revoked',  onSessionRevoked);
     socket.on('catalog:updated',  onCatalogUpdated);
     socket.on('settings:updated', onSettingsUpdated);

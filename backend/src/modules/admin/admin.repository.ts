@@ -159,6 +159,9 @@ const DEFAULTS: Record<string, unknown> = {
   // Second number dedicated to inquiries + customer support (footer shows it
   // below the main phone, labelled).
   'platform.supportPhone':     '',
+  // WhatsApp number for the in-app Help & Support panels (web + mobile).
+  // Blank = WhatsApp falls back to 'platform.supportPhone'.
+  'platform.supportWhatsapp':  '',
   'platform.social.facebook':  '',
   'platform.social.instagram': '',
   'platform.social.tiktok':    '',

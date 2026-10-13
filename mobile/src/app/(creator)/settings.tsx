@@ -1,5 +1,7 @@
 import { errorText } from '@/lib/api';
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { SupportChannels } from '@/components/SupportChannels';
+import { router, useLocalSearchParams, useFocusEffect, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -332,6 +334,7 @@ export default function CreatorSettingsScreen() {
   const toast = useToast();
 
   const [subPage, setSubPage] = useState<string | null>(null);
+  const navigation = useNavigation();
 
   // Platform flags (e.g. the admin's Social Accounts switch) are only fetched
   // once at app launch — re-pull on focus so an admin-side change is picked
@@ -1019,8 +1022,18 @@ export default function CreatorSettingsScreen() {
   function handleBack() {
     if (phoneSubPage) { setPhoneSubPage(null); setPhoneNumber(''); setPhoneOtp(''); }
     else if (subPage) setSubPage(null);
-    else router.back();
+    else if (router.canGoBack()) router.back();
+    else router.replace('/(creator)/(tabs)' as never);
   }
+
+  // Sub-pages (Help Center, Contact Support, …) are local state, not stack
+  // screens — so Android's back button / iOS swipe would otherwise pop the
+  // whole Settings screen. Step out of the sub-page instead; non-back actions
+  // (auth redirects, replace) still go through.
+  usePreventRemove(!!subPage || !!phoneSubPage, ({ data }) => {
+    if (data.action.type === 'GO_BACK' || data.action.type === 'POP') handleBack();
+    else navigation.dispatch(data.action);
+  });
 
   const topTitle = subPage
     ? t(SUB_PAGE_TITLES[subPage] ?? 'creatorSettings.settings')
@@ -2442,6 +2455,11 @@ export default function CreatorSettingsScreen() {
   function renderSupport() {
     return (
       <>
+        {/* Instant channels first (WhatsApp / phone / email from the admin's
+            support contacts); the in-app forms and FAQs follow. */}
+        <View style={{ marginBottom: SPACING.lg }}>
+          <SupportChannels context="creator" />
+        </View>
         <Card>
           <NavRow ionIcon="question-circle"        ionIconColor="#0891B2" label={t('creatorSettings.helpCenterLabel')}      onPress={() => setSubPage('help-center')} />
           <NavRow ionIcon="comment-alt" ionIconColor="#7C3AED" label={t('creatorSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />

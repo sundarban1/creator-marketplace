@@ -3,6 +3,7 @@ import { AdminRepository, numericSetting } from '../admin/admin.repository';
 import { CampaignService } from '../campaign/campaign.service';
 import { CreatorService } from '../creator/creator.service';
 import { BusinessService } from '../business/business.service';
+import { effectiveSupportWhatsapp } from '../admin/supportContact';
 import { cached } from '../../utils/cache';
 
 export class PublicService {
@@ -67,6 +68,8 @@ export class PublicService {
       address: (s['platform.address'] as string) || '',
       phone:   (s['platform.phone'] as string) || '',
       supportPhone: (s['platform.supportPhone'] as string) || '',
+      // Dedicated WhatsApp number, else the support line (see supportContact.ts).
+      whatsapp: effectiveSupportWhatsapp(s),
       email:   (s['platform.supportEmail'] as string) || '',
       companyRegistrationNumber: (s['platform.companyRegistrationNumber'] as string) || '',
       companyPan:                (s['platform.companyPan'] as string) || '',

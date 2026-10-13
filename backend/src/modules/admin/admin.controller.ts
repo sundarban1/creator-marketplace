@@ -8,6 +8,7 @@ import { logActivity } from '../logging/activity.service';
 import { logAudit } from '../logging/audit.service';
 import { ActivityAction, AuditAction, EntityType } from '../logging/logging.constants';
 import { HttpStatus } from '../../constants/httpStatus';
+import { supportContactSettingsError } from './supportContact';
 import {
   sendAccountSuspendedEmail,
   sendAccountReactivatedEmail,
@@ -311,6 +312,10 @@ export async function updateSettings(req: Request, res: Response, next: NextFunc
     if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
       throw new AppError('Settings must be a flat key-value object', HttpStatus.BAD_REQUEST);
     }
+    // Support phone/WhatsApp/email feed the in-app Help & Support links — an
+    // unusable value would silently disable that channel for every user.
+    const contactError = supportContactSettingsError(settings);
+    if (contactError) throw new AppError(contactError, HttpStatus.BAD_REQUEST);
     await service.updateSettings(settings);
     const updated = await service.getSettings();
     return success(res, updated, 'Settings updated');

@@ -730,6 +730,21 @@ body {
 }
 .step-fade { animation: step-fade-in 0.3s ease-out; }
 
+/* Floating Help & Support panel — rises out of its bottom-right button. */
+@keyframes support-pop {
+  0% { opacity: 0; transform: translateY(8px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.support-pop { animation: support-pop 0.18s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* "Need help?" prompt — a slow, small bob so it catches the eye without
+   competing with the page (the reduced-motion block below stills it). */
+@keyframes support-nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.support-nudge { animation: support-nudge 2.4s ease-in-out infinite; }
+
 .scrollbar-hide {
   scrollbar-width: none;
   -ms-overflow-style: none;

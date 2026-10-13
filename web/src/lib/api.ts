@@ -915,6 +915,7 @@ export interface SiteInfo {
   address: string;
   phone:   string;
   supportPhone: string;
+  whatsapp: string;
   email:   string;
   companyRegistrationNumber: string;
   companyPan:                string;

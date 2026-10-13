@@ -1,5 +1,7 @@
 import { errorText } from '@/lib/api';
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { SupportChannels } from '@/components/SupportChannels';
+import { router, useLocalSearchParams, useFocusEffect, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -248,6 +250,7 @@ export default function BusinessSettingsScreen() {
   const [selectedLang, setSelectedLang] = useState(() => langCodeToLabel(language));
 
   const [subPage, setSubPage] = useState<string | null>(null);
+  const navigation = useNavigation();
 
   // ── Accordion (support sub-pages) ──
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -945,8 +948,18 @@ export default function BusinessSettingsScreen() {
 
   function handleBack() {
     if (subPage) setSubPage(null);
-    else router.back();
+    else if (router.canGoBack()) router.back();
+    else router.replace('/(business)/(tabs)' as never);
   }
+
+  // Sub-pages (Help Center, Contact Support, …) are local state, not stack
+  // screens — so Android's back button / iOS swipe would otherwise pop the
+  // whole Settings screen. Step out of the sub-page instead; non-back actions
+  // (auth redirects, replace) still go through.
+  usePreventRemove(!!subPage, ({ data }) => {
+    if (data.action.type === 'GO_BACK' || data.action.type === 'POP') handleBack();
+    else navigation.dispatch(data.action);
+  });
 
   const SECTION_TITLE_KEYS: Record<string, string> = {
     profile:       'businessSettings.sectionProfile',
@@ -2186,6 +2199,11 @@ export default function BusinessSettingsScreen() {
   function renderSupport() {
     return (
       <>
+        {/* Instant channels first (WhatsApp / phone / email from the admin's
+            support contacts); the in-app forms and FAQs follow. */}
+        <View style={{ marginBottom: SPACING.lg }}>
+          <SupportChannels context="business" />
+        </View>
         <Card>
           <NavRow ionIcon="question-circle"         ionIconColor="#0891B2" label={t('businessSettings.helpCenterNavLabel')}  onPress={() => setSubPage('help-center')} />
           <NavRow ionIcon="comment-alt" ionIconColor="#7C3AED" label={t('businessSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
