@@ -2457,7 +2457,7 @@ export default function CreatorSettingsScreen() {
       <>
         {/* Instant channels first (WhatsApp / phone / email from the admin's
             support contacts); the in-app forms and FAQs follow. */}
-        <View style={{ marginBottom: SPACING.lg }}>
+        <View style={{ marginHorizontal: SCREEN_GUTTER, marginBottom: SPACING.lg }}>
           <SupportChannels context="creator" />
         </View>
         <Card>
