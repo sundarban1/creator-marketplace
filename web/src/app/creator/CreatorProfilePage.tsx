@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BadgeCheck, Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Pencil, Trash2, Sparkles, Image as ImageIcon, Link2, X, Clock } from 'lucide-react';
+import { Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Pencil, Trash2, Sparkles, Image as ImageIcon, Link2, X, Clock } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -56,6 +56,7 @@ import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { cn } from '../ui/cn';
 import { confirmImageUpload } from '../ui/uploadPreview';
 import { confirmDialog } from '../ui/confirmDialog';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 const CONNECTABLE_PLATFORMS = ['tiktok', 'youtube', 'instagram', 'facebook'] as const;
 const MAX_NICHE = 5;
@@ -283,7 +284,7 @@ export function CreatorProfilePage() {
               <div className="min-w-0 pb-1">
                 <div className="flex items-center gap-2">
                   <h2 className="text-[20px] font-bold tracking-tight text-ink">{p.fullName ?? '—'}</h2>
-                  {(p.fullyVerified || p.isVerified) && <BadgeCheck size={17} className="flex-shrink-0 text-[#3B82F6]" aria-label={t('profile.verified')} />}
+                  <VerifiedTick entity={p} size={17} label={t('profile.verified')} />
                 </div>
                 {p.username && <p className="text-[13px] text-ink-soft">@{p.username}</p>}
                 {p.location && <p className="mt-0.5 text-[13px] text-ink-soft">{p.location}</p>}

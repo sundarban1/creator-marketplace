@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { BadgeCheck, MapPin, Megaphone, ArrowUpRight } from 'lucide-react';
+import { MapPin, Megaphone, ArrowUpRight } from 'lucide-react';
 import { useT } from '../i18n';
 import { Avatar } from '../ui/Avatar';
 import { cn } from '../ui/cn';
 import type { BusinessCard as BusinessCardData } from '../api/publicMarketplace';
 import type { CategoryMeta } from './categoryLookup';
 import { CategoryPill } from './CategoryPill';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 interface Props {
   business: BusinessCardData;
@@ -46,9 +47,7 @@ export function BusinessCard({ business, categoryMeta, hrefBase = '/businesses' 
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex items-center gap-1.5">
             <h3 className="truncate text-[15px] font-semibold text-ink">{name}</h3>
-            {business.fullyVerified && (
-              <BadgeCheck size={15} className="flex-shrink-0 text-brand" aria-label={t('public.verified')} />
-            )}
+            <VerifiedTick entity={business} size={15} label={t('public.verified')} />
           </div>
           {location && (
             <p className="mt-0.5 flex items-center gap-1 truncate text-[13px] text-ink-soft">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BadgeCheck, MapPin, Star, Globe } from 'lucide-react';
+import { MapPin, Star, Globe } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
@@ -28,6 +28,7 @@ import {
   StatTile,
 } from './detailKit';
 import { SignupGateModal } from './SignupGateModal';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 export function BusinessProfilePage() {
   const t = useT();
@@ -111,9 +112,7 @@ export function BusinessProfilePage() {
               <h1 className="font-serif text-3xl font-medium leading-[1.1] tracking-tight text-ink sm:text-4xl">
                 {name}
               </h1>
-              {business.fullyVerified && (
-                <BadgeCheck size={22} className="flex-shrink-0 text-brand" aria-label={t('public.verified')} />
-              )}
+              <VerifiedTick entity={business} size={22} label={t('public.verified')} />
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink-soft">
               {location && (

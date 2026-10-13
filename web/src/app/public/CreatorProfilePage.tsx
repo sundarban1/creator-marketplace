@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BadgeCheck, MapPin, Star, Users } from 'lucide-react';
+import { MapPin, Star, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { useAsync } from '../lib/useAsync';
@@ -31,6 +31,7 @@ import {
   StatTile,
 } from './detailKit';
 import { SignupGateModal } from './SignupGateModal';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 // Provider-type badge (Team / Agency) hidden from the profile for now — same as
 // mobile's CreatorProfileView. Flip to true to bring it back.
@@ -119,9 +120,7 @@ export function CreatorProfilePage() {
               <h1 className="font-serif text-3xl font-medium leading-[1.1] tracking-tight text-ink sm:text-4xl">
                 {name}
               </h1>
-              {creator.fullyVerified && (
-                <BadgeCheck size={22} className="flex-shrink-0 text-brand" aria-label={t('public.verified')} />
-              )}
+              <VerifiedTick entity={creator} size={22} label={t('public.verified')} />
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink-soft">
               {creator.username && <span>@{creator.username}</span>}

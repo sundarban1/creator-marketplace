@@ -1,6 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import {
-  BadgeCheck,
   Bookmark,
   Camera,
   CalendarDays,
@@ -59,6 +58,7 @@ import { Modal } from '../ui/Modal';
 import { ImageCropModal } from '../ui/ImageCropModal';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { confirmDialog } from '../ui/confirmDialog';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 /** Cover crop ratio — matches the creator profile, mobile ProfileCoverImage and the band's `aspect-[3/1]` below. */
 const COVER_ASPECT = 3;
@@ -280,7 +280,7 @@ export function BusinessProfilePage() {
               <div className="min-w-0 pb-1">
                 <div className="flex items-center gap-2">
                   <h2 className="font-serif text-2xl font-medium tracking-tight text-ink">{p.businessName ?? '—'}</h2>
-                  {(p.fullyVerified || p.isVerified) && <BadgeCheck size={18} className="flex-shrink-0 text-[#3B82F6]" aria-label={t('profile.verified')} />}
+                  <VerifiedTick entity={p} size={18} label={t('profile.verified')} />
                 </div>
                 {p.location && <p className="mt-0.5 text-[13px] text-ink-soft">{p.location}</p>}
               </div>

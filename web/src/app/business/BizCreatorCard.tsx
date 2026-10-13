@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BadgeCheck, MapPin, ArrowUpRight, Bookmark } from 'lucide-react';
+import { MapPin, ArrowUpRight, Bookmark } from 'lucide-react';
 import { useT } from '../i18n';
 import { Avatar } from '../ui/Avatar';
 import { cn } from '../ui/cn';
@@ -7,6 +7,7 @@ import type { BusinessCreatorCard } from '../api/business';
 import type { CategoryMeta } from '../public/categoryLookup';
 import { CategoryPill } from '../public/CategoryPill';
 import { CreatorFollowerGrid } from '../public/CreatorCard';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 /**
  * Same card as the public marketplace's CreatorCard (identical layout, hover
@@ -52,9 +53,7 @@ export function BizCreatorCard({
           <div className="min-w-0 flex-1 pt-0.5">
             <div className="flex items-center gap-1.5">
               <h3 className="truncate text-[15px] font-semibold text-ink">{name}</h3>
-              {creator.fullyVerified && (
-                <BadgeCheck size={15} className="flex-shrink-0 text-brand" aria-label={t('public.verified')} />
-              )}
+              <VerifiedTick entity={creator} size={15} label={t('public.verified')} />
             </div>
             {creator.location && (
               <p className="mt-0.5 flex items-center gap-1 truncate text-[13px] text-ink-soft">

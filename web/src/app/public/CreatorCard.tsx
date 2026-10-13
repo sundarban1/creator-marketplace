@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BadgeCheck, MapPin, ArrowUpRight, Users } from 'lucide-react';
+import { MapPin, ArrowUpRight, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { compactNumber } from '../lib/format';
 import { Avatar } from '../ui/Avatar';
@@ -8,6 +8,7 @@ import { cn } from '../ui/cn';
 import type { CreatorCard as CreatorCardData } from '../api/publicMarketplace';
 import type { CategoryMeta } from './categoryLookup';
 import { CategoryPill } from './CategoryPill';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 // Individual/Team badge hidden in creator lists, same as mobile EntityCard.
 const SHOW_PROVIDER_BADGE: boolean = false;
@@ -59,9 +60,7 @@ export function CreatorCard({ creator, categoryMeta, hrefBase = '/creators', fol
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex items-center gap-1.5">
             <h3 className="truncate text-[15px] font-semibold text-ink">{name}</h3>
-            {creator.fullyVerified && (
-              <BadgeCheck size={15} className="flex-shrink-0 text-brand" aria-label={t('public.verified')} />
-            )}
+            <VerifiedTick entity={creator} size={15} label={t('public.verified')} />
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-ink-soft">
             {creator.location && (

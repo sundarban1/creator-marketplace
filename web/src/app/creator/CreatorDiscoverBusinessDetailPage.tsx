@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, MapPin, Star, Globe, Heart } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Globe, Heart } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { fetchPublicBusiness } from '../api/publicMarketplace';
@@ -16,6 +16,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { CategoryPill } from '../public/CategoryPill';
 import { makeCategoryLookup } from '../public/categoryLookup';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 export function CreatorDiscoverBusinessDetailPage() {
   const t = useT();
@@ -96,7 +97,7 @@ export function CreatorDiscoverBusinessDetailPage() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h1 className="font-serif text-3xl font-medium tracking-tight text-ink">{name}</h1>
-            {b.fullyVerified && <BadgeCheck size={19} className="text-brand" />}
+            <VerifiedTick entity={b} size={19} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink-soft">
             {location && (

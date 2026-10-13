@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, MapPin, Star, ExternalLink, Users } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, ExternalLink, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { compactNumber } from '../lib/format';
@@ -15,6 +15,7 @@ import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { CategoryPill } from '../public/CategoryPill';
 import { makeCategoryLookup } from '../public/categoryLookup';
 import { PortfolioGrid } from '../public/PortfolioGrid';
+import { VerifiedTick } from '../ui/VerifiedTick';
 
 // Provider-type badge (Team / Agency) hidden from the profile for now — same as
 // mobile's CreatorProfileView. Flip to true to bring it back.
@@ -73,7 +74,7 @@ export function CreatorDiscoverCreatorDetailPage() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h1 className="font-serif text-3xl font-medium tracking-tight text-ink">{name}</h1>
-            {c.fullyVerified && <BadgeCheck size={19} className="text-brand" />}
+            <VerifiedTick entity={c} size={19} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink-soft">
             {c.username && <span>@{c.username}</span>}
