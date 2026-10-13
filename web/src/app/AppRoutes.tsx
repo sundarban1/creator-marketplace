@@ -1,5 +1,5 @@
 import { lazy, type ComponentType } from 'react';
-import { Route } from 'react-router-dom';
+import { Navigate, Route } from 'react-router-dom';
 import { AppProviders } from './AppProviders';
 import { RequireAuth, RequireGuest, RequireRole, RequireOnboarding, RequireNotOnboarded } from './auth/guards';
 import { withChunkRetry } from '../lib/chunkRetry';
@@ -57,7 +57,6 @@ const CreatorMeetupsPage = screen(() => import('./creator/CreatorMeetupsPage'), 
 const CreatorMeetupRegisterPage = screen(() => import('./creator/CreatorMeetupRegisterPage'), 'CreatorMeetupRegisterPage');
 const CreatorSavedEventsPage = screen(() => import('./creator/CreatorSavedEventsPage'), 'CreatorSavedEventsPage');
 const CreatorTeamPage = screen(() => import('./creator/CreatorTeamPage'), 'CreatorTeamPage');
-const CreatorRewardsPage = screen(() => import('./creator/CreatorRewardsPage'), 'CreatorRewardsPage');
 const CreatorAnalyticsPage = screen(() => import('./shell/AnalyticsPage'), 'CreatorAnalyticsPage');
 const BusinessAnalyticsPage = screen(() => import('./shell/AnalyticsPage'), 'BusinessAnalyticsPage');
 const CreatorReferralsPage = screen(() => import('./creator/CreatorReferralsPage'), 'CreatorReferralsPage');
@@ -162,7 +161,7 @@ export function marketplaceRoutes() {
               <Route path="verification" element={<CreatorVerificationPage />} />
               <Route path="referrals" element={<CreatorReferralsPage />} />
               <Route path="saved-events" element={<CreatorSavedEventsPage />} />
-              <Route path="rewards" element={<CreatorRewardsPage />} />
+              <Route path="rewards" element={<Navigate to="/creator/wallet?tab=deals" replace />} />
               <Route path="team" element={<CreatorTeamPage />} />
               <Route path="analytics" element={<CreatorAnalyticsPage />} />
               <Route path="support" element={<HelpSupportPage />} />

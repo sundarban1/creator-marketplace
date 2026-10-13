@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Clock, ExternalLink } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { ArrowDownCircle, ArrowDownLeft, ArrowUpRight, Clock, ExternalLink, Info } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -26,9 +27,31 @@ import { StatusBadge, type BadgeTone } from '../ui/StatusBadge';
 import { cn } from '../ui/cn';
 import { WithdrawModal } from './WithdrawModal';
 import { confirmDialog } from '../ui/confirmDialog';
+import { Tabs } from '../ui/Tabs';
+import { RewardsDealsPanel } from './RewardsDealsPanel';
+import { PayoutMethodsSection } from './PayoutMethodsSection';
 
+type RewardsTab = 'withdraw' | 'deals';
+
+/**
+ * Kolab Rewards — web twin of mobile's (creator)/wallet.tsx. One balance card
+ * (wallet balance shown as Kolab Reward Points, 1 point = Rs. 1), then two
+ * tabs: "Withdraw Money" (cash-out, payout accounts, statement) and "Business
+ * Deals" (deals + points activity). Tab lives in ?tab= so /creator/rewards can
+ * redirect straight to the deals tab.
+ */
 export function CreatorWalletPage() {
   const t = useT();
+  const [params, setParams] = useSearchParams();
+  const tab: RewardsTab = params.get('tab') === 'deals' ? 'deals' : 'withdraw';
+  const setTab = (next: string) =>
+    setParams((p) => {
+      const n = new URLSearchParams(p);
+      if (next === 'deals') n.set('tab', 'deals');
+      else n.delete('tab');
+      return n;
+    }, { replace: true });
+
   const summary = useAsync((s) => fetchWalletSummary(s), []);
   const txns = useAsync((s) => fetchWalletTransactions(s), []);
   const withdrawals = useAsync((s) => fetchWithdrawals(s), []);
@@ -70,77 +93,115 @@ export function CreatorWalletPage() {
           ? t('wallet.withdrawDisabledNone')
           : '';
 
+  // Promo redemptions have their own home on the Business Deals tab — the
+  // Withdraw Money statement is cash-out activity only (same as mobile).
+  const statement = txns.data ? txns.data.filter((tx) => tx.kind !== 'PROMO_REDEMPTION_DEBIT') : null;
+
   return (
     <>
-      <DashPageHeader title={t('wallet.title')} description={t('wallet.subtitle')} />
+      <DashPageHeader title={t('rewards.headerTitle')} description={t('wallet.rewardsSubtitle')} />
 
-      {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
-      {cancelError && <Alert tone="error" className="mb-5">{cancelError}</Alert>}
-      {!canWithdraw && disabledReason && <Alert tone="neutral" className="mb-5">{disabledReason}</Alert>}
-
-      {/* Balance hero — solid brand card, matching the admin dashboard's flat card language. */}
+      {/* Balance hero — points, shared by both tabs. */}
       <div className="rounded-xl bg-brand p-6 text-white sm:p-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center justify-between gap-4 sm:justify-start sm:gap-8">
-              <div>
-                <p className="text-[13px] text-white/70">{t('wallet.availableBalance')}</p>
-                <p className="mt-1 text-[32px] font-bold leading-none tracking-tight">
-                  {summary.loading ? '—' : rupees(w?.withdrawableBalance ?? 0)}
-                </p>
-              </div>
-              <div className="text-right sm:text-left">
-                <p className="text-[12px] text-white/70">{t('wallet.totalEarned')}</p>
-                <p className="mt-1 text-[16px] font-semibold">
-                  {summary.loading ? '—' : rupees(w?.totalEarned ?? 0)}
-                </p>
-              </div>
-            </div>
+        <div className="flex items-center justify-between gap-4 sm:justify-start sm:gap-10">
+          <div>
+            <p className="text-[13px] text-white/70">{t('wallet.pointsBalance')}</p>
+            <p className="mt-1 text-[32px] font-bold leading-none tracking-tight">
+              {summary.loading ? '—' : (w?.availableBalance ?? 0).toLocaleString('en-IN')}
+            </p>
           </div>
-          <Button
-            size="lg"
-            onClick={() => setModalOpen(true)}
-            disabled={!canWithdraw}
-            className="self-start sm:self-auto"
-          >
-            {t('wallet.withdraw')}
-          </Button>
+          <div className="text-right sm:text-left">
+            <p className="text-[12px] text-white/70">{t('wallet.totalEarned')}</p>
+            <p className="mt-1 text-[16px] font-semibold">
+              {summary.loading ? '—' : rupees(w?.totalEarned ?? 0)}
+            </p>
+          </div>
         </div>
+        <p className="mt-4 inline-flex items-center gap-1.5 text-[12px] text-white/80">
+          <Info size={12} />
+          {t('wallet.pointsEquivalence')}
+        </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <DashStatCard
-          label={t('wallet.pendingEarnings')}
-          value={summary.loading ? undefined : rupees(w?.pendingEarnings ?? 0)}
-          icon={Clock}
-          tone="amber"
-        />
-        <DashStatCard
-          label={t('wallet.inWithdrawal')}
-          value={summary.loading ? undefined : rupees(w?.pendingWithdrawals ?? 0)}
-          icon={ArrowUpRight}
-          tone="blue"
-        />
-      </div>
+      <Tabs
+        className="mt-5 mb-5"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { value: 'withdraw', label: t('wallet.tabWithdraw') },
+          { value: 'deals', label: t('wallet.tabDeals') },
+        ]}
+      />
 
-      <p className="mt-3 text-[12px] text-ink-soft">{t('wallet.processingNote')}</p>
+      {tab === 'deals' ? (
+        <RewardsDealsPanel />
+      ) : (
+        <>
+          {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
+          {cancelError && <Alert tone="error" className="mb-5">{cancelError}</Alert>}
+          {!canWithdraw && disabledReason && <Alert tone="neutral" className="mb-5">{disabledReason}</Alert>}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
-        <DashCard>
-          <DashCardHeader title={t('wallet.transactionsHeading')} />
-          <TransactionList data={txns.data} loading={txns.loading} />
-        </DashCard>
+          <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[13px] text-ink-soft">{t('wallet.availableBalance')}</p>
+              <p className="mt-1 text-[22px] font-semibold text-ink">
+                {summary.loading ? '—' : rupees(w?.withdrawableBalance ?? 0)}
+              </p>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => setModalOpen(true)}
+              disabled={!canWithdraw || payoutMethods.loading}
+              className="self-start sm:self-auto"
+            >
+              <ArrowDownCircle size={18} />
+              {t('wallet.tabWithdraw')}
+            </Button>
+          </div>
 
-        <DashCard>
-          <DashCardHeader title={t('wallet.withdrawalsHeading')} />
-          <WithdrawalList
-            data={withdrawals.data}
-            loading={withdrawals.loading}
-            cancellingId={cancellingId}
-            onCancel={handleCancelWithdrawal}
-          />
-        </DashCard>
-      </div>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <DashStatCard
+              label={t('wallet.pendingEarnings')}
+              value={summary.loading ? undefined : rupees(w?.pendingEarnings ?? 0)}
+              icon={Clock}
+              tone="amber"
+            />
+            <DashStatCard
+              label={t('wallet.inWithdrawal')}
+              value={summary.loading ? undefined : rupees(w?.pendingWithdrawals ?? 0)}
+              icon={ArrowUpRight}
+              tone="blue"
+            />
+          </div>
+
+          <p className="mt-3 text-[12px] text-ink-soft">{t('wallet.processingNote')}</p>
+
+          <div className="mt-6">
+            <PayoutMethodsSection
+              methods={payoutMethods.data ?? []}
+              loading={payoutMethods.loading}
+              onChanged={payoutMethods.reload}
+            />
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
+            <DashCard>
+              <DashCardHeader title={t('wallet.transactionsHeading')} />
+              <TransactionList data={statement} loading={txns.loading} />
+            </DashCard>
+
+            <DashCard>
+              <DashCardHeader title={t('wallet.withdrawalsHeading')} />
+              <WithdrawalList
+                data={withdrawals.data}
+                loading={withdrawals.loading}
+                cancellingId={cancellingId}
+                onCancel={handleCancelWithdrawal}
+              />
+            </DashCard>
+          </div>
+        </>
+      )}
 
       {w && !payoutMethods.loading && (
         <WithdrawModal

@@ -40,7 +40,7 @@ const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/creator/messages',            'Messages'],
   ['/creator/messages/:id',        'Messages'],
   ['/creator/notifications',       'Notifications'],
-  ['/creator/wallet',              'Wallet'],
+  ['/creator/wallet',              'Kolab Rewards'],
   ['/creator/profile',             'My Profile'],
   ['/creator/settings',            'Settings'],
   ['/creator/verification',        'Verification'],

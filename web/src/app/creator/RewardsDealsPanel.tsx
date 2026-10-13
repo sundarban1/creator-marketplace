@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 import { Gift, Smartphone, Star, Tag } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
-import { fetchDeals, fetchPointsBalance, fetchPointsHistory, type Promotion } from '../api/promotion';
-import { DashPageHeader } from './dash-ui/DashPageHeader';
+import { fetchDeals, fetchPointsHistory, type Promotion } from '../api/promotion';
 import { DashCard, DashCardHeader } from './dash-ui/DashCard';
 import { Avatar } from '../ui/Avatar';
 import { EmptyState } from '../ui/EmptyState';
@@ -15,14 +14,15 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day
 const npr = (n: number) => n.toLocaleString('en-IN');
 
 /**
- * Kolab Rewards — points balance + activity + discoverable deals. Web twin of
- * mobile's wallet.tsx ("Kolab Rewards") + deals.tsx + deal-detail.tsx. The
- * redemption itself is a QR handshake at the business, so it stays in the app;
- * the deal modal says so instead of offering a Redeem button.
+ * "Business Deals" tab of the creator Kolab Rewards page — web twin of mobile
+ * wallet.tsx's DealsTab + deals.tsx + deal-detail.tsx. The points balance lives
+ * in the page's shared balance card (wallet balance = Kolab Reward Points), so
+ * this panel is just discoverable deals + points activity. Redemption itself is
+ * a QR handshake at the business, so it stays in the app; the deal modal says
+ * so instead of offering a Redeem button.
  */
-export function CreatorRewardsPage() {
+export function RewardsDealsPanel() {
   const t = useT();
-  const balance = useAsync((s) => fetchPointsBalance(s), []);
   const history = useAsync((s) => fetchPointsHistory(s), []);
   const deals = useAsync((s) => fetchDeals(s), []);
   const [search, setSearch] = useState('');
@@ -41,32 +41,7 @@ export function CreatorRewardsPage() {
 
   return (
     <div>
-      <DashPageHeader title={t('rewards.headerTitle')} description={t('rewards.supportingText')} />
-
-      {/* Balance */}
-      {balance.loading ? (
-        <Skeleton className="h-36 w-full rounded-2xl" />
-      ) : balance.error || !balance.data ? (
-        <EmptyState variant="error" title={t('rewards.loadError')} action={{ label: t('common.retry'), onClick: balance.reload }} />
-      ) : (
-        <div className="rounded-2xl bg-gradient-to-r from-violet to-dash-pink p-6 text-white">
-          <p className="text-[13px] font-medium text-white/85">{t('rewards.balanceLabel')}</p>
-          <p className="mt-1 text-[36px] font-semibold leading-tight">{npr(balance.data.balance)}</p>
-          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-white/90">
-            <span>
-              {t('rewards.thisMonthLabel')}: <b>{t('rewards.thisMonthValue', { n: npr(balance.data.earnedThisMonth) })}</b>
-            </span>
-            <span>
-              {t('rewards.lifetimeEarned')}: <b>{npr(balance.data.lifetimeEarned)}</b>
-            </span>
-            <span>
-              {t('rewards.lifetimeSpent')}: <b>{npr(balance.data.lifetimeSpent)}</b>
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-start">
         {/* Deals */}
         <DashCard>
           <DashCardHeader title={t('deals.headerTitle')} />

@@ -31,7 +31,7 @@ export function fetchWalletSummary(signal?: AbortSignal): Promise<WalletSummary>
 /** Unified statement row — realized ledger entries + in-flight withdrawals. */
 export interface WalletTransaction {
   id: string;
-  kind: 'CAMPAIGN_PAYOUT' | 'REFERRAL_REWARD' | 'REFERRAL_BONUS' | 'WITHDRAWAL' | 'ADJUSTMENT';
+  kind: 'CAMPAIGN_PAYOUT' | 'REFERRAL_REWARD' | 'REFERRAL_BONUS' | 'WITHDRAWAL' | 'ADJUSTMENT' | 'PROMO_REDEMPTION_DEBIT';
   direction: 'CREDIT' | 'DEBIT';
   amount: number;
   status: string;
@@ -99,6 +99,18 @@ export function createPayoutMethod(input: CreatePayoutMethodInput): Promise<Payo
   return apiRequest<PayoutMethod>('POST', '/api/creator/wallet/payout-methods', input).then(
     (r) => r.data,
   );
+}
+
+export function updatePayoutMethod(id: string, input: CreatePayoutMethodInput): Promise<PayoutMethod> {
+  return apiRequest<PayoutMethod>(
+    'PUT',
+    `/api/creator/wallet/payout-methods/${encodeURIComponent(id)}`,
+    input,
+  ).then((r) => r.data);
+}
+
+export function deletePayoutMethod(id: string): Promise<void> {
+  return apiRequest('DELETE', `/api/creator/wallet/payout-methods/${encodeURIComponent(id)}`).then(() => undefined);
 }
 
 export function createWithdrawal(

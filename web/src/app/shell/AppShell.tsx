@@ -165,7 +165,7 @@ function AppShellInner() {
 
           <div className="ml-auto flex items-center gap-1.5">
             {/* <TestPhasePill /> */}
-            <LanguageSwitcher />
+            <LanguageSwitcher className="h-9 min-w-9 border-line bg-transparent hover:bg-surface-dim" />
             <ThemeToggle className="hidden h-9 w-9 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:bg-surface-dim hover:text-ink sm:flex" />
             <NavLink
               to={messagesPath}

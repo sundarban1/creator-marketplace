@@ -3,7 +3,6 @@ import {
   Compass,
   FileText,
   Briefcase,
-  Wallet,
   UserRound,
   Settings,
   Users,
@@ -70,8 +69,7 @@ const CREATOR_NAV_GROUPS: NavGroup[] = [
   {
     labelKey: 'groupFinance',
     items: [
-      { key: 'wallet', to: '/creator/wallet', icon: Wallet },
-      { key: 'rewards', to: '/creator/rewards', icon: Sparkles },
+      { key: 'wallet', to: '/creator/wallet', icon: Sparkles },
       { key: 'referFriend', to: '/creator/referrals', icon: Gift },
     ],
   },

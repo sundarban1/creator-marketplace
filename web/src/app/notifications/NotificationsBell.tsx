@@ -49,11 +49,14 @@ export function NotificationsBell() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={t('nav.notifications')}
-        className="relative rounded-lg p-2 text-ink-soft hover:bg-surface-dim"
+        className={cn(
+          'relative flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink-soft hover:bg-surface-dim hover:text-ink transition-colors',
+          open && 'bg-surface-dim text-ink',
+        )}
       >
-        <Bell size={19} />
+        <Bell size={16} strokeWidth={2} />
         {unread > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
