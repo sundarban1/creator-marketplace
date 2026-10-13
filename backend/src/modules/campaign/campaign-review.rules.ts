@@ -58,7 +58,7 @@ export function normalizeFeedback(raw: unknown): string | null {
 // featured toggle, open-event FULL flag, hashtags, draft bookkeeping — is a
 // harmless edit that stays live.
 export const MATERIAL_FIELDS = [
-  'title', 'description', 'featureImageUrl', 'category', 'campaignType',
+  'title', 'description', 'featureImageUrl', 'category', 'categories', 'campaignType',
   'budgetMin', 'budgetMax', 'budgetRateType', 'paymentType', 'creatorsNeeded',
   'deliverables', 'deliverableItems', 'contentType', 'platforms', 'minFollowers',
   'deadline', 'startDate', 'applicationDeadline', 'eventDate', 'eventTime',

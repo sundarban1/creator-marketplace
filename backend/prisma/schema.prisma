@@ -858,6 +858,9 @@ model Campaign {
   template              String?
   featureImageUrl       String?
   category              String
+  // Up to 3 creator types the business is looking for; `category` mirrors
+  // categories[0] so every single-category filter/reader keeps working.
+  categories            String[]              @default([])
   goals                 Json                  @default("[]")
   platforms             String[]              @default([])
   minFollowers          Int                   @default(0)

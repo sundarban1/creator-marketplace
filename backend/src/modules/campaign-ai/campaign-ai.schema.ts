@@ -42,7 +42,10 @@ export const COMPLETION_TYPES = ['SERVICE', 'DELIVERABLE'] as const;
 
 // Kept in sync with GOAL_OPTIONS in mobile create-campaign.tsx — the Goal chip picker
 // only ever renders these exact labels, so the AI must pick one of them verbatim.
-export const GOAL_OPTIONS = ['Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement'] as const;
+export const GOAL_OPTIONS = [
+  'Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement', 'Promote Product',
+  'Promote Event', 'Get Content', 'Local Audience', 'Offers & Discounts',
+] as const;
 
 // Kept in sync with DELIVERABLE_TYPES keys in mobile create-campaign.tsx — the
 // deliverables counter list only recognizes these exact keys.
@@ -280,8 +283,8 @@ export type AiCampaignDraft = z.infer<typeof aiCampaignDraftSchema>;
 const draftContextSchema = z.object({
   title:            z.string().max(200).optional(),
   description:      z.string().max(2000).optional(),
-  category:         z.string().max(60).optional(),
-  goal:             z.string().max(60).optional(),
+  category:         z.string().max(200).optional(),
+  goal:             z.string().max(200).optional(),
   platforms:        z.array(z.string().max(40)).max(5).optional(),
   creatorsNeeded:   z.number().int().min(1).max(50).optional(),
   budgetMin:        z.number().min(0).optional(),

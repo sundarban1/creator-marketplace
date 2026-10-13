@@ -26,6 +26,13 @@ function roleCategoryMatch(terms: string[]): Prisma.Sql {
 }
 
 export class CampaignRepository {
+  // A campaign matches a category filter on its primary `category` or any of
+  // its (up to 3) `categories`, case-insensitively.
+  private categoryMatchSql(values: string[]): Prisma.Sql {
+    const lower = Prisma.join(values.map((v) => v.toLowerCase()));
+    return Prisma.sql`(LOWER(c.category) IN (${lower}) OR EXISTS (SELECT 1 FROM unnest(c.categories) AS cc WHERE LOWER(cc) IN (${lower})))`;
+  }
+
   async create(data: {
     businessId: string;
     title: string;
@@ -159,7 +166,7 @@ export class CampaignRepository {
     const where: Prisma.CampaignWhereInput = { deletedAt: null };
 
     if (filters.category?.length) {
-      where.category = { in: filters.category, mode: 'insensitive' };
+      where.OR = [{ category: { in: filters.category, mode: 'insensitive' } }, { categories: { hasSome: filters.category } }];
     }
     if (filters.platform?.length) {
       where.platforms = { hasSome: filters.platform };
@@ -292,7 +299,7 @@ export class CampaignRepository {
       Prisma.sql`c.status = ${filters.status ?? 'ACTIVE'}::"CampaignStatus"`,
     ];
     if (filters.category?.length) {
-      conditions.push(Prisma.sql`LOWER(c.category) IN (${Prisma.join(filters.category.map((v) => v.toLowerCase()))})`);
+      conditions.push(this.categoryMatchSql(filters.category));
     }
     if (filters.platform?.length) {
       conditions.push(Prisma.sql`c.platforms && ARRAY[${Prisma.join(filters.platform)}]::text[]`);
@@ -411,7 +418,7 @@ export class CampaignRepository {
       extraConditions.push(this.searchMatchSql(search).condition);
     }
     if (category?.length) {
-      extraConditions.push(Prisma.sql`LOWER(c.category) IN (${Prisma.join(category.map((c) => c.toLowerCase()))})`);
+      extraConditions.push(this.categoryMatchSql(category));
     }
     if (platform?.length) {
       extraConditions.push(Prisma.sql`c.platforms && ARRAY[${Prisma.join(platform)}]::text[]`);

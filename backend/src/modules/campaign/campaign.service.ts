@@ -196,7 +196,7 @@ const CAMPAIGN_RECOMMEND_WEIGHTS = { category: 0.35, platform: 0.15, budget: 0.1
 
 function scoreCampaignForCreator(
   c: {
-    category: string; platforms: string[]; budgetMin: number; budgetMax: number;
+    category: string; categories?: string[]; platforms: string[]; budgetMin: number; budgetMax: number;
     locationType: 'ONSITE' | 'REMOTE'; locationLat: number | null; locationLng: number | null;
     createdAt: Date; isFeatured: boolean; applicationCount: number;
   },
@@ -206,7 +206,7 @@ function scoreCampaignForCreator(
   },
 ): number {
   const categoryScore = creator.categories.length
-    ? (creator.categories.some((cat) => cat.toLowerCase() === c.category.toLowerCase()) ? 1 : 0)
+    ? (creator.categories.some((cat) => [c.category, ...(c.categories ?? [])].some((x) => x.toLowerCase() === cat.toLowerCase())) ? 1 : 0)
     : 0.5;
 
   const platformScore = creator.prefPlatforms.length
@@ -756,6 +756,8 @@ export class CampaignService {
     } = input;
     return {
       ...plain,
+      // The primary category always mirrors the first chosen creator type.
+      ...(plain.categories ? { category: plain.categories[0] ?? '' } : {}),
       ...(deadline ? { deadline: new Date(deadline) } : {}),
       ...guidedPersistFields({ ...input, locationType }),
       ...(locationType === 'REMOTE' ? { location: null, locationLat: null, locationLng: null } : {}),
@@ -864,6 +866,7 @@ export class CampaignService {
         score: scoreCampaignForCreator(
           {
             category:         c.category,
+            categories:       c.categories,
             platforms:        c.platforms,
             budgetMin:        c.budgetMin,
             budgetMax:        c.budgetMax,
@@ -1077,6 +1080,7 @@ export class CampaignService {
     const { status: _requestedStatus, ...fieldInput } = plainInput;
     const updateData = {
       ...fieldInput,
+      ...(fieldInput.categories ? { category: fieldInput.categories[0] ?? campaign.category } : {}),
       ...this.budgetUpdateFields(input, campaign),
       ...guided,
       complexity: assessCampaign(merged).complexity,

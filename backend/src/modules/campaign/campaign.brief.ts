@@ -116,6 +116,8 @@ export const guidedCampaignFields = {
 export function summarizeDeliverables(items: DeliverableItem[]): string {
   return items
     .map((d) => {
+      // Business-typed deliverables are stored as CUSTOM:<their words>.
+      if (d.type.startsWith('CUSTOM:')) return `${d.quantity}× ${d.type.slice(7)}${d.platform ? ` (${d.platform})` : ''}`;
       const label = d.type.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())
         .replace(/\btiktok\b/i, 'TikTok').replace(/\byoutube\b/i, 'YouTube').replace(/\bugc\b/i, 'UGC');
       return `${d.quantity}× ${label}${d.platform ? ` (${d.platform})` : ''}`;

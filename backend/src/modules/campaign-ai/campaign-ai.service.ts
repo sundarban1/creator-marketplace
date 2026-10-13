@@ -296,7 +296,7 @@ Respond with a JSON object with EXACTLY these keys:
 - category: string, best-fit category
 - secondaryCategories: string[] (0-3), other categories that could also fit
 - platform: string, the single best platform for this campaign
-- goal: string, EXACTLY ONE of: "Brand Awareness", "More Customers", "Sales", "Followers & Engagement" — whichever best matches the campaign's main aim
+- goal: string, EXACTLY ONE of: "Brand Awareness", "More Customers", "Sales", "Followers & Engagement", "Promote Product", "Promote Event", "Get Content", "Local Audience", "Offers & Discounts" — whichever best matches the campaign's main aim
 - suggestedDurationDays: number, how many days the campaign should run (typically 7-30)
 - creatorsNeeded: number, how many creators to recruit (typically 1-10)
 - budgetStatus: string, EXACTLY ONE of "STATED_PER_CREATOR", "STATED_TOTAL", "AMBIGUOUS", "NOT_STATED" — how the brand expressed what they will PAY each creator:
