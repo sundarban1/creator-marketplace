@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowDownCircle, ArrowDownLeft, ArrowUpRight, Clock, ExternalLink, Info } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -9,6 +10,7 @@ import {
   fetchWalletTransactions,
   fetchWithdrawals,
   fetchPayoutMethods,
+  fetchCreatorFullProfile,
   cancelWithdrawal,
   type WalletTransaction,
   type Withdrawal,
@@ -25,7 +27,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { StatusBadge, type BadgeTone } from '../ui/StatusBadge';
 import { cn } from '../ui/cn';
 import { WithdrawModal } from './WithdrawModal';
-import { confirmDialog } from '../ui/confirmDialog';
+import { alertDialog, confirmDialog } from '../ui/confirmDialog';
 import { PointsActivityCard } from './PointsActivityCard';
 import { PayoutMethodsSection } from './PayoutMethodsSection';
 
@@ -44,6 +46,40 @@ export function CreatorWalletPage() {
   useLiveRefresh(['wallet'], () => { summary.refresh(); txns.refresh(); withdrawals.refresh(); });
 
   const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // One-time KYC: Citizenship + PAN must be uploaded AND approved before a
+  // withdrawal (tax records, and to make sure the payout reaches the right
+  // person). The server enforces the same rule; this just explains it up front.
+  const handleWithdrawClick = async () => {
+    let statuses: string[] = ['APPROVED', 'APPROVED'];
+    try {
+      const p = await fetchCreatorFullProfile();
+      statuses = [p.citizenshipStatus, p.panDocStatus];
+    } catch {
+      // Profile read failed — let the modal open; the server still enforces it.
+    }
+    if (statuses.every((st) => st === 'APPROVED')) {
+      setModalOpen(true);
+      return;
+    }
+    if (statuses.every((st) => st === 'APPROVED' || st === 'PENDING')) {
+      await alertDialog({
+        title: t('wallet.kycPendingTitle'),
+        message: t('wallet.kycPendingBody'),
+        confirmLabel: t('wallet.kycPendingOk'),
+      });
+      return;
+    }
+    const upload = await confirmDialog({
+      title: t('wallet.kycRequiredTitle'),
+      message: t('wallet.kycRequiredBody'),
+      confirmLabel: t('wallet.kycRequiredAction'),
+      cancelLabel: t('wallet.kycRequiredCancel'),
+      tone: 'warning',
+    });
+    if (upload) navigate('/creator/verification');
+  };
   const [flash, setFlash] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState('');
@@ -122,7 +158,7 @@ export function CreatorWalletPage() {
           </div>
           <Button
             size="lg"
-            onClick={() => setModalOpen(true)}
+            onClick={handleWithdrawClick}
             disabled={!canWithdraw || payoutMethods.loading}
             className="self-start sm:self-auto"
           >

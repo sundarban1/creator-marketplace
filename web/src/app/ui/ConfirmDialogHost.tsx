@@ -98,7 +98,7 @@ function Dialog({ req, onDone }: { req: DialogRequest; onDone: (ok: boolean) => 
           {req.title}
         </h2>
         {req.message && (
-          <p id="confirm-dialog-message" className="mt-1.5 text-[14px] leading-relaxed text-ink-soft">
+          <p id="confirm-dialog-message" className="mt-1.5 whitespace-pre-line text-[14px] leading-relaxed text-ink-soft">
             {req.message}
           </p>
         )}

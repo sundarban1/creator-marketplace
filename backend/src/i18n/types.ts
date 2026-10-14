@@ -499,6 +499,8 @@ export interface BackendDict {
     minimumWithdrawalAmount: (min: string) => string;
     maximumWithdrawalAmount: (max: string) => string;
     pendingWithdrawalExists: string;
+    withdrawalDocsRequired: string;
+    withdrawalDocsPending: string;
     amountExceedsAvailableBalance: (balance: string) => string;
     dailyLimitReachedToday: (daily: string) => string;
     wouldExceedDailyLimit: (daily: string, left: string) => string;

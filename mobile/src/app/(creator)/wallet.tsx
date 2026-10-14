@@ -6,6 +6,7 @@ import { PageHeader } from '@/features/creator/components/PageHeader';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
+import { useCreatorProfile } from '@/hooks/useCreatorProfile';
 import { STALE } from '@/lib/queryClient';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -112,6 +113,36 @@ export default function WalletScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summaryQuery.isError, transactionsQuery.isError, payoutMethodsQuery.isError]);
 
+  // One-time KYC: Citizenship + PAN must be uploaded AND approved before a
+  // withdrawal (tax records, and to make sure the payout reaches the right
+  // person). The server enforces the same rule; this just explains it up front.
+  const profileQuery = useCreatorProfile();
+  type DocsState = 'missing' | 'pending' | 'approved';
+  const docsState = (p?: { citizenshipStatus?: string; panDocStatus?: string } | null): DocsState => {
+    const statuses = [p?.citizenshipStatus, p?.panDocStatus];
+    if (statuses.every((st) => st === 'APPROVED')) return 'approved';
+    return statuses.every((st) => st === 'APPROVED' || st === 'PENDING') ? 'pending' : 'missing';
+  };
+
+  async function handleWithdrawPress() {
+    // Always re-check: the cached profile may predate an upload or approval.
+    // If the read fails, open the form like web does — the server still enforces it.
+    const { data: fresh } = await profileQuery.refetch();
+    const state = fresh ? docsState(fresh) : 'approved';
+    if (state === 'missing') {
+      Alert.alert(t('wallet.kycRequiredTitle'), t('wallet.kycRequiredBody'), [
+        { text: t('wallet.kycRequiredCancel'), style: 'cancel' },
+        { text: t('wallet.kycRequiredAction'), onPress: () => router.push('/(creator)/settings?section=security' as never) },
+      ]);
+      return;
+    }
+    if (state === 'pending') {
+      Alert.alert(t('wallet.kycPendingTitle'), t('wallet.kycPendingBody'), [{ text: t('wallet.kycPendingOk') }]);
+      return;
+    }
+    setModalVisible(true);
+  }
+
   async function handleWithdraw(amount: number, payoutMethodId: string) {
     const { withdrawal, ...nextSummary } = await walletService.createWithdrawal(amount, payoutMethodId);
     // The server's own post-mutation summary, not a client guess — this is
@@ -205,7 +236,7 @@ export default function WalletScreen() {
                 {/* Withdraw button */}
                 <Pressable
                   style={[styles.withdrawBtn, { backgroundColor: C.surface, borderColor: C.brinjal1 }]}
-                  onPress={() => setModalVisible(true)}>
+                  onPress={handleWithdrawPress}>
                   <FontAwesome5 name="arrow-alt-circle-down" size={20} color={C.brinjal1} />
                   <Text style={[styles.withdrawBtnText, { color: C.brinjal1 }]}>{t('wallet.withdrawMoney')}</Text>
                 </Pressable>

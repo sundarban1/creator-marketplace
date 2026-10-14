@@ -163,6 +163,21 @@ export class WalletService {
   async createWithdrawalRequest(userId: string, input: CreateWithdrawalInput) {
     const profile = await this.resolveCreatorId(userId);
 
+    // KYC gate (one-time): both Citizenship and PAN must be uploaded AND
+    // admin-approved before any payout — needed for tax records and to make
+    // sure the money reaches the right person. `code` lets clients branch
+    // between "upload" and "still being reviewed" without parsing the text.
+    const docStatuses = [profile.citizenshipStatus, profile.panDocStatus];
+    if (!docStatuses.every((st) => st === 'APPROVED')) {
+      const awaitingReview = docStatuses.every((st) => st === 'APPROVED' || st === 'PENDING');
+      throw new AppError(
+        awaitingReview ? getDict().wallet.withdrawalDocsPending : getDict().wallet.withdrawalDocsRequired,
+        HttpStatus.FORBIDDEN,
+        true,
+        { code: awaitingReview ? 'WITHDRAWAL_DOCS_PENDING' : 'WITHDRAWAL_DOCS_REQUIRED' },
+      );
+    }
+
     const payoutMethod = await this.payoutRepo.findById(input.payoutMethodId);
     if (!payoutMethod || payoutMethod.creatorId !== profile.id) {
       throw new AppError(getDict().wallet.payoutMethodNotFound, HttpStatus.NOT_FOUND);

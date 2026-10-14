@@ -474,6 +474,8 @@ export const en: BackendDict = {
     minimumWithdrawalAmount:       (min) => `The minimum you can withdraw is Rs. ${min}.`,
     maximumWithdrawalAmount:       (max) => `You can withdraw at most Rs. ${max} in a single request.`,
     pendingWithdrawalExists:       'You already have a withdrawal request being processed. Please wait for it to be completed before requesting another.',
+    withdrawalDocsRequired:        'Please upload your Citizenship and PAN to make a withdrawal request. This is a one-time step. If you don\'t have a Citizenship and/or PAN, please contact Kolab customer support to resolve this.',
+    withdrawalDocsPending:         'Your Citizenship and PAN are being verified. You can request a withdrawal once they are approved. This is a one-time step.',
     amountExceedsAvailableBalance: (balance) => `You can only withdraw up to your available balance of Rs. ${balance}.`,
     dailyLimitReachedToday:        (daily) => `You've reached your withdrawal limit for today (Rs. ${daily}). Please come back and request again tomorrow.`,
     wouldExceedDailyLimit:         (daily, left) => `This would take you over today's withdrawal limit of Rs. ${daily}. You can still withdraw up to Rs. ${left} today.`,
