@@ -192,6 +192,7 @@ export const ne: BackendDict = {
     freeEventsNoWorkStage:             'निःशुल्क इभेन्टमा कुनै कार्य चरण हुँदैन — स्वीकृत हुनु नै अन्तिम हो',
     paymentNotYetSecured:              'भुक्तानी अझै सुरक्षित गरिएको छैन',
     freeEventsNoDeliverablesToSubmit:  'निःशुल्क इभेन्टमा पेश गर्नुपर्ने कुनै डेलिभरेबल हुँदैन',
+    invalidDeliverableLink:            (url: string) => `"${url}" मान्य लिङ्क होइन — पूरा सेयर लिङ्क (https://…) टाँस्नुहोस्`,
     workNotSubmittedYet:               'कार्य अझै पेश गरिएको छैन',
     engagementUnderDisputeApproving:   'यो सम्झौता विवादमा छ — स्वीकृत गर्नुअघि यसलाई समाधान गर्नुहोस्',
     engagementUnderDispute:            'यो सम्झौता विवादमा छ',

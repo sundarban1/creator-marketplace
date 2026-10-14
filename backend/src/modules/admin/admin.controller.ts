@@ -496,6 +496,19 @@ export async function verifyBusiness(req: Request, res: Response, next: NextFunc
   }
 }
 
+// PATCH /api/admin/businesses/:id/active
+export async function setBusinessActive(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id }       = req.params;
+    const { isActive } = req.body as { isActive: boolean };
+    if (typeof isActive !== 'boolean') throw new AppError('isActive must be a boolean', HttpStatus.BAD_REQUEST);
+    const updated = await service.setBusinessActive(id!, isActive, req.user!.id);
+    return success(res, updated, isActive ? 'Business activated' : 'Business deactivated');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // PATCH /api/admin/businesses/:id/reject
 export async function rejectBusiness(req: Request, res: Response, next: NextFunction) {
   try {

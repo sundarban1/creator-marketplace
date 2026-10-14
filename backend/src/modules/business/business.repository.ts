@@ -56,8 +56,10 @@ export class BusinessRepository {
     // totals correct). Mirrors CreatorRepository's identical exclusion.
     // isActive covers both admin-suspended and self-deactivated accounts —
     // either way the account shouldn't be discoverable while it's down.
+    // isActive (profile) is the admin's marketplace-visibility switch.
     const where: Prisma.BusinessProfileWhereInput = {
       showPublicProfile: true,
+      isActive: true,
       user: { isOnboarded: true, isActive: true },
     };
 
@@ -125,6 +127,7 @@ export class BusinessRepository {
     // listing already hides.
     const conditions: Prisma.Sql[] = [
       Prisma.sql`b."showPublicProfile" = true`,
+      Prisma.sql`b."isActive" = true`,
       Prisma.sql`EXISTS (SELECT 1 FROM users u WHERE u.id = b."userId" AND u."isOnboarded" = true AND u."isActive" = true)`,
     ];
 
@@ -224,12 +227,12 @@ export class BusinessRepository {
     return { businesses, total };
   }
 
-  // findFirst rather than findUnique — the extra user.isActive filter means a
-  // suspended/self-deactivated business's profile 404s the same way an
+  // findFirst rather than findUnique — the extra isActive filters mean a
+  // suspended/self-deactivated/admin-deactivated business's profile 404s the same way an
   // unknown id already does, instead of surfacing a dead account's public page.
   async findPublicById(id: string) {
     return prisma.businessProfile.findFirst({
-      where: { id, user: { isActive: true } },
+      where: { id, isActive: true, user: { isActive: true } },
       select: {
         id:                   true,
         slug:                 true,

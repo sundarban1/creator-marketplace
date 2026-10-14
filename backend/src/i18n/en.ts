@@ -192,6 +192,7 @@ export const en: BackendDict = {
     freeEventsNoWorkStage:             'Free events have no work stage — being accepted is final',
     paymentNotYetSecured:              'Payment not yet secured',
     freeEventsNoDeliverablesToSubmit:  'Free events have no deliverables to submit',
+    invalidDeliverableLink:            (url: string) => `"${url}" isn't a valid link — paste the full share link (https://…)`,
     workNotSubmittedYet:               'Work has not been submitted yet',
     engagementUnderDisputeApproving:   'This engagement is under dispute — resolve it before approving',
     engagementUnderDispute:            'This engagement is under dispute',

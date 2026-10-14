@@ -506,6 +506,9 @@ export interface ApiBusiness {
   website?:     string | null;
   categories:   string[];
   isVerified:   boolean;
+  // Admin marketplace-visibility switch — false hides the business and its
+  // events/deals from creators and other businesses (owner can still log in).
+  isActive:     boolean;
   createdAt:    string;
   panDocUrl?:          string | null;
   panDocStatus?:       'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -1318,6 +1321,9 @@ export const api = {
 
     releaseReferral: (id: string) =>
       request<ApiReferral>('PATCH', `/api/admin/referrals/${id}/release`),
+
+    setBusinessActive: (id: string, isActive: boolean) =>
+      request<{ id: string; businessName: string | null; isActive: boolean }>('PATCH', `/api/admin/businesses/${id}/active`, { isActive }),
 
     verifyBusiness: (id: string, verified: boolean) =>
       request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/verify`, { verified }),

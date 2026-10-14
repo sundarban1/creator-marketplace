@@ -47,6 +47,8 @@ export const AuditAction = {
   VERIFICATION_REJECTED:    'verification.rejected',
   ACCOUNT_SUSPENDED:        'account.suspended',
   ACCOUNT_REACTIVATED:      'account.reactivated',
+  BUSINESS_DEACTIVATED:     'business.deactivated',
+  BUSINESS_ACTIVATED:       'business.activated',
   ACCOUNT_DELETED_BY_ADMIN: 'account.deleted_by_admin',
   REPORT_REVIEWED:          'report.reviewed',
   WITHDRAWAL_PROCESSING:    'withdrawal.processing',

@@ -936,7 +936,10 @@ export class CampaignService {
     if (!campaign) {
       throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
-    if (!isCreatorVisible(campaign.status) && !(await this.canSeeUnpublished(campaign, viewer))) {
+    // An admin-deactivated business's events are treated like unpublished ones:
+    // hidden from discovery, but in-flight collaborations stay reachable.
+    const hidden = !isCreatorVisible(campaign.status) || !campaign.business.isActive;
+    if (hidden && !(await this.canSeeUnpublished(campaign, viewer))) {
       throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
     const dto = toCampaignDto(campaign);
@@ -1395,7 +1398,8 @@ export class CampaignService {
     }
 
     const campaign = await this.repo.findById(campaignId);
-    if (!campaign) {
+    // Admin-deactivated business → its events don't exist for new applicants.
+    if (!campaign || !campaign.business.isActive) {
       throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
 
@@ -2596,6 +2600,23 @@ export class CampaignService {
       throw new AppError(getDict().campaign.freeEventsNoDeliverablesToSubmit, HttpStatus.BAD_REQUEST);
     }
     assertWorkTransition(app.workStatus, 'SUBMITTED');
+
+    // Deliverable links (Google Drive / Dropbox / YouTube — the path for files
+    // too large to upload) are newline/comma separated. Normalize bare domains
+    // to https:// like the clients do, and reject anything that isn't http(s).
+    if (data.urls !== undefined) {
+      const links = data.urls.split(/[\n,]/).map((s) => s.trim()).filter(Boolean)
+        .map((u) => (/^https?:\/\//i.test(u) ? u : `https://${u}`));
+      for (const link of links) {
+        let ok = false;
+        try {
+          const u = new URL(link);
+          ok = (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname.includes('.');
+        } catch { /* invalid */ }
+        if (!ok) throw new AppError(getDict().campaign.invalidDeliverableLink(link), HttpStatus.BAD_REQUEST);
+      }
+      data = { ...data, urls: links.length ? links.join('\n') : undefined };
+    }
 
     const updated = await this.repo.submitWork(appId, data);
 

@@ -178,6 +178,7 @@ export interface BackendDict {
     freeEventsNoWorkStage: string;
     paymentNotYetSecured: string;
     freeEventsNoDeliverablesToSubmit: string;
+    invalidDeliverableLink: (url: string) => string;
     workNotSubmittedYet: string;
     engagementUnderDisputeApproving: string;
     engagementUnderDispute: string;

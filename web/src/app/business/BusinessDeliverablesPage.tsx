@@ -15,6 +15,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { Modal } from '../ui/Modal';
 import { Textarea } from '../ui/Textarea';
 import { DeliverableStrip } from '../ui/DeliverableGallery';
+import { DeliverableLinkList, parseDeliverableLinks } from '../ui/DeliverableLinks';
 import { confirmDialog } from '../ui/confirmDialog';
 
 const TABS = ['review', 'approved'] as const;
@@ -120,6 +121,13 @@ export function BusinessDeliverablesPage() {
                 <div className="mt-3">
                   <p className="mb-1.5 text-[12px] font-semibold text-ink-soft">{t('biz.submittedFiles')}</p>
                   <DeliverableStrip files={a.deliverableFiles} videos={a.deliverableVideos} />
+                </div>
+              )}
+
+              {parseDeliverableLinks(a.deliverableUrls).length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1.5 text-[12px] font-semibold text-ink-soft">{t('deliv.submittedLinks')}</p>
+                  <DeliverableLinkList links={parseDeliverableLinks(a.deliverableUrls)} />
                 </div>
               )}
 

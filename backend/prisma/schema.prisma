@@ -731,6 +731,12 @@ model BusinessProfile {
   // falls back to the raw id when it's null, mirroring
   // CreatorProfile.username's resolveHandleToId pattern.
   slug                     String?                 @unique
+  // Admin-controlled marketplace visibility (Admin → Businesses → Deactivate).
+  // False hides the business and all of its events/deals from creators and
+  // other businesses (listings, search, public pages, invitations) while the
+  // owner can still log in. Distinct from User.isActive/suspendedAt, which
+  // blocks login entirely.
+  isActive                 Boolean                 @default(true)
   description              String?
   logoUrl                  String?
   coverImageUrl            String?

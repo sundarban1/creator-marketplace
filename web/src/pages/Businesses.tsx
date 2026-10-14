@@ -1,4 +1,4 @@
-import { Eye, BarChart3, Trash2 } from 'lucide-react';
+import { Eye, BarChart3, Trash2, Power, PowerOff } from 'lucide-react';
 import { DataTable }     from '../components/DataTable';
 import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 10;
 
-type Action = { type: 'suspend' | 'activate' | 'delete' | 'verify' | 'unverify' | 'reject'; business: ApiBusiness };
+type Action = { type: 'suspend' | 'activate' | 'delete' | 'verify' | 'unverify' | 'reject' | 'show' | 'hide'; business: ApiBusiness };
 
 function businessStatus(b: ApiBusiness): string {
   if (b.user.isActive === false) return 'suspended';
@@ -62,6 +62,10 @@ export function Businesses() {
       } else if (action.type === 'verify' || action.type === 'unverify') {
         await api.admin.verifyBusiness(action.business.id, action.type === 'verify');
         showToast(`${displayBusinessName(action.business.businessName)} ${action.type === 'verify' ? 'verified' : 'unverified'}.`);
+      } else if (action.type === 'show' || action.type === 'hide') {
+        const isActive = action.type === 'show';
+        await api.admin.setBusinessActive(action.business.id, isActive);
+        showToast(`${displayBusinessName(action.business.businessName)} ${isActive ? 'activated' : 'deactivated'}.`);
       } else if (action.type === 'reject') {
         await api.admin.rejectBusiness(action.business.id, rejectReason.trim());
         showToast(`${displayBusinessName(action.business.businessName)}'s verification was rejected.`);
@@ -151,6 +155,11 @@ export function Businesses() {
       render: (row: ApiBusiness) => <StatusBadge status={businessStatus(row)} />,
     },
     {
+      key:    'visibility',
+      header: 'Visibility',
+      render: (row: ApiBusiness) => <StatusBadge status={row.isActive === false ? 'inactive' : 'active'} />,
+    },
+    {
       key:    'campaigns',
       header: 'Events',
       render: (row: ApiBusiness) => (
@@ -196,6 +205,11 @@ export function Businesses() {
             icon={BarChart3}
             title="Analytics"
             onClick={() => navigate(`/admin/analytics/${row.user.id}`, { state: { name: displayBusinessName(row.businessName), email: row.user.email } })} />
+          {row.isActive === false ? (
+            <ActionButton variant="success" icon={Power} title="Activate (show on platform)" onClick={() => setAction({ type: 'show', business: row })} />
+          ) : (
+            <ActionButton variant="warning" icon={PowerOff} title="Deactivate (hide from platform)" onClick={() => setAction({ type: 'hide', business: row })} />
+          )}
           <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', business: row })} />
         </div>
       ),
@@ -211,6 +225,10 @@ export function Businesses() {
       ? { title: `Suspend ${bName}?`, body: `The business will be unable to log in. An email will be sent to ${bEmail}.`, confirmLabel: 'Suspend account', variant: 'warning' as const }
       : action.type === 'activate'
       ? { title: `Reactivate ${bName}?`, body: `The business will regain full access. An email will be sent to ${bEmail}.`, confirmLabel: 'Reactivate', variant: 'success' as const }
+      : action.type === 'hide'
+      ? { title: `Deactivate ${bName}?`, body: `${bName} and all of its events and deals will be hidden from creators and other businesses. The owner can still log in, and creators already working with them keep access to that work.`, confirmLabel: 'Deactivate', variant: 'warning' as const }
+      : action.type === 'show'
+      ? { title: `Activate ${bName}?`, body: `${bName} and its events and deals will be visible on the platform again.`, confirmLabel: 'Activate', variant: 'success' as const }
       : action.type === 'verify'
       ? { title: `Verify ${bName}?`, body: `This marks ${bName} as a verified business.`, confirmLabel: 'Verify business', variant: 'success' as const }
       : action.type === 'reject'
@@ -253,7 +271,10 @@ export function Businesses() {
           }
           title={displayBusinessName(viewing.businessName)}
           subtitle={displayEmailOrPhone(viewing.user.email)}
-          badges={<StatusBadge status={businessStatus(viewing)} />}
+          badges={<>
+            <StatusBadge status={businessStatus(viewing)} />
+            {viewing.isActive === false && <StatusBadge status="inactive" />}
+          </>}
           sections={[
             {
               heading: 'Profile',
@@ -294,6 +315,7 @@ export function Businesses() {
                 { label: 'Phone', value: viewing.user.phone ?? (isPhonePlaceholderEmail(viewing.user.email) ? displayEmailOrPhone(viewing.user.email) : '—') },
                 { label: 'Email verified', value: viewing.user.isEmailVerified ? 'Yes' : 'No' },
                 { label: 'Account active', value: viewing.user.isActive === false ? 'Suspended' : 'Active' },
+                { label: 'Visible on platform', value: viewing.isActive === false ? 'No (deactivated by admin)' : 'Yes' },
                 { label: 'Joined', value: new Date(viewing.user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
               ],
             },
@@ -314,12 +336,20 @@ export function Businesses() {
                   Reject
                 </button>
               )}
+              <button
+                onClick={() => setAction({ type: viewing.isActive === false ? 'show' : 'hide', business: viewing })}
+                className={viewing.isActive === false
+                  ? 'px-4 py-2.5 text-sm font-medium text-green-600 bg-green-50 rounded-xl hover:bg-green-100 transition-colors'
+                  : 'px-4 py-2.5 text-sm font-medium text-orange-600 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors'}
+              >
+                {viewing.isActive === false ? 'Activate' : 'Deactivate'}
+              </button>
               {viewing.user.isActive === false ? (
                 <button
                   onClick={() => setAction({ type: 'activate', business: viewing })}
                   className="px-4 py-2.5 text-sm font-medium text-green-600 bg-green-50 rounded-xl hover:bg-green-100 transition-colors"
                 >
-                  Activate
+                  Unsuspend
                 </button>
               ) : (
                 <button

@@ -163,7 +163,8 @@ export class CampaignRepository {
     // Excludes admin-soft-deleted campaigns unconditionally — independent of
     // whatever `status` filter is applied, since a deleted campaign can keep
     // its pre-deletion status (see Campaign.deletedAt's schema comment).
-    const where: Prisma.CampaignWhereInput = { deletedAt: null };
+    // Events of an admin-deactivated business are hidden the same way.
+    const where: Prisma.CampaignWhereInput = { deletedAt: null, business: { isActive: true } };
 
     if (filters.category?.length) {
       where.OR = [{ category: { in: filters.category, mode: 'insensitive' } }, { categories: { hasSome: filters.category } }];
@@ -296,6 +297,7 @@ export class CampaignRepository {
     const { search } = filters;
     const conditions: Prisma.Sql[] = [
       Prisma.sql`c."deletedAt" IS NULL`,
+      Prisma.sql`b."isActive" = true`,
       Prisma.sql`c.status = ${filters.status ?? 'ACTIVE'}::"CampaignStatus"`,
     ];
     if (filters.category?.length) {
@@ -400,6 +402,7 @@ export class CampaignRepository {
 
     const boundingBoxWhere = Prisma.sql`
       c."deletedAt" IS NULL
+      AND b."isActive" = true
       AND c.status = 'ACTIVE'
       AND c."locationLat" IS NOT NULL
       AND c."locationLng" IS NOT NULL
@@ -518,7 +521,7 @@ export class CampaignRepository {
       where: { id, deletedAt: null },
       include: {
         business: {
-          select: { id: true, slug: true, businessName: true, logoUrl: true, website: true, description: true },
+          select: { id: true, slug: true, businessName: true, logoUrl: true, website: true, description: true, isActive: true },
         },
         _count: { select: { applications: true } },
         requirements: {
@@ -691,6 +694,7 @@ export class CampaignRepository {
       where: {
         deletedAt: null,
         status: 'ACTIVE',
+        business: { isActive: true },
         ...(excludeCampaignIds.length ? { id: { notIn: excludeCampaignIds } } : {}),
       },
       orderBy: { createdAt: 'desc' },

@@ -456,6 +456,7 @@ export interface BusinessApplication extends CreatorApplication {
   } | null;
   engagementState: EngagementState | string;
   deliverableFiles?: DeliverableFile[];
+  deliverableUrls?: string | null;
 }
 
 export function fetchBusinessApplications(

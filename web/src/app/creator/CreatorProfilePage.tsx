@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Pencil, Trash2, Sparkles, Image as ImageIcon, Link2, X, Clock } from 'lucide-react';
+import { Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Pencil, Trash2, Sparkles, Image as ImageIcon, Link2, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -610,7 +610,6 @@ function ConnectSocialModal({
   };
   const isSocialPlatformEnabled = (id: ConnectablePlatform) =>
     (platformFlags.data?.[SOCIAL_ENABLED_FLAG[id]] ?? true) as boolean;
-  const anySocialPlatformEnabled = CONNECTABLE_PLATFORMS.some(isSocialPlatformEnabled);
 
   const byPlatform = new Map(accounts.map((a) => [a.platform, a]));
 
@@ -723,11 +722,13 @@ function ConnectSocialModal({
     >
       <div className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
-        {anySocialPlatformEnabled && (
         <ul className="space-y-2">
-          {CONNECTABLE_PLATFORMS.filter(isSocialPlatformEnabled).map((id) => {
+          {CONNECTABLE_PLATFORMS.map((id) => {
             const acct = byPlatform.get(id);
             const meta = platformMeta(id);
+            // Admin-disabled platforms stay listed with a disabled "Coming soon"
+            // button instead of being hidden.
+            const enabled = isSocialPlatformEnabled(id);
             return (
               <li key={id} className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
                 <span
@@ -744,9 +745,9 @@ function ConnectSocialModal({
                         ? t('profile.connected')
                         : `${compactNumber(acct.followers)} ${t('profile.followers')}`}
                     </p>
-                  ) : (
+                  ) : enabled ? (
                     <p className="truncate text-[12px] text-ink-soft">{t('profile.connectHint')}</p>
-                  )}
+                  ) : null}
                 </div>
                 {acct ? (
                   <button
@@ -761,25 +762,16 @@ function ConnectSocialModal({
                     size="sm"
                     variant="secondary"
                     className="flex-shrink-0"
-                    onClick={CONNECT_HANDLERS[id]}
+                    disabled={!enabled}
+                    onClick={enabled ? CONNECT_HANDLERS[id] : undefined}
                   >
-                    {t('profile.connectBtn')}
+                    {enabled ? t('profile.connectBtn') : t('profile.socialComingSoonBtn')}
                   </Button>
                 )}
               </li>
             );
           })}
         </ul>
-        )}
-        {!anySocialPlatformEnabled && (
-          <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-5 text-center">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand">
-              <Clock size={16} />
-            </span>
-            <p className="text-[13px] font-semibold text-ink">{t('profile.socialComingSoonTitle')}</p>
-            <p className="text-[12px] text-ink-soft">{t('profile.socialComingSoonSub')}</p>
-          </div>
-        )}
         <div className="flex justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('common.cancel')}

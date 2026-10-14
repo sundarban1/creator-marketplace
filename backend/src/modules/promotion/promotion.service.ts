@@ -85,6 +85,8 @@ export class PromotionService {
   }
 
   private async notifyFavoritingCreators(promotion: Promotion) {
+    const business = await prisma.businessProfile.findUnique({ where: { id: promotion.businessId }, select: { isActive: true } });
+    if (!business?.isActive) return; // hidden business — don't advertise its deals
     const favorites = await prisma.favoriteBusiness.findMany({
       where:  { businessId: promotion.businessId },
       select: { creator: { select: { userId: true } } },
@@ -162,6 +164,7 @@ export class PromotionService {
       ]);
       return toPromotionManageDto(promotion, { redemptions, creditsEarned });
     }
+    if (!promotion.business.isActive) throw new AppError(getDict().promotion.promotionNotFound, HttpStatus.NOT_FOUND);
     return toPromotionDto(promotion);
   }
 }

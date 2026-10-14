@@ -42,10 +42,10 @@ export class FavoriteRepository {
     platform?:  string;
     locations?: string[]; // OR-matched against campaign.location
   }) {
-    const where: Prisma.FavoriteBusinessWhereInput = { creatorId };
+    const where: Prisma.FavoriteBusinessWhereInput = { creatorId, business: { isActive: true } };
 
     if (filters?.category || filters?.platform || (filters?.locations && filters.locations.length > 0)) {
-      const businessWhere: Prisma.BusinessProfileWhereInput = {};
+      const businessWhere: Prisma.BusinessProfileWhereInput = { isActive: true };
       if (filters.category) businessWhere.categories = { has: filters.category };
 
       if (filters.platform || (filters.locations && filters.locations.length > 0)) {
@@ -89,10 +89,10 @@ export class FavoriteRepository {
     platform?:  string;
     locations?: string[]; // OR-matched against campaign.location
   }) {
-    const where: Prisma.SavedCreatorWhereInput = { creatorId };
+    const where: Prisma.SavedCreatorWhereInput = { creatorId, business: { isActive: true } };
 
     if (filters?.category || filters?.platform || (filters?.locations && filters.locations.length > 0)) {
-      const businessWhere: Prisma.BusinessProfileWhereInput = {};
+      const businessWhere: Prisma.BusinessProfileWhereInput = { isActive: true };
       if (filters.category) businessWhere.categories = { has: filters.category };
 
       if (filters.platform || (filters.locations && filters.locations.length > 0)) {

@@ -26,6 +26,7 @@ import { ActivityAction, AuditAction, EntityType } from '../logging/logging.cons
 import { HttpStatus } from '../../constants/httpStatus';
 import { AuthRepository } from '../auth/auth.repository';
 import { emitToAll, emitToUser } from '../../socket';
+import { invalidatePublicBusinessProfile } from '../business/business.service';
 
 export class AdminService {
   private repo: AdminRepository;
@@ -413,6 +414,22 @@ export class AdminService {
 
   async setBusinessDocumentStatus(businessId: string, doc: 'pan' | 'companyReg' | 'identity', approved: boolean) {
     return this.repo.setBusinessDocumentStatus(businessId, doc, approved);
+  }
+
+  // Marketplace visibility only — the owner keeps full login access. Listings
+  // aren't cached, so only the public profile cache needs dropping; the
+  // catalog:updated broadcast makes open creator/business screens refetch.
+  async setBusinessActive(businessId: string, isActive: boolean, adminUserId: string) {
+    const updated = await this.repo.updateBusinessActiveStatus(businessId, isActive);
+    logAudit({
+      userId:      updated.userId,
+      action:      isActive ? AuditAction.BUSINESS_ACTIVATED : AuditAction.BUSINESS_DEACTIVATED,
+      performedBy: adminUserId,
+      newValue:    { profileId: updated.id, isActive },
+    });
+    await invalidatePublicBusinessProfile(updated.id);
+    emitToAll('catalog:updated', { kind: 'businesses' });
+    return updated;
   }
 
   async setBusinessVerified(businessId: string, verified: boolean, adminUserId: string) {

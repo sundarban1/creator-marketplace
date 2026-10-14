@@ -187,6 +187,8 @@ export interface CreatorApplication {
   paidAt: string | null;
   deliverableFiles?: DeliverableFile[];
   deliverableVideos?: DeliverableVideo[];
+  /** Newline-separated Google Drive / Dropbox / YouTube share links. */
+  deliverableUrls?: string | null;
   dispute?: {
     status: string;
     reason: string;
@@ -246,9 +248,10 @@ export function removeDeliverableFile(appId: string, fileId: string): Promise<vo
   ).then(() => undefined);
 }
 
-export function submitWork(appId: string, note?: string): Promise<CreatorApplication> {
+export function submitWork(appId: string, note?: string, urls?: string[]): Promise<CreatorApplication> {
   return apiRequest<CreatorApplication>('PUT', `/api/campaigns/applications/${appId}/submit`, {
     note,
+    urls: urls && urls.length > 0 ? urls.join('\n') : undefined,
   }).then((r) => r.data);
 }
 

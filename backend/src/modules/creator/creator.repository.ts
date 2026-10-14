@@ -752,7 +752,8 @@ export class CreatorRepository {
 
   async findInvitations(creatorProfileId: string) {
     return prisma.campaignInvitation.findMany({
-      where: { creatorId: creatorProfileId },
+      // Invitations from an admin-deactivated business are hidden.
+      where: { creatorId: creatorProfileId, business: { isActive: true } },
       include: { campaign: true, business: { select: { id: true, businessName: true, logoUrl: true } } },
       orderBy: { createdAt: 'desc' },
     });

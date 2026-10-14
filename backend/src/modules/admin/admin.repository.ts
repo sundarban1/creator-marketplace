@@ -478,6 +478,14 @@ export class AdminRepository {
     });
   }
 
+  async updateBusinessActiveStatus(businessProfileId: string, isActive: boolean) {
+    return prisma.businessProfile.update({
+      where:  { id: businessProfileId },
+      data:   { isActive },
+      select: { id: true, userId: true, businessName: true, isActive: true },
+    });
+  }
+
   async updateBusinessVerification(businessProfileId: string, isVerified: boolean) {
     const data: {
       isVerified: boolean;

@@ -13,7 +13,7 @@ export class PromotionRepository {
   async findById(id: string) {
     return prisma.promotion.findUnique({
       where: { id },
-      include: { business: { select: { id: true, userId: true, businessName: true, logoUrl: true, location: true } } },
+      include: { business: { select: { id: true, userId: true, businessName: true, logoUrl: true, location: true, isActive: true } } },
     });
   }
 
@@ -48,6 +48,7 @@ export class PromotionRepository {
         status:     'ACTIVE',
         validFrom:  { lte: now },
         validUntil: { gte: now },
+        business:   { isActive: true }, // admin-deactivated businesses' deals are hidden
       },
       include: { business: { select: { id: true, businessName: true, logoUrl: true, location: true } } },
       orderBy: { createdAt: 'desc' },

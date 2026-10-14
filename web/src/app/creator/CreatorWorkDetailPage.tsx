@@ -24,6 +24,12 @@ import { Modal } from '../ui/Modal';
 import { Textarea } from '../ui/Textarea';
 import { FileUpload } from '../ui/FileUpload';
 import { DeliverableStrip } from '../ui/DeliverableGallery';
+import {
+  DeliverableLinkList,
+  DeliverableLinksEditor,
+  parseDeliverableLinks,
+  tryAddLinks,
+} from '../ui/DeliverableLinks';
 import { EngagementBadge } from './EngagementBadge';
 import { DisputeStatusCard } from './DisputeStatus';
 import { ReviewSection } from './ReviewSection';
@@ -55,6 +61,12 @@ export function CreatorWorkDetailPage() {
   const [actionError, setActionError] = useState('');
   const [note, setNote] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
+  // null = not touched yet → fall back to the links from the last submission
+  // (so a revision starts with what the business already saw).
+  const [linksState, setLinks] = useState<string[] | null>(null);
+  const [linkDraft, setLinkDraft] = useState('');
+  const [linkError, setLinkError] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   if (loading && !app) {
     return (
@@ -86,6 +98,33 @@ export function CreatorWorkDetailPage() {
   const state = app.engagementState;
   const files = app.deliverableFiles ?? [];
   const videos = app.deliverableVideos ?? [];
+  const submittedLinks = parseDeliverableLinks(app.deliverableUrls);
+  const links = linksState ?? submittedLinks;
+
+  // Any one of file / video / link is enough. A link typed but not yet
+  // "added" is picked up here too, so it isn't silently dropped.
+  const handleSubmit = () => {
+    setSubmitError('');
+    let finalLinks = links;
+    if (linkDraft.trim()) {
+      const result = tryAddLinks(links, linkDraft, t);
+      if (result.error) {
+        setLinkError(result.error);
+        return;
+      }
+      finalLinks = result.links;
+      setLinks(finalLinks);
+      setLinkDraft('');
+    }
+    if (files.length === 0 && videos.length === 0 && finalLinks.length === 0) {
+      setSubmitError(t('workDetail.submitNeedsFile'));
+      return;
+    }
+    run(
+      () => submitWork(app.id, note.trim() || undefined, finalLinks),
+      t('workDetail.workSubmitted'),
+    );
+  };
   // Countdown for the current timed stage — shown inside the action card,
   // same labels as the business view and mobile's activity timeline.
   const stage = stageInfo(app, 'CREATOR', t);
@@ -303,6 +342,26 @@ export function CreatorWorkDetailPage() {
             />
           </div>
 
+          <Alert tone="info" className="mt-4">
+            <span className="block font-semibold">{t('deliv.bigFileTitle')}</span>
+            {t('deliv.bigFileBody')}
+          </Alert>
+
+          <div className="mt-4">
+            <DeliverableLinksEditor
+              links={links}
+              onChange={(next) => {
+                setLinks(next);
+                setSubmitError('');
+              }}
+              draft={linkDraft}
+              onDraftChange={setLinkDraft}
+              error={linkError}
+              onError={setLinkError}
+              disabled={busy}
+            />
+          </div>
+
           <div className="mt-4">
             <Textarea
               label={t('workDetail.submitNote')}
@@ -315,13 +374,16 @@ export function CreatorWorkDetailPage() {
           <Button
             className="mt-4"
             loading={busy}
-            disabled={files.length === 0}
-            onClick={() => run(() => submitWork(app!.id, note.trim() || undefined), t('workDetail.workSubmitted'))}
+            onClick={handleSubmit}
           >
             {t('workDetail.submitForReview')}
           </Button>
-          {files.length === 0 && (
-            <p className="mt-2 text-[12px] text-ink-soft">{t('workDetail.submitNeedsFile')}</p>
+          {submitError ? (
+            <Alert tone="error" className="mt-3">{submitError}</Alert>
+          ) : (
+            files.length === 0 && videos.length === 0 && links.length === 0 && !linkDraft.trim() && (
+              <p className="mt-2 text-[12px] text-ink-soft">{t('workDetail.submitNeedsAny')}</p>
+            )
           )}
         </Card>
       );
@@ -345,6 +407,12 @@ export function CreatorWorkDetailPage() {
           <div className="mb-3">
             <DeliverableStrip files={files} videos={videos} />
           </div>
+          {submittedLinks.length > 0 && (
+            <div className="mt-3">
+              <p className="mb-1.5 text-[12px] font-semibold text-ink-soft">{t('deliv.submittedLinks')}</p>
+              <DeliverableLinkList links={submittedLinks} />
+            </div>
+          )}
         </Card>
       );
     }
