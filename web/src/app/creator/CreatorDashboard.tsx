@@ -8,7 +8,7 @@ import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
 import { useWelcomeToast } from '../lib/useWelcomeToast';
-import { rupees, isFuture, byDateAsc } from '../lib/format';
+import { isFuture, byDateAsc } from '../lib/format';
 import { useDeadlineLabel } from '../lib/useDeadlineLabel';
 import { isActiveWork } from '../lib/engagement';
 import { fetchWalletSummary, fetchMyApplications, fetchNotifications, fetchCreatorFullProfile } from '../api/creator';
@@ -200,12 +200,12 @@ export function CreatorDashboard() {
         <DashStatCard
           label={t('dashboard.walletBalance')}
           compact
-          value={wallet.loading ? undefined : rupees(wallet.data?.withdrawableBalance ?? 0)}
+          value={wallet.loading ? undefined : (wallet.data?.withdrawableBalance ?? 0).toLocaleString('en-IN')}
           icon={Wallet}
           tone="emerald"
           hint={
             wallet.data && wallet.data.pendingEarnings > 0
-              ? `+ ${rupees(wallet.data.pendingEarnings)} pending`
+              ? `+ ${wallet.data.pendingEarnings.toLocaleString('en-IN')} pending`
               : undefined
           }
         />

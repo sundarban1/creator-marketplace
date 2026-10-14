@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowDownCircle, ArrowDownLeft, ArrowUpRight, Clock, ExternalLink, Info } from 'lucide-react';
+import { ArrowDownCircle, ArrowDownLeft, ArrowUpRight, ExternalLink, Info } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -18,7 +18,6 @@ import {
 } from '../api/creator';
 import { DashPageHeader } from './dash-ui/DashPageHeader';
 import { DashCard, DashCardHeader } from './dash-ui/DashCard';
-import { DashStatCard } from './dash-ui/DashStatCard';
 import { DashListRow } from './dash-ui/DashListRow';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/Alert';
@@ -122,28 +121,6 @@ export function CreatorWalletPage() {
     <>
       <DashPageHeader title={t('rewards.headerTitle')} description={t('wallet.rewardsSubtitle')} />
 
-      {/* Balance hero — wallet balance as Kolab Reward Points. */}
-      <div className="rounded-xl bg-brand p-6 text-white sm:p-7">
-        <div className="flex items-center justify-between gap-4 sm:justify-start sm:gap-10">
-          <div>
-            <p className="text-[13px] text-white/70">{t('wallet.pointsBalance')}</p>
-            <p className="mt-1 text-[32px] font-bold leading-none tracking-tight">
-              {summary.loading ? '—' : (w?.availableBalance ?? 0).toLocaleString('en-IN')}
-            </p>
-          </div>
-          <div className="text-right sm:text-left">
-            <p className="text-[12px] text-white/70">{t('wallet.totalEarned')}</p>
-            <p className="mt-1 text-[16px] font-semibold">
-              {summary.loading ? '—' : rupees(w?.totalEarned ?? 0)}
-            </p>
-          </div>
-        </div>
-        <p className="mt-4 inline-flex items-center gap-1.5 text-[12px] text-white/80">
-          <Info size={12} />
-          {t('wallet.pointsEquivalence')}
-        </p>
-      </div>
-
       <div className="mt-5">
         {flash && <Alert tone="success" className="mb-5">{flash}</Alert>}
         {cancelError && <Alert tone="error" className="mb-5">{cancelError}</Alert>}
@@ -151,9 +128,13 @@ export function CreatorWalletPage() {
 
         <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[13px] text-ink-soft">{t('wallet.availableBalance')}</p>
+            <p className="text-[13px] text-ink-soft">{t('wallet.pointsBalance')}</p>
             <p className="mt-1 text-[22px] font-semibold text-ink">
-              {summary.loading ? '—' : rupees(w?.withdrawableBalance ?? 0)}
+              {summary.loading ? '—' : (w?.withdrawableBalance ?? 0).toLocaleString('en-IN')}
+            </p>
+            <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-ink-soft">
+              <Info size={12} />
+              {t('wallet.pointsEquivalence')}
             </p>
           </div>
           <Button
@@ -165,21 +146,6 @@ export function CreatorWalletPage() {
             <ArrowDownCircle size={18} />
             {t('wallet.withdraw')}
           </Button>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <DashStatCard
-            label={t('wallet.pendingEarnings')}
-            value={summary.loading ? undefined : rupees(w?.pendingEarnings ?? 0)}
-            icon={Clock}
-            tone="amber"
-          />
-          <DashStatCard
-            label={t('wallet.inWithdrawal')}
-            value={summary.loading ? undefined : rupees(w?.pendingWithdrawals ?? 0)}
-            icon={ArrowUpRight}
-            tone="blue"
-          />
         </div>
 
         <p className="mt-3 text-[12px] text-ink-soft">{t('wallet.processingNote')}</p>

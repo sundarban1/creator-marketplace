@@ -16,6 +16,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:essentials": "tsx prisma/seed-essentials.ts",
     "db:seed:admin": "tsx prisma/seed-admin.ts",
+    "db:admin:rename-email": "tsx prisma/rename-admin-email.ts",
     "db:seed:platforms": "tsx prisma/seed-platforms.ts",
     "db:seed:payment-methods": "tsx prisma/seed-payment-methods.ts",
     "db:seed:success-stories": "tsx prisma/seed-success-stories.ts",

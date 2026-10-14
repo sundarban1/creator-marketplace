@@ -155,7 +155,7 @@ export const en = {
     // Creator stats
     activeWork: 'Active work',
     pendingApplications: 'Pending applications',
-    walletBalance: 'Available balance',
+    walletBalance: 'Available Kolab Rewards',
     upcomingDeadlines: 'Upcoming deadlines',
     // Business stats
     activeEvents: 'Active events',
@@ -258,7 +258,7 @@ export const en = {
 
   wallet: {
     pointsBalance: 'Available Kolab Reward Points',
-    pointsEquivalence: '1 Kolab Reward Point = Rs. 1',
+    pointsEquivalence: '1 Kolab Rewards Point = Rs. 1',
     rewardsSubtitle: 'Withdraw your earnings or use them at participating businesses.',
     title: 'Earnings',
     subtitle: 'Your earnings, ready to withdraw.',

@@ -147,7 +147,7 @@ export const ne: AppDict = {
     previewNote: 'यो वेबमा Kolab को सुरुवाती झलक हो। तपाईंको पूर्ण ड्यासबोर्ड चाँडै आउँदैछ — तलका सबै कुरा मोबाइल एपसँग सिंकमा रहन्छन्।',
     activeWork: 'सक्रिय काम',
     pendingApplications: 'विचाराधीन आवेदनहरू',
-    walletBalance: 'उपलब्ध ब्यालेन्स',
+    walletBalance: 'उपलब्ध कोल्याब रिवार्ड्स',
     upcomingDeadlines: 'आउँदा म्यादहरू',
     activeEvents: 'सक्रिय इभेन्टहरू',
     applicationsToReview: 'समीक्षा गर्न बाँकी',
