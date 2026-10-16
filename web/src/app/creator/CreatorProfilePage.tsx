@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Pencil, Trash2, Sparkles, Image as ImageIcon, Link2, X } from 'lucide-react';
+import { Bookmark, CheckCircle2, ExternalLink, Camera, Heart, Plus, Pencil, Trash2, Sparkles, Image as ImageIcon, Link2, Play, X } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -52,6 +52,8 @@ import { EmptyState } from '../ui/EmptyState';
 import { Modal } from '../ui/Modal';
 import { ImageCropModal } from '../ui/ImageCropModal';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
+import { portfolioItemTitle, videoPosterSrc } from '../ui/portfolioLink';
+import { LinkThumb } from '../ui/PortfolioLinkThumb';
 import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { cn } from '../ui/cn';
 import { confirmImageUpload } from '../ui/uploadPreview';
@@ -415,16 +417,29 @@ export function CreatorProfilePage() {
             <ul className="space-y-2">
               {portfolioItems.data!.map((item) => (
                 <li key={item.id} className="flex items-center gap-3 rounded-xl bg-ink/[0.02] px-3 py-2.5">
-                  {item.mediaUrl ? (
+                  {item.mediaUrl && item.mediaType === 'VIDEO' ? (
+                    <span className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg bg-ink">
+                      <video src={videoPosterSrc(item.mediaUrl)} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-ink">
+                          <Play size={9} className="ml-px fill-current" />
+                        </span>
+                      </span>
+                    </span>
+                  ) : item.mediaUrl ? (
                     <img src={item.mediaUrl} alt="" className="h-11 w-11 flex-shrink-0 rounded-lg object-cover" />
+                  ) : item.externalUrl ? (
+                    <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg">
+                      <LinkThumb url={item.externalUrl} iconSize={18} />
+                    </span>
                   ) : (
                     <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-ink/[0.04] text-ink-soft">
                       <Link2 size={16} />
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
-                    {item.description && (
-                      <p className="line-clamp-2 text-[13px] text-ink">{item.description}</p>
+                    {portfolioItemTitle(item, t) && (
+                      <p className="line-clamp-2 text-[13px] text-ink">{portfolioItemTitle(item, t)}</p>
                     )}
                     {item.externalUrl && (
                       <a

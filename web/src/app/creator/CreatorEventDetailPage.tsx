@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Bookmark, BookmarkCheck, CheckCircle2 } from 'lucide-react';
+import { Bookmark, CheckCircle2 } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -123,7 +123,7 @@ export function CreatorEventDetailPage() {
         aria-pressed={isSaved}
         aria-label={isSaved ? t('savedEvents.unsave') : t('savedEvents.save')}
       >
-        {isSaved ? <BookmarkCheck size={15} className="text-violet-dark" /> : <Bookmark size={15} />}
+        <Bookmark size={15} className={isSaved ? 'fill-violet text-violet' : ''} />
         {isSaved ? t('savedEvents.saved') : t('savedEvents.save')}
       </Button>
     </div>

@@ -40,7 +40,8 @@ export class WithdrawalAdminService {
     if (w.status !== 'PENDING') {
       throw new AppError(`Only a pending withdrawal can be moved to processing`, HttpStatus.BAD_REQUEST);
     }
-    const updated = await this.repo.update(id, { status: 'PROCESSING', processedByAdminId: adminId });
+    const updated = await this.repo.transition(id, ['PENDING'], { status: 'PROCESSING', processedByAdminId: adminId });
+    if (!updated) throw new AppError('This withdrawal changed while you were viewing it — refresh and try again', HttpStatus.CONFLICT);
 
     logAudit({ performedBy: adminId, action: AuditAction.WITHDRAWAL_PROCESSING, newValue: { withdrawalId: id } });
     notificationService.create({
@@ -62,12 +63,13 @@ export class WithdrawalAdminService {
     if (w.status === 'REJECTED') throw new AppError('This withdrawal is already rejected', HttpStatus.BAD_REQUEST);
     if (w.status === 'CANCELLED') throw new AppError('This withdrawal was cancelled', HttpStatus.BAD_REQUEST);
 
-    const updated = await this.repo.update(id, {
+    const updated = await this.repo.transition(id, ['PENDING', 'PROCESSING'], {
       status:             'REJECTED',
       rejectionReason:    input.reason,
       processedByAdminId: adminId,
       processedAt:        new Date(),
     });
+    if (!updated) throw new AppError('This withdrawal changed while you were viewing it — refresh and try again', HttpStatus.CONFLICT);
     // The reservation releases automatically — a REJECTED withdrawal is no
     // longer counted in pendingWithdrawals, so withdrawableBalance recovers.
 

@@ -176,6 +176,7 @@ export const en: BackendDict = {
     paymentAlreadyMadeForCampaign:     'Payment already made for this campaign',
     paymentAlreadyMadeForApplication:  'Payment already made for this application',
     creatorMustBeAcceptedFirst:        'Creator must be accepted first',
+    paymentAfterSelectionExpired:      'This creator selection expired before your payment completed. Your payment is being refunded to your original payment method within 3–5 business days.',
     khaltiPaymentMismatch:             'This Khalti payment does not match any pending payment.',
     khaltiPaymentStatus:               (status) => `Khalti payment ${status}`,
     paidAmountMismatch:                'The paid amount does not match what was due.',

@@ -16,6 +16,17 @@ import { HttpStatus } from '../../constants/httpStatus';
 
 const messagingService = new MessagingService();
 
+/**
+ * Row-lock an application for the rest of `tx`. Every escrow transition reads
+ * the current status and then writes the next one; without this lock two
+ * concurrent transitions (a sweep release vs. a dispute, a late payment vs. the
+ * payment-timeout sweep) could both pass their status check against the same
+ * stale row and both commit. Call it first, before reading the application.
+ */
+export async function lockApplication(tx: Prisma.TransactionClient, applicationId: string): Promise<void> {
+  await tx.$queryRaw`SELECT id FROM applications WHERE id = ${applicationId} FOR UPDATE`;
+}
+
 // ───────────────────────────────────────────────────────────────────────────────
 // EscrowService — the money operations of the campaign state machine, each one
 // a single atomic DB transaction that rolls back completely on any failure
@@ -48,6 +59,14 @@ interface RefundInput {
    * closes silently as before.
    */
   systemMessage?: string;
+  /**
+   * Only refund while workStatus is one of these — checked under the row lock,
+   * so a sweep that found the row moments ago can't refund an engagement the
+   * creator has just moved on (e.g. submitted right at the deadline).
+   */
+  requireWorkStatus?: WorkStatus[];
+  /** Also expire the assignment and free the slot, in the same transaction. */
+  expireApplication?: boolean;
 }
 
 interface RefundResult {
@@ -72,6 +91,7 @@ class EscrowService {
     } = input;
 
     const outcome = await prisma.$transaction(async (tx) => {
+      await lockApplication(tx, applicationId);
       const app = await tx.application.findUnique({
         where: { id: applicationId },
         include: {
@@ -83,6 +103,9 @@ class EscrowService {
 
       const REFUNDABLE = ['HELD', 'FROZEN', 'RELEASE_PENDING', 'REFUND_PENDING'];
       if (!REFUNDABLE.includes(app.escrowStatus)) {
+        return { moved: false as const, app, amount: 0, partial: false };
+      }
+      if (input.requireWorkStatus && !input.requireWorkStatus.includes(app.workStatus)) {
         return { moved: false as const, app, amount: 0, partial: false };
       }
 
@@ -136,6 +159,8 @@ class EscrowService {
         reason,
         metadata:      { amount, partial },
       });
+
+      if (input.expireApplication) await this.voidInTx(tx, applicationId, reason);
 
       return { moved: true as const, app, amount, partial };
     });
@@ -216,10 +241,13 @@ class EscrowService {
     reason?: string;
     /** Suppress the standard completion notifications/chat (dispute flow sends its own). */
     silent?: boolean;
+    /** Only release from one of these escrow states — a no-op otherwise. */
+    requireEscrowStatus?: string[];
   }): Promise<{ released: boolean }> {
     const { applicationId, actor } = params;
 
     const outcome = await prisma.$transaction(async (tx) => {
+      await lockApplication(tx, applicationId);
       const app = await tx.application.findUnique({
         where: { id: applicationId },
         include: {
@@ -230,6 +258,11 @@ class EscrowService {
       if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
       if (app.escrowStatus === 'RELEASED') return { moved: false as const, app };
+      // The settlement sweep picked this row up as RELEASE_PENDING; if it has
+      // since moved (a dispute froze it), the sweep must not release it.
+      if (params.requireEscrowStatus && !params.requireEscrowStatus.includes(app.escrowStatus)) {
+        return { moved: false as const, app };
+      }
       if (!['HELD', 'RELEASE_PENDING', 'FROZEN'].includes(app.escrowStatus)) {
         throw new AppError(getDict().campaign.escrowNotReleasable(app.escrowStatus), HttpStatus.CONFLICT);
       }
@@ -399,42 +432,64 @@ class EscrowService {
     applicationId: string;
     reason: string;
     fromApplicationStatus?: string;
+    /**
+     * Only void while the escrow is in one of these states. The payment-timeout
+     * sweep passes ['NOT_FUNDED'] so a payment that lands between its query and
+     * this call is never stranded on an EXPIRED application.
+     */
+    requireEscrowStatus?: string[];
   }): Promise<{ voided: boolean }> {
     const voided = await prisma.$transaction(async (tx) => {
-      const app = await tx.application.findUnique({
-        where: { id: params.applicationId },
-        include: { campaign: { select: { id: true, status: true, deadline: true } } },
-      });
-      if (!app || app.status !== 'ACCEPTED') return false;
-
-      await tx.application.update({
-        where: { id: params.applicationId },
-        data: { status: 'EXPIRED' },
-      });
-
-      // Re-open a campaign that closed only because this slot filled, as long as
-      // it hasn't itself passed its deadline.
-      if (app.campaign.status === 'CLOSED' && app.campaign.deadline > new Date()) {
-        await tx.campaign.update({
-          where: { id: app.campaignId },
-          data:  { status: 'ACTIVE', eventStatus: 'OPEN' },
-        });
+      await lockApplication(tx, params.applicationId);
+      if (params.requireEscrowStatus) {
+        const row = await tx.application.findUnique({ where: { id: params.applicationId }, select: { escrowStatus: true } });
+        if (!row || !params.requireEscrowStatus.includes(row.escrowStatus)) return false;
       }
-
-      await recordCampaignEventTx(tx, {
-        campaignId:    app.campaignId,
-        applicationId: params.applicationId,
-        axis:          'application',
-        fromStatus:    params.fromApplicationStatus ?? 'ACCEPTED',
-        toStatus:      'EXPIRED',
-        actorType:     'SYSTEM',
-        reason:        params.reason,
-      });
-
-      return true;
+      return this.voidInTx(tx, params.applicationId, params.reason, params.fromApplicationStatus);
     });
 
     return { voided };
+  }
+
+  // Expire an ACCEPTED assignment inside the caller's transaction (the caller
+  // holds the row lock). Returns false when it was no longer ACCEPTED.
+  private async voidInTx(
+    tx: Prisma.TransactionClient,
+    applicationId: string,
+    reason: string,
+    fromApplicationStatus?: string,
+  ): Promise<boolean> {
+    const app = await tx.application.findUnique({
+      where: { id: applicationId },
+      include: { campaign: { select: { id: true, status: true, deadline: true } } },
+    });
+    if (!app || app.status !== 'ACCEPTED') return false;
+
+    await tx.application.update({
+      where: { id: applicationId },
+      data: { status: 'EXPIRED' },
+    });
+
+    // Re-open a campaign that closed only because this slot filled, as long as
+    // it hasn't itself passed its deadline.
+    if (app.campaign.status === 'CLOSED' && app.campaign.deadline > new Date()) {
+      await tx.campaign.update({
+        where: { id: app.campaignId },
+        data:  { status: 'ACTIVE', eventStatus: 'OPEN' },
+      });
+    }
+
+    await recordCampaignEventTx(tx, {
+      campaignId:    app.campaignId,
+      applicationId,
+      axis:          'application',
+      fromStatus:    fromApplicationStatus ?? 'ACCEPTED',
+      toStatus:      'EXPIRED',
+      actorType:     'SYSTEM',
+      reason,
+    });
+
+    return true;
   }
 
   // ── Reliability (escrow spec §40) ────────────────────────────────────────
@@ -491,6 +546,7 @@ class EscrowService {
     const { applicationId, raisedByUserId, raisedByRole, reason } = params;
 
     const result = await prisma.$transaction(async (tx) => {
+      await lockApplication(tx, applicationId);
       const app = await tx.application.findUnique({
         where: { id: applicationId },
         include: {
@@ -628,8 +684,11 @@ class EscrowService {
       await this.unfreeze({ applicationId: app.id, adminUserId, note });
     }
 
-    await prisma.dispute.update({
-      where: { id: disputeId },
+    // Conditional so a second admin resolving the same dispute concurrently
+    // can't overwrite the first outcome on record (the money primitives above
+    // already no-op or refuse once the escrow has moved).
+    await prisma.dispute.updateMany({
+      where: { id: disputeId, status: { not: 'RESOLVED' } },
       data: {
         status:            'RESOLVED',
         resolution:        outcome,
@@ -675,6 +734,7 @@ class EscrowService {
     const { applicationId, adminUserId, creatorAmount, businessAmount } = params;
 
     await prisma.$transaction(async (tx) => {
+      await lockApplication(tx, applicationId);
       const app = await tx.application.findUnique({
         where: { id: applicationId },
         include: { campaign: { include: { business: { select: { id: true } } } } },
@@ -744,6 +804,7 @@ class EscrowService {
   // DISMISSED — thaw the escrow and put the engagement back on the normal flow.
   private async unfreeze(params: { applicationId: string; adminUserId: string; note: string }): Promise<void> {
     await prisma.$transaction(async (tx) => {
+      await lockApplication(tx, params.applicationId);
       const app = await tx.application.findUnique({
         where: { id: params.applicationId },
         include: { submissionVersions: { select: { id: true }, take: 1 } },

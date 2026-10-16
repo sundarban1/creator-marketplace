@@ -176,6 +176,7 @@ export const ne: BackendDict = {
     paymentAlreadyMadeForCampaign:     'यो क्याम्पेनका लागि भुक्तानी पहिले नै गरिसकिएको छ',
     paymentAlreadyMadeForApplication:  'यो आवेदनका लागि भुक्तानी पहिले नै गरिसकिएको छ',
     creatorMustBeAcceptedFirst:        'पहिले क्रियेटरलाई स्वीकृत गर्नुपर्छ',
+    paymentAfterSelectionExpired:      'तपाईंको भुक्तानी पूरा हुनुअघि नै यो क्रियेटर छनोटको समय सकियो। तपाईंको भुक्तानी ३–५ कार्यदिनभित्र मूल भुक्तानी माध्यममा फिर्ता गरिँदैछ।',
     khaltiPaymentMismatch:             'यो Khalti भुक्तानी कुनै पनि विचाराधीन भुक्तानीसँग मेल खाँदैन।',
     khaltiPaymentStatus:               (status) => `Khalti भुक्तानी ${status}`,
     paidAmountMismatch:                'तिरिएको रकम तिर्नुपर्ने रकमसँग मेल खाँदैन।',

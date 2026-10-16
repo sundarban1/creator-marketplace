@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useAppColors } from '@/context/ThemeContext';
+import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { readableOnSurface } from '@/utilities/color';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 // import { ProviderTypeBadge } from '@/components/ProviderTypeBadge';
 import type { ProviderType } from '@/services/creator';
@@ -101,6 +102,8 @@ export function EntityCard({
   stat, statInHeader, rating, ctaLabel, ctaStyle = 'button', onPress, onPressIn, action,
 }: EntityCardProps) {
   const C = useAppColors();
+  const { isDark } = useIsDark();
+  const statColor = stat ? readableOnSurface(stat.color, isDark, C.text) : undefined;
   const ring = { borderWidth: 2, borderColor: ringColor };
   const avatarShape = circularAvatar ? { borderRadius: RADIUS.full } : { borderRadius: RADIUS.md };
 
@@ -156,7 +159,7 @@ export function EntityCard({
               ]}
               onPress={(e) => { e.stopPropagation(); action.onToggle(); }}
               hitSlop={8}>
-              <FontAwesome5 name={action.active ? action.activeIcon : action.inactiveIcon} size={14} color={action.active ? action.activeColor : C.textSecondary} />
+              <FontAwesome5 name={action.active ? action.activeIcon : action.inactiveIcon} solid={action.active} size={14} color={action.active ? action.activeColor : C.textSecondary} />
             </Pressable>
           )}
         </View>
@@ -173,8 +176,8 @@ export function EntityCard({
             </View>
             {statInHeader && stat && (
               <View style={styles.headerStat}>
-                <FontAwesome5 name={stat.icon as never} size={10} color={stat.color} />
-                <Text style={[styles.headerStatText, { color: stat.color }]} numberOfLines={1}>{stat.text}</Text>
+                <FontAwesome5 name={stat.icon as never} size={10} color={statColor} />
+                <Text style={[styles.headerStatText, { color: statColor }]} numberOfLines={1}>{stat.text}</Text>
               </View>
             )}
           </View>
@@ -215,8 +218,8 @@ export function EntityCard({
           <View style={styles.footerRow}>
             {stat && !statInHeader ? (
               <View style={styles.statItem}>
-                <FontAwesome5 name={stat.icon as never} size={11} color={stat.color} />
-                <Text style={[styles.statText, { color: stat.color }]} numberOfLines={1}>{stat.text}</Text>
+                <FontAwesome5 name={stat.icon as never} size={11} color={statColor} />
+                <Text style={[styles.statText, { color: statColor }]} numberOfLines={1}>{stat.text}</Text>
               </View>
             ) : <View />}
 

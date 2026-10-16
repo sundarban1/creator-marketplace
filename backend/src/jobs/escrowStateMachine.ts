@@ -10,6 +10,7 @@ import { recordCampaignEvent } from '../modules/campaign/campaign-events';
 import { logActivity } from '../modules/logging/activity.service';
 import { ActivityAction, EntityType } from '../modules/logging/logging.constants';
 import { CampaignService } from '../modules/campaign/campaign.service';
+import { withJobLock } from '../utils/jobLock';
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Escrow state-machine sweep (escrow spec §38). Every automatic transition the
@@ -49,8 +50,9 @@ async function sweepPaymentTimeouts(now: Date): Promise<number> {
 
   for (const app of rows) {
     const { voided } = await escrowService.voidAssignment({
-      applicationId: app.id,
-      reason:        'Business did not fund escrow within the payment window',
+      applicationId:       app.id,
+      reason:              'Business did not fund escrow within the payment window',
+      requireEscrowStatus: ['NOT_FUNDED'],
     });
     if (!voided) continue;
 
@@ -89,17 +91,17 @@ async function sweepConfirmationTimeouts(now: Date): Promise<number> {
   }) as EngagementRow[];
 
   for (const app of rows) {
-    // Money back first, then free the slot.
+    // Refund and free the slot in one transaction — and only if the creator
+    // still hasn't confirmed by the time the row lock is held.
     const { refunded } = await escrowService.refund({
-      applicationId: app.id,
-      reason:        'Creator did not confirm the engagement within the confirmation window',
-      actorType:     'SYSTEM',
-      silent:        true,
+      applicationId:     app.id,
+      reason:            'Creator did not confirm the engagement within the confirmation window',
+      actorType:         'SYSTEM',
+      silent:            true,
+      requireWorkStatus: ['NONE'],
+      expireApplication: true,
     });
-    await escrowService.voidAssignment({
-      applicationId: app.id,
-      reason:        'Creator confirmation window elapsed',
-    });
+    if (!refunded) continue;
     void escrowService.bumpReliability(app.creatorId, 'missedConfirmation');
 
     logActivity({ userId: null, action: ActivityAction.CREATOR_CONFIRMATION_EXPIRED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId, refunded } });
@@ -137,13 +139,16 @@ async function sweepContentDeadlines(now: Date): Promise<number> {
   }) as EngagementRow[];
 
   for (const app of rows) {
-    await prisma.application.update({
-      where: { id: app.id },
+    // Conditional: a creator who submitted between the query above and this
+    // write must not be knocked back to CONTENT_OVERDUE.
+    const { count } = await prisma.application.updateMany({
+      where: { id: app.id, status: 'ACCEPTED', workStatus: 'IN_PROGRESS' },
       data: {
         workStatus:           'CONTENT_OVERDUE',
         contentGraceDeadline: deadlineFromNow(timings.contentGraceHours, now),
       },
     });
+    if (count === 0) continue;
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'IN_PROGRESS', toStatus: 'CONTENT_OVERDUE', actorType: 'SYSTEM', reason: 'Content deadline passed' });
     logActivity({ userId: null, action: ActivityAction.CONTENT_OVERDUE, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId } });
 
@@ -179,14 +184,17 @@ async function sweepCreatorFailures(now: Date): Promise<number> {
   }) as EngagementRow[];
 
   for (const app of rows) {
-    await escrowService.refund({
-      applicationId:   app.id,
-      reason:          'Creator failed to deliver any content by the deadline',
-      actorType:       'SYSTEM',
-      workStatusAfter: 'CREATOR_FAILED',
-      silent:          true,
-      systemMessage:   'This engagement has been closed and the payment refunded — the creator did not deliver any content by the deadline.',
+    const { refunded } = await escrowService.refund({
+      applicationId:     app.id,
+      reason:            'Creator failed to deliver any content by the deadline',
+      actorType:         'SYSTEM',
+      workStatusAfter:   'CREATOR_FAILED',
+      silent:            true,
+      requireWorkStatus: ['CONTENT_OVERDUE'],
+      systemMessage:     'This engagement has been closed and the payment refunded — the creator did not deliver any content by the deadline.',
     });
+    // Submitted at the last moment (or already handled) — nothing to report.
+    if (!refunded) continue;
     recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'CONTENT_OVERDUE', toStatus: 'CREATOR_FAILED', actorType: 'SYSTEM', reason: 'Grace period elapsed with no submission' });
     void escrowService.bumpReliability(app.creatorId, 'failed');
     logActivity({ userId: null, action: ActivityAction.CREATOR_FAILED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId } });
@@ -299,7 +307,12 @@ async function sweepSettlementReleases(now: Date): Promise<number> {
   let released = 0;
   for (const { id } of rows) {
     try {
-      const r = await escrowService.release({ applicationId: id, actor: { type: 'SYSTEM' }, reason: 'Settlement window elapsed' });
+      const r = await escrowService.release({
+        applicationId:       id,
+        actor:               { type: 'SYSTEM' },
+        reason:              'Settlement window elapsed',
+        requireEscrowStatus: ['RELEASE_PENDING'],
+      });
       if (r.released) released += 1;
     } catch (err) {
       reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: 'settlementReleases', appId: id });
@@ -335,8 +348,11 @@ async function runEscrowSweep(): Promise<void> {
 export function startEscrowStateMachineJob(): void {
   // Every 5 minutes — the spec's windows are measured in hours, so 5-minute
   // resolution keeps transitions timely without hammering the DB.
+  // One sweep at a time across all instances; the 10-minute lease outlives
+  // any normal run and frees itself if an instance dies mid-sweep.
   cron.schedule('*/5 * * * *', () => {
-    runEscrowSweep().catch((err) => reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: 'top_level' }));
+    withJobLock('escrow-sweep', 600, runEscrowSweep)
+      .catch((err) => reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: 'top_level' }));
   });
 }
 

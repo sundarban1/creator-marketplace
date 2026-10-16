@@ -1240,20 +1240,6 @@ export class CampaignRepository {
     return (app?.deliverableFiles as DeliverableFile[] | null) ?? [];
   }
 
-  async payForApplication(appId: string, method: string) {
-    return prisma.application.update({
-      where: { id: appId },
-      data: {
-        paymentStatus:        'PAID',
-        escrowStatus:         'HELD',
-        paidAt:               new Date(),
-        paymentMethod:        method,
-        khaltiPidx:           null,
-        esewaTransactionUuid: null,
-      },
-    });
-  }
-
   async setKhaltiPidx(appId: string, pidx: string) {
     return prisma.application.update({
       where: { id: appId },
@@ -1320,42 +1306,6 @@ export class CampaignRepository {
   async reopenConnectIpsPayment(txnId: string) {
     return prisma.connectIpsPayment.update({ where: { txnId }, data: { status: 'INITIATED', verifiedAt: null } });
   }
-
-  // Ledger entry for the business escrowing funds — see PaymentTransaction's
-  // schema comment for why this exists alongside Application.paymentStatus.
-  // Idempotent: a retried payment webhook that slips past the upstream
-  // paymentStatus guard gets the already-recorded row back instead of a
-  // duplicate money-movement entry (unique `reference`).
-  async createEscrowTransaction(params: {
-    applicationId: string;
-    campaignId: string;
-    businessId: string;
-    creatorId: string;
-    amount: number;
-    method: string;
-  }) {
-    const reference = `escrow:${params.applicationId}`;
-    try {
-      return await prisma.paymentTransaction.create({
-        data: {
-          type:          'ESCROW_IN',
-          amount:        params.amount,
-          method:        params.method,
-          applicationId: params.applicationId,
-          campaignId:    params.campaignId,
-          businessId:    params.businessId,
-          creatorId:     params.creatorId,
-          reference,
-        },
-      });
-    } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        return prisma.paymentTransaction.findUniqueOrThrow({ where: { reference } });
-      }
-      throw err;
-    }
-  }
-
   async countAcceptedApplications(campaignId: string): Promise<number> {
     return prisma.application.count({
       where: { campaignId, status: 'ACCEPTED' },

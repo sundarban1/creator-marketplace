@@ -7,6 +7,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/Button';
+import { BackButton } from '@/components/BackButton';
 import { ApiError } from '@/lib/api';
 import { F, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { guidedCampaignService, type AiClarifyingQuestion, type GuidedCampaign } from '@/services/guidedCampaign';
@@ -251,18 +252,23 @@ export default function GuidedCampaignScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.background }} edges={['top']}>
-      {/* Top bar: close (saves), autosave status, discard */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.sm, gap: SPACING.md }}>
-        <Pressable onPress={close} hitSlop={10} style={{ minWidth: 44, minHeight: 44, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={t('guided.close')}>
-          <FontAwesome5 name="times" size={18} color={C.text} />
-        </Pressable>
-        <Text style={[st.fieldLabel, { color: C.text, flex: 1 }]} numberOfLines={1}>{mode === 'edit' ? t('guided.editKicker') : t('guided.createKicker')}</Text>
-        {mode === 'create' ? <SaveIndicator status={autosave.status} /> : null}
-        {mode === 'create' && (draftId || step !== 'idea') ? (
-          <Pressable onPress={discard} hitSlop={10} style={{ minWidth: 44, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={t('guided.discard')}>
-            <FontAwesome5 name="trash-alt" size={15} color={C.textSecondary} />
-          </Pressable>
-        ) : null}
+      {/* Top bar — same look as create-campaign: back (saves), centered title,
+          autosave status + discard on the right. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md }}>
+        <View style={{ minWidth: 88, alignItems: 'flex-start' }}>
+          <BackButton onPress={close} />
+        </View>
+        <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontFamily: F.bold, color: C.text }} numberOfLines={1}>
+          {mode === 'edit' ? t('guided.editKicker') : t('guided.createKicker')}
+        </Text>
+        <View style={{ minWidth: 88, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: SPACING.sm }}>
+          {mode === 'create' ? <SaveIndicator status={autosave.status} /> : null}
+          {mode === 'create' && (draftId || step !== 'idea') ? (
+            <Pressable onPress={discard} hitSlop={10} style={{ minWidth: 32, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={t('guided.discard')}>
+              <FontAwesome5 name="trash-alt" size={15} color={C.textSecondary} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       {loading ? (

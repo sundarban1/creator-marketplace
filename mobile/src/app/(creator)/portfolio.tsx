@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -10,6 +9,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { AppModal } from '@/components/AppModal';
+import { PortfolioThumb, portfolioItemTitle } from '@/components/PortfolioThumb';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
@@ -118,7 +118,7 @@ export default function PortfolioScreen() {
         visible={!!deleteTarget}
         type="danger"
         title={t('portfolioScreen.deleteTitle')}
-        body={deleteTarget ? t('portfolioScreen.deleteBody', { title: deleteTarget.description || deleteTarget.title || t('portfolioScreen.untitled') }) : ''}
+        body={deleteTarget ? t('portfolioScreen.deleteBody', { title: portfolioItemTitle(deleteTarget, t) }) : ''}
         confirmLabel={t('servicesScreen.delete')}
         loading={deleting}
         onConfirm={confirmDelete}
@@ -139,21 +139,14 @@ function PortfolioTile({ item, onEdit, onDelete }: {
   return (
     <Pressable style={[styles.tile, { backgroundColor: C.surface, borderColor: C.border }, SHADOW.raised]} onPress={onEdit}>
       {item.mediaUrl ? (
-        <Image source={{ uri: item.mediaUrl }} style={styles.tileImage} contentFit="cover" />
+        <PortfolioThumb item={item} style={styles.tileImage} iconSize={26} badgeSize={26} />
       ) : (
-        <Pressable
-          style={[styles.tileImage, styles.linkFallback, { backgroundColor: C.primaryLight }]}
-          onPress={() => item.externalUrl && Linking.openURL(item.externalUrl)}>
-          <FontAwesome5 name="external-link-alt" solid size={22} color={C.brinjal1} />
+        <Pressable onPress={() => item.externalUrl && Linking.openURL(item.externalUrl)}>
+          <PortfolioThumb item={item} style={styles.tileImage} iconSize={26} badgeSize={26} />
         </Pressable>
       )}
-      {item.mediaType === 'VIDEO' && (
-        <View style={styles.playBadge}>
-          <FontAwesome5 name="play" solid size={11} color="#fff" />
-        </View>
-      )}
       <View style={styles.tileFooter}>
-        <Text style={[styles.tileTitle, { color: C.text }]} numberOfLines={1}>{item.description || item.title || t('portfolioScreen.untitled')}</Text>
+        <Text style={[styles.tileTitle, { color: C.text }]} numberOfLines={1}>{portfolioItemTitle(item, t)}</Text>
         <Pressable hitSlop={8} onPress={onDelete}>
           <FontAwesome5 name="trash-alt" solid size={13} color="#EF4444" />
         </Pressable>
@@ -171,11 +164,6 @@ const styles = StyleSheet.create({
 
   tile: { flex: 1, borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden' },
   tileImage: { width: '100%', aspectRatio: 1 },
-  linkFallback: { justifyContent: 'center', alignItems: 'center' },
-  playBadge: {
-    position: 'absolute', top: 8, right: 8, width: 26, height: 26, borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(17,24,39,0.65)', justifyContent: 'center', alignItems: 'center',
-  },
   tileFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 8, gap: 8 },
   tileTitle: { flex: 1, fontSize: 12, fontFamily: F.semibold },
 });

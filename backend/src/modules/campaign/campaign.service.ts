@@ -27,10 +27,10 @@ import { logger } from '../../config/logger';
 import { reportError, LogEvent } from '../../config/observability';
 import { invitationService } from './invitation/invitation.service';
 import { logActivity, getActivityForEntity } from '../logging/activity.service';
-import { recordCampaignEvent } from './campaign-events';
+import { recordCampaignEvent, recordCampaignEventTx } from './campaign-events';
 import { assertWorkTransition, assertEscrowTransition } from './application-state-machine';
 import { getEscrowTimings, deadlineFromNow } from './escrow-config';
-import { escrowService } from './escrow.service';
+import { escrowService, lockApplication } from './escrow.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
@@ -2031,16 +2031,108 @@ export class CampaignService {
     creatorUserId?: string;
     proposedRate: number;
     method: string;
-  }) {
-    await this.repo.payForApplication(params.appId, params.method);
-    await this.repo.createEscrowTransaction({
-      applicationId: params.appId,
-      campaignId:    params.campaignId,
-      businessId:    params.businessId,
-      creatorId:     params.creatorId,
-      amount:        params.proposedRate,
-      method:        params.method,
+  }): Promise<'funded' | 'already' | 'late'> {
+    // Funding is decided under the application's row lock, so it can't
+    // interleave with the payment-timeout sweep expiring the same slot.
+    //  - funded:  still ACCEPTED + NOT_FUNDED → escrow HELD, as normal.
+    //  - already: someone else funded it first → nothing to do here.
+    //  - late:    the slot expired before the money arrived. Gateway money has
+    //             really moved, so it's recorded as received and immediately
+    //             refunded (atomically — never left HELD on a dead slot).
+    const outcome = await prisma.$transaction(async (tx) => {
+      await lockApplication(tx, params.appId);
+      const app = await tx.application.findUnique({
+        where:  { id: params.appId },
+        select: { status: true, escrowStatus: true, paymentStatus: true },
+      });
+      if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+      if (app.paymentStatus === 'PAID' || app.paymentStatus === 'RELEASED') return 'already' as const;
+
+      const live = app.status === 'ACCEPTED' && app.escrowStatus === 'NOT_FUNDED';
+
+      // Credits haven't moved yet, so a dead slot is refused outright rather
+      // than debited and refunded. Debit and funding share this transaction.
+      if (params.method === 'credits') {
+        if (!live) throw new AppError(getDict().campaign.creatorMustBeAcceptedFirst, HttpStatus.BAD_REQUEST);
+        await this.debitCreditsInTx(tx, params.businessId, params.appId, params.proposedRate);
+      }
+
+      const now = new Date();
+      await tx.application.update({
+        where: { id: params.appId },
+        data: {
+          paymentStatus:        live ? 'PAID' : 'REFUNDED',
+          escrowStatus:         live ? 'HELD' : 'REFUNDED',
+          paidAt:               now,
+          paymentMethod:        params.method,
+          khaltiPidx:           null,
+          esewaTransactionUuid: null,
+        },
+      });
+
+      const txBase = {
+        method:        params.method,
+        applicationId: params.appId,
+        campaignId:    params.campaignId,
+        businessId:    params.businessId,
+      };
+      const escrowRef = `escrow:${params.appId}`;
+      if (!(await tx.paymentTransaction.findUnique({ where: { reference: escrowRef } }))) {
+        await tx.paymentTransaction.create({
+          data: { ...txBase, type: 'ESCROW_IN', amount: params.proposedRate, creatorId: params.creatorId, reference: escrowRef },
+        });
+      }
+
+      if (!live) {
+        const refundRef = `refund:${params.appId}`;
+        if (!(await tx.paymentTransaction.findUnique({ where: { reference: refundRef } }))) {
+          await tx.paymentTransaction.create({
+            data: {
+              ...txBase,
+              type:      'REFUND',
+              amount:    params.proposedRate,
+              reference: refundRef,
+              metadata:  { reason: 'Payment arrived after the creator selection had expired', actorType: 'SYSTEM' } as Prisma.InputJsonValue,
+            },
+          });
+        }
+        await recordCampaignEventTx(tx, {
+          campaignId: params.campaignId, applicationId: params.appId, axis: 'escrow',
+          fromStatus: app.escrowStatus, toStatus: 'REFUNDED', actorType: 'SYSTEM',
+          reason:     'Payment arrived after the creator selection had expired',
+          metadata:   { amount: params.proposedRate, method: params.method },
+        });
+      }
+
+      return live ? 'funded' as const : 'late' as const;
     });
+
+    if (outcome === 'already') return outcome;
+    if (outcome === 'late') {
+      reportError(new Error('Payment received for an expired application — auto-refunded'), {
+        event: LogEvent.PAYMENT_LATE_REFUNDED, appId: params.appId, method: params.method, amount: params.proposedRate,
+      });
+      logActivity({
+        userId: null, action: ActivityAction.PAYMENT_REFUNDED, entityType: EntityType.APPLICATION, entityId: params.appId,
+        metadata: { campaignId: params.campaignId, amount: params.proposedRate, reason: 'late_payment' },
+      });
+      notificationService.create({
+        userId:  params.businessUserId,
+        type:    'payment_refunded',
+        title:   'Payment refunded',
+        body:    `Your payment for "${params.campaignTitle}" arrived after the creator selection had expired, so Rs. ${params.proposedRate.toLocaleString()} is being returned to your original payment method within 3–5 business days. You can select a creator again.`,
+        refId:   params.campaignId,
+        refType: 'campaign',
+      }).catch(() => {});
+      notificationService.createForAdmins({
+        type:    'payment_refunded',
+        title:   'Late payment needs a refund',
+        body:    `${params.businessName} paid Rs. ${params.proposedRate.toLocaleString()} via ${params.method} for "${params.campaignTitle}" after the selection expired. Refund it through ${params.method}.`,
+        refId:   params.campaignId,
+        refType: 'campaign',
+      }).catch(() => {});
+      return outcome;
+    }
 
     logActivity({
       userId:     params.businessUserId,
@@ -2097,32 +2189,32 @@ export class CampaignService {
         `Payment for "${params.campaignTitle}" is complete and now secured with Kolab. You can message here anytime — it will be great working together!`,
       )
       .catch(() => {});
+
+    return outcome;
   }
 
   // Kolab Rewards — pay for an accepted application entirely with Business
   // Credits, exclusive of any money gateway (never a combination with
   // eSewa/Khalti for one application — the business picks one method).
-  // Debits the ledger atomically (lock the account, verify the live balance,
-  // debit) BEFORE finalizeApplicationPayment flips the application's own
-  // status, so two concurrent attempts can't both spend the same credits —
-  // the second one's ledger insert collides on the same idempotency key
-  // (referenceType 'application', referenceId appId) and is rejected.
-  private async debitCreditsForApplication(businessId: string, appId: string, amount: number) {
-    await prisma.$transaction(async (tx) => {
-      const account = await this.creditsRepo.lockAccount(tx, businessId);
-      if ((account?.balance ?? 0) < amount) {
-        throw new AppError(getDict().campaign.insufficientCredits, HttpStatus.BAD_REQUEST);
-      }
-      await recordCreditsTransaction(tx, {
-        businessId,
-        type:          'CAMPAIGN_BUDGET_SPEND',
-        direction:     'DEBIT',
-        amount,
-        description:   'Applied to fund a creator payment',
-        referenceType: 'application',
-        referenceId:   appId,
-      });
-    }, { isolationLevel: 'Serializable' });
+  // Runs inside finalizeApplicationPayment's transaction (lock the account,
+  // verify the live balance, debit) so the debit and the escrow funding commit
+  // or roll back together; two concurrent attempts can't both spend the same
+  // credits — the second one's ledger insert collides on the same idempotency
+  // key (referenceType 'application', referenceId appId) and is rejected.
+  private async debitCreditsInTx(tx: Prisma.TransactionClient, businessId: string, appId: string, amount: number) {
+    const account = await this.creditsRepo.lockAccount(tx, businessId);
+    if ((account?.balance ?? 0) < amount) {
+      throw new AppError(getDict().campaign.insufficientCredits, HttpStatus.BAD_REQUEST);
+    }
+    await recordCreditsTransaction(tx, {
+      businessId,
+      type:          'CAMPAIGN_BUDGET_SPEND',
+      direction:     'DEBIT',
+      amount,
+      description:   'Applied to fund a creator payment',
+      referenceType: 'application',
+      referenceId:   appId,
+    });
   }
 
   async payForApplication(appId: string, userId: string, method = 'esewa') {
@@ -2147,11 +2239,7 @@ export class CampaignService {
       throw new AppError(getDict().campaign.gatewayMethodNeedsCheckout, HttpStatus.BAD_REQUEST);
     }
 
-    if (method === 'credits') {
-      await this.debitCreditsForApplication(business.id, appId, application.proposedRate);
-    }
-
-    await this.finalizeApplicationPayment({
+    const funding = await this.finalizeApplicationPayment({
       appId,
       campaignId:     application.campaignId,
       campaignTitle:  campaign.title,
@@ -2163,6 +2251,13 @@ export class CampaignService {
       proposedRate:   application.proposedRate,
       method,
     });
+    // A concurrent attempt funded it first — this one charged nothing.
+    if (funding === 'already') {
+      throw new AppError(getDict().campaign.paymentAlreadyMadeForApplication, HttpStatus.BAD_REQUEST);
+    }
+    if (funding === 'late') {
+      throw new AppError(getDict().campaign.paymentAfterSelectionExpired, HttpStatus.CONFLICT);
+    }
 
     return { success: true };
   }
@@ -2241,7 +2336,7 @@ export class CampaignService {
     }
 
     const campaign = application.campaign as any;
-    await this.finalizeApplicationPayment({
+    const funding = await this.finalizeApplicationPayment({
       appId,
       campaignId:     application.campaignId,
       campaignTitle:  campaign.title,
@@ -2253,6 +2348,9 @@ export class CampaignService {
       proposedRate:   application.proposedRate,
       method:         'khalti',
     });
+    if (funding === 'late') {
+      throw new AppError(getDict().campaign.paymentAfterSelectionExpired, HttpStatus.CONFLICT);
+    }
     return { campaignId: application.campaignId };
   }
 
@@ -2350,7 +2448,7 @@ export class CampaignService {
     }
 
     const campaign = application.campaign as any;
-    await this.finalizeApplicationPayment({
+    const funding = await this.finalizeApplicationPayment({
       appId,
       campaignId:     application.campaignId,
       campaignTitle:  campaign.title,
@@ -2362,6 +2460,9 @@ export class CampaignService {
       proposedRate:   application.proposedRate,
       method:         'esewa',
     });
+    if (funding === 'late') {
+      throw new AppError(getDict().campaign.paymentAfterSelectionExpired, HttpStatus.CONFLICT);
+    }
 
     return { campaignId: application.campaignId };
   }
@@ -2470,8 +2571,9 @@ export class CampaignService {
     }
 
     const campaign = application.campaign as any;
+    let funding: Awaited<ReturnType<CampaignService['finalizeApplicationPayment']>>;
     try {
-      await this.finalizeApplicationPayment({
+      funding = await this.finalizeApplicationPayment({
         appId:          application.id,
         campaignId,
         campaignTitle:  campaign.title,
@@ -2489,6 +2591,16 @@ export class CampaignService {
       await this.repo.reopenConnectIpsPayment(txnId).catch(() => {});
       reportError(err, { event: LogEvent.PAYMENT_CONNECTIPS_FINALIZE_FAILED, txnId, appId: application.id });
       return { outcome: 'pending', campaignId };
+    }
+    if (funding === 'late') {
+      return { outcome: 'failed', campaignId, message: getDict().campaign.paymentAfterSelectionExpired };
+    }
+    if (funding === 'already') {
+      // Another payment funded it between our read above and the lock — this
+      // TXNID's money is a second payment and needs a manual refund.
+      reportError(new Error('connectIPS payment received for an already-funded application'), {
+        event: LogEvent.PAYMENT_CONNECTIPS_DUPLICATE, appId: application.id, txnId, amountPaisa: attempt.amountPaisa,
+      });
     }
     return { outcome: 'success', campaignId };
   }
@@ -2751,6 +2863,32 @@ export class CampaignService {
       return toApplicationDto(updated);
     }
 
+    // Escrow spec §19–§20: when the settlement hold is on, approval doesn't pay
+    // out — it starts a protection window during which a dispute can still
+    // freeze the funds. The settlement sweep releases once the window passes.
+    const timings = await getEscrowTimings();
+    const holdEnabled = timings.settlementHoldEnabled && timings.settlementHours > 0;
+    if (holdEnabled) {
+      assertEscrowTransition(app.escrowStatus, 'RELEASE_PENDING');
+      // Conditional on the state we checked — a dispute raised in the meantime
+      // has set FROZEN, and an unconditional write would thaw it into
+      // RELEASE_PENDING for the settlement sweep to pay out.
+      const { count } = await prisma.application.updateMany({
+        where: { id: appId, escrowStatus: 'HELD', workStatus: 'SUBMITTED' },
+        data: {
+          workStatus:       'APPROVED',
+          escrowStatus:     'RELEASE_PENDING',
+          paymentReleaseAt: deadlineFromNow(timings.settlementHours),
+        },
+      });
+      if (count === 0) {
+        const now = await prisma.application.findUnique({ where: { id: appId }, select: { escrowStatus: true } });
+        throw now?.escrowStatus === 'FROZEN'
+          ? new AppError(getDict().campaign.engagementUnderDispute, HttpStatus.CONFLICT)
+          : new AppError(getDict().campaign.workNotSubmittedYet, HttpStatus.CONFLICT);
+      }
+    }
+
     this.repo.getUserEmails([creatorUserId]).then((emailMap) => {
       const email = emailMap.get(creatorUserId);
       if (email) {
@@ -2758,17 +2896,7 @@ export class CampaignService {
       }
     }).catch(() => {});
 
-    // Escrow spec §19–§20: when the settlement hold is on, approval doesn't pay
-    // out — it starts a protection window during which a dispute can still
-    // freeze the funds. The settlement sweep releases once the window passes.
-    const timings = await getEscrowTimings();
-    if (timings.settlementHoldEnabled && timings.settlementHours > 0) {
-      assertEscrowTransition(app.escrowStatus, 'RELEASE_PENDING');
-      await this.repo.setEngagementTiming(appId, {
-        workStatus:       'APPROVED',
-        escrowStatus:     'RELEASE_PENDING',
-        paymentReleaseAt: deadlineFromNow(timings.settlementHours),
-      });
+    if (holdEnabled) {
       recordCampaignEvent({
         campaignId:    app.campaignId,
         applicationId: appId,

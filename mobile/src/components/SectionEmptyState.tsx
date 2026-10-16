@@ -1,6 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
+import { withAlpha } from '@/utilities/color';
 import { F, RADIUS } from '@/utilities/constants';
 
 type Props = {
@@ -21,7 +22,11 @@ export function SectionEmptyState({ icon, title, hint, cta, onPress }: Props) {
   const C = useAppColors();
   return (
     <View style={[styles.wrap, { borderColor: C.border }]}>
-      <FontAwesome5 name={icon} solid size={28} color={C.border} />
+      {/* Brand-tinted badge — the old C.border-coloured glyph all but vanished
+          on the dark palette (#262626 on a #1A1A1A card). */}
+      <View style={[styles.iconWrap, { backgroundColor: withAlpha(C.brinjal1, 0.14) }]}>
+        <FontAwesome5 name={icon} solid size={22} color={C.brinjal1} />
+      </View>
       <Text style={[styles.title, { color: C.text }]}>{title}</Text>
       <Text style={[styles.hint, { color: C.textSecondary }]}>{hint}</Text>
       {cta && onPress ? (
@@ -43,6 +48,7 @@ export function SectionEmptyState({ icon, title, hint, cta, onPress }: Props) {
 
 const styles = StyleSheet.create({
   wrap:    { alignItems: 'center', gap: 8, paddingVertical: 20, paddingHorizontal: 12, borderWidth: 1.5, borderRadius: RADIUS.lg, borderStyle: 'dashed' },
+  iconWrap: { width: 52, height: 52, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   title:   { fontSize: 14, fontFamily: F.bold },
   hint:    { fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
   cta:     { borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 9, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },

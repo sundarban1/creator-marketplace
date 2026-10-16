@@ -32,6 +32,7 @@ import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { readableOnSurface } from '@/utilities/color';
 import { businessService, type PaymentHistoryEntry } from '@/services/business';
 import type { ApiSocialAccount } from '@/lib/api';
 import { notificationService } from '@/services/notifications';
@@ -2006,18 +2007,22 @@ export default function BusinessSettingsScreen() {
             const isConnecting = connectingPlatform === p.id;
             const isLive = PLATFORM_LIVE[p.id];
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
+            // TikTok's near-black brand color vanishes on the dark palette — swap
+            // it for the theme text color everywhere this row uses the brand hue.
+            const pc = readableOnSurface(p.color, isDark, C.text);
+            const pcOnBtn = pc === p.color ? '#fff' : C.background;
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                 <View
                   style={[
                     styles.socialIconWrap,
                     {
-                      backgroundColor: p.color + '18', shadowColor: p.color,
+                      backgroundColor: pc + '18', shadowColor: pc,
                       shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
                     },
                   ]}
                 >
-                  <FontAwesome5 name={p.iconName} size={20} color={p.color} />
+                  <FontAwesome5 name={p.iconName} size={20} color={pc} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.connectPlatformNameRow}>
@@ -2029,8 +2034,8 @@ export default function BusinessSettingsScreen() {
                   {acct ? (
                     <>
                       <View style={styles.socialMetaRow}>
-                        <View style={[styles.socialFollowerBadge, { backgroundColor: p.color + '15' }]}>
-                          <Text style={[styles.socialFollowerBadgeText, { color: p.color }]}>
+                        <View style={[styles.socialFollowerBadge, { backgroundColor: pc + '15' }]}>
+                          <Text style={[styles.socialFollowerBadgeText, { color: pc }]}>
                             {fmtCount(String(acct.followers))} {p.followersLabel.toLowerCase()}
                           </Text>
                         </View>
@@ -2040,7 +2045,7 @@ export default function BusinessSettingsScreen() {
                     <>
                       {p.id === 'instagram' && isLive && (
                         <Pressable disabled={isConnecting} onPress={() => void handleConnectInstagramDirect()} hitSlop={4}>
-                          <Text style={[styles.connectInstagramDirectLink, { color: p.color }]}>
+                          <Text style={[styles.connectInstagramDirectLink, { color: pc }]}>
                             {t('businessSettings.connectInstagramDirectly')}
                           </Text>
                         </Pressable>
@@ -2059,7 +2064,7 @@ export default function BusinessSettingsScreen() {
                     </View>
                   ) : (
                     <Pressable
-                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: isConnecting ? 0.7 : 1 }]}
+                      style={[styles.connectBtn, { backgroundColor: pc, opacity: isConnecting ? 0.7 : 1 }]}
                       disabled={isConnecting}
                       onPress={() => {
                         if (p.id === 'youtube') handleConnectYoutube();
@@ -2068,8 +2073,8 @@ export default function BusinessSettingsScreen() {
                         else if (p.id === 'instagram') handleConnectInstagram();
                       }}>
                       {isConnecting
-                        ? <ActivityIndicator size="small" color="#fff" />
-                        : <Text style={styles.connectBtnText}>{t('businessSettings.connectBtn')}</Text>}
+                        ? <ActivityIndicator size="small" color={pcOnBtn} />
+                        : <Text style={[styles.connectBtnText, { color: pcOnBtn }]}>{t('businessSettings.connectBtn')}</Text>}
                     </Pressable>
                   )}
                 </View>

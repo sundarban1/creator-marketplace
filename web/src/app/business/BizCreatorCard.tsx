@@ -93,7 +93,7 @@ export function BizCreatorCard({
           saved ? 'text-violet' : 'text-ink-soft hover:text-ink',
         )}
       >
-        <Bookmark size={16} className={saved ? 'fill-current' : ''} />
+        <Bookmark size={16} className={saved ? 'fill-violet text-violet' : ''} />
       </button>
     </div>
   );

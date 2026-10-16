@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { CoverInitials, ProfileCoverImage } from '@/components/ProfileCoverImage';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getSocket } from '@/lib/socket';
 import {
   ActivityIndicator,
@@ -26,13 +26,16 @@ import { SectionEmptyState } from '@/components/SectionEmptyState';
 import { ReportModal } from '@/components/ReportModal';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
+import { PortfolioThumb, portfolioItemTitle } from '@/components/PortfolioThumb';
+import { detectLinkPlatform } from '@/utilities/portfolioLink';
 import { BackButton } from '@/components/BackButton';
 import { IconButton } from '@/components/IconButton';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useToast } from '@/components/Toast';
-import { useAppColors } from '@/context/ThemeContext';
+import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { readableOnSurface } from '@/utilities/color';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { chatService } from '@/services/chat';
@@ -40,6 +43,7 @@ import { serviceRequestService } from '@/services/serviceRequest';
 import type { ApiPublicService } from '@/services/creator';
 import type { ApiPortfolioItem } from '@/services/portfolio';
 import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { logger } from '@/utilities/logger';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
@@ -185,11 +189,14 @@ function ChipRow({ items, primary }: { items: string[]; primary?: boolean }) {
 
 export function PlatformList({ platforms }: { platforms: MergedPlatform[] }) {
   const C = useAppColors();
+  const { isDark } = useIsDark();
   const { t } = useLanguage();
   return (
     <View style={styles.socialList}>
       {platforms.map((p) => {
         const info = platformInfo(p.platform);
+        // A near-black brand tile (TikTok) melts into the dark card — outline it.
+        const outlineTile = readableOnSurface(info.color, isDark, '') === '';
         const canOpen = !!p.profileUrl;
         return (
           <Pressable
@@ -201,6 +208,7 @@ export function PlatformList({ platforms }: { platforms: MergedPlatform[] }) {
                 styles.socialIconWrap,
                 {
                   backgroundColor: info.color,
+                  ...(outlineTile ? { borderWidth: 1, borderColor: C.borderDark } : null),
                   ...Platform.select({ ios: { shadowColor: info.color, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } } }),
                 },
               ]}
@@ -239,6 +247,11 @@ export function CreatorProfileView({
   const isOwner = mode === 'owner';
   const isBusiness = mode === 'business';
   const isVisitor = !isOwner;
+
+  // Owner mode is the creator's Profile bottom tab — scroll back up when that tab
+  // is tapped. Visitor modes pass '' (never emitted) so they never react.
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTopOnTabPress(isOwner ? 'profile' : '', () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
 
   const backFallback = isBusiness ? '/(business)/explore-creators' : '/(creator)/explore-creators';
   const chatPath = isBusiness ? '/(business)/chat/[id]' : '/(creator)/chat/[id]';
@@ -446,6 +459,7 @@ export function CreatorProfileView({
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={edges}>
       <MaxWidthContainer>
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 60 }}
         refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} /> : undefined}>
@@ -775,19 +789,9 @@ export function CreatorProfileView({
                     <Pressable
                       key={item.id}
                       style={[styles.portfolioTile, { backgroundColor: C.background, borderColor: C.border }]}
+                      accessibilityLabel={portfolioItemTitle(item, t)}
                       onPress={() => router.push('/(creator)/portfolio' as never)}>
-                      {item.mediaUrl ? (
-                        <Image source={{ uri: item.mediaUrl }} style={styles.portfolioImage} resizeMode="cover" />
-                      ) : (
-                        <View style={[styles.portfolioImage, styles.portfolioFallback, { backgroundColor: C.primaryLight }]}>
-                          <FontAwesome5 name="external-link-alt" solid size={18} color={C.brinjal1} />
-                        </View>
-                      )}
-                      {item.mediaType === 'VIDEO' && (
-                        <View style={styles.portfolioPlayBadge}>
-                          <FontAwesome5 name="play" solid size={9} color="#fff" />
-                        </View>
-                      )}
+                      <PortfolioThumb item={item} style={styles.portfolioImage} iconSize={16} badgeSize={18} />
                     </Pressable>
                   ))}
                   <Pressable
@@ -808,40 +812,42 @@ export function CreatorProfileView({
             </InfoCard>
           ) : null}
 
-          {/* Portfolio work gallery (business only) */}
-          {isBusiness && vm.portfolioItems.length > 0 && (
+          {/* Portfolio work gallery (visitors — business and peer creators) */}
+          {isVisitor && vm.portfolioItems.length > 0 && (
             <InfoCard title={t('creatorDetailExtra.sectionPortfolio')} icon="images">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.workRow}>
                 {vm.portfolioItems.map((item) => {
                   const hasMedia = !!item.mediaUrl;
+                  const title = portfolioItemTitle(item, t);
+                  const platform = item.externalUrl ? detectLinkPlatform(item.externalUrl) : null;
+                  // Sub-line: category if set, else where the link opens ("Opens in TikTok").
+                  const subline = item.category
+                    || (platform && !hasMedia
+                      ? (platform.label ? t('portfolioScreen.opensIn', { platform: platform.label }) : t('portfolioScreen.opensLink'))
+                      : null);
                   return (
                     <Pressable
                       key={item.id}
-                      style={[styles.workTile, { backgroundColor: C.background, borderColor: C.border }]}
-                      accessibilityRole="button"
-                      accessibilityLabel={item.description || item.title || t('portfolioScreen.untitled')}
+                      style={({ pressed }) => [
+                        styles.workTile,
+                        { backgroundColor: C.background, borderColor: C.border, opacity: pressed ? 0.85 : 1 },
+                      ]}
+                      accessibilityRole={hasMedia ? 'button' : 'link'}
+                      accessibilityLabel={title}
                       onPress={() => {
                         if (hasMedia) setPreviewItem(item);
                         else if (item.externalUrl) Linking.openURL(item.externalUrl).catch(() => {});
                       }}>
-                      {hasMedia ? (
-                        <Image source={{ uri: item.mediaUrl! }} style={styles.workThumb} resizeMode="cover" />
-                      ) : (
-                        <View style={[styles.workThumb, styles.workThumbFallback, { backgroundColor: C.primaryLight }]}>
-                          <FontAwesome5 name="external-link-alt" solid size={20} color={C.brinjal1} />
-                        </View>
-                      )}
-                      {item.mediaType === 'VIDEO' && hasMedia && (
-                        <View style={styles.workPlayBadge}>
-                          <FontAwesome5 name="play" solid size={10} color="#fff" />
-                        </View>
-                      )}
+                      <PortfolioThumb item={item} style={styles.workThumb} iconSize={24} badgeSize={24} />
                       <View style={styles.workMeta}>
-                        <Text style={[styles.workTitle, { color: C.text }]} numberOfLines={1}>
-                          {item.description || item.title || t('portfolioScreen.untitled')}
-                        </Text>
-                        {!!item.category && (
-                          <Text style={[styles.workCategory, { color: C.textSecondary }]} numberOfLines={1}>{item.category}</Text>
+                        <Text style={[styles.workTitle, { color: C.text }]} numberOfLines={1}>{title}</Text>
+                        {!!subline && (
+                          <View style={styles.workSubRow}>
+                            {platform && !hasMedia && !item.category && (
+                              <FontAwesome5 name="external-link-alt" solid size={9} color={C.textSecondary} />
+                            )}
+                            <Text style={[styles.workCategory, { color: C.textSecondary }]} numberOfLines={1}>{subline}</Text>
+                          </View>
                         )}
                       </View>
                     </Pressable>
@@ -1009,13 +1015,13 @@ export function CreatorProfileView({
               <ImagePreviewModal
                 visible={!!previewItem && previewItem.mediaType !== 'VIDEO'}
                 url={previewItem?.mediaUrl ?? null}
-                title={previewItem?.description || previewItem?.title || t('portfolioScreen.untitled')}
+                title={previewItem ? portfolioItemTitle(previewItem, t) : ''}
                 onClose={() => setPreviewItem(null)}
               />
               <VideoPlayerModal
                 visible={!!previewItem && previewItem.mediaType === 'VIDEO'}
                 url={previewItem?.mediaUrl ?? null}
-                title={previewItem?.description || previewItem?.title || t('portfolioScreen.untitled')}
+                title={previewItem ? portfolioItemTitle(previewItem, t) : ''}
                 onClose={() => setPreviewItem(null)}
               />
             </>
@@ -1151,18 +1157,13 @@ const styles = StyleSheet.create({
   portfolioScroll:   { gap: 10, paddingRight: 4 },
   portfolioTile:     { width: 76, height: 76, borderRadius: RADIUS.md, borderWidth: 1, overflow: 'hidden' },
   portfolioImage:    { width: '100%', height: '100%' },
-  portfolioFallback: { justifyContent: 'center', alignItems: 'center' },
-  portfolioPlayBadge:{ position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: RADIUS.full,
-                       backgroundColor: 'rgba(17,24,39,0.65)', justifyContent: 'center', alignItems: 'center' },
   portfolioAddTile:  { justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderStyle: 'dashed' },
 
   // Business portfolio gallery
   workRow:          { gap: 12, paddingRight: 4 },
   workTile:         { width: 148, borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden' },
   workThumb:        { width: '100%', height: 148 },
-  workThumbFallback:{ justifyContent: 'center', alignItems: 'center' },
-  workPlayBadge:    { position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 12,
-                      backgroundColor: 'rgba(17,24,39,0.65)', justifyContent: 'center', alignItems: 'center' },
+  workSubRow:       { flexDirection: 'row', alignItems: 'center', gap: 4 },
   workMeta:         { paddingHorizontal: 10, paddingVertical: 8, gap: 2 },
   workTitle:        { fontSize: 13, fontFamily: F.semibold },
   workCategory:     { fontSize: 11, fontFamily: F.regular },

@@ -22,6 +22,7 @@ export const LogEvent = {
   PAYMENT_CONNECTIPS_KEY_INVALID: 'payment.connectips.key_invalid',
   PAYMENT_CONNECTIPS_INITIATED: 'payment.connectips.initiated',
   PAYMENT_CONNECTIPS_DUPLICATE: 'payment.connectips.duplicate_payment',
+  PAYMENT_LATE_REFUNDED: 'payment.late_refunded',
   PAYMENT_CONNECTIPS_FINALIZE_FAILED: 'payment.connectips.finalize_failed',
   PAYMENT_CALLBACK_ALREADY_PROCESSED: 'payment.callback_already_processed',
   PAYMENT_AMOUNT_MISMATCH: 'payment.amount_mismatch',

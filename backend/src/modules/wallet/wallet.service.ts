@@ -204,7 +204,7 @@ export class WalletService {
 
       // One pending request at a time — the creator must wait for the current
       // one to be paid or rejected before asking for more.
-      const pendingCount = await this.repo.countReservedWithdrawals(profile.id);
+      const pendingCount = await this.repo.countReservedWithdrawals(profile.id, tx);
       if (pendingCount > 0) {
         throw new AppError(
           getDict().wallet.pendingWithdrawalExists,
@@ -212,7 +212,9 @@ export class WalletService {
         );
       }
 
-      const { withdrawableBalance } = await this.computeBalances(profile.id);
+      // Read through `tx` — the lock holder must not need a second pool
+      // connection while it holds this one.
+      const withdrawableBalance = await computeWithdrawableBalance(tx, profile.id);
       if (input.amount > withdrawableBalance) {
         throw new AppError(
           getDict().wallet.amountExceedsAvailableBalance(withdrawableBalance.toLocaleString()),
@@ -226,6 +228,7 @@ export class WalletService {
       const dailyUsed = await this.repo.sumWithdrawalsRequestedSince(
         profile.id,
         startOfTodayNepal(),
+        tx,
       );
       const left = Math.max(0, limits.daily - dailyUsed);
       if (dailyUsed + input.amount > limits.daily) {
@@ -274,10 +277,16 @@ export class WalletService {
       throw new AppError(getDict().wallet.onlyPendingWithdrawalCanBeCancelled, HttpStatus.BAD_REQUEST);
     }
 
-    const updated = await prisma.withdrawal.update({
-      where: { id: withdrawalId },
+    // Compare-and-set: if the admin started processing or paid it since the
+    // read above, the cancel must not overwrite that.
+    const { count } = await prisma.withdrawal.updateMany({
+      where: { id: withdrawalId, status: 'PENDING' },
       data:  { status: 'CANCELLED', processedAt: new Date() },
     });
+    if (count === 0) {
+      throw new AppError(getDict().wallet.onlyPendingWithdrawalCanBeCancelled, HttpStatus.BAD_REQUEST);
+    }
+    const updated = await prisma.withdrawal.findUniqueOrThrow({ where: { id: withdrawalId } });
     // The reservation releases automatically — a CANCELLED withdrawal is no
     // longer counted in pendingWithdrawals, so withdrawableBalance recovers.
 

@@ -66,8 +66,8 @@ export class WalletRepository {
   }
 
   /** How many in-flight (PENDING/PROCESSING) requests the creator has right now. */
-  async countReservedWithdrawals(creatorId: string) {
-    return prisma.withdrawal.count({
+  async countReservedWithdrawals(creatorId: string, client: DbClient = prisma) {
+    return client.withdrawal.count({
       where: { creatorId, status: { in: [...RESERVED_WITHDRAWAL_STATUSES] } },
     });
   }
@@ -77,8 +77,8 @@ export class WalletRepository {
    * day) that still counts against the daily cap — everything except
    * REJECTED/CANCELLED (those never moved money, so they don't consume it).
    */
-  async sumWithdrawalsRequestedSince(creatorId: string, since: Date) {
-    const result = await prisma.withdrawal.aggregate({
+  async sumWithdrawalsRequestedSince(creatorId: string, since: Date, client: DbClient = prisma) {
+    const result = await client.withdrawal.aggregate({
       where: {
         creatorId,
         createdAt: { gte: since },

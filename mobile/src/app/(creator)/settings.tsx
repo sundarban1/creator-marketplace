@@ -51,6 +51,7 @@ import { useFacebookAccessToken } from '@/hooks/useFacebookAccessToken';
 import * as WebBrowser from 'expo-web-browser';
 import type { FacebookPageOption } from '@/services/creator';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { readableOnSurface } from '@/utilities/color';
 import { useAuth } from '@/context/AuthContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useToast } from '@/components/Toast';
@@ -1420,17 +1421,21 @@ export default function CreatorSettingsScreen() {
             const isConnecting = connectingPlatform === p.id;
             const isLive = PLATFORM_LIVE[p.id];
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
+            // TikTok's near-black brand color vanishes on the dark palette — swap
+            // it for the theme text color everywhere this row uses the brand hue.
+            const pc = readableOnSurface(p.color, isDark, C.text);
+            const pcOnBtn = pc === p.color ? '#fff' : C.background;
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                 <View
                   style={[
                     styles.socialIconWrap,
                     {
-                      backgroundColor: p.color + '18',
+                      backgroundColor: pc + '18',
                     },
                   ]}
                 >
-                  <PlatformIcon iconName={p.iconName} size={20} color={p.color} />
+                  <PlatformIcon iconName={p.iconName} size={20} color={pc} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.connectPlatformNameRow}>
@@ -1442,8 +1447,8 @@ export default function CreatorSettingsScreen() {
                   {acct ? (
                     <>
                       <View style={styles.socialMetaRow}>
-                        <View style={[styles.socialFollowerBadge, { backgroundColor: p.color + '15' }]}>
-                          <Text style={[styles.socialFollowerBadgeText, { color: p.color }]}>
+                        <View style={[styles.socialFollowerBadge, { backgroundColor: pc + '15' }]}>
+                          <Text style={[styles.socialFollowerBadgeText, { color: pc }]}>
                             {fmt(String(acct.followers))} {p.followersLabel.toLowerCase()}
                           </Text>
                         </View>
@@ -1453,7 +1458,7 @@ export default function CreatorSettingsScreen() {
                     <>
                       {p.id === 'instagram' && isLive && (
                         <Pressable disabled={isConnecting} onPress={() => void handleConnectInstagramDirect()} hitSlop={4}>
-                          <Text style={[styles.connectInstagramDirectLink, { color: p.color }]}>
+                          <Text style={[styles.connectInstagramDirectLink, { color: pc }]}>
                             {t('creatorSettings.connectInstagramDirectly')}
                           </Text>
                         </Pressable>
@@ -1472,7 +1477,7 @@ export default function CreatorSettingsScreen() {
                     </View>
                   ) : (
                     <Pressable
-                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: isConnecting ? 0.7 : 1 }]}
+                      style={[styles.connectBtn, { backgroundColor: pc, opacity: isConnecting ? 0.7 : 1 }]}
                       disabled={isConnecting}
                       onPress={() => {
                         if (p.id === 'youtube') handleConnectYoutube();
@@ -1481,8 +1486,8 @@ export default function CreatorSettingsScreen() {
                         else if (p.id === 'instagram') handleConnectInstagram();
                       }}>
                       {isConnecting
-                        ? <ActivityIndicator size="small" color="#fff" />
-                        : <Text style={styles.connectBtnText}>{t('creatorSettings.connectBtn')}</Text>}
+                        ? <ActivityIndicator size="small" color={pcOnBtn} />
+                        : <Text style={[styles.connectBtnText, { color: pcOnBtn }]}>{t('creatorSettings.connectBtn')}</Text>}
                     </Pressable>
                   )}
                 </View>

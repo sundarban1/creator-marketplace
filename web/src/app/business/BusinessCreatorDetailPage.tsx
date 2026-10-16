@@ -119,7 +119,7 @@ export function BusinessCreatorDetailPage() {
       <div className="mt-5 flex flex-wrap gap-2">
         <Button onClick={() => setInviteOpen(true)}>{t('biz.invite')}</Button>
         <Button variant="secondary" onClick={onToggleSave}>
-          <Bookmark size={15} className={isSaved ? 'fill-current' : ''} />
+          <Bookmark size={15} className={isSaved ? 'fill-violet text-violet' : ''} />
           {isSaved ? t('biz.saved') : t('biz.save')}
         </Button>
         <ReportButton targetType="USER" targetId={c.userId ?? c.id} />

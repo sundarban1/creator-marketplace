@@ -15,7 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackButton } from '@/components/BackButton';
 import { SearchInput } from '@/components/SearchInput';
 import { EntityCard } from '@/components/EntityCard';
-import { useAppColors } from '@/context/ThemeContext';
+import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { readableOnSurface } from '@/utilities/color';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { EmptyState } from '@/components/EmptyState';
@@ -119,6 +120,7 @@ const EMPTY_SAVED: SavedCreatorItem[] = [];
 
 export default function SavedCreatorsScreen() {
   const C = useAppColors();
+  const { isDark } = useIsDark();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { categories: allCategories } = useAllCategories();
@@ -270,7 +272,7 @@ export default function SavedCreatorsScreen() {
             const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
             return (
               <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-                <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                <FontAwesome5 name={meta.icon} size={11} color={readableOnSurface(meta.color, isDark, C.text)} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
                 <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
               </Pressable>

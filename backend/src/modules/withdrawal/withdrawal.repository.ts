@@ -54,4 +54,14 @@ export class WithdrawalRepository {
   update(id: string, data: Prisma.WithdrawalUpdateInput) {
     return prisma.withdrawal.update({ where: { id }, data, include: withCreator });
   }
+
+  /**
+   * Move a withdrawal only if it is still in one of `from` — a compare-and-set,
+   * so a concurrent transition (creator cancel vs. admin mark-paid) can't be
+   * overwritten by a write based on a stale read. Null when it had moved on.
+   */
+  async transition(id: string, from: WithdrawalStatus[], data: Prisma.WithdrawalUpdateManyMutationInput) {
+    const { count } = await prisma.withdrawal.updateMany({ where: { id, status: { in: from } }, data });
+    return count === 0 ? null : this.findById(id);
+  }
 }

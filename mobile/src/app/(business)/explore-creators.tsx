@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
@@ -40,6 +40,7 @@ import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { STALE } from '@/lib/queryClient';
 import { prefetchCreatorPublic } from '@/lib/prefetch';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import type { ApiCategory } from '@/services/category';
 import { CategoryPillRow } from '@/components/CategoryPillRow';
 
@@ -207,6 +208,12 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
   const queryClient = useQueryClient();
+
+  // As the Find People tab root (showBack=false), scroll back up when its bottom-nav
+  // tab is tapped. Only one of the two lists (people / services) is mounted at a time,
+  // so a single ref covers whichever is showing.
+  const listRef = useRef<FlatList<any>>(null);
+  useScrollToTopOnTabPress(showBack ? '' : 'find-people', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -579,6 +586,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
             />
           ) : (
             <FlatList
+              ref={listRef}
               style={{ flex: 1 }}
               data={peopleData}
               keyExtractor={(item) => item.id}
@@ -629,6 +637,7 @@ export default function ExploreCreatorsScreen({ showBack = true }: { showBack?: 
             />
           ) : (
             <FlatList
+              ref={listRef}
               style={{ flex: 1 }}
               data={services}
               keyExtractor={(item) => item.id}

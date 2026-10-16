@@ -162,6 +162,7 @@ export interface BackendDict {
     paymentAlreadyMadeForCampaign: string;
     paymentAlreadyMadeForApplication: string;
     creatorMustBeAcceptedFirst: string;
+    paymentAfterSelectionExpired: string;
     khaltiPaymentMismatch: string;
     khaltiPaymentStatus: (status: string) => string;
     paidAmountMismatch: string;
