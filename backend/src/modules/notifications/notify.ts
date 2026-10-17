@@ -41,6 +41,37 @@ export const NotificationEvent = {
 } as const;
 export type NotificationEventType = (typeof NotificationEvent)[keyof typeof NotificationEvent];
 
+// Competition events (modules/competition/competition.notifications.ts). Same
+// dispatcher and dedupe ledger; refType is always 'competition', refId the
+// competition id (web: web/src/app/lib/notificationRoute.ts).
+export const CompetitionNotificationEvent = {
+  JOINED:               'competition_joined',
+  NEW_PARTICIPANTS:     'competition_new_participants',
+  SUBMISSION_RECEIVED:  'competition_submission_received',
+  NEW_SUBMISSIONS:      'competition_new_submissions',
+  STAGE_OPENED:         'competition_stage_opened',
+  DEADLINE_CHANGED:     'competition_deadline_changed',
+  DEADLINE_REMINDER:    'competition_deadline_reminder',
+  ORGANIZER_DEADLINE:   'competition_organizer_deadline',
+  READY_FOR_REVIEW:     'competition_ready_for_review',
+  NEEDS_ATTENTION:      'competition_needs_attention',
+  ADVANCED:             'competition_advanced',
+  NOT_SELECTED:         'competition_not_selected',
+  RESULTS_PUBLISHED:    'competition_results_published',
+  RESULTS_REOPENED:     'competition_results_reopened',
+  PAUSED:               'competition_paused',
+  RESUMED:              'competition_resumed',
+  CANCELLED:            'competition_cancelled',
+  UPDATED:              'competition_updated',
+  SUSPENDED:            'competition_suspended',
+  REVIEW_APPROVED:      'competition_review_approved',
+  REVIEW_CHANGES:       'competition_review_changes_requested',
+  REVIEW_REJECTED:      'competition_review_rejected',
+  EDIT_APPROVED:        'competition_edit_approved',
+  EDIT_REJECTED:        'competition_edit_rejected',
+} as const;
+export type CompetitionNotificationType = (typeof CompetitionNotificationEvent)[keyof typeof CompetitionNotificationEvent];
+
 // Web page that owns the action a collaboration notification asks for. Mirrors
 // web/src/app/lib/notificationRoute.ts so an email CTA lands exactly where the
 // web bell would. Logged-out visitors hit the login screen, which returns them
@@ -70,7 +101,7 @@ export function applicationPushKey(campaignId: string, windowIndex: number): str
 
 export interface NotifyInput {
   userId: string;
-  type: NotificationEventType;
+  type: NotificationEventType | CompetitionNotificationType;
   /** Push title / bell title — keep short. */
   title: string;
   body: string;

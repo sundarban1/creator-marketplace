@@ -322,6 +322,7 @@ model CreatorProfile {
   reliability              CreatorReliability?
   redemptionSessions       RedemptionSession[]
   meetupRegistrations      CreatorMeetupRegistration[]
+  competitionEntries       CompetitionParticipant[]
 
   @@index([isVerified])
   // Explore Creators' default ordering is `createdAt DESC, id ASC` (see
@@ -819,6 +820,7 @@ model BusinessProfile {
   creditsAccount           BusinessCreditsAccount?
   creditsLedger            BusinessCreditsLedger[]
   redemptionSessions       RedemptionSession[]
+  competitions             Competition[]
 
   @@index([isVerified])
   // Business discovery filters `categories` with array `has` and orders by
@@ -2181,6 +2183,7 @@ enum ReportTargetType {
   BUSINESS
   SERVICE
   OPPORTUNITY
+  COMPETITION
   POST
   MESSAGE
   REVIEW
@@ -3080,4 +3083,356 @@ enum SharePlatform {
   COPY_LINK
   NATIVE_SHARE
   OTHER
+}
+
+// ============================================================================
+// Competitions (V1, web-first) — a third event type alongside Paid Event and
+// Open Event. Creators join, submit work per stage, the organizer reviews and
+// publishes stage decisions, then final awards. Deliberately separate from
+// Campaign: no budget/escrow/application coupling, and NO payment records of
+// any kind — CompetitionPrize amounts are advertised text only (docs/COMPETITIONS.md).
+//
+// Time-driven transitions (scheduled publish, stage open/close, reminders) are
+// never pre-scheduled: jobs/competitionLifecycle.ts re-derives them from the
+// row's CURRENT dates on every sweep with conditional updates, so extending a
+// deadline or reopening a stage can't be undone by a stale task.
+// ============================================================================
+
+// Every competition is reviewed by a Kolab admin before it goes live —
+// unlike events, verified businesses do NOT skip it (prize claims reach many
+// creators). Approval → SCHEDULED (future publishAt) or ACTIVE.
+enum CompetitionStatus {
+  DRAFT
+  PENDING_REVIEW
+  CHANGES_REQUESTED
+  REJECTED
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  AWAITING_RESULTS
+  COMPLETED
+  CANCELLED
+}
+
+enum CompetitionStageStatus {
+  UPCOMING
+  OPEN
+  UNDER_REVIEW
+  // Organizer has saved draft decisions but not published them.
+  SELECTION_PENDING
+  RESULTS_PUBLISHED
+  CLOSED
+}
+
+enum CompetitionParticipantStatus {
+  ACTIVE
+  NOT_SELECTED
+  WITHDRAWN
+}
+
+enum CompetitionSubmissionMethod {
+  VIDEO_UPLOAD
+  EXTERNAL_LINK
+}
+
+enum CompetitionDecisionValue {
+  ADVANCE
+  NOT_SELECTED
+}
+
+enum CompetitionModerationFlag {
+  NONE
+  FLAGGED
+  UNDER_INVESTIGATION
+  CLEARED
+}
+
+enum CompetitionResultsVisibility {
+  PUBLIC
+  PARTICIPANTS
+}
+
+model Competition {
+  id                        String                       @id @default(cuid())
+  businessId                String
+  slug                      String                       @unique
+  title                     String
+  description               String
+  objectives                String?
+  coverImageUrl             String?
+  rules                     String
+  eligibility               String?
+  // Creator skills / content formats the organizer is looking for (free text tags).
+  contentFormats            String[]                     @default([])
+  submissionInstructions    String?
+  // Competition-wide defaults; a stage may override (CompetitionStage.videoMin/MaxSec).
+  videoMinSec               Int?
+  videoMaxSec               Int?
+  contactInstructions       String?
+  // Organizer reference documents — rules PDF, brand kit, reference images.
+  // Same shape and caps as Campaign.brief.attachments (POST /api/campaigns/attachments).
+  attachments               Json                         @default("[]")
+  status                    CompetitionStatus            @default(DRAFT)
+  resultsVisibility         CompetitionResultsVisibility @default(PUBLIC)
+  // Scheduled publication — SCHEDULED rows flip to ACTIVE once this passes.
+  publishAt                 DateTime?
+  registrationOpensAt       DateTime
+  registrationDeadline      DateTime
+  startsAt                  DateTime
+  endsAt                    DateTime
+  // Creators may replace a stage submission before its deadline.
+  allowSubmissionEdits      Boolean                      @default(true)
+  // Competition-specific rule (e.g. Kolab Creator Challenge): at most one award per creator.
+  onePrizePerCreator        Boolean                      @default(true)
+  // Optional judging rubric — [{ key, label, weight }], weights total 100.
+  scoringEnabled            Boolean                      @default(false)
+  judgingCriteria           Json                         @default("[]")
+  publishedAt               DateTime?
+  pausedAt                  DateTime?
+  pauseReason               String?
+  completedAt               DateTime?
+  resultsPublishedAt        DateTime?
+  cancelledAt               DateTime?
+  cancelReason              String?
+  // ── Kolab moderation (permission-gated, audited) ─────────────────────────
+  // Suspension hides the competition from discovery and freezes creator and
+  // organizer workflow actions without changing `status`.
+  moderationFlag            CompetitionModerationFlag    @default(NONE)
+  moderationNote            String?
+  suspendedAt               DateTime?
+  suspensionReason          String?
+  // ── Admin review (launch + material edits) ───────────────────────────────
+  // Latest decision mirrored here; full history in CompetitionReview.
+  reviewFeedback            String?
+  reviewedAt                DateTime?
+  submittedForReviewAt      DateTime?
+  // An admin may reject permanently (policy violation); false blocks resubmit.
+  resubmissionAllowed       Boolean                      @default(true)
+  reviewRevision            Int                          @default(0)
+  // Proposed edits to rules / eligibility / prizes on a live (or approved,
+  // scheduled) competition, awaiting admin approval. The approved version stays
+  // in effect until then. Shape: { rules?, eligibility?, prizes? }.
+  pendingChanges            Json?
+  pendingChangesSubmittedAt DateTime?
+  pendingChangesFeedback    String?
+  createdAt                 DateTime                     @default(now())
+  updatedAt                 DateTime                     @updatedAt
+
+  business     BusinessProfile          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  reviews      CompetitionReview[]
+  stages       CompetitionStage[]
+  participants CompetitionParticipant[]
+  prizes       CompetitionPrize[]
+  awards       CompetitionAward[]
+
+  @@index([businessId])
+  @@index([status, registrationDeadline])
+  @@index([status, publishAt])
+  @@index([status, submittedForReviewAt])
+  @@map("competitions")
+}
+
+enum CompetitionReviewAction {
+  SUBMITTED
+  RESUBMITTED
+  WITHDRAWN
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+  EDIT_SUBMITTED
+  EDIT_APPROVED
+  EDIT_REJECTED
+}
+
+// Append-only review history (launch reviews and material-edit reviews).
+model CompetitionReview {
+  id            String                  @id @default(cuid())
+  competitionId String
+  // Admin for decisions, the organizer's user for submissions. No FK, same as AuditLog.
+  actorId       String?
+  action        CompetitionReviewAction
+  feedback      String?
+  revision      Int
+  changedFields String[]                @default([])
+  createdAt     DateTime                @default(now())
+
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId, createdAt(sort: Desc)])
+  @@map("competition_reviews")
+}
+
+model CompetitionStage {
+  id                  String                 @id @default(cuid())
+  competitionId       String
+  order               Int
+  name                String
+  description         String?
+  brief               String?
+  opensAt             DateTime
+  deadline            DateTime
+  status              CompetitionStageStatus @default(UPCOMING)
+  // Fixed advancement limit; null = organizer picks manually with no cap.
+  advanceLimit        Int?
+  // Subset of CompetitionSubmissionMethod values.
+  allowedMethods      String[]               @default(["VIDEO_UPLOAD", "EXTERNAL_LINK"])
+  videoMinSec         Int?
+  videoMaxSec         Int?
+  requirements        String?
+  openedAt            DateTime?
+  submissionsClosedAt DateTime?
+  resultsPublishedAt  DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  competition Competition                @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  submissions CompetitionSubmission[]
+  decisions   CompetitionStageDecision[]
+
+  @@unique([competitionId, order])
+  @@index([status, deadline])
+  @@index([status, opensAt])
+  @@map("competition_stages")
+}
+
+model CompetitionParticipant {
+  id                String                       @id @default(cuid())
+  competitionId     String
+  creatorId         String
+  status            CompetitionParticipantStatus @default(ACTIVE)
+  // Highest stage (CompetitionStage.order) this creator is eligible to submit to.
+  currentStageOrder Int                          @default(1)
+  // The stage at which they were not selected (null while still in).
+  eliminatedAtOrder Int?
+  joinedAt          DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+
+  competition Competition                @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  creator     CreatorProfile             @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  submissions CompetitionSubmission[]
+  decisions   CompetitionStageDecision[]
+  awards      CompetitionAward[]
+
+  @@unique([competitionId, creatorId])
+  @@index([creatorId])
+  @@index([competitionId, status, currentStageOrder])
+  @@map("competition_participants")
+}
+
+// The ACTIVE submission for (stage, participant) — unique, so at most one.
+// Every replacement appends a CompetitionSubmissionVersion row first.
+model CompetitionSubmission {
+  id              String                      @id @default(cuid())
+  stageId         String
+  participantId   String
+  method          CompetitionSubmissionMethod
+  videoUrl        String?
+  thumbnailUrl    String?
+  // Storage reference (R2 key or Cloudinary publicId) — never sent to clients.
+  storageRef      String?
+  storageProvider String?
+  durationSec     Int?
+  sizeBytes       Int?
+  externalUrl     String?
+  caption         String?
+  version         Int                         @default(1)
+  submittedAt     DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  stage       CompetitionStage               @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  participant CompetitionParticipant         @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  versions    CompetitionSubmissionVersion[]
+
+  @@unique([stageId, participantId])
+  @@index([participantId])
+  @@map("competition_submissions")
+}
+
+// Append-only history of replaced submissions.
+model CompetitionSubmissionVersion {
+  id           String                      @id @default(cuid())
+  submissionId String
+  version      Int
+  method       CompetitionSubmissionMethod
+  videoUrl     String?
+  thumbnailUrl String?
+  externalUrl  String?
+  durationSec  Int?
+  caption      String?
+  submittedAt  DateTime
+  replacedAt   DateTime                    @default(now())
+
+  submission CompetitionSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, version])
+  @@map("competition_submission_versions")
+}
+
+// Organizer's per-stage decision. Draft (isPublished=false) rows, notes and
+// scores are organizer-only; creators only ever see a published `decision`.
+model CompetitionStageDecision {
+  id            String                    @id @default(cuid())
+  stageId       String
+  participantId String
+  decision      CompetitionDecisionValue?
+  notes         String?
+  // { [criterionKey]: 0..10 } when the competition has scoringEnabled.
+  scores        Json?
+  totalScore    Float?
+  isPublished   Boolean                   @default(false)
+  decidedById   String?
+  publishedAt   DateTime?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  stage       CompetitionStage       @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  participant CompetitionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, participantId])
+  @@index([stageId, decision])
+  @@map("competition_stage_decisions")
+}
+
+// Advertised prize definition — informational only, never a payment record.
+model CompetitionPrize {
+  id             String   @id @default(cuid())
+  competitionId  String
+  position       Int
+  // PLACEMENT = a ranking (Winner, 1st runner-up…) — a creator can hold at most
+  // one. SPECIAL = consolation/category prize (Best Storytelling…), stackable
+  // only when the competition's onePrizePerCreator is off.
+  kind           String   @default("PLACEMENT")
+  title          String
+  description    String?
+  amount         Float?
+  currency       String   @default("NPR")
+  recipientCount Int      @default(1)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  competition Competition        @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  awards      CompetitionAward[]
+
+  @@index([competitionId, position])
+  @@map("competition_prizes")
+}
+
+// A finalist assigned to a prize. Draft until the organizer publishes results.
+model CompetitionAward {
+  id            String    @id @default(cuid())
+  competitionId String
+  prizeId       String
+  participantId String
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  competition Competition            @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  prize       CompetitionPrize       @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+  participant CompetitionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([prizeId, participantId])
+  @@index([competitionId, isPublished])
+  @@map("competition_awards")
 }

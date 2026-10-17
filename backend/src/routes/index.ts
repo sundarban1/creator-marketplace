@@ -53,6 +53,7 @@ import pointsRoutes from '../modules/points/points.routes';
 import creditsRoutes from '../modules/credits/credits.routes';
 import meetupRoutes from '../modules/meetup/meetup.routes';
 import meetupAdminRoutes from '../modules/meetup/meetup.admin.routes';
+import { competitionRoutes, competitionManageRoutes, competitionAdminRoutes } from '../modules/competition/competition.routes';
 
 export function registerApiRoutes(app: Express): void {
   app.use('/api/auth', authRoutes);
@@ -85,6 +86,9 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/promotions', promotionRoutes);
   app.use('/api/redemptions', redemptionRoutes);
   app.use('/api/meetups', meetupRoutes);
+  // /manage must be mounted before the public /:idOrSlug router.
+  app.use('/api/competitions/manage', competitionManageRoutes);
+  app.use('/api/competitions', competitionRoutes);
   app.use('/api/admin/meetups', meetupAdminRoutes);
   app.use('/api/messaging', messagingRoutes);
   app.use('/api/admin/categories', categoryAdminRoutes);
@@ -97,6 +101,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/admin/services', serviceAdminRoutes);
   app.use('/api/admin/reports', reportAdminRoutes);
   app.use('/api/admin/withdrawals', withdrawalAdminRoutes);
+  app.use('/api/admin/competitions', competitionAdminRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/platforms', platformRoutes);

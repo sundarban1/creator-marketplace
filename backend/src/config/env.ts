@@ -38,6 +38,11 @@ const envSchema = z.object({
   // Render's free-tier restriction on outbound SMTP ports.
   RESEND_API_KEY: z.string().optional(),
   ADMIN_EMAIL:    z.string().optional(),
+  // Comma-separated admin emails allowed to use competition MODERATION tools
+  // (view private submissions, flag/suspend). Ordinary admins only get the
+  // competition oversight summary. Kept in env (not a platform setting) so an
+  // admin can't grant themselves access from the dashboard.
+  COMPETITION_MODERATOR_EMAILS: z.string().optional(),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
   SENTRY_DSN: z.string().optional(),

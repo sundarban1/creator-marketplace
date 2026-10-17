@@ -12,6 +12,7 @@ import { startEscrowStateMachineJob } from './jobs/escrowStateMachine';
 import { startCollaborationRemindersJob } from './jobs/collaborationReminders';
 import { startConnectIpsReconcileJob } from './jobs/reconcileConnectIps';
 import { startResourceAlertsJob } from './jobs/resourceAlerts';
+import { startCompetitionLifecycleJob } from './jobs/competitionLifecycle';
 import { startPushWorker, stopPushWorker } from './workers/pushWorker';
 import { closeQueues } from './config/queue';
 
@@ -38,6 +39,7 @@ export async function startServer(app: Express): Promise<void> {
     startCollaborationRemindersJob();
     startConnectIpsReconcileJob();
     startResourceAlertsJob();
+    startCompetitionLifecycleJob();
     startPushWorker();
 
     httpServer.listen(PORT, () => {

@@ -56,6 +56,34 @@ export const AuditAction = {
   WITHDRAWAL_REJECTED:      'withdrawal.rejected',
   WITHDRAWAL_CANCELLED:     'withdrawal.cancelled',
   DISPUTE_RESOLVED:         'dispute.resolved',
+  // Competitions — written inside the same transaction as the change they
+  // record (see competition.service.ts audit()).
+  COMPETITION_CREATED:             'competition.created',
+  COMPETITION_UPDATED:             'competition.updated',
+  COMPETITION_PUBLISHED:           'competition.published',
+  COMPETITION_SCHEDULED:           'competition.scheduled',
+  COMPETITION_PAUSED:              'competition.paused',
+  COMPETITION_RESUMED:             'competition.resumed',
+  COMPETITION_CANCELLED:           'competition.cancelled',
+  COMPETITION_CLOSED:              'competition.closed',
+  COMPETITION_REGISTRATION_CHANGED: 'competition.registration_changed',
+  COMPETITION_STAGE_OPENED:        'competition.stage_opened',
+  COMPETITION_STAGE_CLOSED:        'competition.stage_closed',
+  COMPETITION_STAGE_REOPENED:      'competition.stage_reopened',
+  COMPETITION_DEADLINE_EXTENDED:   'competition.deadline_extended',
+  COMPETITION_DECISIONS_PUBLISHED: 'competition.decisions_published',
+  COMPETITION_RESULTS_PUBLISHED:   'competition.results_published',
+  COMPETITION_RESULTS_REOPENED:    'competition.results_reopened',
+  COMPETITION_MODERATION_FLAGGED:  'competition.moderation_flagged',
+  COMPETITION_SUSPENDED:           'competition.suspended',
+  COMPETITION_UNSUSPENDED:         'competition.unsuspended',
+  COMPETITION_SENSITIVE_ACCESS:    'competition.sensitive_access',
+  COMPETITION_SUBMITTED:           'competition.submitted',
+  COMPETITION_APPROVED:            'competition.approved',
+  COMPETITION_CHANGES_REQUESTED:   'competition.changes_requested',
+  COMPETITION_REJECTED:            'competition.rejected',
+  COMPETITION_CHANGES_APPROVED:    'competition.edit_approved',
+  COMPETITION_CHANGES_REJECTED:    'competition.edit_rejected',
 } as const;
 
 export const EntityType = {
@@ -64,6 +92,7 @@ export const EntityType = {
   CONVERSATION:     'Conversation',
   CREATOR_PROFILE:  'CreatorProfile',
   BUSINESS_PROFILE: 'BusinessProfile',
+  COMPETITION:      'Competition',
 } as const;
 
 export type ActivityActionValue = typeof ActivityAction[keyof typeof ActivityAction];

@@ -5,6 +5,8 @@ export const hasDb = !!process.env.TEST_DATABASE_URL;
 
 // Tables the escrow + Kolab Rewards flows touch, child-first for FK-safe truncation.
 const TABLES = [
+  'competition_awards', 'competition_prizes', 'competition_stage_decisions', 'competition_submission_versions',
+  'competition_submissions', 'competition_participants', 'competition_stages', 'competitions', 'reports',
   'campaign_events', 'campaign_submission_versions', 'disputes', 'revision_notes',
   'wallet_transactions', 'payment_transactions', 'creator_reliability',
   'redemption_sessions', 'promotions',
