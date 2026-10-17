@@ -4,6 +4,7 @@ import { useLiveRefresh } from '../lib/liveUpdates';
 import { fetchMyApplications } from '../api/creator';
 import { DashPageHeader } from './dash-ui/DashPageHeader';
 import { EventsBrowser } from '../events/EventsBrowser';
+import { CompetitionsStrip } from '../competitions/CompetitionsStrip';
 
 export function CreatorEventsPage() {
   const t = useT();
@@ -18,6 +19,7 @@ export function CreatorEventsPage() {
         title={t('nav.discoverEvents')}
         description={t('public.eventsSubtitle')}
       />
+      <CompetitionsStrip />
       <EventsBrowser hrefBase="/creator/events" appliedIds={appliedIds} variant="dashboard" />
     </>
   );

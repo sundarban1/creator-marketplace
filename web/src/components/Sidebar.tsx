@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
+  Trophy,
   LayoutDashboard,
   Users,
   Star,
@@ -47,6 +48,7 @@ const navGroups: NavGroup[] = [
       { to: '/admin/verification', label: 'Verification', icon: ShieldCheck },
       { to: '/admin/campaigns',  label: 'Events',     icon: Megaphone       },
       { to: '/admin/event-reviews', label: 'Event Reviews', icon: ClipboardCheck },
+      { to: '/admin/competitions', label: 'Competitions', icon: Trophy },
       { to: '/admin/creator-meetups', label: 'Creator Meetups', icon: CalendarDays },
       { to: '/admin/events',     label: 'Community Events', icon: CalendarHeart },
       { to: '/admin/categories', label: 'Categories', icon: Tag             },

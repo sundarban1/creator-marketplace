@@ -87,6 +87,8 @@ const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/admin/campaigns',                  'Events'],
   ['/admin/event-reviews',              'Event Reviews'],
   ['/admin/campaigns/:id',              'Event Details'],
+  ['/admin/competitions',               'Competitions'],
+  ['/admin/competitions/:id',           'Competition Oversight'],
   ['/admin/creator-meetups',            'Creator Meetups'],
   ['/admin/creator-meetups/:meetupId',  'Meetup Details'],
   ['/admin/events',                     'Community Events'],

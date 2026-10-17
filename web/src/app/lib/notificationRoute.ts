@@ -32,6 +32,17 @@ export function notificationRoute(n: AppNotification, role: AppRole): string {
       : `${base}/events/${ref}`;
   }
 
+  // Competitions: organizers land on the management view (review tab when
+  // there's something to review), creators on their progress page.
+  if (n.refType === 'competition') {
+    if (!ref) return `${base}/competitions`;
+    if (role === 'BUSINESS') {
+      const review = ['competition_new_submissions', 'competition_ready_for_review', 'competition_organizer_deadline'].includes(n.type);
+      return `${base}/competitions/${ref}${review ? '?tab=review' : ''}`;
+    }
+    return `${base}/competitions/${ref}`;
+  }
+
   switch (n.refType) {
     case 'application':
       if (!ref) return `${base}/applications`;

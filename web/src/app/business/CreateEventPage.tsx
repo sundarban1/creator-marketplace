@@ -315,12 +315,15 @@ export function CreateEventPage() {
 
       {phase !== 'budget' && (
         <>
-          <SegmentedControl<CType>
+          <SegmentedControl<CType | 'COMPETITION'>
             ariaLabel="Type"
             variant="pill"
             value={cType}
             onChange={(next) => {
               if (next === cType) return;
+              // Competitions have their own builder (stages, prizes, judging)
+              // — the paid/open forms below are untouched.
+              if (next === 'COMPETITION') { navigate('/business/competitions/new'); return; }
               setCType(next);
               // Paid and free events use different AI prompt shapes (budget
               // vs. no budget) — a prompt written for one reads oddly, and
@@ -330,6 +333,7 @@ export function CreateEventPage() {
             options={[
               { value: 'PAID_CAMPAIGN', label: t('public.typePaid') },
               { value: 'OPEN_EVENT', label: t('public.typeOpenEvent') },
+              { value: 'COMPETITION', label: t('comp.typeBadge') },
             ]}
           />
 

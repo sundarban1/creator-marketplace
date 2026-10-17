@@ -81,6 +81,11 @@ const BusinessPaymentsPage = screen(() => import('./business/BusinessPaymentsPag
 const BusinessProfilePage = screen(() => import('./business/BusinessProfilePage'), 'BusinessProfilePage');
 const BusinessReferralsPage = screen(() => import('./business/BusinessReferralsPage'), 'BusinessReferralsPage');
 const BusinessVerificationPage = screen(() => import('./business/BusinessVerificationPage'), 'BusinessVerificationPage');
+const CreatorCompetitionsPage = screen(() => import('./competitions/CreatorCompetitionsPage'), 'CreatorCompetitionsPage');
+const CreatorCompetitionDetailPage = screen(() => import('./competitions/CreatorCompetitionDetailPage'), 'CreatorCompetitionDetailPage');
+const BusinessCompetitionsPage = screen(() => import('./competitions/BusinessCompetitionsPage'), 'BusinessCompetitionsPage');
+const BusinessCompetitionManagePage = screen(() => import('./competitions/BusinessCompetitionManagePage'), 'BusinessCompetitionManagePage');
+const CompetitionFormPage = screen(() => import('./competitions/CompetitionFormPage'), 'CompetitionFormPage');
 
 export function marketplaceRoutes() {
   return (
@@ -151,6 +156,8 @@ export function marketplaceRoutes() {
               <Route path="applications/:id" element={<CreatorWorkDetailPage />} />
               <Route path="work" element={<CreatorWorkPage />} />
               <Route path="work/:id" element={<CreatorWorkDetailPage />} />
+              <Route path="competitions" element={<CreatorCompetitionsPage />} />
+              <Route path="competitions/:id" element={<CreatorCompetitionDetailPage />} />
               <Route path="meetups" element={<CreatorMeetupsPage />} />
               <Route path="meetups/:meetupId" element={<CreatorMeetupRegisterPage />} />
               <Route path="messages" element={<ChatPage />} />
@@ -183,6 +190,10 @@ export function marketplaceRoutes() {
               <Route path="events/create" element={<CreateEventPage />} />
               <Route path="events/:id" element={<BusinessEventDetailPage />} />
               <Route path="events/:id/edit" element={<EditEventPage />} />
+              <Route path="competitions" element={<BusinessCompetitionsPage />} />
+              <Route path="competitions/new" element={<CompetitionFormPage />} />
+              <Route path="competitions/:id" element={<BusinessCompetitionManagePage />} />
+              <Route path="competitions/:id/edit" element={<CompetitionFormPage />} />
               <Route path="promotions" element={<BusinessPromotionsPage />} />
               <Route path="promotions/create" element={<BusinessPromotionFormPage />} />
               <Route path="promotions/:id/edit" element={<BusinessPromotionFormPage />} />

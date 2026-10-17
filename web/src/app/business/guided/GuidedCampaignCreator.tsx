@@ -349,6 +349,7 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
           onManual={startManual}
           busy={aiBusy}
           onSwitchToFree={mode === 'create' ? onSwitchToFree : undefined}
+          onSwitchToCompetition={mode === 'create' ? () => navigate('/business/competitions/new') : undefined}
           onStartFrom={startFrom}
           startingFrom={startingFrom}
         />

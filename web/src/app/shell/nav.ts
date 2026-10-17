@@ -19,6 +19,7 @@ import {
   Sparkles,
   BarChart3,
   UsersRound,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from '../api/auth';
@@ -52,6 +53,7 @@ const CREATOR_NAV_GROUPS: NavGroup[] = [
     labelKey: 'groupDiscover',
     items: [
       { key: 'discoverEvents', to: '/creator/events', icon: Compass },
+      { key: 'competitions', to: '/creator/competitions', icon: Trophy },
       { key: 'discoverCreators', to: '/creator/creators', icon: Users },
       { key: 'discoverBusinesses', to: '/creator/businesses', icon: Building2 },
       { key: 'savedEvents', to: '/creator/saved-events', icon: Bookmark },
@@ -99,6 +101,7 @@ const BUSINESS_NAV_GROUPS: NavGroup[] = [
     items: [
       { key: 'findCreators', to: '/business/creators', icon: Users },
       { key: 'events', to: '/business/events', icon: CalendarDays },
+      { key: 'competitions', to: '/business/competitions', icon: Trophy },
       { key: 'promotions', to: '/business/promotions', icon: Tag },
     ],
   },

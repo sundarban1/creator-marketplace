@@ -38,6 +38,8 @@ export function notificationRoute(n: ApiNotification): string | null {
     case 'account_verified':
     case 'account_deactivated':
     case 'account_deleted':     return '/admin/users';
+    case 'competition_review_submitted':
+      return n.refId ? `/admin/competitions/${n.refId}` : '/admin/competitions?review=pending';
   }
 
   // Fallback for any type not mapped above — route by what the notification
@@ -50,6 +52,7 @@ export function notificationRoute(n: ApiNotification): string | null {
     case 'issue_report':    return '/admin/support-inbox?tab=reports';
     case 'dispute':         return '/admin/payments?tab=disputes';
     case 'withdrawal':      return '/admin/payments?tab=withdrawals';
+    case 'competition':     return n.refId ? `/admin/competitions/${n.refId}` : '/admin/competitions';
     default:                return '/admin/dashboard';
   }
 }

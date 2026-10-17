@@ -100,13 +100,14 @@ function MakeClearer({ field, text, form, onUse }: { field: 'idea' | 'descriptio
 const QUICK_STARTS = ['promote', 'launch', 'event', 'ugc', 'awareness', 'other'] as const;
 type QuickStart = (typeof QUICK_STARTS)[number];
 
-export function StartStep({ form, update, onCreateWithAi, onManual, busy, onSwitchToFree, onStartFrom, startingFrom }: {
+export function StartStep({ form, update, onCreateWithAi, onManual, busy, onSwitchToFree, onSwitchToCompetition, onStartFrom, startingFrom }: {
   form: GuidedForm;
   update: Update;
   onCreateWithAi: () => void;
   onManual: () => void;
   busy: boolean;
   onSwitchToFree?: () => void;
+  onSwitchToCompetition?: () => void;
   onStartFrom?: (s: StartSource) => void;
   startingFrom?: string | null;
 }) {
@@ -170,6 +171,14 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onSwit
           <span>{t('guided.freeEventPrompt')}</span>
           <button type="button" onClick={onSwitchToFree} className="inline-flex min-h-[36px] items-center rounded-full border border-violet/30 bg-violet/[0.05] px-4 text-[13px] font-semibold text-violet-dark transition-colors hover:bg-violet/[0.1]">
             {t('guided.freeEventLink')}
+          </button>
+        </div>
+      )}
+      {onSwitchToCompetition && (
+        <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-soft">
+          <span>{t('comp.guidedPrompt')}</span>
+          <button type="button" onClick={onSwitchToCompetition} className="inline-flex min-h-[36px] items-center rounded-full border border-brand-orange/30 bg-brand-orange/[0.06] px-4 text-[13px] font-semibold text-brand-orange transition-colors hover:bg-brand-orange/[0.12]">
+            {t('comp.guidedLink')}
           </button>
         </div>
       )}

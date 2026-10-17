@@ -2,7 +2,7 @@
 
 import { apiRequest } from '../lib/apiClient';
 
-export type ReportTargetType = 'USER' | 'BUSINESS' | 'SERVICE' | 'OPPORTUNITY' | 'POST' | 'MESSAGE' | 'REVIEW';
+export type ReportTargetType = 'USER' | 'BUSINESS' | 'SERVICE' | 'OPPORTUNITY' | 'POST' | 'MESSAGE' | 'REVIEW' | 'COMPETITION';
 export type ReportReason =
   | 'SPAM'
   | 'SCAM'

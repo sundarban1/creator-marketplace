@@ -1031,6 +1031,50 @@ async function refreshAccessToken(): Promise<string> {
   return token;
 }
 
+// ── Competitions (admin oversight — aggregate only; see backend competition.service adminGet) ──
+export interface ApiCompetitionAdminRow {
+  id: string; title: string; status: string;
+  organizer: { id: string; businessName: string | null; isVerified: boolean };
+  registrationDeadline: string; startsAt: string; endsAt: string; createdAt: string;
+  participantCount: number; stageCount: number;
+  moderationFlag: 'NONE' | 'FLAGGED' | 'UNDER_INVESTIGATION' | 'CLEARED'; suspended: boolean; openReports: number;
+  submittedForReviewAt: string | null; hasPendingChanges: boolean;
+}
+export interface ApiCompetitionPrizeContent { id?: string; title: string; kind: string; description?: string | null; amount: number | null; currency?: string; recipientCount: number; notes?: string | null }
+export interface ApiCompetitionAdminDetail {
+  id: string; title: string; description: string; status: string;
+  organizer: { id: string; businessName: string | null; isVerified: boolean; slug: string | null };
+  publishedAt: string | null; registrationOpensAt: string; registrationDeadline: string; startsAt: string; endsAt: string;
+  completedAt: string | null; cancelledAt: string | null; cancelReason: string | null;
+  participantCount: number;
+  stages: Array<{ id: string; order: number; name: string; status: string; opensAt: string; deadline: string; advanceLimit: number | null; submissions: number; advanced: number; notSelected: number }>;
+  prizes: Array<{ title: string; kind: string; amount: number | null; currency: string; recipientCount: number }>;
+  prizePool: { amount: number; currency: string } | null;
+  results: Array<{ prize: { title: string; amount: number | null }; creator: { fullName: string | null; username: string | null } }> | null;
+  moderation: { flag: ApiCompetitionAdminRow['moderationFlag']; note: string | null; suspended: boolean; suspendedAt: string | null; suspensionReason: string | null };
+  reports: Array<{ id: string; reason: string; description: string | null; status: string; createdAt: string }>;
+  viewerIsModerator: boolean;
+  content: {
+    objectives: string | null; coverImageUrl: string | null; rules: string; eligibility: string | null; contentFormats: string[];
+    submissionInstructions: string | null; contactInstructions: string | null; videoMinSec: number | null; videoMaxSec: number | null;
+    attachments: Array<{ url: string; name: string; kind?: string }>; resultsVisibility: string; allowSubmissionEdits: boolean; onePrizePerCreator: boolean;
+    judgingCriteria: Array<{ key: string; label: string; weight: number }>;
+    stageBriefs: Array<{ id: string; name: string; brief: string | null; requirements: string | null; allowedMethods: string[]; videoMinSec: number | null; videoMaxSec: number | null }>;
+    prizes: ApiCompetitionPrizeContent[];
+  };
+  review: {
+    publishAt: string | null; submittedAt: string | null; reviewedAt: string | null; feedback: string | null;
+    resubmissionAllowed: boolean; revision: number;
+    pendingChanges: { rules?: string; eligibility?: string | null; prizes?: ApiCompetitionPrizeContent[] } | null;
+    pendingChangesSubmittedAt: string | null;
+    history: Array<{ id: string; action: string; feedback: string | null; revision: number; changedFields: string[]; createdAt: string }>;
+  };
+}
+export interface ApiCompetitionEvidence {
+  stage: { id: string; name: string };
+  items: Array<{ participantId: string; creator: { fullName: string | null; username: string | null }; method: string; videoUrl: string | null; externalUrl: string | null; caption: string | null; version: number; submittedAt: string }>;
+}
+
 async function request<T>(
   method:  string,
   path:    string,
@@ -1226,6 +1270,26 @@ export const api = {
 
     updateReportStatus: (id: string, status: 'UNDER_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED', actionNote?: string) =>
       request<ApiReport>('PUT', `/api/admin/reports/${id}/status`, { status, actionNote }),
+
+    competitions: (params: { status?: string; flagged?: 'true'; review?: 'pending'; q?: string; page?: number }) =>
+      request<{ items: ApiCompetitionAdminRow[]; pagination: { total: number; page: number; limit: number; totalPages: number } }>('GET', '/api/admin/competitions', undefined, params),
+    competition: (id: string) => request<ApiCompetitionAdminDetail>('GET', `/api/admin/competitions/${id}`),
+    approveCompetition: (id: string) => request<ApiCompetitionAdminDetail>('POST', `/api/admin/competitions/${id}/review/approve`),
+    requestCompetitionChanges: (id: string, feedback: string) =>
+      request<ApiCompetitionAdminDetail>('POST', `/api/admin/competitions/${id}/review/request-changes`, { feedback }),
+    rejectCompetition: (id: string, feedback: string, allowResubmission: boolean) =>
+      request<ApiCompetitionAdminDetail>('POST', `/api/admin/competitions/${id}/review/reject`, { feedback, allowResubmission }),
+    approveCompetitionChanges: (id: string) => request<ApiCompetitionAdminDetail>('POST', `/api/admin/competitions/${id}/review/changes/approve`),
+    rejectCompetitionChanges: (id: string, feedback: string) =>
+      request<ApiCompetitionAdminDetail>('POST', `/api/admin/competitions/${id}/review/changes/reject`, { feedback }),
+    flagCompetition: (id: string, flag: ApiCompetitionAdminRow['moderationFlag'], note: string) =>
+      request<ApiCompetitionAdminDetail>('POST', `/api/admin/competitions/${id}/moderation/flag`, { flag, note }),
+    suspendCompetition: (id: string, reason: string) =>
+      request<ApiCompetitionAdminDetail>('POST', `/api/admin/competitions/${id}/moderation/suspend`, { reason }),
+    unsuspendCompetition: (id: string, reason: string) =>
+      request<ApiCompetitionAdminDetail>('POST', `/api/admin/competitions/${id}/moderation/unsuspend`, { reason }),
+    competitionEvidence: (id: string, stageId: string, reason: string) =>
+      request<ApiCompetitionEvidence>('POST', `/api/admin/competitions/${id}/moderation/stages/${stageId}/submissions`, { reason }),
 
     meetups: () => request<ApiMeetupAdmin[]>('GET', '/api/admin/meetups'),
 
