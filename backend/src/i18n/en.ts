@@ -558,6 +558,8 @@ export const en: BackendDict = {
     stageNotFound: "Stage not found.",
     stageNotOpen: "Submissions for this stage aren’t open yet.",
     stageNotReopenable: "Only a closed stage whose results aren’t published can be reopened.",
+    reviewRoundNoDeadline: "This round reviews entries already submitted, so it has no submission deadline.",
+    submissionModeLocked: "The deadline setup can’t change after the competition is published.",
     stageNotUpcoming: "This stage has already opened.",
     stageRulesLocked: "Advancement and submission rules can only change before a stage opens.",
     stageStructureLocked: "Stages can’t be added, removed or reordered after publishing.",

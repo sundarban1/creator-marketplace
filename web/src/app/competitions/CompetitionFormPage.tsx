@@ -1,6 +1,6 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Eye, FileText, Globe2, Gift, ListOrdered, Pencil, Plus, Repeat, Scale, ScrollText, Sparkles, Trash2, Trophy, Users } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Eye, FileText, Flag, Globe2, Gift, ListOrdered, Pencil, Plus, Repeat, Scale, ScrollText, Sparkles, Trash2, Trophy, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { Button } from '../ui/Button';
@@ -9,6 +9,8 @@ import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { Switch } from '../ui/Switch';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { PageHeader } from '../ui/PageHeader';
+import { EventTypeSwitcher } from '../business/EventTypeSwitcher';
 import { RichTextEditor } from '../ui/RichTextEditor';
 import { markdownToPlain } from '../ui/richText';
 import { cn } from '../ui/cn';
@@ -43,7 +45,7 @@ function emptyForm(): CompetitionInput {
   return {
     title: '', description: '', objectives: null, coverImageUrl: null, rules: '', eligibility: null, contentFormats: [], skills: [],
     submissionInstructions: null, videoMinSec: null, videoMaxSec: null, contactInstructions: null, attachments: [],
-    resultsVisibility: 'PUBLIC',
+    resultsVisibility: 'PUBLIC', submissionMode: 'PER_STAGE',
     registrationOpensAt: iso(1), registrationDeadline: iso(24 * 7), startsAt: iso(1), endsAt: iso(24 * 30),
     allowSubmissionEdits: true, onePrizePerCreator: true, scoringEnabled: false, judgingCriteria: [],
     stages: [emptyStage(1, 24 * 10, 'Round 1')],
@@ -58,7 +60,7 @@ function fromManaged(c: ManagedCompetition): CompetitionInput {
     title: c.title, description: c.description, objectives: c.objectives, coverImageUrl: c.coverImageUrl, rules: pending?.rules ?? c.rules,
     eligibility: pending && 'eligibility' in pending ? pending.eligibility ?? null : c.eligibility, contentFormats: c.contentFormats, skills: c.skills ?? [], submissionInstructions: c.submissionInstructions,
     videoMinSec: c.videoMinSec, videoMaxSec: c.videoMaxSec, contactInstructions: c.contactInstructions, attachments: c.attachments ?? [],
-    resultsVisibility: c.resultsVisibility, registrationOpensAt: c.registrationOpensAt, registrationDeadline: c.registrationDeadline,
+    resultsVisibility: c.resultsVisibility, submissionMode: c.submissionMode ?? 'PER_STAGE', registrationOpensAt: c.registrationOpensAt, registrationDeadline: c.registrationDeadline,
     startsAt: c.startsAt, endsAt: c.endsAt, allowSubmissionEdits: c.allowSubmissionEdits, onePrizePerCreator: c.onePrizePerCreator,
     scoringEnabled: c.scoringEnabled, judgingCriteria: c.judgingCriteria,
     stages: c.stages.map((s) => ({ id: s.id, name: s.name, description: s.description, brief: s.brief, requirements: s.requirements, opensAt: s.opensAt, deadline: s.deadline, advanceLimit: s.advanceLimit, allowedMethods: s.allowedMethods, videoMinSec: s.videoMinSec, videoMaxSec: s.videoMaxSec })),
@@ -96,6 +98,7 @@ function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'review'>, t:
       f.stages.forEach((s, i) => {
         const n = s.name || t('comp.stageN', { n: i + 1 });
         if (!s.name.trim()) e.push(t('comp.vStageName', { n: i + 1 }));
+        if (isReviewRound(f, i)) return; // no dates of its own
         if (ts(s.deadline) <= ts(s.opensAt)) e.push(t('comp.vStageDeadline', { name: n }));
         if (ts(s.opensAt) < ts(f.startsAt)) e.push(t('comp.vStageStart', { name: n }));
         if (ts(s.deadline) > ts(f.endsAt)) e.push(t('comp.vStageEnd', { name: n }));
@@ -118,6 +121,17 @@ function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'review'>, t:
 
 function validateAll(f: CompetitionInput, t: Parameters<typeof validateStep>[2]): Array<{ step: Exclude<FormStep, 'review'>; message: string }> {
   return FORM_STEPS.flatMap((step) => validateStep(f, step, t).map((message) => ({ step, message })));
+}
+
+/** SINGLE mode: stage 2+ only shortlists entries already submitted (mirrors the server's rules.isReviewRound). */
+const isReviewRound = (f: Pick<CompetitionInput, 'submissionMode'>, index: number) => f.submissionMode === 'SINGLE' && index > 0;
+
+/** Review rounds get derived dates (entry deadline → competition end), same as the server stores. */
+function withDerivedStageDates(f: CompetitionInput): CompetitionInput['stages'] {
+  if (f.submissionMode !== 'SINGLE' || f.stages.length < 2) return f.stages;
+  const entryDeadline = f.stages[0].deadline;
+  const end = new Date(f.endsAt) > new Date(entryDeadline) ? f.endsAt : entryDeadline;
+  return f.stages.map((s, i) => (i === 0 ? s : { ...s, opensAt: entryDeadline, deadline: end }));
 }
 
 const FORM_TOP_ID = 'competition-form-top';
@@ -163,6 +177,11 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   const objectives = parseObjectives(f.objectives);
 
   function addStage() {
+    if (f.submissionMode === 'SINGLE') {
+      // Shortlist rounds have no dates of their own (derived on save).
+      setF((p) => ({ ...p, stages: [...p.stages, { ...emptyStage(0, 1), name: t('comp.stageN', { n: p.stages.length + 1 }) }] }));
+      return;
+    }
     const last = f.stages[f.stages.length - 1];
     const opens = new Date(new Date(last.deadline).getTime() + 2 * 86_400_000).toISOString();
     const deadline = new Date(new Date(opens).getTime() + 5 * 86_400_000).toISOString();
@@ -189,7 +208,7 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
     ...f,
     judgingCriteria: f.judgingCriteria.map((c, i) => ({ ...c, key: c.key || keyFor(c.label, i), weight: Number(c.weight) || 0 })),
     prizes: f.prizes.map((p) => ({ ...p, amount: p.amount === null || p.amount === undefined || Number.isNaN(Number(p.amount)) ? null : Number(p.amount), recipientCount: Math.max(1, Number(p.recipientCount) || 1) })),
-    stages: f.stages.map((s, i) => ({ ...s, advanceLimit: i === f.stages.length - 1 ? null : s.advanceLimit ? Number(s.advanceLimit) : null })),
+    stages: withDerivedStageDates(f).map((s, i) => ({ ...s, advanceLimit: i === f.stages.length - 1 ? null : s.advanceLimit ? Number(s.advanceLimit) : null })),
   }), [f]);
 
   const allIssues = validateAll(payload, t);
@@ -306,19 +325,34 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
     </>
   );
 
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button size="sm" variant="ghost" onClick={() => setPreview(true)}><Eye size={14} />{t('comp.preview')}</Button>
+      {!existing && step !== 'review' && (
+        <Button size="sm" variant="secondary" loading={busy === 'draft'} disabled={uploading} onClick={() => save('draft')}>{t('comp.saveDraft')}</Button>
+      )}
+    </div>
+  );
+
   return (
     <div id={FORM_TOP_ID} className="mx-auto max-w-2xl scroll-mt-24 pb-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <Link to={existing ? `/business/competitions/${existing.id}` : '/business/competitions'} className="inline-flex items-center gap-1 text-[13px] font-semibold uppercase tracking-wider text-ink-soft hover:text-ink">
-          <ArrowLeft size={14} aria-hidden /> {existing ? t('comp.editTitle') : t('comp.newTitle')}
-        </Link>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="ghost" onClick={() => setPreview(true)}><Eye size={14} />{t('comp.preview')}</Button>
-          {!existing && step !== 'review' && (
-            <Button size="sm" variant="secondary" loading={busy === 'draft'} disabled={uploading} onClick={() => save('draft')}>{t('comp.saveDraft')}</Button>
-          )}
+      {existing ? (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <Link to={`/business/competitions/${existing.id}`} className="inline-flex items-center gap-1 text-[13px] font-semibold uppercase tracking-wider text-ink-soft hover:text-ink">
+            <ArrowLeft size={14} aria-hidden /> {t('comp.editTitle')}
+          </Link>
+          {headerActions}
         </div>
-      </div>
+      ) : (
+        <>
+          <PageHeader title={t('biz.newCompetition')} actions={headerActions} />
+          {step === 'basics' && (
+            <div className="mb-6">
+              <EventTypeSwitcher value="COMPETITION" />
+            </div>
+          )}
+        </>
+      )}
 
       {existing && !structural && <Alert tone="info" className="mb-5">{t('comp.liveEditNote')}</Alert>}
       {existing?.status === 'SCHEDULED' && <Alert tone="info" className="mb-5">{t('comp.scheduledEditNote')}</Alert>}
@@ -391,15 +425,38 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
       )}
 
       {step === 'stages' && (
-        <StepShell title={t('comp.stepTitle_stages')} subtitle={t('comp.stagesHelp')} footer={stepFooter('stages')}>
+        <StepShell title={t('comp.stepTitle_stages')} subtitle={f.submissionMode === 'SINGLE' ? t('comp.stagesHelpSingle') : t('comp.stagesHelp')} footer={stepFooter('stages')}>
+          <Field label={t('comp.deadlineModeTitle')}>
+            <fieldset disabled={!structural}>
+              <SegmentedControl
+                variant="cards"
+                ariaLabel={t('comp.deadlineModeTitle')}
+                value={f.submissionMode}
+                onChange={(v) => set('submissionMode', v)}
+                options={[
+                  { value: 'SINGLE', label: t('comp.modeSingle'), description: t('comp.modeSingleDesc'), icon: <Flag size={15} /> },
+                  { value: 'PER_STAGE', label: t('comp.modePerStage'), description: t('comp.modePerStageDesc'), icon: <CalendarClock size={15} /> },
+                ]}
+              />
+            </fieldset>
+          </Field>
           <ol className="space-y-4">
             {f.stages.map((s, i) => {
               const isFinal = i === f.stages.length - 1;
+              const single = f.submissionMode === 'SINGLE';
+              const review = isReviewRound(f, i);
               const upcoming = !existing || structural || existing.stages.find((x) => x.id === s.id)?.status === 'UPCOMING';
               return (
                 <li key={s.id ?? i} className="rounded-2xl border border-line bg-surface p-4">
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <span className="text-[14px] font-semibold text-ink">{t('comp.stageN', { n: i + 1 })}{isFinal ? ` · ${t('comp.finalStage')}` : ''}</span>
+                    <span className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-ink">
+                      {t('comp.stageN', { n: i + 1 })}{isFinal ? ` · ${t('comp.finalStage')}` : ''}
+                      {single && (
+                        <span className={cn('rounded-full px-2 py-0.5 text-[11.5px] font-semibold', review ? 'bg-violet/10 text-violet-dark' : 'bg-brand-orange/10 text-brand-orange')}>
+                          {review ? t('comp.shortlistRound') : t('comp.entryRound')}
+                        </span>
+                      )}
+                    </span>
                     {structural && (
                       <div className="flex gap-1">
                         <Button size="sm" variant="ghost" aria-label={t('comp.moveUp')} disabled={i === 0} onClick={() => moveStage(i, -1)}><ArrowUp size={14} /></Button>
@@ -410,11 +467,16 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
                   </div>
                   <div className="space-y-3">
                     <TextField label={t('comp.fStageName')} placeholder={t('comp.fStageNamePh')} value={s.name} onChange={(e) => setStage(i, { name: e.target.value })} maxLength={80} />
-                    <RichTextEditor label={t('comp.fStageBrief')} hint={t('comp.fStageBriefHint')} value={s.brief ?? ''} onChange={(v) => setStage(i, { brief: v || null })} maxLength={5000} minHeight={110} />
-                    <fieldset disabled={!structural} className="grid gap-3 sm:grid-cols-2">
-                      <NptDateTimeField label={t('comp.fStageOpens')} value={s.opensAt} onChange={(v) => setStage(i, { opensAt: v })} />
-                      <NptDateTimeField label={t('comp.fStageDeadline')} value={s.deadline} onChange={(v) => setStage(i, { deadline: v })} />
-                    </fieldset>
+                    {review && (
+                      <p className="rounded-xl bg-violet/[0.06] px-3 py-2.5 text-[13px] text-ink-soft">{t('comp.reviewRoundFormHint', { name: f.stages[i - 1].name || t('comp.stageN', { n: i }) })}</p>
+                    )}
+                    <RichTextEditor label={t('comp.fStageBrief')} hint={review ? t('comp.fStageBriefHintReview') : t('comp.fStageBriefHint')} value={s.brief ?? ''} onChange={(v) => setStage(i, { brief: v || null })} maxLength={5000} minHeight={110} />
+                    {!review && (
+                      <fieldset disabled={!structural} className="grid gap-3 sm:grid-cols-2">
+                        <NptDateTimeField label={single ? t('comp.fEntryOpens') : t('comp.fStageOpens')} value={s.opensAt} onChange={(v) => setStage(i, { opensAt: v })} />
+                        <NptDateTimeField label={single ? t('comp.fEntryDeadline') : t('comp.fStageDeadline')} value={s.deadline} onChange={(v) => setStage(i, { deadline: v })} />
+                      </fieldset>
+                    )}
                     <fieldset disabled={!upcoming} className="space-y-3">
                       {!isFinal && (
                         <TextField type="number" min={1} label={t('comp.fAdvanceLimit')} hint={t('comp.fAdvanceLimitHint')} value={s.advanceLimit ?? ''} onChange={(e) => setStage(i, { advanceLimit: e.target.value ? Number(e.target.value) : null })} />
@@ -434,12 +496,12 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
                         </div>
                       </div>
                       */}
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      {!review && <div className="grid gap-3 sm:grid-cols-2">
                         <TextField type="number" min={1} label={t('comp.fStageMinSec')} value={s.videoMinSec ?? ''} onChange={(e) => setStage(i, { videoMinSec: e.target.value ? Number(e.target.value) : null })} />
                         <TextField type="number" min={1} label={t('comp.fStageMaxSec')} value={s.videoMaxSec ?? ''} onChange={(e) => setStage(i, { videoMaxSec: e.target.value ? Number(e.target.value) : null })} />
-                      </div>
+                      </div>}
                     </fieldset>
-                    <Textarea label={t('comp.fStageRequirements')} rows={2} value={s.requirements ?? ''} onChange={(e) => setStage(i, { requirements: e.target.value || null })} maxLength={2000} />
+                    {!review && <Textarea label={t('comp.fStageRequirements')} rows={2} value={s.requirements ?? ''} onChange={(e) => setStage(i, { requirements: e.target.value || null })} maxLength={2000} />}
                   </div>
                 </li>
               );
@@ -562,6 +624,7 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
             </SummaryRow>
             <SummaryRow icon={<ListOrdered size={16} />} label={t('comp.step_stages')} onEdit={() => editFromReview('stages')}>
               <span className="block">{f.stages.map((s) => s.name || '—').join(' → ')}</span>
+              <span className="block text-[13px] text-ink-soft">{f.submissionMode === 'SINGLE' ? t('comp.summarySingle', { when: formatNpt(f.stages[0]?.deadline) }) : t('comp.summaryPerStage')}</span>
               <span className="block text-[13px] text-ink-soft">{f.stages.map((s, i) => (i < f.stages.length - 1 && s.advanceLimit ? t('comp.topN', { n: s.advanceLimit }) : null)).filter(Boolean).join(' · ') || t('comp.summaryManualAdvance')}</span>
             </SummaryRow>
             <SummaryRow icon={<Trophy size={16} />} label={t('comp.step_prizes')} onEdit={() => editFromReview('prizes')}>

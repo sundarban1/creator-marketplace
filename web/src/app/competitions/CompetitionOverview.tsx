@@ -29,7 +29,8 @@ export function CompetitionOverview({ c, headerAction, progress, timelineStages,
 }) {
   const t = useT();
   const dur = durationLabel(c.videoMinSec, c.videoMaxSec, t);
-  const stages: TimelineStage[] = timelineStages ?? c.stages.map((s) => ({ ...s }));
+  const single = c.submissionMode === 'SINGLE';
+  const stages: TimelineStage[] = (timelineStages ?? c.stages.map((s) => ({ ...s }))).map((s, i) => ({ ...s, reviewRound: single && i > 0 }));
   const objectives = parseObjectives(c.objectives);
 
   return (
@@ -152,6 +153,7 @@ export function CompetitionOverview({ c, headerAction, progress, timelineStages,
               <InfoRow label={t('comp.registrationOpens')} value={formatNpt(c.registrationOpensAt)} />
               <InfoRow label={t('comp.registrationCloses2')} value={formatNpt(c.registrationDeadline)} />
               <InfoRow label={t('comp.runs')} value={`${formatNpt(c.startsAt, { time: false })} – ${formatNpt(c.endsAt, { time: false })}`} />
+              {single && c.stages[0] && <InfoRow label={t('comp.entryDeadline')} value={formatNpt(c.stages[0].deadline)} />}
             </dl>
           </Section>
           <Section title={t('comp.stages')}>

@@ -40,7 +40,23 @@ export interface Problem {
  * are given in order; each must open after the previous one's deadline (so the
  * organizer has a review window) and sit inside the competition's start/end.
  */
-export function validateSchedule(c: ScheduleInput, stages: StageScheduleInput[]): Problem[] {
+export type SubmissionMode = 'PER_STAGE' | 'SINGLE';
+
+/** In SINGLE mode only stage 1 collects entries; later stages are review-only rounds. */
+export const isReviewRound = (mode: SubmissionMode | string | null | undefined, order: number) => mode === 'SINGLE' && order > 1;
+
+/**
+ * Review rounds have no submission window of their own. Their stored dates
+ * are derived (opens at the entry deadline, "closes" at the competition end)
+ * so date-ordered queries and timelines stay sensible.
+ */
+export function normalizeStageDates<T extends { opensAt: Date; deadline: Date }>(mode: SubmissionMode | string | null | undefined, stages: T[], endsAt: Date): T[] {
+  if (mode !== 'SINGLE' || stages.length < 2) return stages;
+  const entryDeadline = stages[0].deadline;
+  return stages.map((s, i) => (i === 0 ? s : { ...s, opensAt: entryDeadline, deadline: endsAt > entryDeadline ? endsAt : entryDeadline }));
+}
+
+export function validateSchedule(c: ScheduleInput, stages: StageScheduleInput[], mode: SubmissionMode = 'PER_STAGE'): Problem[] {
   const p: Problem[] = [];
   const t = (d: Date) => d.getTime();
 
@@ -67,19 +83,20 @@ export function validateSchedule(c: ScheduleInput, stages: StageScheduleInput[])
   stages.forEach((s, i) => {
     const f = `stages.${i}`;
     if (!s.name.trim()) p.push({ field: `${f}.name`, message: `Stage ${i + 1} needs a name` });
-    if (t(s.deadline) <= t(s.opensAt)) {
+    const review = isReviewRound(mode, i + 1);
+    if (!review && t(s.deadline) <= t(s.opensAt)) {
       p.push({ field: `${f}.deadline`, message: `${s.name || `Stage ${i + 1}`}: deadline must be after submissions open` });
     }
-    if (t(s.opensAt) < t(c.startsAt)) {
+    if (!review && t(s.opensAt) < t(c.startsAt)) {
       p.push({ field: `${f}.opensAt`, message: `${s.name || `Stage ${i + 1}`}: cannot open before the competition starts` });
     }
     if (i === 0 && t(s.opensAt) < t(c.registrationOpensAt)) {
       p.push({ field: `${f}.opensAt`, message: 'The first stage cannot open before registration opens' });
     }
-    if (t(s.deadline) > t(c.endsAt)) {
+    if (!review && t(s.deadline) > t(c.endsAt)) {
       p.push({ field: `${f}.deadline`, message: `${s.name || `Stage ${i + 1}`}: deadline must be on or before the competition end` });
     }
-    if (i > 0 && t(s.opensAt) < t(stages[i - 1].deadline)) {
+    if (!review && i > 0 && t(s.opensAt) < t(stages[i - 1].deadline)) {
       p.push({ field: `${f}.opensAt`, message: `${s.name || `Stage ${i + 1}`}: must open after the previous stage's deadline` });
     }
     if (!s.allowedMethods.length) {

@@ -130,6 +130,8 @@ export interface TimelineStage {
   outcome?: 'ADVANCE' | 'NOT_SELECTED' | null;
   submitted?: boolean;
   locked?: boolean;
+  /** SINGLE mode, stage 2+: shortlists existing entries, so it has no dates of its own. */
+  reviewRound?: boolean;
 }
 
 /** "Round 1 → Top 20 → Final" — vertical on mobile, compact chips on desktop. */
@@ -162,14 +164,14 @@ export function StageTimeline({ stages, currentId, onSelect, selectedId }: {
                 {s.advanceLimit ? <span className="text-[11.5px] text-ink-soft">{t('comp.topN', { n: s.advanceLimit })}</span> : null}
               </div>
               <p className="mt-0.5 text-[12px] text-ink-soft">
-                {s.status === 'UPCOMING' ? t('comp.opensOn', { when: formatNpt(s.opensAt) }) : t('comp.deadlineOn', { when: formatNpt(s.deadline) })}
+                {s.reviewRound ? t('comp.reviewRoundLine') : s.status === 'UPCOMING' ? t('comp.opensOn', { when: formatNpt(s.opensAt) }) : t('comp.deadlineOn', { when: formatNpt(s.deadline) })}
               </p>
               {s.outcome && (
                 <p className={cn('mt-1 text-[12px] font-semibold', s.outcome === 'ADVANCE' ? 'text-success' : 'text-ink-soft')}>
                   {s.outcome === 'ADVANCE' ? t('comp.outcomeAdvanced') : t('comp.outcomeNotSelected')}
                 </p>
               )}
-              {s.submitted !== undefined && !s.outcome && s.status !== 'UPCOMING' && (
+              {s.submitted !== undefined && !s.outcome && s.status !== 'UPCOMING' && !s.reviewRound && (
                 <p className={cn('mt-1 text-[12px]', s.submitted ? 'text-success' : 'text-ink-soft')}>
                   {s.submitted ? t('comp.entrySubmitted') : t('comp.entryNotSubmitted')}
                 </p>

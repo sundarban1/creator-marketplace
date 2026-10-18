@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   validateSchedule, validatePrizes, validateCriteria, computeTotalScore, validateAwards,
-  validateAdvanceSelection, creatorStatus, canTransition, registrationOpen, prizeSignature, type StageScheduleInput,
+  validateAdvanceSelection, creatorStatus, canTransition, registrationOpen, prizeSignature, normalizeStageDates, isReviewRound, type StageScheduleInput,
 } from './competition.rules';
 import { validateSubmissionLink } from './competition.links';
 
@@ -37,6 +37,32 @@ describe('validateSchedule', () => {
 
   it('rejects having no stages', () => {
     expect(validateSchedule(base, []).some((x) => x.field === 'stages')).toBe(true);
+  });
+});
+
+describe('single deadline (SINGLE mode)', () => {
+  it('only treats stages after the first as review rounds', () => {
+    expect([1, 2, 3].map((o) => isReviewRound('SINGLE', o))).toEqual([false, true, true]);
+    expect(isReviewRound('PER_STAGE', 2)).toBe(false);
+  });
+
+  it('derives review-round dates from the entry deadline and competition end', () => {
+    const out = normalizeStageDates('SINGLE', [stage(2, 12), stage(1, 1), stage(1, 1)], d(30));
+    expect(out[0]).toEqual(stage(2, 12));
+    expect(out.slice(1).map((s) => [s.opensAt, s.deadline])).toEqual([[d(12), d(30)], [d(12), d(30)]]);
+  });
+
+  it('leaves per-stage competitions untouched', () => {
+    const stages = [stage(2, 12), stage(14, 18)];
+    expect(normalizeStageDates('PER_STAGE', stages, d(30))).toBe(stages);
+  });
+
+  it('skips date checks for review rounds but still checks the entry stage and limits', () => {
+    const stages = [stage(2, 12, { advanceLimit: 30 }), stage(1, 1, { advanceLimit: 10 }), stage(1, 1)];
+    expect(validateSchedule(base, stages, 'SINGLE')).toEqual([]);
+    expect(validateSchedule(base, stages, 'PER_STAGE').length).toBeGreaterThan(0);
+    const bad = validateSchedule(base, [stage(2, 12, { advanceLimit: 10 }), stage(1, 1, { advanceLimit: 30 }), stage(1, 1)], 'SINGLE');
+    expect(bad.map((x) => x.field)).toEqual(['stages.1.advanceLimit']);
   });
 });
 

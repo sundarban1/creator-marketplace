@@ -136,10 +136,10 @@ function prizeData(p: PrizeInput, index: number) {
 function validateConfig(c: {
   publishAt?: Date | null; registrationOpensAt: Date; registrationDeadline: Date; startsAt: Date; endsAt: Date;
   videoMinSec?: number | null; videoMaxSec?: number | null; scoringEnabled: boolean; judgingCriteria: rules.Criterion[];
-  stages: Array<rules.StageScheduleInput>; prizes: rules.PrizeInput[];
+  stages: Array<rules.StageScheduleInput>; prizes: rules.PrizeInput[]; submissionMode?: rules.SubmissionMode;
 }) {
   const problems = [
-    ...rules.validateSchedule(c, c.stages),
+    ...rules.validateSchedule(c, c.stages, c.submissionMode ?? 'PER_STAGE'),
     ...rules.validatePrizes(c.prizes),
     ...rules.validateCriteria(c.scoringEnabled, c.judgingCriteria),
   ];
@@ -265,6 +265,7 @@ export class CompetitionService {
 
   async create(userId: string, input: CreateCompetitionInput) {
     const b = await this.organizerProfile(userId);
+    input = { ...input, stages: rules.normalizeStageDates(input.submissionMode, input.stages, input.endsAt) };
     validateConfig({ ...input, publishAt: null });
 
     const slug = await generateUniqueSlug(input.title, async (s) => !!(await prisma.competition.findUnique({ where: { slug: s }, select: { id: true } })));
@@ -313,6 +314,7 @@ export class CompetitionService {
     if (this.reviewedChanges(c, input).length) return true;
     const t = (d?: Date) => d?.getTime();
     if ((['registrationOpensAt', 'registrationDeadline', 'startsAt', 'endsAt'] as const).some((k) => input[k] !== undefined && t(input[k]) !== t(c[k]))) return true;
+    if (input.submissionMode !== undefined && input.submissionMode !== c.submissionMode) return true;
     if (input.stages) {
       const sig = (xs: Array<{ name: string; opensAt: Date; deadline: Date; advanceLimit?: number | null; allowedMethods: string[] }>) =>
         JSON.stringify(xs.map((x) => [x.name, x.opensAt.getTime(), x.deadline.getTime(), x.advanceLimit ?? null, [...x.allowedMethods].sort()]));
@@ -323,7 +325,14 @@ export class CompetitionService {
 
   // Before anyone can join: everything is editable; stages/prizes are replaced wholesale.
   private async updateDraft(userId: string, c: Awaited<ReturnType<CompetitionService['owned']>>, input: UpdateCompetitionInput, opts: { backToReview?: boolean } = {}) {
-    const { stages, prizes, judgingCriteria, attachments, ...scalars } = input;
+    const { stages: rawStages, prizes, judgingCriteria, attachments, ...scalars } = input;
+    const mode = scalars.submissionMode ?? c.submissionMode;
+    const endsAt = scalars.endsAt ?? c.endsAt;
+    // Review-round dates are derived; rewrite them whenever the inputs they depend on change.
+    const derivedChanged = mode === 'SINGLE' && (!!rawStages || scalars.submissionMode !== undefined || scalars.endsAt !== undefined);
+    const stages = rawStages
+      ? rules.normalizeStageDates(mode, rawStages, endsAt)
+      : derivedChanged ? rules.normalizeStageDates(mode, c.stages.map((s) => ({ ...s, allowedMethods: s.allowedMethods as rules.SubmissionMethod[] })), endsAt) : undefined;
     const nextStages = stages ?? c.stages.map((s) => ({ ...s, allowedMethods: s.allowedMethods as rules.SubmissionMethod[] }));
     const nextPrizes = prizes ?? c.prizes.map((p) => ({ ...p, kind: p.kind as rules.PrizeKind }));
     const merged = {
@@ -338,6 +347,7 @@ export class CompetitionService {
       judgingCriteria: judgingCriteria ?? criteriaOf(c.judgingCriteria),
       stages: nextStages,
       prizes: nextPrizes,
+      submissionMode: mode,
     };
     validateConfig(merged);
 
@@ -383,6 +393,7 @@ export class CompetitionService {
       || !sameDate(input.startsAt, c.startsAt) || !sameDate(input.endsAt, c.endsAt)) {
       throw fail(m.useDeadlineActions, HttpStatus.CONFLICT);
     }
+    if (input.submissionMode !== undefined && input.submissionMode !== c.submissionMode) throw fail(m.submissionModeLocked, HttpStatus.CONFLICT);
 
     const scoredDecisions = input.judgingCriteria || input.scoringEnabled !== undefined
       ? await prisma.competitionStageDecision.count({ where: { stage: { competitionId: c.id }, scores: { not: Prisma.AnyNull } } })
@@ -679,6 +690,7 @@ export class CompetitionService {
     this.assertNotSuspended(c);
     if (c.status !== 'ACTIVE') throw fail(M().competitionNotActive, HttpStatus.CONFLICT);
     const stage = this.stageOf(c, stageId);
+    if (rules.isReviewRound(c.submissionMode, stage.order)) throw fail(M().reviewRoundNoDeadline, HttpStatus.CONFLICT);
     if (stage.status !== 'UPCOMING') throw fail(M().stageNotUpcoming, HttpStatus.CONFLICT);
     const prev = c.stages.find((s) => s.order === stage.order - 1);
     if (prev && prev.status !== 'RESULTS_PUBLISHED') throw fail(M().previousStageUnpublished, HttpStatus.CONFLICT);
@@ -700,6 +712,7 @@ export class CompetitionService {
     const c = await this.owned(userId, id);
     this.assertNotSuspended(c);
     const stage = this.stageOf(c, stageId);
+    if (rules.isReviewRound(c.submissionMode, stage.order)) throw fail(M().reviewRoundNoDeadline, HttpStatus.CONFLICT);
     if (stage.status !== 'OPEN') throw fail(M().stageNotOpen, HttpStatus.CONFLICT);
     const now = new Date();
     const isFinal = stage.order === c.stages.length;
@@ -726,6 +739,7 @@ export class CompetitionService {
     this.assertNotSuspended(c);
     this.assertEditable(c);
     const stage = this.stageOf(c, stageId);
+    if (rules.isReviewRound(c.submissionMode, stage.order)) throw fail(M().reviewRoundNoDeadline, HttpStatus.CONFLICT);
     if (!['UPCOMING', 'OPEN'].includes(stage.status)) throw fail(M().stageNotExtendable, HttpStatus.CONFLICT);
     const now = new Date();
     if (deadline <= now || deadline <= stage.opensAt) throw fail(M().deadlineMustBeFuture, HttpStatus.BAD_REQUEST);
@@ -739,6 +753,7 @@ export class CompetitionService {
     this.assertNotSuspended(c);
     if (!['ACTIVE', 'AWAITING_RESULTS'].includes(c.status)) throw fail(M().competitionNotActive, HttpStatus.CONFLICT);
     const stage = this.stageOf(c, stageId);
+    if (rules.isReviewRound(c.submissionMode, stage.order)) throw fail(M().reviewRoundNoDeadline, HttpStatus.CONFLICT);
     if (!['UNDER_REVIEW', 'SELECTION_PENDING'].includes(stage.status)) throw fail(M().stageNotReopenable, HttpStatus.CONFLICT);
     if (deadline <= new Date()) throw fail(M().deadlineMustBeFuture, HttpStatus.BAD_REQUEST);
     return this.moveStageDeadline(userId, c, stage, deadline, ['UNDER_REVIEW', 'SELECTION_PENDING'], AuditAction.COMPETITION_STAGE_REOPENED, 'OPEN');
@@ -764,6 +779,10 @@ export class CompetitionService {
       });
       if (res.count !== 1) throw fail(M().changedMeanwhile, HttpStatus.CONFLICT);
       if (newEnd) await tx.competition.update({ where: { id: c.id }, data: { endsAt: newEnd } });
+      if (c.submissionMode === 'SINGLE' && stage.order === 1) {
+        // Review rounds' derived dates follow the entry deadline (see rules.normalizeStageDates).
+        await tx.competitionStage.updateMany({ where: { competitionId: c.id, order: { gt: 1 } }, data: { opensAt: deadline, ...(newEnd ? { deadline: newEnd } : {}) } });
+      }
       if (toStatus && isFinal) await tx.competition.updateMany({ where: { id: c.id, status: 'AWAITING_RESULTS' }, data: { status: 'ACTIVE' } });
       await audit(tx, {
         actorId: userId, actorType: 'USER', action, competitionId: c.id,
@@ -893,6 +912,7 @@ export class CompetitionService {
       await tx.competitionParticipant.updateMany({ where: { id: { in: advanceIds } }, data: { currentStageOrder: stage.order + 1 } });
       await tx.competitionParticipant.updateMany({ where: { id: { in: restIds } }, data: { status: 'NOT_SELECTED', eliminatedAtOrder: stage.order } });
       await tx.competitionStage.update({ where: { id: stageId }, data: { status: 'RESULTS_PUBLISHED', resultsPublishedAt: now } });
+      if (comp.submissionMode === 'SINGLE') await this.startReviewRound(tx, id, stage.order + 1, stageId, advanceIds, now);
       await audit(tx, {
         actorId: userId, actorType: 'USER', action: AuditAction.COMPETITION_DECISIONS_PUBLISHED, competitionId: id,
         metadata: { stageId, stage: stage.name, advanced: advanceIds.length, notSelected: restIds.length, advancedParticipantIds: advanceIds },
@@ -901,9 +921,34 @@ export class CompetitionService {
     });
 
     const nextIsFinal = stage.order + 1 === c.stages.length;
-    void N.stageResults(result.advancedUsers, result.restUsers, c, stage, nextIsFinal).catch((err) => logger.warn({ err }, 'competition: stage results notify failed'));
+    void N.stageResults(result.advancedUsers, result.restUsers, c, stage, nextIsFinal, c.submissionMode === 'SINGLE').catch((err) => logger.warn({ err }, 'competition: stage results notify failed'));
     await this.runLifecycleSweep(new Date(), id);
     return this.getForOrganizer(userId, id);
+  }
+
+  /**
+   * SINGLE mode: the next round has no submission window. It goes straight to
+   * review, and each advancing creator's entry is carried into it so the
+   * review / scoring / awards flow works exactly as for a per-stage round.
+   * Copies never take the storage reference — only the original row owns the file.
+   */
+  private async startReviewRound(tx: Tx, competitionId: string, order: number, fromStageId: string, participantIds: string[], now: Date) {
+    const next = await tx.competitionStage.findUnique({ where: { competitionId_order: { competitionId, order } } });
+    if (!next || next.status !== 'UPCOMING') return;
+    const entries = await tx.competitionSubmission.findMany({ where: { stageId: fromStageId, participantId: { in: participantIds } } });
+    if (entries.length) {
+      await tx.competitionSubmission.createMany({
+        data: entries.map((e) => ({
+          stageId: next.id, participantId: e.participantId, method: e.method, videoUrl: e.videoUrl, thumbnailUrl: e.thumbnailUrl,
+          storageRef: null, storageProvider: null, durationSec: e.durationSec, sizeBytes: e.sizeBytes, externalUrl: e.externalUrl,
+          caption: e.caption, version: e.version, submittedAt: e.submittedAt,
+        })),
+        skipDuplicates: true,
+      });
+    }
+    await tx.competitionStage.update({ where: { id: next.id }, data: { status: 'UNDER_REVIEW', openedAt: now, submissionsClosedAt: now } });
+    const isFinal = !(await tx.competitionStage.count({ where: { competitionId, order: { gt: order } } }));
+    if (isFinal) await tx.competition.updateMany({ where: { id: competitionId, status: 'ACTIVE' }, data: { status: 'AWAITING_RESULTS' } });
   }
 
   // ── Organizer: final awards ───────────────────────────────────────────────
@@ -1101,7 +1146,7 @@ export class CompetitionService {
   private organizerDto(c: Awaited<ReturnType<CompetitionService['owned']>>) {
     return {
       id: c.id, slug: c.slug, title: c.title, description: c.description, objectives: c.objectives,
-      coverImageUrl: c.coverImageUrl, rules: c.rules, eligibility: c.eligibility, contentFormats: c.contentFormats, skills: c.skills,
+      coverImageUrl: c.coverImageUrl, rules: c.rules, eligibility: c.eligibility, contentFormats: c.contentFormats, skills: c.skills, submissionMode: c.submissionMode,
       submissionInstructions: c.submissionInstructions, videoMinSec: c.videoMinSec, videoMaxSec: c.videoMaxSec,
       contactInstructions: c.contactInstructions, attachments: c.attachments, status: c.status, resultsVisibility: c.resultsVisibility,
       publishAt: c.publishAt, registrationOpensAt: c.registrationOpensAt, registrationDeadline: c.registrationDeadline,
@@ -1317,7 +1362,7 @@ export class CompetitionService {
 
     return {
       id: c.id, slug: c.slug, title: c.title, description: c.description, objectives: c.objectives, coverImageUrl: c.coverImageUrl,
-      rules: c.rules, eligibility: c.eligibility, contentFormats: c.contentFormats, skills: c.skills, submissionInstructions: c.submissionInstructions,
+      rules: c.rules, eligibility: c.eligibility, contentFormats: c.contentFormats, skills: c.skills, submissionMode: c.submissionMode, submissionInstructions: c.submissionInstructions,
       videoMinSec: c.videoMinSec, videoMaxSec: c.videoMaxSec, contactInstructions: c.contactInstructions, attachments: c.attachments,
       status: c.status, pauseReason: c.status === 'PAUSED' ? c.pauseReason : null, cancelReason: c.status === 'CANCELLED' ? c.cancelReason : null,
       registrationOpensAt: c.registrationOpensAt, registrationDeadline: c.registrationDeadline, startsAt: c.startsAt, endsAt: c.endsAt,
@@ -1455,7 +1500,8 @@ export class CompetitionService {
           submission: sub ? { ...this.submissionDto(sub), previousVersions: sub._count.versions } : null,
           outcome: p.decisions.find((d) => d.stageId === s.id)?.decision ?? null,
           canSubmit: block === null,
-          blockedReason: block && !['notYet'].includes(block) ? submitBlockMessage(block) : null,
+          reviewRound: rules.isReviewRound(c.submissionMode, s.order),
+          blockedReason: block && !['notYet'].includes(block) && !rules.isReviewRound(c.submissionMode, s.order) ? submitBlockMessage(block) : null,
         };
       }),
       awards: p.awards.map((a) => a.prize),
@@ -1669,7 +1715,7 @@ export class CompetitionService {
       // public once published; never participant data.
       content: {
         objectives: c.objectives, coverImageUrl: c.coverImageUrl, rules: c.rules, eligibility: c.eligibility,
-        contentFormats: c.contentFormats, skills: c.skills, submissionInstructions: c.submissionInstructions, contactInstructions: c.contactInstructions,
+        contentFormats: c.contentFormats, skills: c.skills, submissionMode: c.submissionMode, submissionInstructions: c.submissionInstructions, contactInstructions: c.contactInstructions,
         videoMinSec: c.videoMinSec, videoMaxSec: c.videoMaxSec, attachments: c.attachments, resultsVisibility: c.resultsVisibility,
         allowSubmissionEdits: c.allowSubmissionEdits, onePrizePerCreator: c.onePrizePerCreator,
         judgingCriteria: c.scoringEnabled ? criteriaOf(c.judgingCriteria) : [],
@@ -1924,7 +1970,8 @@ export class CompetitionService {
 
     // 2. Stages due to open (previous stage's results must be published first).
     const toOpen = await prisma.competitionStage.findMany({
-      where: { status: 'UPCOMING', opensAt: { lte: now }, competition: liveWhere },
+      // SINGLE-mode review rounds start from publishDecisions, never by date.
+      where: { status: 'UPCOMING', opensAt: { lte: now }, competition: liveWhere, OR: [{ order: 1 }, { competition: { submissionMode: 'PER_STAGE' } }] },
       include: { competition: { include: { stages: { select: { order: true, status: true } }, business: { select: { userId: true } } } } },
     });
     for (const s of toOpen) {

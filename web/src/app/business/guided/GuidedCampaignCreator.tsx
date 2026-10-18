@@ -13,6 +13,8 @@ import { AiGeneratingOverlay } from '../AiGeneratingOverlay';
 import { NeedHelpButton } from '../NeedHelpModal';
 import { Alert } from '../../ui/Alert';
 import { Button } from '../../ui/Button';
+import { PageHeader } from '../../ui/PageHeader';
+import { EventTypeSwitcher } from '../EventTypeSwitcher';
 import { Skeleton, SkeletonText } from '../../ui/Skeleton';
 import { getCampaignIssues, blockingIssues, type CampaignStep } from '../campaignRules';
 import {
@@ -276,30 +278,41 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
     );
   }
 
-  const railSteps = [...planned, 'review' as const].map((k) => ({ key: k, label: t(`guided.stepLabel_${k}`) }));
-  const railCurrent = step === 'requirements' ? 'content' : step;
+  // Create mode shows the whole journey from the first screen (Idea → … →
+  // Review) so the business always knows how many steps are left.
+  const railKeys: GuidedStep[] = mode === 'create'
+    ? ['idea', ...(planned.length ? planned : FLOW_STEPS), 'review']
+    : [...planned, 'review'];
+  const railSteps = railKeys.map((k) => ({ key: k, label: t(`guided.stepLabel_${k}`) }));
+  const railCurrent = step === 'requirements' ? 'content' : step === 'clarify' ? 'idea' : step;
   const stepProps = { form, update, issues };
+
+  const headerActions = (
+    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 whitespace-nowrap">
+      {mode === 'create' && <SaveIndicator status={autosave.status} />}
+      {mode === 'create' && (draftId || step !== 'idea') && (
+        <button type="button" onClick={discard} aria-label={t('guided.discard')} className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-danger/40 hover:bg-danger/[0.06] hover:text-danger">
+          <Trash2 size={13} />
+          <span className="hidden sm:inline">{t('guided.discard')}</span>
+        </button>
+      )}
+      {step !== 'idea' && step !== 'clarify' && <AskKolabButton step={step} form={form} />}
+      <NeedHelpButton />
+    </div>
+  );
 
   return (
     <div ref={topRef} className="mx-auto max-w-2xl scroll-mt-24 pb-6">
       {aiBusy && <AiGeneratingOverlay />}
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] font-semibold uppercase tracking-wider text-ink-soft">
-          {mode === 'edit' ? t('guided.editKicker') : t('guided.createKicker')}
-        </p>
-        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 whitespace-nowrap">
-          {mode === 'create' && <SaveIndicator status={autosave.status} />}
-          {mode === 'create' && (draftId || step !== 'idea') && (
-            <button type="button" onClick={discard} aria-label={t('guided.discard')} className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 text-[12px] font-medium text-ink-soft transition-colors hover:border-danger/40 hover:bg-danger/[0.06] hover:text-danger">
-              <Trash2 size={13} />
-              <span className="hidden sm:inline">{t('guided.discard')}</span>
-            </button>
-          )}
-          {step !== 'idea' && step !== 'clarify' && <AskKolabButton step={step} form={form} />}
-          <NeedHelpButton />
+      {mode === 'create' ? (
+        <PageHeader title={t('biz.newPaidEvent')} actions={headerActions} />
+      ) : (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[13px] font-semibold uppercase tracking-wider text-ink-soft">{t('guided.editKicker')}</p>
+          {headerActions}
         </div>
-      </div>
+      )}
 
       {resumeOffer && step === 'idea' && !draftId && (
         <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-violet/25 bg-violet/[0.05] p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -337,10 +350,14 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
         <Alert tone="info" className="mb-5">{t('eventReview.materialEditNote')}</Alert>
       )}
 
-      {step !== 'idea' && step !== 'clarify' && planned.length > 0 && (
-        <ProgressRail steps={railSteps} current={railCurrent} onJump={(k) => setStep(k as GuidedStep)} />
+      {step === 'idea' && mode === 'create' && onSwitchToFree && (
+        <div className="mb-6">
+          <EventTypeSwitcher value="PAID_CAMPAIGN" onSelect={(next) => { if (next === 'OPEN_EVENT') onSwitchToFree(); }} />
+        </div>
       )}
-
+      {railSteps.length > 1 && (
+        <ProgressRail steps={railSteps} current={railCurrent} onJump={(k) => { if (k !== 'idea') setStep(k as GuidedStep); }} />
+      )}
       {step === 'idea' && (
         <StartStep
           form={form}
@@ -348,8 +365,6 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
           onCreateWithAi={runAi}
           onManual={startManual}
           busy={aiBusy}
-          onSwitchToFree={mode === 'create' ? onSwitchToFree : undefined}
-          onSwitchToCompetition={mode === 'create' ? () => navigate('/business/competitions/new') : undefined}
           onStartFrom={startFrom}
           startingFrom={startingFrom}
         />

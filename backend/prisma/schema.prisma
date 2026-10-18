@@ -3147,6 +3147,13 @@ enum CompetitionModerationFlag {
   CLEARED
 }
 
+// PER_STAGE: every stage has its own submission window and deadline.
+// SINGLE: creators submit once (stage 1); later stages only shortlist those entries.
+enum CompetitionSubmissionMode {
+  PER_STAGE
+  SINGLE
+}
+
 enum CompetitionResultsVisibility {
   PUBLIC
   PARTICIPANTS
@@ -3176,6 +3183,7 @@ model Competition {
   attachments               Json                         @default("[]")
   status                    CompetitionStatus            @default(DRAFT)
   resultsVisibility         CompetitionResultsVisibility @default(PUBLIC)
+  submissionMode            CompetitionSubmissionMode    @default(PER_STAGE)
   // Scheduled publication — SCHEDULED rows flip to ACTIVE once this passes.
   publishAt                 DateTime?
   registrationOpensAt       DateTime

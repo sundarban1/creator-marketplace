@@ -82,6 +82,8 @@ export interface CompetitionDetail {
   eligibility: string | null;
   contentFormats: string[];
   skills: string[];
+  /** SINGLE = one entry deadline, later stages shortlist the same entries. */
+  submissionMode: SubmissionMode;
   submissionInstructions: string | null;
   videoMinSec: number | null;
   videoMaxSec: number | null;
@@ -123,6 +125,8 @@ export interface MySubmission {
   updatedAt: string;
 }
 
+export type SubmissionMode = 'PER_STAGE' | 'SINGLE';
+
 export interface MyProgress {
   participantId: string;
   joinedAt: string;
@@ -143,6 +147,8 @@ export interface MyProgress {
     submission: (MySubmission & { previousVersions: number }) | null;
     outcome: 'ADVANCE' | 'NOT_SELECTED' | null;
     canSubmit: boolean;
+    /** SINGLE mode, stage 2+: no submissions — the creator's entry was carried over. */
+    reviewRound?: boolean;
     blockedReason: string | null;
   }>;
   awards: Array<{ id: string; title: string; kind: PrizeKind; amount: number | null; currency: string }>;
@@ -208,6 +214,8 @@ export interface CompetitionInput {
   eligibility?: string | null;
   contentFormats: string[];
   skills: string[];
+  /** SINGLE = one entry deadline, later stages shortlist the same entries. */
+  submissionMode: SubmissionMode;
   submissionInstructions?: string | null;
   videoMinSec?: number | null;
   videoMaxSec?: number | null;

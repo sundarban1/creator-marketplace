@@ -86,6 +86,7 @@ export function CompetitionReviewPanel({ c, onChanged }: { c: ApiCompetitionAdmi
           {c.content.contactInstructions && <Block k="Contact" v={c.content.contactInstructions} />}
           <Block k="Prizes (advertised)" v={prizeText(c.content.prizes) || 'No prizes'} />
           <Block k="Settings" v={[
+            c.content.submissionMode === 'SINGLE' ? 'One entry deadline — later stages shortlist the same entries' : 'A submission deadline for each stage',
             c.content.allowSubmissionEdits ? 'Entries can be replaced before deadlines' : 'Entries are final',
             c.content.onePrizePerCreator ? 'One prize per creator' : 'Creators may win several prizes',
             `Results visible to ${c.content.resultsVisibility === 'PUBLIC' ? 'everyone' : 'participants only'}`,

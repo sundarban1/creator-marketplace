@@ -58,7 +58,7 @@ export function CreatorCompetitionDetailPage() {
   const timeline: TimelineStage[] | undefined = p
     ? c.stages.map((s) => {
       const mine = p.stages.find((x) => x.stageId === s.id);
-      return { ...s, outcome: mine?.outcome ?? null, submitted: !!mine?.submission, locked: s.order > p.currentStageOrder };
+      return { ...s, outcome: mine?.outcome ?? null, submitted: !!mine?.submission, locked: s.order > p.currentStageOrder, reviewRound: !!mine?.reviewRound };
     })
     : undefined;
 
@@ -97,6 +97,9 @@ function ProgressBlock({ c, p, onChanged }: { c: CompetitionDetail; p: MyProgres
   const t = useT();
   const b = creatorStatusBadge(p.status, t);
   const current = p.stages.find((s) => s.order === p.currentStageOrder);
+  // Latest earlier-stage entry, so an advanced creator can re-submit the same video.
+  const previousStage = current ? [...p.stages].filter((s) => s.order < current.order && s.submission).sort((a, b) => b.order - a.order)[0] : undefined;
+  const previousEntry = previousStage?.submission ? { stageName: previousStage.name, submission: previousStage.submission } : null;
   const pastWithEntries = p.stages.filter((s) => s.order < p.currentStageOrder && s.submission);
 
   return (
@@ -119,7 +122,10 @@ function ProgressBlock({ c, p, onChanged }: { c: CompetitionDetail; p: MyProgres
               {c.stages.find((s) => s.id === current.stageId)?.brief && (
                 <Prose className="mb-3">{c.stages.find((s) => s.id === current.stageId)!.brief}</Prose>
               )}
-              <SubmissionPanel key={current.stageId} competitionId={c.id} stage={current} allowEdits={c.allowSubmissionEdits} onSaved={onChanged} />
+              {current.reviewRound && (
+                <p className="mb-3 rounded-xl bg-success-soft/40 px-3 py-2.5 text-[13.5px] text-ink">{t('comp.reviewRoundCreator')}</p>
+              )}
+              <SubmissionPanel key={current.stageId} competitionId={c.id} stage={current} allowEdits={c.allowSubmissionEdits} onSaved={onChanged} previous={previousEntry} />
             </>
           )}
         </div>

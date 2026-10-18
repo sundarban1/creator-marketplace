@@ -158,7 +158,9 @@ function Overview({ c, onChanged }: { c: ManagedCompetition; onChanged: () => vo
               const badge = stageStatusBadge(s.status, t);
               const isFinal = s.order === c.stages.length;
               const prev = c.stages.find((x) => x.order === s.order - 1);
-              const canOpen = c.status === 'ACTIVE' && s.status === 'UPCOMING' && (!prev || prev.status === 'RESULTS_PUBLISHED');
+              // SINGLE mode: stage 2+ only shortlists entries already in — no window, no deadline controls.
+              const reviewRound = c.submissionMode === 'SINGLE' && s.order > 1;
+              const canOpen = !reviewRound && c.status === 'ACTIVE' && s.status === 'UPCOMING' && (!prev || prev.status === 'RESULTS_PUBLISHED');
               return (
                 <li key={s.id} className="rounded-xl border border-line p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -166,8 +168,14 @@ function Overview({ c, onChanged }: { c: ManagedCompetition; onChanged: () => vo
                     <span className="text-[12px] font-semibold text-ink-soft">{badge.label}</span>
                   </div>
                   <dl className="mt-2 grid gap-1 text-[12.5px] sm:grid-cols-2">
-                    <InfoRow label={t('comp.opens')} value={formatNpt(s.opensAt)} />
-                    <InfoRow label={t('comp.deadline')} value={formatNpt(s.deadline)} />
+                    {reviewRound ? (
+                      <p className="text-ink-soft sm:col-span-2">{s.status === 'UPCOMING' ? t('comp.reviewRoundStartsAfter', { name: prev?.name ?? '' }) : t('comp.reviewRoundLine')}</p>
+                    ) : (
+                      <>
+                        <InfoRow label={t('comp.opens')} value={formatNpt(s.opensAt)} />
+                        <InfoRow label={t('comp.deadline')} value={formatNpt(s.deadline)} />
+                      </>
+                    )}
                     {st && <InfoRow label={t('comp.entries')} value={`${st.submissions} / ${st.eligible}`} />}
                     {st && (st.advanced > 0 || st.notSelected > 0) && <InfoRow label={t('comp.published')} value={t('comp.advancedVsNot', { a: st.advanced, n: st.notSelected })} />}
                     {st && s.status === 'SELECTION_PENDING' && <InfoRow label={t('comp.draft')} value={t('comp.draftSelected', { n: st.draftAdvance })} />}
@@ -175,8 +183,8 @@ function Overview({ c, onChanged }: { c: ManagedCompetition; onChanged: () => vo
                   <div className="mt-3 flex flex-wrap gap-2">
                     {canOpen && <Button size="sm" loading={busy === `open-${s.id}`} onClick={() => run(`open-${s.id}`, () => openStageNow(c.id, s.id), t('comp.stageOpenedToast'), { title: t('comp.openStageQ', { name: s.name }), message: t('comp.openStageBody'), label: t('comp.openNow') })}>{t('comp.openNow')}</Button>}
                     {s.status === 'OPEN' && <Button size="sm" variant="secondary" loading={busy === `close-${s.id}`} onClick={() => run(`close-${s.id}`, () => closeStageNow(c.id, s.id), t('comp.stageClosedToast'), { title: t('comp.closeStageQ', { name: s.name }), message: t('comp.closeStageBody'), label: t('comp.closeSubmissions'), tone: 'warning' })}>{t('comp.closeSubmissions')}</Button>}
-                    {['UPCOMING', 'OPEN'].includes(s.status) && a.edit && <Button size="sm" variant="secondary" onClick={() => setDialog({ kind: 'extendStage', stage: s })}><CalendarClock size={14} />{t('comp.extendDeadline')}</Button>}
-                    {['UNDER_REVIEW', 'SELECTION_PENDING'].includes(s.status) && ['ACTIVE', 'AWAITING_RESULTS'].includes(c.status) && <Button size="sm" variant="secondary" onClick={() => setDialog({ kind: 'reopenStage', stage: s })}>{t('comp.reopenSubmissions')}</Button>}
+                    {!reviewRound && ['UPCOMING', 'OPEN'].includes(s.status) && a.edit && <Button size="sm" variant="secondary" onClick={() => setDialog({ kind: 'extendStage', stage: s })}><CalendarClock size={14} />{t('comp.extendDeadline')}</Button>}
+                    {!reviewRound && ['UNDER_REVIEW', 'SELECTION_PENDING'].includes(s.status) && ['ACTIVE', 'AWAITING_RESULTS'].includes(c.status) && <Button size="sm" variant="secondary" onClick={() => setDialog({ kind: 'reopenStage', stage: s })}>{t('comp.reopenSubmissions')}</Button>}
                     {['OPEN', 'UNDER_REVIEW', 'SELECTION_PENDING'].includes(s.status) && (
                       <Link to={`?tab=${isFinal ? 'results' : 'review'}&stage=${s.id}`} className="inline-flex min-h-[36px] items-center rounded-xl px-3 text-[13px] font-semibold text-brand hover:bg-brand/5">
                         {isFinal && s.status !== 'OPEN' ? t('comp.goFinalResults') : t('comp.reviewEntries')}

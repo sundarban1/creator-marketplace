@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sparkles, X } from 'lucide-react';
 import { SuggestDescriptionButton } from './SuggestDescriptionButton';
 import { useT } from '../i18n';
@@ -15,7 +15,8 @@ import { TextField } from '../ui/TextField';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { Alert } from '../ui/Alert';
-import { SegmentedControl } from '../ui/SegmentedControl';
+import { EventTypeSwitcher } from './EventTypeSwitcher';
+import { ProgressRail } from './guided/parts';
 import { FeaturedEventToggle } from './FeaturedEventToggle';
 import { NeedHelpButton } from './NeedHelpModal';
 import { EventCoverPicker } from './EventCoverPicker';
@@ -50,7 +51,8 @@ export function CreateEventPage() {
   const [featureImageCredit, setFeatureImageCredit] = useState<{ name: string; profileUrl: string } | null>(null);
   const [imageIsCustom, setImageIsCustom] = useState(false);
 
-  const [cType, setCType] = useState<CType>('PAID_CAMPAIGN');
+  const [params] = useSearchParams();
+  const [cType, setCType] = useState<CType>(params.get('type') === 'free' ? 'OPEN_EVENT' : 'PAID_CAMPAIGN');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -307,35 +309,35 @@ export function CreateEventPage() {
     : [t('biz.aiExamplePaid1'), t('biz.aiExamplePaid2'), t('biz.aiExamplePaid3')];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-2xl">
       {aiBusy && <AiGeneratingOverlay />}
-      <PageHeader title={t('biz.newEvent')} actions={<NeedHelpButton />} />
+      <PageHeader title={t('biz.newOpenEvent')} actions={<NeedHelpButton />} />
 
       {error && <Alert tone="error" className="mb-5">{error}</Alert>}
 
       {phase !== 'budget' && (
         <>
-          <SegmentedControl<CType | 'COMPETITION'>
-            ariaLabel="Type"
-            variant="pill"
-            value={cType}
-            onChange={(next) => {
-              if (next === cType) return;
-              // Competitions have their own builder (stages, prizes, judging)
-              // — the paid/open forms below are untouched.
-              if (next === 'COMPETITION') { navigate('/business/competitions/new'); return; }
+          <EventTypeSwitcher
+            value="OPEN_EVENT"
+            onSelect={(next) => {
               setCType(next);
               // Paid and free events use different AI prompt shapes (budget
               // vs. no budget) — a prompt written for one reads oddly, and
               // half-applies, against the other, so start it fresh.
               setAiPrompt('');
             }}
-            options={[
-              { value: 'PAID_CAMPAIGN', label: t('public.typePaid') },
-              { value: 'OPEN_EVENT', label: t('public.typeOpenEvent') },
-              { value: 'COMPETITION', label: t('comp.typeBadge') },
-            ]}
           />
+
+          <div className="mt-4">
+            <ProgressRail
+              steps={[
+                { key: 'prompt', label: t('guided.stepLabel_idea') },
+                { key: 'details', label: t('biz.stepLabelDetails') },
+              ]}
+              current={phase}
+              onJump={(k) => setPhase(k as Phase)}
+            />
+          </div>
 
           {/* AI assist */}
           <Card className="mb-6 mt-4 border-violet/25 bg-violet/[0.05]">

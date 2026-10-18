@@ -139,7 +139,7 @@ export const competitionNotifications = {
     });
   },
 
-  async stageResults(advanced: string[], notSelected: string[], c: { id: string; title: string }, stage: { id: string; name: string }, isNextFinal: boolean) {
+  async stageResults(advanced: string[], notSelected: string[], c: { id: string; title: string }, stage: { id: string; name: string }, isNextFinal: boolean, singleDeadline = false) {
     // Both groups in parallel — the advanced group also gets an email, which
     // must not delay the not-selected creators' notice.
     const advancedSends = fanOut(advanced, (userId) => send({
@@ -150,7 +150,9 @@ export const competitionNotifications = {
       email: {
         subject: `You advanced in ${c.title}`,
         heading: isNextFinal ? 'You’re a finalist!' : 'You advanced to the next stage',
-        paragraphs: [`Congratulations — you made it through ${stage.name} of ${c.title}. Check the next stage's brief and deadline.`],
+        paragraphs: [singleDeadline
+          ? `Congratulations — you made it through ${stage.name} of ${c.title}. Your entry moves on to the next round automatically; there's nothing new to submit.`
+          : `Congratulations — you made it through ${stage.name} of ${c.title}. Check the next stage's brief and deadline.`],
         cta: { label: 'View my progress', url: creatorCompetitionUrl(c.id) },
       },
     }));

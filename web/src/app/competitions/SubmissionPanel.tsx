@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
-import { UploadCloud, Link2, CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { UploadCloud, Link2, CheckCircle2, AlertTriangle, X, Repeat, Plus } from 'lucide-react';
 import { useT } from '../i18n';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
 import { Alert } from '../ui/Alert';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { useToast } from '../ui/Toast';
-import { submitCompetitionLink, type MyProgress, type SubmissionMethod } from '../api/competitions';
+import { submitCompetitionLink, type MyProgress, type MySubmission, type SubmissionMethod } from '../api/competitions';
+import { cn } from '../ui/cn';
 import { uploadCompetitionVideo, probeVideo, MAX_VIDEO_BYTES, ACCEPTED_VIDEO_TYPES, UploadAbortedError } from './videoUpload';
 import { SubmissionPreview, StageRequirements } from './parts';
 import { formatNpt } from './format';
@@ -28,11 +29,13 @@ type StageProgress = MyProgress['stages'][number];
  * upload-or-link form. Everything here is re-validated by the server — the
  * client checks only give faster feedback.
  */
-export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved }: {
+export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved, previous }: {
   competitionId: string;
   stage: StageProgress;
   allowEdits: boolean;
   onSaved: () => void;
+  /** The creator's entry from the latest earlier stage — offered as "use the same video" after advancing. */
+  previous?: { stageName: string; submission: MySubmission } | null;
 }) {
   const t = useT();
   const toast = useToast();
@@ -49,6 +52,9 @@ export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [fileWarning, setFileWarning] = useState('');
+  // Only link entries can be re-submitted as-is (the link endpoint re-checks them).
+  const reusable = previous?.submission.method === 'EXTERNAL_LINK' && previous.submission.externalUrl ? previous : null;
+  const [source, setSource] = useState<'reuse' | 'new' | null>(reusable ? null : 'new');
   const fileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -73,7 +79,9 @@ export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved }: {
     setError('');
     setBusy(true);
     try {
-      if (method === 'EXTERNAL_LINK') {
+      if (source === 'reuse' && reusable) {
+        await submitCompetitionLink(competitionId, stage.stageId, { url: reusable.submission.externalUrl!, caption: caption.trim() || undefined });
+      } else if (method === 'EXTERNAL_LINK') {
         if (!link.trim()) { setError(t('comp.linkRequired')); return; }
         if (!isGoogleDriveLink(link)) { setError(t('comp.driveOnly')); return; }
         await submitCompetitionLink(competitionId, stage.stageId, { url: link.trim(), caption: caption.trim() || undefined });
@@ -92,6 +100,7 @@ export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved }: {
       setLink('');
       setFile(null);
       setCaption('');
+      setSource(reusable ? null : 'new');
       onSaved();
     } catch (e) {
       if (!(e instanceof UploadAbortedError)) setError(e instanceof Error ? e.message : t('common.somethingWrong'));
@@ -113,6 +122,9 @@ export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved }: {
             {t('comp.yourEntry', { when: formatNpt(stage.submission.submittedAt) })}
             {stage.submission.version > 1 && <span className="font-normal text-ink-soft">· {t('comp.versionN', { n: stage.submission.version })}</span>}
           </p>
+          {reusable && stage.submission.externalUrl === reusable.submission.externalUrl && (
+            <p className="-mt-1.5 mb-3 flex items-center gap-1.5 text-[12.5px] text-ink-soft"><Repeat size={13} aria-hidden />{t('comp.reusedFrom', { stage: reusable.stageName })}</p>
+          )}
           <SubmissionPreview s={stage.submission} compact />
           {canReplace && !editing && (
             <Button variant="secondary" size="sm" className="mt-3" onClick={() => setEditing(true)}>{t('comp.replaceEntry')}</Button>
@@ -129,7 +141,46 @@ export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved }: {
 
       {canReplace && editing && (
         <div className="space-y-3 rounded-xl border border-line p-4">
-          {methods.length > 1 && (
+          {reusable && (
+            <div>
+              <p className="mb-2 text-[13px] font-semibold text-ink">{t('comp.entrySourceTitle')}</p>
+              <div role="radiogroup" aria-label={t('comp.entrySourceTitle')} className="grid gap-2 sm:grid-cols-2">
+                {([
+                  { value: 'reuse', icon: <Repeat size={16} />, title: t('comp.reuseTitle', { stage: reusable.stageName }), desc: t('comp.reuseDesc') },
+                  { value: 'new', icon: <Plus size={16} />, title: t('comp.newVideoTitle'), desc: t('comp.newVideoDesc') },
+                ] as const).map((o) => {
+                  const on = source === o.value;
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => { setSource(o.value); setError(''); }}
+                      className={cn(
+                        'flex items-start gap-3 rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
+                        on ? 'border-brand bg-brand/[0.05]' : 'border-line-strong hover:bg-surface-dim',
+                      )}
+                    >
+                      <span className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full', on ? 'bg-brand text-white' : 'bg-surface-dim text-ink-soft')} aria-hidden>{o.icon}</span>
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-semibold text-ink">{o.title}</span>
+                        <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-soft">{o.desc}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {source === 'reuse' && reusable && (
+            <div className="rounded-xl bg-surface-dim/60 p-3">
+              <SubmissionPreview s={reusable.submission} compact />
+            </div>
+          )}
+
+          {source === 'new' && methods.length > 1 && (
             <SegmentedControl<SubmissionMethod>
               ariaLabel={t('comp.submitAs')}
               variant="pill"
@@ -139,7 +190,7 @@ export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved }: {
             />
           )}
 
-          {method === 'VIDEO_UPLOAD' ? (
+          {source !== 'new' ? null : method === 'VIDEO_UPLOAD' ? (
             <div>
               <input
                 ref={fileRef}
@@ -196,10 +247,10 @@ export function SubmissionPanel({ competitionId, stage, allowEdits, onSaved }: {
             </div>
           )}
 
-          <TextField label={t('comp.captionOptional')} value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={500} />
+          {source && <TextField label={t('comp.captionOptional')} value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={500} />}
           {error && <Alert tone="error">{error}</Alert>}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={submit} loading={busy}>{stage.submission ? t('comp.submitReplacement') : t('comp.submitEntry')}</Button>
+            {source && <Button onClick={submit} loading={busy}>{source === 'reuse' ? t('comp.submitSameVideo') : stage.submission ? t('comp.submitReplacement') : t('comp.submitEntry')}</Button>}
             {stage.submission && !busy && <Button variant="ghost" onClick={() => setEditing(false)}>{t('common.cancel')}</Button>}
           </div>
           <p className="text-[12px] text-ink-soft">{t('comp.deadlineReminder', { when: formatNpt(stage.deadline) })}</p>
