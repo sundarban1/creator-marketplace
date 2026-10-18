@@ -561,7 +561,6 @@ export const ne: AppDict = {
     deadline: "समयसीमा",
     submitAs: "पेश गर्ने तरिका",
     videoLengthLabel: "भिडियोको लम्बाइ",
-    nepalTime: "नेपाल समय (NPT)",
     reasonHint: "कम्तीमा ५ अक्षर। सहभागीहरूले यो देख्न सक्छन्।",
     deadlineFuture: "भविष्यको मिति र समय छान्नुहोस्।",
     currentDeadline: "हालको समयसीमा: {when}",

@@ -583,7 +583,6 @@ export const en = {
     deadline: "Deadline",
     submitAs: "Submit as",
     videoLengthLabel: "Video length",
-    nepalTime: "Nepal time (NPT)",
     reasonHint: "At least 5 characters. Participants may see this.",
     deadlineFuture: "Choose a date and time in the future.",
     currentDeadline: "Current deadline: {when}",

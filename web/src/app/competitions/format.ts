@@ -37,7 +37,7 @@ export function formatNpt(iso: string | null | undefined, opts: { time?: boolean
     timeZone: 'Asia/Kathmandu', day: 'numeric', month: 'short', year: 'numeric',
     ...(opts.time !== false ? { hour: 'numeric', minute: '2-digit', hour12: true } : {}),
   });
-  return opts.time !== false ? `${s} NPT` : s;
+  return s;
 }
 
 /** "in 3 days" / "in 5 hours" / "ended" — coarse, for cards. */

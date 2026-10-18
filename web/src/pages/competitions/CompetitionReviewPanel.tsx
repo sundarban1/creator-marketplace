@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, FileClock } from 'lucide-react';
 import { api, type ApiCompetitionAdminDetail, type ApiCompetitionPrizeContent } from '../../lib/api';
 
-const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Kathmandu', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' NPT' : '—');
+const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Kathmandu', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—');
 const npr = (n: number | null | undefined) => (n == null ? 'non-cash' : `NPR ${Math.round(n).toLocaleString('en-IN')}`);
 const MIN_FEEDBACK = 10;
 

@@ -321,7 +321,6 @@ export function NptDateTimeField({ label, value, onChange, error, hint, min, req
   min?: string;
   required?: boolean;
 }) {
-  const t = useT();
   return (
     <TextField
       type="datetime-local"
@@ -329,7 +328,7 @@ export function NptDateTimeField({ label, value, onChange, error, hint, min, req
       value={toNptInput(value)}
       min={min ? toNptInput(min) : undefined}
       onChange={(e) => onChange(fromNptInput(e.target.value))}
-      hint={hint ?? t('comp.nepalTime')}
+      hint={hint}
       error={error}
       required={required}
     />
