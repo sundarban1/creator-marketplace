@@ -7,6 +7,7 @@ import { PaymentMethodsProvider } from './context/PaymentMethodsContext';
 import { SuccessStoriesProvider } from './context/SuccessStoriesContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PublicWhatsAppButton } from './components/PublicWhatsAppButton';
 import { RouteTitle } from './components/RouteTitle';
 import { RouteFallback } from './components/RouteFallback';
 import { PrerenderRelease } from './components/PrerenderRelease';
@@ -131,6 +132,8 @@ export default function App() {
         <UploadPreviewHost />
         {/* App-styled confirm/alert dialogs replacing window.confirm/alert (app + admin). */}
         <ConfirmDialogHost />
+        {/* WhatsApp support bubble on every pre-login page (landing, auth, public marketplace). */}
+        <PublicWhatsAppButton />
        <Suspense fallback={<RouteFallback />}>
         <PrerenderRelease />
         {/* Tab titles for app/admin/auth routes (public pages use <SEO>). */}

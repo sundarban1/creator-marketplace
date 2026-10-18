@@ -13,7 +13,7 @@ import { confirmDialog } from '../ui/confirmDialog';
 import { fetchCompetition, fetchMyProgress, joinCompetition, type CompetitionDetail, type MyProgress } from '../api/competitions';
 import { CompetitionOverview } from './CompetitionOverview';
 import { SubmissionPanel } from './SubmissionPanel';
-import { Section, type TimelineStage } from './parts';
+import { Prose, Section, type TimelineStage } from './parts';
 import { creatorStatusBadge, formatNpt } from './format';
 
 export function CreatorCompetitionDetailPage() {
@@ -117,7 +117,7 @@ function ProgressBlock({ c, p, onChanged }: { c: CompetitionDetail; p: MyProgres
           ) : (
             <>
               {c.stages.find((s) => s.id === current.stageId)?.brief && (
-                <p className="mb-3 whitespace-pre-line text-[14px] text-ink-soft">{c.stages.find((s) => s.id === current.stageId)!.brief}</p>
+                <Prose className="mb-3">{c.stages.find((s) => s.id === current.stageId)!.brief}</Prose>
               )}
               <SubmissionPanel key={current.stageId} competitionId={c.id} stage={current} allowEdits={c.allowSubmissionEdits} onSaved={onChanged} />
             </>

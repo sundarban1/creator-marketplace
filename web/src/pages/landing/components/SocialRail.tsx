@@ -26,7 +26,7 @@ const DARK_MODE_COLOR_OVERRIDE: Partial<Record<(typeof SOCIAL_ICONS)[number]['ke
 // stays put while the page scrolls (unlike the footer's old inline social
 // row, which only appeared once you'd scrolled all the way down). Hidden on
 // small screens: at that width it would sit on top of body copy rather than
-// in the page's own right margin. Sits above ChatWidget's bottom-right
+// in the page's own right margin. Sits above the WhatsApp bottom-right
 // bubble rather than on top of it since this one's vertically centered.
 export function SocialRail() {
   const siteInfo = useSiteInfo();

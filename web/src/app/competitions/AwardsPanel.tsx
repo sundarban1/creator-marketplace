@@ -11,7 +11,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { Avatar } from '../ui/Avatar';
 import { useToast } from '../ui/Toast';
 import { fetchParticipants, saveAwards, publishResults, type ManagedCompetition } from '../api/competitions';
-import { Section } from './parts';
+import { Section, CreatorProfileLink } from './parts';
 import { npr } from './format';
 
 /** Final results: assign finalists to prize slots, save as draft, preview, publish. */
@@ -111,8 +111,10 @@ export function AwardsPanel({ c, onChanged }: { c: ManagedCompetition; onChanged
             {published.map((a) => (
               <li key={a.prizeId + a.participantId} className="flex items-center gap-3 py-2.5">
                 <Award size={16} aria-hidden className={a.prize.kind === 'PLACEMENT' ? 'text-brand-orange' : 'text-violet'} />
-                <Avatar name={a.creator.fullName ?? ''} src={a.creator.avatarUrl} size="sm" />
-                <span className="flex-1 text-[14px] font-semibold text-ink">{a.creator.fullName}</span>
+                <CreatorProfileLink creatorId={a.creator.id} className="flex-1">
+                  <Avatar name={a.creator.fullName ?? ''} src={a.creator.avatarUrl} size="sm" />
+                  <span className="truncate text-[14px] font-semibold text-ink group-hover/creator:text-violet-dark group-hover/creator:underline">{a.creator.fullName ?? a.creator.username}</span>
+                </CreatorProfileLink>
                 <span className="text-[13px] text-ink-soft">{a.prize.title}</span>
               </li>
             ))}

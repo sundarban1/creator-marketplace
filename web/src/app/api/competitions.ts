@@ -81,6 +81,7 @@ export interface CompetitionDetail {
   rules: string;
   eligibility: string | null;
   contentFormats: string[];
+  skills: string[];
   submissionInstructions: string | null;
   videoMinSec: number | null;
   videoMaxSec: number | null;
@@ -206,6 +207,7 @@ export interface CompetitionInput {
   rules: string;
   eligibility?: string | null;
   contentFormats: string[];
+  skills: string[];
   submissionInstructions?: string | null;
   videoMinSec?: number | null;
   videoMaxSec?: number | null;

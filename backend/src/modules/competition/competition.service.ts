@@ -1101,7 +1101,7 @@ export class CompetitionService {
   private organizerDto(c: Awaited<ReturnType<CompetitionService['owned']>>) {
     return {
       id: c.id, slug: c.slug, title: c.title, description: c.description, objectives: c.objectives,
-      coverImageUrl: c.coverImageUrl, rules: c.rules, eligibility: c.eligibility, contentFormats: c.contentFormats,
+      coverImageUrl: c.coverImageUrl, rules: c.rules, eligibility: c.eligibility, contentFormats: c.contentFormats, skills: c.skills,
       submissionInstructions: c.submissionInstructions, videoMinSec: c.videoMinSec, videoMaxSec: c.videoMaxSec,
       contactInstructions: c.contactInstructions, attachments: c.attachments, status: c.status, resultsVisibility: c.resultsVisibility,
       publishAt: c.publishAt, registrationOpensAt: c.registrationOpensAt, registrationDeadline: c.registrationDeadline,
@@ -1317,7 +1317,7 @@ export class CompetitionService {
 
     return {
       id: c.id, slug: c.slug, title: c.title, description: c.description, objectives: c.objectives, coverImageUrl: c.coverImageUrl,
-      rules: c.rules, eligibility: c.eligibility, contentFormats: c.contentFormats, submissionInstructions: c.submissionInstructions,
+      rules: c.rules, eligibility: c.eligibility, contentFormats: c.contentFormats, skills: c.skills, submissionInstructions: c.submissionInstructions,
       videoMinSec: c.videoMinSec, videoMaxSec: c.videoMaxSec, contactInstructions: c.contactInstructions, attachments: c.attachments,
       status: c.status, pauseReason: c.status === 'PAUSED' ? c.pauseReason : null, cancelReason: c.status === 'CANCELLED' ? c.cancelReason : null,
       registrationOpensAt: c.registrationOpensAt, registrationDeadline: c.registrationDeadline, startsAt: c.startsAt, endsAt: c.endsAt,
@@ -1669,7 +1669,7 @@ export class CompetitionService {
       // public once published; never participant data.
       content: {
         objectives: c.objectives, coverImageUrl: c.coverImageUrl, rules: c.rules, eligibility: c.eligibility,
-        contentFormats: c.contentFormats, submissionInstructions: c.submissionInstructions, contactInstructions: c.contactInstructions,
+        contentFormats: c.contentFormats, skills: c.skills, submissionInstructions: c.submissionInstructions, contactInstructions: c.contactInstructions,
         videoMinSec: c.videoMinSec, videoMaxSec: c.videoMaxSec, attachments: c.attachments, resultsVisibility: c.resultsVisibility,
         allowSubmissionEdits: c.allowSubmissionEdits, onePrizePerCreator: c.onePrizePerCreator,
         judgingCriteria: c.scoringEnabled ? criteriaOf(c.judgingCriteria) : [],

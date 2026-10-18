@@ -15,6 +15,8 @@ import { EmptyState } from '../ui/EmptyState';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { Avatar } from '../ui/Avatar';
 import { cn } from '../ui/cn';
+import { MarkdownText } from '../ui/MarkdownText';
+import { markdownToPlain } from '../ui/richText';
 import { DetailHero, DetailSection, HeroReveal } from '../public/detailKit';
 import { EventGallery } from './EventGallery';
 import { fetchCommunityEvent } from './api';
@@ -151,7 +153,7 @@ function EventDetail({ event }: { event: CommunityEventDetail }) {
           <div className="min-w-0">
             {event.description && (
               <DetailSection title={t('communityEvents.aboutTitle')}>
-                <div className="max-w-[65ch] whitespace-pre-line text-[16px] leading-[1.75] text-ink-soft">{event.description}</div>
+                <MarkdownText className="max-w-[65ch] text-[16px] leading-[1.75] text-ink-soft">{event.description}</MarkdownText>
               </DetailSection>
             )}
           </div>
@@ -433,7 +435,7 @@ function EventSeo({ event, noindex }: { event: CommunityEventDetail; noindex: bo
   const path = communityEventPath(event.slug);
   const description =
     event.metaDescription ??
-    [event.shortDescription, event.description].filter(Boolean).join(' — ').replace(/\s+/g, ' ').slice(0, 158);
+    [event.shortDescription, markdownToPlain(event.description)].filter(Boolean).join(' — ').replace(/\s+/g, ' ').slice(0, 158);
   const image = event.ogImageUrl ?? event.coverImageUrl ?? undefined;
   const statusMap = { CANCELLED: 'EventCancelled', UPCOMING: 'EventScheduled', ONGOING: 'EventScheduled', COMPLETED: 'EventScheduled' } as const;
   return (

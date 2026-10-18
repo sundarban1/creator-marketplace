@@ -1,6 +1,6 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Eye, FileText, ListOrdered, Pencil, Plus, Scale, ScrollText, Trash2, Trophy, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Eye, FileText, Globe2, Gift, ListOrdered, Pencil, Plus, Repeat, Scale, ScrollText, Sparkles, Trash2, Trophy, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { Button } from '../ui/Button';
@@ -8,6 +8,10 @@ import { TextField } from '../ui/TextField';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { Switch } from '../ui/Switch';
+import { SegmentedControl } from '../ui/SegmentedControl';
+import { RichTextEditor } from '../ui/RichTextEditor';
+import { markdownToPlain } from '../ui/richText';
+import { cn } from '../ui/cn';
 import { Alert } from '../ui/Alert';
 import { Modal } from '../ui/Modal';
 import { Skeleton } from '../ui/Skeleton';
@@ -20,9 +24,10 @@ import {
   type CompetitionInput, type ManagedCompetition, type Prize, type Criterion,
 } from '../api/competitions';
 import { NptDateTimeField } from './parts';
-import { StepShell, Field, ProgressRail } from '../business/guided/parts';
+import { StepShell, Field, ProgressRail, ChoiceChips } from '../business/guided/parts';
 import { CompetitionOverview, type OverviewData } from './CompetitionOverview';
 import { nptInputIn, fromNptInput, formatNpt, npr } from './format';
+import { CRITERIA_SUGGESTIONS, FORMAT_OPTIONS, MAX_OBJECTIVES, MAX_TAGS, OBJECTIVE_OPTIONS, SKILL_OPTIONS, parseObjectives, serializeObjectives } from './options';
 
 type StageForm = CompetitionInput['stages'][number];
 
@@ -36,7 +41,7 @@ function emptyStage(opensH: number, deadlineH: number, name = ''): StageForm {
 
 function emptyForm(): CompetitionInput {
   return {
-    title: '', description: '', objectives: null, coverImageUrl: null, rules: '', eligibility: null, contentFormats: [],
+    title: '', description: '', objectives: null, coverImageUrl: null, rules: '', eligibility: null, contentFormats: [], skills: [],
     submissionInstructions: null, videoMinSec: null, videoMaxSec: null, contactInstructions: null, attachments: [],
     resultsVisibility: 'PUBLIC',
     registrationOpensAt: iso(1), registrationDeadline: iso(24 * 7), startsAt: iso(1), endsAt: iso(24 * 30),
@@ -51,7 +56,7 @@ function fromManaged(c: ManagedCompetition): CompetitionInput {
   const pending = c.review.pendingChanges;
   return {
     title: c.title, description: c.description, objectives: c.objectives, coverImageUrl: c.coverImageUrl, rules: pending?.rules ?? c.rules,
-    eligibility: pending && 'eligibility' in pending ? pending.eligibility ?? null : c.eligibility, contentFormats: c.contentFormats, submissionInstructions: c.submissionInstructions,
+    eligibility: pending && 'eligibility' in pending ? pending.eligibility ?? null : c.eligibility, contentFormats: c.contentFormats, skills: c.skills ?? [], submissionInstructions: c.submissionInstructions,
     videoMinSec: c.videoMinSec, videoMaxSec: c.videoMaxSec, contactInstructions: c.contactInstructions, attachments: c.attachments ?? [],
     resultsVisibility: c.resultsVisibility, registrationOpensAt: c.registrationOpensAt, registrationDeadline: c.registrationDeadline,
     startsAt: c.startsAt, endsAt: c.endsAt, allowSubmissionEdits: c.allowSubmissionEdits, onePrizePerCreator: c.onePrizePerCreator,
@@ -139,7 +144,6 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   const [step, setStep] = useState<FormStep>(existing ? 'review' : 'basics');
   const [reached, setReached] = useState<number>(existing ? FORM_STEPS.length : 0);
   const [returnToReview, setReturnToReview] = useState(false);
-  const [formatInput, setFormatInput] = useState('');
   const [busy, setBusy] = useState<'draft' | 'submit' | 'save' | null>(null);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -156,13 +160,7 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   const setCriterion = (i: number, patch: Partial<Criterion>) => setF((p) => ({ ...p, judgingCriteria: p.judgingCriteria.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
   const weightTotal = f.judgingCriteria.reduce((s, c) => s + (Number(c.weight) || 0), 0);
 
-  function addFormat(e?: KeyboardEvent<HTMLInputElement>) {
-    if (e && e.key !== 'Enter' && e.key !== ',') return;
-    e?.preventDefault();
-    const v = formatInput.trim().replace(/,$/, '');
-    if (v && !f.contentFormats.includes(v) && f.contentFormats.length < 10) set('contentFormats', [...f.contentFormats, v]);
-    setFormatInput('');
-  }
+  const objectives = parseObjectives(f.objectives);
 
   function addStage() {
     const last = f.stages[f.stages.length - 1];
@@ -341,27 +339,22 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
           <Field label={t('comp.fCover')} optional>
             <EventCoverPicker value={f.coverImageUrl ?? ''} onChange={(url) => set('coverImageUrl', url || null)} onError={(m) => setErrors([m])} />
           </Field>
-          <Textarea label={t('comp.fDescription')} hint={t('comp.fDescriptionHint')} rows={4} value={f.description} onChange={(e) => set('description', e.target.value)} maxLength={5000} showCount />
-          <Textarea label={t('comp.fObjectives')} rows={2} value={f.objectives ?? ''} onChange={(e) => set('objectives', e.target.value || null)} maxLength={3000} />
-          <div>
-            <TextField label={t('comp.fFormats')} hint={t('comp.fFormatsHint')} value={formatInput} onChange={(e) => setFormatInput(e.target.value)} onKeyDown={addFormat} onBlur={() => addFormat()} />
-            {f.contentFormats.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {f.contentFormats.map((x) => (
-                  <span key={x} className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-0.5 text-[12px] text-ink">
-                    {x}
-                    <button type="button" aria-label={t('common.remove')} onClick={() => set('contentFormats', f.contentFormats.filter((y) => y !== x))}><X size={12} /></button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          <RichTextEditor label={t('comp.fDescription')} hint={t('comp.fDescriptionHint')} value={f.description} onChange={(v) => set('description', v)} maxLength={5000} minHeight={160} />
+          <PillField label={t('comp.fObjectives')} hint={t('comp.fObjectivesHint')} count={objectives.length} max={MAX_OBJECTIVES}>
+            <PillPicker presets={OBJECTIVE_OPTIONS} customLabel={t('comp.otherCustom')} value={objectives} max={MAX_OBJECTIVES} maxLength={80} ariaLabel={t('comp.fObjectives')} onChange={(v) => set('objectives', serializeObjectives(v))} />
+          </PillField>
+          <PillField label={t('comp.fFormatsOnly')} hint={t('comp.fFormatsOnlyHint')} count={f.contentFormats.length} max={MAX_TAGS}>
+            <PillPicker presets={FORMAT_OPTIONS} customLabel={t('comp.otherCustom')} value={f.contentFormats} max={MAX_TAGS} maxLength={40} ariaLabel={t('comp.fFormatsOnly')} onChange={(v) => set('contentFormats', v)} />
+          </PillField>
+          <PillField label={t('comp.fSkills')} hint={t('comp.fSkillsHint')} count={f.skills.length} max={MAX_TAGS}>
+            <PillPicker presets={SKILL_OPTIONS} customLabel={t('comp.other')} value={f.skills} max={MAX_TAGS} maxLength={40} ariaLabel={t('comp.fSkills')} onChange={(v) => set('skills', v)} />
+          </PillField>
         </StepShell>
       )}
 
       {step === 'rules' && (
         <StepShell title={t('comp.stepTitle_rules')} subtitle={t('comp.stepSub_rules')} footer={stepFooter('rules')}>
-          <Textarea label={t('comp.fRules')} hint={t('comp.fRulesHint')} rows={6} value={f.rules} onChange={(e) => set('rules', e.target.value)} maxLength={10000} showCount />
+          <RichTextEditor label={t('comp.fRules')} hint={t('comp.fRulesHint')} value={f.rules} onChange={(v) => set('rules', v)} maxLength={10000} minHeight={200} />
           <Textarea label={t('comp.fEligibility')} rows={2} value={f.eligibility ?? ''} onChange={(e) => set('eligibility', e.target.value || null)} maxLength={3000} />
           <Textarea label={t('comp.fInstructions')} rows={3} value={f.submissionInstructions ?? ''} onChange={(e) => set('submissionInstructions', e.target.value || null)} maxLength={5000} />
           <Field label={t('comp.videoLengthLabel')} optional help={<span className="text-[12px] text-ink-soft">{t('comp.videoLengthHelp')}</span>}>
@@ -417,7 +410,7 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
                   </div>
                   <div className="space-y-3">
                     <TextField label={t('comp.fStageName')} placeholder={t('comp.fStageNamePh')} value={s.name} onChange={(e) => setStage(i, { name: e.target.value })} maxLength={80} />
-                    <Textarea label={t('comp.fStageBrief')} hint={t('comp.fStageBriefHint')} rows={3} value={s.brief ?? ''} onChange={(e) => setStage(i, { brief: e.target.value || null })} maxLength={5000} />
+                    <RichTextEditor label={t('comp.fStageBrief')} hint={t('comp.fStageBriefHint')} value={s.brief ?? ''} onChange={(v) => setStage(i, { brief: v || null })} maxLength={5000} minHeight={110} />
                     <fieldset disabled={!structural} className="grid gap-3 sm:grid-cols-2">
                       <NptDateTimeField label={t('comp.fStageOpens')} value={s.opensAt} onChange={(v) => setStage(i, { opensAt: v })} />
                       <NptDateTimeField label={t('comp.fStageDeadline')} value={s.deadline} onChange={(v) => setStage(i, { deadline: v })} />
@@ -489,29 +482,35 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
 
       {step === 'judging' && (
         <StepShell title={t('comp.stepTitle_judging')} subtitle={t('comp.stepSub_judging')} footer={stepFooter('judging')}>
-          <div className="space-y-4">
-            <Switch label={t('comp.fAllowEdits')} checked={f.allowSubmissionEdits} onChange={(v) => set('allowSubmissionEdits', v)} />
-            <Switch label={t('comp.fOnePrize')} checked={f.onePrizePerCreator} onChange={(v) => set('onePrizePerCreator', v)} />
-          </div>
-          <Select label={t('comp.fResultsVisibility')} value={f.resultsVisibility} onChange={(e) => set('resultsVisibility', e.target.value as CompetitionInput['resultsVisibility'])} options={[{ value: 'PUBLIC', label: t('comp.visPublic') }, { value: 'PARTICIPANTS', label: t('comp.visParticipants') }]} />
-          <Field label={t('comp.fScoring')} optional help={<span className="text-[12px] text-ink-soft">{t('comp.scoringHelp')}</span>}>
-            <Switch label={f.scoringEnabled ? t('comp.scoringOn') : t('comp.scoringOff')} checked={f.scoringEnabled} onChange={(v) => set('scoringEnabled', v)} />
-            {f.scoringEnabled && (
-              <div className="mt-3 space-y-2">
-                {f.judgingCriteria.map((c, i) => (
-                  <div key={i} className="flex items-end gap-2">
-                    <TextField className="flex-1" label={i === 0 ? t('comp.fCriterion') : ''} aria-label={t('comp.fCriterion')} value={c.label} onChange={(e) => setCriterion(i, { label: e.target.value })} maxLength={80} />
-                    <TextField className="w-24" type="number" min={1} max={100} label={i === 0 ? t('comp.fWeight') : ''} aria-label={t('comp.fWeight')} value={c.weight} onChange={(e) => setCriterion(i, { weight: Number(e.target.value) || 0 })} />
-                    <Button variant="ghost" aria-label={t('common.remove')} onClick={() => set('judgingCriteria', f.judgingCriteria.filter((_, j) => j !== i))}><Trash2 size={16} /></Button>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between">
-                  <Button size="sm" variant="secondary" onClick={() => set('judgingCriteria', [...f.judgingCriteria, { key: '', label: '', weight: 0 }])} disabled={f.judgingCriteria.length >= 10}><Plus size={14} />{t('comp.addCriterion')}</Button>
-                  <span className={weightTotal === 100 ? 'text-[13px] font-semibold text-success' : 'text-[13px] font-semibold text-warning'}>{t('comp.weightTotal', { total: weightTotal })}</span>
-                </div>
-              </div>
-            )}
+          <Field label={t('comp.secEntries')}>
+            <div className="divide-y divide-line rounded-2xl border border-line bg-surface">
+              <SettingRow icon={<Repeat size={16} />} title={t('comp.fAllowEdits')} description={t('comp.fAllowEditsDesc')} checked={f.allowSubmissionEdits} onChange={(v) => set('allowSubmissionEdits', v)} />
+              <SettingRow icon={<Gift size={16} />} title={t('comp.fOnePrize')} description={t('comp.fOnePrizeDesc')} checked={f.onePrizePerCreator} onChange={(v) => set('onePrizePerCreator', v)} />
+            </div>
           </Field>
+          <Field label={t('comp.fResultsVisibility')}>
+            <SegmentedControl
+              variant="cards"
+              ariaLabel={t('comp.fResultsVisibility')}
+              value={f.resultsVisibility}
+              onChange={(v) => set('resultsVisibility', v)}
+              options={[
+                { value: 'PUBLIC', label: t('comp.visPublic'), description: t('comp.visPublicDesc'), icon: <Globe2 size={15} /> },
+                { value: 'PARTICIPANTS', label: t('comp.visParticipants'), description: t('comp.visParticipantsDesc'), icon: <Users size={15} /> },
+              ]}
+            />
+          </Field>
+          <div className="rounded-2xl border border-line bg-surface">
+            <SettingRow icon={<Scale size={16} />} title={t('comp.scoringTitle')} description={t('comp.scoringHelp')} checked={f.scoringEnabled} onChange={(v) => set('scoringEnabled', v)} badge={t('guided.optional')} />
+            {f.scoringEnabled && (
+              <CriteriaEditor
+                criteria={f.judgingCriteria}
+                onChange={(v) => set('judgingCriteria', v)}
+                onPatch={setCriterion}
+                total={weightTotal}
+              />
+            )}
+          </div>
         </StepShell>
       )}
 
@@ -546,10 +545,13 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
           <div className="rounded-2xl border border-line bg-surface px-4">
             <SummaryRow icon={<FileText size={16} />} label={t('comp.step_basics')} onEdit={() => editFromReview('basics')}>
               <span className="font-semibold">{f.title || '—'}</span>
-              {f.description && <span className="mt-0.5 line-clamp-2 block text-[13.5px] text-ink-soft">{f.description}</span>}
+              {f.description && <span className="mt-0.5 line-clamp-2 block text-[13.5px] text-ink-soft">{markdownToPlain(f.description)}</span>}
+              {(objectives.length > 0 || f.contentFormats.length > 0 || f.skills.length > 0) && (
+                <span className="mt-0.5 line-clamp-1 block text-[13px] text-ink-soft">{[...objectives, ...f.contentFormats, ...f.skills].join(' · ')}</span>
+              )}
             </SummaryRow>
             <SummaryRow icon={<ScrollText size={16} />} label={t('comp.step_rules')} onEdit={() => editFromReview('rules')}>
-              <span className="line-clamp-2 block">{f.rules || '—'}</span>
+              <span className="line-clamp-2 block">{markdownToPlain(f.rules) || '—'}</span>
               <span className="mt-0.5 block text-[13px] text-ink-soft">
                 {[f.eligibility && t('comp.summaryEligibility'), (f.attachments?.length ?? 0) > 0 && t('comp.summaryDocs', { n: f.attachments!.length })].filter(Boolean).join(' · ') || t('comp.summaryNoExtras')}
               </span>
@@ -624,6 +626,188 @@ function SummaryRow({ icon, label, onEdit, children }: { icon: ReactNode; label:
       <button type="button" onClick={onEdit} aria-label={`${t('comp.edit')} ${label}`} className="inline-flex min-h-[40px] items-center gap-1 rounded-full px-3 text-[13px] font-semibold text-violet-dark hover:bg-violet/[0.07]">
         <Pencil size={13} aria-hidden />{t('comp.edit')}
       </button>
+    </div>
+  );
+}
+
+/** Label + hint + "n/max selected" counter above a pill picker. */
+function PillField({ label, hint, count, max, children }: { label: string; hint: string; count: number; max: number; children: ReactNode }) {
+  const t = useT();
+  return (
+    <div>
+      <div className="mb-1 flex items-baseline justify-between gap-3">
+        <p className="text-[13px] font-semibold text-ink">{label}</p>
+        <span className={cn('text-[12px] tabular-nums', count >= max ? 'font-semibold text-violet-dark' : 'text-ink-soft')}>{t('comp.selectedOfMax', { n: count, max })}</span>
+      </div>
+      <p className="mb-2.5 text-[13px] text-ink-soft">{hint}</p>
+      {children}
+    </div>
+  );
+}
+
+/** Multi-select preset pills, plus an "Add your own" pill for anything not listed. */
+function PillPicker({ presets, value, onChange, max, maxLength, ariaLabel, customLabel }: {
+  presets: string[]; value: string[]; onChange: (v: string[]) => void; max: number; maxLength: number; ariaLabel: string;
+  /** Text on the add-your-own pill (defaults to "Add your own"). */
+  customLabel?: string;
+}) {
+  const t = useT();
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState('');
+  const lower = (x: string) => x.trim().toLowerCase();
+  // Custom picks (and older free-text tags) show as pills next to the presets.
+  const options = [...presets, ...value.filter((v) => !presets.some((p) => lower(p) === lower(v)))];
+  const full = value.length >= max;
+  const toggle = (v: string) => onChange(value.includes(v) ? value.filter((x) => x !== v) : full ? value : [...value, v]);
+
+  function commit() {
+    const v = draft.trim().replace(/,$/, '').slice(0, maxLength);
+    setDraft('');
+    setAdding(false);
+    if (!v || full) return;
+    const preset = presets.find((p) => lower(p) === lower(v));
+    const pick = preset ?? v;
+    if (!value.some((x) => lower(x) === lower(pick))) onChange([...value, pick]);
+  }
+  function onKey(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { setDraft(''); setAdding(false); }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="contents">
+        <ChoiceChips multi max={max} ariaLabel={ariaLabel} value={value} onChange={toggle} options={options.map((o) => ({ value: o, label: o }))} />
+      </div>
+      {adding ? (
+        <input
+          autoFocus
+          value={draft}
+          maxLength={maxLength}
+          placeholder={t('comp.addOwnPh')}
+          aria-label={customLabel ?? t('comp.addOwn')}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={onKey}
+          onBlur={commit}
+          className="min-h-[44px] w-48 rounded-full border border-violet bg-surface px-4 text-[14px] text-ink outline-none ring-2 ring-violet/20 placeholder:text-ink-soft/60"
+        />
+      ) : (
+        <button
+          type="button"
+          disabled={full}
+          onClick={() => setAdding(true)}
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-dashed border-line-strong px-4 text-[14px] font-medium text-ink-soft transition-colors hover:border-violet/50 hover:text-violet-dark disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          <Plus size={14} aria-hidden />{customLabel ?? t('comp.addOwn')}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** One toggle setting: icon, title and explanation on the left, switch on the right. */
+function SettingRow({ icon, title, description, checked, onChange, badge }: {
+  icon: ReactNode; title: string; description: string; checked: boolean; onChange: (v: boolean) => void; badge?: string;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 p-4">
+      <span className={cn('mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-colors', checked ? 'bg-violet/10 text-violet-dark' : 'bg-ink/[0.05] text-ink-soft')} aria-hidden>{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2 text-[14.5px] font-semibold text-ink">
+          {title}
+          {badge && <span className="text-[12px] font-normal text-ink-soft">{badge}</span>}
+        </span>
+        <span className="mt-0.5 block text-[13px] leading-snug text-ink-soft">{description}</span>
+      </span>
+      <Switch label={title} checked={checked} onChange={onChange} className="mt-1.5" />
+    </label>
+  );
+}
+
+/** Rubric rows with a weight slider each, a running total bar and quick actions. */
+function CriteriaEditor({ criteria, onChange, onPatch, total }: {
+  criteria: Criterion[]; onChange: (v: Criterion[]) => void; onPatch: (i: number, patch: Partial<Criterion>) => void; total: number;
+}) {
+  const t = useT();
+  const maxCriteria = 10;
+  const remaining = 100 - total;
+  const add = (label = '') => {
+    if (criteria.length >= maxCriteria) return;
+    onChange([...criteria, { key: '', label, weight: Math.max(1, Math.min(100, remaining)) }]);
+  };
+  const splitEvenly = () => {
+    const n = criteria.length;
+    if (!n) return;
+    const base = Math.floor(100 / n);
+    onChange(criteria.map((c, i) => ({ ...c, weight: base + (i < 100 - base * n ? 1 : 0) })));
+  };
+  const suggestions = CRITERIA_SUGGESTIONS.filter((s) => !criteria.some((c) => c.label.trim().toLowerCase() === s.toLowerCase()));
+  const tone = total === 100 ? 'success' : total > 100 ? 'danger' : 'warning';
+
+  return (
+    <div className="space-y-4 border-t border-line p-4">
+      {criteria.length > 0 && (
+        <ul className="space-y-2.5">
+          {criteria.map((c, i) => (
+            <li key={i} className="rounded-xl border border-line bg-surface-dim/40 p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  value={c.label}
+                  maxLength={80}
+                  placeholder={t('comp.criterionPh')}
+                  aria-label={t('comp.fCriterion')}
+                  onChange={(e) => onPatch(i, { label: e.target.value })}
+                  className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-[14.5px] font-medium text-ink outline-none placeholder:text-ink-soft/60 hover:border-line focus:border-brand focus:bg-surface"
+                />
+                <span className="w-12 text-right text-[15px] font-semibold tabular-nums text-ink">{c.weight}%</span>
+                <button type="button" aria-label={t('common.remove')} onClick={() => onChange(criteria.filter((_, j) => j !== i))} className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-soft hover:bg-danger/10 hover:text-danger">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={100}
+                step={1}
+                value={c.weight || 1}
+                aria-label={t('comp.weightFor', { name: c.label || t('comp.fCriterion') })}
+                onChange={(e) => onPatch(i, { weight: Number(e.target.value) })}
+                className="mt-1 h-2 w-full cursor-pointer accent-violet"
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div>
+        <div className="h-2 overflow-hidden rounded-full bg-ink/[0.07]" aria-hidden>
+          <div className={cn('h-full rounded-full transition-[width] duration-200', { success: 'bg-success', warning: 'bg-warning', danger: 'bg-danger' }[tone])} style={{ width: `${Math.min(100, total)}%` }} />
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[13px]">
+          <span className={cn('font-semibold', { success: 'text-success', warning: 'text-warning', danger: 'text-danger' }[tone])} aria-live="polite">
+            {total === 100 ? t('comp.weightDone') : total > 100 ? t('comp.weightOver', { n: total - 100 }) : t('comp.weightLeft', { n: remaining })}
+          </span>
+          <span className="tabular-nums text-ink-soft">{t('comp.weightTotal', { total })}</span>
+        </div>
+      </div>
+
+      {suggestions.length > 0 && criteria.length < maxCriteria && (
+        <div>
+          <p className="mb-1.5 flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wide text-ink-soft"><Sparkles size={12} aria-hidden />{t('comp.quickAdd')}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {suggestions.map((s) => (
+              <button key={s} type="button" onClick={() => add(s)} className="inline-flex min-h-[36px] items-center gap-1 rounded-full border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink hover:border-violet/40">
+                <Plus size={12} aria-hidden />{s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="secondary" onClick={() => add()} disabled={criteria.length >= maxCriteria}><Plus size={14} />{t('comp.addCriterion')}</Button>
+        {criteria.length > 1 && total !== 100 && <Button size="sm" variant="ghost" onClick={splitEvenly}>{t('comp.splitEvenly')}</Button>}
+      </div>
     </div>
   );
 }

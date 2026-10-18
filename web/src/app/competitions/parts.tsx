@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trophy, Users, Clock, CheckCircle2, Circle, XCircle, Lock, PlayCircle, Link2, ExternalLink, Award, ArrowUpRight } from 'lucide-react';
 import { useT } from '../i18n';
 import { cn } from '../ui/cn';
+import { MarkdownText } from '../ui/MarkdownText';
 import { Avatar } from '../ui/Avatar';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -30,9 +31,10 @@ export function CompetitionTypeBadge({ className }: { className?: string }) {
 }
 
 /** Multi-line organizer text (rules, briefs) — preserves their line breaks. */
+/** Organizer text — Markdown from the rich-text editor, or older plain text. */
 export function Prose({ children, className }: { children?: string | null; className?: string }) {
   if (!children) return null;
-  return <p className={cn('whitespace-pre-line text-[14px] leading-relaxed text-ink-soft', className)}>{children}</p>;
+  return <MarkdownText className={cn('text-[14px] leading-relaxed text-ink-soft', className)}>{children}</MarkdownText>;
 }
 
 export function Section({ title, action, children, className }: { title: string; action?: ReactNode; children: ReactNode; className?: string }) {
@@ -427,3 +429,15 @@ export function DeadlineDialog({ open, title, message, current, confirmLabel, on
   );
 }
 
+
+/** Avatar + name that opens the creator's profile (business side), in the same tab. */
+export function CreatorProfileLink({ creatorId, children, className }: { creatorId: string; children: ReactNode; className?: string }) {
+  return (
+    <Link
+      to={`/business/creators/${creatorId}`}
+      className={cn('group/creator flex min-w-0 items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-violet/40', className)}
+    >
+      {children}
+    </Link>
+  );
+}

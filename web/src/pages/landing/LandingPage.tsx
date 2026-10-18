@@ -19,7 +19,6 @@ import { LandingThemeProvider } from './context/ThemeContext';
 import { CursorSparkles } from './components/CursorSparkles';
 import { ScrollProgress } from './components/ScrollProgress';
 import { CornerChrome } from './components/CornerChrome';
-import { ChatWidget } from './components/ChatWidget';
 import { SocialRail } from './components/SocialRail';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
@@ -148,7 +147,6 @@ function LandingPageInner() {
       <Stories status={storiesStatus} stories={successStories} />
       <FinalCTA creators={creators} businesses={businesses} />
       <LandingFooter />
-      <ChatWidget />
     </div>
   );
 }

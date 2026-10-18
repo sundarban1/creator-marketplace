@@ -1055,7 +1055,7 @@ export interface ApiCompetitionAdminDetail {
   reports: Array<{ id: string; reason: string; description: string | null; status: string; createdAt: string }>;
   viewerIsModerator: boolean;
   content: {
-    objectives: string | null; coverImageUrl: string | null; rules: string; eligibility: string | null; contentFormats: string[];
+    objectives: string | null; coverImageUrl: string | null; rules: string; eligibility: string | null; contentFormats: string[]; skills?: string[];
     submissionInstructions: string | null; contactInstructions: string | null; videoMinSec: number | null; videoMaxSec: number | null;
     attachments: Array<{ url: string; name: string; kind?: string }>; resultsVisibility: string; allowSubmissionEdits: boolean; onePrizePerCreator: boolean;
     judgingCriteria: Array<{ key: string; label: string; weight: number }>;

@@ -3162,8 +3162,10 @@ model Competition {
   coverImageUrl             String?
   rules                     String
   eligibility               String?
-  // Creator skills / content formats the organizer is looking for (free text tags).
+  // Content formats the organizer wants (Reels, Short film…) — picked from presets or custom.
   contentFormats            String[]                     @default([])
+  // Creator skills the organizer is looking for (Storytelling, Dance…).
+  skills                    String[]                     @default([])
   submissionInstructions    String?
   // Competition-wide defaults; a stage may override (CompetitionStage.videoMin/MaxSec).
   videoMinSec               Int?

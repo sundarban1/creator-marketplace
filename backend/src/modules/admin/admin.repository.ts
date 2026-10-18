@@ -134,11 +134,11 @@ const DEFAULTS: Record<string, unknown> = {
   // are shown (max 4), so an entry for a city with no creators yet simply
   // stays hidden until one joins — see CreatorService.getPopularSearches.
   'marketplace.popularCreatorSearches': [
-    'Food creators in Kathmandu',
-    'TikTok creators in Pokhara',
-    'Beauty creators in Kathmandu',
+    'Food creators in Biratnagar',
+    'Fitness creators in Pokhara',
+    'Beauty creators in Pokhara',
     'Fashion creators in Nepal',
-    'Fitness creators in Nepal',
+    'TikTok creators in Pokhara',
     'Lifestyle creators in Lalitpur',
     'Travel creators in Pokhara',
     'YouTube creators in Nepal',

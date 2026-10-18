@@ -8,6 +8,7 @@ import { EventAttachmentsView } from '../events/EventAttachments';
 import type { CompetitionDetail } from '../api/competitions';
 import { CompetitionTypeBadge, CompetitionStatusBadge, Prose, Section, StageTimeline, PrizeList, InfoRow, type TimelineStage } from './parts';
 import { formatNpt, durationLabel, npr } from './format';
+import { parseObjectives } from './options';
 
 /** The subset of the public detail the overview needs — also built from form state for previews. */
 export type OverviewData = Omit<CompetitionDetail, 'viewer' | 'id' | 'slug' | 'registrationOpen' | 'registrationClosedReason' | 'currentStageId' | 'participantCount' | 'results'> & {
@@ -29,6 +30,7 @@ export function CompetitionOverview({ c, headerAction, progress, timelineStages,
   const t = useT();
   const dur = durationLabel(c.videoMinSec, c.videoMaxSec, t);
   const stages: TimelineStage[] = timelineStages ?? c.stages.map((s) => ({ ...s }));
+  const objectives = parseObjectives(c.objectives);
 
   return (
     <div className="space-y-5">
@@ -89,12 +91,16 @@ export function CompetitionOverview({ c, headerAction, progress, timelineStages,
 
           <Section title={t('comp.aboutCompetition')}>
             <Prose>{c.description}</Prose>
-            {c.objectives && (<><h3 className="mb-1 mt-4 text-[13px] font-semibold text-ink">{t('comp.objectives')}</h3><Prose>{c.objectives}</Prose></>)}
-            {c.contentFormats.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {c.contentFormats.map((f) => <span key={f} className="rounded-full border border-line px-2.5 py-0.5 text-[12px] text-ink-soft">{f}</span>)}
-              </div>
+            {objectives.length > 0 && (
+              <>
+                <h3 className="mb-1.5 mt-4 text-[13px] font-semibold text-ink">{t('comp.objectives')}</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {objectives.map((o) => <span key={o} className="rounded-full bg-violet/10 px-2.5 py-1 text-[12.5px] font-medium text-violet-dark">{o}</span>)}
+                </div>
+              </>
             )}
+            <TagRow title={t('comp.formatsLabel')} tags={c.contentFormats} />
+            <TagRow title={t('comp.skillsLabel')} tags={c.skills ?? []} />
           </Section>
 
           <Section title={t('comp.rulesEligibility')}>
@@ -166,5 +172,17 @@ export function CompetitionOverview({ c, headerAction, progress, timelineStages,
         </aside>
       </div>
     </div>
+  );
+}
+
+function TagRow({ title, tags }: { title: string; tags: string[] }) {
+  if (!tags.length) return null;
+  return (
+    <>
+      <h3 className="mb-1.5 mt-4 text-[13px] font-semibold text-ink">{title}</h3>
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map((f) => <span key={f} className="rounded-full border border-line px-2.5 py-0.5 text-[12px] text-ink-soft">{f}</span>)}
+      </div>
+    </>
   );
 }

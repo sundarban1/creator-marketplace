@@ -38,9 +38,10 @@ export const en = {
     // (GET /api/public/creators/popular-searches), which drops any search
     // that currently has no creators.
     popularSearches: [
-      'Food creators in Kathmandu',
-      'TikTok creators in Pokhara',
-      'Beauty creators in Nepal',
+      'Food creators in Biratnagar',
+      'Fitness creators in Pokhara',
+      'Beauty creators in Pokhara',
+      'Fashion creators in Nepal',
     ],
     socialProofSuffix: 'creators are already on Kolab',
     socialProofQualitative: 'Built for creators and businesses across Nepal',

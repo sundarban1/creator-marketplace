@@ -53,7 +53,7 @@ export function CornerChrome() {
           /{active}
         </span>
       </div>
-      {/* Offset well above ChatWidget's own fixed bottom-5/right-5 bubble
+      {/* Offset well above PublicWhatsAppButton's fixed bottom-5/right-5 bubble
           (~64px tall) so the two never overlap. */}
       <div
         aria-hidden

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Check, X, Eye, Inbox } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Check, X, Eye, ExternalLink, Inbox } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
@@ -22,7 +22,7 @@ import {
   fetchParticipants, fetchSubmissionDetail, fetchDecisionSummary, saveDecisions, publishDecisions,
   type ManagedCompetition, type ParticipantFilter, type ParticipantRow,
 } from '../api/competitions';
-import { StageTimeline, SubmissionPreview, Section } from './parts';
+import { StageTimeline, SubmissionPreview, Section, CreatorProfileLink } from './parts';
 import { formatNpt } from './format';
 
 type Decision = 'ADVANCE' | 'NOT_SELECTED' | null;
@@ -161,17 +161,17 @@ function StageReview({ c, stageId, onSelectStage, onChanged }: { c: ManagedCompe
                 const published = r.decision?.isPublished;
                 return (
                   <li key={r.participantId} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-3 sm:flex-row sm:items-center">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <CreatorProfileLink creatorId={r.creator.id} className="flex-1">
                       <Avatar name={r.creator.fullName ?? ''} src={r.creator.avatarUrl} size="sm" />
                       <div className="min-w-0">
-                        <p className="flex items-center gap-1 truncate text-[14px] font-semibold text-ink">{r.creator.fullName ?? r.creator.username}<VerifiedTick entity={r.creator} /></p>
+                        <p className="flex items-center gap-1 truncate text-[14px] font-semibold text-ink group-hover/creator:text-violet-dark group-hover/creator:underline">{r.creator.fullName ?? r.creator.username}<VerifiedTick entity={r.creator} /></p>
                         <p className="truncate text-[12px] text-ink-soft">
                           {r.submission ? t('comp.submittedAt', { when: formatNpt(r.submission.submittedAt) }) : t('comp.noEntryYet')}
                           {r.submission && r.submission.version > 1 ? ` · v${r.submission.version}` : ''}
                           {r.decision?.totalScore != null ? ` · ${t('comp.scoreN', { n: r.decision.totalScore })}` : ''}
                         </p>
                       </div>
-                    </div>
+                    </CreatorProfileLink>
                     <div className="flex flex-wrap items-center gap-2">
                       {r.status === 'NOT_SELECTED' && r.eliminatedAtOrder === stage.order && <StatusBadge label={t('comp.outcomeNotSelected')} tone="neutral" />}
                       {r.currentStageOrder > stage.order && <StatusBadge label={t('comp.outcomeAdvanced')} tone="success" />}
@@ -251,6 +251,20 @@ function EntryModal({ c, stageId, row, editable, canDecide, pending, onClose, on
       title={row.creator.fullName ?? row.creator.username ?? t('comp.entry')}
       footer={editable ? <><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button onClick={apply}>{t('comp.applyToDraft')}</Button></> : <Button variant="ghost" onClick={onClose}>{t('common.close')}</Button>}
     >
+      {/* New tab: scores/decision typed here aren't applied until "Apply", so don't navigate away. */}
+      <Link
+        to={`/business/creators/${row.creator.id}`}
+        target="_blank"
+        rel="noopener"
+        className="group mb-4 flex items-center gap-3 rounded-xl border border-line p-2.5 transition-colors hover:border-violet/40 hover:bg-violet/[0.04]"
+      >
+        <Avatar name={row.creator.fullName ?? ''} src={row.creator.avatarUrl} size="sm" />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1 truncate text-[14px] font-semibold text-ink">{row.creator.fullName ?? row.creator.username}<VerifiedTick entity={row.creator} /></span>
+          {row.creator.username && <span className="block truncate text-[12px] text-ink-soft">@{row.creator.username}</span>}
+        </span>
+        <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-violet-dark group-hover:underline">{t('comp.viewCreatorProfile')}<ExternalLink size={13} aria-hidden /></span>
+      </Link>
       {detail.loading ? <Skeleton className="h-64 rounded-xl" /> : !d?.submission ? <p className="text-[14px] text-ink-soft">{t('comp.noEntryYet')}</p> : (
         <div className="space-y-4">
           <SubmissionPreview s={d.submission} />

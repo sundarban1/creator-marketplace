@@ -9,6 +9,8 @@ import {
 } from '../../lib/api';
 import { PageHeader } from '../../components/PageHeader';
 import { EVENT_TYPES, communityEventPath } from '../../app/community-events/format';
+import { RichTextEditor } from '../../app/ui/RichTextEditor';
+import { markdownToPlain } from '../../app/ui/richText';
 import { GalleryManager } from './GalleryManager';
 import { AddRowButton, Field, ImageField, RowControls, Section } from './formParts';
 import { EVENT_TYPE_LABELS, inputCls, move } from './formUtils';
@@ -94,7 +96,7 @@ export function CommunityEventEditorPage() {
   const slugPreview = slugTouched ? form.slug ?? '' : slugify(form.title);
   const defaultMetaTitle = `${form.title || 'Event title'} | Kolab`;
   const defaultMetaDescription = useMemo(
-    () => [form.shortDescription, form.description].filter(Boolean).join(' — ').replace(/\s+/g, ' ').slice(0, 158),
+    () => [form.shortDescription, markdownToPlain(form.description)].filter(Boolean).join(' — ').replace(/\s+/g, ' ').slice(0, 158),
     [form.shortDescription, form.description],
   );
 
@@ -215,8 +217,8 @@ export function CommunityEventEditorPage() {
             <Field label="Short description" htmlFor="f-shortDescription" required error={errors.shortDescription} hint={`Shown on event cards and under the title · ${form.shortDescription.length}/280`}>
               <input id="f-shortDescription" maxLength={280} className={inputCls(errors.shortDescription)} value={form.shortDescription} onChange={(e) => set('shortDescription', e.target.value)} placeholder="Creators. Connections. Opportunities." />
             </Field>
-            <Field label="Full description" htmlFor="f-description" hint="Shown under “About the Event”. Blank lines start new paragraphs.">
-              <textarea id="f-description" rows={7} className={`${inputCls()} resize-y`} value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} />
+            <Field label="Full description" hint="Shown under “About the Event”. Use the toolbar for headings, bold text and lists.">
+              <RichTextEditor ariaLabel="Full description" value={form.description ?? ''} onChange={(v) => set('description', v)} maxLength={20_000} minHeight={220} />
             </Field>
             <Field label="Event type" htmlFor="f-eventType">
               <select id="f-eventType" className={inputCls()} value={form.eventType} onChange={(e) => set('eventType', e.target.value as FormState['eventType'])}>
