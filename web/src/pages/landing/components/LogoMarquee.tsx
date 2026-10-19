@@ -95,7 +95,7 @@ export function LogoMarquee({
 function MarqueeChip({ item, variant }: { item: LogoMarqueeItem; variant: LogoMarqueeVariant }) {
   if (variant === 'logo' && item.imageUrl) {
     return (
-      <div className="group flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.18)] ring-1 ring-black/5 transition duration-300 ease-out hover:scale-110 motion-reduce:transition-none sm:h-24 sm:w-24 sm:p-4">
+      <div className="group flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.18)] ring-1 ring-black/5 transition duration-300 ease-out hover:scale-110 motion-reduce:transition-none sm:h-24 sm:w-24 sm:p-2">
         <img
           src={item.imageUrl}
           alt={item.label}
