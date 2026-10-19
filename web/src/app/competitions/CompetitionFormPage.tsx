@@ -168,6 +168,8 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   // After publication the stage structure and dates are fixed (deadline
   // controls live on the manage page); content stays editable.
   const structural = !existing || !!existing.allowedActions.editStructure;
+  // Not yet sent to (or sent back from) Kolab review — can be saved half-filled.
+  const isDraft = !!existing && ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(existing.status);
   const set = <K extends keyof CompetitionInput>(k: K, v: CompetitionInput[K]) => setF((p) => ({ ...p, [k]: v }));
   const setStage = (i: number, patch: Partial<StageForm>) => setF((p) => ({ ...p, stages: p.stages.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
   const setPrize = (i: number, patch: Partial<Prize>) => setF((p) => ({ ...p, prizes: p.prizes.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
@@ -263,6 +265,12 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
     setBusy(mode);
     setErrors([]);
     try {
+      if (existing && mode === 'draft') {
+        // Saving a draft keeps the business on the form so they can carry on editing.
+        await updateCompetition(existing.id, bodyForSave());
+        toast.success(t('comp.draftSavedToast'));
+        return;
+      }
       if (existing) {
         const saved = await updateCompetition(existing.id, bodyForSave());
         const sentForReview = (existing.status === 'SCHEDULED' && saved.status === 'PENDING_REVIEW')
@@ -328,8 +336,8 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   const headerActions = (
     <div className="flex flex-wrap items-center gap-2">
       <Button size="sm" variant="ghost" onClick={() => setPreview(true)}><Eye size={14} />{t('comp.preview')}</Button>
-      {!existing && step !== 'review' && (
-        <Button size="sm" variant="secondary" loading={busy === 'draft'} disabled={uploading} onClick={() => save('draft')}>{t('comp.saveDraft')}</Button>
+      {((!existing && step !== 'review') || isDraft) && (
+        <Button size="sm" variant="secondary" loading={busy === 'draft'} disabled={uploading || busy !== null} onClick={() => save('draft')}>{t('comp.saveDraft')}</Button>
       )}
     </div>
   );
