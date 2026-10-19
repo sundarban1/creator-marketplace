@@ -18,8 +18,8 @@ export type LogoMarqueeItem = {
   verified?: boolean;
 };
 
-/** `avatar`: round photo + name chip (people). `logo`: the logo alone, no
- *  tile — upload transparent PNGs that read on the navy band. */
+/** `avatar`: round photo + name chip (people). `logo`: the logo centred in a
+ *  white circle, so any logo (dark or light) reads on the navy band. */
 export type LogoMarqueeVariant = 'avatar' | 'logo';
 
 const MARQUEE_SPEED = 28;
@@ -95,15 +95,15 @@ export function LogoMarquee({
 function MarqueeChip({ item, variant }: { item: LogoMarqueeItem; variant: LogoMarqueeVariant }) {
   if (variant === 'logo' && item.imageUrl) {
     return (
-      <div className="group flex h-16 w-44 items-center justify-center px-2 sm:h-20 sm:w-56">
+      <div className="group flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.18)] ring-1 ring-black/5 transition duration-300 ease-out hover:scale-110 motion-reduce:transition-none sm:h-24 sm:w-24 sm:p-4">
         <img
           src={item.imageUrl}
           alt={item.label}
-          width={208}
-          height={80}
+          width={96}
+          height={96}
           loading="eager"
           decoding="async"
-          className="max-h-full max-w-full object-contain transition duration-300 ease-out group-hover:scale-110 group-hover:drop-shadow-[0_6px_18px_rgba(255,255,255,0.18)] motion-reduce:transition-none"
+          className="max-h-full max-w-full object-contain"
         />
       </div>
     );
