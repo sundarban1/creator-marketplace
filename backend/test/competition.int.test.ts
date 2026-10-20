@@ -64,6 +64,9 @@ function input(overrides: Record<string, unknown> = {}) {
       { kind: 'PLACEMENT', title: 'First runner-up', amount: 8000, recipientCount: 1 },
       { kind: 'SPECIAL', title: 'Consolation', amount: 2000, recipientCount: 5 },
     ],
+    prizePaymentMethod: 'DIRECT',
+    cashPrizePool: 28000,
+    paymentTermsAccepted: true,
     ...overrides,
   });
 }
@@ -372,6 +375,7 @@ d('competitions', () => {
         { name: 'Grand Final', opensAt: new Date(now + 96 * H), deadline: new Date(now + 120 * H), allowedMethods: ['EXTERNAL_LINK'] },
       ],
       prizes: [{ kind: 'PLACEMENT', title: 'Winner', amount: 10000, recipientCount: 1 }],
+      cashPrizePool: 10000,
     });
     const [r1, r2, fin] = c.stages;
     const parts = await prisma.competitionParticipant.findMany({ where: { competitionId: c.id }, include: { creator: true }, orderBy: { joinedAt: 'asc' } });
@@ -455,7 +459,7 @@ d('competitions', () => {
 
   // ── Final results ─────────────────────────────────────────────────────────
 
-  it('publishes final results without any payment records, enforcing prize rules', async () => {
+  it('publishes final results with direct-payment tracking only (no Kolab money), enforcing prize rules', async () => {
     const c = await publishedWithJoins(s);
     await svc.closeCompetition(s.bizId, c.id);
     const parts = await prisma.competitionParticipant.findMany({ where: { competitionId: c.id }, orderBy: { joinedAt: 'asc' } });
@@ -477,11 +481,21 @@ d('competitions', () => {
 
     expect(await prisma.paymentTransaction.count()).toBe(0);
     expect(await prisma.walletTransaction.count()).toBe(0);
+    expect(await prisma.competitionFunding.count()).toBe(0);
+    // Direct payment: one obligation per cash award, owed by the business.
+    const payouts = await prisma.competitionPayout.findMany({ where: { competitionId: c.id }, orderBy: { grossPaisa: 'desc' } });
+    expect(payouts.map((p) => [p.method, p.status, p.grossPaisa])).toEqual([
+      ['DIRECT', 'AWAITING_BUSINESS_PAYMENT', 1_000_000],
+      ['DIRECT', 'AWAITING_BUSINESS_PAYMENT', 800_000],
+      ['DIRECT', 'AWAITING_BUSINESS_PAYMENT', 200_000],
+    ]);
 
     // Reopening is explicit, reasoned and audited.
     const reopened = await svc.reopenResults(s.bizId, c.id, 'Wrong winner assigned by mistake');
     expect(reopened.status).toBe('AWAITING_RESULTS');
     expect(await prisma.auditLog.count({ where: { entityId: c.id, action: 'competition.results_reopened' } })).toBe(1);
+    // Untouched payouts are cancelled (kept, never deleted) and unlinked from their awards.
+    expect(await prisma.competitionPayout.count({ where: { competitionId: c.id, status: 'CANCELLED', awardId: null } })).toBe(3);
   });
 
   // ── Admin oversight ───────────────────────────────────────────────────────

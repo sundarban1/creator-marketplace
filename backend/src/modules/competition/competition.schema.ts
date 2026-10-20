@@ -69,6 +69,13 @@ const competitionFields = {
   judgingCriteria:        z.array(criterionSchema).max(MAX_CRITERIA).default([]),
   stages:                 z.array(stageSchema).min(1, 'Add at least one stage').max(MAX_STAGES),
   prizes:                 z.array(prizeSchema).max(MAX_PRIZES).default([]),
+  // Prize & payment (see competition.payments.rules.ts). Pool is NPR here;
+  // stored as integer paisa.
+  prizePaymentMethod:     z.enum(['KOLAB', 'DIRECT']).nullable().optional(),
+  cashPrizePool:          z.number().min(0).max(1_000_000_000).nullable().optional(),
+  prizeTieRule:           optionalText(1000),
+  // true = the organizer ticked the terms for the selected method on this save.
+  paymentTermsAccepted:   z.boolean().optional(),
 };
 
 export const createCompetitionSchema = z.object(competitionFields);
@@ -101,6 +108,10 @@ export const updateCompetitionSchema = z.object({
   judgingCriteria:        z.array(criterionSchema).max(MAX_CRITERIA).optional(),
   stages:                 z.array(stageSchema).min(1).max(MAX_STAGES).optional(),
   prizes:                 z.array(prizeSchema).max(MAX_PRIZES).optional(),
+  prizePaymentMethod:     competitionFields.prizePaymentMethod,
+  cashPrizePool:          competitionFields.cashPrizePool,
+  prizeTieRule:           competitionFields.prizeTieRule,
+  paymentTermsAccepted:   competitionFields.paymentTermsAccepted,
 });
 
 export const publishCompetitionSchema = z.object({

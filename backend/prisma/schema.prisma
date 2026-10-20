@@ -3160,9 +3160,9 @@ enum CompetitionResultsVisibility {
 }
 
 model Competition {
-  id                        String                       @id @default(cuid())
+  id                        String                         @id @default(cuid())
   businessId                String
-  slug                      String                       @unique
+  slug                      String                         @unique
   title                     String
   description               String
   objectives                String?
@@ -3170,9 +3170,9 @@ model Competition {
   rules                     String
   eligibility               String?
   // Content formats the organizer wants (Reels, Short film…) — picked from presets or custom.
-  contentFormats            String[]                     @default([])
+  contentFormats            String[]                       @default([])
   // Creator skills the organizer is looking for (Storytelling, Dance…).
-  skills                    String[]                     @default([])
+  skills                    String[]                       @default([])
   submissionInstructions    String?
   // Competition-wide defaults; a stage may override (CompetitionStage.videoMin/MaxSec).
   videoMinSec               Int?
@@ -3180,10 +3180,10 @@ model Competition {
   contactInstructions       String?
   // Organizer reference documents — rules PDF, brand kit, reference images.
   // Same shape and caps as Campaign.brief.attachments (POST /api/campaigns/attachments).
-  attachments               Json                         @default("[]")
-  status                    CompetitionStatus            @default(DRAFT)
-  resultsVisibility         CompetitionResultsVisibility @default(PUBLIC)
-  submissionMode            CompetitionSubmissionMode    @default(PER_STAGE)
+  attachments               Json                           @default("[]")
+  status                    CompetitionStatus              @default(DRAFT)
+  resultsVisibility         CompetitionResultsVisibility   @default(PUBLIC)
+  submissionMode            CompetitionSubmissionMode      @default(PER_STAGE)
   // Scheduled publication — SCHEDULED rows flip to ACTIVE once this passes.
   publishAt                 DateTime?
   registrationOpensAt       DateTime
@@ -3191,12 +3191,12 @@ model Competition {
   startsAt                  DateTime
   endsAt                    DateTime
   // Creators may replace a stage submission before its deadline.
-  allowSubmissionEdits      Boolean                      @default(true)
+  allowSubmissionEdits      Boolean                        @default(true)
   // Competition-specific rule (e.g. Kolab Creator Challenge): at most one award per creator.
-  onePrizePerCreator        Boolean                      @default(true)
+  onePrizePerCreator        Boolean                        @default(true)
   // Optional judging rubric — [{ key, label, weight }], weights total 100.
-  scoringEnabled            Boolean                      @default(false)
-  judgingCriteria           Json                         @default("[]")
+  scoringEnabled            Boolean                        @default(false)
+  judgingCriteria           Json                           @default("[]")
   publishedAt               DateTime?
   pausedAt                  DateTime?
   pauseReason               String?
@@ -3207,7 +3207,7 @@ model Competition {
   // ── Kolab moderation (permission-gated, audited) ─────────────────────────
   // Suspension hides the competition from discovery and freezes creator and
   // organizer workflow actions without changing `status`.
-  moderationFlag            CompetitionModerationFlag    @default(NONE)
+  moderationFlag            CompetitionModerationFlag      @default(NONE)
   moderationNote            String?
   suspendedAt               DateTime?
   suspensionReason          String?
@@ -3217,16 +3217,35 @@ model Competition {
   reviewedAt                DateTime?
   submittedForReviewAt      DateTime?
   // An admin may reject permanently (policy violation); false blocks resubmit.
-  resubmissionAllowed       Boolean                      @default(true)
-  reviewRevision            Int                          @default(0)
+  resubmissionAllowed       Boolean                        @default(true)
+  reviewRevision            Int                            @default(0)
   // Proposed edits to rules / eligibility / prizes on a live (or approved,
   // scheduled) competition, awaiting admin approval. The approved version stays
   // in effect until then. Shape: { rules?, eligibility?, prizes? }.
   pendingChanges            Json?
   pendingChangesSubmittedAt DateTime?
   pendingChangesFeedback    String?
-  createdAt                 DateTime                     @default(now())
-  updatedAt                 DateTime                     @updatedAt
+  // ── Prize payments (see docs/COMPETITIONS.md "Prize payments") ────────────
+  // null = legacy competition created before prize payments existed: prizes
+  // stay advertised text, no funding gate and no payout records.
+  prizePaymentMethod        CompetitionPrizePaymentMethod?
+  // Declared cash prize pool in integer paisa. Cash allocations must equal it
+  // before the competition can be submitted for review.
+  cashPrizePoolPaisa        Int?
+  // How ties are resolved — shown to creators with the prizes.
+  prizeTieRule              String?
+  fundingStatus             CompetitionFundingStatus       @default(NOT_REQUIRED)
+  // Σ confirmed CHARGE rows − Σ confirmed REFUND rows (denormalised; the
+  // CompetitionFunding ledger is the source of truth).
+  fundedAmountPaisa         Int                            @default(0)
+  fundedAt                  DateTime?
+  // Which method's prize terms were accepted, by whom and when. Changing the
+  // method clears the acceptance.
+  paymentTermsMethod        CompetitionPrizePaymentMethod?
+  paymentTermsAcceptedAt    DateTime?
+  paymentTermsAcceptedById  String?
+  createdAt                 DateTime                       @default(now())
+  updatedAt                 DateTime                       @updatedAt
 
   business     BusinessProfile          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   reviews      CompetitionReview[]
@@ -3234,6 +3253,8 @@ model Competition {
   participants CompetitionParticipant[]
   prizes       CompetitionPrize[]
   awards       CompetitionAward[]
+  fundings     CompetitionFunding[]
+  payouts      CompetitionPayout[]
 
   @@index([businessId])
   @@index([status, registrationDeadline])
@@ -3441,8 +3462,166 @@ model CompetitionAward {
   competition Competition            @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   prize       CompetitionPrize       @relation(fields: [prizeId], references: [id], onDelete: Cascade)
   participant CompetitionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  payout      CompetitionPayout?
 
   @@unique([prizeId, participantId])
   @@index([competitionId, isPublished])
   @@map("competition_awards")
+}
+
+// ── Competition prize payments ───────────────────────────────────────────────
+// KOLAB: the business funds the whole cash pool through Kolab before the
+//        competition can go live; Kolab pays winners after results are final.
+// DIRECT: the business pays winners itself after results; Kolab only tracks
+//        evidence and the winner's confirmation. Never Kolab money.
+enum CompetitionPrizePaymentMethod {
+  KOLAB
+  DIRECT
+}
+
+enum CompetitionFundingStatus {
+  NOT_REQUIRED
+  UNFUNDED
+  PENDING
+  PARTIALLY_FUNDED
+  FUNDED
+  FAILED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum CompetitionFundingKind {
+  CHARGE
+  REFUND
+}
+
+enum CompetitionFundingTxStatus {
+  INITIATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum CompetitionPayoutStatus {
+  NOT_READY
+  AWAITING_BUSINESS_PAYMENT
+  APPROVED
+  PROCESSING
+  AWAITING_CONFIRMATION
+  PAID
+  FAILED
+  DISPUTED
+  CANCELLED
+}
+
+// Append-only funding ledger: one row per payment attempt (CHARGE) or refund
+// (REFUND). Rows are never deleted; a mistake is corrected with a new row.
+model CompetitionFunding {
+  id             String                     @id @default(cuid())
+  competitionId  String
+  kind           CompetitionFundingKind     @default(CHARGE)
+  amountPaisa    Int
+  currency       String                     @default("NPR")
+  // 'khalti' | 'esewa' for charges; 'manual' for admin-recorded refunds.
+  provider       String
+  // Khalti pidx / eSewa transaction_uuid / refund reference.
+  providerRef    String?
+  // Gateway's own transaction id once confirmed (Khalti transaction_id, eSewa ref_id).
+  providerTxnId  String?
+  status         CompetitionFundingTxStatus @default(INITIATED)
+  idempotencyKey String                     @unique
+  failureReason  String?
+  // Set when a charge succeeded after the pool was already funded — money
+  // Kolab holds that must be refunded.
+  isDuplicate    Boolean                    @default(false)
+  initiatedById  String?
+  initiatedAt    DateTime                   @default(now())
+  confirmedAt    DateTime?
+  lastCheckedAt  DateTime?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerRef])
+  @@index([competitionId, createdAt])
+  @@index([status, initiatedAt])
+  @@map("competition_fundings")
+}
+
+// One payout per published cash award. Winner / prize details are snapshotted
+// (no FK) so the financial record survives later edits.
+model CompetitionPayout {
+  id                  String                        @id @default(cuid())
+  competitionId       String
+  // Cleared when results are reopened and the payout is cancelled, so a
+  // republished award gets a fresh payout.
+  awardId             String?                       @unique
+  prizeId             String
+  prizeTitle          String
+  prizeKind           String
+  participantId       String
+  creatorId           String
+  creatorName         String
+  method              CompetitionPrizePaymentMethod
+  grossPaisa          Int
+  deductionsPaisa     Int                           @default(0)
+  netPaisa            Int
+  status              CompetitionPayoutStatus
+  // ── KOLAB-managed (manual) payout ──
+  approvedById        String?
+  approvedAt          DateTime?
+  processingAt        DateTime?
+  // Snapshot of the creator's payout account when processing started.
+  payoutChannel       String?
+  payoutDestination   Json?
+  providerRef         String?
+  completedAt         DateTime?
+  failureReason       String?
+  // ── DIRECT business payment ──
+  reportedAmountPaisa Int?
+  reportedPaidOn      DateTime?
+  reportedMethod      String?
+  reportedReference   String?
+  evidenceUrl         String?
+  reportedAt          DateTime?
+  // ── Winner + admin ──
+  confirmedAt         DateTime?
+  disputedAt          DateTime?
+  disputeReason       String?
+  adminVerifiedById   String?
+  adminVerifiedAt     DateTime?
+  adminNote           String?
+  cancelledAt         DateTime?
+  cancelReason        String?
+  createdAt           DateTime                      @default(now())
+  updatedAt           DateTime                      @updatedAt
+
+  competition Competition              @relation(fields: [competitionId], references: [id], onDelete: Restrict)
+  award       CompetitionAward?        @relation(fields: [awardId], references: [id], onDelete: SetNull)
+  events      CompetitionPayoutEvent[]
+
+  @@index([competitionId, status])
+  @@index([creatorId])
+  @@index([status, updatedAt])
+  @@map("competition_payouts")
+}
+
+// Append-only status history for a payout (who moved it, from → to, why).
+model CompetitionPayoutEvent {
+  id         String                   @id @default(cuid())
+  payoutId   String
+  fromStatus CompetitionPayoutStatus?
+  toStatus   CompetitionPayoutStatus
+  actorId    String?
+  actorType  String
+  note       String?
+  metadata   Json?
+  createdAt  DateTime                 @default(now())
+
+  payout CompetitionPayout @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+
+  @@index([payoutId, createdAt])
+  @@map("competition_payout_events")
 }

@@ -15,6 +15,8 @@ import { AuditAction, EntityType, type AuditActionValue } from '../logging/loggi
 import * as rules from './competition.rules';
 import { competitionNotifications as N } from './competition.notifications';
 import { validateSubmissionLink, checkLinkAccessibility } from './competition.links';
+import * as PR from './competition.payments.rules';
+import { competitionPaymentService as Pay, paymentConfigView, kolabPaymentsEnabled } from './competition.payments.service';
 import type {
   CreateCompetitionInput, UpdateCompetitionInput, StageInput, PrizeInput, SaveDecisionsInput,
   SaveAwardsInput, ParticipantsQuery, DiscoverQuery, AdminListQuery, VideoCompleteInput,
@@ -31,7 +33,8 @@ import type {
 //  * Multi-row state changes run in one transaction with the affected row
 //    locked (SELECT … FOR UPDATE) and an AuditLog row written inside it.
 //  * Notifications go out only AFTER the transaction commits.
-//  * No payment logic exists here by design — prizes are advertised text.
+//  * Prize money lives in competition.payments.service.ts; this file only
+//    calls its hooks (funding gate, payouts on results, refunds on cancel).
 // ─────────────────────────────────────────────────────────────────────────────
 
 type Tx = Prisma.TransactionClient;
@@ -162,6 +165,66 @@ function prizePool(prizes: Array<{ amount: number | null; currency: string; reci
   return { amount: priced.reduce((s, p) => s + (p.amount ?? 0) * p.recipientCount, 0), currency: 'NPR' };
 }
 
+// ── Prize payment configuration ─────────────────────────────────────────────
+
+type PaymentInput = Pick<UpdateCompetitionInput, 'prizePaymentMethod' | 'cashPrizePool' | 'prizeTieRule' | 'paymentTermsAccepted'>;
+
+interface CurrentPayment {
+  prizePaymentMethod: PR.PrizePaymentMethod | null;
+  cashPrizePoolPaisa: number | null;
+  prizeTieRule: string | null;
+  fundingStatus: PR.FundingStatus;
+  paymentTermsMethod: PR.PrizePaymentMethod | null;
+  paymentTermsAcceptedAt: Date | null;
+  paymentTermsAcceptedById: string | null;
+}
+
+function splitPayment<T extends PaymentInput>(input: T) {
+  const { prizePaymentMethod, cashPrizePool, prizeTieRule, paymentTermsAccepted, ...rest } = input;
+  return { pay: { prizePaymentMethod, cashPrizePool, prizeTieRule, paymentTermsAccepted } as PaymentInput, rest };
+}
+
+const paymentTouched = (pay: PaymentInput) => Object.values(pay).some((v) => v !== undefined);
+
+/**
+ * The payment columns for a pre-launch save. Changing the method clears the
+ * terms acceptance; once money has moved (funding pending / funded) the
+ * method and pool are locked.
+ */
+function resolvePayment(pay: PaymentInput, cur: CurrentPayment | null, prizes: PR.PrizeLike[], userId: string, strict = false) {
+  const method = pay.prizePaymentMethod !== undefined ? pay.prizePaymentMethod ?? null : cur?.prizePaymentMethod ?? null;
+  const pool = pay.cashPrizePool !== undefined ? (pay.cashPrizePool == null ? null : PR.toPaisa(pay.cashPrizePool)) : cur?.cashPrizePoolPaisa ?? null;
+  if (pay.cashPrizePool != null && pool == null) throwProblems([{ field: 'cashPrizePool', message: 'Prize pool can have at most 2 decimal places' }]);
+  const methodChanged = method !== (cur?.prizePaymentMethod ?? null);
+  const locked = !!cur && PR.FUNDING_LOCKED.includes(cur.fundingStatus);
+  if (locked && (methodChanged || pool !== cur!.cashPrizePoolPaisa)) {
+    throw fail('Money has already been paid towards this prize pool, so the payment method and pool can’t change. Contact Kolab support.', HttpStatus.CONFLICT, 'PAYMENT_LOCKED');
+  }
+
+  let termsMethod = methodChanged ? null : cur?.paymentTermsMethod ?? null;
+  let termsAt = methodChanged ? null : cur?.paymentTermsAcceptedAt ?? null;
+  let termsBy = methodChanged ? null : cur?.paymentTermsAcceptedById ?? null;
+  if (pay.paymentTermsAccepted === true && method && (termsMethod !== method || !termsAt)) {
+    termsMethod = method; termsAt = new Date(); termsBy = userId;
+  } else if (pay.paymentTermsAccepted === false) {
+    termsMethod = null; termsAt = null; termsBy = null;
+  }
+
+  // A competition already funded through Kolab stays valid if the flag is later switched off.
+  const kolabEnabled = kolabPaymentsEnabled() || (locked && method === 'KOLAB');
+  throwProblems(PR.validatePaymentConfig(prizes, { prizePaymentMethod: method, cashPrizePoolPaisa: pool, paymentTermsMethod: termsMethod, paymentTermsAcceptedAt: termsAt }, { strict, kolabEnabled }));
+
+  return {
+    prizePaymentMethod: method,
+    cashPrizePoolPaisa: pool,
+    prizeTieRule: pay.prizeTieRule !== undefined ? pay.prizeTieRule ?? null : cur?.prizeTieRule ?? null,
+    paymentTermsMethod: termsMethod,
+    paymentTermsAcceptedAt: termsAt,
+    paymentTermsAcceptedById: termsBy,
+    fundingStatus: locked ? cur!.fundingStatus : PR.baselineFundingStatus(method, pool),
+  };
+}
+
 function effectiveDuration(c: { videoMinSec: number | null; videoMaxSec: number | null }, s: { videoMinSec: number | null; videoMaxSec: number | null }) {
   return { min: s.videoMinSec ?? c.videoMinSec, max: s.videoMaxSec ?? c.videoMaxSec };
 }
@@ -267,14 +330,17 @@ export class CompetitionService {
     const b = await this.organizerProfile(userId);
     input = { ...input, stages: rules.normalizeStageDates(input.submissionMode, input.stages, input.endsAt) };
     validateConfig({ ...input, publishAt: null });
+    const { pay, rest } = splitPayment(input);
+    const payment = resolvePayment(pay, null, input.prizes, userId);
 
     const slug = await generateUniqueSlug(input.title, async (s) => !!(await prisma.competition.findUnique({ where: { slug: s }, select: { id: true } })));
-    const { stages, prizes, judgingCriteria, attachments, ...scalars } = input;
+    const { stages, prizes, judgingCriteria, attachments, ...scalars } = rest;
 
     const created = await prisma.$transaction(async (tx) => {
       const c = await tx.competition.create({
         data: {
           ...scalars,
+          ...payment,
           businessId: b.id,
           slug,
           judgingCriteria: judgingCriteria as unknown as Prisma.InputJsonValue,
@@ -283,7 +349,7 @@ export class CompetitionService {
           prizes: { create: prizes.map(prizeData) },
         },
       });
-      await audit(tx, { actorId: userId, actorType: 'USER', action: AuditAction.COMPETITION_CREATED, competitionId: c.id, newValue: { title: c.title } });
+      await audit(tx, { actorId: userId, actorType: 'USER', action: AuditAction.COMPETITION_CREATED, competitionId: c.id, newValue: { title: c.title, prizePaymentMethod: payment.prizePaymentMethod, cashPrizePoolPaisa: payment.cashPrizePoolPaisa } });
       return c;
     });
     return this.getForOrganizer(userId, created.id);
@@ -312,6 +378,9 @@ export class CompetitionService {
 
   private scheduledNeedsReview(c: Awaited<ReturnType<CompetitionService['owned']>>, input: UpdateCompetitionInput): boolean {
     if (this.reviewedChanges(c, input).length) return true;
+    if (input.prizePaymentMethod !== undefined && (input.prizePaymentMethod ?? null) !== c.prizePaymentMethod) return true;
+    if (input.cashPrizePool !== undefined && (input.cashPrizePool == null ? null : PR.toPaisa(input.cashPrizePool)) !== c.cashPrizePoolPaisa) return true;
+    if (input.prizeTieRule !== undefined && (input.prizeTieRule ?? '').trim() !== (c.prizeTieRule ?? '').trim()) return true;
     const t = (d?: Date) => d?.getTime();
     if ((['registrationOpensAt', 'registrationDeadline', 'startsAt', 'endsAt'] as const).some((k) => input[k] !== undefined && t(input[k]) !== t(c[k]))) return true;
     if (input.submissionMode !== undefined && input.submissionMode !== c.submissionMode) return true;
@@ -324,7 +393,8 @@ export class CompetitionService {
   }
 
   // Before anyone can join: everything is editable; stages/prizes are replaced wholesale.
-  private async updateDraft(userId: string, c: Awaited<ReturnType<CompetitionService['owned']>>, input: UpdateCompetitionInput, opts: { backToReview?: boolean } = {}) {
+  private async updateDraft(userId: string, c: Awaited<ReturnType<CompetitionService['owned']>>, fullInput: UpdateCompetitionInput, opts: { backToReview?: boolean } = {}) {
+    const { pay, rest: input } = splitPayment(fullInput);
     const { stages: rawStages, prizes, judgingCriteria, attachments, ...scalars } = input;
     const mode = scalars.submissionMode ?? c.submissionMode;
     const endsAt = scalars.endsAt ?? c.endsAt;
@@ -350,12 +420,20 @@ export class CompetitionService {
       submissionMode: mode,
     };
     validateConfig(merged);
+    const payment = paymentTouched(pay) || prizes ? resolvePayment(pay, c, nextPrizes, userId) : null;
 
     await prisma.$transaction(async (tx) => {
+      // Funding may have moved since we read the row — re-check under the lock.
+      if (payment) {
+        await this.lockCompetition(tx, c.id);
+        const fresh = await tx.competition.findUniqueOrThrow({ where: { id: c.id } });
+        if (fresh.fundingStatus !== c.fundingStatus) resolvePayment(pay, fresh, nextPrizes, userId);
+      }
       await tx.competition.update({
         where: { id: c.id },
         data: {
           ...scalars,
+          ...(payment ?? {}),
           ...(judgingCriteria ? { judgingCriteria: judgingCriteria as unknown as Prisma.InputJsonValue } : {}),
           ...(attachments ? { attachments: attachments as unknown as Prisma.InputJsonValue } : {}),
         },
@@ -368,7 +446,14 @@ export class CompetitionService {
         await tx.competitionPrize.deleteMany({ where: { competitionId: c.id } });
         await tx.competitionPrize.createMany({ data: prizes.map((p, i) => ({ ...prizeData(p, i), competitionId: c.id })) });
       }
-      await audit(tx, { actorId: userId, actorType: 'USER', action: AuditAction.COMPETITION_UPDATED, competitionId: c.id, metadata: { fields: Object.keys(input), backToReview: !!opts.backToReview } });
+      await audit(tx, { actorId: userId, actorType: 'USER', action: AuditAction.COMPETITION_UPDATED, competitionId: c.id, metadata: { fields: Object.keys(fullInput), backToReview: !!opts.backToReview } });
+      if (payment && (payment.prizePaymentMethod !== c.prizePaymentMethod || payment.cashPrizePoolPaisa !== c.cashPrizePoolPaisa || payment.paymentTermsAcceptedAt !== c.paymentTermsAcceptedAt)) {
+        await audit(tx, {
+          actorId: userId, actorType: 'USER', action: AuditAction.COMPETITION_PAYMENT_CONFIGURED, competitionId: c.id,
+          oldValue: { prizePaymentMethod: c.prizePaymentMethod, cashPrizePoolPaisa: c.cashPrizePoolPaisa, termsAcceptedAt: c.paymentTermsAcceptedAt },
+          newValue: { prizePaymentMethod: payment.prizePaymentMethod, cashPrizePoolPaisa: payment.cashPrizePoolPaisa, termsAcceptedAt: payment.paymentTermsAcceptedAt },
+        });
+      }
       if (opts.backToReview) {
         const res = await tx.competition.updateMany({
           where: { id: c.id, status: 'SCHEDULED' },
@@ -376,7 +461,7 @@ export class CompetitionService {
         });
         if (res.count !== 1) throw fail(M().changedMeanwhile, HttpStatus.CONFLICT);
         await tx.competitionReview.create({
-          data: { competitionId: c.id, actorId: userId, action: 'RESUBMITTED', revision: c.reviewRevision + 1, changedFields: Object.keys(input) },
+          data: { competitionId: c.id, actorId: userId, action: 'RESUBMITTED', revision: c.reviewRevision + 1, changedFields: Object.keys(fullInput) },
         });
       }
     });
@@ -386,8 +471,15 @@ export class CompetitionService {
 
   // After publication: content can change (participants are told); dates go
   // through the dedicated deadline actions; the stage structure is fixed.
-  private async updateLive(userId: string, c: Awaited<ReturnType<CompetitionService['owned']>>, input: UpdateCompetitionInput) {
+  private async updateLive(userId: string, c: Awaited<ReturnType<CompetitionService['owned']>>, fullInput: UpdateCompetitionInput) {
     const m = M();
+    // The payment method and pool are fixed once the competition has started.
+    const { pay, rest: input } = splitPayment(fullInput);
+    if ((pay.prizePaymentMethod !== undefined && (pay.prizePaymentMethod ?? null) !== c.prizePaymentMethod)
+      || (pay.cashPrizePool !== undefined && (pay.cashPrizePool == null ? null : PR.toPaisa(pay.cashPrizePool)) !== c.cashPrizePoolPaisa)
+      || (pay.prizeTieRule !== undefined && (pay.prizeTieRule ?? '').trim() !== (c.prizeTieRule ?? '').trim())) {
+      throw fail('Prize payment settings can’t change after the competition has gone live.', HttpStatus.CONFLICT, 'PAYMENT_LOCKED');
+    }
     const sameDate = (a: Date | undefined, b: Date) => a === undefined || a.getTime() === b.getTime();
     if (!sameDate(input.registrationOpensAt, c.registrationOpensAt) || !sameDate(input.registrationDeadline, c.registrationDeadline)
       || !sameDate(input.startsAt, c.startsAt) || !sameDate(input.endsAt, c.endsAt)) {
@@ -445,6 +537,7 @@ export class CompetitionService {
     const reviewed = this.reviewedChanges(c, input);
     if (input.prizes && reviewed.includes('prizes')) {
       throwProblems(rules.validatePrizes(input.prizes));
+      throwProblems(this.livePrizeProblems(c, input.prizes));
       const keptIds = new Set(input.prizes.map((p) => p.id).filter(Boolean) as string[]);
       if ([...keptIds].some((pid) => !c.prizes.find((p) => p.id === pid))) throw fail(m.prizeNotFound, HttpStatus.BAD_REQUEST);
       const removed = c.prizes.filter((p) => !keptIds.has(p.id)).map((p) => p.id);
@@ -503,6 +596,15 @@ export class CompetitionService {
     return this.getForOrganizer(userId, c.id);
   }
 
+  /** A proposed prize edit on a live competition must keep a Kolab-funded pool fully allocated. */
+  private livePrizeProblems(c: { prizePaymentMethod: string | null; cashPrizePoolPaisa: number | null }, prizes: PR.PrizeLike[]): rules.Problem[] {
+    const out: rules.Problem[] = PR.validatePaymentConfig(prizes, { prizePaymentMethod: null, cashPrizePoolPaisa: null, paymentTermsMethod: null, paymentTermsAcceptedAt: null }, { strict: false, kolabEnabled: true });
+    if (c.prizePaymentMethod === 'KOLAB' && PR.cashAllocationPaisa(prizes) !== (c.cashPrizePoolPaisa ?? 0)) {
+      out.push({ field: 'prizes', message: 'Cash prizes must still add up to the funded prize pool' });
+    }
+    return out;
+  }
+
   /**
    * Organizer submits (or resubmits) for admin review. `publishAt` is the
    * requested go-live time — null/past means "as soon as it's approved".
@@ -528,6 +630,8 @@ export class CompetitionService {
     });
     if (c.registrationDeadline <= now) throw fail(m.registrationDeadlinePast, HttpStatus.BAD_REQUEST);
     if (c.stages[0].deadline <= now) throw fail(m.firstStageDeadlinePast, HttpStatus.BAD_REQUEST);
+    // Prize & payment must be complete: method chosen, pool fully allocated, terms accepted.
+    resolvePayment({}, c, c.prizes, userId, true);
 
     await prisma.$transaction(async (tx) => {
       const res = await tx.competition.updateMany({
@@ -569,6 +673,9 @@ export class CompetitionService {
     const c = await this.owned(userId, id);
     const deletable = ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'];
     if (!deletable.includes(c.status)) throw fail(M().onlyDraftsDelete, HttpStatus.CONFLICT);
+    if (await prisma.competitionFunding.count({ where: { competitionId: id } })) {
+      throw fail('This competition has prize payment records, so it can’t be deleted. Contact Kolab support.', HttpStatus.CONFLICT, 'HAS_PAYMENT_RECORDS');
+    }
     await prisma.competition.deleteMany({ where: { id, status: { in: deletable as never } } });
     return { id };
   }
@@ -577,6 +684,7 @@ export class CompetitionService {
 
   private async transition(userId: string, id: string, to: string, opts: {
     action: AuditActionValue; data?: Prisma.CompetitionUncheckedUpdateInput; reason?: string | null; from?: string[];
+    inTx?: (tx: Tx) => Promise<unknown>;
   }) {
     const c = await this.owned(userId, id);
     this.assertNotSuspended(c);
@@ -587,6 +695,7 @@ export class CompetitionService {
       const res = await tx.competition.updateMany({ where: { id, status: c.status }, data: { status: to as never, ...(opts.data ?? {}) } });
       if (res.count !== 1) throw fail(M().changedMeanwhile, HttpStatus.CONFLICT);
       await audit(tx, { actorId: userId, actorType: 'USER', action: opts.action, competitionId: id, oldValue: { status: c.status }, newValue: { status: to }, metadata: opts.reason ? { reason: opts.reason } : undefined });
+      if (opts.inTx) await opts.inTx(tx);
     });
     return c;
   }
@@ -617,7 +726,13 @@ export class CompetitionService {
 
   async cancel(userId: string, id: string, reason: string) {
     const now = new Date();
-    const c = await this.transition(userId, id, 'CANCELLED', { action: AuditAction.COMPETITION_CANCELLED, reason, data: { cancelledAt: now, cancelReason: reason } });
+    let refund: Awaited<ReturnType<typeof Pay.onCancelled>> = null;
+    const c = await this.transition(userId, id, 'CANCELLED', {
+      action: AuditAction.COMPETITION_CANCELLED, reason, data: { cancelledAt: now, cancelReason: reason },
+      inTx: async (tx) => { refund = await Pay.onCancelled(tx, id, userId); },
+    });
+    const due = refund as Awaited<ReturnType<typeof Pay.onCancelled>>;
+    if (due) void N.adminPaymentAttention({ id, title: due.title }, `“${due.title}” was cancelled with NPR ${due.refundDue.toLocaleString('en-IN')} of prize money held by Kolab. Refund it to the business.`).catch(() => {});
     await prisma.competitionStage.updateMany({ where: { competitionId: id, status: { in: ['UPCOMING', 'OPEN'] } }, data: { status: 'CLOSED', submissionsClosedAt: now } });
     const users = await this.participantUserIds(id);
     void N.statusChanged(users, c, 'CANCELLED', now, reason).catch((err) => logger.warn({ err }, 'competition: cancel notify failed'));
@@ -996,10 +1111,19 @@ export class CompetitionService {
         actorId: userId, actorType: 'USER', action: AuditAction.COMPETITION_RESULTS_PUBLISHED, competitionId: id,
         newValue: { awards: drafts.map((d) => ({ prizeId: d.prizeId, participantId: d.participantId })) },
       });
-      return this.participantUserIds(id);
+      // Final results → one tracked payout per cash award (KOLAB or DIRECT).
+      const payouts = await Pay.createPayoutsForResults(tx, id, userId);
+      return { users: await this.participantUserIds(id), payouts };
     });
 
-    void N.resultsPublished(recipients, c, now).catch((err) => logger.warn({ err }, 'competition: results notify failed'));
+    void N.resultsPublished(recipients.users, c, now).catch((err) => logger.warn({ err }, 'competition: results notify failed'));
+    const { method, created } = recipients.payouts;
+    if (method && created.length) {
+      void Promise.all(created.map((x) => N.prizeWon(x.userId, c, x.payoutId, x.prizeTitle, x.amountNpr, method))).catch(() => {});
+      if (method === 'DIRECT') {
+        void N.prizesOutstanding(c.business.userId, c, created.length, created.reduce((sum, x) => sum + x.amountNpr, 0)).catch(() => {});
+      }
+    }
     return this.getForOrganizer(userId, id);
   }
 
@@ -1012,6 +1136,7 @@ export class CompetitionService {
     await prisma.$transaction(async (tx) => {
       const comp = await this.lockCompetition(tx, id);
       if (comp.status !== 'COMPLETED') throw fail(M().changedMeanwhile, HttpStatus.CONFLICT);
+      await Pay.cancelPayoutsForReopen(tx, id, userId, reason);
       const published = await tx.competitionAward.findMany({ where: { competitionId: id, isPublished: true }, select: { prizeId: true, participantId: true } });
       await tx.competitionAward.updateMany({ where: { competitionId: id }, data: { isPublished: false, publishedAt: null } });
       await tx.competition.update({ where: { id }, data: { status: 'AWAITING_RESULTS', completedAt: null, resultsPublishedAt: null } });
@@ -1121,7 +1246,7 @@ export class CompetitionService {
     });
   }
 
-  private allowedActions(c: { status: string; suspendedAt: Date | null; publishedAt: Date | null; registrationDeadline: Date; resubmissionAllowed: boolean; pendingChanges: Prisma.JsonValue }, now: Date) {
+  private allowedActions(c: { status: string; suspendedAt: Date | null; publishedAt: Date | null; registrationDeadline: Date; resubmissionAllowed: boolean; pendingChanges: Prisma.JsonValue; prizePaymentMethod: string | null; fundingStatus: string }, now: Date) {
     if (c.suspendedAt) return { suspended: true } as Record<string, boolean>;
     const s = c.status;
     const live = ['SCHEDULED', 'ACTIVE', 'PAUSED', 'AWAITING_RESULTS'].includes(s);
@@ -1140,6 +1265,9 @@ export class CompetitionService {
       extendRegistration: ['SCHEDULED', 'ACTIVE', 'PAUSED'].includes(s),
       publishResults: s === 'AWAITING_RESULTS',
       reopenResults: s === 'COMPLETED',
+      fundPrizePool: c.prizePaymentMethod === 'KOLAB' && (s === 'SCHEDULED' || (s === 'PAUSED' && !c.publishedAt)) && ['UNFUNDED', 'FAILED', 'PENDING', 'PARTIALLY_FUNDED'].includes(c.fundingStatus),
+      // Payment method / pool can only change before launch and before money moves.
+      editPayment: (rules.PRE_LAUNCH_EDITABLE.includes(s) || s === 'SCHEDULED') && !PR.FUNDING_LOCKED.includes(c.fundingStatus as PR.FundingStatus),
     };
   }
 
@@ -1171,6 +1299,7 @@ export class CompetitionService {
       })),
       prizes: c.prizes.map((p) => ({ id: p.id, position: p.position, kind: p.kind, title: p.title, description: p.description, amount: p.amount, currency: p.currency, recipientCount: p.recipientCount, notes: p.notes })),
       prizePool: prizePool(c.prizes),
+      payment: { ...paymentConfigView(c), kolabPaymentsEnabled: kolabPaymentsEnabled() },
     };
   }
 
@@ -1328,6 +1457,8 @@ export class CompetitionService {
           stageCount: c.stages.length,
           prizeHighlights: c.prizes.slice(0, 3),
           prizePool: prizePool(c.prizes),
+          prizePaymentMethod: c.prizePaymentMethod,
+          prizePoolFunded: c.prizePaymentMethod === 'KOLAB' && c.fundingStatus === 'FUNDED',
           participantCount: c._count.participants,
           joined: mine.has(c.id),
         };
@@ -1381,6 +1512,12 @@ export class CompetitionService {
       currentStageId: currentStage(c.stages)?.id ?? null,
       prizes: c.prizes.map((p) => ({ id: p.id, kind: p.kind, title: p.title, description: p.description, amount: p.amount, currency: p.currency, recipientCount: p.recipientCount, notes: p.notes })),
       prizePool: prizePool(c.prizes),
+      // Who pays the prizes. DIRECT = the organizer, not funded or guaranteed by Kolab.
+      prizePayment: {
+        method: c.prizePaymentMethod,
+        funded: c.prizePaymentMethod === 'KOLAB' && c.fundingStatus === 'FUNDED',
+        tieRule: c.prizeTieRule,
+      },
       results: showResults ? await this.publicResults(c.id) : null,
       viewer: {
         role: isOwner ? 'OWNER' : participant ? 'PARTICIPANT' : 'VISITOR',
@@ -1505,6 +1642,8 @@ export class CompetitionService {
         };
       }),
       awards: p.awards.map((a) => a.prize),
+      prizePaymentMethod: c.prizePaymentMethod,
+      prizePayments: await Pay.creatorPayouts(creator.id, c.id),
     };
   }
 
@@ -1690,6 +1829,7 @@ export class CompetitionService {
         participantCount: c._count.participants, stageCount: c._count.stages,
         moderationFlag: c.moderationFlag, suspended: !!c.suspendedAt,
         submittedForReviewAt: c.submittedForReviewAt, hasPendingChanges: !!c.pendingChanges,
+        prizePaymentMethod: c.prizePaymentMethod, fundingStatus: c.fundingStatus,
         openReports: reportCounts.find((r) => r.targetId === c.id)?._count._all ?? 0,
       })),
       pagination: { total, page: q.page, limit: q.limit, totalPages: Math.ceil(total / q.limit) },
@@ -1739,6 +1879,7 @@ export class CompetitionService {
       })),
       prizes: c.prizes.map((p) => ({ title: p.title, kind: p.kind, amount: p.amount, currency: p.currency, recipientCount: p.recipientCount })),
       prizePool: prizePool(c.prizes),
+      payment: paymentConfigView(c),
       results: c.status === 'COMPLETED' ? await this.publicResults(id) : null,
       moderation: { flag: c.moderationFlag, note: c.moderationNote, suspended: !!c.suspendedAt, suspendedAt: c.suspendedAt, suspensionReason: c.suspensionReason },
       reports,
@@ -1765,20 +1906,28 @@ export class CompetitionService {
       if (c.status !== 'PENDING_REVIEW') throw fail(m.notPendingReview, HttpStatus.CONFLICT);
       // Dates can lapse while it waits in the queue — don't approve something that can't run.
       if (c.registrationDeadline <= now || c.stages[0].deadline <= now) throw fail(m.datesLapsed, HttpStatus.CONFLICT);
-      const scheduled = !!c.publishAt && c.publishAt > now;
+      // Approval never makes a Kolab-funded competition live on its own: until
+      // the full prize pool is confirmed it waits as SCHEDULED (publishAt =
+      // the requested time, or now = "as soon as it's funded").
+      const awaitingFunding = !PR.fundingAllowsLaunch(c.fundingStatus);
+      const scheduled = (!!c.publishAt && c.publishAt > now) || awaitingFunding;
       await tx.competition.update({
         where: { id },
         data: {
           status: scheduled ? 'SCHEDULED' : 'ACTIVE', reviewedAt: now, reviewFeedback: null,
-          ...(scheduled ? {} : { publishedAt: now, publishAt: null }),
+          ...(scheduled ? (awaitingFunding && !(c.publishAt && c.publishAt > now) ? { publishAt: now } : {}) : { publishedAt: now, publishAt: null }),
         },
       });
       await tx.competitionReview.create({ data: { competitionId: id, actorId: adminId, action: 'APPROVED', revision: c.reviewRevision } });
-      await audit(tx, { actorId: adminId, actorType: 'ADMIN', action: AuditAction.COMPETITION_APPROVED, competitionId: id, newValue: { status: scheduled ? 'SCHEDULED' : 'ACTIVE', publishAt: c.publishAt } });
-      return { c, scheduled };
+      await audit(tx, { actorId: adminId, actorType: 'ADMIN', action: AuditAction.COMPETITION_APPROVED, competitionId: id, newValue: { status: scheduled ? 'SCHEDULED' : 'ACTIVE', publishAt: c.publishAt, awaitingFunding } });
+      return { c, scheduled, awaitingFunding };
     });
     const organizer = await this.organizerUserId(id);
-    void N.reviewDecision(organizer, out.c, out.scheduled ? 'APPROVED_SCHEDULED' : 'APPROVED', null, out.c.publishAt).catch(() => {});
+    if (out.awaitingFunding) {
+      void N.fundingRequired(organizer, out.c, PR.fromPaisa((out.c.cashPrizePoolPaisa ?? 0) - out.c.fundedAmountPaisa)).catch(() => {});
+    } else {
+      void N.reviewDecision(organizer, out.c, out.scheduled ? 'APPROVED_SCHEDULED' : 'APPROVED', null, out.c.publishAt).catch(() => {});
+    }
     if (!out.scheduled) await this.runLifecycleSweep(new Date(), id);
     return this.adminGet(id);
   }
@@ -1818,6 +1967,11 @@ export class CompetitionService {
       if (['COMPLETED', 'CANCELLED'].includes(c.status)) throw fail(m.competitionFinished, HttpStatus.CONFLICT);
       if (pending.prizes) {
         throwProblems(rules.validatePrizes(pending.prizes));
+        throwProblems(this.livePrizeProblems(c, pending.prizes));
+        if (c.prizePaymentMethod === 'DIRECT') {
+          // The organizer's direct commitment follows the approved prize list.
+          await tx.competition.update({ where: { id }, data: { cashPrizePoolPaisa: PR.cashAllocationPaisa(pending.prizes) || null } });
+        }
         const keep = pending.prizes.map((p) => p.id).filter(Boolean) as string[];
         const removed = c.prizes.filter((p) => !keep.includes(p.id)).map((p) => p.id);
         // Awards may have been drafted since the proposal was made.
@@ -1956,10 +2110,12 @@ export class CompetitionService {
     const stats = { published: 0, opened: 0, closed: 0, reminded: 0 };
 
     // 1. Scheduled publication.
-    const due = await prisma.competition.findMany({ where: { ...scope, status: 'SCHEDULED', publishAt: { lte: now }, suspendedAt: null }, select: { id: true } });
+    // Kolab-funded prize pools must be fully confirmed before going live.
+    const launchable = { fundingStatus: { in: ['NOT_REQUIRED', 'FUNDED'] as Array<'NOT_REQUIRED' | 'FUNDED'> } };
+    const due = await prisma.competition.findMany({ where: { ...scope, status: 'SCHEDULED', publishAt: { lte: now }, suspendedAt: null, ...launchable }, select: { id: true } });
     for (const c of due) {
       const ok = await prisma.$transaction(async (tx) => {
-        const res = await tx.competition.updateMany({ where: { id: c.id, status: 'SCHEDULED', publishAt: { lte: now }, suspendedAt: null }, data: { status: 'ACTIVE', publishedAt: now } });
+        const res = await tx.competition.updateMany({ where: { id: c.id, status: 'SCHEDULED', publishAt: { lte: now }, suspendedAt: null, ...launchable }, data: { status: 'ACTIVE', publishedAt: now } });
         if (res.count === 1) await audit(tx, { actorType: 'SYSTEM', action: AuditAction.COMPETITION_PUBLISHED, competitionId: c.id, newValue: { status: 'ACTIVE' }, metadata: { scheduled: true } });
         return res.count === 1;
       });

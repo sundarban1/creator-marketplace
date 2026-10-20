@@ -43,6 +43,16 @@ const envSchema = z.object({
   // competition oversight summary. Kept in env (not a platform setting) so an
   // admin can't grant themselves access from the dashboard.
   COMPETITION_MODERATOR_EMAILS: z.string().optional(),
+  // Competition prize payments. Kolab-managed prize funding (business pays the
+  // prize pool to Kolab, Kolab pays winners) stays OFF until the collection +
+  // payout arrangement is approved by the payment provider and a Nepal adviser.
+  // Off: businesses can only choose "Pay winners directly".
+  COMPETITION_KOLAB_PAYMENTS_ENABLED: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
+  // Comma-separated admin emails allowed to act on competition prize money
+  // (approve/record payouts, verify disputed direct payments, record refunds).
+  // Other admins see the payment overview read-only. Env, not a dashboard
+  // setting, so an admin can't grant themselves access.
+  COMPETITION_PAYMENT_ADMIN_EMAILS: z.string().optional(),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
   SENTRY_DSN: z.string().optional(),

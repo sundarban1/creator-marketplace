@@ -1935,15 +1935,19 @@ export default function CreateCampaignScreen() {
                   [
                     { key: 'PAID_CAMPAIGN' as const, icon: 'money-bill-alt' as const, title: t('createInvitation.chooseTypePaidTitle'), desc: t('createInvitation.chooseTypePaidSub'), example: t('createInvitation.chooseTypePaidExample'), tone: TabColors.brand },
                     { key: 'OPEN_EVENT'    as const, icon: 'gift' as const,            title: t('createInvitation.chooseTypeFreeTitle'), desc: t('createInvitation.chooseTypeFreeSub'), example: t('createInvitation.chooseTypeFreeExample'), tone: TabColors.info },
+                    { key: 'COMPETITION'   as const, icon: 'trophy' as const,          title: t('competition.cardTitle'),                desc: t('competition.cardSub'),                example: t('competition.cardExample'),                tone: TabColors.warning },
                   ]
                 ).map((opt) => (
                   <Pressable
                     key={opt.key}
                     // Paid campaigns use the guided, AI-first creator
-                    // (guided-campaign.tsx); free invitations stay here.
+                    // (guided-campaign.tsx) and competitions their own builder
+                    // (create-competition.tsx); free invitations stay here.
                     onPress={() => (opt.key === 'PAID_CAMPAIGN'
                       ? router.replace('/guided-campaign')
-                      : resetFormForType(opt.key, 'inviteOffer'))}
+                      : opt.key === 'COMPETITION'
+                        ? router.replace('/create-competition')
+                        : resetFormForType(opt.key, 'inviteOffer'))}
                     style={({ pressed }) => [
                       s.typeCard,
                       { backgroundColor: C.surface, borderColor: pressed ? opt.tone.color : C.border },

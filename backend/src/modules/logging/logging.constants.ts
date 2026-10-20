@@ -84,6 +84,14 @@ export const AuditAction = {
   COMPETITION_REJECTED:            'competition.rejected',
   COMPETITION_CHANGES_APPROVED:    'competition.edit_approved',
   COMPETITION_CHANGES_REJECTED:    'competition.edit_rejected',
+  COMPETITION_PAYMENT_CONFIGURED:  'competition.payment_configured',
+  COMPETITION_FUNDING_INITIATED:   'competition.funding_initiated',
+  COMPETITION_FUNDING_CONFIRMED:   'competition.funding_confirmed',
+  COMPETITION_FUNDING_FAILED:      'competition.funding_failed',
+  COMPETITION_FUNDING_REFUND:      'competition.funding_refund',
+  COMPETITION_PAYOUTS_CREATED:     'competition.payouts_created',
+  COMPETITION_PAYOUTS_CANCELLED:   'competition.payouts_cancelled',
+  COMPETITION_PAYOUT_UPDATED:      'competition.payout_updated',
 } as const;
 
 export const EntityType = {

@@ -252,4 +252,150 @@ export const competitionNotifications = {
       dedupeKey: `comp:${c.id}:suspended:${at.toISOString()}`,
     });
   },
+
+  // ── Prize payments ─────────────────────────────────────────────────────────
+  // Every call below is made after a verified server-side change commits.
+  // Dedupe keys carry the payout/funding id + the new status, so a retried
+  // gateway callback or a double-clicked admin action never notifies twice.
+
+  /** Organizer: approved, but a Kolab-managed prize pool must be funded before it can go live. */
+  fundingRequired(organizerUserId: string, c: { id: string; title: string }, amountNpr: number) {
+    return send({
+      userId: organizerUserId, type: E.FUNDING_REQUIRED, competitionId: c.id,
+      title: 'Fund your prize pool',
+      body: `“${c.title}” is approved. Fund the NPR ${npr(amountNpr)} prize pool to make it live for creators.`,
+      dedupeKey: `comp:${c.id}:funding_required`,
+      email: {
+        subject: `Fund your prize pool: ${c.title}`,
+        heading: 'Your competition is approved',
+        paragraphs: [`“${c.title}” is approved. Creators can’t see it until the full NPR ${npr(amountNpr)} prize pool is funded through Kolab.`],
+        cta: { label: 'Fund prize pool', url: `${organizerCompetitionUrl(c.id)}?tab=payments` },
+      },
+    });
+  },
+
+  fundingConfirmed(organizerUserId: string, c: { id: string; title: string }, fundingId: string, amountNpr: number) {
+    return send({
+      userId: organizerUserId, type: E.FUNDING_CONFIRMED, competitionId: c.id,
+      title: 'Prize pool funded',
+      body: `We received NPR ${npr(amountNpr)} for “${c.title}”. Your competition can now go live.`,
+      dedupeKey: `comp-funding:${fundingId}:confirmed`,
+      email: {
+        subject: `Prize pool funded: ${c.title}`,
+        heading: 'Prize pool funded',
+        paragraphs: [`We received NPR ${npr(amountNpr)} for “${c.title}”. It goes live for creators as scheduled.`],
+        cta: { label: 'Open competition', url: organizerCompetitionUrl(c.id) },
+      },
+    });
+  },
+
+  fundingFailed(organizerUserId: string, c: { id: string; title: string }, fundingId: string) {
+    return send({
+      userId: organizerUserId, type: E.FUNDING_FAILED, competitionId: c.id,
+      title: 'Prize pool payment not completed',
+      body: `The payment for “${c.title}” didn’t go through. Nothing was charged by Kolab — you can try again.`,
+      dedupeKey: `comp-funding:${fundingId}:failed`,
+    });
+  },
+
+  /** Organizer (direct payment): results are final, these prizes are now owed. */
+  prizesOutstanding(organizerUserId: string, c: { id: string; title: string }, count: number, totalNpr: number) {
+    return send({
+      userId: organizerUserId, type: E.PRIZES_OUTSTANDING, competitionId: c.id,
+      title: 'Pay your winners',
+      body: `${count} prize${count === 1 ? '' : 's'} (NPR ${npr(totalNpr)}) from “${c.title}” are due. Pay the winners and upload proof of payment.`,
+      dedupeKey: `comp:${c.id}:prizes_outstanding:${count}:${totalNpr}`,
+      email: {
+        subject: `Prizes due: ${c.title}`,
+        heading: 'Pay your winners',
+        paragraphs: [
+          `Results for “${c.title}” are published. You chose to pay winners directly, so you are responsible for paying ${count} prize${count === 1 ? '' : 's'} totalling NPR ${npr(totalNpr)}.`,
+          'After paying each winner, record the payment and upload proof on Kolab. The winner then confirms they received it.',
+        ],
+        cta: { label: 'Record payments', url: `${organizerCompetitionUrl(c.id)}?tab=payments` },
+      },
+    });
+  },
+
+  /** Winner: which party pays them and what happens next. */
+  prizeWon(userId: string, c: { id: string; title: string }, payoutId: string, prizeTitle: string, amountNpr: number, method: 'KOLAB' | 'DIRECT') {
+    const body = method === 'KOLAB'
+      ? `You won ${prizeTitle} (NPR ${npr(amountNpr)}) in “${c.title}”. Kolab will coordinate your prize payment — make sure your payout account is set up.`
+      : `You won ${prizeTitle} (NPR ${npr(amountNpr)}) in “${c.title}”. The organizer pays this prize directly; you’ll be asked to confirm once they report the payment.`;
+    return send({
+      userId, type: E.PRIZE_WON, competitionId: c.id, title: 'You won a prize!', body,
+      dedupeKey: `comp-payout:${payoutId}:won`,
+      email: { subject: `You won a prize in ${c.title}`, heading: 'Congratulations!', paragraphs: [body], cta: { label: 'View your prize', url: creatorCompetitionUrl(c.id) } },
+    });
+  },
+
+  /** Winner: a Kolab-managed payout moved (approved / processing / paid / failed). */
+  payoutUpdate(userId: string, c: { id: string; title: string }, payoutId: string, status: 'APPROVED' | 'PROCESSING' | 'PAID' | 'FAILED', amountNpr: number, stamp: Date) {
+    const copy = {
+      APPROVED:   { title: 'Prize payment approved', body: `Your NPR ${npr(amountNpr)} prize from “${c.title}” is approved for payment.` },
+      PROCESSING: { title: 'Prize payment on its way', body: `Kolab is sending your NPR ${npr(amountNpr)} prize from “${c.title}”.` },
+      PAID:       { title: 'Prize paid', body: `Your NPR ${npr(amountNpr)} prize from “${c.title}” was paid. Check your payout account.` },
+      FAILED:     { title: 'Prize payment failed', body: `We couldn’t send your NPR ${npr(amountNpr)} prize from “${c.title}”. Check your payout account details — Kolab will retry.` },
+    }[status];
+    return send({
+      userId, type: E.PAYOUT_UPDATE, competitionId: c.id, ...copy,
+      dedupeKey: `comp-payout:${payoutId}:${status}:${stamp.getTime()}`,
+      email: status === 'PAID' || status === 'FAILED'
+        ? { subject: `${copy.title}: ${c.title}`, heading: copy.title, paragraphs: [copy.body], cta: { label: 'View details', url: creatorCompetitionUrl(c.id) } }
+        : undefined,
+    });
+  },
+
+  /** Winner: the organizer says they paid — please confirm or report a problem. */
+  paymentReported(userId: string, c: { id: string; title: string }, payoutId: string, amountNpr: number, stamp: Date) {
+    const body = `The organizer of “${c.title}” reported paying your NPR ${npr(amountNpr)} prize. Please confirm you received it, or report a problem.`;
+    return send({
+      userId, type: E.PAYMENT_REPORTED, competitionId: c.id, title: 'Confirm your prize payment', body,
+      dedupeKey: `comp-payout:${payoutId}:reported:${stamp.getTime()}`,
+      email: { subject: `Confirm your prize payment: ${c.title}`, heading: 'Did you receive your prize?', paragraphs: [body], cta: { label: 'Confirm or report', url: creatorCompetitionUrl(c.id) } },
+    });
+  },
+
+  /** Organizer: the winner confirmed receipt. */
+  paymentConfirmed(organizerUserId: string, c: { id: string; title: string }, payoutId: string, creatorName: string) {
+    return send({
+      userId: organizerUserId, type: E.PAYMENT_CONFIRMED, competitionId: c.id,
+      title: 'Prize payment confirmed', body: `${creatorName} confirmed receiving their prize from “${c.title}”.`,
+      dedupeKey: `comp-payout:${payoutId}:confirmed`,
+    });
+  },
+
+  /** Organizer + Kolab admins: the winner reports a payment problem. */
+  async paymentDisputed(organizerUserId: string, c: { id: string; title: string }, payoutId: string, creatorName: string, reason: string, stamp: Date) {
+    const body = `${creatorName} reported a problem with their prize payment for “${c.title}”: ${reason}`;
+    await send({
+      userId: organizerUserId, type: E.PAYMENT_DISPUTED, competitionId: c.id,
+      title: 'Prize payment issue reported', body,
+      dedupeKey: `comp-payout:${payoutId}:disputed:${stamp.getTime()}`,
+      email: { subject: `Prize payment issue: ${c.title}`, heading: 'A winner reported a payment problem', paragraphs: [body, 'Check the payment and upload updated proof, or contact Kolab support.'], cta: { label: 'Open payments', url: `${organizerCompetitionUrl(c.id)}?tab=payments` } },
+    });
+    await notificationService.createForAdmins({ type: E.PAYMENT_DISPUTED, title: 'Competition prize dispute', body, refId: c.id, refType: 'competition' });
+  },
+
+  /** Both sides: an admin reviewed a disputed / unconfirmed payment. */
+  disputeResolved(userIds: string[], c: { id: string; title: string }, payoutId: string, outcome: 'VERIFIED' | 'UNPAID' | 'CANCELLED', stamp: Date) {
+    const body = {
+      VERIFIED:  `Kolab reviewed the prize payment for “${c.title}” and marked it as paid.`,
+      UNPAID:    `Kolab reviewed the prize payment for “${c.title}”: it is still due from the organizer.`,
+      CANCELLED: `Kolab reviewed the prize payment for “${c.title}” and closed it.`,
+    }[outcome];
+    return fanOut(userIds, (userId) => send({
+      userId, type: E.DISPUTE_RESOLVED, competitionId: c.id, title: 'Prize payment reviewed', body,
+      dedupeKey: `comp-payout:${payoutId}:resolved:${outcome}:${stamp.getTime()}:${userId}`,
+    }));
+  },
+
+  /** Kolab admins: something needs a payment admin (refund due, duplicate charge…). */
+  adminPaymentAttention(c: { id: string; title: string }, body: string) {
+    return notificationService.createForAdmins({ type: 'competition_payment_attention', title: 'Competition payment needs attention', body, refId: c.id, refType: 'competition' });
+  },
 };
+
+function npr(n: number) {
+  return n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}

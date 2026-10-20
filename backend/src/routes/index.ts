@@ -53,7 +53,7 @@ import pointsRoutes from '../modules/points/points.routes';
 import creditsRoutes from '../modules/credits/credits.routes';
 import meetupRoutes from '../modules/meetup/meetup.routes';
 import meetupAdminRoutes from '../modules/meetup/meetup.admin.routes';
-import { competitionRoutes, competitionManageRoutes, competitionAdminRoutes } from '../modules/competition/competition.routes';
+import { competitionRoutes, competitionManageRoutes, competitionAdminRoutes, competitionPaymentCallbackRoutes } from '../modules/competition/competition.routes';
 
 export function registerApiRoutes(app: Express): void {
   app.use('/api/auth', authRoutes);
@@ -74,6 +74,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/business', businessRoutes);
   // Public — Khalti's browser redirect lands here directly with no auth header,
   // same reasoning as the TikTok/Instagram callbacks above.
+  app.use('/api/payments/competition', competitionPaymentCallbackRoutes);
   app.use('/api/payments/khalti', khaltiCallbackRoutes);
   // Public — same reasoning, for eSewa's checkout page + browser redirect.
   app.use('/api/payments/esewa', esewaCallbackRoutes);

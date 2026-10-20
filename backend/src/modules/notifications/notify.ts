@@ -69,6 +69,17 @@ export const CompetitionNotificationEvent = {
   REVIEW_REJECTED:      'competition_review_rejected',
   EDIT_APPROVED:        'competition_edit_approved',
   EDIT_REJECTED:        'competition_edit_rejected',
+  // Prize payments
+  FUNDING_REQUIRED:     'competition_funding_required',
+  FUNDING_CONFIRMED:    'competition_funding_confirmed',
+  FUNDING_FAILED:       'competition_funding_failed',
+  PRIZES_OUTSTANDING:   'competition_prizes_outstanding',
+  PRIZE_WON:            'competition_prize_won',
+  PAYOUT_UPDATE:        'competition_payout_update',
+  PAYMENT_REPORTED:     'competition_prize_payment_reported',
+  PAYMENT_CONFIRMED:    'competition_prize_payment_confirmed',
+  PAYMENT_DISPUTED:     'competition_prize_payment_disputed',
+  DISPUTE_RESOLVED:     'competition_prize_dispute_resolved',
 } as const;
 export type CompetitionNotificationType = (typeof CompetitionNotificationEvent)[keyof typeof CompetitionNotificationEvent];
 

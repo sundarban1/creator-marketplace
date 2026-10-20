@@ -420,6 +420,7 @@ function RootNavigator() {
         <Stack.Screen name="submit-proposal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="create-campaign" options={{ presentation: 'modal' }} />
         <Stack.Screen name="guided-campaign" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="create-competition" options={{ presentation: 'modal' }} />
         <Stack.Screen name="edit-campaign" options={{ presentation: 'modal' }} />
         <Stack.Screen name="video-player" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
       </Stack>

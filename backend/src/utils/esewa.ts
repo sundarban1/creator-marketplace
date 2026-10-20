@@ -94,11 +94,14 @@ export function buildEsewaSignedFields(params: {
    * redirects back into (native deep link for mobile, a web app URL for web).
    * Defaults to 'mobile' so the mobile app's existing flow is untouched. */
   platform?: 'web' | 'mobile';
+  /** Callback route prefix; defaults to the campaign escrow callbacks. */
+  callbackPath?: string;
 }): EsewaFormFields {
   const { secretKey, returnBaseUrl } = assertConfigured();
   const totalAmount = formatAmount(params.totalAmountNpr);
   const productCode = env.ESEWA_MERCHANT_CODE;
   const platformSuffix = params.platform === 'web' ? '/web' : '';
+  const callbackPath = params.callbackPath ?? '/api/payments/esewa';
 
   const message = `total_amount=${totalAmount},transaction_uuid=${params.transactionUuid},product_code=${productCode}`;
   const signature = signMessage(secretKey, message);
@@ -111,8 +114,8 @@ export function buildEsewaSignedFields(params: {
     product_code: productCode,
     product_service_charge: '0',
     product_delivery_charge: '0',
-    success_url: `${returnBaseUrl}/api/payments/esewa/success/${params.appId}${platformSuffix}`,
-    failure_url: `${returnBaseUrl}/api/payments/esewa/failure/${params.appId}${platformSuffix}`,
+    success_url: `${returnBaseUrl}${callbackPath}/success/${params.appId}${platformSuffix}`,
+    failure_url: `${returnBaseUrl}${callbackPath}/failure/${params.appId}${platformSuffix}`,
     signed_field_names: SIGNED_FIELD_NAMES,
     signature,
   };
