@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Globe, ShieldCheck, LogOut, UserX, Trash2, Mail, Gift, LifeBuoy, Info, ChevronRight, BadgeCheck, Eye, Phone, Share2 } from 'lucide-react';
+import { Globe, ShieldCheck, UserX, Trash2, Mail, Gift, LifeBuoy, Info, ChevronRight, BadgeCheck, Eye, Phone, Share2 } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { useAppLanguage, useT, type Lang } from '../i18n';
@@ -12,7 +12,6 @@ import { fetchBusinessProfile, updateBusinessProfile } from '../api/business';
 import { paths } from '../routes';
 import { PageHeader } from '../ui/PageHeader';
 import { Card, CardHeader } from '../ui/Card';
-import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
 import { Switch } from '../ui/Switch';
 import { StatusBadge } from '../ui/StatusBadge';
@@ -265,11 +264,6 @@ export function AccountSettingsPage() {
         </dl>
 
         <div className="mt-5 space-y-3 border-t border-line pt-4">
-          <Button variant="secondary" onClick={() => logout().then(() => navigate(paths.login))}>
-            <LogOut size={15} />
-            {t('settings.signOut')}
-          </Button>
-
           <button
             onClick={async () => {
               const ok = await confirmDialog({
