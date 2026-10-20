@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, GripVertical, ImagePlus, Loader2, Star, Trash2 } from 'lucide-react';
 import type { CommunityEventImage } from '../../lib/api';
 import { checkImages, move, uploadImages, useMultiFilePicker } from './formUtils';
+import { FieldError } from '../../app/ui/FieldError';
 
 const BATCH = 5;
 
@@ -122,7 +123,7 @@ export function GalleryManager({
         )}
       </button>
       <p className="mt-1.5 text-xs text-gray-400">JPEG, PNG or WebP, up to 10 MB each. Drag (or use the arrows) to reorder.</p>
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && <FieldError message={error} />}
     </div>
   );
 }

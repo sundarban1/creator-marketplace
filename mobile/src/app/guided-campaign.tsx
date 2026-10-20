@@ -22,6 +22,7 @@ import { AskKolabButton } from '@/features/business/guided/AskKolab';
 import { StartStep, ClarifyStep, BasicsStep, CreatorsStep, ContentStep, BudgetStep, RequirementsStep, type Update } from '@/features/business/guided/steps';
 import { ReviewStep } from '@/features/business/guided/ReviewStep';
 import type { StartSource } from '@/features/business/guided/templates';
+import { FormErrorBanner } from '@/components/FieldError';
 
 /**
  * Guided, AI-first creator for PAID campaigns (UX spec) — the native
@@ -246,7 +247,7 @@ export default function GuidedCampaignScreen() {
         <View style={{ marginBottom: SPACING.md }}><AskKolabButton step={step} form={form} /></View>
       </>
     : null;
-  const banner = error ? <Text style={[st.small, { color: C.error, marginBottom: SPACING.md }]}>{error}</Text> : null;
+  const banner = error ? <FormErrorBanner message={error} style={{ marginBottom: SPACING.md }} /> : null;
   const header = <>{progress}{banner}</>;
   const stepProps = { form, update, issues, header, nextLabel: returnToReview ? t('guided.backToReview') : undefined };
 

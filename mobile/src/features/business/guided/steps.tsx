@@ -21,6 +21,7 @@ import {
   StepShell, Field, FooterNav, ChoiceChips, RecommendButton, LinkButton, SuggestionNote, ProvenanceTag,
   IssueNote, WhyAsking, Input, ListInput, Stepper, LocationPicker, DeliverablesEditor, st,
 } from './parts';
+import { FormErrorBanner } from '@/components/FieldError';
 
 // Native step screens — same flow and rules as web/src/app/business/guided/steps.tsx.
 
@@ -157,7 +158,7 @@ export function StartStep({ form, update, onCreateWithAi, onManual, busy, onInpu
           onError={setVoiceError}
         />
         {transcribing ? <ActivityIndicator color={C.brinjal1} /> : null}
-        {voiceError ? <Text style={[st.small, { color: C.error }]}>{voiceError}</Text> : null}
+        {voiceError ? <FormErrorBanner message={voiceError} /> : null}
       </View>
       */}
 

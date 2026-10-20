@@ -8,6 +8,8 @@ import { paths } from '../routes';
 import { AuthShell } from './AuthShell';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
+import { FieldError } from '../ui/FieldError';
+import { useFormValidation, useValidators, type Rule } from '../lib/validation';
 import { IdentifierField } from './IdentifierField';
 import { Alert } from '../ui/Alert';
 import { OtpInput } from '../ui/OtpInput';
@@ -25,12 +27,22 @@ export function ForgotPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const v = useValidators();
+  const requestForm = useFormValidation(
+    { identifier: toIdentifier(identifier) },
+    { identifier: v.required(t('auth.identifierRequired')) },
+  );
+  const codeRule: Rule<string> = (c) => (c.length === 6 ? undefined : t('auth.codeRequired'));
+  const resetForm = useFormValidation(
+    { code, newPassword },
+    { code: codeRule, newPassword: v.required(t('auth.passwordRequired')) },
+  );
 
   async function handleRequest(e: FormEvent) {
     e.preventDefault();
     setError('');
-    const id = toIdentifier(identifier);
-    if (!id) return setError(t('auth.identifierRequired'));
+    if (!requestForm.validate()) return;
+    const id = toIdentifier(identifier)!;
 
     setSubmitting(true);
     try {
@@ -47,8 +59,7 @@ export function ForgotPasswordScreen() {
   async function handleReset(e: FormEvent) {
     e.preventDefault();
     setError('');
-    if (code.length !== 6) return setError(t('auth.codeRequired'));
-    if (!newPassword) return setError(t('auth.passwordRequired'));
+    if (!resetForm.validate()) return;
 
     setSubmitting(true);
     try {
@@ -78,10 +89,8 @@ export function ForgotPasswordScreen() {
         </Link>
       }
     >
-      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
-
       {step === 'request' ? (
-        <form onSubmit={handleRequest} noValidate className="space-y-4">
+        <form ref={requestForm.formRef} onSubmit={handleRequest} noValidate className="space-y-4">
           <IdentifierField
             label={t('auth.emailOrPhone')}
             icon={<AtSign />}
@@ -90,14 +99,19 @@ export function ForgotPasswordScreen() {
             inputMode="email"
             value={identifier}
             onValueChange={setIdentifier}
+            error={requestForm.error('identifier')}
           />
+          {error && <Alert tone="error">{error}</Alert>}
           <Button type="submit" size="lg" fullWidth loading={submitting}>
             {t('auth.sendCode')}
           </Button>
         </form>
       ) : (
-        <form onSubmit={handleReset} noValidate className="space-y-5">
-          <OtpInput value={code} onChange={setCode} invalid={Boolean(error)} />
+        <form ref={resetForm.formRef} onSubmit={handleReset} noValidate className="space-y-5">
+          <div>
+            <OtpInput value={code} onChange={setCode} invalid={Boolean(error || resetForm.error('code'))} />
+            <FieldError message={resetForm.error('code')} />
+          </div>
           <TextField
             label={t('auth.newPassword')}
             type="password"
@@ -106,7 +120,9 @@ export function ForgotPasswordScreen() {
             hint={t('auth.passwordHint')}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
+            error={resetForm.error('newPassword')}
           />
+          {error && <Alert tone="error">{error}</Alert>}
           <Button type="submit" size="lg" fullWidth loading={submitting}>
             {t('auth.resetCta')}
           </Button>

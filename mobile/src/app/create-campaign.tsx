@@ -56,6 +56,7 @@ import {
   mapAiCampaignDraftToForm, mapAiEventDraftToForm,
 } from '@/features/business/utils/campaignFormMappers';
 import { ListingHeroCard, PreviewRow, AiGeneratingOverlay } from '@/features/business/components/CampaignSummary';
+import { FieldError } from '@/components/FieldError';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -508,7 +509,7 @@ function MultiCheckboxDropdown({
         )}
         <FontAwesome5 name="chevron-down" solid size={16} color={C.textSecondary} />
       </Pressable>
-      {error && <Text style={dp.error}>{error}</Text>}
+      {error && <FieldError message={error} />}
 
       <BottomSheet visible={open} onClose={() => setOpen(false)} title={placeholder} maxHeightPct={0.7}>
         {options.map((opt) => {
@@ -636,7 +637,7 @@ function RadioGroup({
           </Pressable>
         );
       })}
-      {error && <Text style={rg.error}>{error}</Text>}
+      {error && <FieldError message={error} />}
     </View>
   );
 }
@@ -753,7 +754,7 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
           <FontAwesome5 name="calendar-alt" size={18} color={C.textSecondary} />
         )}
       </Pressable>
-      {error && <Text style={dp.error}>{error}</Text>}
+      {error && <FieldError message={error} />}
 
       <BottomSheet visible={open} onClose={() => setOpen(false)} title={label ?? t('createEvent.deadlineDefaultLabel')} maxHeightPct={0.7}>
         {value && (
@@ -2240,7 +2241,7 @@ export default function CreateCampaignScreen() {
                 {/* Publish silently refuses on a below-minimum budget
                     otherwise — the sheet that sets it is already closed by
                     then, so the reason has to surface on the row itself. */}
-                {reviewErrors.budget ? <Text style={[s.errorText, { marginTop: 6 }]}>{reviewErrors.budget}</Text> : null}
+                {reviewErrors.budget ? <FieldError message={reviewErrors.budget} /> : null}
               </View>
 
               {/* People Needed — one row per role: role × qty, budget, edit
@@ -2908,7 +2909,7 @@ export default function CreateCampaignScreen() {
                           </Text>
                           <Text style={s.locationArrow}>›</Text>
                         </Pressable>
-                        {aiLocationError ? <Text style={s.errorText}>{aiLocationError}</Text> : null}
+                        {aiLocationError ? <FieldError message={aiLocationError} /> : null}
                       </>
                     )}
                   </SectionCard>
@@ -3073,7 +3074,7 @@ export default function CreateCampaignScreen() {
                           </Text>
                           <Text style={s.locationArrow}>›</Text>
                         </Pressable>
-                        {aiLocationError ? <Text style={s.errorText}>{aiLocationError}</Text> : null}
+                        {aiLocationError ? <FieldError message={aiLocationError} /> : null}
                       </>
                     )}
                   </SectionCard>

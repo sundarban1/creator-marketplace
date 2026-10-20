@@ -21,6 +21,7 @@ import { confirmSensitiveAction } from '@/services/biometric';
 import type { ApiPayoutMethod, PayoutMethodType } from '@/services/wallet';
 import { PAYMENT_METHOD_IMAGES } from '@/utilities/paymentMethods';
 import { F, RADIUS } from '@/utilities/constants';
+import { FormErrorBanner } from '@/components/FieldError';
 
 // decimal-pad has no "Done" key on iOS at all, so the keyboard has no way to
 // dismiss itself without this accessory toolbar.
@@ -246,7 +247,7 @@ export function WithdrawModal({
                 })}
               </View>
 
-              {!!error && <Text style={styles.errorText}>{error}</Text>}
+              <FormErrorBanner message={error} />
             </>
           )}
         </View>

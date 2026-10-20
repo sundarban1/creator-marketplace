@@ -508,6 +508,7 @@ export default function CreatorSettingsScreen() {
   // Phone verification sub-page
   const [phoneSubPage, setPhoneSubPage] = useState<'input' | 'otp' | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneInputError, setPhoneInputError] = useState<string | null>(null);
   const [phoneOtp, setPhoneOtp] = useState('');
   const [phoneLoading, setPhoneLoading] = useState(false);
 
@@ -1779,9 +1780,10 @@ export default function CreatorSettingsScreen() {
   async function handleRequestPhoneOtp() {
     if (!phoneNumber.trim()) return;
     if (!isValidNepaliPhone(phoneNumber)) {
-      showToast(t('settings.phoneInvalid'), true);
+      setPhoneInputError(t('settings.phoneInvalid'));
       return;
     }
+    setPhoneInputError(null);
     setPhoneLoading(true);
     try {
       await authService.requestPhoneOtp(normalizePhoneForSubmit(phoneNumber));
@@ -2274,12 +2276,13 @@ export default function CreatorSettingsScreen() {
               <TextInputWithLabel
                 label={t('creatorSettings.phoneNumberLabel')}
                 value={phoneNumber}
-                onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9+]/g, ''))}
+                onChangeText={(text) => { setPhoneNumber(text.replace(/[^0-9+]/g, '')); setPhoneInputError(null); }}
                 placeholder={t('creatorSettings.phonePlaceholder')}
                 keyboardType="phone-pad"
                 autoCorrect={false}
                 autoFocus
                 leftIcon="phone"
+                error={phoneInputError ?? undefined}
               />
               <Pressable
                 style={[

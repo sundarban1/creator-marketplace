@@ -22,6 +22,8 @@ import { StatusBadge } from '../ui/StatusBadge';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { cn } from '../ui/cn';
+import { FieldError, FieldLabel, FormErrorBanner } from '../ui/FieldError';
+import { compose, useFormValidation, useValidators } from '../lib/validation';
 import { ApiError } from '../lib/apiClient';
 
 const CREATOR_TYPES: MeetupCreatorType[] = [
@@ -221,19 +223,23 @@ function RegistrationForm({ meetupId, initial }: {
     });
   }
 
-  function validate(): string {
-    if (!fullName.trim()) return t('meetup.validationNameRequired');
-    if (!phoneNumber.trim()) return t('meetup.validationPhoneRequired');
-    if (creatorTypes.length === 0) return t('meetup.validationTypeRequired');
-    if (creatorTypes.includes('OTHER') && !otherCreatorType.trim()) return t('meetup.validationOtherRequired');
-    if (!socialMediaProfile.trim()) return t('meetup.validationSocialRequired');
-    return '';
-  }
+  const v = useValidators();
+  const needsOther = creatorTypes.includes('OTHER');
+  const form = useFormValidation(
+    { fullName, phoneNumber, email, creatorTypes, otherCreatorType, socialMediaProfile },
+    {
+      fullName: v.required(t('meetup.validationNameRequired')),
+      phoneNumber: compose(v.required(t('meetup.validationPhoneRequired')), v.phone()),
+      email: v.email(),
+      creatorTypes: v.choose(t('meetup.validationTypeRequired')),
+      otherCreatorType: needsOther ? v.required(t('meetup.validationOtherRequired')) : undefined,
+      socialMediaProfile: v.required(t('meetup.validationSocialRequired')),
+    },
+  );
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const err = validate();
-    if (err) return setError(err);
+    if (!form.validate()) return;
     setError('');
     setSaving(true);
     try {
@@ -260,18 +266,16 @@ function RegistrationForm({ meetupId, initial }: {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-      {error && <Alert tone="error">{error}</Alert>}
-
+    <form ref={form.formRef} onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
       <Card className="space-y-4">
-        <TextField label={t('meetup.fieldFullName')} value={fullName} onChange={(e) => setFullName(e.target.value)} />
-        <TextField label={t('meetup.fieldPhone')} type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-        <TextField label={t('meetup.fieldEmail')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <TextField label={t('meetup.fieldFullName')} required error={form.error('fullName')} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <TextField label={t('meetup.fieldPhone')} required error={form.error('phoneNumber')} type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+        <TextField label={t('meetup.fieldEmail')} error={form.error('email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </Card>
 
       <Card className="space-y-3">
-        <p className="text-[13px] font-semibold text-ink">{t('meetup.fieldCreatorType')}</p>
-        <div className="flex flex-wrap gap-2">
+        <FieldLabel required>{t('meetup.fieldCreatorType')}</FieldLabel>
+        <div className="flex flex-wrap gap-2" data-invalid={form.error('creatorTypes') ? 'true' : undefined} tabIndex={-1}>
           {CREATOR_TYPES.map((type) => {
             const selected = creatorTypes.includes(type);
             const disabled = !selected && creatorTypes.length >= 2;
@@ -295,9 +299,12 @@ function RegistrationForm({ meetupId, initial }: {
             );
           })}
         </div>
+        <FieldError message={form.error('creatorTypes')} />
         {creatorTypes.includes('OTHER') && (
           <TextField
             label={t('meetup.fieldOtherCreatorType')}
+            required
+            error={form.error('otherCreatorType')}
             value={otherCreatorType}
             onChange={(e) => setOtherCreatorType(e.target.value)}
           />
@@ -310,6 +317,7 @@ function RegistrationForm({ meetupId, initial }: {
           hint={t('meetup.fieldSocialProfileHint')}
           placeholder="https://instagram.com/yourhandle"
           required
+          error={form.error('socialMediaProfile')}
           value={socialMediaProfile}
           onChange={(e) => setSocialMediaProfile(e.target.value)}
         />
@@ -346,6 +354,7 @@ function RegistrationForm({ meetupId, initial }: {
         />
       </Card>
 
+      <FormErrorBanner message={error} />
       <div className="flex gap-2 pt-2">
         <Button type="submit" size="lg" loading={saving} disabled={saving}>
           {t('meetup.submitButton')}

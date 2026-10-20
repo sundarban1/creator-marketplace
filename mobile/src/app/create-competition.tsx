@@ -18,6 +18,7 @@ import {
   type FormStep,
 } from '@/features/business/competition/model';
 import { competitionService, type CompetitionInput, type CompetitionPrize, type CompetitionStageInput } from '@/services/competition';
+import { FormErrorBanner } from '@/components/FieldError';
 
 type Step = Exclude<FormStep, 'review'>;
 const numOrNull = (v: string) => (v.trim() === '' || Number.isNaN(Number(v)) ? null : Number(v));
@@ -151,11 +152,7 @@ export default function CreateCompetitionScreen() {
   }
 
   const rail = <ProgressRail steps={ALL_STEPS.map((k) => ({ key: k, label: t(`competition.step_${k}`) }))} current={step} />;
-  const errorBox = errors.length ? (
-    <View style={[st.note, { borderColor: C.error, marginBottom: SPACING.md, gap: 4 }]} accessibilityLiveRegion="polite">
-      {errors.map((e) => <Text key={e} style={[st.small, { color: C.error }]}>• {e}</Text>)}
-    </View>
-  ) : null;
+  const errorBox = <FormErrorBanner message={errors} style={{ marginBottom: SPACING.md }} />;
   const nav = (s: Step) => (
     <>
       {errorBox}

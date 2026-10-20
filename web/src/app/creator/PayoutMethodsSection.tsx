@@ -21,6 +21,7 @@ import { confirmDialog } from '../ui/confirmDialog';
 import { cn } from '../ui/cn';
 import esewaLogo from '../../assets/payments/esewa.png';
 import khaltiLogo from '../../assets/payments/khalti.png';
+import { FieldError } from '../ui/FieldError';
 
 type PayoutType = PayoutMethod['type'];
 
@@ -295,7 +296,7 @@ function PayoutMethodForm({
                 ]}
               />
               {errors.bankName && bankChoice !== OTHER_BANK && (
-                <p className="mt-1.5 text-[12px] text-danger">{errors.bankName}</p>
+                <FieldError message={errors.bankName} />
               )}
             </div>
             {bankChoice === OTHER_BANK && (

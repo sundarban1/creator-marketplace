@@ -18,6 +18,7 @@ import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { TextField } from '../ui/TextField';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/Alert';
+import { FieldError } from '../ui/FieldError';
 
 const TOTAL_STEPS = 3;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -364,7 +365,7 @@ export function CreatorOnboarding() {
               onChange={setLocation}
               placeholder={t('onboarding.locationPlaceholder')}
             />
-            {locationError && <p className="mt-1.5 text-[13px] font-medium text-danger">{locationError}</p>}
+            {locationError && <FieldError message={locationError} />}
           </div>
 
           <Button size="lg" fullWidth loading={step2Loading} onClick={handleStep2Continue}>

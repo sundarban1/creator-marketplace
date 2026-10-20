@@ -4,6 +4,7 @@ import { ImagePlus, X, Loader2 } from 'lucide-react';
 import type { SuccessStory, SuccessStoryStatus } from '../../context/SuccessStoriesContext';
 import { useSuccessStories } from '../../context/SuccessStoriesContext';
 import { confirmImageUpload } from '../../app/ui/uploadPreview';
+import { FieldError } from '../../app/ui/FieldError';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -116,7 +117,7 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
                   <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoChange} disabled={uploading} />
                 </label>
                 <p className="text-xs text-gray-400 mt-1.5">Optional — falls back to initials if left blank. JPEG, PNG, or WebP, up to 5MB.</p>
-                {errors.photo && <p className="text-xs text-red-500 mt-1">{errors.photo}</p>}
+                {errors.photo && <FieldError message={errors.photo} />}
               </div>
             </div>
           </div>
@@ -135,9 +136,9 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
                 value={name}
                 onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: '' })); }}
                 placeholder="e.g. Sarah Karki"
-                className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.name ? 'border-danger' : 'border-gray-200'}`}
               />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+              {errors.name && <FieldError message={errors.name} />}
             </div>
 
             <div>
@@ -151,9 +152,9 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
                 value={role}
                 onChange={(e) => { setRole(e.target.value); setErrors((p) => ({ ...p, role: '' })); }}
                 placeholder="e.g. Content Creator"
-                className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.role ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.role ? 'border-danger' : 'border-gray-200'}`}
               />
-              {errors.role && <p className="text-xs text-red-500 mt-1">{errors.role}</p>}
+              {errors.role && <FieldError message={errors.role} />}
             </div>
 
             <div>
@@ -166,9 +167,9 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
                 onChange={(e) => { setQuote(e.target.value); setErrors((p) => ({ ...p, quote: '' })); }}
                 placeholder="What did they say about their experience?"
                 rows={4}
-                className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none ${errors.quote ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none ${errors.quote ? 'border-danger' : 'border-gray-200'}`}
               />
-              {errors.quote && <p className="text-xs text-red-500 mt-1">{errors.quote}</p>}
+              {errors.quote && <FieldError message={errors.quote} />}
             </div>
 
             <div>

@@ -16,6 +16,7 @@ import { StepIndicator } from '@/components/StepIndicator';
 import { GroupedCategoryPicker } from '@/components/GroupedCategoryPicker';
 import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { FieldError, FormErrorBanner } from '@/components/FieldError';
 
 // Three required steps, matching what's actually needed before a provider can
 // use Kolab (how they operate, profile [name, username, email, location],
@@ -387,15 +388,11 @@ export default function OnboardingScreen() {
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
             {providerTypeSubmitted && !providerType && (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{t('onboarding.providerTypeError')}</Text>
-              </View>
+              <FormErrorBanner message={t('onboarding.providerTypeError')} style={{ marginBottom: 12 }} />
             )}
 
             {providerTypeError ? (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{providerTypeError}</Text>
-              </View>
+              <FormErrorBanner message={providerTypeError} style={{ marginBottom: 12 }} />
             ) : null}
 
             <View style={styles.choiceCards}>
@@ -444,9 +441,7 @@ export default function OnboardingScreen() {
           <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={[styles.scrollContent, keyboardVisible && { paddingBottom: 24 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step1Error ? (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step1Error}</Text>
-              </View>
+              <FormErrorBanner message={step1Error} style={{ marginBottom: 12 }} />
             ) : null}
 
             <View style={styles.form}>
@@ -570,7 +565,7 @@ export default function OnboardingScreen() {
                   </Text>
                   <Text style={[styles.locationArrow, { color: C.textSecondary }]}>›</Text>
                 </Pressable>
-                {locationError && <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>}
+                {locationError && <FieldError message={locationError} />}
               </View>
 
             </View>
@@ -609,17 +604,11 @@ export default function OnboardingScreen() {
             </View>
 
             {step2Submitted && selectedCategories.length === 0 && (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>
-                  {t('onboarding.categoryError')}
-                </Text>
-              </View>
+              <FormErrorBanner message={t('onboarding.categoryError')} style={{ marginBottom: 12 }} />
             )}
 
             {step2Error ? (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step2Error}</Text>
-              </View>
+              <FormErrorBanner message={step2Error} style={{ marginBottom: 12 }} />
             ) : null}
 
             <View style={{ marginBottom: 28 }}>

@@ -1,6 +1,7 @@
 import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from './cn';
+import { FieldError, FieldLabel } from './FieldError';
 
 interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label: string;
@@ -34,9 +35,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   return (
     <div className="w-full">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <label htmlFor={inputId} className="text-[13px] font-semibold text-ink">
+        <FieldLabel htmlFor={inputId} required={rest.required}>
           {label}
-        </label>
+        </FieldLabel>
         {labelAccessory}
       </div>
 
@@ -55,10 +56,10 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           className={cn(
             'h-11 w-full rounded-xl border bg-surface text-[15px] text-ink placeholder:text-ink-soft/60',
             'transition-[border-color,box-shadow] duration-150',
-            'focus:outline-none focus:ring-2 focus:ring-brand/35 focus:border-brand',
+            'focus:outline-none focus:ring-2',
             icon ? 'pl-10' : 'pl-3.5',
             isPassword ? 'pr-11' : 'pr-3.5',
-            error ? 'border-danger' : 'border-line-strong',
+            error ? 'border-danger focus:border-danger focus:ring-danger/25' : 'border-line-strong focus:ring-brand/35 focus:border-brand',
             className,
           )}
           {...rest}
@@ -77,9 +78,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       </div>
 
       {error ? (
-        <p id={errorId} className="mt-1.5 text-[13px] font-medium text-danger">
-          {error}
-        </p>
+        <FieldError id={errorId} message={error} />
       ) : hint ? (
         <p
           id={hintId}

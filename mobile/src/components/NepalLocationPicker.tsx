@@ -11,6 +11,7 @@ import {
   NEPAL_PROVINCES,
   districtsOf,
 } from '@/utilities/nepalAdministrative';
+import { FieldError } from '@/components/FieldError';
 
 export type NepalLocationValue = {
   province: string | null;
@@ -73,7 +74,7 @@ export function NepalLocationPicker({ value, onChange, errors }: Props) {
           </Text>
           <FontAwesome5 name="chevron-down" size={13} color={C.textSecondary} />
         </Pressable>
-        {errors?.province ? <Text style={[styles.error, { color: C.error }]}>{errors.province}</Text> : null}
+        {errors?.province ? <FieldError message={errors.province} /> : null}
       </View>
 
       {/* ── District ── */}
@@ -99,7 +100,7 @@ export function NepalLocationPicker({ value, onChange, errors }: Props) {
           </Text>
           <FontAwesome5 name="chevron-down" size={13} color={C.textSecondary} />
         </Pressable>
-        {errors?.district ? <Text style={[styles.error, { color: C.error }]}>{errors.district}</Text> : null}
+        {errors?.district ? <FieldError message={errors.district} /> : null}
       </View>
 
       {/* ── City / Municipality ── */}

@@ -16,6 +16,7 @@ import type { CampaignAttachment } from '@/services/guidedCampaign';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { useToast } from '@/components/Toast';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import { FormErrorBanner } from '@/components/FieldError';
 
 const rupees = (n: number) => `Rs. ${Math.round(n).toLocaleString('en-IN')}`;
 const fmtDate = (d: string) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
@@ -108,7 +109,7 @@ export function ReviewStep({ form, issues, mode, onEdit, onPublish, onSaveExit, 
       subtitle={mode === 'edit' ? t('guided.reviewEditKicker') : t('guided.reviewKicker')}
       footer={
         <View style={{ gap: SPACING.sm }}>
-          {serverError ? <Text style={[st.small, { color: C.error }]}>{serverError}</Text> : null}
+          {serverError ? <FormErrorBanner message={serverError} /> : null}
           <Button label={mode === 'edit' ? t('guided.saveChanges') : t('guided.publish')} onPress={onPublish} loading={publishing} disabled={blocking.length > 0 || visitUnknown || attachmentsBusy} fullWidth />
           <Button label={mode === 'edit' ? t('guided.cancel') : t('guided.saveExit')} variant="ghost" onPress={onSaveExit} disabled={publishing} fullWidth />
         </View>

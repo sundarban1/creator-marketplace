@@ -6,6 +6,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { api, type ApiCompetitionAdminDetail, type ApiCompetitionAdminRow, type ApiCompetitionEvidence } from '../../lib/api';
 import { useApi } from '../../lib/useApi';
 import { CompetitionReviewPanel } from './CompetitionReviewPanel';
+import { FormErrorBanner } from '../../app/ui/FieldError';
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Kathmandu', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—');
 const npr = (n: number | null) => (n == null ? '' : `NPR ${Math.round(n).toLocaleString('en-IN')}`);
@@ -169,7 +170,7 @@ function Moderation({ c, onChanged }: { c: ApiCompetitionAdminDetail; onChanged:
           </div>
         </div>
       )}
-      {err && <p className="mt-3 text-sm text-red-600">{err}</p>}
+      {err && <FormErrorBanner message={err} className="mt-3" />}
 
       {evidence && (
         <div className="mt-4 max-h-80 overflow-auto rounded-lg border border-gray-100">

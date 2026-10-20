@@ -4,6 +4,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS } from '@/utilities/constants';
 import { withAlpha } from '@/utilities/color';
+import { FieldError } from '@/components/FieldError';
 
 type Props = {
   label: string;
@@ -63,10 +64,7 @@ export function LocationField({
       {(error || hint) && (
         <View style={styles.feedbackRow}>
           {error ? (
-            <>
-              <FontAwesome5 name="exclamation-circle" solid size={12} color={C.error} />
-              <Text style={[styles.errorText, { color: C.error, fontFamily: F.medium }]}>{error}</Text>
-            </>
+            <FieldError message={error} style={{ marginTop: 0 }} />
           ) : (
             <Text style={[styles.hintText, { color: C.textSecondary, fontFamily: F.regular }]}>{hint}</Text>
           )}

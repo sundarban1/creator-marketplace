@@ -15,6 +15,7 @@ import { walletService, type PayoutMethodInput, type PayoutMethodType } from '@/
 import { NEPAL_CLASS_A_BANKS, isKnownBank } from '@/utilities/nepalBanks';
 import { PAYMENT_METHOD_IMAGES } from '@/utilities/paymentMethods';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
+import { FieldError } from '@/components/FieldError';
 
 const TYPE_VISUAL: Record<PayoutMethodType, {
   icon: keyof typeof FontAwesome5.glyphMap;
@@ -161,7 +162,7 @@ export default function PayoutMethodFormScreen() {
                       <FontAwesome5 name="chevron-down" size={12} color={C.textSecondary} />
                     </Pressable>
                     {errors.bankName && !bankIsOther && (
-                      <Text style={styles.fieldError}>{errors.bankName}</Text>
+                      <FieldError message={errors.bankName} />
                     )}
                   </View>
                   {bankIsOther && (

@@ -11,6 +11,7 @@ import { AuthShell } from './AuthShell';
 import { SocialAuth } from './SocialAuth';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
+import { useFormValidation, useValidators } from '../lib/validation';
 import { IdentifierField } from './IdentifierField';
 import { Alert } from '../ui/Alert';
 import { SegmentedControl } from '../ui/SegmentedControl';
@@ -59,13 +60,17 @@ export function SignupScreen() {
         ? 'CREATOR'
         : selectedRole;
 
+  const v = useValidators();
+  const form = useFormValidation(
+    { identifier: toIdentifier(identifier), password },
+    { identifier: v.required(t('auth.identifierRequired')), password: v.required(t('auth.passwordRequired')) },
+  );
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
-
-    const id = toIdentifier(identifier);
-    if (!id) return setError(t('auth.identifierRequired'));
-    if (!password) return setError(t('auth.passwordRequired'));
+    if (!form.validate()) return;
+    const id = toIdentifier(identifier)!;
 
     setSubmitting(true);
     try {
@@ -97,8 +102,7 @@ export function SignupScreen() {
         <Alert tone="warning">{t('auth.registrationClosedBoth')}</Alert>
       ) : (
         <>
-          <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {error && <Alert tone="error">{error}</Alert>}
+          <form ref={form.formRef} onSubmit={handleSubmit} noValidate className="space-y-4">
 
             {creatorEnabled && businessEnabled ? (
               <div>
@@ -139,6 +143,7 @@ export function SignupScreen() {
               inputMode="email"
               value={identifier}
               onValueChange={setIdentifier}
+              error={form.error('identifier')}
             />
 
             <TextField
@@ -149,6 +154,7 @@ export function SignupScreen() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              error={form.error('password')}
             />
 
             <ul className="-mt-2 flex flex-wrap gap-2" aria-label={t('auth.passwordHint')}>
@@ -171,6 +177,7 @@ export function SignupScreen() {
               })}
             </ul>
 
+            {error && <Alert tone="error">{error}</Alert>}
             <Button type="submit" size="lg" fullWidth loading={submitting}>
               {t('auth.signUpCta')}
             </Button>

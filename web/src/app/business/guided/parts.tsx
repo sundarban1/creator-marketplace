@@ -8,6 +8,7 @@ import type { CampaignLocation, DeliverableItem, LocationScope, Provenance } fro
 import type { CampaignRuleIssue } from '../campaignRules';
 import type { SaveStatus } from './useAutosave';
 import { EXTRA_KINDS, MAX_CUSTOM_LABEL, SIMPLE_KINDS, deliverableLabel, resolveNewDeliverable, simplifyDeliverables } from './deliverableKinds';
+import { FieldError } from '../../ui/FieldError';
 
 // ── Layout ───────────────────────────────────────────────────────────────────
 
@@ -499,7 +500,7 @@ export function DeliverablesEditor({ items, onChange }: { items: DeliverableItem
             />
             <Button type="submit" size="sm" disabled={!custom.trim()}>{t('guided.add')}</Button>
           </form>
-          {error && <p role="alert" className="mt-2 text-[12px] font-medium text-danger">{error}</p>}
+          {error && <FieldError message={error} />}
           <button type="button" onClick={() => { setAdding(false); setCustom(''); setError(null); }} className="mt-2 text-[13px] font-semibold text-ink-soft hover:text-ink">
             {t('guided.cancel')}
           </button>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Search, GripVertical } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { api } from '../lib/api';
+import { FieldError } from '../app/ui/FieldError';
 
 interface HelpArticle {
   id:        string;
@@ -84,7 +85,7 @@ function ArticleModal({
               placeholder="e.g. How do events work?"
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['question'] ? 'border-red-400' : 'border-gray-200'}`}
             />
-            {errors['question'] && <p className="text-xs text-red-500 mt-1">{errors['question']}</p>}
+            {errors['question'] && <FieldError message={errors['question']} />}
           </div>
 
           <div>
@@ -96,7 +97,7 @@ function ArticleModal({
               rows={5}
               className={`w-full px-3 py-2 text-sm border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['answer'] ? 'border-red-400' : 'border-gray-200'}`}
             />
-            {errors['answer'] && <p className="text-xs text-red-500 mt-1">{errors['answer']}</p>}
+            {errors['answer'] && <FieldError message={errors['answer']} />}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

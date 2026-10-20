@@ -5,6 +5,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { BottomSheet } from '@/components/BottomSheet';
 import { dayStart, fmtDate, getDaysInMonth, getFirstWeekday, sameDay } from '@/features/business/utils/campaignFormMappers';
 import { F, RADIUS } from '@/utilities/constants';
+import { FieldError } from '@/components/FieldError';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -39,7 +40,7 @@ export function DatePickerField({
         </Text>
         <FontAwesome5 name="calendar-alt" size={16} color={C.textSecondary} />
       </Pressable>
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <FieldError message={error} />}
 
       <BottomSheet visible={open} onClose={() => setOpen(false)} title={label} maxHeightPct={0.7}>
         <CalendarGrid

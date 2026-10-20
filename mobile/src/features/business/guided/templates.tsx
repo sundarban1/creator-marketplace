@@ -9,6 +9,7 @@ import { SPACING } from '@/utilities/constants';
 import { campaignService } from '@/services/campaign';
 import { guidedCampaignService, type MyTemplate, type SystemTemplate } from '@/services/guidedCampaign';
 import { Input, LinkButton, st } from './parts';
+import { FormErrorBanner } from '@/components/FieldError';
 
 // Templates & "start from a previous campaign" (UX spec §23) — native
 // counterpart of web/src/app/business/guided/templates.tsx.
@@ -137,7 +138,7 @@ export function SaveTemplateButton({ campaignId, defaultName, beforeSave }: { ca
           <View style={{ gap: SPACING.md }}>
             <Text style={[st.small, { color: C.textSecondary }]}>{t('guided.tplSaveHint')}</Text>
             <Input value={name} onChangeText={setName} maxLength={80} placeholder={t('guided.tplName')} accessibilityLabel={t('guided.tplName')} />
-            {error ? <Text style={[st.small, { color: C.error }]}>{error}</Text> : null}
+            {error ? <FormErrorBanner message={error} /> : null}
             <Button
               label={t('guided.tplSave')}
               loading={busy}

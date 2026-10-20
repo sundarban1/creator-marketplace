@@ -10,6 +10,7 @@ import { AuthShell } from './AuthShell';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/Alert';
 import { OtpInput } from '../ui/OtpInput';
+import { FieldError } from '../ui/FieldError';
 import type { Identifier } from '../api/auth';
 
 const RESEND_COOLDOWN = 30;
@@ -73,10 +74,14 @@ export function VerifyOtpScreen() {
       })}
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        {error && <Alert tone="error">{error}</Alert>}
         {notice && !error && <Alert tone="success">{notice}</Alert>}
 
-        <OtpInput value={code} onChange={setCode} invalid={Boolean(error)} />
+        {/* The code is the only field, so both "enter the code" and a
+            rejected code show under it rather than in a banner. */}
+        <div>
+          <OtpInput value={code} onChange={setCode} invalid={Boolean(error)} />
+          <FieldError message={error} />
+        </div>
 
         {isEmail && (
           <p className="text-center text-[13px] text-ink-soft">{t('auth.checkSpamEmail')}</p>

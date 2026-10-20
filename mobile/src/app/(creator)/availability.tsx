@@ -16,6 +16,7 @@ import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
 import { OfflineError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { FieldError } from '@/components/FieldError';
 
 type AvailabilityStatus = 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
 const STATUSES: AvailabilityStatus[] = ['AVAILABLE', 'BUSY', 'UNAVAILABLE'];
@@ -227,7 +228,7 @@ function DayTimeSheet({ dayLabel, initialFrom, initialUntil, onSave, onClose }: 
           <ChipGroup options={TIME_OPTIONS} value={until} onChange={setUntil} colors={C} />
         </View>
         {invalid && (
-          <Text style={{ color: C.error, fontSize: 12, fontFamily: F.medium }}>{t('availabilityScreen.errFromBeforeUntil')}</Text>
+          <FieldError message={t('availabilityScreen.errFromBeforeUntil')} />
         )}
         <Button label={t('availabilityScreen.saveTimes')} onPress={() => onSave(from, until)} disabled={invalid} />
       </View>

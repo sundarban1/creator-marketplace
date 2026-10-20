@@ -3,6 +3,7 @@ import { ImagePlus, Loader2, X } from 'lucide-react';
 import type { PaymentMethod, PaymentMethodStatus } from '../../context/PaymentMethodsContext';
 import { usePaymentMethods } from '../../context/PaymentMethodsContext';
 import { confirmImageUpload } from '../../app/ui/uploadPreview';
+import { FieldError, FormErrorBanner } from '../../app/ui/FieldError';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -122,7 +123,7 @@ export function PaymentMethodModal({ initial, onClose }: PaymentMethodModalProps
 
         <form onSubmit={handleSubmit} noValidate className="p-6 space-y-5">
           {errors.form && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{errors.form}</div>
+            <FormErrorBanner message={errors.form} />
           )}
 
           {/* Icon */}
@@ -150,7 +151,7 @@ export function PaymentMethodModal({ initial, onClose }: PaymentMethodModalProps
                 <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleIconChange} disabled={uploading} />
               </label>
               <p className="text-xs text-gray-400 mt-1.5">JPEG, PNG, or WebP, up to 5MB.</p>
-              {errors.icon && <p className="text-xs text-red-500 mt-1">{errors.icon}</p>}
+              {errors.icon && <FieldError message={errors.icon} />}
             </div>
           </div>
 
@@ -165,9 +166,9 @@ export function PaymentMethodModal({ initial, onClose }: PaymentMethodModalProps
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="e.g. eSewa"
-              className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+              className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.name ? 'border-danger' : 'border-gray-200'}`}
             />
-            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+            {errors.name && <FieldError message={errors.name} />}
           </div>
 
           {/* Key */}
@@ -182,9 +183,9 @@ export function PaymentMethodModal({ initial, onClose }: PaymentMethodModalProps
               value={key}
               onChange={(e) => { setKey(e.target.value.toLowerCase()); setKeyTouched(true); setErrors((p) => ({ ...p, key: '' })); }}
               placeholder="esewa"
-              className={`w-full px-3 py-2.5 text-sm font-mono border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.key ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+              className={`w-full px-3 py-2.5 text-sm font-mono border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.key ? 'border-danger' : 'border-gray-200'}`}
             />
-            {errors.key && <p className="text-xs text-red-500 mt-1">{errors.key}</p>}
+            {errors.key && <FieldError message={errors.key} />}
           </div>
 
           {/* Color */}

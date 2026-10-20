@@ -15,6 +15,8 @@ import { portfolioService } from '@/services/portfolio';
 import { STALE } from '@/lib/queryClient';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
+import { FieldError, FormErrorBanner } from '@/components/FieldError';
+import { useFormValidation, useValidators } from '@/hooks/useFormValidation';
 
 export default function PortfolioFormScreen() {
   const C = useAppColors();
@@ -29,7 +31,12 @@ export default function PortfolioFormScreen() {
 
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const v = useValidators();
+  const form = useFormValidation(
+    { media: mediaUrl || externalUrl.trim(), externalUrl },
+    { media: v.required(t('portfolioForm.errMediaOrLinkRequired')), externalUrl: v.url(t('portfolioForm.errInvalidUrl')) },
+  );
 
   // Same shared cache portfolio.tsx populates — editing an item just visited
   // there resolves instantly instead of a fresh fetch.
@@ -78,16 +85,9 @@ export default function PortfolioFormScreen() {
     }
   }
 
-  function validate(): boolean {
-    const errs: Record<string, string> = {};
-    if (!mediaUrl && !externalUrl.trim()) errs.media = t('portfolioForm.errMediaOrLinkRequired');
-    if (externalUrl.trim() && !/^https?:\/\/.+/.test(externalUrl.trim())) errs.externalUrl = t('portfolioForm.errInvalidUrl');
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  }
-
   async function handleSubmit() {
-    if (!validate()) return;
+    if (!form.validate()) return;
+    setSaveError(null);
     setSubmitting(true);
     try {
       const payload = {
@@ -101,7 +101,7 @@ export default function PortfolioFormScreen() {
       void queryClient.invalidateQueries({ queryKey: ['portfolio', 'mine'] });
       router.back();
     } catch (err) {
-      Alert.alert(t('common.error'), err instanceof Error ? err.message : t('portfolioForm.saveFailed'));
+      setSaveError(err instanceof Error ? err.message : t('portfolioForm.saveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -113,11 +113,11 @@ export default function PortfolioFormScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <MaxWidthContainer>
           {loadingExisting ? null : (
-            <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-              <View>
+            <ScrollView ref={form.scrollRef} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+              <View ref={form.fieldRef('media')}>
                 <Text style={[styles.label, { color: C.text }]}>{t('portfolioForm.mediaLabel')}</Text>
                 <Pressable
-                  style={[styles.mediaPicker, { backgroundColor: C.surface, borderColor: errors.media ? C.error : C.border }]}
+                  style={[styles.mediaPicker, { backgroundColor: C.surface, borderColor: form.error('media') ? C.error : C.border }]}
                   onPress={handlePickMedia}
                   disabled={uploading}>
                   {mediaUrl ? (
@@ -136,7 +136,7 @@ export default function PortfolioFormScreen() {
                     </View>
                   )}
                 </Pressable>
-                {errors.media && <Text style={[styles.errorText, { color: C.error }]}>{errors.media}</Text>}
+                <FieldError message={form.error('media')} />
               </View>
 
               <TextInputWithLabel
@@ -144,7 +144,8 @@ export default function PortfolioFormScreen() {
                 value={externalUrl}
                 onChangeText={setExternalUrl}
                 placeholder={t('portfolioForm.externalUrlPlaceholder')}
-                error={errors.externalUrl}
+                error={form.error('externalUrl')}
+                containerRef={form.fieldRef('externalUrl')}
                 autoCapitalize="none"
                 keyboardType="url"
               />
@@ -160,6 +161,7 @@ export default function PortfolioFormScreen() {
                 style={{ height: 100, textAlignVertical: 'top' }}
               />
 
+              <FormErrorBanner message={saveError} />
               <Button
                 label={isEdit ? t('serviceForm.saveBtn') : t('portfolioForm.addBtn')}
                 onPress={handleSubmit}

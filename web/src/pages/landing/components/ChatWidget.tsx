@@ -6,6 +6,7 @@ import { visitorChatApi, type VisitorMessage } from '../lib/visitorChatApi';
 import { connectVisitorSocket, disconnectVisitorSocket } from '../lib/visitorSocket';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { Button } from './Button';
+import { FormErrorBanner } from '../../../app/ui/FieldError';
 
 const STORAGE_KEY = 'kolab_visitor_chat';
 
@@ -182,7 +183,7 @@ export function ChatWidget() {
                   placeholder={d.chatWidget.contactPlaceholder}
                   className="rounded-xl border border-ink/15 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none dark:border-white/15 dark:text-white dark:placeholder:text-white/40"
                 />
-                {formError && <p className="text-xs text-red-500">{formError}</p>}
+                {formError && <FormErrorBanner message={formError} />}
                 <Button type="submit" loading={starting} className="mt-1 w-full rounded-xl! normal-case">
                   {d.chatWidget.startChat}
                 </Button>

@@ -2,6 +2,7 @@ import { useRef, useState, type DragEvent } from 'react';
 import { UploadCloud, Camera } from 'lucide-react';
 import { cn } from './cn';
 import { confirmImageUpload } from './uploadPreview';
+import { FieldError } from './FieldError';
 
 /** Rough "is this a phone/tablet with a camera" check — drives the capture UI. */
 const IS_MOBILE =
@@ -125,7 +126,7 @@ export function FileUpload({
         }}
       />
 
-      {error && <p className="mt-2 text-[13px] font-medium text-danger">{error}</p>}
+      {error && <FieldError message={error} />}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, FileClock } from 'lucide-react';
 import { api, type ApiCompetitionAdminDetail, type ApiCompetitionPrizeContent } from '../../lib/api';
+import { FormErrorBanner } from '../../app/ui/FieldError';
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Kathmandu', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—');
 const npr = (n: number | null | undefined) => (n == null ? 'non-cash' : `NPR ${Math.round(n).toLocaleString('en-IN')}`);
@@ -157,7 +158,7 @@ function Decision({ feedback, setFeedback, busy, err, extra, actions }: {
           </button>
         ))}
       </div>
-      {err && <p className="text-sm text-red-600">{err}</p>}
+      {err && <FormErrorBanner message={err} />}
     </div>
   );
 }

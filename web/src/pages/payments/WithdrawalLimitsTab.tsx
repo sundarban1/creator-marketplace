@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Save, RefreshCw, CheckCircle } from 'lucide-react';
 import { api } from '../../lib/api';
+import { FieldError } from '../../app/ui/FieldError';
 
 // Defaults mirror the backend (admin.repository.ts DEFAULTS). They are the
 // starting point shown before an admin has ever saved a custom value, and the
@@ -201,7 +202,7 @@ export function WithdrawalLimitsTab() {
         />
 
         {validationError && (
-          <p className="text-xs text-red-600 mt-1">{validationError}</p>
+          <FieldError message={validationError} />
         )}
 
         <div className="mt-4 pt-4 border-t border-gray-100">

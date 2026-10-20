@@ -11,6 +11,7 @@ import { postAuthPath } from './postAuthNav';
 import { SocialAuth } from './SocialAuth';
 import { Button } from '../ui/Button';
 import { TextField } from '../ui/TextField';
+import { useFormValidation, useValidators } from '../lib/validation';
 import { IdentifierField } from './IdentifierField';
 import { Alert } from '../ui/Alert';
 
@@ -31,15 +32,18 @@ export function LoginScreen() {
   const [error, setError] = useState('');
   const [needsVerify, setNeedsVerify] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const v = useValidators();
+  const form = useFormValidation(
+    { identifier: toIdentifier(identifier), password },
+    { identifier: v.required(t('auth.identifierRequired')), password: v.required(t('auth.passwordRequired')) },
+  );
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
     setNeedsVerify(false);
-
-    const id = toIdentifier(identifier);
-    if (!id) return setError(t('auth.identifierRequired'));
-    if (!password) return setError(t('auth.passwordRequired'));
+    if (!form.validate()) return;
+    const id = toIdentifier(identifier)!;
 
     setSubmitting(true);
     try {
@@ -72,8 +76,39 @@ export function LoginScreen() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      <form ref={form.formRef} onSubmit={handleSubmit} noValidate className="space-y-4">
         {flash && !error && <Alert tone="success">{flash}</Alert>}
+
+        <IdentifierField
+          label={t('auth.emailOrPhone')}
+          icon={<AtSign />}
+          placeholder={t('auth.emailOrPhonePlaceholder')}
+          autoComplete="username"
+          inputMode="email"
+          value={identifier}
+          onValueChange={setIdentifier}
+          error={form.error('identifier')}
+        />
+
+        <TextField
+          label={t('auth.password')}
+          type="password"
+          icon={<Lock />}
+          placeholder={t('auth.passwordPlaceholder')}
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={form.error('password')}
+          labelAccessory={
+            <Link
+              to={paths.forgotPassword}
+              className="text-[13px] font-semibold text-brand hover:underline"
+            >
+              {t('auth.forgotPassword')}
+            </Link>
+          }
+        />
+
         {error && (
           <Alert tone="error">
             <span>
@@ -95,34 +130,6 @@ export function LoginScreen() {
             </span>
           </Alert>
         )}
-
-        <IdentifierField
-          label={t('auth.emailOrPhone')}
-          icon={<AtSign />}
-          placeholder={t('auth.emailOrPhonePlaceholder')}
-          autoComplete="username"
-          inputMode="email"
-          value={identifier}
-          onValueChange={setIdentifier}
-        />
-
-        <TextField
-          label={t('auth.password')}
-          type="password"
-          icon={<Lock />}
-          placeholder={t('auth.passwordPlaceholder')}
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          labelAccessory={
-            <Link
-              to={paths.forgotPassword}
-              className="text-[13px] font-semibold text-brand hover:underline"
-            >
-              {t('auth.forgotPassword')}
-            </Link>
-          }
-        />
 
         <Button type="submit" size="lg" fullWidth loading={submitting}>
           {t('auth.signInCta')}

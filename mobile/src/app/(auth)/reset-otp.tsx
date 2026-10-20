@@ -10,6 +10,7 @@ import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW, lineHeightFor } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { BackButton } from '@/components/BackButton';
+import { FormErrorBanner } from '@/components/FieldError';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -182,10 +183,7 @@ export default function ResetOtpScreen() {
           </View>
 
           {error ? (
-            <View style={[styles.errorBanner, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
-              <FontAwesome5 name="exclamation-triangle" solid size={14} color="#EF4444" />
-              <Text style={[styles.errorText, { color: '#EF4444' }]}>{error}</Text>
-            </View>
+            <FormErrorBanner message={error} style={{ marginBottom: 12 }} />
           ) : null}
 
           <Pressable

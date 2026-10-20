@@ -24,6 +24,7 @@ import { StepIndicator } from '@/components/StepIndicator';
 import { GroupedCategoryPicker } from '@/components/GroupedCategoryPicker';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { FieldError, FormErrorBanner } from '@/components/FieldError';
 
 // The step sequence depends on the hiring type. Both start with "how are you
 // hiring?" and their own basic details, then diverge on the last step: an
@@ -363,15 +364,11 @@ export default function BusinessOnboardingScreen() {
           <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
             {representingTypeSubmitted && !representingType && (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{t('businessOnboarding.representingTypeError')}</Text>
-              </View>
+              <FormErrorBanner message={t('businessOnboarding.representingTypeError')} style={{ marginBottom: 12 }} />
             )}
 
             {representingTypeError ? (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{representingTypeError}</Text>
-              </View>
+              <FormErrorBanner message={representingTypeError} style={{ marginBottom: 12 }} />
             ) : null}
 
             <View style={styles.choiceCards}>
@@ -427,9 +424,7 @@ export default function BusinessOnboardingScreen() {
           <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step1Error ? (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step1Error}</Text>
-              </View>
+              <FormErrorBanner message={step1Error} style={{ marginBottom: 12 }} />
             ) : null}
 
             {/* Business Name */}
@@ -525,7 +520,7 @@ export default function BusinessOnboardingScreen() {
                 </Text>
                 <Text style={[styles.locationArrow, { color: C.textSecondary }]}>›</Text>
               </Pressable>
-              {locationError ? <Text style={[styles.fieldError, { color: C.error, marginTop: 6 }]}>{locationError}</Text> : null}
+              {locationError ? <FieldError message={locationError} /> : null}
             </View>
 
             <Pressable
@@ -553,9 +548,7 @@ export default function BusinessOnboardingScreen() {
           <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
             {industryError ? (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{industryError}</Text>
-              </View>
+              <FormErrorBanner message={industryError} style={{ marginBottom: 12 }} />
             ) : null}
 
             <View style={styles.fieldGroup}>
@@ -570,7 +563,7 @@ export default function BusinessOnboardingScreen() {
                 </View>
               </View>
               {industrySubmitted && industries.length === 0 && (
-                <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{t('businessOnboarding.industryError')}</Text>
+                <FieldError message={t('businessOnboarding.industryError')} style={{ marginBottom: 8 }} />
               )}
               <GroupedCategoryPicker categories={industryOptions} selected={industries} onToggle={toggleIndustry} max={MAX_INDUSTRIES} />
             </View>
@@ -600,9 +593,7 @@ export default function BusinessOnboardingScreen() {
           <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
             {step3Error ? (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step3Error}</Text>
-              </View>
+              <FormErrorBanner message={step3Error} style={{ marginBottom: 12 }} />
             ) : null}
 
             <View style={styles.fieldGroup}>
@@ -617,7 +608,7 @@ export default function BusinessOnboardingScreen() {
                 </View>
               </View>
               {step3Submitted && interestCategories.length === 0 && (
-                <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{t('businessOnboarding.interestsError')}</Text>
+                <FieldError message={t('businessOnboarding.interestsError')} style={{ marginBottom: 8 }} />
               )}
               <GroupedCategoryPicker categories={interestOptions} selected={interestCategories} onToggle={toggleInterest} max={MAX_INTEREST_CATEGORIES} />
             </View>

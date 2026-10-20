@@ -17,6 +17,7 @@ import { LocationAutocomplete } from '../public/LocationAutocomplete';
 import { TextField } from '../ui/TextField';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/Alert';
+import { FieldError } from '../ui/FieldError';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_INDUSTRIES = 5;
@@ -326,7 +327,7 @@ export function BusinessOnboarding() {
               onChange={setLocation}
               placeholder={t('businessOnboarding.locationPlaceholder')}
             />
-            {locationError && <p className="mt-1.5 text-[13px] font-medium text-danger">{locationError}</p>}
+            {locationError && <FieldError message={locationError} />}
           </div>
 
           <Button size="lg" fullWidth loading={detailsLoading} onClick={handleDetailsContinue}>

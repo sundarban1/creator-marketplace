@@ -7,6 +7,7 @@ import { Card, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
 import { cn } from '../ui/cn';
+import { FieldError } from '../ui/FieldError';
 
 function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
@@ -86,7 +87,7 @@ export function ReviewSection({ appId, revieweeName }: { appId: string; reviewee
             })}
           </div>
           <Textarea className="mt-3" label={t('review.commentLabel')} rows={2} value={comment} onChange={(e) => setComment(e.target.value)} />
-          {error && <p className="mt-2 text-[12px] font-medium text-danger">{error}</p>}
+          {error && <FieldError message={error} />}
           <Button className="mt-3" size="sm" loading={busy} disabled={rating < 1} onClick={onSubmit}>
             {t('review.submit')}
           </Button>

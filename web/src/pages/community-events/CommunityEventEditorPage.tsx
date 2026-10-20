@@ -14,6 +14,7 @@ import { markdownToPlain } from '../../app/ui/richText';
 import { GalleryManager } from './GalleryManager';
 import { AddRowButton, Field, ImageField, RowControls, Section } from './formParts';
 import { EVENT_TYPE_LABELS, inputCls, move } from './formUtils';
+import { FieldError } from '../../app/ui/FieldError';
 
 const STATUS_LABELS: Record<CommunityEventStatus, string> = {
   UPCOMING: 'Upcoming',
@@ -325,7 +326,7 @@ export function CommunityEventEditorPage() {
                 </div>
               );
             })}
-            {errors.speakers && <p className="text-xs text-red-500">{errors.speakers}</p>}
+            {errors.speakers && <FieldError message={errors.speakers} />}
             <AddRowButton label="Add speaker" onClick={() => set('speakers', [...form.speakers, { name: '' }])} />
           </Section>
 
@@ -344,7 +345,7 @@ export function CommunityEventEditorPage() {
                 </div>
               );
             })}
-            {errors.highlights && <p className="text-xs text-red-500">{errors.highlights}</p>}
+            {errors.highlights && <FieldError message={errors.highlights} />}
             <AddRowButton label="Add highlight" onClick={() => set('highlights', [...form.highlights, { title: '' }])} />
           </Section>
 
@@ -363,7 +364,7 @@ export function CommunityEventEditorPage() {
                 </div>
               );
             })}
-            {errors.agenda && <p className="text-xs text-red-500">{errors.agenda}</p>}
+            {errors.agenda && <FieldError message={errors.agenda} />}
             <AddRowButton label="Add agenda item" onClick={() => set('agenda', [...form.agenda, { time: '', title: '' }])} />
           </Section>
 
@@ -382,7 +383,7 @@ export function CommunityEventEditorPage() {
                 </div>
               );
             })}
-            {errors.partners && <p className="text-xs text-red-500">{errors.partners}</p>}
+            {errors.partners && <FieldError message={errors.partners} />}
             <AddRowButton label="Add partner" onClick={() => set('partners', [...form.partners, { name: '' }])} />
           </Section>
 

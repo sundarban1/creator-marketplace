@@ -79,11 +79,12 @@ export function OtpInput({
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={handlePaste}
+          aria-invalid={invalid || undefined}
           className={cn(
             'h-14 w-full min-w-0 rounded-xl border bg-surface text-center text-xl font-semibold text-ink',
-            'transition-[border-color,box-shadow] focus:outline-none focus:ring-2 focus:ring-brand/35 focus:border-brand',
+            'transition-[border-color,box-shadow] focus:outline-none focus:ring-2',
             'disabled:opacity-50',
-            invalid ? 'border-danger' : 'border-line-strong',
+            invalid ? 'border-danger focus:border-danger focus:ring-danger/25' : 'border-line-strong focus:ring-brand/35 focus:border-brand',
           )}
         />
       ))}

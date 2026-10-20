@@ -26,6 +26,7 @@ import { creatorService } from '@/services/creator';
 import { ApiError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { FieldError } from '@/components/FieldError';
 
 function isValidUrl(v: string) {
   try { new URL(v); return true; } catch { return false; }
@@ -357,10 +358,7 @@ export default function SubmitProposalScreen() {
               />
               <View style={styles.fieldMeta}>
                 {coverError ? (
-                  <>
-                    <FontAwesome5 name="exclamation-triangle" solid size={12} color={C.error} />
-                    <Text style={[styles.fieldError, { color: C.error }]}>{coverError}</Text>
-                  </>
+                  <FieldError message={coverError} style={{ marginTop: 0 }} />
                 ) : (
                   <>
                     {coverLetterLen >= 50 && <FontAwesome5 name="check" solid size={12} color={C.active} />}

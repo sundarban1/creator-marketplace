@@ -58,6 +58,7 @@ import { ImageCropModal } from '../ui/ImageCropModal';
 import { PlatformIcon, platformMeta } from '../ui/PlatformIcon';
 import { confirmDialog } from '../ui/confirmDialog';
 import { VerifiedTick } from '../ui/VerifiedTick';
+import { FieldError } from '../ui/FieldError';
 
 /** Cover crop ratio — matches the creator profile, mobile ProfileCoverImage and the band's `aspect-[3/1]` below. */
 const COVER_ASPECT = 3;
@@ -451,7 +452,7 @@ export function BusinessProfilePage() {
             <label className="mb-1.5 block text-[13px] font-semibold text-ink">{t('biz.location')}</label>
             <LocationAutocomplete value={location} onChange={setLocation} placeholder={t('biz.location')} />
             {locationSubmitted && !location.trim() && (
-              <p className="mt-1.5 text-[13px] font-medium text-danger">{t('onboarding.locationRequired')}</p>
+              <FieldError message={t('onboarding.locationRequired')} />
             )}
           </div>
           <div className="flex justify-end gap-2 pt-2">

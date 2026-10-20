@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { api, type ApiMeetup } from '../../lib/api';
 import { LIFECYCLE_LABELS, fieldsForLifecycle, lifecycleOf, type MeetupLifecycle } from './meetupLifecycle';
+import { FieldError, FormErrorBanner } from '../../app/ui/FieldError';
 
 const LIFECYCLE_HINTS: Record<MeetupLifecycle, string> = {
   DRAFT:  'Not published — creators can’t see it yet.',
@@ -180,7 +181,7 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
             <input value={form.title} onChange={(e) => update('title', e.target.value)}
               placeholder="e.g. Kolab Creators Meetup — Itahari"
               className={inputClass(!!errors['title'])} />
-            {errors['title'] && <p className="text-xs text-red-500 mt-1">{errors['title']}</p>}
+            {errors['title'] && <FieldError message={errors['title']} />}
           </div>
 
           <div className="grid grid-cols-3 gap-4">
@@ -188,7 +189,7 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
               <label className={labelClass}>City <span className="text-red-500">*</span></label>
               <input value={form.city} onChange={(e) => update('city', e.target.value)}
                 className={inputClass(!!errors['city'])} />
-              {errors['city'] && <p className="text-xs text-red-500 mt-1">{errors['city']}</p>}
+              {errors['city'] && <FieldError message={errors['city']} />}
             </div>
             <div>
               <label className={labelClass}>District</label>
@@ -231,7 +232,7 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
             <div>
               <label className={labelClass}>Registration End</label>
               <input type="datetime-local" value={form.registrationEndsAt} onChange={(e) => update('registrationEndsAt', e.target.value)} className={inputClass(!!errors['registrationEndsAt'])} />
-              {errors['registrationEndsAt'] && <p className="text-xs text-red-500 mt-1">{errors['registrationEndsAt']}</p>}
+              {errors['registrationEndsAt'] && <FieldError message={errors['registrationEndsAt']} />}
             </div>
           </div>
 
@@ -259,7 +260,7 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
               <label className={labelClass}>Capacity <span className="text-gray-400 font-normal">(informational only)</span></label>
               <input type="number" min={1} value={form.capacity} onChange={(e) => update('capacity', e.target.value)}
                 className={inputClass(!!errors['capacity'])} />
-              {errors['capacity'] && <p className="text-xs text-red-500 mt-1">{errors['capacity']}</p>}
+              {errors['capacity'] && <FieldError message={errors['capacity']} />}
             </div>
           </div>
 
@@ -269,7 +270,7 @@ export function MeetupFormModal({ meetup, onClose, onSaved }: {
           </div>
 
           {saveError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 whitespace-pre-line">{saveError}</div>
+            <FormErrorBanner message={saveError} className="whitespace-pre-line" />
           )}
         </form>
 

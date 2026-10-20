@@ -11,6 +11,7 @@ import { Card, CardHeader } from './Card';
 import { Button } from './Button';
 import { TextField } from './TextField';
 import { OtpInput } from './OtpInput';
+import { FieldError } from './FieldError';
 
 const RESEND_COOLDOWN = 30;
 
@@ -60,7 +61,7 @@ function OtpPanel({
     <div className="mt-3 rounded-xl bg-surface-dim p-3.5">
       <p className="mb-2.5 text-[12.5px] text-ink-soft">{t('contactVerification.codeSentTo', { target })}</p>
       <OtpInput value={code} onChange={onCode} invalid={Boolean(error)} autoFocus={false} />
-      {error && <p className="mt-2 text-[12.5px] font-medium text-danger">{error}</p>}
+      {error && <FieldError message={error} />}
       <div className="mt-3 flex items-center justify-between gap-3">
         <Button size="sm" onClick={onVerify} loading={busy} disabled={code.length !== 6}>
           {t('contactVerification.verifyCta')}

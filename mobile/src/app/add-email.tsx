@@ -10,6 +10,7 @@ import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
+import { FormErrorBanner } from '@/components/FieldError';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -243,10 +244,7 @@ export default function AddEmailScreen() {
                 </View>
 
                 {otpError ? (
-                  <View style={[styles.errorBanner, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
-                    <FontAwesome5 name="exclamation-triangle" solid size={13} color="#EF4444" />
-                    <Text style={styles.errorText}>{otpError}</Text>
-                  </View>
+                  <FormErrorBanner message={otpError} style={{ marginBottom: 12 }} />
                 ) : null}
 
                 <Pressable

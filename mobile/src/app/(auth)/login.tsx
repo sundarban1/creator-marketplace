@@ -47,6 +47,7 @@ import {
   isBiometricLoginEnabled,
   type BiometricLabel,
 } from '@/services/biometric';
+import { FieldError } from '@/components/FieldError';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -195,12 +196,7 @@ function FlatInput({ value, onChangeText, placeholder, icon, trailing, secureTog
           </Pressable>
         )}
       </View>
-      {!!error && (
-        <View style={s.feedbackRow}>
-          <FontAwesome5 name="exclamation-circle" solid size={12} color={C.error} />
-          <Text style={[s.errorText, { color: C.error }]}>{error}</Text>
-        </View>
-      )}
+      <FieldError message={error} />
     </View>
   );
 }

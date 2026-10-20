@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Eye, EyeOff, Search } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { api } from '../lib/api';
 import type { HelpArticle } from '../lib/api';
+import { FieldError } from '../app/ui/FieldError';
 
 const CATEGORIES = ['General', 'Events', 'Payments', 'Account', 'Content', 'Other'];
 const EMPTY_FORM = { question: '', answer: '', category: 'General', order: 0, published: true };
@@ -61,14 +62,14 @@ function FaqModal({ initial, onSave, onClose, saving }: { initial: Partial<HelpA
             <input value={form.question} onChange={(e) => { setForm((f) => ({ ...f, question: e.target.value })); setErrors((err) => ({ ...err, question: '' })); }}
               placeholder="e.g. Is Kolab free to use?"
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['question'] ? 'border-red-400' : 'border-gray-200'}`} />
-            {errors['question'] && <p className="text-xs text-red-500 mt-1">{errors['question']}</p>}
+            {errors['question'] && <FieldError message={errors['question']} />}
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Answer <span className="text-red-500">*</span></label>
             <textarea value={form.answer} onChange={(e) => { setForm((f) => ({ ...f, answer: e.target.value })); setErrors((err) => ({ ...err, answer: '' })); }}
               placeholder="Write a clear, concise answer…" rows={5}
               className={`w-full px-3 py-2 text-sm border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['answer'] ? 'border-red-400' : 'border-gray-200'}`} />
-            {errors['answer'] && <p className="text-xs text-red-500 mt-1">{errors['answer']}</p>}
+            {errors['answer'] && <FieldError message={errors['answer']} />}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

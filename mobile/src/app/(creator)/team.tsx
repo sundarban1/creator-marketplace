@@ -28,6 +28,7 @@ import { useRefetchOnFocusIfStale } from '@/hooks/useRefetchOnFocusIfStale';
 import { STALE } from '@/lib/queryClient';
 import { OfflineError } from '@/lib/api';
 import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { FormErrorBanner } from '@/components/FieldError';
 
 // OWNER is missing on purpose — the provider account itself is the owner, so
 // the API rejects it (see provider-member.schema.ts).
@@ -416,7 +417,7 @@ function InviteSheet({ visible, providerId, onClose, onInvited }: {
           <Text style={[styles.fieldHint, { color: C.textSecondary }]}>{t(`team.roleHint${accessRole}`)}</Text>
         </View>
 
-        {error ? <Text style={[styles.error, { color: C.error }]}>{error}</Text> : null}
+        {error ? <FormErrorBanner message={error} /> : null}
 
         <Button label={t('team.sendInvite')} onPress={submit} loading={submitting} fullWidth />
       </View>

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Category, CategoryStatus, CategoryScope } from '../../context/CategoriesContext';
 import { ICON_OPTIONS, getIconOption } from '../../lib/iconOptions';
+import { FieldError } from '../../app/ui/FieldError';
 
 const BG_COLORS = [
   { hex: '#f3e8ff', label: 'Purple' },
@@ -196,8 +197,8 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
                 placeholder="Search icons, e.g. food, travel, fashion…"
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition mb-2"
               />
-              {errors.icon && <p className="text-xs text-red-500 mb-2">{errors.icon}</p>}
-              <div className={`grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-2 border rounded-xl ${errors.icon ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+              {errors.icon && <FieldError message={errors.icon} className="mt-0 mb-2" />}
+              <div className={`grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-2 border rounded-xl ${errors.icon ? 'border-danger' : 'border-gray-200'}`}>
                 {filteredIcons.map((o) => (
                   <button
                     key={o.slug}
@@ -230,9 +231,9 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
                 value={name}
                 onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: '' })); }}
                 placeholder="e.g. Fashion"
-                className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.name ? 'border-danger' : 'border-gray-200'}`}
               />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+              {errors.name && <FieldError message={errors.name} />}
             </div>
 
             <div>
@@ -250,10 +251,10 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
                   value={key}
                   onChange={(e) => { setKey(e.target.value.toLowerCase()); setKeyTouched(true); setErrors((p) => ({ ...p, key: '' })); }}
                   placeholder="fashion"
-                  className={`w-full pl-[88px] pr-3 py-2.5 text-sm font-mono border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.key ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                  className={`w-full pl-[88px] pr-3 py-2.5 text-sm font-mono border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.key ? 'border-danger' : 'border-gray-200'}`}
                 />
               </div>
-              {errors.key && <p className="text-xs text-red-500 mt-1">{errors.key}</p>}
+              {errors.key && <FieldError message={errors.key} />}
               {!errors.key && (
                 <p className="text-xs text-gray-400 mt-1">Full key: <span className="font-mono">category/{key || '…'}</span></p>
               )}

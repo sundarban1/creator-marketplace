@@ -4,6 +4,7 @@ import { api, type ApiPartner, type PartnerInput } from '../../lib/api';
 import { PageHeader } from '../../components/PageHeader';
 import { StatusBadge } from '../../components/StatusBadge';
 import { confirmImageUpload } from '../../app/ui/uploadPreview';
+import { FieldError, FormErrorBanner } from '../../app/ui/FieldError';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -69,7 +70,7 @@ export function PartnersPage() {
         }
       />
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <FormErrorBanner message={error} className="mb-4" />}
 
       <div className="bg-white rounded-2xl border border-gray-200 adm-card overflow-hidden">
         <table className="w-full text-sm">
@@ -230,7 +231,7 @@ function PartnerFormModal({
   }
 
   const inputClass = (err?: string) =>
-    `w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${err ? 'border-red-300 bg-red-50' : 'border-gray-200'}`;
+    `w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${err ? 'border-danger' : 'border-gray-200'}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -258,19 +259,19 @@ function PartnerFormModal({
               <p className="text-xs text-gray-400 mt-1.5">Use a transparent PNG in a light colour — it sits directly on the dark landing background. Up to 5MB.</p>
             </div>
           </div>
-          {errors.logo && <p className="text-xs text-red-500 mt-1">{errors.logo}</p>}
+          {errors.logo && <FieldError message={errors.logo} />}
         </div>
 
         <div>
           <label htmlFor="partner-name" className="block text-xs font-medium text-gray-600 mb-1.5">Name <span className="text-red-400">*</span></label>
           <input id="partner-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Himalayan Coffee Co." className={inputClass(errors.name)} />
-          {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+          {errors.name && <FieldError message={errors.name} />}
         </div>
 
         <div>
           <label htmlFor="partner-site" className="block text-xs font-medium text-gray-600 mb-1.5">Website <span className="text-gray-400 font-normal">— optional</span></label>
           <input id="partner-site" type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://" className={inputClass(errors.website)} />
-          {errors.website && <p className="text-xs text-red-500 mt-1">{errors.website}</p>}
+          {errors.website && <FieldError message={errors.website} />}
         </div>
 
         <div className="flex items-end gap-4">
@@ -284,7 +285,7 @@ function PartnerFormModal({
           </label>
         </div>
 
-        {errors.form && <p className="text-sm text-red-600">{errors.form}</p>}
+        {errors.form && <FormErrorBanner message={errors.form} />}
 
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 transition-colors">Cancel</button>

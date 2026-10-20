@@ -11,6 +11,7 @@ import type { CampaignLocation, DeliverableItem, LocationScope, Provenance } fro
 import type { CampaignRuleIssue } from '../utils/campaignRules';
 import type { SaveStatus } from './useAutosave';
 import { EXTRA_KINDS, MAX_CUSTOM_LABEL, SIMPLE_KINDS, deliverableLabel, resolveNewDeliverable, simplifyDeliverables } from './deliverableKinds';
+import { FieldError } from '@/components/FieldError';
 
 // Native building blocks of the guided creator — same roles as
 // web/src/app/business/guided/parts.tsx.
@@ -481,7 +482,7 @@ export function DeliverablesEditor({ items, onChange }: { items: DeliverableItem
             />
             <Button label={t('guided.add')} size="small" onPress={() => add(custom)} disabled={!custom.trim()} />
           </View>
-          {error ? <Text accessibilityRole="alert" style={[st.small, { color: C.error, fontFamily: F.medium }]}>{error}</Text> : null}
+          {error ? <FieldError message={error} /> : null}
           <LinkButton label={t('guided.cancel')} tone={C.textSecondary} onPress={() => { setAdding(false); setCustom(''); setError(null); }} />
         </View>
       )}

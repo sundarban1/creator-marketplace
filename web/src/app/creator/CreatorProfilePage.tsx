@@ -59,6 +59,7 @@ import { cn } from '../ui/cn';
 import { confirmImageUpload } from '../ui/uploadPreview';
 import { confirmDialog } from '../ui/confirmDialog';
 import { VerifiedTick } from '../ui/VerifiedTick';
+import { FieldError } from '../ui/FieldError';
 
 const CONNECTABLE_PLATFORMS = ['tiktok', 'youtube', 'instagram', 'facebook'] as const;
 const MAX_NICHE = 5;
@@ -510,7 +511,7 @@ export function CreatorProfilePage() {
             <label className="mb-1.5 block text-[13px] font-semibold text-ink">{t('profile.location')}</label>
             <LocationAutocomplete value={location} onChange={setLocation} placeholder={t('profile.location')} />
             {locationSubmitted && !location.trim() && (
-              <p className="mt-1.5 text-[13px] font-medium text-danger">{t('onboarding.locationRequired')}</p>
+              <FieldError message={t('onboarding.locationRequired')} />
             )}
           </div>
           <TextField

@@ -3,6 +3,7 @@ import { useT } from '../i18n';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { TextField } from '../ui/TextField';
 import type { BudgetRateType, BudgetInputType } from './budgetPickerTypes';
+import { FieldError } from '../ui/FieldError';
 
 function toInt(raw: string): number {
   return parseInt(raw.replace(/[^0-9]/g, ''), 10) || 0;
@@ -193,7 +194,7 @@ export function BudgetPicker({
         </div>
       )}
 
-      {error && <p className="text-[13px] font-medium text-danger">{error}</p>}
+      {error && <FieldError message={error} />}
     </div>
   );
 }

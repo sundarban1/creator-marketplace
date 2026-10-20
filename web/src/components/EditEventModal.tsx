@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, type ApiCampaignDetail } from '../lib/api';
 import { StatusBadge } from './StatusBadge';
+import { FieldError, FormErrorBanner } from '../app/ui/FieldError';
 
 const PLATFORM_OPTIONS = ['Instagram', 'TikTok', 'YouTube', 'LinkedIn', 'Twitter'];
 const STATUS_OPTIONS = ['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED'];
@@ -168,7 +169,7 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Title <span className="text-red-500">*</span></label>
                 <input value={form.title} onChange={(e) => update('title', e.target.value)}
                   className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['title'] ? 'border-red-400' : 'border-gray-200'}`} />
-                {errors['title'] && <p className="text-xs text-red-500 mt-1">{errors['title']}</p>}
+                {errors['title'] && <FieldError message={errors['title']} />}
               </div>
 
               <div>
@@ -233,13 +234,13 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5">Per creator — Min (NPR) <span className="text-red-500">*</span></label>
                       <input type="number" min={0} value={form.budgetMin} onChange={(e) => update('budgetMin', e.target.value)}
                         className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['budgetMin'] ? 'border-red-400' : 'border-gray-200'}`} />
-                      {errors['budgetMin'] && <p className="text-xs text-red-500 mt-1">{errors['budgetMin']}</p>}
+                      {errors['budgetMin'] && <FieldError message={errors['budgetMin']} />}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5">Per creator — Max (NPR) <span className="text-red-500">*</span></label>
                       <input type="number" min={0} value={form.budgetMax} onChange={(e) => update('budgetMax', e.target.value)}
                         className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['budgetMax'] ? 'border-red-400' : 'border-gray-200'}`} />
-                      {errors['budgetMax'] && <p className="text-xs text-red-500 mt-1">{errors['budgetMax']}</p>}
+                      {errors['budgetMax'] && <FieldError message={errors['budgetMax']} />}
                     </div>
                   </div>
                   <p className="text-xs text-gray-400 -mt-2">
@@ -255,7 +256,7 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Deadline <span className="text-red-500">*</span></label>
                   <input type="date" value={form.deadline} onChange={(e) => update('deadline', e.target.value)}
                     className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['deadline'] ? 'border-red-400' : 'border-gray-200'}`} />
-                  {errors['deadline'] && <p className="text-xs text-red-500 mt-1">{errors['deadline']}</p>}
+                  {errors['deadline'] && <FieldError message={errors['deadline']} />}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Creators Needed</label>
@@ -277,7 +278,7 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5">Event Date <span className="text-red-500">*</span></label>
                       <input type="date" value={form.eventDate} onChange={(e) => update('eventDate', e.target.value)}
                         className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['eventDate'] ? 'border-red-400' : 'border-gray-200'}`} />
-                      {errors['eventDate'] && <p className="text-xs text-red-500 mt-1">{errors['eventDate']}</p>}
+                      {errors['eventDate'] && <FieldError message={errors['eventDate']} />}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5">Capacity</label>
@@ -289,7 +290,7 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Venue <span className="text-red-500">*</span></label>
                     <input value={form.venue} onChange={(e) => update('venue', e.target.value)}
                       className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['venue'] ? 'border-red-400' : 'border-gray-200'}`} />
-                    {errors['venue'] && <p className="text-xs text-red-500 mt-1">{errors['venue']}</p>}
+                    {errors['venue'] && <FieldError message={errors['venue']} />}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Creator Benefits <span className="text-gray-400 font-normal">(comma-separated)</span></label>
@@ -309,7 +310,7 @@ export function EditEventModal({ campaignId, onClose, onSaved }: {
               </div>
 
               {saveError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{saveError}</div>
+                <FormErrorBanner message={saveError} />
               )}
             </form>
 

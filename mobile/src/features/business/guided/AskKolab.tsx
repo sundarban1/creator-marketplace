@@ -9,6 +9,7 @@ import { F, RADIUS, SPACING } from '@/utilities/constants';
 import { guidedCampaignService } from '@/services/guidedCampaign';
 import { toAiContext, type GuidedForm, type GuidedStep } from './guidedModel';
 import { Input, st } from './parts';
+import { FormErrorBanner } from '@/components/FieldError';
 
 // "✨ Ask Kolab" (UX spec §17) — native counterpart of
 // web/src/app/business/guided/AskKolab.tsx. A quiet co-pilot, not a chatbot:
@@ -96,7 +97,7 @@ export function AskKolabButton({ step, form }: { step: GuidedStep; form: GuidedF
               ))}
             </View>
             <Input value={question} onChangeText={setQuestion} multiline maxLength={500} placeholder={t('guided.askPlaceholder')} accessibilityLabel={t('guided.askKolab')} />
-            {error ? <Text style={[st.small, { color: C.error }]}>{error}</Text> : null}
+            {error ? <FormErrorBanner message={error} /> : null}
             {busy ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
                 <ActivityIndicator size="small" color={C.brinjal1} />

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, RefreshCw, CheckCircle, Plus, X } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { api, type PlatformSettings } from '../lib/api';
+import { FieldError } from '../app/ui/FieldError';
 
 // ── Building blocks ────────────────────────────────────────────────────────────
 
@@ -135,7 +136,7 @@ function EmailListField({
           Add
         </button>
       </div>
-      {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
+      {error && <FieldError message={error} className="mt-0 mb-2" />}
 
       {emails.length > 0 ? (
         <div className="flex flex-wrap gap-2">

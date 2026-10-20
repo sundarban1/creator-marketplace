@@ -12,6 +12,7 @@ import {
 import { useAppColors } from '@/context/ThemeContext';
 import { buildPlacesAutocompleteUrl, GOOGLE_PLACES_API_KEY, F } from '@/utilities/constants';
 import { assertOnline, fetchWithTimeout, API_TIMEOUT_MS } from '@/lib/api';
+import { FieldError } from '@/components/FieldError';
 
 export type PlacePrediction = { place_id: string; description: string };
 
@@ -126,7 +127,7 @@ export function PlacesAutocompleteInput({
         autoCorrect={autoCorrect}
         style={[styles.input, { backgroundColor: C.background, borderColor: error ? C.error : C.border, color: C.text }]}
       />
-      {error ? <Text style={[styles.errorTxt, { color: C.error }]}>{error}</Text> : null}
+      {error ? <FieldError message={error} /> : null}
       {suggestions.length > 0 && (
         // Shadow lives on the outer view (no overflow clipping) and the rounded-corner
         // clip lives on the inner view — iOS drops a shadow on any view that also has

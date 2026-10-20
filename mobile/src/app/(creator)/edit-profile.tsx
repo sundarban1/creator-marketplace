@@ -26,6 +26,7 @@ import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { isValidWebsiteUrl, normalizeWebsiteUrl } from '@/utilities/url';
+import { FieldError } from '@/components/FieldError';
 
 // ─── EditProfileScreen ────────────────────────────────────────────────────────
 
@@ -278,7 +279,7 @@ export default function EditProfileScreen() {
               <Text style={styles.locationArrow}>›</Text>
             </Pressable>
             {locationError ? (
-              <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>{locationError}</Text>
+              <FieldError message={locationError} />
             ) : null}
             {location ? (
               <Pressable onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>

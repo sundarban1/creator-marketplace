@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { BUDGET_TIERS, DELIVERABLE_TYPES } from '../constants/campaignForm';
+import { FieldError } from '@/components/FieldError';
 
 // Shared building blocks for the campaign create + edit forms — keeping these in
 // one place is what makes "edit" actually look/behave like "create" instead of
@@ -82,7 +83,7 @@ export function ChipGroup({
           );
         })}
       </View>
-      {error && <Text style={cg.error}>{error}</Text>}
+      {error && <FieldError message={error} />}
     </View>
   );
 }
@@ -128,7 +129,7 @@ export function ChipMultiGroup({
           );
         })}
       </View>
-      {error && <Text style={cg.error}>{error}</Text>}
+      {error && <FieldError message={error} />}
     </View>
   );
 }
@@ -174,7 +175,7 @@ export function PlatformChipGroup({
           );
         })}
       </View>
-      {error && <Text style={cg.error}>{error}</Text>}
+      {error && <FieldError message={error} />}
     </View>
   );
 }
@@ -264,7 +265,7 @@ export function BudgetTierPicker({
           </View>
         </View>
       )}
-      {error && <Text style={bt.errorText}>{error}</Text>}
+      {error && <FieldError message={error} />}
     </View>
   );
 }
@@ -465,7 +466,7 @@ export function PerCreatorBudgetPicker({
           <Text style={[pcb.notSetBody, { color: C.textSecondary }]}>{t('createEvent.budgetNotSetBody')}</Text>
         </View>
       )}
-      {error ? <Text style={bt.errorText}>{error}</Text> : null}
+      {error ? <FieldError message={error} /> : null}
     </View>
   );
 }

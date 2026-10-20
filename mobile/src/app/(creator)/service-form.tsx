@@ -16,6 +16,9 @@ import { creatorService } from '@/services/creator';
 import { sortOtherLast, sortSelectedFirst } from '@/hooks/useCategories';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
+import { FieldError, FormErrorBanner } from '@/components/FieldError';
+import { useFormValidation, useValidators } from '@/hooks/useFormValidation';
+import { compose } from '@/utilities/validation';
 
 const PRICING_MODELS: PricingModel[] = ['PER_PROJECT', 'PER_HOUR', 'PER_DAY', 'PER_CAMPAIGN', 'CUSTOM_QUOTE'];
 const DELIVERY_PRESETS = ['1 day', '2-3 days', '1 week', '2 weeks'];
@@ -55,7 +58,19 @@ export default function ServiceFormScreen() {
 
   const [loadingExisting, setLoadingExisting] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const v = useValidators();
+  const nameMsg = t('serviceForm.errNameLength');
+  const descMsg = t('serviceForm.errDescriptionLength');
+  const form = useFormValidation(
+    { category: categoryKey, name, description, startingPrice },
+    {
+      category: v.choose(t('serviceForm.errCategoryRequired')),
+      name: compose(v.required(nameMsg), v.minLength(3, nameMsg), v.maxLength(100, nameMsg)),
+      description: compose(v.required(descMsg), v.minLength(50, descMsg), v.maxLength(1000, descMsg)),
+      startingPrice: v.number({ min: 0.01 }, t('serviceForm.errPriceInvalid')),
+    },
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -85,18 +100,10 @@ export default function ServiceFormScreen() {
     setNewIncluded('');
   }
 
-  function validate(): boolean {
-    const errs: Record<string, string> = {};
-    if (!categoryKey) errs.category = t('serviceForm.errCategoryRequired');
-    if (name.trim().length < 3 || name.trim().length > 100) errs.name = t('serviceForm.errNameLength');
-    if (description.trim().length < 50 || description.trim().length > 1000) errs.description = t('serviceForm.errDescriptionLength');
-    if (startingPrice.trim() && (isNaN(Number(startingPrice)) || Number(startingPrice) <= 0)) errs.startingPrice = t('serviceForm.errPriceInvalid');
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  }
 
   async function handleSubmit() {
-    if (!validate()) return;
+    if (!form.validate()) return;
+    setSaveError(null);
     const category = categories.find((c) => c.key === categoryKey);
     if (!category) return;
     setSubmitting(true);
@@ -115,7 +122,7 @@ export default function ServiceFormScreen() {
       toast.success(isEdit ? t('serviceForm.updateSuccess') : t('serviceForm.createSuccess'));
       router.back();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('serviceForm.saveFailed'));
+      setSaveError(err instanceof Error ? err.message : t('serviceForm.saveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -127,8 +134,8 @@ export default function ServiceFormScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <MaxWidthContainer>
           {loadingExisting ? null : (
-            <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-              <View>
+            <ScrollView ref={form.scrollRef} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+              <View ref={form.fieldRef('category')}>
                 <Text style={[styles.label, { color: C.text }]}>{t('serviceForm.categoryLabel')}</Text>
                 <View style={styles.chipWrap}>
                   {orderedCategories.map((c) => {
@@ -149,7 +156,7 @@ export default function ServiceFormScreen() {
                     );
                   })}
                 </View>
-                {errors.category && <Text style={[styles.charCount, { color: C.error, textAlign: 'left' }]}>{errors.category}</Text>}
+                <FieldError message={form.error('category')} />
               </View>
 
               <View style={styles.fieldGroup}>
@@ -158,7 +165,9 @@ export default function ServiceFormScreen() {
                   value={name}
                   onChangeText={setName}
                   placeholder={t('serviceForm.namePlaceholder')}
-                  error={errors.name}
+                  required
+                  error={form.error('name')}
+                  containerRef={form.fieldRef('name')}
                   maxLength={100}
                 />
                 <Text style={[styles.charCount, { color: C.textSecondary }]}>{name.length}/100</Text>
@@ -170,7 +179,9 @@ export default function ServiceFormScreen() {
                   value={description}
                   onChangeText={setDescription}
                   placeholder={t('serviceForm.descriptionPlaceholder')}
-                  error={errors.description}
+                  required
+                  error={form.error('description')}
+                  containerRef={form.fieldRef('description')}
                   multiline
                   numberOfLines={4}
                   maxLength={1000}
@@ -184,7 +195,8 @@ export default function ServiceFormScreen() {
                 value={startingPrice}
                 onChangeText={setStartingPrice}
                 placeholder={t('serviceForm.pricePlaceholder')}
-                error={errors.startingPrice}
+                error={form.error('startingPrice')}
+                containerRef={form.fieldRef('startingPrice')}
                 keyboardType="numeric"
               />
 
@@ -250,6 +262,7 @@ export default function ServiceFormScreen() {
                 <Text style={[styles.charCount, { color: C.textSecondary }]}>{included.length}/{MAX_INCLUDED}</Text>
               </View>
 
+              <FormErrorBanner message={saveError} />
               <Button
                 label={isEdit ? t('serviceForm.saveBtn') : t('serviceForm.createBtn')}
                 onPress={handleSubmit}

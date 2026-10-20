@@ -1,10 +1,11 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Users, Megaphone, CreditCard, ShieldOff } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Users, Megaphone, CreditCard, ShieldOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { LandingThemeProvider } from './landing/context/ThemeContext';
 import { ThemeToggle } from './landing/components/ThemeToggle';
+import { FormErrorBanner } from '../app/ui/FieldError';
 
 const DEFAULT_SUPPORT_EMAIL = 'info@kolab.com.np';
 
@@ -125,10 +126,7 @@ function LoginInner() {
 
           <form onSubmit={handleSubmit} noValidate className="mt-7 space-y-4">
             {error && (
-              <div className="flex items-center gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
-                <AlertCircle size={16} className="flex-shrink-0" />
-                {error}
-              </div>
+              <FormErrorBanner message={error} />
             )}
 
             {/* Email */}

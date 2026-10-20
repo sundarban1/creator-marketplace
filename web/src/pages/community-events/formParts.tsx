@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, ImagePlus, Loader2, Plus, Trash2, X } from 'luc
 import type { CommunityEventUploadKind } from '../../lib/api';
 import { checkImages, uploadImages } from './formUtils';
 import { confirmImageUpload } from '../../app/ui/uploadPreview';
+import { FieldError } from '../../app/ui/FieldError';
 
 /** Shared building blocks for the Community Events admin form. */
 
@@ -69,7 +70,7 @@ export function Field({
         {label} {required && <span className="text-red-400">*</span>}
       </label>
       {children}
-      {error ? <p className="text-xs text-red-500 mt-1">{error}</p> : hint ? <p className="text-xs text-gray-400 mt-1">{hint}</p> : null}
+      {error ? <FieldError message={error} /> : hint ? <p className="text-xs text-gray-400 mt-1">{hint}</p> : null}
     </div>
   );
 }
@@ -145,7 +146,7 @@ export function ImageField({
         {value ? 'Replace' : 'Upload'}
         <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handle} disabled={busy} />
       </label>
-      {(err || error) && <p className="text-xs text-red-500 mt-1">{err ?? error}</p>}
+      {(err || error) && <FieldError message={err ?? error} />}
     </div>
   );
 }

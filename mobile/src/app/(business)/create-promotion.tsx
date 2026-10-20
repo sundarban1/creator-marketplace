@@ -16,6 +16,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { promotionService } from '@/services/rewards';
 import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { FieldError } from '@/components/FieldError';
 
 export default function CreatePromotionScreen() {
   const C = useAppColors();
@@ -120,7 +121,7 @@ export default function CreatePromotionScreen() {
                 onChangeText={setTitle}
                 maxLength={100}
               />
-              {!!errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+              {!!errors.title && <FieldError message={errors.title} />}
             </SectionCard>
 
             <SectionCard title={t('promotions.discountTypeLabel')} icon="percentage" colors={C}>
@@ -131,7 +132,7 @@ export default function CreatePromotionScreen() {
                 keyboardType="number-pad"
                 leftIcon="percentage"
               />
-              {!!errors.discountValue && <Text style={styles.errorText}>{errors.discountValue}</Text>}
+              {!!errors.discountValue && <FieldError message={errors.discountValue} />}
             </SectionCard>
 
             <SectionCard title={t('promotions.minSpendLabel')} icon="receipt" colors={C}>
@@ -157,7 +158,7 @@ export default function CreatePromotionScreen() {
                   />
                 </View>
               </View>
-              {!!errors.dates && <Text style={styles.errorText}>{errors.dates}</Text>}
+              {!!errors.dates && <FieldError message={errors.dates} />}
             </SectionCard>
 
             {/* Preview */}

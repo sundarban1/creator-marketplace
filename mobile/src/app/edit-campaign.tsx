@@ -40,6 +40,7 @@ import {
 } from '@/features/business/components/CampaignFormControls';
 import { ListingHeroCard, PreviewRow } from '@/features/business/components/CampaignSummary';
 import { eventOptionLabel, eventOptionLabels } from '@/features/business/utils/eventOptionLabels';
+import { FieldError } from '@/components/FieldError';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -211,6 +212,7 @@ export default function EditCampaignScreen() {
     eventDate: null, eventTime: null, venue: '', capacity: '20', benefits: [], platforms: [],
   });
   const [editErrors, setEditErrors] = useState<EditErrors>({});
+  const [creatorsFloorError, setCreatorsFloorError] = useState<string | null>(null);
   const [timeSheetOpen, setTimeSheetOpen] = useState(false);
   // An open event's time is baked into every confirmed creator's invitation —
   // the backend rejects a change once anyone is ACCEPTED, so the field is
@@ -358,9 +360,10 @@ export default function EditCampaignScreen() {
   // campaign (mirrors the backend check — this just gives instant feedback).
   function setCreatorsNeeded(v: number) {
     if (v < (Number(editForm.creatorsNeeded) || 1) && v < confirmedCreators) {
-      showToast(t('campaignDetail.cannotReduceCreatorsBelowConfirmed', { confirmed: confirmedCreators }), 'error');
+      setCreatorsFloorError(t('campaignDetail.cannotReduceCreatorsBelowConfirmed', { confirmed: confirmedCreators }));
       return;
     }
+    setCreatorsFloorError(null);
     updateEdit('creatorsNeeded', String(v));
   }
 
@@ -529,7 +532,7 @@ export default function EditCampaignScreen() {
           onEditPress={() => setEditingField('title')}
           onImagePress={() => setEditingField('image')}
         />
-        {editErrors.title ? <Text style={s.errTxt}>{editErrors.title}</Text> : null}
+        {editErrors.title ? <FieldError message={editErrors.title} /> : null}
 
         <Pressable
           style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 6 }]}
@@ -640,7 +643,7 @@ export default function EditCampaignScreen() {
           </View>
         )}
         {(editErrors.eventDate || editErrors.deadline || editErrors.venue || editErrors.location || editErrors.budgetMin || editErrors.budgetMax) ? (
-          <Text style={s.errTxt}>{editErrors.eventDate || editErrors.deadline || editErrors.venue || editErrors.location || editErrors.budgetMin || editErrors.budgetMax}</Text>
+          <FieldError message={editErrors.eventDate || editErrors.deadline || editErrors.venue || editErrors.location || editErrors.budgetMin || editErrors.budgetMax} />
         ) : null}
         {!isOpenEvent && hasProposals && <Text style={s.lockedNote}>{t('campaignDetail.lockedFieldNote')}</Text>}
         {isOpenEvent && timeLocked && <Text style={s.lockedNote}>{t('createEvent.eventTimeLocked')}</Text>}
@@ -832,6 +835,7 @@ export default function EditCampaignScreen() {
           <View style={{ gap: 8 }}>
             <Text style={[s.label, { color: C.text, marginTop: 0 }]}>{t('createEvent.secCreatorsNeededTitle')}</Text>
             <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={setCreatorsNeeded} colors={C} />
+            <FieldError message={creatorsFloorError} />
             <Text style={[s.label, { color: C.text }]}>{t('createEvent.secBudgetTitle')}</Text>
             <PerCreatorBudgetPicker
               key={budgetPickerResetKey({ inputType: editForm.budgetInputType, rateType: editForm.budgetRateType, creatorsNeeded: Number(editForm.creatorsNeeded) || 1 })}
@@ -854,6 +858,7 @@ export default function EditCampaignScreen() {
           <View style={{ gap: 8 }}>
             <Text style={[s.label, { color: C.text, marginTop: 0 }]}>{t('createEvent.secCreatorsNeededTitle')}</Text>
             <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={setCreatorsNeeded} colors={C} />
+            <FieldError message={creatorsFloorError} />
             <Text style={[s.label, { color: C.text }]}>{t('createEvent.secBudgetTitle')}</Text>
             <PerCreatorBudgetPicker
               key={budgetPickerResetKey({ inputType: editForm.budgetInputType, rateType: editForm.budgetRateType, creatorsNeeded: Number(editForm.creatorsNeeded) || 1 })}

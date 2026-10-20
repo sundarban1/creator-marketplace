@@ -1,5 +1,6 @@
 import { forwardRef, useId, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { cn } from './cn';
+import { FieldError, FieldLabel } from './FieldError';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
@@ -22,9 +23,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   return (
     <div className="w-full">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <label htmlFor={fieldId} className="text-[13px] font-semibold text-ink">
+        <FieldLabel htmlFor={fieldId} required={rest.required}>
           {label}
-        </label>
+        </FieldLabel>
         {labelAccessory}
       </div>
       <textarea
@@ -34,20 +35,23 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         value={value}
         maxLength={maxLength}
         aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined}
         className={cn(
           'w-full rounded-xl border bg-surface px-3.5 py-2.5 text-[15px] text-ink placeholder:text-ink-soft/60',
-          'transition-[border-color,box-shadow] focus:outline-none focus:ring-2 focus:ring-brand/35 focus:border-brand',
-          error ? 'border-danger' : 'border-line-strong',
+          'transition-[border-color,box-shadow] focus:outline-none focus:ring-2',
+          error ? 'border-danger focus:border-danger focus:ring-danger/25' : 'border-line-strong focus:ring-brand/35 focus:border-brand',
           className,
         )}
         {...rest}
       />
-      <div className="mt-1.5 flex items-center justify-between gap-3">
-        <p className={cn('text-[13px]', error ? 'font-medium text-danger' : 'text-ink-soft')}>
-          {error || hint}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        {error ? (
+          <FieldError id={`${fieldId}-error`} message={error} />
+        ) : (
+          <p id={hint ? `${fieldId}-hint` : undefined} className="mt-1.5 text-[13px] text-ink-soft">{hint}</p>
+        )}
         {showCount && (
-          <span className="text-[12px] tabular-nums text-ink-soft">
+          <span className={cn('mt-1.5 text-[12px] tabular-nums', maxLength && count >= maxLength ? 'text-danger' : 'text-ink-soft')}>
             {count}
             {maxLength ? ` / ${maxLength}` : ''}
           </span>

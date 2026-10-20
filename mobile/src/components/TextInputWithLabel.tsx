@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState, type ReactNode } from 'react';
+import { forwardRef, useRef, useState, type ReactNode, type Ref } from 'react';
 import {
   Animated,
   Pressable,
@@ -12,6 +12,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS } from '@/utilities/constants';
 import { withAlpha } from '@/utilities/color';
+import { FieldError, FieldLabel } from './FieldError';
 
 type Props = TextInputProps & {
   label?: string;
@@ -21,6 +22,10 @@ type Props = TextInputProps & {
   leftIcon?: keyof typeof FontAwesome5.glyphMap;
   rightSlot?: ReactNode;
   clearable?: boolean;
+  /** Shows the shared red `*` after the label. */
+  required?: boolean;
+  /** Ref for the outer wrapper — pass `form.fieldRef('name')` so submit can scroll here. */
+  containerRef?: Ref<View>;
 };
 
 // The one labeled text-input shape for the app — filled/tonal field with a circular
@@ -29,7 +34,7 @@ type Props = TextInputProps & {
 // (via `secureToggle`); search boxes use the separate, unlabeled `SearchInput`.
 export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInputWithLabel({
   label, error, hint, secureToggle, secureTextEntry, leftIcon, rightSlot, style, multiline,
-  clearable = true, ...rest
+  clearable = true, required, containerRef, ...rest
 }, ref) {
   const C = useAppColors();
   const [hidden,  setHidden]  = useState(secureTextEntry ?? false);
@@ -53,18 +58,18 @@ export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInpu
 
   const borderColor = anim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [error ? withAlpha(C.error, 0.35) : C.border, error ? C.error : C.brinjal1],
+    outputRange: [error ? C.error : C.border, error ? C.error : C.brinjal1],
   });
   const backgroundColor = anim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [C.primaryLight, C.surface],
+    outputRange: [error ? withAlpha(C.error, 0.06) : C.primaryLight, C.surface],
   });
 
   return (
-    <View style={styles.wrapper}>
+    <View ref={containerRef} style={styles.wrapper}>
       {(label || rightSlot) && (
         <View style={styles.labelRow}>
-          {!!label && <Text style={[styles.label, { color: C.text, fontFamily: F.semibold }]}>{label}</Text>}
+          {!!label && <FieldLabel required={required}>{label}</FieldLabel>}
           {rightSlot}
         </View>
       )}
@@ -73,7 +78,7 @@ export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInpu
         styles.row,
         { borderColor, backgroundColor },
         multiline && styles.rowMultiline,
-        focused && !isDisabled && { shadowColor: C.brinjal1, shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+        focused && !isDisabled && { shadowColor: error ? C.error : C.brinjal1, shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
         isDisabled && { backgroundColor: `${C.border}40`, borderColor: C.border },
       ]}>
         {leftIcon && (
@@ -96,6 +101,7 @@ export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInpu
           onFocus={onFocus}
           onBlur={onBlur}
           accessibilityLabel={label}
+          accessibilityHint={error || undefined}
           accessibilityState={{ disabled: isDisabled }}
           {...rest}
         />
@@ -127,10 +133,7 @@ export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInpu
         <View style={styles.feedbackRow}>
           <View style={styles.feedbackLeft}>
             {error ? (
-              <>
-                <FontAwesome5 name="exclamation-circle" solid size={12} color={C.error} />
-                <Text style={[styles.errorText, { color: C.error, fontFamily: F.medium }]}>{error}</Text>
-              </>
+              <FieldError message={error} style={{ marginTop: 0 }} />
             ) : hint ? (
               <Text style={[styles.hintText, { color: C.textSecondary, fontFamily: F.regular }]}>{hint}</Text>
             ) : null}
@@ -149,7 +152,6 @@ export const TextInputWithLabel = forwardRef<TextInput, Props>(function TextInpu
 const styles = StyleSheet.create({
   wrapper:      { gap: 6 },
   labelRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  label:        { fontSize: 13, letterSpacing: 0.2 },
   row:          { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 5, minHeight: 54, gap: 4 },
   rowMultiline: { alignItems: 'flex-start', paddingVertical: 6 },
   iconWrap:     { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginLeft: 4, flexShrink: 0 },
@@ -160,7 +162,7 @@ const styles = StyleSheet.create({
   clearBtn:     { paddingHorizontal: 8 },
   feedbackRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   feedbackLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
-  errorText:    { fontSize: 11, flexShrink: 1 },
-  hintText:     { fontSize: 11, paddingHorizontal: 2 },
-  charCount:    { fontSize: 11, flexShrink: 0 },
+  // hint/count stay at 12; errors use the shared 13px FieldError
+  hintText:     { fontSize: 12, paddingHorizontal: 2 },
+  charCount:    { fontSize: 12, flexShrink: 0 },
 });

@@ -57,6 +57,7 @@ import {
   isBiometricLoginEnabled,
   type BiometricLabel,
 } from '@/services/biometric';
+import { FieldError } from '@/components/FieldError';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
@@ -1496,7 +1497,7 @@ export default function BusinessSettingsScreen() {
                 value={emailOtp}
                 onChangeText={(v) => { setEmailOtp(v.replace(/[^0-9]/g, '')); setEmailError(''); }}
               />
-              {!!emailError && <Text style={[styles.phoneError, { color: C.error }]}>{emailError}</Text>}
+              {!!emailError && <FieldError message={emailError} />}
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Pressable
                   style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: emailLoading ? 0.7 : 1 }]}
@@ -1637,7 +1638,7 @@ export default function BusinessSettingsScreen() {
                 value={phoneOtp}
                 onChangeText={(v) => { setPhoneOtp(v.replace(/[^0-9]/g, '')); setPhoneError(''); }}
               />
-              {!!phoneError && <Text style={[styles.phoneError, { color: C.error }]}>{phoneError}</Text>}
+              {!!phoneError && <FieldError message={phoneError} />}
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Pressable
                   style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: phoneLoading ? 0.7 : 1 }]}
