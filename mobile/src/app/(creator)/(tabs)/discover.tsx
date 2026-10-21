@@ -33,6 +33,7 @@ import { trendingScores } from '@/features/creator/data/trending';
 import type { Campaign } from '@/types';
 import ExploreBusinessesScreen, { type BusinessesExploreHandle } from '@/app/(creator)/explore-businesses';
 import ExploreCreatorPeersScreen, { type PeopleExploreHandle } from '@/app/(creator)/explore-creators';
+import { CompetitionsExplore, type CompetitionsExploreHandle } from '@/features/creator/competition/CompetitionsExplore';
 
 const SLIDER_MAX = 100000;
 
@@ -696,16 +697,16 @@ const styles = StyleSheet.create({
 // only owns which one is showing. Tabs are mounted lazily on first visit,
 // then kept alive (display:none) so switching back preserves scroll position
 // and filters instead of refetching. ────────────────────────────────────────
-type MainTab = 'campaigns' | 'businesses' | 'people';
+type MainTab = 'campaigns' | 'competitions' | 'businesses' | 'people';
 
 // Left-to-right tab order — drives the slide direction when switching panels.
-const MAIN_TAB_ORDER: readonly MainTab[] = ['campaigns', 'businesses', 'people'];
+const MAIN_TAB_ORDER: readonly MainTab[] = ['campaigns', 'competitions', 'businesses', 'people'];
 
 export default function DiscoverScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const [mainTab, setMainTab] = useState<MainTab>('campaigns');
-  const [visited, setVisited] = useState<Record<MainTab, boolean>>({ campaigns: true, businesses: false, people: false });
+  const [visited, setVisited] = useState<Record<MainTab, boolean>>({ campaigns: true, competitions: false, businesses: false, people: false });
   // "Saved" toggle on the Businesses tab — swaps that panel to the creator's
   // favourited businesses in place, instead of pushing a separate screen.
   const [businessesSaved, setBusinessesSaved] = useState(false);
@@ -721,6 +722,7 @@ export default function DiscoverScreen() {
   const businessesRef = useRef<BusinessesExploreHandle>(null);
   const peopleRef     = useRef<PeopleExploreHandle>(null);
   const campaignsRef  = useRef<CampaignsExploreHandle>(null);
+  const competitionsRef = useRef<CompetitionsExploreHandle>(null);
 
   function selectTab(tab: MainTab) {
     setVisited((v) => (v[tab] ? v : { ...v, [tab]: true }));
@@ -733,7 +735,7 @@ export default function DiscoverScreen() {
   // quick action.
   const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
   useEffect(() => {
-    if (tabParam === 'businesses' || tabParam === 'people' || tabParam === 'campaigns') {
+    if (tabParam === 'businesses' || tabParam === 'people' || tabParam === 'campaigns' || tabParam === 'competitions') {
       selectTab(tabParam);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -748,6 +750,7 @@ export default function DiscoverScreen() {
     if (mainTab === 'businesses') businessesRef.current?.setSearchText(searchText);
     else if (mainTab === 'people') peopleRef.current?.setSearchText(searchText);
     else if (mainTab === 'campaigns') campaignsRef.current?.setSearchText(searchText);
+    else if (mainTab === 'competitions') competitionsRef.current?.setSearchText(searchText);
   }, [mainTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSearchChange(text: string) {
@@ -755,6 +758,7 @@ export default function DiscoverScreen() {
     if (mainTab === 'businesses') businessesRef.current?.setSearchText(text);
     else if (mainTab === 'people') peopleRef.current?.setSearchText(text);
     else if (mainTab === 'campaigns') campaignsRef.current?.setSearchText(text);
+    else if (mainTab === 'competitions') competitionsRef.current?.setSearchText(text);
   }
 
   function handleFilterPress() {
@@ -773,6 +777,7 @@ export default function DiscoverScreen() {
 
   const MAIN_TABS = [
     { key: 'campaigns',   label: t('creator.discover.tabCampaigns'),   color: C.brinjal1 },
+    { key: 'competitions', label: t('creator.discover.tabCompetitions'), color: C.brinjal1 },
     { key: 'businesses',  label: t('creator.discover.tabBusinesses'),  color: C.brinjal1 },
     { key: 'people',      label: t('creator.discover.tabPeople'),      color: C.brinjal1 },
   ];
@@ -790,6 +795,7 @@ export default function DiscoverScreen() {
           <Text style={[shellStyles.title, { color: C.text }]} numberOfLines={2}>
             {mainTab === 'businesses' ? (businessesSaved ? t('explore.businesses.savedHeading') : t('creator.discover.titleBusinesses')) :
              mainTab === 'people'     ? t('creator.discover.titlePeople') :
+             mainTab === 'competitions' ? t('comp.creatorTitle') :
              t('creator.discover.title')}
           </Text>
           {mainTab === 'businesses' && (
@@ -832,6 +838,7 @@ export default function DiscoverScreen() {
               placeholder={
                 mainTab === 'businesses' ? t('explore.businesses.searchPlaceholder') :
                 mainTab === 'people'     ? t('explore.searchCreators') :
+                mainTab === 'competitions' ? t('comp.searchPlaceholder') :
                 t('creator.browse.searchPlaceholder')
               }
               value={searchText}
@@ -842,6 +849,7 @@ export default function DiscoverScreen() {
               onSubmitEditing={() => searchInputRef.current?.blur()}
             />
           </View>
+          {mainTab !== 'competitions' && (
           <Pressable
             style={[
               shellStyles.filterBtn,
@@ -857,6 +865,7 @@ export default function DiscoverScreen() {
               </View>
             )}
           </Pressable>
+          )}
         </View>
 
         {/* Tab strip gets the row to itself — the Saved shortcut now lives up
@@ -883,6 +892,11 @@ export default function DiscoverScreen() {
                 embedded
                 onFilterCountChange={(n) => setFilterCounts((f) => (f.people === n ? f : { ...f, people: n }))}
               />
+            </View>
+          )}
+          {visited.competitions && (
+            <View style={[{ flex: 1 }, mainTab !== 'competitions' && shellStyles.hidden]}>
+              <CompetitionsExplore ref={competitionsRef} />
             </View>
           )}
           {visited.campaigns && (

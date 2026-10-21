@@ -417,6 +417,7 @@ function RootNavigator() {
         <Stack.Screen name="legal" options={{ presentation: 'card' }} />
         <Stack.Screen name="about-us" options={{ presentation: 'card' }} />
         <Stack.Screen name="campaign-detail" options={{ presentation: 'card' }} />
+        <Stack.Screen name="competition-detail" options={{ presentation: 'card' }} />
         <Stack.Screen name="submit-proposal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="create-campaign" options={{ presentation: 'modal' }} />
         <Stack.Screen name="guided-campaign" options={{ presentation: 'modal' }} />
