@@ -4,6 +4,7 @@ import { success } from '../../utils/response';
 import { logError, AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
 import { env } from '../../config/env';
+import { verifyRefreshToken } from '../../utils/jwt';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -42,10 +43,15 @@ export class AuthController {
 
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (req.user) {
-        const refreshToken = req.body?.refreshToken as string | undefined;
-        await authService.logout(req.user.id, refreshToken);
+      const refreshToken = req.body?.refreshToken as string | undefined;
+      // The access token may have already expired (app idle >15 min) — the
+      // refresh token alone still identifies this device's session, so a
+      // logout then still ends it instead of leaving it alive server-side.
+      let userId = req.user?.id;
+      if (!userId && refreshToken) {
+        try { userId = verifyRefreshToken(refreshToken).id; } catch { /* expired/invalid — nothing to end */ }
       }
+      if (userId) await authService.logout(userId, refreshToken);
       success(res, {}, getDict().auth.loggedOut);
     } catch (err) {
       next(err);

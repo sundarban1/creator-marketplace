@@ -28,6 +28,15 @@ export function signRefreshToken(payload: TokenPayload): string {
   } as SignOptions);
 }
 
+// Expiry of an already-signed refresh token (read from its own `exp`), for
+// the Session row's expiresAt.
+export function refreshTokenExpiry(token: string): Date | null {
+  const decoded = jwt.decode(token);
+  return decoded && typeof decoded === 'object' && typeof decoded.exp === 'number'
+    ? new Date(decoded.exp * 1000)
+    : null;
+}
+
 export function verifyAccessToken(token: string): TokenPayload & JwtPayload {
   return jwt.verify(token, env.JWT_ACCESS_SECRET) as TokenPayload & JwtPayload;
 }

@@ -51,18 +51,28 @@ export function useTabTransition<T extends string>(active: T, order: readonly T[
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       });
-      anim.start(({ finished }) => {
-        // Interrupted by the OS mid-run — snap to the resting (visible) state
-        // rather than leaving the panel dim.
-        if (!finished) {
-          progress.setValue(1);
-          offsetX.setValue(0);
-        }
+      // Always snap to the resting (visible) state when the run ends, finished
+      // or not. A native-driven run only updates the native view; if the
+      // incoming panel re-renders this Animated.View mid-run (it does, as it
+      // mounts and reports its filter count), the commit can re-apply the
+      // stale JS-side opacity of 0 and the tab stays blank until the user
+      // switches away and back. setValue syncs JS + native to 1.
+      anim.start(() => {
+        progress.setValue(1);
+        offsetX.setValue(0);
       });
     });
 
+    // Safety net: if the run is lost entirely (no callback ever fires — seen
+    // in release builds on a busy JS thread), force the panel visible anyway.
+    const fallback = setTimeout(() => {
+      progress.setValue(1);
+      offsetX.setValue(0);
+    }, 600);
+
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(fallback);
       anim?.stop();
       // Whatever point the transition reached, a torn-down transition must
       // leave its panel fully visible — never stuck faded out.

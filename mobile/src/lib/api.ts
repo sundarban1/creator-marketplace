@@ -459,10 +459,18 @@ async function refreshAccessToken(): Promise<string> {
 
   const json = parseEnvelope<ApiEnvelope<{ accessToken: string; refreshToken?: string }>>(text);
   const newAccessToken = json.data.accessToken;
-  await storage.set(ACCESS_TOKEN_KEY, newAccessToken);
 
-  // Some backends rotate the refresh token on every refresh — persist it if
-  // the response includes a new one.
+  // "Remember me" off keeps the session in memory only — a refresh must not
+  // quietly start persisting it to SecureStore.
+  if (storage.isMemoryOnly(REFRESH_TOKEN_KEY)) {
+    storage.setMemoryOnly(ACCESS_TOKEN_KEY, newAccessToken);
+    if (json.data.refreshToken) storage.setMemoryOnly(REFRESH_TOKEN_KEY, json.data.refreshToken);
+    return newAccessToken;
+  }
+
+  await storage.set(ACCESS_TOKEN_KEY, newAccessToken);
+  // The backend swaps in a new refresh token about once a day (sliding
+  // session, so an active device never hits the expiry) — persist it.
   if (json.data.refreshToken) {
     await storage.set(REFRESH_TOKEN_KEY, json.data.refreshToken);
   }

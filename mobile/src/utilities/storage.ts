@@ -2,6 +2,8 @@ import * as SecureStore from 'expo-secure-store';
 
 // In-memory cache for synchronous reads — SecureStore is async only
 const cache = new Map<string, string>();
+// Keys currently held in memory only (setMemoryOnly) — "Remember me" off.
+const memoryOnlyKeys = new Set<string>();
 
 export const storage = {
   // Synchronous reads (from cache, populated on app start via hydrate())
@@ -16,26 +18,34 @@ export const storage = {
   // Async writes — persist to SecureStore and update cache
   async set(key: string, value: string): Promise<void> {
     cache.set(key, value);
+    memoryOnlyKeys.delete(key);
     await SecureStore.setItemAsync(key, value);
   },
   async setJSON<T>(key: string, value: T): Promise<void> {
     const str = JSON.stringify(value);
     cache.set(key, str);
+    memoryOnlyKeys.delete(key);
     await SecureStore.setItemAsync(key, str);
   },
 
   // Async delete
   async remove(key: string): Promise<void> {
     cache.delete(key);
+    memoryOnlyKeys.delete(key);
     await SecureStore.deleteItemAsync(key);
   },
 
   // Session-only writes — cache only, never touches SecureStore (used for "Remember me" off)
   setMemoryOnly(key: string, value: string): void {
     cache.set(key, value);
+    memoryOnlyKeys.add(key);
   },
   setJSONMemoryOnly<T>(key: string, value: T): void {
     cache.set(key, JSON.stringify(value));
+    memoryOnlyKeys.add(key);
+  },
+  isMemoryOnly(key: string): boolean {
+    return memoryOnlyKeys.has(key);
   },
 
   // Call once on app start to warm the in-memory cache from secure storage.

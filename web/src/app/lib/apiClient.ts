@@ -224,7 +224,9 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
   // A logout (here or in another tab) that landed while this refresh was in
   // flight already ended the session — don't resurrect it with a fresh token.
-  if (getRefreshToken() !== rt) return null;
+  // If another tab swapped in a new refresh token meanwhile (sliding session),
+  // the session is still alive — use the fresh access token it stored.
+  if (getRefreshToken() !== rt) return getRefreshToken() ? getAccessToken() : null;
   setTokens(json.data.accessToken, json.data.refreshToken);
   return json.data.accessToken;
 }

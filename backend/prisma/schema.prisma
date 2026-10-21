@@ -123,15 +123,27 @@ model AuthAccount {
 // column so a login on device B no longer invalidates device A's session.
 // Deleted on that device's logout; wiped entirely (all rows for the user) on
 // password reset / account deactivation / deletion.
+//
+// Sliding session: AuthService.refresh() swaps in a fresh refresh token (at
+// most once a day) so the expiry keeps moving forward while the device is in
+// use — a session only ends after JWT_REFRESH_EXPIRES_IN of no use at all.
+// The token it replaced is kept in previousRefreshToken and still accepted
+// (it just hands back the current one), so a rotation whose response never
+// reached the device can't log that device out.
 model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  refreshToken String   @unique
-  deviceId     String?
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String    @id @default(cuid())
+  userId               String
+  refreshToken         String    @unique
+  previousRefreshToken String?   @unique
+  deviceId             String?
+  // When the current refreshToken expires — lets the cleanup job drop dead
+  // rows. Null on rows created before this column existed.
+  expiresAt            DateTime?
+  createdAt            DateTime  @default(now())
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
   @@map("sessions")
 }
 

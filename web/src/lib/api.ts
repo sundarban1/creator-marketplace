@@ -1023,11 +1023,13 @@ async function refreshAccessToken(): Promise<string> {
     throw new Error('Session expired');
   }
 
-  const json = await res.json() as ApiResponse<{ accessToken: string }>;
+  const json = await res.json() as ApiResponse<{ accessToken: string; refreshToken?: string }>;
   const token = json.data.accessToken;
   // A logout that landed while this refresh was in flight wins.
   if (getRefreshToken() !== rt) throw new Error('Session expired');
   localStorage.setItem(KEY_ACCESS, token);
+  // The backend periodically swaps in a new refresh token (sliding session).
+  if (json.data.refreshToken) localStorage.setItem(KEY_REFRESH, json.data.refreshToken);
   return token;
 }
 

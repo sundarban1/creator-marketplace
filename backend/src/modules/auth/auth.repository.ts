@@ -2,6 +2,7 @@ import { AuthProvider, Role } from '@prisma/client';
 import prisma from '../../prisma';
 import { cacheOtp, otpKnownWrong, clearCachedOtp } from '../../utils/otpCache';
 import { denyRefreshToken, denyRefreshTokens } from '../../utils/tokenDenylist';
+import { refreshTokenExpiry } from '../../utils/jwt';
 
 const profileSelect = {
   creatorProfile:  { select: { id: true, username: true, fullName: true, avatarUrl: true } },
@@ -60,7 +61,7 @@ export class AuthRepository {
   }
 
   async createSession(userId: string, refreshToken: string, deviceId?: string) {
-    return prisma.session.create({ data: { userId, refreshToken, deviceId } });
+    return prisma.session.create({ data: { userId, refreshToken, deviceId, expiresAt: refreshTokenExpiry(refreshToken) } });
   }
 
   // ── Provider identities (Apple / Google / Facebook) ─────────────────────────
@@ -195,22 +196,65 @@ export class AuthRepository {
     });
   }
 
+  // Matches the device's current token or the one it replaced (see the
+  // Session model's sliding-session note).
   async findSessionByRefreshToken(refreshToken: string) {
-    return prisma.session.findUnique({ where: { refreshToken } });
+    return prisma.session.findFirst({
+      where: { OR: [{ refreshToken }, { previousRefreshToken: refreshToken }] },
+    });
+  }
+
+  async findSessionById(id: string) {
+    return prisma.session.findUnique({ where: { id } });
+  }
+
+  // Swaps in a new refresh token, keeping the old one as the accepted
+  // previous token. Conditional on the old token still being current, so two
+  // concurrent refreshes from the same device can't both rotate — returns
+  // false for the loser, which then reads back the winner's token.
+  async rotateSession(id: string, oldToken: string, newToken: string): Promise<boolean> {
+    const { count } = await prisma.session.updateMany({
+      where: { id, refreshToken: oldToken },
+      data: { refreshToken: newToken, previousRefreshToken: oldToken, expiresAt: refreshTokenExpiry(newToken) },
+    });
+    return count === 1;
   }
 
   async deleteSessionByRefreshToken(userId: string, refreshToken: string) {
+    const session = await prisma.session.findFirst({
+      where: { userId, OR: [{ refreshToken }, { previousRefreshToken: refreshToken }] },
+      select: { id: true, refreshToken: true, previousRefreshToken: true },
+    });
     void denyRefreshToken(refreshToken);
-    await prisma.session.deleteMany({ where: { userId, refreshToken } });
+    if (!session) return;
+    void denyRefreshTokens([session.refreshToken, session.previousRefreshToken].filter((t): t is string => !!t && t !== refreshToken));
+    await prisma.session.deleteMany({ where: { id: session.id } });
   }
 
   async deleteAllSessions(userId: string) {
     // Deny every one of this user's refresh tokens before dropping the rows, so
     // logout-everywhere / password-reset / deactivate immediately invalidate
     // tokens already in flight (best-effort; the row deletion is authoritative).
-    const sessions = await prisma.session.findMany({ where: { userId }, select: { refreshToken: true } });
-    void denyRefreshTokens(sessions.map((s) => s.refreshToken));
+    const sessions = await prisma.session.findMany({ where: { userId }, select: { refreshToken: true, previousRefreshToken: true } });
+    void denyRefreshTokens(sessions.flatMap((s) => [s.refreshToken, s.previousRefreshToken]).filter((t): t is string => !!t));
     await prisma.session.deleteMany({ where: { userId } });
+  }
+
+  // Housekeeping: drop sessions whose refresh token has expired. Rows from
+  // before expiresAt existed carried the old fixed 30-day token, so they're
+  // dead once they're older than that.
+  async deleteExpiredSessions(): Promise<number> {
+    const now = new Date();
+    const legacyCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const { count } = await prisma.session.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: now } },
+          { expiresAt: null, createdAt: { lt: legacyCutoff } },
+        ],
+      },
+    });
+    return count;
   }
 
   async setDeviceId(userId: string, deviceId: string) {

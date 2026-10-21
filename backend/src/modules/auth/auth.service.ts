@@ -87,6 +87,8 @@ interface TiktokLoginUserInfoResponse {
 // generated and texted instead.
 const PHONE_OTP_CODE = '123456';
 const PLACEHOLDER_EMAIL_DOMAIN = 'phone.kolab.internal';
+// How old a refresh token gets before refresh() swaps in a new one.
+const REFRESH_ROTATE_AFTER_MS = 24 * 60 * 60 * 1000;
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -365,7 +367,9 @@ export class AuthService {
     }
 
     const session = await this.repo.findSessionByRefreshToken(input.refreshToken);
-    if (!session) throw new AppError(getDict().auth.refreshTokenMismatch, HttpStatus.UNAUTHORIZED);
+    if (!session || session.userId !== decoded.id) {
+      throw new AppError(getDict().auth.refreshTokenMismatch, HttpStatus.UNAUTHORIZED);
+    }
 
     const user = await this.repo.findUserById(decoded.id);
     if (!user) throw new AppError(getDict().auth.userNotFound, HttpStatus.UNAUTHORIZED);
@@ -376,18 +380,41 @@ export class AuthService {
 
     const tokenPayload = { id: user.id, email: user.email, role: user.role };
     const accessToken  = signAccessToken(tokenPayload);
-    return { accessToken };
+
+    // Sliding session (Facebook-style): a session only ends after
+    // JWT_REFRESH_EXPIRES_IN of no use, not that long after login.
+    //
+    // The device sent the token its session already replaced — the rotation
+    // response never reached it (dropped connection, app killed mid-request)
+    // or a second tab/request raced it. Hand back the current one.
+    if (session.refreshToken !== input.refreshToken) {
+      return { accessToken, refreshToken: session.refreshToken };
+    }
+
+    // Rotate at most once a day — the many 15-minute access-token refreshes in
+    // between don't each need a DB write or a new token on the device.
+    const issuedAtMs = (decoded.iat ?? 0) * 1000;
+    if (Date.now() - issuedAtMs < REFRESH_ROTATE_AFTER_MS) return { accessToken };
+
+    const newRefreshToken = signRefreshToken(tokenPayload);
+    if (await this.repo.rotateSession(session.id, input.refreshToken, newRefreshToken)) {
+      return { accessToken, refreshToken: newRefreshToken };
+    }
+    // Lost a race with a concurrent refresh from the same device — use the
+    // token that one installed (or fail if the session was logged out meanwhile).
+    const current = await this.repo.findSessionById(session.id);
+    if (!current) throw new AppError(getDict().auth.refreshTokenMismatch, HttpStatus.UNAUTHORIZED);
+    return { accessToken, refreshToken: current.refreshToken };
   }
 
   // Only tears down the session for the calling device (its own refresh
   // token) so other logged-in devices stay signed in — see deleteAllSessions
   // for the flows (password reset, deactivate, delete) that intentionally
-  // sign out everywhere.
+  // sign out everywhere. A logout without a refresh token touches no session:
+  // it must never be able to sign the user out of their other devices.
   async logout(userId: string, refreshToken?: string) {
     if (refreshToken) {
       await this.repo.deleteSessionByRefreshToken(userId, refreshToken);
-    } else {
-      await this.repo.deleteAllSessions(userId);
     }
     return { message: getDict().auth.loggedOut };
   }
