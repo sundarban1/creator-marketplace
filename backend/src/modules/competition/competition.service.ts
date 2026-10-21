@@ -632,6 +632,14 @@ export class CompetitionService {
     if (c.stages[0].deadline <= now) throw fail(m.firstStageDeadlinePast, HttpStatus.BAD_REQUEST);
     // Prize & payment must be complete: method chosen, pool fully allocated, terms accepted.
     resolvePayment({}, c, c.prizes, userId, true);
+    // Paying winners yourself (DIRECT) needs a verified business — Kolab can't
+    // vouch for prizes an unverified organizer promises to pay. Kolab-managed
+    // payments are funded upfront, so they don't need this. Only first-time
+    // submissions are gated: competitions already sent to review before this
+    // rule existed (reviewRevision > 0) keep resubmitting as before.
+    if (c.prizePaymentMethod === 'DIRECT' && !c.business.isVerified && c.reviewRevision === 0) {
+      throw fail(m.verificationRequiredDirect, HttpStatus.FORBIDDEN, 'BUSINESS_VERIFICATION_REQUIRED');
+    }
 
     await prisma.$transaction(async (tx) => {
       const res = await tx.competition.updateMany({
@@ -1285,7 +1293,7 @@ export class CompetitionService {
       suspended: !!c.suspendedAt, suspensionReason: c.suspendedAt ? c.suspensionReason : null,
       review: {
         feedback: c.reviewFeedback, reviewedAt: c.reviewedAt, submittedAt: c.submittedForReviewAt,
-        resubmissionAllowed: c.resubmissionAllowed,
+        resubmissionAllowed: c.resubmissionAllowed, revision: c.reviewRevision,
         pendingChanges: c.pendingChanges as Record<string, unknown> | null,
         pendingChangesSubmittedAt: c.pendingChangesSubmittedAt,
         pendingChangesFeedback: c.pendingChangesFeedback,

@@ -175,6 +175,10 @@ export interface Paged<T> {
 export function fetchCompetitions(params: { tab?: 'open' | 'results' | 'all'; q?: string; page?: number; limit?: number }, signal?: AbortSignal) {
   return api<Paged<CompetitionCard>>('GET', '/api/competitions', undefined, { signal, params });
 }
+/** Which prize payment methods this server offers (Kolab-managed is behind a flag). */
+export function fetchCompetitionPaymentConfig(signal?: AbortSignal) {
+  return api<{ kolabPaymentsEnabled: boolean }>('GET', '/api/competitions/payment-config', undefined, { signal });
+}
 export function fetchCompetition(idOrSlug: string, signal?: AbortSignal) {
   return api<CompetitionDetail>('GET', `/api/competitions/${encodeURIComponent(idOrSlug)}`, undefined, { signal });
 }
@@ -232,7 +236,15 @@ export interface CompetitionInput {
   judgingCriteria: Criterion[];
   stages: Array<Omit<Stage, 'id' | 'order' | 'status'> & { id?: string }>;
   prizes: Prize[];
+  /** How cash prizes reach winners. Required (with accepted terms) on submit when any prize has an amount. */
+  prizePaymentMethod?: PrizePaymentMethod | null;
+  /** Total cash pool in NPR — must equal Σ amount × recipients on submit. */
+  cashPrizePool?: number | null;
+  paymentTermsAccepted?: boolean;
 }
+
+/** DIRECT = the business pays each winner itself (needs a verified business); KOLAB = funded through Kolab. */
+export type PrizePaymentMethod = 'KOLAB' | 'DIRECT';
 
 export interface ManagedListItem {
   id: string; slug: string; title: string; coverImageUrl: string | null; status: CompetitionStatus; suspended: boolean;
@@ -247,6 +259,8 @@ export interface ManagedCompetition extends Omit<CompetitionInput, 'stages' | 'p
   id: string;
   slug: string;
   status: CompetitionStatus;
+  /** Prize payment setup (only the fields web reads). DIRECT = the business pays winners itself. */
+  payment?: { prizePaymentMethod: PrizePaymentMethod | null; paymentTermsAccepted: boolean; fundingStatus?: string; kolabPaymentsEnabled?: boolean };
   attachments: CampaignAttachment[];
   publishAt: string | null;
   publishedAt: string | null;
@@ -263,6 +277,8 @@ export interface ManagedCompetition extends Omit<CompetitionInput, 'stages' | 'p
     reviewedAt: string | null;
     submittedAt: string | null;
     resubmissionAllowed: boolean;
+    /** Times it has been sent to Kolab review (0 = never submitted). */
+    revision?: number;
     /** Proposed rules / eligibility / prizes awaiting admin approval. */
     pendingChanges: { rules?: string; eligibility?: string | null; prizes?: Prize[] } | null;
     pendingChangesSubmittedAt: string | null;

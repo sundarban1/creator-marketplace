@@ -569,6 +569,7 @@ export const en: BackendDict = {
     videoTooLarge: "Videos must be 500 MB or smaller.",
     videoTooLong: "This video is too long — the maximum is {{sec}} seconds.",
     videoTooShort: "This video is too short — the minimum is {{sec}} seconds.",
+    verificationRequiredDirect: "To run a competition and pay winners yourself, verify your business first by uploading your company documents. If you don't have documents, contact Kolab admin to create the competition for you.",
   },
   meetup: {
     creatorProfileNotFound:    'Creator profile not found',

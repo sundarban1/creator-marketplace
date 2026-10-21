@@ -1,6 +1,6 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Eye, FileText, Flag, Globe2, Gift, ListOrdered, Pencil, Plus, Repeat, Scale, ScrollText, Sparkles, Trash2, Trophy, Users } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Eye, FileText, Flag, Globe2, Gift, HandCoins, ListOrdered, Pencil, Plus, Repeat, Scale, ScrollText, ShieldCheck, Sparkles, Trash2, Trophy, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { Button } from '../ui/Button';
@@ -22,10 +22,12 @@ import { useToast } from '../ui/Toast';
 import { EventCoverPicker } from '../business/EventCoverPicker';
 import { EventAttachmentsEditor } from '../events/EventAttachments';
 import {
-  createCompetition, updateCompetition, fetchManagedCompetition, submitCompetitionForReview,
-  type CompetitionInput, type ManagedCompetition, type Prize, type Criterion,
+  createCompetition, updateCompetition, fetchManagedCompetition, submitCompetitionForReview, fetchCompetitionPaymentConfig,
+  type CompetitionInput, type ManagedCompetition, type Prize, type Criterion, type PrizePaymentMethod,
 } from '../api/competitions';
+import { fetchBusinessProfile } from '../api/business';
 import { NptDateTimeField } from './parts';
+import { VerifyBusinessDialog, checkVerificationGate, isVerificationRequiredError, type VerifyGate } from './VerifyBusinessDialog';
 import { StepShell, Field, ProgressRail, ChoiceChips } from '../business/guided/parts';
 import { CompetitionOverview, type OverviewData } from './CompetitionOverview';
 import { nptInputIn, fromNptInput, formatNpt, npr } from './format';
@@ -50,8 +52,13 @@ function emptyForm(): CompetitionInput {
     allowSubmissionEdits: true, onePrizePerCreator: true, scoringEnabled: false, judgingCriteria: [],
     stages: [emptyStage(1, 24 * 10, 'Round 1')],
     prizes: [],
+    prizePaymentMethod: 'DIRECT', cashPrizePool: null, paymentTermsAccepted: false,
   };
 }
+
+/** Σ amount × recipients over cash prizes, in NPR (the pool the server expects). Same as mobile's cashPrizeTotal. */
+const cashPrizeTotal = (prizes: CompetitionInput['prizes']): number =>
+  prizes.reduce((sum, p) => sum + (Number(p.amount) || 0) * Math.max(1, Number(p.recipientCount) || 1), 0);
 
 function fromManaged(c: ManagedCompetition): CompetitionInput {
   // Show the organizer their own proposal when an edit is waiting for review.
@@ -65,6 +72,9 @@ function fromManaged(c: ManagedCompetition): CompetitionInput {
     scoringEnabled: c.scoringEnabled, judgingCriteria: c.judgingCriteria,
     stages: c.stages.map((s) => ({ id: s.id, name: s.name, description: s.description, brief: s.brief, requirements: s.requirements, opensAt: s.opensAt, deadline: s.deadline, advanceLimit: s.advanceLimit, allowedMethods: s.allowedMethods, videoMinSec: s.videoMinSec, videoMaxSec: s.videoMaxSec })),
     prizes: (pending?.prizes ?? c.prizes).map((p) => ({ id: p.id, kind: p.kind, title: p.title, description: p.description, amount: p.amount, currency: 'NPR', recipientCount: p.recipientCount, notes: p.notes })),
+    // Kept exactly as saved (null stays null) — opening an existing competition never changes its payment setup.
+    prizePaymentMethod: c.payment?.prizePaymentMethod ?? null,
+    paymentTermsAccepted: !!c.payment?.paymentTermsAccepted,
   };
 }
 
@@ -76,7 +86,7 @@ const FORM_STEPS: Exclude<FormStep, 'review'>[] = ['basics', 'rules', 'schedule'
  * the field so "Continue" can stop on the right page. Inline feedback only —
  * the server re-validates everything.
  */
-function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'review'>, t: (k: string, v?: Record<string, string | number>) => string): string[] {
+function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'review'>, t: (k: string, v?: Record<string, string | number>) => string, opts: { payment?: boolean } = {}): string[] {
   const e: string[] = [];
   const ts = (s: string) => new Date(s).getTime();
   switch (step) {
@@ -108,6 +118,10 @@ function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'review'>, t:
       break;
     case 'prizes':
       f.prizes.forEach((p, i) => { if (!p.title.trim()) e.push(t('comp.vPrizeTitle', { n: i + 1 })); });
+      if (opts.payment !== false && cashPrizeTotal(f.prizes) > 0) {
+        if (!f.prizePaymentMethod) e.push(t('comp.vPayMethod'));
+        else if (!f.paymentTermsAccepted) e.push(t('comp.vPayTerms'));
+      }
       break;
     case 'judging':
       if (f.scoringEnabled) {
@@ -119,8 +133,8 @@ function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'review'>, t:
   return Array.from(new Set(e));
 }
 
-function validateAll(f: CompetitionInput, t: Parameters<typeof validateStep>[2]): Array<{ step: Exclude<FormStep, 'review'>; message: string }> {
-  return FORM_STEPS.flatMap((step) => validateStep(f, step, t).map((message) => ({ step, message })));
+function validateAll(f: CompetitionInput, t: Parameters<typeof validateStep>[2], opts: Parameters<typeof validateStep>[3] = {}): Array<{ step: Exclude<FormStep, 'review'>; message: string }> {
+  return FORM_STEPS.flatMap((step) => validateStep(f, step, t, opts).map((message) => ({ step, message })));
 }
 
 /** SINGLE mode: stage 2+ only shortlists entries already submitted (mirrors the server's rules.isReviewRound). */
@@ -164,12 +178,27 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   const [preview, setPreview] = useState(false);
   const [goLive, setGoLive] = useState<'approval' | 'schedule'>('approval');
   const [publishAt, setPublishAt] = useState('');
+  // Set when submit was blocked because a direct-paying business isn't verified yet (draft already saved).
+  const [verifyGate, setVerifyGate] = useState<{ gate: VerifyGate; draftId: string } | null>(null);
 
   // After publication the stage structure and dates are fixed (deadline
   // controls live on the manage page); content stays editable.
   const structural = !existing || !!existing.allowedActions.editStructure;
   // Not yet sent to (or sent back from) Kolab review — can be saved half-filled.
   const isDraft = !!existing && ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(existing.status);
+  const paymentEditable = !existing || isDraft;
+  // Existing competitions keep their saved payment setup untouched unless the business changes it here.
+  const [paymentTouched, setPaymentTouched] = useState(false);
+  const checkPayment = paymentEditable && (!existing || paymentTouched);
+  const cashTotal = cashPrizeTotal(f.prizes);
+  // Kolab-managed prize payments are behind a server flag; "pay directly" is always offered.
+  const payConfig = useAsync((sig) => fetchCompetitionPaymentConfig(sig), []);
+  const kolabPayments = !!payConfig.data?.kolabPaymentsEnabled;
+  // Paying winners directly needs a verified business — warn while they're still filling the form.
+  const bizProfile = useAsync((sig) => fetchBusinessProfile(sig), []);
+  const unverified = !!bizProfile.data && !bizProfile.data.isVerified && bizProfile.data.verificationStatus !== 'VERIFIED';
+  // Switching method means agreeing to that method's terms again (the server does the same).
+  const setPayMethod = (m: PrizePaymentMethod) => { setPaymentTouched(true); setF((p) => ({ ...p, prizePaymentMethod: m, paymentTermsAccepted: p.prizePaymentMethod === m ? p.paymentTermsAccepted : false })); };
   const set = <K extends keyof CompetitionInput>(k: K, v: CompetitionInput[K]) => setF((p) => ({ ...p, [k]: v }));
   const setStage = (i: number, patch: Partial<StageForm>) => setF((p) => ({ ...p, stages: p.stages.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
   const setPrize = (i: number, patch: Partial<Prize>) => setF((p) => ({ ...p, prizes: p.prizes.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
@@ -211,9 +240,18 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
     judgingCriteria: f.judgingCriteria.map((c, i) => ({ ...c, key: c.key || keyFor(c.label, i), weight: Number(c.weight) || 0 })),
     prizes: f.prizes.map((p) => ({ ...p, amount: p.amount === null || p.amount === undefined || Number.isNaN(Number(p.amount)) ? null : Number(p.amount), recipientCount: Math.max(1, Number(p.recipientCount) || 1) })),
     stages: withDerivedStageDates(f).map((s, i) => ({ ...s, advanceLimit: i === f.stages.length - 1 ? null : s.advanceLimit ? Number(s.advanceLimit) : null })),
+    // The pool is always the sum of the cash prizes; no cash prizes → no payment setup. Same as mobile's toPayload.
+    ...(() => {
+      const pool = cashPrizeTotal(f.prizes);
+      return {
+        cashPrizePool: pool > 0 ? pool : null,
+        prizePaymentMethod: pool > 0 ? f.prizePaymentMethod ?? null : null,
+        paymentTermsAccepted: pool > 0 ? !!f.paymentTermsAccepted : false,
+      };
+    })(),
   }), [f]);
 
-  const allIssues = validateAll(payload, t);
+  const allIssues = validateAll(payload, t, { payment: checkPayment });
 
   function go(next: FormStep) {
     setErrors([]);
@@ -224,7 +262,7 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   }
 
   function next(current: Exclude<FormStep, 'review'>) {
-    const v = validateStep(payload, current, t);
+    const v = validateStep(payload, current, t, { payment: checkPayment });
     if (v.length) { setErrors(v); return; }
     const i = FORM_STEPS.indexOf(current);
     if (returnToReview || i === FORM_STEPS.length - 1) { setReturnToReview(false); go('review'); }
@@ -242,9 +280,17 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   }
 
   function bodyForSave(): Partial<CompetitionInput> {
-    if (!existing || structural) return payload;
+    const body: Partial<CompetitionInput> = { ...payload };
+    // Payment setup is only chosen before review; after that it's fixed (the server locks it once money moves).
+    // For an existing competition it's only sent when the business changed it here.
+    if (!paymentEditable || (existing && !paymentTouched)) {
+      delete body.prizePaymentMethod;
+      delete body.cashPrizePool;
+      delete body.paymentTermsAccepted;
+    }
+    if (!existing || structural) return body;
     // Live competitions: dates go through the deadline controls.
-    const rest: Partial<CompetitionInput> = { ...payload };
+    const rest: Partial<CompetitionInput> = { ...body };
     delete rest.registrationOpensAt;
     delete rest.registrationDeadline;
     delete rest.startsAt;
@@ -281,10 +327,14 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
       }
       const created = await createCompetition(payload);
       if (mode === 'submit') {
+        // Paying winners directly needs a verified business: keep the draft and explain how to verify.
+        const gate = await checkVerificationGate(created.payment?.prizePaymentMethod);
+        if (gate) { setVerifyGate({ gate, draftId: created.id }); return; }
         try {
           await submitCompetitionForReview(created.id, goLive === 'schedule' ? publishAt : null);
           toast.success(t('comp.submittedToast'));
         } catch (e) {
+          if (isVerificationRequiredError(e)) { setVerifyGate({ gate: 'NOT_VERIFIED', draftId: created.id }); return; }
           // The draft exists — land on it with the reason rather than losing the work.
           toast.error(e instanceof Error ? e.message : t('common.somethingWrong'));
         }
@@ -344,6 +394,11 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
 
   return (
     <div id={FORM_TOP_ID} className="mx-auto max-w-2xl scroll-mt-24 pb-6">
+      <VerifyBusinessDialog
+        gate={verifyGate?.gate ?? null}
+        draftSaved
+        onClose={() => { const id = verifyGate?.draftId; setVerifyGate(null); if (id) navigate(`/business/competitions/${id}`); }}
+      />
       {existing ? (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link to={`/business/competitions/${existing.id}`} className="inline-flex items-center gap-1 text-[13px] font-semibold uppercase tracking-wider text-ink-soft hover:text-ink">
@@ -547,6 +602,53 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
             </ol>
           )}
           <Button variant="secondary" onClick={() => set('prizes', [...f.prizes, { kind: 'PLACEMENT', title: '', amount: null, currency: 'NPR', recipientCount: 1 }])}><Plus size={16} />{t('comp.addPrize')}</Button>
+          {cashTotal > 0 && (
+            <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
+              <div>
+                <p className="text-[14px] font-semibold text-ink">{t('comp.payTitle')}</p>
+                <p className="mt-0.5 text-[13px] text-ink-soft">{t('comp.payPool', { amount: npr(cashTotal) })}</p>
+              </div>
+              {paymentEditable ? (
+                <>
+                  <ChoiceChips<PrizePaymentMethod>
+                    ariaLabel={t('comp.payTitle')}
+                    value={f.prizePaymentMethod ?? null}
+                    onChange={setPayMethod}
+                    options={[
+                      { value: 'DIRECT', label: t('comp.payDirect'), icon: <HandCoins size={15} /> },
+                      ...(kolabPayments || f.prizePaymentMethod === 'KOLAB' ? [{ value: 'KOLAB' as const, label: t('comp.payKolab'), icon: <ShieldCheck size={15} /> }] : []),
+                    ]}
+                  />
+                  {f.prizePaymentMethod && (
+                    <p className="text-[13px] text-ink-soft">{f.prizePaymentMethod === 'KOLAB' ? t('comp.payKolabDesc') : t('comp.payDirectDesc')}</p>
+                  )}
+                  {f.prizePaymentMethod === 'DIRECT' && unverified && (
+                    <Alert tone="info">
+                      <span>
+                        {t('comp.payDirectVerifyNote')}{' '}
+                        <a href="/business/verification" target="_blank" rel="noopener noreferrer" className="font-semibold underline">{t('comp.verifyCta')}</a>
+                      </span>
+                    </Alert>
+                  )}
+                  {f.prizePaymentMethod && (
+                    <label className="flex cursor-pointer items-start gap-2.5 text-[13.5px] text-ink">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-brand)]"
+                        checked={!!f.paymentTermsAccepted}
+                        onChange={(e) => { setPaymentTouched(true); set('paymentTermsAccepted', e.target.checked); }}
+                      />
+                      <span>{f.prizePaymentMethod === 'KOLAB' ? t('comp.payTermsKolab', { amount: npr(cashTotal) }) : t('comp.payTermsDirect')}</span>
+                    </label>
+                  )}
+                </>
+              ) : (
+                <p className="text-[13.5px] text-ink">
+                  {f.prizePaymentMethod === 'KOLAB' ? t('comp.payKolab') : f.prizePaymentMethod === 'DIRECT' ? t('comp.payDirect') : '—'}
+                </p>
+              )}
+            </div>
+          )}
         </StepShell>
       )}
 
@@ -640,6 +742,11 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
                 <>
                   <span className="block">{f.prizes.map((p) => (p.recipientCount > 1 ? `${p.title} × ${p.recipientCount}` : p.title)).join(', ')}</span>
                   {previewData.prizePool && <span className="block text-[13px] text-ink-soft">{t('comp.prizePool', { amount: npr(previewData.prizePool.amount) })}</span>}
+                  {cashTotal > 0 && (
+                    <span className="block text-[13px] text-ink-soft">
+                      {f.prizePaymentMethod === 'KOLAB' ? t('comp.payKolab') : f.prizePaymentMethod === 'DIRECT' ? t('comp.payDirect') : '—'}
+                    </span>
+                  )}
                 </>
               )}
             </SummaryRow>

@@ -19,6 +19,9 @@ import {
 } from '@/features/business/competition/model';
 import { competitionService, type CompetitionInput, type CompetitionPrize, type CompetitionStageInput } from '@/services/competition';
 import { FormErrorBanner } from '@/components/FieldError';
+import { VerifyBusinessModal, checkVerificationGate, isVerificationRequiredError, type VerifyGate } from '@/features/business/competition/VerifyBusinessModal';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { withAlpha } from '@/utilities/color';
 
 type Step = Exclude<FormStep, 'review'>;
 const numOrNull = (v: string) => (v.trim() === '' || Number.isNaN(Number(v)) ? null : Number(v));
@@ -41,6 +44,8 @@ export default function CreateCompetitionScreen() {
   const [returnToReview, setReturnToReview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState<'draft' | 'submit' | 'cover' | null>(null);
+  // Set when submit was blocked because a direct-paying business isn't verified yet (draft already saved).
+  const [verifyGate, setVerifyGate] = useState<VerifyGate | null>(null);
 
   const edit = (fn: (p: CompetitionInput) => CompetitionInput) => { setF(fn); setDirty(true); };
   const set = <K extends keyof CompetitionInput>(k: K, v: CompetitionInput[K]) => edit((p) => ({ ...p, [k]: v }));
@@ -54,6 +59,9 @@ export default function CreateCompetitionScreen() {
     competitionService.paymentConfig().then((c) => setKolabPayments(!!c.kolabPaymentsEnabled)).catch(() => {});
   }, []);
   // Switching method means agreeing to that method's terms again (the server does the same).
+  // Paying winners directly needs a verified business — warn while they're still filling the form.
+  const bizProfile = useBusinessProfile();
+  const unverified = !!bizProfile.data && !bizProfile.data.isVerified && bizProfile.data.verificationStatus !== 'VERIFIED';
   const setPayMethod = (m: 'KOLAB' | 'DIRECT') => edit((p) => ({ ...p, prizePaymentMethod: m, paymentTermsAccepted: p.prizePaymentMethod === m ? p.paymentTermsAccepted : false }));
 
   function go(next: FormStep) { setErrors([]); setStep(next); }
@@ -101,9 +109,13 @@ export default function CreateCompetitionScreen() {
     setErrors([]);
     try {
       const id = await persist();
+      // Paying winners directly needs a verified business: keep the draft and explain how to verify.
+      const gate = await checkVerificationGate(f.prizePaymentMethod);
+      if (gate) { setVerifyGate(gate); return; }
       try {
         await competitionService.submitForReview(id);
       } catch (e) {
+        if (isVerificationRequiredError(e)) { setVerifyGate('NOT_VERIFIED'); return; }
         // The draft is saved — keep the business here with the reason.
         setErrors([e instanceof Error ? e.message : t('competition.somethingWrong')]);
         return;
@@ -359,6 +371,18 @@ export default function CreateCompetitionScreen() {
                     {f.prizePaymentMethod === 'KOLAB' ? t('competition.payKolabDesc') : t('competition.payDirectDesc')}
                   </Text>
                 ) : null}
+                {f.prizePaymentMethod === 'DIRECT' && unverified ? (
+                  <Pressable
+                    onPress={() => router.push('/(business)/settings?section=verification' as Parameters<typeof router.push>[0])}
+                    accessibilityRole="link"
+                    style={{ flexDirection: 'row', gap: SPACING.sm, borderRadius: RADIUS.sm, padding: SPACING.md, backgroundColor: withAlpha(C.brinjal1, 0.08) }}>
+                    <FontAwesome5 name="shield-alt" size={14} color={C.brinjal1} style={{ marginTop: 2 }} />
+                    <Text style={[st.small, { color: C.text, flex: 1 }]}>
+                      {t('competition.payDirectVerifyNote')}{' '}
+                      <Text style={{ color: C.brinjal1, fontFamily: F.semibold, textDecorationLine: 'underline' }}>{t('comp.verifyCta')}</Text>
+                    </Text>
+                  </Pressable>
+                ) : null}
                 {f.prizePaymentMethod ? (
                   <Pressable
                     onPress={() => set('paymentTermsAccepted', !f.paymentTermsAccepted)}
@@ -467,6 +491,7 @@ export default function CreateCompetitionScreen() {
           </StepShell>
         )}
       </KeyboardAvoidingView>
+      <VerifyBusinessModal gate={verifyGate} draftSaved onClose={() => setVerifyGate(null)} />
     </SafeAreaView>
   );
 }

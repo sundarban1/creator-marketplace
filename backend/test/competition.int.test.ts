@@ -39,7 +39,8 @@ async function seed() {
   const biz = await mkUser('BUSINESS');
   const otherBiz = await mkUser('BUSINESS');
   const admin = await mkUser('ADMIN');
-  await prisma.businessProfile.create({ data: { userId: biz.id, businessName: 'Kolab', categories: [] } });
+  // Verified by default — paying winners directly (the default prize method here) requires it.
+  await prisma.businessProfile.create({ data: { userId: biz.id, businessName: 'Kolab', categories: [], isVerified: true } });
   await prisma.businessProfile.create({ data: { userId: otherBiz.id, businessName: 'Other', categories: [] } });
   const creators = await Promise.all([1, 2, 3, 4].map((i) => mkCreator(`Creator ${i}`)));
   return { bizId: biz.id, otherBizId: otherBiz.id, admin, creators };

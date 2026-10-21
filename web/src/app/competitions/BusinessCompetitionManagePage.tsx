@@ -22,6 +22,7 @@ import { formatNpt, stageStatusBadge, activityLabel } from './format';
 import { ReviewPanel } from './ReviewPanel';
 import { AwardsPanel } from './AwardsPanel';
 import { ActivityPanel } from './ActivityPanel';
+import { VerifyBusinessDialog, checkVerificationGate, isVerificationRequiredError, type VerifyGate } from './VerifyBusinessDialog';
 import { ReviewBanner } from './ReviewBanner';
 
 type Tab = 'overview' | 'review' | 'results' | 'activity';
@@ -88,7 +89,17 @@ function Overview({ c, onChanged }: { c: ManagedCompetition; onChanged: () => vo
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [verifyGate, setVerifyGate] = useState<VerifyGate | null>(null);
   const a = c.allowedActions;
+
+  // Paying winners directly needs a verified business — say so up front instead of a failed submit.
+  async function openPublish() {
+    setBusy('publish');
+    const gate = await checkVerificationGate(c.payment?.prizePaymentMethod, c.review.revision ?? 0);
+    setBusy(null);
+    if (gate) setVerifyGate(gate);
+    else setDialog({ kind: 'publish' });
+  }
 
   async function run(key: string, fn: () => Promise<unknown>, done: string, confirm?: { title: string; message: string; tone?: 'danger' | 'warning' | 'default'; label: string }) {
     if (confirm && !(await confirmDialog({ title: confirm.title, message: confirm.message, tone: confirm.tone ?? 'default', confirmLabel: confirm.label }))) return;
@@ -119,7 +130,7 @@ function Overview({ c, onChanged }: { c: ManagedCompetition; onChanged: () => vo
 
       <Section title={t('comp.controls')}>
         <div className="flex flex-wrap gap-2">
-          {a.submitForReview && <Button onClick={() => setDialog({ kind: 'publish' })}>{c.status === 'DRAFT' ? t('comp.submitForReview') : t('comp.resubmit')}</Button>}
+          {a.submitForReview && <Button onClick={() => void openPublish()} loading={busy === 'publish'}>{c.status === 'DRAFT' ? t('comp.submitForReview') : t('comp.resubmit')}</Button>}
           {a.withdraw && (
             <Button variant="secondary" loading={busy === 'withdraw'} onClick={() => run('withdraw', () => withdrawCompetition(c.id), t('comp.movedToDraft'), { title: t('comp.withdrawQ'), message: c.status === 'SCHEDULED' ? t('comp.withdrawScheduledBody') : t('comp.withdrawBody'), label: t('comp.withdraw'), tone: 'warning' })}>
               {t('comp.withdraw')}
@@ -237,7 +248,8 @@ function Overview({ c, onChanged }: { c: ManagedCompetition; onChanged: () => vo
       </div>
 
       {/* Dialogs */}
-      <PublishDialog open={dialog?.kind === 'publish'} c={c} onClose={() => setDialog(null)} onDone={onChanged} />
+      <PublishDialog open={dialog?.kind === 'publish'} c={c} onClose={() => setDialog(null)} onDone={onChanged} onNeedsVerification={() => { setDialog(null); setVerifyGate('NOT_VERIFIED'); }} />
+      <VerifyBusinessDialog gate={verifyGate} onClose={() => setVerifyGate(null)} />
       <ReasonDialog open={dialog?.kind === 'cancel'} title={t('comp.cancelQ')} message={t('comp.cancelBody')} label={t('comp.reasonForParticipants')} confirmLabel={t('comp.cancelCompetition')} onClose={() => setDialog(null)} onConfirm={async (r) => { await cancelCompetition(c.id, r); toast.success(t('comp.cancelledToast')); onChanged(); }} />
       <ReasonDialog open={dialog?.kind === 'pause'} optional tone="primary" title={t('comp.pauseQ')} message={t('comp.pauseBody')} label={t('comp.reasonOptional')} confirmLabel={t('comp.pause')} onClose={() => setDialog(null)} onConfirm={async (r) => { await pauseCompetition(c.id, r); toast.success(t('comp.pausedToast')); onChanged(); }} />
       <ReasonDialog open={dialog?.kind === 'close'} optional tone="primary" title={t('comp.closeQ')} message={t('comp.closeBody')} label={t('comp.reasonOptional')} confirmLabel={t('comp.closeCompetition')} onClose={() => setDialog(null)} onConfirm={async (r) => { await closeCompetition(c.id, r); toast.success(t('comp.closedToast')); onChanged(); }} />
@@ -262,7 +274,7 @@ function nextStepFor(c: ManagedCompetition, t: ReturnType<typeof useT>): string 
   return null;
 }
 
-function PublishDialog({ open, c, onClose, onDone }: { open: boolean; c: ManagedCompetition; onClose: () => void; onDone: () => void }) {
+function PublishDialog({ open, c, onClose, onDone, onNeedsVerification }: { open: boolean; c: ManagedCompetition; onClose: () => void; onDone: () => void; onNeedsVerification: () => void }) {
   const t = useT();
   const toast = useToast();
   const [mode, setMode] = useState<'now' | 'schedule'>(c.publishAt && new Date(c.publishAt) > new Date() ? 'schedule' : 'now');
@@ -279,6 +291,7 @@ function PublishDialog({ open, c, onClose, onDone }: { open: boolean; c: Managed
       onClose();
       onDone();
     } catch (e) {
+      if (isVerificationRequiredError(e)) { onNeedsVerification(); return; }
       setError(e instanceof Error ? e.message : t('common.somethingWrong'));
     } finally {
       setBusy(false);

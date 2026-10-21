@@ -42,7 +42,8 @@ async function mkUser(role: 'BUSINESS' | 'CREATOR' | 'ADMIN', email?: string) {
 }
 async function seed() {
   const biz = await mkUser('BUSINESS');
-  await prisma.businessProfile.create({ data: { userId: biz.id, businessName: 'Kolab', categories: [] } });
+  // Verified by default — paying winners directly requires it (see the dedicated test below).
+  await prisma.businessProfile.create({ data: { userId: biz.id, businessName: 'Kolab', categories: [], isVerified: true } });
   const admin = await mkUser('ADMIN');
   const payAdmin = await mkUser('ADMIN', PAY_ADMIN);
   const creators = await Promise.all([1, 2, 3].map(async (i) => {
@@ -126,6 +127,27 @@ d('competition prize payments', () => {
     const submitted = await svc.submitForReview(s.bizId, c.id);
     expect(submitted.payment).toMatchObject({ prizePaymentMethod: 'KOLAB', cashPrizePool: 15000, fundingStatus: 'UNFUNDED', paymentTermsAccepted: true });
     expect(await prisma.auditLog.count({ where: { entityId: c.id, action: 'competition.payment_configured' } })).toBeGreaterThan(0);
+  });
+
+  it('direct payment needs a verified business to submit for review; Kolab-managed does not', async () => {
+    await prisma.businessProfile.updateMany({ where: { userId: s.bizId }, data: { isVerified: false } });
+    const direct = await svc.create(s.bizId, input());
+    await expect(svc.submitForReview(s.bizId, direct.id)).rejects.toMatchObject({ statusCode: 403, data: { code: 'BUSINESS_VERIFICATION_REQUIRED' } });
+    expect((await prisma.competition.findUniqueOrThrow({ where: { id: direct.id } })).status).toBe('DRAFT');
+
+    const kolab = await svc.create(s.bizId, input({ prizePaymentMethod: 'KOLAB' }));
+    expect((await svc.submitForReview(s.bizId, kolab.id)).status).toBe('PENDING_REVIEW');
+
+    await prisma.businessProfile.updateMany({ where: { userId: s.bizId }, data: { isVerified: true } });
+    expect((await svc.submitForReview(s.bizId, direct.id)).status).toBe('PENDING_REVIEW');
+  });
+
+  it('does not block competitions that were already sent to review before (resubmissions)', async () => {
+    await prisma.businessProfile.updateMany({ where: { userId: s.bizId }, data: { isVerified: false } });
+    const c = await svc.create(s.bizId, input());
+    // An existing competition that went through review and came back with changes requested.
+    await prisma.competition.update({ where: { id: c.id }, data: { status: 'CHANGES_REQUESTED', reviewRevision: 1 } });
+    expect((await svc.submitForReview(s.bizId, c.id)).status).toBe('PENDING_REVIEW');
   });
 
   it('keeps Kolab-managed payments disabled unless the deployment enables them', async () => {
