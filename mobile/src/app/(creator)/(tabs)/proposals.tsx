@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { TabSlider } from '@/components/TabSlider';
+import { SegmentedMenu } from '@/components/SegmentedMenu';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
@@ -457,9 +458,9 @@ export default function ProposalsScreen() {
     : '';
 
   const typeTabs = [
-    { key: 'paid',         label: t('proposal.creator.typePaid'),         color: C.brinjal1 },
-    { key: 'open',         label: t('proposal.creator.typeOpen'),         color: C.brinjal1 },
-    { key: 'competitions', label: t('proposal.creator.typeCompetitions'), color: C.brinjal1 },
+    { key: 'paid',         label: t('proposal.creator.typePaid'),         icon: 'money-bill-alt' as const },
+    { key: 'open',         label: t('proposal.creator.typeOpen'),         icon: 'gift'           as const },
+    { key: 'competitions', label: t('proposal.creator.typeCompetitions'), icon: 'trophy'         as const },
   ];
 
   const allTabs = [
@@ -490,7 +491,7 @@ export default function ProposalsScreen() {
 
       {/* ── Type menu: Paid / Open / Competitions ── */}
       <View style={styles.typeBar}>
-        <TabSlider tabs={typeTabs} active={activeType} onChange={(k) => selectType(k as TypeKey)} />
+        <SegmentedMenu items={typeTabs} active={activeType} onChange={(k) => selectType(k as TypeKey)} />
       </View>
 
       {activeType === 'competitions' ? (

@@ -277,3 +277,119 @@ export const creatorCompetitionService = {
     return (await request<MySubmission>('POST', `${P}/${id}/stages/${stageId}/submissions/link`, body)).data;
   },
 };
+
+// ── Organizer management (business "Manage competition" screen) ──────────────
+// Mirrors web/src/app/api/competitions.ts — same /api/competitions/manage routes.
+
+export type ReviewAction = 'SUBMITTED' | 'RESUBMITTED' | 'WITHDRAWN' | 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED' | 'EDIT_SUBMITTED' | 'EDIT_APPROVED' | 'EDIT_REJECTED';
+export interface StageStats { stageId: string; eligible: number; submissions: number; advanced: number; notSelected: number; draftAdvance: number; draftNotSelected: number }
+export interface DraftAward { prizeId: string; participantId: string; isPublished: boolean; prize: { id: string; position: number; kind: PrizeKind; title: string; amount: number | null; currency: string }; creator: CreatorDisplay }
+export type ManageAction =
+  | 'edit' | 'editStructure' | 'submitForReview' | 'withdraw' | 'discardPendingChanges' | 'deleteDraft' | 'pause' | 'resume' | 'cancel' | 'closeCompetition'
+  | 'closeRegistration' | 'extendRegistration' | 'publishResults' | 'reopenResults' | 'suspended';
+
+export interface ManageDetail {
+  id: string;
+  slug: string;
+  title: string;
+  coverImageUrl: string | null;
+  status: CompetitionStatus;
+  submissionMode: SubmissionMode;
+  registrationOpensAt: string;
+  registrationDeadline: string;
+  startsAt: string;
+  endsAt: string;
+  publishAt: string | null;
+  pauseReason: string | null;
+  suspended: boolean;
+  suspensionReason: string | null;
+  onePrizePerCreator: boolean;
+  scoringEnabled: boolean;
+  judgingCriteria: CompetitionCriterion[];
+  review: {
+    feedback: string | null;
+    submittedAt: string | null;
+    resubmissionAllowed: boolean;
+    pendingChanges: Record<string, unknown> | null;
+    pendingChangesFeedback: string | null;
+  };
+  reviewHistory: { id: string; action: ReviewAction; feedback: string | null; createdAt: string }[];
+  stages: PublicStage[];
+  prizes: (CompetitionPrize & { id: string })[];
+  prizePool: { amount: number; currency: string } | null;
+  stats: { participants: number; active: number; awaitingReview: number; stages: StageStats[]; upcomingDeadlines: { label: string; at: string }[] };
+  awards: DraftAward[];
+  recentActivity: { action: string; createdAt: string; actorType: string | null; metadata: Record<string, unknown> | null }[];
+  allowedActions: Partial<Record<ManageAction, boolean>>;
+}
+
+export type ParticipantFilter = 'ALL' | 'SUBMITTED' | 'NOT_SUBMITTED' | 'UNDER_REVIEW' | 'ADVANCED' | 'NOT_SELECTED' | 'FINALISTS';
+export type Decision = 'ADVANCE' | 'NOT_SELECTED' | null;
+
+export interface ParticipantRow {
+  participantId: string;
+  joinedAt: string;
+  status: 'ACTIVE' | 'NOT_SELECTED' | 'WITHDRAWN';
+  currentStageOrder: number;
+  eliminatedAtOrder: number | null;
+  creator: CreatorDisplay & { location: string | null; categories: string[] };
+  submission: MySubmission | null;
+  decision: { decision: Decision; isPublished: boolean; notes: string | null; scores: Record<string, number> | null; totalScore: number | null; updatedAt: string } | null;
+}
+
+export interface SubmissionDetail {
+  participantId: string;
+  creator: CreatorDisplay & { location: string | null };
+  submission: (MySubmission & { history: { version: number; videoUrl: string | null; externalUrl: string | null; submittedAt: string }[] }) | null;
+  decision: ParticipantRow['decision'];
+}
+
+export interface DecisionSummary { stageId: string; inStage: number; advance: number; notSelected: number; undecided: number; advanceLimit: number | null }
+export interface ActivityItem { id: string; action: string; actorType: string | null; createdAt: string; metadata: Record<string, unknown> | null }
+
+const MG = '/api/competitions/manage';
+const post = async (path: string, body?: unknown) => (await request<ManageDetail>('POST', `${MG}${path}`, body)).data;
+
+export const competitionManageService = {
+  async get(id: string): Promise<ManageDetail> {
+    return (await request<ManageDetail>('GET', `${MG}/${id}`)).data;
+  },
+  submitForReview: (id: string) => post(`/${id}/submit`, { publishAt: null }),
+  withdraw:        (id: string) => post(`/${id}/withdraw`),
+  discardChanges:  (id: string) => post(`/${id}/pending-changes/discard`),
+  pause:           (id: string, reason?: string) => post(`/${id}/pause`, { reason: reason || null }),
+  resume:          (id: string) => post(`/${id}/resume`),
+  cancel:          (id: string, reason: string) => post(`/${id}/cancel`, { reason }),
+  close:           (id: string, reason?: string) => post(`/${id}/close`, { reason: reason || null }),
+  closeRegistration:  (id: string) => post(`/${id}/registration/close`),
+  extendRegistration: (id: string, registrationDeadline: string) => post(`/${id}/registration/extend`, { registrationDeadline }),
+  openStage:   (id: string, stageId: string) => post(`/${id}/stages/${stageId}/open`),
+  closeStage:  (id: string, stageId: string) => post(`/${id}/stages/${stageId}/close`),
+  extendStage: (id: string, stageId: string, deadline: string) => post(`/${id}/stages/${stageId}/extend`, { deadline }),
+  reopenStage: (id: string, stageId: string, deadline: string) => post(`/${id}/stages/${stageId}/reopen`, { deadline }),
+  reopenResults: (id: string, reason: string) => post(`/${id}/results/reopen`, { reason }),
+  async deleteDraft(id: string): Promise<void> {
+    await request('DELETE', `${MG}/${id}`);
+  },
+
+  async participants(id: string, params: { stageId?: string; filter?: ParticipantFilter; q?: string; page?: number; limit?: number }): Promise<Paged<ParticipantRow>> {
+    return (await request<Paged<ParticipantRow>>('GET', `${MG}/${id}/participants`, undefined, params)).data;
+  },
+  async submission(id: string, stageId: string, participantId: string): Promise<SubmissionDetail> {
+    return (await request<SubmissionDetail>('GET', `${MG}/${id}/stages/${stageId}/submissions/${participantId}`)).data;
+  },
+  async decisionSummary(id: string, stageId: string): Promise<DecisionSummary> {
+    return (await request<DecisionSummary>('GET', `${MG}/${id}/stages/${stageId}/decisions/summary`)).data;
+  },
+  async saveDecisions(id: string, stageId: string, decisions: { participantId: string; decision?: Decision; notes?: string | null; scores?: Record<string, number> | null }[]): Promise<DecisionSummary> {
+    return (await request<DecisionSummary>('PUT', `${MG}/${id}/stages/${stageId}/decisions`, { decisions })).data;
+  },
+  publishDecisions: (id: string, stageId: string, expectedAdvanceCount: number) => post(`/${id}/stages/${stageId}/decisions/publish`, { expectedAdvanceCount }),
+  async saveAwards(id: string, awards: { prizeId: string; participantId: string }[]): Promise<DraftAward[]> {
+    return (await request<DraftAward[]>('PUT', `${MG}/${id}/awards`, { awards })).data;
+  },
+  publishResults: (id: string, expectedAwardCount: number) => post(`/${id}/results/publish`, { expectedAwardCount }),
+  async activity(id: string, page = 1): Promise<Paged<ActivityItem>> {
+    return (await request<Paged<ActivityItem>>('GET', `${MG}/${id}/activity`, undefined, { page })).data;
+  },
+};

@@ -19,11 +19,14 @@ import { SearchInput } from '@/components/SearchInput';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { TabSlider } from '@/components/TabSlider';
+import { SegmentedMenu } from '@/components/SegmentedMenu';
 import { useToast } from '@/components/Toast';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { campaignService } from '@/services/campaign';
+import { competitionService, type CompetitionStatus, type ManagedListItem } from '@/services/competition';
+import { STALE } from '@/lib/queryClient';
 import { creatorService, type SavedCreatorItem, type ApiCreatorListItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta, sortOtherLast } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
@@ -89,6 +92,31 @@ type FilterKey = typeof FILTERS[number];
 type TabState = { items: Campaign[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
 const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
 
+// Top menu under the search bar. Paid / Open drive the campaign list (with
+// the status sub-tabs below); Competitions swaps in its own sub-tabs + list.
+type WorkType = 'PAID' | 'OPEN' | 'COMPETITIONS';
+const CAMPAIGN_TYPE_PARAM = { PAID: 'PAID_CAMPAIGN', OPEN: 'OPEN_EVENT' } as const;
+
+type CompFilterKey = 'All' | 'Live' | 'Review' | 'Draft' | 'Judging' | 'Ended';
+const COMP_FILTER_STATUSES: Record<Exclude<CompFilterKey, 'All'>, CompetitionStatus[]> = {
+  Live:    ['SCHEDULED', 'ACTIVE', 'PAUSED'],
+  Review:  ['PENDING_REVIEW', 'CHANGES_REQUESTED', 'REJECTED'],
+  Draft:   ['DRAFT'],
+  Judging: ['AWAITING_RESULTS'],
+  Ended:   ['COMPLETED', 'CANCELLED'],
+};
+const COMP_STATUS_STYLE: Partial<Record<CompetitionStatus, { bg: string; color: string }>> = {
+  ACTIVE:            { bg: TabColors.positive.bg, color: TabColors.positive.color },
+  SCHEDULED:         { bg: TabColors.info.bg,     color: TabColors.info.color },
+  DRAFT:             { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  PENDING_REVIEW:    { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  CHANGES_REQUESTED: { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  PAUSED:            { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  AWAITING_RESULTS:  { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  REJECTED:          { bg: '#FEE2E2',             color: '#DC2626' },
+};
+const NO_COMPETITIONS: ManagedListItem[] = [];
+
 const STATUS_PARAM: Record<FilterKey, 'ACTIVE' | 'REVIEW' | 'DRAFT' | 'CLOSED' | 'EXPIRED' | undefined> = {
   All: undefined, Active: 'ACTIVE', Review: 'REVIEW', Draft: 'DRAFT', Closed: 'CLOSED', Expired: 'EXPIRED',
 };
@@ -111,6 +139,9 @@ export default function CampaignsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
+  const [workType, setWorkType] = useState<WorkType>('PAID');
+  const workTypeRef = useRef<WorkType>('PAID');
+  const [compFilter, setCompFilter] = useState<CompFilterKey>('All');
 
   // Search runs server-side (GET /api/campaigns/my?search=…) so it matches
   // across the business's whole event history — title, description, category
@@ -163,7 +194,8 @@ export default function CampaignsScreen() {
     // in flight at once — drop any whose response comes back after a newer
     // one has already been requested, so stale results can't overwrite fresh.
     const seq = replace ? ++loadSeqRef.current : loadSeqRef.current;
-    const { campaigns: data, total } = await campaignService.listMy({ page, limit: PAGE_SIZE, status: STATUS_PARAM[filter], search: searchRef.current });
+    const { campaigns: data, total } = await campaignService.listMy({ page, limit: PAGE_SIZE, status: STATUS_PARAM[filter], search: searchRef.current,
+      campaignType: workTypeRef.current === 'OPEN' ? CAMPAIGN_TYPE_PARAM.OPEN : CAMPAIGN_TYPE_PARAM.PAID });
     if (replace && seq !== loadSeqRef.current) return;
     setTabData((prev) => {
       const prevItems = replace ? [] : prev[filter].items;
@@ -225,6 +257,38 @@ export default function CampaignsScreen() {
     void queryClient.invalidateQueries({ queryKey: ['campaign'] });
     return loadCampaigns(true);
   }, [activeFilter]);
+
+  // Competitions — the whole (small, unpaginated) list in one call; the
+  // sub-tabs and search narrow it client-side.
+  const competitionsQuery = useQuery({
+    queryKey: ['competitions', 'mine'],
+    queryFn: () => competitionService.listMine(),
+    staleTime: STALE.list,
+  });
+  useFocusEffect(useCallback(() => {
+    if (workTypeRef.current === 'COMPETITIONS') void competitionsQuery.refetch();
+  }, []));
+  const [compRefreshing, setCompRefreshing] = useState(false);
+  async function onRefreshCompetitions() {
+    setCompRefreshing(true);
+    try { await competitionsQuery.refetch(); } finally { setCompRefreshing(false); }
+  }
+
+  function selectWorkType(next: WorkType) {
+    if (next === workTypeRef.current) return;
+    workTypeRef.current = next;
+    setWorkType(next);
+    if (next === 'COMPETITIONS') {
+      setCompFilter('All');
+      void competitionsQuery.refetch();
+      return;
+    }
+    // Paid ↔ Open: every cached status tab belongs to the other type now.
+    invalidateAllTabs();
+    setActiveFilter('All');
+    setLoading(true);
+    void loadTab('All', 1, true).catch(() => {}).finally(() => setLoading(false));
+  }
 
   // Re-query when the (debounced) search term settles. Every tab's cache is
   // invalidated so switching status chips mid-search refetches with the term
@@ -430,6 +494,32 @@ export default function CampaignsScreen() {
     { key: 'Expired', label: t('campaigns.expired'), icon: 'hourglass-end' as const, color: TabColors.closed.color, count: tabData.Expired.total },
   ];
 
+  const WORK_TYPE_TABS: { key: WorkType; label: string; icon: IoniconName }[] = [
+    { key: 'PAID',         label: t('campaigns.typePaid'),         icon: 'money-bill-alt' },
+    { key: 'OPEN',         label: t('campaigns.typeOpen'),         icon: 'gift' },
+    { key: 'COMPETITIONS', label: t('campaigns.typeCompetitions'), icon: 'trophy' },
+  ];
+
+  const competitionsAll = competitionsQuery.data ?? NO_COMPETITIONS;
+  const compSearch = searchDebounced.trim().toLowerCase();
+  const competitionsSearched = compSearch
+    ? competitionsAll.filter((c) => c.title.toLowerCase().includes(compSearch))
+    : competitionsAll;
+  const compCount = (f: CompFilterKey) => (f === 'All'
+    ? competitionsSearched.length
+    : competitionsSearched.filter((c) => COMP_FILTER_STATUSES[f].includes(c.status)).length);
+  const competitionsShown = compFilter === 'All'
+    ? competitionsSearched
+    : competitionsSearched.filter((c) => COMP_FILTER_STATUSES[compFilter].includes(c.status));
+  const COMP_TABS = [
+    { key: 'All',     label: t('campaigns.all'),          icon: 'layer-group'     as const, color: TabColors.neutral.color,  count: compCount('All') },
+    { key: 'Live',    label: t('campaigns.compLive'),     icon: 'bolt'            as const, color: TabColors.positive.color, count: compCount('Live') },
+    { key: 'Review',  label: t('eventReview.tabInReview'), icon: 'clipboard-check' as const, color: TabColors.warning.color,  count: compCount('Review') },
+    { key: 'Draft',   label: t('campaigns.draft'),        icon: 'edit'            as const, color: TabColors.warning.color,  count: compCount('Draft') },
+    { key: 'Judging', label: t('campaigns.compJudging'),  icon: 'gavel'           as const, color: TabColors.info.color,     count: compCount('Judging') },
+    { key: 'Ended',   label: t('campaigns.compEnded'),    icon: 'flag-checkered'  as const, color: TabColors.closed.color,   count: compCount('Ended') },
+  ];
+
   const shown = tabData[activeFilter].items;
   const filterActive = searchDebounced.trim().length > 0 || categoryFilter.length > 0;
   // Search is already applied server-side; only the category chip narrows here.
@@ -489,17 +579,136 @@ export default function CampaignsScreen() {
         </Pressable>
       </View>
 
-      {/* Filter tabs */}
+      {/* Top menu — Paid / Open / Competitions */}
+      <SegmentedMenu
+        items={WORK_TYPE_TABS}
+        active={workType}
+        onChange={(k) => selectWorkType(k as WorkType)}
+        style={styles.typeMenu}
+      />
+
+      {/* Sub-menu — status tabs for the selected type */}
       <View style={styles.filterRow}>
-        <TabSlider
-          tabs={CAMP_TABS}
-          active={activeFilter}
-          onChange={(k) => selectFilter(k as FilterKey)}
-        />
+        {workType === 'COMPETITIONS' ? (
+          <TabSlider
+            key="comp"
+            tabs={COMP_TABS}
+            active={compFilter}
+            onChange={(k) => setCompFilter(k as CompFilterKey)}
+          />
+        ) : (
+          <TabSlider
+            key="camp"
+            tabs={CAMP_TABS}
+            active={activeFilter}
+            onChange={(k) => selectFilter(k as FilterKey)}
+          />
+        )}
       </View>
 
-      {/* Campaign list */}
-      {loading ? (
+      {/* Competitions list */}
+      {workType === 'COMPETITIONS' ? (
+        competitionsQuery.isPending ? (
+          <View style={[styles.list, numColumns === 2 && styles.listGrid]}>
+            {[0, 1, 2, 3].map((i) => (
+              <View key={i} style={numColumns === 2 && styles.cardWrapHalf}>
+                <ListRowSkeleton avatarSize={64} avatarRadius={RADIUS.md} withBadge />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <FlatList
+            key={`comp-${numColumns}`}
+            data={competitionsShown}
+            keyExtractor={(c) => c.id}
+            numColumns={numColumns}
+            columnWrapperStyle={numColumns === 2 ? styles.columnWrapper : undefined}
+            contentContainerStyle={[styles.list, competitionsShown.length === 0 && styles.listEmpty]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={compRefreshing} onRefresh={onRefreshCompetitions} tintColor={C.brinjal1} />}
+            ListEmptyComponent={
+              <View style={styles.emptyWrap}>
+                <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={[styles.emptyIconCircle, { backgroundColor: TabColors.warning.bg }]}>
+                    <FontAwesome5 name="trophy" solid size={36} color={TabColors.warning.color} />
+                  </View>
+                  <Text style={[styles.emptyTitle, { color: C.text }]}>
+                    {compSearch ? t('campaigns.noResultsTitle') : t('campaigns.compEmptyTitle')}
+                  </Text>
+                  <Text style={[styles.emptySub, { color: C.textSecondary }]}>
+                    {compSearch ? t('campaigns.noResultsSub') : t('campaigns.compEmptySub')}
+                  </Text>
+                  {!compSearch && (compFilter === 'All' || compFilter === 'Draft') && (
+                    <Pressable
+                      style={[styles.emptyCreateBtn, { backgroundColor: C.brinjal1 }]}
+                      onPress={() => router.push('/create-competition')}>
+                      <FontAwesome5 name="plus-circle" solid size={16} color="#fff" />
+                      <Text style={styles.emptyCreateBtnText}>{t('campaigns.compCreate')}</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            }
+            renderItem={({ item: comp }) => {
+              const cs = COMP_STATUS_STYLE[comp.status] ?? { bg: TabColors.closed.bg, color: TabColors.closed.color };
+              return (
+                <View style={[styles.cardWrap, numColumns === 2 && styles.cardWrapHalf]}>
+                  <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                    <View style={styles.cardBody}>
+                      <Pressable
+                        style={({ pressed }) => [styles.cardContent, pressed && { opacity: 0.92 }]}
+                        onPress={() => router.push({ pathname: '/(business)/manage-competition', params: { id: comp.id } })}>
+                        <View style={styles.cardHeader}>
+                          <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={1}>{comp.title}</Text>
+                          <View style={styles.cardHeaderRow}>
+                            <View style={styles.thumbColumn}>
+                              <View style={[styles.thumb, { backgroundColor: TabColors.warning.bg }]}>
+                                <FontAwesome5 name="trophy" solid size={22} color={TabColors.warning.color} />
+                                {comp.coverImageUrl && (
+                                  <Image source={{ uri: comp.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" recyclingKey={comp.coverImageUrl} />
+                                )}
+                              </View>
+                              <Text style={[styles.postedDay, { color: C.textSecondary }]} numberOfLines={1}>{timeAgo(comp.createdAt)}</Text>
+                            </View>
+                            <View style={styles.titleSection}>
+                              <View style={styles.tagContainer}>
+                                <View style={[styles.tagBadge, { backgroundColor: cs.bg }]}>
+                                  <Text style={[styles.tagBadgeText, { color: cs.color }]}>{t(`comp.status_${comp.status}`)}</Text>
+                                </View>
+                                {comp.suspended && (
+                                  <View style={[styles.tagBadge, { backgroundColor: '#FEE2E2' }]}>
+                                    <Text style={[styles.tagBadgeText, { color: '#DC2626' }]}>{t('campaigns.compSuspended')}</Text>
+                                  </View>
+                                )}
+                              </View>
+                              <View style={styles.tagContainer}>
+                                <View style={[styles.statChip, { backgroundColor: C.background }]}>
+                                  <FontAwesome5 name="users" solid size={12} color={C.textSecondary} />
+                                  <Text style={[styles.statText, { color: C.textSecondary }]} numberOfLines={1}>{t('comp.participants', { n: comp.participantCount })}</Text>
+                                </View>
+                                <View style={[styles.statChip, { backgroundColor: C.background }]}>
+                                  <FontAwesome5 name="calendar-alt" size={12} color={C.textSecondary} />
+                                  <Text style={[styles.statText, { color: C.textSecondary }]} numberOfLines={1}>{formatShortDate(comp.registrationDeadline)}</Text>
+                                </View>
+                              </View>
+                              {comp.currentStage && (
+                                <View style={[styles.statChip, { backgroundColor: C.background, alignSelf: 'flex-start' }]}>
+                                  <FontAwesome5 name="flag" solid size={11} color={C.textSecondary} />
+                                  <Text style={[styles.statText, { color: C.textSecondary }]} numberOfLines={1}>{comp.currentStage.name}</Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+              );
+            }}
+          />
+        )
+      ) : loading ? (
         <View style={[styles.list, numColumns === 2 && styles.listGrid]}>
           {[0, 1, 2, 3, 4].map((i) => (
             <View key={i} style={numColumns === 2 && styles.cardWrapHalf}>
@@ -938,6 +1147,7 @@ const styles = StyleSheet.create({
 
   // Flush with the page, same as the creator proposals tab bar: no
   // background or shadow of its own, just spacing.
+  typeMenu: { marginHorizontal: SCREEN_GUTTER, marginTop: SPACING.md },
   filterRow: { marginTop: SPACING.md },
 
   list: { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xxxl },

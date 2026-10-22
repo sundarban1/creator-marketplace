@@ -93,3 +93,11 @@ export function isGoogleDriveLink(raw: string): boolean {
   const m = /^(?:https?:\/\/)?(?:www\.)?([^/?#:]+)/i.exec(v);
   return !!m && m[1].toLowerCase() === 'drive.google.com';
 }
+
+/** "competition.stage_closed" + { stage: 'Round 1' } → "Round 1 submissions closed". Same as web. */
+export function activityLabel(action: string, metadata: Record<string, unknown> | null, t: TFn): string {
+  const key = action.replace(/^competition\./, '');
+  const stage = typeof metadata?.stage === 'string' ? metadata.stage : '';
+  const label = t(`comp.act_${key}`, { stage, advanced: String(metadata?.advanced ?? ''), notSelected: String(metadata?.notSelected ?? '') });
+  return label.startsWith('comp.') ? action : label;
+}

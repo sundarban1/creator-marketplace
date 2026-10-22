@@ -23,6 +23,7 @@ import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useTabTransition } from '@/hooks/useTabTransition';
 import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
 import { TabSlider } from '@/components/TabSlider';
+import { SegmentedMenu } from '@/components/SegmentedMenu';
 import { RangeDropdown } from '@/components/RangeDropdown';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
@@ -776,10 +777,10 @@ export default function DiscoverScreen() {
   const panelStyle = useTabTransition(mainTab, MAIN_TAB_ORDER);
 
   const MAIN_TABS = [
-    { key: 'campaigns',   label: t('creator.discover.tabCampaigns'),   color: C.brinjal1 },
-    { key: 'businesses',  label: t('creator.discover.tabBusinesses'),  color: C.brinjal1 },
-    { key: 'people',      label: t('creator.discover.tabPeople'),      color: C.brinjal1 },
-    { key: 'competitions', label: t('creator.discover.tabCompetitions'), color: C.brinjal1 },
+    { key: 'campaigns',    label: t('creator.discover.tabCampaigns') },
+    { key: 'businesses',   label: t('creator.discover.tabBusinesses') },
+    { key: 'people',       label: t('creator.discover.tabPeople') },
+    { key: 'competitions', label: t('creator.discover.tabCompetitions') },
   ];
 
   return (
@@ -871,7 +872,7 @@ export default function DiscoverScreen() {
         {/* Tab strip gets the row to itself — the Saved shortcut now lives up
             in the title row. */}
         <View style={shellStyles.tabsWrap}>
-          <TabSlider tabs={MAIN_TABS} active={mainTab} onChange={(key) => selectTab(key as MainTab)} />
+          <SegmentedMenu items={MAIN_TABS} active={mainTab} onChange={(key) => selectTab(key as MainTab)} />
         </View>
 
         <Animated.View style={[{ flex: 1 }, panelStyle]}>

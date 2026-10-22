@@ -1660,6 +1660,16 @@ const en = {
 
   // ── Campaigns list (business) ─────────────────────────────────
   campaigns: {
+    typePaid: 'Paid',
+    typeOpen: 'Open',
+    typeCompetitions: 'Competitions',
+    compLive: 'Live',
+    compJudging: 'Judging',
+    compEnded: 'Ended',
+    compEmptyTitle: 'No competitions here',
+    compEmptySub: 'Competitions you create will show up here.',
+    compCreate: 'Create Competition',
+    compSuspended: 'Suspended',
     title: 'My Work',
     subtitle: 'Manage and track your work',
     all: 'All',
@@ -4878,6 +4888,9 @@ const en = {
   },
   // Copied from web/src/app/i18n comp.* (placeholders → {{x}}) — keep the two in sync.
   comp: {
+    reasonRequired: "Please add a reason.",
+    resumeBody: "Creators can submit entries again from now on.",
+    viewAsCreator: "View as creators see it",
     typeBadge: "Competition",
     creatorTitle: "Competitions",
     creatorSubtitle: "Join creator contests, submit your best work and compete for prizes.",

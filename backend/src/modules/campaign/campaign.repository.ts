@@ -537,13 +537,14 @@ export class CampaignRepository {
     });
   }
 
-  async findByBusinessId(businessId: string, page: number, limit: number, status?: CampaignStatus | CampaignStatus[], search?: string) {
+  async findByBusinessId(businessId: string, page: number, limit: number, status?: CampaignStatus | CampaignStatus[], search?: string, campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT') {
     const skip = (page - 1) * limit;
     const term = search?.trim();
     const where: Prisma.CampaignWhereInput = {
       businessId,
       deletedAt: null,
       ...(Array.isArray(status) ? { status: { in: status } } : status ? { status } : {}),
+      ...(campaignType ? { campaignType } : {}),
       // A business searching its own "My Work" list — a small set — so a
       // straightforward case-insensitive match across the fields it would
       // recognise a campaign by (title first, then description/category/venue)

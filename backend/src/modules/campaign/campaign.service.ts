@@ -1348,13 +1348,13 @@ export class CampaignService {
     return { message: getDict().campaign.campaignDeletedSuccessfully };
   }
 
-  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en', status?: CampaignStatus | CampaignStatus[], search?: string) {
+  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en', status?: CampaignStatus | CampaignStatus[], search?: string, campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT') {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
       throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
     }
 
-    const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50), status, search);
+    const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50), status, search, campaignType);
     const dtos = raw.map(toCampaignDto);
     const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
     return { campaigns, total, page, limit };

@@ -486,7 +486,7 @@ export default function BusinessHomeScreen() {
                   <View key={comp.id} style={[styles.campaignCardWrap, numColumns === 2 && styles.campaignCardWrapHalf, { backgroundColor: C.surface }]}>
                     <Pressable
                       style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
-                      onPress={() => router.push({ pathname: '/competition-detail', params: { id: comp.id } })}>
+                      onPress={() => router.push({ pathname: '/(business)/manage-competition', params: { id: comp.id } })}>
                       <View style={styles.cardChevron} pointerEvents="none">
                         <FontAwesome5 name="chevron-right" solid size={12} color={C.textSecondary} />
                       </View>

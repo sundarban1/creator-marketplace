@@ -270,7 +270,10 @@ export class CampaignController {
         ? [CampaignStatus.PENDING_APPROVAL, CampaignStatus.CHANGES_REQUESTED, CampaignStatus.REJECTED]
         : rawStatus && (Object.values(CampaignStatus) as string[]).includes(rawStatus) ? rawStatus as CampaignStatus : undefined;
       const search = (req.query.search as string)?.trim() || undefined;
-      const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit, req.language, status, search);
+      // Optional Paid / Open split for the mobile "My Work" top menu.
+      const rawType = req.query.campaignType as string | undefined;
+      const campaignType = rawType === 'PAID_CAMPAIGN' || rawType === 'OPEN_EVENT' ? rawType : undefined;
+      const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit, req.language, status, search, campaignType);
       paginated(res, campaigns, total, page, limit);
     } catch (err) {
       next(err);

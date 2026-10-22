@@ -380,12 +380,14 @@ export const campaignService = {
     // REVIEW = every event in admin moderation (pending / changes requested / rejected).
     status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED' | 'REVIEW';
     search?: string;
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
   }): Promise<{ campaigns: Campaign[]; total: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns/my', undefined, {
       page:   params?.page  ?? 1,
       limit:  params?.limit ?? 50,
       status: params?.status,
       search: params?.search?.trim() || undefined,
+      campaignType: params?.campaignType,
     });
     return {
       campaigns: res.data.map((c) => toCampaign({ ...c, business: c.business ?? { businessName: '', logoUrl: null } })),

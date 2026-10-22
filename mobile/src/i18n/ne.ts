@@ -1650,6 +1650,16 @@ const ne = {
 
   // ── Campaigns list (business) ─────────────────────────────────
   campaigns: {
+    typePaid: 'पेड',
+    typeOpen: 'खुला',
+    typeCompetitions: 'प्रतियोगिता',
+    compLive: 'लाइभ',
+    compJudging: 'मूल्याङ्कन',
+    compEnded: 'सकियो',
+    compEmptyTitle: 'यहाँ कुनै प्रतियोगिता छैन',
+    compEmptySub: 'तपाईंले बनाएका प्रतियोगिताहरू यहाँ देखिनेछन्।',
+    compCreate: 'प्रतियोगिता बनाउनुहोस्',
+    compSuspended: 'निलम्बित',
     title: 'मेरो काम',
     subtitle: 'आफ्ना कामहरू हेर्नुहोस् र मिलाउनुहोस्',
     all: 'सबै',
@@ -4791,6 +4801,9 @@ const ne = {
   },
   // Copied from web/src/app/i18n comp.* (placeholders → {{x}}) — keep the two in sync.
   comp: {
+    reasonRequired: "कृपया कारण लेख्नुहोस्।",
+    resumeBody: "अबदेखि क्रिएटरहरूले फेरि प्रविष्टि पेश गर्न सक्छन्।",
+    viewAsCreator: "क्रिएटरले देख्ने जस्तै हेर्नुहोस्",
     typeBadge: "प्रतियोगिता",
     creatorTitle: "प्रतियोगिताहरू",
     creatorSubtitle: "क्रियेटर प्रतियोगितामा सामेल हुनुहोस्, आफ्नो उत्कृष्ट काम पेश गर्नुहोस् र पुरस्कारका लागि प्रतिस्पर्धा गर्नुहोस्।",
