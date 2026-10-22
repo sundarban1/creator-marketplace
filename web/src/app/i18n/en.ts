@@ -1271,6 +1271,7 @@ export const en = {
     cropTitle: 'Crop photo',
     addCoverPhoto: 'Add cover photo',
     cropSave: 'Save photo',
+    cropError: 'We couldn’t process this photo. Try a JPG or PNG image.',
     cropZoom: 'Zoom',
   },
 

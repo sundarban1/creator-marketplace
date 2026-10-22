@@ -5,7 +5,9 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    // Reject with a real Error — a bare DOM Event reaches Sentry as
+    // "Event `Event` (type=error) captured as promise rejection" with no context.
+    img.onerror = () => reject(new Error('Could not load image for cropping'));
     img.src = src;
   });
 }

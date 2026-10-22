@@ -12,6 +12,10 @@ Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: import.meta.env.MODE,
   integrations: [Sentry.browserTracingIntegration()],
+  // Noise from Android in-app browsers (Facebook/Instagram/TikTok): their
+  // injected Java bridge disappears when the user closes the in-app browser.
+  // Not our code and not actionable.
+  ignoreErrors: [/Java object is gone/i],
   beforeSend(event) {
     if (event.request?.headers) {
       delete event.request.headers['Authorization']

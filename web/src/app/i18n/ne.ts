@@ -1247,6 +1247,7 @@ export const ne: AppDict = {
     cropTitle: 'फोटो क्रप गर्नुहोस्',
     addCoverPhoto: 'कभर फोटो थप्नुहोस्',
     cropSave: 'फोटो सुरक्षित गर्नुहोस्',
+    cropError: 'यो फोटो प्रोसेस गर्न सकिएन। JPG वा PNG फोटो प्रयोग गर्नुहोस्।',
     cropZoom: 'जुम',
   },
 

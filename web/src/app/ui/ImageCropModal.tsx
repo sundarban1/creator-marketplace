@@ -45,6 +45,7 @@ export function ImageCropModal({
   const [minZoom, setMinZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [working, setWorking] = useState(false);
+  const [cropError, setCropError] = useState(false);
 
   const onCropComplete = useCallback((_area: Area, pixels: Area) => {
     setCroppedAreaPixels(pixels);
@@ -64,6 +65,7 @@ export function ImageCropModal({
     setZoom(1);
     setMinZoom(1);
     setCroppedAreaPixels(null);
+    setCropError(false);
   };
 
   const handleCancel = () => {
@@ -74,10 +76,22 @@ export function ImageCropModal({
   const handleConfirm = async () => {
     if (!imageSrc || !croppedAreaPixels) return;
     setWorking(true);
+    setCropError(false);
     try {
-      const blob = await getCroppedImageBlob(imageSrc, croppedAreaPixels);
+      let blob: Blob;
+      try {
+        blob = await getCroppedImageBlob(imageSrc, croppedAreaPixels);
+      } catch {
+        // Browser couldn't decode/rasterize the photo (e.g. HEIC in Chrome,
+        // corrupt file). Tell the user instead of failing silently.
+        setCropError(true);
+        return;
+      }
       await onConfirm(blob);
       reset();
+    } catch {
+      // onConfirm (the upload) reports its own errors; just keep this from
+      // becoming an unhandled rejection.
     } finally {
       setWorking(false);
     }
@@ -119,6 +133,9 @@ export function ImageCropModal({
               onCropComplete={onCropComplete}
             />
           </div>
+          {cropError && (
+            <p role="alert" className="text-[13px] font-medium text-red-600">{t('profile.cropError')}</p>
+          )}
           <div className="flex items-center gap-3">
             <span className="text-[13px] font-medium text-ink-soft">{t('profile.cropZoom')}</span>
             <input
