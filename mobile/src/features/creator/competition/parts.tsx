@@ -10,7 +10,7 @@ import type { CompetitionCard, JoinedCompetition, MySubmission, PublicPrize, Pub
 import { withAlpha } from '@/utilities/color';
 import { F, RADIUS, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
 import {
-  competitionStatusBadge, creatorStatusBadge, formatNpt, npr, stageStatusBadge, timeLeft, toneColor, type Tone,
+  competitionStatusBadge, creatorStatusBadge, formatNpt, joinedCardLabel, npr, stageStatusBadge, timeLeft, toneColor, type Tone,
 } from './format';
 
 const ORANGE = '#EA580C';
@@ -152,14 +152,13 @@ export function JoinedRow({ j, onPress }: { j: JoinedCompetition; onPress: () =>
       <Cover uri={j.competition.coverImageUrl} style={s.joinedThumb} />
       <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
         <View style={s.rowWrap}>
-          <Badge label={badge.label} tone={badge.tone} dot />
+          <Badge label={joinedCardLabel(j, t)} tone={badge.tone} dot />
         </View>
         <Text style={[s.cardTitle, { color: C.text }]} numberOfLines={2}>{j.competition.title}</Text>
         <Text style={[s.meta, { color: C.textSecondary }]} numberOfLines={1}>
           {j.currentStage ? t('comp.stageOf', { name: j.currentStage.name, n: j.currentStage.order, total: j.competition.stageCount }) : ''}
           {j.competition.organizer.name ? `${j.currentStage ? ' · ' : ''}${j.competition.organizer.name}` : ''}
         </Text>
-        <Text style={[s.small, { color: C.text }]}>{badge.hint}</Text>
         {stage && left && !left.past && (
           <View style={s.iconMeta}>
             <FontAwesome5 name="clock" size={11} color={left.urgent ? C.error : C.textSecondary} />
@@ -167,11 +166,6 @@ export function JoinedRow({ j, onPress }: { j: JoinedCompetition; onPress: () =>
               {stage.status === 'UPCOMING' ? t('comp.opensOn', { when: formatNpt(stage.opensAt) }) : t('comp.deadlineOn', { when: formatNpt(stage.deadline) })}
             </Text>
           </View>
-        )}
-        {j.latestResult?.decision && (
-          <Text style={[s.meta, { color: C.textSecondary }]}>
-            {t('comp.latestResult', { stage: j.latestResult.stageName, result: j.latestResult.decision === 'ADVANCE' ? t('comp.outcomeAdvanced') : t('comp.outcomeNotSelected') })}
-          </Text>
         )}
         {j.awards.length > 0 && <Text style={[s.small, { color: ORANGE, fontFamily: F.semibold }]}>🏆 {j.awards.map((a) => a.title).join(', ')}</Text>}
         <View style={s.ctaRow}>

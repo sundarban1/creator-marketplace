@@ -48,6 +48,38 @@ export function creatorStatusBadge(s: CreatorCompetitionStatus, t: TFn): { label
   return { label: t(`comp.my_${s}`), tone: tone[s], hint: t(`comp.myHint_${s}`) };
 }
 
+/**
+ * Badge label for the Applications → Competitions card: the status plus the
+ * round it refers to, e.g. "Round 1 advanced", "Round 2 submitted". Single-round
+ * competitions (and statuses that aren't about a round) keep the plain label.
+ * Note: once a creator advances, `currentStage` is already the NEXT round, so
+ * the round they advanced from is `order - 1`.
+ */
+export function joinedCardLabel(
+  j: { status: CreatorCompetitionStatus; currentStage: { order: number; status: StageStatus } | null; competition: { stageCount: number } },
+  t: TFn,
+): string {
+  const plain = t(`comp.my_${j.status}`);
+  const round = j.currentStage?.order;
+  if (!round || j.competition.stageCount <= 1) return plain;
+  const prev = round - 1;
+  switch (j.status) {
+    case 'SUBMISSION_REQUIRED': return t('comp.card_SUBMISSION_REQUIRED', { n: round });
+    case 'SUBMITTED':           return t('comp.card_SUBMITTED', { n: round });
+    case 'UNDER_REVIEW':        return t('comp.card_UNDER_REVIEW', { n: round });
+    case 'NO_SUBMISSION':       return t('comp.card_NO_SUBMISSION', { n: round });
+    case 'NOT_SELECTED':        return t('comp.card_NOT_SELECTED', { n: round });
+    case 'ADVANCED':            return prev >= 1 ? t('comp.card_ADVANCED', { n: prev }) : plain;
+    case 'FINALIST':
+      // Final round not started yet → they just advanced into it.
+      // Final round running/under review → they're competing in the final.
+      return j.currentStage!.status === 'UPCOMING' && prev >= 1
+        ? t('comp.card_FINALIST_ADVANCED', { n: prev })
+        : t('comp.card_FINALIST', { n: round });
+    default:                    return plain;
+  }
+}
+
 export function durationLabel(min: number | null, max: number | null, t: TFn): string | null {
   if (min && max) return t('comp.durationRange', { min, max });
   if (max) return t('comp.durationMax', { max });

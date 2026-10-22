@@ -26,12 +26,17 @@ import { campaignService } from '@/services/campaign';
 import { F, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
+import { CompetitionApplications } from '@/features/creator/competition/CompetitionsExplore';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED' | 'REVISION' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED';
 type AppStatus = 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired';
 type TabKey = 'all' | 'action' | AppStatus;
+/** Top menu: which kind of application the status sub-menu below applies to. */
+type TypeKey = 'paid' | 'open' | 'competitions';
+type CampaignTypeKey = Exclude<TypeKey, 'competitions'>;
+const CAMPAIGN_TYPE_PARAM: Record<CampaignTypeKey, 'PAID_CAMPAIGN' | 'OPEN_EVENT'> = { paid: 'PAID_CAMPAIGN', open: 'OPEN_EVENT' };
 
 type Proposal = {
   id:              string;
@@ -334,13 +339,14 @@ const EMPTY_PROPOSALS: Proposal[] = [];
  *  so the tab strip can show every tab's total count immediately, not just the
  *  active one — but only the tabs the user has actually opened (or 'all', on
  *  mount) are `enabled`, matching the old lazy-load-on-first-visit behaviour. */
-function useTabQuery(tab: TabKey, enabled: boolean) {
+function useTabQuery(type: CampaignTypeKey, tab: TabKey, enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: ['applications', 'creator', 'paginated', tab],
+    queryKey: ['applications', 'creator', 'paginated', type, tab],
     queryFn: ({ pageParam }) => campaignService.getMyApplications({
       page: pageParam, limit: PAGE_SIZE, status: STATUS_PARAM[tab],
       // Action Required = paid work waiting on the creator (filtered server-side).
       filter: tab === 'action' ? 'action' : undefined,
+      campaignType: CAMPAIGN_TYPE_PARAM[type],
     }),
     initialPageParam: 1,
     getNextPageParam: (last, all) => {
@@ -365,25 +371,32 @@ function flattenProposals(pages: ApplicationsPage[] | undefined): Proposal[] {
 export default function ProposalsScreen() {
   const { t } = useLanguage();
   const C = useAppColors();
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const params = useLocalSearchParams<{ tab?: string; type?: string }>();
+  const [activeType, setActiveType] = useState<TypeKey>('paid');
+  // Paid/Open queries keep pointing at the last campaign type while the
+  // Competitions view is showing, so switching back is instant.
+  const [campaignType, setCampaignType] = useState<CampaignTypeKey>('paid');
   const [activeTab, setActiveTab] = useState<TabKey>('all');
-  // Which tabs have been opened at least once — the rest stay `enabled: false`
-  // (no request, count shows 0) until visited, matching the old lazy-load.
-  const [visitedTabs, setVisitedTabs] = useState<Set<TabKey>>(() => new Set(['all']));
+  // Which (type, tab) pairs have been opened at least once — the rest stay
+  // `enabled: false` (no request, count shows 0) until visited.
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => new Set(['paid:all']));
+  const visited = (tab: TabKey) => visitedTabs.has(`${campaignType}:${tab}`);
   const [refreshing, setRefreshing] = useState(false);
   const listRef = useRef<FlatList<Proposal>>(null);
   useScrollToTopOnTabPress('proposals', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   // One query per tab (see useTabQuery) so every tab's count is visible in
   // the strip at once — only `visitedTabs` are actually enabled/fetched.
-  const allQuery         = useTabQuery('all', visitedTabs.has('all'));
-  // Always enabled — its count is the point of the tab, even before it's opened.
-  const actionQuery      = useTabQuery('action', true);
-  const pendingQuery     = useTabQuery('pending', visitedTabs.has('pending'));
-  const shortlistedQuery = useTabQuery('shortlisted', visitedTabs.has('shortlisted'));
-  const acceptedQuery    = useTabQuery('accepted', visitedTabs.has('accepted'));
-  const rejectedQuery    = useTabQuery('rejected', visitedTabs.has('rejected'));
-  const expiredQuery     = useTabQuery('expired', visitedTabs.has('expired'));
+  const allQuery         = useTabQuery(campaignType, 'all', visited('all'));
+  // Always enabled for Paid — its count is the point of the tab, even before
+  // it's opened. Free events never wait on the creator, so Open has no
+  // Action Required tab (the server filter is paid-only anyway).
+  const actionQuery      = useTabQuery(campaignType, 'action', campaignType === 'paid');
+  const pendingQuery     = useTabQuery(campaignType, 'pending', visited('pending'));
+  const shortlistedQuery = useTabQuery(campaignType, 'shortlisted', visited('shortlisted'));
+  const acceptedQuery    = useTabQuery(campaignType, 'accepted', visited('accepted'));
+  const rejectedQuery    = useTabQuery(campaignType, 'rejected', visited('rejected'));
+  const expiredQuery     = useTabQuery(campaignType, 'expired', visited('expired'));
   const queryByTab: Record<TabKey, UseInfiniteQueryResult<InfiniteData<ApplicationsPage>>> = {
     all: allQuery, action: actionQuery, pending: pendingQuery, shortlisted: shortlistedQuery,
     accepted: acceptedQuery, rejected: rejectedQuery, expired: expiredQuery,
@@ -391,19 +404,41 @@ export default function ProposalsScreen() {
   const activeQuery = queryByTab[activeTab];
   useRefetchOnFocusIfStale(activeQuery);
 
-  function selectTab(tab: TabKey) {
+  function markVisited(type: CampaignTypeKey, tab: TabKey) {
+    const key = `${type}:${tab}`;
+    setVisitedTabs((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+  }
+
+  function selectTab(tab: TabKey, type: CampaignTypeKey = campaignType) {
     setActiveTab(tab);
-    setVisitedTabs((prev) => (prev.has(tab) ? prev : new Set(prev).add(tab)));
+    markVisited(type, tab);
+  }
+
+  function selectType(type: TypeKey) {
+    setActiveType(type);
+    if (type === 'competitions') return;
+    setCampaignType(type);
+    // Open has no Action Required tab — fall back to All.
+    const tab: TabKey = type === 'open' && activeTab === 'action' ? 'all' : activeTab;
+    setActiveTab(tab);
+    markVisited(type, tab);
   }
 
   // Lets other screens (e.g. Home's "My Campaigns" quick action) land directly
   // on a specific tab via ?tab=accepted instead of always opening on "all".
+  // Action Required is paid-only, so ?tab=action also switches to Paid.
+  // ?type=paid|open|competitions picks the top menu.
   useEffect(() => {
-    if (params.tab && params.tab in STATUS_PARAM && params.tab !== activeTab) {
-      selectTab(params.tab as TabKey);
+    const type = params.type === 'paid' || params.type === 'open' || params.type === 'competitions'
+      ? params.type
+      : params.tab === 'action' ? 'paid' : undefined;
+    if (type) selectType(type);
+    const nextType: CampaignTypeKey = type === 'paid' || type === 'open' ? type : campaignType;
+    if (params.tab && params.tab in STATUS_PARAM && !(params.tab === 'action' && nextType === 'open')) {
+      selectTab(params.tab as TabKey, nextType);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.tab]);
+  }, [params.tab, params.type]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -421,7 +456,13 @@ export default function ProposalsScreen() {
     ? (activeQuery.error instanceof Error ? activeQuery.error.message : 'Failed to load proposals')
     : '';
 
-  const tabs = [
+  const typeTabs = [
+    { key: 'paid',         label: t('proposal.creator.typePaid'),         color: C.brinjal1 },
+    { key: 'open',         label: t('proposal.creator.typeOpen'),         color: C.brinjal1 },
+    { key: 'competitions', label: t('proposal.creator.typeCompetitions'), color: C.brinjal1 },
+  ];
+
+  const allTabs = [
     { key: 'all',         label: t('proposal.creator.tabAll'),         icon: 'copy'          as const, color: TabColors.neutral.color,  count: allQuery.data?.pages[0]?.total ?? 0 },
     { key: 'action',      label: t('proposal.creator.tabAction'),      icon: 'exclamation-circle' as const, color: TabColors.warning.color, count: actionQuery.data?.pages[0]?.total ?? 0 },
     { key: 'pending',     label: t('proposal.creator.tabPending'),     icon: 'clock'          as const, color: TabColors.brand.color,    count: pendingQuery.data?.pages[0]?.total ?? 0 },
@@ -430,6 +471,7 @@ export default function ProposalsScreen() {
     { key: 'rejected',    label: t('proposal.creator.tabRejected'),    icon: 'times-circle'   as const, color: TabColors.danger.color,   count: rejectedQuery.data?.pages[0]?.total ?? 0 },
     { key: 'expired',     label: t('proposal.creator.tabExpired'),     icon: 'hourglass-end'  as const, color: TabColors.closed.color,   count: expiredQuery.data?.pages[0]?.total ?? 0 },
   ];
+  const tabs = campaignType === 'open' ? allTabs.filter((tb) => tb.key !== 'action') : allTabs;
 
   const emptyMessages: Record<TabKey, { faIcon: string; title: string; sub: string }> = {
     all:         { faIcon: 'inbox',          title: t('proposal.creator.emptyTitle'),            sub: t('proposal.creator.emptySub')            },
@@ -446,7 +488,16 @@ export default function ProposalsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
 
-      {/* ── Tab bar ── */}
+      {/* ── Type menu: Paid / Open / Competitions ── */}
+      <View style={styles.typeBar}>
+        <TabSlider tabs={typeTabs} active={activeType} onChange={(k) => selectType(k as TypeKey)} />
+      </View>
+
+      {activeType === 'competitions' ? (
+        <CompetitionApplications />
+      ) : (
+      <>
+      {/* ── Status sub-menu ── */}
       <View style={styles.tabBar}>
         <TabSlider tabs={tabs} active={activeTab} onChange={(k) => selectTab(k as TabKey)} />
       </View>
@@ -496,6 +547,8 @@ export default function ProposalsScreen() {
           }
         />
       )}
+      </>
+      )}
       </MaxWidthContainer>
     </SafeAreaView>
   );
@@ -508,7 +561,8 @@ const styles = StyleSheet.create({
 
   // Tab bar — flush with the page, same as the home hero header: no
   // background or shadow of its own, just spacing.
-  tabBar: { marginTop: 14 },
+  typeBar: { marginTop: 14, paddingHorizontal: SCREEN_GUTTER },
+  tabBar: { marginTop: 8 },
 
   // List — 20px horizontal gutter matches the home feed and the business
   // proposals list (was 16, an unexplained one-off on this screen).

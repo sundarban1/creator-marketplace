@@ -371,12 +371,16 @@ export class CampaignController {
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as ApplicationStatus | undefined;
       const needsAction = req.query.filter === 'action';
+      // Optional; anything other than the two known types is ignored.
+      const rawType = req.query.campaignType;
+      const campaignType = rawType === 'PAID_CAMPAIGN' || rawType === 'OPEN_EVENT' ? rawType : undefined;
       const { applications, total } = await campaignService.getMyApplications(
         req.user!.id,
         page,
         limit,
         status,
         needsAction,
+        campaignType,
       );
       paginated(res, applications, total, page, limit);
     } catch (err) {

@@ -913,7 +913,7 @@ export class CampaignRepository {
     });
   }
 
-  async findApplicationsByCreator(creatorId: string, page: number, limit: number, status?: ApplicationStatus, needsAction = false) {
+  async findApplicationsByCreator(creatorId: string, page: number, limit: number, status?: ApplicationStatus, needsAction = false, campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT') {
     const skip = (page - 1) * limit;
     // needsAction = paid work the creator has to move forward right now:
     // escrow funded, and work not started yet or started but not submitted.
@@ -927,7 +927,12 @@ export class CampaignRepository {
           workStatus: { in: ['NONE', 'IN_PROGRESS'] },
           campaign: { campaignType: 'PAID_CAMPAIGN' },
         }
-      : { creatorId, ...(status ? { status } : {}) };
+      : {
+          creatorId,
+          ...(status ? { status } : {}),
+          // Optional narrowing by event type (mobile Applications Paid/Open menu).
+          ...(campaignType ? { campaign: { campaignType } } : {}),
+        };
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
         where,

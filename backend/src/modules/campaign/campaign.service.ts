@@ -1956,7 +1956,7 @@ export class CampaignService {
     return updated;
   }
 
-  async getMyApplications(userId: string, page: number, limit: number, status?: ApplicationStatus, needsAction = false) {
+  async getMyApplications(userId: string, page: number, limit: number, status?: ApplicationStatus, needsAction = false, campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT') {
     const creator = await this.creatorRepo.findByUserId(userId);
     if (!creator) {
       throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
@@ -1968,6 +1968,7 @@ export class CampaignService {
       Math.min(limit, 50),
       status,
       needsAction,
+      campaignType,
     );
 
     return { applications: raw.map(toApplicationDto), total, page, limit };

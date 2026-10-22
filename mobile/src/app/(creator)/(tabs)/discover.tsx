@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
 type MainTab = 'campaigns' | 'competitions' | 'businesses' | 'people';
 
 // Left-to-right tab order — drives the slide direction when switching panels.
-const MAIN_TAB_ORDER: readonly MainTab[] = ['campaigns', 'competitions', 'businesses', 'people'];
+const MAIN_TAB_ORDER: readonly MainTab[] = ['campaigns', 'businesses', 'people', 'competitions'];
 
 export default function DiscoverScreen() {
   const C = useAppColors();
@@ -777,9 +777,9 @@ export default function DiscoverScreen() {
 
   const MAIN_TABS = [
     { key: 'campaigns',   label: t('creator.discover.tabCampaigns'),   color: C.brinjal1 },
-    { key: 'competitions', label: t('creator.discover.tabCompetitions'), color: C.brinjal1 },
     { key: 'businesses',  label: t('creator.discover.tabBusinesses'),  color: C.brinjal1 },
     { key: 'people',      label: t('creator.discover.tabPeople'),      color: C.brinjal1 },
+    { key: 'competitions', label: t('creator.discover.tabCompetitions'), color: C.brinjal1 },
   ];
 
   return (

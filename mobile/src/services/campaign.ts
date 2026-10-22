@@ -1011,6 +1011,8 @@ export const campaignService = {
     status?: 'PENDING' | 'SHORTLISTED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
     /** 'action' = only paid work waiting on the creator (start or upload). */
     filter?: 'action';
+    /** Only applications to this event type (omit = both). */
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
   }): Promise<{
     proposals: Array<{
       id:               string;
@@ -1091,6 +1093,7 @@ export const campaignService = {
       limit:  params?.limit ?? 10,
       status: params?.status,
       filter: params?.filter,
+      campaignType: params?.campaignType,
     });
 
     return {
