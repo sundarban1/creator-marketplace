@@ -209,8 +209,8 @@ function normalizeUrl(url: string): string {
 
 function isValidUrl(url: string): boolean {
   try {
-    const u = new URL(normalizeUrl(url));
-    return u.protocol === 'http:' || u.protocol === 'https:';
+    const u = new URL(normalizeUrl(url.trim()));
+    return (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname.includes('.');
   } catch {
     return false;
   }

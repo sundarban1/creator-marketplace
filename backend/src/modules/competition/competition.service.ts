@@ -14,7 +14,7 @@ import { videoPlaybackUrl, videoThumbnailUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES 
 import { AuditAction, EntityType, type AuditActionValue } from '../logging/logging.constants';
 import * as rules from './competition.rules';
 import { competitionNotifications as N } from './competition.notifications';
-import { validateSubmissionLink, checkLinkAccessibility } from './competition.links';
+import { validateSubmissionLink } from './competition.links';
 import * as PR from './competition.payments.rules';
 import { competitionPaymentService as Pay, paymentConfigView, kolabPaymentsEnabled } from './competition.payments.service';
 import type {
@@ -1716,8 +1716,6 @@ export class CompetitionService {
     if (!ctx.stage.allowedMethods.includes('EXTERNAL_LINK')) throw fail(m.methodNotAllowed, HttpStatus.BAD_REQUEST);
     const link = validateSubmissionLink(input.url);
     if (!link.ok) throw fail(link.message, HttpStatus.BAD_REQUEST, 'INVALID_LINK');
-    const access = await checkLinkAccessibility(link.url, link.provider);
-    if (access === 'RESTRICTED') throw fail(m.linkNotShared, HttpStatus.BAD_REQUEST, 'LINK_NOT_SHARED');
     return this.writeSubmission(ctx, { method: 'EXTERNAL_LINK', externalUrl: link.url, caption: input.caption ?? null }, userId);
   }
 

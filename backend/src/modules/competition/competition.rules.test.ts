@@ -191,8 +191,13 @@ describe('validateSubmissionLink', () => {
     expect(r.ok && r.provider).toBe('Google Drive');
   });
 
-  it('rejects Drive folders and unsupported hosts', () => {
-    expect(validateSubmissionLink('https://drive.google.com/drive/folders/1AbCdEfGhIjKl').ok).toBe(false);
+  it('accepts any Google Drive link without inspecting the path', () => {
+    expect(validateSubmissionLink('https://drive.google.com/drive/folders/1AbCdEfGhIjKl').ok).toBe(true);
+    expect(validateSubmissionLink('https://drive.google.com/open?id=abc').ok).toBe(true);
+    expect(validateSubmissionLink('drive.google.com/file/d/x').ok).toBe(true);
+  });
+
+  it('rejects unsupported hosts and garbage', () => {
     expect(validateSubmissionLink('https://example.com/video.mp4').ok).toBe(false);
     expect(validateSubmissionLink('not a url at all').ok).toBe(false);
   });

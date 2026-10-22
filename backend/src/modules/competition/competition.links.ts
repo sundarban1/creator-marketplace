@@ -1,5 +1,3 @@
-import { logger } from '../../config/logger';
-
 // External video links for competition submissions — the "too big to upload"
 // path, same idea as deliverable links (web/src/app/ui/DeliverableLinks.tsx)
 // but restricted to video hosts a reviewer can actually open.
@@ -29,15 +27,12 @@ function providerFor(host: string): string | null {
   return null;
 }
 
-// Drive share links: /file/d/{id}/view, /open?id={id}, /uc?id={id}. A folder
-// link is rejected — reviewers need the video itself.
-function isDriveFileLink(u: URL): boolean {
-  if (/^\/file\/d\/[\w-]{10,}/.test(u.pathname)) return true;
-  if ((u.pathname === '/open' || u.pathname === '/uc') && /^[\w-]{10,}$/.test(u.searchParams.get('id') ?? '')) return true;
-  return false;
-}
-
-/** Syntax + provider validation. Normalises a bare "drive.google.com/…" to https. */
+/**
+ * Light syntax + provider check only. Any link on a supported host (e.g. any
+ * drive.google.com link — file, folder, open?id=…) is accepted as-is; we don't
+ * inspect the path or probe whether it's shared. Normalises a bare
+ * "drive.google.com/…" to https.
+ */
 export function validateSubmissionLink(raw: string): LinkCheck {
   const trimmed = raw.trim();
   const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
@@ -52,37 +47,6 @@ export function validateSubmissionLink(raw: string): LinkCheck {
   if (!provider) {
     return { ok: false, message: `Links from ${u.hostname} aren’t supported. Use ${SUPPORTED_LINK_PROVIDERS.join(', ')}.` };
   }
-  if (provider === 'Google Drive') {
-    if (u.pathname.startsWith('/drive/folders')) return { ok: false, message: 'Share a link to the video file, not a Drive folder' };
-    if (!isDriveFileLink(u)) return { ok: false, message: 'Use the Google Drive “Share → Copy link” link to the video file' };
-  }
   u.protocol = 'https:';
   return { ok: true, url: u.toString(), provider };
-}
-
-export type Accessibility = 'ACCESSIBLE' | 'RESTRICTED' | 'UNKNOWN';
-
-/**
- * Best-effort public-access check for Google Drive links only. A file that
- * isn't shared as "Anyone with the link" redirects to accounts.google.com.
- * Anything inconclusive (timeouts, other hosts, Google changing behaviour)
- * returns UNKNOWN and the submission is accepted — the UI still tells the
- * creator to share the file publicly. Only Drive hosts are ever fetched, so
- * this can't be pointed at arbitrary/internal addresses.
- */
-export async function checkLinkAccessibility(url: string, provider: string): Promise<Accessibility> {
-  if (provider !== 'Google Drive') return 'UNKNOWN';
-  const u = new URL(url);
-  if (u.hostname !== 'drive.google.com') return 'UNKNOWN';
-  try {
-    const res = await fetch(u.toString(), { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(4000) });
-    const loc = res.headers.get('location') ?? '';
-    if (res.status >= 300 && res.status < 400 && /accounts\.google\.com|ServiceLogin/i.test(loc)) return 'RESTRICTED';
-    if (res.status === 401 || res.status === 403) return 'RESTRICTED';
-    if (res.status === 200) return 'ACCESSIBLE';
-    return 'UNKNOWN';
-  } catch (err) {
-    logger.debug({ err: err instanceof Error ? err.message : err }, 'competition: drive accessibility check inconclusive');
-    return 'UNKNOWN';
-  }
 }
