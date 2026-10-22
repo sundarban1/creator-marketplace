@@ -80,9 +80,19 @@ export interface ManagedCompetition extends Omit<CompetitionInput, 'stages'> {
   stages: (CompetitionStageInput & { id: string; order: number; status: string })[];
 }
 
+/** One row of the organizer's own competitions list (GET /manage). */
+export interface ManagedListItem {
+  id: string; slug: string; title: string; coverImageUrl: string | null; status: CompetitionStatus; suspended: boolean;
+  registrationDeadline: string; publishAt: string | null; participantCount: number; stageCount: number;
+  currentStage: { id: string; name: string; status: string; deadline: string } | null; createdAt: string;
+}
+
 const M = '/api/competitions/manage';
 
 export const competitionService = {
+  async listMine(): Promise<ManagedListItem[]> {
+    return (await request<ManagedListItem[]>('GET', M)).data;
+  },
   async create(body: CompetitionInput): Promise<ManagedCompetition> {
     return (await request<ManagedCompetition>('POST', M, body)).data;
   },

@@ -21,6 +21,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { F, FONT_SIZE, lineHeightFor, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, FEATURE_IMAGE_ASPECT } from '@/utilities/constants';
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { campaignService } from '@/services/campaign';
+import { competitionService, type CompetitionStatus, type ManagedListItem } from '@/services/competition';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import type { Campaign } from '@/types';
@@ -51,12 +52,24 @@ const TABLET_BREAKPOINT = 768;
 
 // Left-to-right order of the Recent Events type filter — drives the slide
 // direction of the panel transition (see useTabTransition).
-const TYPE_TAB_ORDER = ['All', 'Paid', 'Open'] as const;
+const TYPE_TAB_ORDER = ['All', 'Paid', 'Open', 'Competitions'] as const;
+
+// Competition status → badge colors (labels come from comp.status_*).
+const COMP_STATUS_STYLE: Partial<Record<CompetitionStatus, { bg: string; color: string }>> = {
+  ACTIVE:            { bg: TabColors.positive.bg, color: TabColors.positive.color },
+  SCHEDULED:         { bg: TabColors.info.bg,     color: TabColors.info.color },
+  PENDING_REVIEW:    { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  CHANGES_REQUESTED: { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  PAUSED:            { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  AWAITING_RESULTS:  { bg: TabColors.warning.bg,  color: TabColors.warning.color },
+  REJECTED:          { bg: '#FEE2E2',             color: '#DC2626' },
+}
 
 // Stable empty references so derived values don't get a fresh [] every render
 // while a query is pending (keeps React Compiler's memoing intact).
 const NO_CAMPAIGNS: Campaign[] = [];
 const NO_PROVIDERS: ApiCreatorListItem[] = [];
+const NO_COMPETITIONS: ManagedListItem[] = [];
 const NO_STRINGS: string[] = [];
 
 export default function BusinessHomeScreen() {
@@ -111,7 +124,14 @@ export default function BusinessHomeScreen() {
     staleTime: STALE.list,
   });
 
-  useRefetchOnFocusIfStale(profileQuery, campaignsQuery, recommendedQuery, proposalsQuery);
+  const competitionsQuery = useQuery({
+    queryKey: ['competitions', 'mine'],
+    queryFn: () => competitionService.listMine(),
+    enabled: user?.role === 'BUSINESS',
+    staleTime: STALE.list,
+  });
+
+  useRefetchOnFocusIfStale(profileQuery, campaignsQuery, recommendedQuery, proposalsQuery, competitionsQuery);
 
   const campaigns = campaignsQuery.data?.campaigns ?? NO_CAMPAIGNS;
   const recommendedProviders = recommendedQuery.data ?? NO_PROVIDERS;
@@ -204,6 +224,7 @@ export default function BusinessHomeScreen() {
         campaignsQuery.refetch(),
         recommendedQuery.refetch(),
         proposalsQuery.refetch(),
+        competitionsQuery.refetch(),
       ]);
     } finally {
       setRefreshing(false);
@@ -216,7 +237,7 @@ export default function BusinessHomeScreen() {
     completed: campaigns.filter((c) => c.status === 'closed').length,
   };
 
-  const [typeFilter, setTypeFilter] = useState<'All' | 'Paid' | 'Open'>('All');
+  const [typeFilter, setTypeFilter] = useState<'All' | 'Paid' | 'Open' | 'Competitions'>('All');
   // Cross-fade + slide the Recent Events list when the type filter changes, so
   // the tab switch glides instead of the list popping to new contents.
   const recentListStyle = useTabTransition(typeFilter, TYPE_TAB_ORDER);
@@ -231,11 +252,15 @@ export default function BusinessHomeScreen() {
   const publishedCampaigns = campaigns.filter((c) => c.status !== 'draft');
   const paidCount = publishedCampaigns.filter((c) => !c.campaignType || c.campaignType === 'PAID_CAMPAIGN').length;
   const openCount = publishedCampaigns.filter((c) => c.campaignType === 'OPEN_EVENT').length;
+  // Same rule as events: drafts aren't shown here.
+  const competitions = (competitionsQuery.data ?? NO_COMPETITIONS).filter((c) => c.status !== 'DRAFT');
+  const showCompetitions = typeFilter === 'Competitions';
 
   const TYPE_TABS = [
     { key: 'All',  label: t('business.home.tabAll'),      icon: 'layer-group' as const,  color: TabColors.neutral.color, count: publishedCampaigns.length },
     { key: 'Paid', label: t('business.home.tabPaid'),     icon: 'money-bill-alt'  as const,   color: TabColors.brand.color,   count: paidCount        },
     { key: 'Open', label: t('business.home.tabOpenFree'), icon: 'gift'  as const,   color: TabColors.info.color,    count: openCount        },
+    { key: 'Competitions', label: t('business.home.tabCompetitions'), icon: 'trophy' as const, color: TabColors.warning.color, count: competitions.length },
   ];
 
   const recent = publishedCampaigns.filter(matchesType).slice(0, 5);
@@ -437,7 +462,69 @@ export default function BusinessHomeScreen() {
         )}
 
         <Animated.View style={recentListStyle}>
-        {loading ? (
+        {showCompetitions ? (
+          competitionsQuery.isPending ? (
+            <View style={styles.loadingWrap}>
+              <ActivityIndicator size="large" color={C.brinjal1} />
+            </View>
+          ) : competitions.length === 0 ? (
+            <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <FontAwesome5 name="trophy" solid size={48} color={C.textSecondary} />
+              <Text style={[styles.emptyTitle, { color: C.text }]}>{t('business.home.noCompetitionsTitle')}</Text>
+              <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('business.home.noCompetitionsSub')}</Text>
+              <Pressable
+                style={[styles.emptyBtn, { backgroundColor: C.brinjal1 }]}
+                onPress={() => router.push('/create-competition')}>
+                <Text style={styles.emptyBtnText}>{t('business.home.createCompetitionBtn')}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={[styles.campaignList, numColumns === 2 && styles.campaignListGrid]}>
+              {competitions.slice(0, 5).map((comp) => {
+                const cs = COMP_STATUS_STYLE[comp.status] ?? { bg: TabColors.closed.bg, color: TabColors.closed.color };
+                return (
+                  <View key={comp.id} style={[styles.campaignCardWrap, numColumns === 2 && styles.campaignCardWrapHalf, { backgroundColor: C.surface }]}>
+                    <Pressable
+                      style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
+                      onPress={() => router.push({ pathname: '/competition-detail', params: { id: comp.id } })}>
+                      <View style={styles.cardChevron} pointerEvents="none">
+                        <FontAwesome5 name="chevron-right" solid size={12} color={C.textSecondary} />
+                      </View>
+                      <View style={styles.cardHeader}>
+                        <View style={[styles.thumb, { backgroundColor: TabColors.warning.bg }]}>
+                          <FontAwesome5 name="trophy" solid size={22} color={TabColors.warning.color} />
+                          {comp.coverImageUrl && (
+                            <Image source={{ uri: comp.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                          )}
+                        </View>
+                        <View style={styles.titleSection}>
+                          <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={1}>{comp.title}</Text>
+                          <View style={styles.detailRow}>
+                            <FontAwesome5 name="users" size={12} color={C.textSecondary} />
+                            <Text style={[styles.detailText, { color: C.text }]}>{t('comp.participants', { n: comp.participantCount })}</Text>
+                          </View>
+                          {comp.currentStage ? (
+                            <View style={styles.detailRow}>
+                              <FontAwesome5 name="flag" size={12} color={C.textSecondary} />
+                              <Text style={[styles.detailText, { color: C.textSecondary }]} numberOfLines={1}>{comp.currentStage.name}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                      </View>
+                      <View style={[styles.cardFooter, styles.detailsSection]}>
+                        <View style={styles.tagContainer}>
+                          <View style={[styles.statusBadge, { backgroundColor: cs.bg }]}>
+                            <Text style={[styles.statusText, { color: cs.color }]}>{t(`comp.status_${comp.status}`)}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          )
+        ) : loading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={C.brinjal1} />
             <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('business.home.loading')}</Text>
