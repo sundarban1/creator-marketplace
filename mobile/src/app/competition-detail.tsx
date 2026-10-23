@@ -35,11 +35,13 @@ import {
 import {
   competitionStatusBadge, creatorStatusBadge, durationLabel, formatNpt, isGoogleDriveLink, npr, toneColor,
 } from '@/features/creator/competition/format';
+import { PersonAvatar, ProfileRow, useOpenProfile } from '@/features/creator/competition/ProfileAvatar';
 
 const ORANGE = '#EA580C';
 
 export default function CompetitionDetailScreen() {
   const C = useAppColors();
+  const openProfile = useOpenProfile();
   const { t } = useLanguage();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -107,15 +109,15 @@ export default function CompetitionDetailScreen() {
                     {c.results.map((r, i) => (
                       <View key={`${r.prize.id}-${i}`} style={styles.resultRow}>
                         <FontAwesome5 name="award" size={16} color={r.prize.kind === 'PLACEMENT' ? ORANGE : '#7C3AED'} />
-                        {r.creator.avatarUrl
-                          ? <Image source={{ uri: r.creator.avatarUrl }} style={styles.avatar} />
-                          : <View style={[styles.avatar, { backgroundColor: C.primaryLight }]} />}
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={[styles.strong, { color: C.text }]} numberOfLines={1}>
-                            {r.creator.fullName}{r.creator.username ? <Text style={{ color: C.textSecondary, fontFamily: F.regular }}> @{r.creator.username}</Text> : null}
-                          </Text>
-                          <Text style={[styles.meta, { color: C.textSecondary }]}>{r.prize.title}</Text>
-                        </View>
+                        <ProfileRow onPress={openProfile.creator(r.creator.id)} label={r.creator.fullName ?? r.creator.username ?? ''} style={{ flex: 1 }}>
+                          <PersonAvatar uri={r.creator.avatarUrl} name={r.creator.fullName ?? r.creator.username} size={32} />
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={[styles.strong, { color: C.text }]} numberOfLines={1}>
+                              {r.creator.fullName ?? r.creator.username}{r.creator.fullName && r.creator.username ? <Text style={{ color: C.textSecondary, fontFamily: F.regular }}> @{r.creator.username}</Text> : null}
+                            </Text>
+                            <Text style={[styles.meta, { color: C.textSecondary }]}>{r.prize.title}</Text>
+                          </View>
+                        </ProfileRow>
                         {r.prize.amount != null && <Text style={[styles.strong, { color: C.text }]}>{npr(r.prize.amount)}</Text>}
                       </View>
                     ))}
@@ -164,6 +166,7 @@ export default function CompetitionDetailScreen() {
 
 function Hero({ c }: { c: CompetitionDetail }) {
   const C = useAppColors();
+  const openProfile = useOpenProfile();
   const { t } = useLanguage();
   const status = competitionStatusBadge(c.status, t);
   return (
@@ -177,16 +180,13 @@ function Hero({ c }: { c: CompetitionDetail }) {
           <Badge label={status.label} tone={status.tone} dot />
         </View>
         <Text style={[styles.heroTitle, { color: C.text }]}>{c.title}</Text>
-        <View style={styles.rowWrap}>
-          {c.organizer.logoUrl
-            ? <Image source={{ uri: c.organizer.logoUrl }} style={styles.orgLogo} />
-            : <View style={[styles.orgLogo, { backgroundColor: C.primaryLight }]} />}
-          <Text style={[styles.meta, { color: C.textSecondary }]}>{t('comp.byOrganizer', { name: c.organizer.name ?? '' })}</Text>
+        <ProfileRow onPress={openProfile.business(c.organizer.slug)} label={c.organizer.name ?? ''} style={{ gap: 8, alignSelf: 'flex-start' }}>
+          <PersonAvatar uri={c.organizer.logoUrl} name={c.organizer.name} size={22} />
+          <Text style={[styles.meta, { color: C.textSecondary, flexShrink: 1 }]}>{t('comp.byOrganizer', { name: c.organizer.name ?? '' })}</Text>
           {c.organizer.isVerified && <FontAwesome5 name="check-circle" solid size={12} color={toneColor('info')} />}
-        </View>
+        </ProfileRow>
         <View style={{ gap: 6 }}>
           <MetaLine icon="calendar-alt" text={t('comp.registrationUntil', { when: formatNpt(c.registrationDeadline) })} />
-          <MetaLine icon="users" text={t('comp.participants', { n: c.participantCount })} />
           {c.prizePool && <MetaLine icon="trophy" color={ORANGE} bold text={t('comp.prizePool', { amount: npr(c.prizePool.amount) })} />}
         </View>
       </View>
@@ -572,8 +572,6 @@ const styles = StyleSheet.create({
   heroTitle: { fontSize: 22, fontFamily: F.bold, lineHeight: lineHeightFor(22) },
   rowWrap:   { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   iconRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  orgLogo:   { width: 20, height: 20, borderRadius: 10 },
-  avatar:    { width: 32, height: 32, borderRadius: 16 },
   meta:      { fontSize: 12.5, fontFamily: F.regular, lineHeight: lineHeightFor(12.5) },
   small:     { fontSize: 13.5, fontFamily: F.regular, lineHeight: lineHeightFor(13.5) },
   strong:    { fontSize: 14, fontFamily: F.semibold, lineHeight: lineHeightFor(14) },

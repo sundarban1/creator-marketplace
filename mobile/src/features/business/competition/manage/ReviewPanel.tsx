@@ -25,7 +25,8 @@ import {
 } from '@/services/competition';
 import { Badge, SubmissionPreview } from '@/features/creator/competition/parts';
 import { formatNpt, stageStatusBadge } from '@/features/creator/competition/format';
-import { CreatorAvatar, Notice, shared } from './shared';
+import { Notice, shared } from './shared';
+import { PersonAvatar, ProfileRow } from '@/features/creator/competition/ProfileAvatar';
 
 interface Pending { decision?: Decision; before?: Decision; notes?: string | null; scores?: Record<string, number> | null }
 const PAGE = 25;
@@ -184,11 +185,10 @@ function StageReview({ c, stageId, onChanged }: { c: ManageDetail; stageId: stri
             const d = effective(r);
             return (
               <View key={r.participantId} style={[shared.card, { borderColor: C.border, backgroundColor: C.surface }]}>
-                <Pressable
-                  style={shared.row}
-                  accessibilityRole="button"
-                  onPress={() => (r.submission ? setViewing(r) : router.push({ pathname: '/(business)/creator-detail', params: { id: r.creator.id } }))}>
-                  <CreatorAvatar uri={r.creator.avatarUrl} />
+                <ProfileRow
+                  label={r.creator.fullName ?? r.creator.username ?? ''}
+                  onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: r.creator.id } })}>
+                  <PersonAvatar uri={r.creator.avatarUrl} name={r.creator.fullName ?? r.creator.username} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[shared.strong, { color: C.text }]} numberOfLines={1}>
                       {r.creator.fullName ?? r.creator.username}
@@ -200,8 +200,7 @@ function StageReview({ c, stageId, onChanged }: { c: ManageDetail; stageId: stri
                       {r.decision?.totalScore != null ? ` · ${t('comp.scoreN', { n: r.decision.totalScore })}` : ''}
                     </Text>
                   </View>
-                  {!!r.submission && <FontAwesome5 name="chevron-right" size={12} color={C.textSecondary} />}
-                </Pressable>
+                </ProfileRow>
                 <View style={styles.rowActions}>
                   {r.status === 'NOT_SELECTED' && r.eliminatedAtOrder === stage.order && <Badge label={t('comp.outcomeNotSelected')} tone="closed" />}
                   {r.currentStageOrder > stage.order && <Badge label={t('comp.outcomeAdvanced')} tone="positive" />}
@@ -313,7 +312,7 @@ function EntrySheet({ c, stageId, row, editable, canDecide, pending, onClose, on
           onPress={() => { onClose(); router.push({ pathname: '/(business)/creator-detail', params: { id: row.creator.id } }); }}
           accessibilityRole="link"
           style={[shared.row, styles.profileLink, { borderColor: C.border }]}>
-          <CreatorAvatar uri={row.creator.avatarUrl} />
+          <PersonAvatar uri={row.creator.avatarUrl} name={name} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[shared.strong, { color: C.text }]} numberOfLines={1}>{name}</Text>
             {!!row.creator.username && <Text style={[shared.meta, { color: C.textSecondary }]}>@{row.creator.username}</Text>}

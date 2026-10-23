@@ -3,7 +3,6 @@
 // the pause / cancel / close / extend controls (web: ReasonDialog, DeadlineDialog).
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -55,17 +54,6 @@ export function StatTile({ label, value, icon, color }: { label: string; value: 
       <Text style={[s.statLabel, { color: C.textSecondary }]} numberOfLines={2}>{label}</Text>
     </View>
   );
-}
-
-export function CreatorAvatar({ uri, size = 36 }: { uri: string | null; size?: number }) {
-  const C = useAppColors();
-  return uri
-    ? <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} contentFit="cover" />
-    : (
-      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-        <FontAwesome5 name="user" solid size={size * 0.4} color={C.brinjal1} />
-      </View>
-    );
 }
 
 /** Reason prompt — required (cancel, reopen results) or optional (pause, close). */

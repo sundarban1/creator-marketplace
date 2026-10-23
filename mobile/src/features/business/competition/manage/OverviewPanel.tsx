@@ -67,33 +67,34 @@ export function OverviewPanel({ c, onChanged, onGoTab }: { c: ManageDetail; onCh
         <View style={{ gap: 8 }}>
           {a.submitForReview && (
             <Button
+              size="medium"
               label={c.status === 'DRAFT' ? t('comp.submitForReview') : t('comp.resubmit')}
               icon="paper-plane"
               onPress={() => setConfirm({ key: 'submit', title: t('comp.submitTitle'), body: t('comp.submitBody'), label: t('comp.submitForReview'), type: 'info', fn: () => api.submitForReview(c.id), done: t('comp.submittedToast') })}
             />
           )}
-          {a.resume && <Button label={t('comp.resume')} icon="play" onPress={() => setConfirm({ key: 'resume', title: t('comp.resume'), body: t('comp.resumeBody'), label: t('comp.resume'), type: 'info', fn: () => api.resume(c.id), done: t('comp.resumedToast') })} />}
+          {a.resume && <Button size="medium" label={t('comp.resume')} icon="play" onPress={() => setConfirm({ key: 'resume', title: t('comp.resume'), body: t('comp.resumeBody'), label: t('comp.resume'), type: 'info', fn: () => api.resume(c.id), done: t('comp.resumedToast') })} />}
           {a.withdraw && (
-            <Button label={t('comp.withdraw')} variant="secondary"
+            <Button size="medium" label={t('comp.withdraw')} variant="secondary"
               onPress={() => setConfirm({ key: 'withdraw', title: t('comp.withdrawQ'), body: c.status === 'SCHEDULED' ? t('comp.withdrawScheduledBody') : t('comp.withdrawBody'), label: t('comp.withdraw'), type: 'warning', fn: () => api.withdraw(c.id), done: t('comp.movedToDraft') })} />
           )}
           {a.discardPendingChanges && (
-            <Button label={t('comp.discardChanges')} variant="secondary"
+            <Button size="medium" label={t('comp.discardChanges')} variant="secondary"
               onPress={() => setConfirm({ key: 'discard', title: t('comp.discardChangesQ'), body: t('comp.discardChangesBody'), label: t('comp.discardChanges'), type: 'warning', fn: () => api.discardChanges(c.id), done: t('comp.changesDiscarded') })} />
           )}
-          {a.pause && <Button label={t('comp.pause')} icon="pause" variant="secondary" onPress={() => setSheet({ kind: 'pause' })} />}
-          {a.extendRegistration && <Button label={t('comp.extendRegistration')} icon="calendar-alt" variant="secondary" onPress={() => setSheet({ kind: 'extendRegistration' })} />}
+          {a.pause && <Button size="medium" label={t('comp.pause')} icon="pause" variant="secondary" onPress={() => setSheet({ kind: 'pause' })} />}
+          {a.extendRegistration && <Button size="medium" label={t('comp.extendRegistration')} icon="calendar-alt" variant="secondary" onPress={() => setSheet({ kind: 'extendRegistration' })} />}
           {a.closeRegistration && (
-            <Button label={t('comp.closeRegistration')} icon="door-closed" variant="secondary"
+            <Button size="medium" label={t('comp.closeRegistration')} icon="door-closed" variant="secondary"
               onPress={() => setConfirm({ key: 'closeReg', title: t('comp.closeRegistrationQ'), body: t('comp.closeRegistrationBody'), label: t('comp.closeRegistration'), type: 'warning', fn: () => api.closeRegistration(c.id), done: t('comp.registrationClosedToast') })} />
           )}
-          {a.closeCompetition && <Button label={t('comp.closeCompetition')} icon="flag-checkered" variant="secondary" onPress={() => setSheet({ kind: 'close' })} />}
-          {a.reopenResults && <Button label={t('comp.reopenResults')} icon="undo" variant="secondary" onPress={() => setSheet({ kind: 'reopenResults' })} />}
+          {a.closeCompetition && <Button size="medium" label={t('comp.closeCompetition')} icon="flag-checkered" variant="secondary" onPress={() => setSheet({ kind: 'close' })} />}
+          {a.reopenResults && <Button size="medium" label={t('comp.reopenResults')} icon="undo" variant="secondary" onPress={() => setSheet({ kind: 'reopenResults' })} />}
           {a.deleteDraft && (
-            <Button label={t('comp.deleteDraft')} icon="trash-alt" variant="danger"
+            <Button size="medium" label={t('comp.deleteDraft')} icon="trash-alt" variant="danger"
               onPress={() => setConfirm({ key: 'delete', title: t('comp.deleteDraftQ'), body: t('comp.deleteDraftBody'), label: t('comp.deleteDraft'), type: 'danger', fn: () => api.deleteDraft(c.id), done: t('comp.draftDeleted'), after: () => router.back() })} />
           )}
-          {a.cancel && !a.deleteDraft && <Button label={t('comp.cancelCompetition')} icon="ban" variant="danger" onPress={() => setSheet({ kind: 'cancel' })} />}
+          {a.cancel && !a.deleteDraft && <Button size="medium" label={t('comp.cancelCompetition')} icon="ban" variant="danger" onPress={() => setSheet({ kind: 'cancel' })} />}
         </View>
         {c.status === 'PAUSED' && <Text style={[shared.meta, { color: C.textSecondary }]}>{t('comp.pausedOrganizerNote')}</Text>}
       </Section>

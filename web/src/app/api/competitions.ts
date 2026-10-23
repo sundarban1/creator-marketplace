@@ -68,7 +68,7 @@ export interface CreatorDisplay { id: string; fullName: string | null; username:
 
 export interface PublicResult {
   prize: { id: string; position: number; kind: PrizeKind; title: string; amount: number | null; currency: string };
-  creator: Omit<CreatorDisplay, 'id'>;
+  creator: Omit<CreatorDisplay, 'id'> & { id?: string };
 }
 
 export interface CompetitionDetail {

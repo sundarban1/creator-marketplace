@@ -161,8 +161,8 @@ function StageReview({ c, stageId, onSelectStage, onChanged }: { c: ManagedCompe
                 const published = r.decision?.isPublished;
                 return (
                   <li key={r.participantId} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-3 sm:flex-row sm:items-center">
-                    <CreatorProfileLink creatorId={r.creator.id} className="flex-1">
-                      <Avatar name={r.creator.fullName ?? ''} src={r.creator.avatarUrl} size="sm" />
+                    <CreatorProfileLink creatorId={r.creator.id} username={r.creator.username} className="flex-1">
+                      <Avatar name={r.creator.fullName ?? r.creator.username ?? ''} src={r.creator.avatarUrl} size="sm" />
                       <div className="min-w-0">
                         <p className="flex items-center gap-1 truncate text-[14px] font-semibold text-ink group-hover/creator:text-violet-dark group-hover/creator:underline">{r.creator.fullName ?? r.creator.username}<VerifiedTick entity={r.creator} /></p>
                         <p className="truncate text-[12px] text-ink-soft">
@@ -258,7 +258,7 @@ function EntryModal({ c, stageId, row, editable, canDecide, pending, onClose, on
         rel="noopener"
         className="group mb-4 flex items-center gap-3 rounded-xl border border-line p-2.5 transition-colors hover:border-violet/40 hover:bg-violet/[0.04]"
       >
-        <Avatar name={row.creator.fullName ?? ''} src={row.creator.avatarUrl} size="sm" />
+        <Avatar name={row.creator.fullName ?? row.creator.username ?? ''} src={row.creator.avatarUrl} size="sm" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1 truncate text-[14px] font-semibold text-ink">{row.creator.fullName ?? row.creator.username}<VerifiedTick entity={row.creator} /></span>
           {row.creator.username && <span className="block truncate text-[12px] text-ink-soft">@{row.creator.username}</span>}

@@ -12,6 +12,7 @@ import { F, RADIUS, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants
 import {
   competitionStatusBadge, creatorStatusBadge, formatNpt, joinedCardLabel, npr, stageStatusBadge, timeLeft, toneColor, type Tone,
 } from './format';
+import { PersonAvatar, ProfileRow, useOpenProfile } from './ProfileAvatar';
 
 const ORANGE = '#EA580C';
 const VIOLET = '#7C3AED';
@@ -69,6 +70,7 @@ function Cover({ uri, style }: { uri: string | null; style: object }) {
 /** Discover/Results card — same content as web's CompetitionCard. */
 export function CompetitionCardItem({ c, onPress }: { c: CompetitionCard; onPress: () => void }) {
   const C = useAppColors();
+  const openProfile = useOpenProfile();
   const { t } = useLanguage();
   const status = competitionStatusBadge(c.status, t);
   const reg = timeLeft(c.registrationDeadline, t);
@@ -100,12 +102,10 @@ export function CompetitionCardItem({ c, onPress }: { c: CompetitionCard; onPres
         </View>
         <Text style={[s.cardTitle, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
         {!!c.organizer.name && (
-          <View style={s.orgRow}>
-            {c.organizer.logoUrl
-              ? <Image source={{ uri: c.organizer.logoUrl }} style={s.orgLogo} />
-              : <View style={[s.orgLogo, { backgroundColor: C.primaryLight }]} />}
-            <Text style={[s.meta, { color: C.textSecondary }]} numberOfLines={1}>{c.organizer.name}</Text>
-          </View>
+          <ProfileRow onPress={openProfile.business(c.organizer.slug)} label={c.organizer.name} style={s.orgRow}>
+            <PersonAvatar uri={c.organizer.logoUrl} name={c.organizer.name} size={18} />
+            <Text style={[s.meta, { color: C.textSecondary, flexShrink: 1 }]} numberOfLines={1}>{c.organizer.name}</Text>
+          </ProfileRow>
         )}
         {(c.prizePool || c.prizeHighlights.length > 0) && (
           <View style={s.prizeRow}>
@@ -116,10 +116,6 @@ export function CompetitionCardItem({ c, onPress }: { c: CompetitionCard; onPres
           </View>
         )}
         <View style={s.rowWrap}>
-          <View style={s.iconMeta}>
-            <FontAwesome5 name="users" size={11} color={C.textSecondary} />
-            <Text style={[s.meta, { color: C.textSecondary }]}>{t('comp.participants', { n: c.participantCount })}</Text>
-          </View>
           {c.registrationOpen && (
             <View style={s.iconMeta}>
               <FontAwesome5 name="clock" size={11} color={reg.urgent ? C.error : C.textSecondary} />
@@ -295,7 +291,6 @@ const s = StyleSheet.create({
   rowWrap:   { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   cardTitle: { fontSize: 16, fontFamily: F.bold, lineHeight: lineHeightFor(16) },
   orgRow:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  orgLogo:   { width: 18, height: 18, borderRadius: 9 },
   prizeRow:  { flexDirection: 'row', gap: 6 },
   prizeText: { flex: 1, fontSize: 14, fontFamily: F.semibold, lineHeight: lineHeightFor(14) },
   iconMeta:  { flexDirection: 'row', alignItems: 'center', gap: 5 },

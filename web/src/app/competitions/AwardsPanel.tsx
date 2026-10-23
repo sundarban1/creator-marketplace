@@ -111,8 +111,8 @@ export function AwardsPanel({ c, onChanged }: { c: ManagedCompetition; onChanged
             {published.map((a) => (
               <li key={a.prizeId + a.participantId} className="flex items-center gap-3 py-2.5">
                 <Award size={16} aria-hidden className={a.prize.kind === 'PLACEMENT' ? 'text-brand-orange' : 'text-violet'} />
-                <CreatorProfileLink creatorId={a.creator.id} className="flex-1">
-                  <Avatar name={a.creator.fullName ?? ''} src={a.creator.avatarUrl} size="sm" />
+                <CreatorProfileLink creatorId={a.creator.id} username={a.creator.username} className="flex-1">
+                  <Avatar name={a.creator.fullName ?? a.creator.username ?? ''} src={a.creator.avatarUrl} size="sm" />
                   <span className="truncate text-[14px] font-semibold text-ink group-hover/creator:text-violet-dark group-hover/creator:underline">{a.creator.fullName ?? a.creator.username}</span>
                 </CreatorProfileLink>
                 <span className="text-[13px] text-ink-soft">{a.prize.title}</span>

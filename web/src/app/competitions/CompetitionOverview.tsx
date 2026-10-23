@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
-import { CalendarClock, Users, Trophy, Award } from 'lucide-react';
+import { CalendarClock, Trophy, Award } from 'lucide-react';
 import { useT } from '../i18n';
 import { Avatar } from '../ui/Avatar';
 import { VerifiedTick } from '../ui/VerifiedTick';
 import { Alert } from '../ui/Alert';
 import { EventAttachmentsView } from '../events/EventAttachments';
 import type { CompetitionDetail } from '../api/competitions';
-import { CompetitionTypeBadge, CompetitionStatusBadge, Prose, Section, StageTimeline, PrizeList, InfoRow, type TimelineStage } from './parts';
+import { CompetitionTypeBadge, CompetitionStatusBadge, Prose, Section, StageTimeline, PrizeList, InfoRow, ProfileLink, type TimelineStage } from './parts';
+import { useProfilePaths } from './profilePaths';
 import { formatNpt, durationLabel, npr } from './format';
 import { parseObjectives } from './options';
 
@@ -28,6 +29,7 @@ export function CompetitionOverview({ c, headerAction, progress, timelineStages,
   currentStageId?: string | null;
 }) {
   const t = useT();
+  const paths = useProfilePaths();
   const dur = durationLabel(c.videoMinSec, c.videoMaxSec, t);
   const single = c.submissionMode === 'SINGLE';
   const stages: TimelineStage[] = (timelineStages ?? c.stages.map((s) => ({ ...s }))).map((s, i) => ({ ...s, reviewRound: single && i > 0 }));
@@ -49,14 +51,13 @@ export function CompetitionOverview({ c, headerAction, progress, timelineStages,
               <CompetitionStatusBadge status={c.status} />
             </div>
             <h1 className="mt-2 text-[22px] font-semibold leading-tight text-ink sm:text-[26px]">{c.title}</h1>
-            <div className="mt-2 flex items-center gap-2 text-[13px] text-ink-soft">
+            <ProfileLink to={paths.business(c.organizer.slug)} className="mt-2 gap-2 self-start text-[13px] text-ink-soft">
               <Avatar name={c.organizer.name ?? ''} src={c.organizer.logoUrl} size="xs" />
-              <span>{t('comp.byOrganizer', { name: c.organizer.name ?? '' })}</span>
+              <span className="group-hover/creator:text-ink group-hover/creator:underline">{t('comp.byOrganizer', { name: c.organizer.name ?? '' })}</span>
               <VerifiedTick entity={{ isVerified: c.organizer.isVerified }} />
-            </div>
+            </ProfileLink>
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[12.5px] text-ink-soft">
               <span className="inline-flex items-center gap-1"><CalendarClock size={13} aria-hidden />{t('comp.registrationUntil', { when: formatNpt(c.registrationDeadline) })}</span>
-              {c.participantCount != null && <span className="inline-flex items-center gap-1"><Users size={13} aria-hidden />{t('comp.participants', { n: c.participantCount })}</span>}
               {c.prizePool && <span className="inline-flex items-center gap-1 font-semibold text-ink"><Trophy size={13} aria-hidden className="text-brand-orange" />{t('comp.prizePool', { amount: npr(c.prizePool.amount) })}</span>}
             </div>
           </div>
@@ -78,11 +79,13 @@ export function CompetitionOverview({ c, headerAction, progress, timelineStages,
                 {c.results.map((r, i) => (
                   <li key={`${r.prize.id}-${i}`} className="flex items-center gap-3 py-2.5">
                     <Award size={18} aria-hidden className={r.prize.kind === 'PLACEMENT' ? 'text-brand-orange' : 'text-violet'} />
-                    <Avatar name={r.creator.fullName ?? ''} src={r.creator.avatarUrl} size="sm" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-ink">{r.creator.fullName}{r.creator.username ? <span className="font-normal text-ink-soft"> @{r.creator.username}</span> : null}</p>
-                      <p className="text-[12.5px] text-ink-soft">{r.prize.title}</p>
-                    </div>
+                    <ProfileLink to={paths.creator(r.creator)} className="flex-1">
+                      <Avatar name={r.creator.fullName ?? r.creator.username ?? ''} src={r.creator.avatarUrl} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[14px] font-semibold text-ink group-hover/creator:text-violet-dark group-hover/creator:underline">{r.creator.fullName ?? r.creator.username}{r.creator.fullName && r.creator.username ? <span className="font-normal text-ink-soft"> @{r.creator.username}</span> : null}</p>
+                        <p className="text-[12.5px] text-ink-soft">{r.prize.title}</p>
+                      </div>
+                    </ProfileLink>
                     {r.prize.amount != null && <span className="text-[13px] font-semibold text-ink">{npr(r.prize.amount)}</span>}
                   </li>
                 ))}

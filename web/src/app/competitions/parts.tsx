@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { Trophy, Users, Clock, CheckCircle2, Circle, XCircle, Lock, PlayCircle, Link2, ExternalLink, Award, ArrowUpRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useProfilePaths } from './profilePaths';
+import { Trophy, Clock, CheckCircle2, Circle, XCircle, Lock, PlayCircle, Link2, ExternalLink, Award, ArrowUpRight } from 'lucide-react';
 import { useT } from '../i18n';
 import { cn } from '../ui/cn';
 import { MarkdownText } from '../ui/MarkdownText';
@@ -58,6 +59,7 @@ export function CompetitionCard({ c, href }: { c: CardData; href: string }) {
   const cta = c.joined
     ? c.status === 'COMPLETED' ? t('comp.ctaViewResults') : t('comp.ctaViewProgress')
     : c.status === 'COMPLETED' ? t('comp.ctaViewResults') : c.registrationOpen ? t('comp.ctaJoin') : t('comp.ctaView');
+  const paths = useProfilePaths();
 
   return (
     <Link
@@ -89,10 +91,10 @@ export function CompetitionCard({ c, href }: { c: CardData; href: string }) {
           )}
         </div>
         <h3 className="mt-2.5 line-clamp-2 text-[16px] font-semibold leading-snug text-ink">{c.title}</h3>
-        <div className="mt-2 flex items-center gap-2">
+        <ProfileLink to={paths.business(c.organizer.slug)} insideLink className="mt-2 gap-2 self-start">
           <Avatar name={c.organizer.name ?? ''} src={c.organizer.logoUrl} size="xs" />
-          <span className="truncate text-[13px] text-ink-soft">{c.organizer.name}</span>
-        </div>
+          <span className="truncate text-[13px] text-ink-soft group-hover/creator:text-ink group-hover/creator:underline">{c.organizer.name}</span>
+        </ProfileLink>
         {(c.prizePool || c.prizeHighlights.length > 0) && (
           <p className="mt-3 flex items-start gap-1.5 text-[14px] font-semibold text-ink">
             <Trophy size={14} className="mt-0.5 shrink-0 text-brand-orange" aria-hidden />
@@ -102,7 +104,6 @@ export function CompetitionCard({ c, href }: { c: CardData; href: string }) {
           </p>
         )}
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-ink-soft">
-          <span className="inline-flex items-center gap-1"><Users size={13} aria-hidden />{t('comp.participants', { n: c.participantCount })}</span>
           {c.registrationOpen && (
             <span className={cn('inline-flex items-center gap-1', reg.urgent && 'font-semibold text-danger')}>
               <Clock size={13} aria-hidden />{t('comp.registrationCloses', { when: reg.label })}
@@ -431,14 +432,35 @@ export function DeadlineDialog({ open, title, message, current, confirmLabel, on
 }
 
 
-/** Avatar + name that opens the creator's profile (business side), in the same tab. */
-export function CreatorProfileLink({ creatorId, children, className }: { creatorId: string; children: ReactNode; className?: string }) {
-  return (
-    <Link
-      to={`/business/creators/${creatorId}`}
-      className={cn('group/creator flex min-w-0 items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-violet/40', className)}
-    >
-      {children}
-    </Link>
-  );
+const linkCls = 'group/creator flex min-w-0 items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-violet/40';
+
+/**
+ * Avatar + name that opens a profile. `insideLink` (e.g. inside a whole-card
+ * link) renders a keyboard-accessible span that navigates on its own, since
+ * nested <a> elements are invalid. With no `to`, it renders plain content.
+ */
+export function ProfileLink({ to, children, className, insideLink }: { to: string | null; children: ReactNode; className?: string; insideLink?: boolean }) {
+  const navigate = useNavigate();
+  if (!to) return <span className={cn('flex min-w-0 items-center gap-3', className)}>{children}</span>;
+  if (insideLink) {
+    const go = (e: React.SyntheticEvent) => { e.preventDefault(); e.stopPropagation(); navigate(to); };
+    return (
+      <span
+        role="link"
+        tabIndex={0}
+        onClick={go}
+        onKeyDown={(e) => { if (e.key === 'Enter') go(e); }}
+        className={cn(linkCls, 'cursor-pointer', className)}
+      >
+        {children}
+      </span>
+    );
+  }
+  return <Link to={to} className={cn(linkCls, className)}>{children}</Link>;
+}
+
+/** Avatar + name that opens the creator's profile, in the same tab. */
+export function CreatorProfileLink({ creatorId, username, children, className }: { creatorId: string; username?: string | null; children: ReactNode; className?: string }) {
+  const paths = useProfilePaths();
+  return <ProfileLink to={paths.creator({ id: creatorId, username })} className={className}>{children}</ProfileLink>;
 }

@@ -18,7 +18,8 @@ import { F, RADIUS, SPACING } from '@/utilities/constants';
 import { competitionManageService as api, type ManageDetail, type ParticipantRow } from '@/services/competition';
 import { Section } from '@/features/creator/competition/parts';
 import { npr } from '@/features/creator/competition/format';
-import { CreatorAvatar, Notice, shared } from './shared';
+import { Notice, shared } from './shared';
+import { PersonAvatar } from '@/features/creator/competition/ProfileAvatar';
 
 const ORANGE = '#EA580C';
 const VIOLET = '#7C3AED';
@@ -122,7 +123,7 @@ export function ResultsPanel({ c, onChanged }: { c: ManageDetail; onChanged: () 
           <Pressable key={a.prizeId + a.participantId} style={shared.row} accessibilityRole="link"
             onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: a.creator.id } })}>
             <FontAwesome5 name="award" size={16} color={a.prize.kind === 'PLACEMENT' ? ORANGE : VIOLET} />
-            <CreatorAvatar uri={a.creator.avatarUrl} size={32} />
+            <PersonAvatar uri={a.creator.avatarUrl} name={a.creator.fullName ?? a.creator.username} size={32} />
             <Text style={[shared.strong, { color: C.text, flex: 1 }]} numberOfLines={1}>{a.creator.fullName ?? a.creator.username}</Text>
             <Text style={[shared.meta, { color: C.textSecondary }]}>{a.prize.title}</Text>
           </Pressable>
@@ -162,7 +163,7 @@ export function ResultsPanel({ c, onChanged }: { c: ManageDetail; onChanged: () 
                     accessibilityRole="button"
                     accessibilityLabel={`${p.title} ${i + 1}: ${pid ? nameOf(pid) : t('comp.unassigned')}`}
                     style={[styles.slot, { borderColor: pid ? withAlpha(C.brinjal1, 0.4) : C.border, backgroundColor: pid ? withAlpha(C.brinjal1, 0.05) : C.background, opacity: editable ? 1 : 0.7 }]}>
-                    {pid ? <CreatorAvatar uri={r?.creator.avatarUrl ?? null} size={28} /> : <FontAwesome5 name="user-plus" size={13} color={C.textSecondary} />}
+                    {pid ? <PersonAvatar uri={r?.creator.avatarUrl} name={nameOf(pid)} size={28} /> : <FontAwesome5 name="user-plus" size={13} color={C.textSecondary} />}
                     <Text style={[shared.small, { flex: 1, color: pid ? C.text : C.textSecondary, fontFamily: pid ? F.semibold : F.regular }]} numberOfLines={1}>
                       {pid ? nameOf(pid) : t('comp.unassigned')}
                     </Text>
@@ -197,6 +198,7 @@ export function ResultsPanel({ c, onChanged }: { c: ManageDetail; onChanged: () 
             <PickRow
               key={r.participantId}
               avatar={r.creator.avatarUrl}
+              name={r.creator.fullName ?? r.creator.username}
               label={`${r.creator.fullName ?? r.creator.username}${r.submission ? '' : ` (${t('comp.noEntryShort')})`}`}
               selected={!!picking && slots[picking.key] === r.participantId}
               onPress={() => { setSlots((s) => ({ ...s, [picking!.key]: r.participantId })); setPicking(null); }}
@@ -231,12 +233,12 @@ export function ResultsPanel({ c, onChanged }: { c: ManageDetail; onChanged: () 
   );
 }
 
-function PickRow({ label, avatar, selected, onPress }: { label: string; avatar?: string | null; selected: boolean; onPress: () => void }) {
+function PickRow({ label, avatar, name, selected, onPress }: { label: string; avatar?: string | null; name?: string | null; selected: boolean; onPress: () => void }) {
   const C = useAppColors();
   return (
     <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected }}
       style={[styles.pickRow, selected && { backgroundColor: withAlpha(C.brinjal1, 0.08) }]}>
-      {avatar !== undefined ? <CreatorAvatar uri={avatar} size={32} /> : <FontAwesome5 name="minus-circle" size={16} color={C.textSecondary} style={{ width: 32, textAlign: 'center' }} />}
+      {avatar !== undefined ? <PersonAvatar uri={avatar} name={name} size={32} /> : <FontAwesome5 name="minus-circle" size={16} color={C.textSecondary} style={{ width: 32, textAlign: 'center' }} />}
       <Text style={[shared.small, { color: C.text, flex: 1 }]} numberOfLines={1}>{label}</Text>
       {selected && <FontAwesome5 name="check" size={13} color={C.brinjal1} />}
     </Pressable>

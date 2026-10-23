@@ -1546,7 +1546,7 @@ export class CompetitionService {
 
   private async publicResults(competitionId: string) {
     const awards = await this.listAwards(competitionId, false);
-    return awards.map((a) => ({ prize: a.prize, creator: { fullName: a.creator.fullName, username: a.creator.username, avatarUrl: a.creator.avatarUrl, isVerified: a.creator.isVerified } }));
+    return awards.map((a) => ({ prize: a.prize, creator: { id: a.creator.id, fullName: a.creator.fullName, username: a.creator.username, avatarUrl: a.creator.avatarUrl, isVerified: a.creator.isVerified } }));
   }
 
   async join(userId: string, id: string) {

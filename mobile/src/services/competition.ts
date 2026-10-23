@@ -191,7 +191,7 @@ export interface CompetitionDetail {
   prizePool: { amount: number; currency: string } | null;
   results: Array<{
     prize: { id: string; position: number; kind: PrizeKind; title: string; amount: number | null; currency: string };
-    creator: Omit<CreatorDisplay, 'id'>;
+    creator: Omit<CreatorDisplay, 'id'> & { id?: string };
   }> | null;
   viewer: { role: 'OWNER' | 'PARTICIPANT' | 'VISITOR'; joined: boolean; canJoin: boolean };
 }
