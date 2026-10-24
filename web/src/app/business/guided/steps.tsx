@@ -34,12 +34,28 @@ interface StepProps {
   onNext: () => void;
   onBack?: () => void;
   nextLabel?: string;
+  /** Edit mode: save the whole event straight from this step. */
+  onSave?: () => void;
+  saving?: boolean;
 }
 
 const issueFor = (issues: CampaignRuleIssue[], ...fields: string[]) => issues.find((i) => fields.includes(i.field));
 
-function Footer({ onBack, onNext, nextLabel, nextDisabled, busy }: { onBack?: () => void; onNext: () => void; nextLabel?: string; nextDisabled?: boolean; busy?: boolean }) {
+function Footer({ onBack, onNext, nextLabel, nextDisabled, busy, onSave, saving }: { onBack?: () => void; onNext: () => void; nextLabel?: string; nextDisabled?: boolean; busy?: boolean; onSave?: () => void; saving?: boolean }) {
   const t = useT();
+  if (onSave) {
+    // Editing a live event: "Back"/"Next" both return to the summary, so offer that plus a direct save.
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button type="button" variant="secondary" size="lg" onClick={onNext} disabled={nextDisabled || saving}>
+          <ArrowLeft size={16} aria-hidden />{nextLabel ?? t('guided.backToReview')}
+        </Button>
+        <Button type="button" size="lg" onClick={onSave} loading={saving} className="min-w-[9rem]">
+          {t('guided.saveChanges')}
+        </Button>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center justify-between gap-3">
       {onBack ? (
@@ -224,10 +240,10 @@ export function ClarifyStep({ form, update, questions, onNext, onBack }: StepPro
 // ── Basics (Step 2) ──────────────────────────────────────────────────────────
 
 
-export function BasicsStep({ form, update, issues, onNext, onBack, nextLabel }: StepProps) {
+export function BasicsStep({ form, update, issues, onNext, onBack, nextLabel, onSave, saving }: StepProps) {
   const t = useT();
   return (
-    <StepShell title={t('guided.basicsTitle')} subtitle={t('guided.basicsSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>
+    <StepShell title={t('guided.basicsTitle')} subtitle={t('guided.basicsSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} onSave={onSave} saving={saving} />}>
       <div>
         <TextField
           label={t('guided.titleLabel')}
@@ -333,7 +349,7 @@ const COUNT_BUCKETS = [
   { value: '1-3', n: 2 }, { value: '4-10', n: 5 }, { value: '10+', n: 12 },
 ] as const;
 
-export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel }: StepProps) {
+export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel, onSave, saving }: StepProps) {
   const t = useT();
   const categories = useAsync((s) => fetchCategories(s), []);
   const [rec, setRec] = useState<{ reason: string } | null>(null);
@@ -354,7 +370,7 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel }
   const count = form.creatorsNeeded;
   const bucket = count == null ? null : count <= 3 ? '1-3' : count <= 10 ? '4-10' : '10+';
   return (
-    <StepShell title={t('guided.creatorsTitle')} subtitle={t('guided.creatorsSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>
+    <StepShell title={t('guided.creatorsTitle')} subtitle={t('guided.creatorsSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} onSave={onSave} saving={saving} />}>
       <Field label={t('guided.creatorTypeLabel')} help={<ProvenanceTag value={form.aiProvenance.category} />}>
         <ChoiceChips<string>
           multi
@@ -414,7 +430,7 @@ export function CreatorsStep({ form, update, issues, onNext, onBack, nextLabel }
 
 // ── Content (Step 4) ─────────────────────────────────────────────────────────
 
-export function ContentStep({ form, update, issues, onNext, onBack, onAdvanced, nextLabel }: StepProps & { onAdvanced: () => void }) {
+export function ContentStep({ form, update, issues, onNext, onBack, onAdvanced, nextLabel, onSave, saving }: StepProps & { onAdvanced: () => void }) {
   const t = useT();
   const platformList = useAsync((s) => fetchActivePlatforms(s), []);
   const platforms = Array.from(new Set([...(platformList.data?.length ? platformList.data : ['Instagram', 'TikTok', 'YouTube', 'Facebook']), ...form.platforms]));
@@ -429,7 +445,7 @@ export function ContentStep({ form, update, issues, onNext, onBack, onAdvanced, 
     } catch { /* optional */ } finally { setBusy(false); }
   };
   return (
-    <StepShell title={t('guided.contentTitle')} subtitle={t('guided.contentSub')} example={t('guided.contentExample')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>
+    <StepShell title={t('guided.contentTitle')} subtitle={t('guided.contentSub')} example={t('guided.contentExample')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} onSave={onSave} saving={saving} />}>
       <Field label={t('guided.deliverablesLabel')} help={<><ProvenanceTag value={form.aiProvenance.deliverableItems} /><WhyAsking label={t('guided.whatsTheDifference')} text={t('guided.helpDeliverableTypes')} onRecommend={recommend} /></>}>
         <DeliverablesEditor items={form.deliverableItems} onChange={(items) => { setRec(null); update({ deliverableItems: items }, ['deliverableItems']); }} />
         <div className="mt-1"><RecommendButton onClick={recommend} loading={busy} /></div>
@@ -471,7 +487,7 @@ const BUDGET_BUCKETS = [
   { value: '25K_100K', total: 50000 },
 ] as const;
 
-export function BudgetStep({ form, update, issues, onNext, onBack, nextLabel }: StepProps) {
+export function BudgetStep({ form, update, issues, onNext, onBack, nextLabel, onSave, saving }: StepProps) {
   const t = useT();
   const [nonce, setNonce] = useState(0);
   const [rec, setRec] = useState<string | null>(null);
@@ -504,7 +520,7 @@ export function BudgetStep({ form, update, issues, onNext, onBack, nextLabel }: 
   };
 
   return (
-    <StepShell title={t('guided.budgetTitle')} subtitle={t('guided.budgetSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} />}>
+    <StepShell title={t('guided.budgetTitle')} subtitle={t('guided.budgetSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel} onSave={onSave} saving={saving} />}>
       <Field label={t('guided.paymentLabel')}>
         <ChoiceChips<'CASH' | 'EXCHANGE'>
           value={exchange ? 'EXCHANGE' : 'CASH'}
@@ -551,7 +567,7 @@ export function BudgetStep({ form, update, issues, onNext, onBack, nextLabel }: 
 
 // ── Advanced requirements (Step 6, optional) ─────────────────────────────────
 
-export function RequirementsStep({ form, update, onNext, onBack, nextLabel }: StepProps) {
+export function RequirementsStep({ form, update, onNext, onBack, nextLabel, onSave, saving }: StepProps) {
   const t = useT();
   const [open, setOpen] = useState<string | null>(() => BRIEF_SECTIONS.find((s) => sectionFilled(form.brief, s.key))?.key ?? 'content');
 
@@ -561,7 +577,7 @@ export function RequirementsStep({ form, update, onNext, onBack, nextLabel }: St
   };
 
   return (
-    <StepShell title={t('guided.reqTitle')} subtitle={t('guided.reqSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={nextLabel ?? t('guided.done')} />}>
+    <StepShell title={t('guided.reqTitle')} subtitle={t('guided.reqSub')} footer={<Footer onBack={onBack} onNext={onNext} nextLabel={onSave ? nextLabel : nextLabel ?? t('guided.done')} onSave={onSave} saving={saving} />}>
       <div className="space-y-3">
         {BRIEF_SECTIONS.map((s) => {
           const isOpen = open === s.key;

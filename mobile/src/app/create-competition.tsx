@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, Switch, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, Switch, Text, TextInput, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
@@ -14,10 +15,10 @@ import { StepShell, Field, FooterNav, ProgressRail, ChoiceChips, Input, st } fro
 import { DateTimeField } from '@/features/business/competition/DateTimeField';
 import {
   ALL_STEPS, CRITERIA_SUGGESTIONS, FORMAT_OPTIONS, FORM_STEPS, MAX_OBJECTIVES, MAX_STAGES, MAX_TAGS, OBJECTIVE_OPTIONS, SKILL_OPTIONS,
-  cashPrizeTotal, emptyForm, emptyStage, formatNpt, isReviewRound, parseObjectives, serializeObjectives, toPayload, validateAll, validateStep,
+  cashPrizeTotal, emptyForm, emptyStage, formatNpt, fromManaged, isReviewRound, parseObjectives, serializeObjectives, toPayload, validateAll, validateStep,
   type FormStep,
 } from '@/features/business/competition/model';
-import { competitionService, type CompetitionInput, type CompetitionPrize, type CompetitionStageInput } from '@/services/competition';
+import { competitionService, type CompetitionInput, type CompetitionPrize, type CompetitionStageInput, type EditableCompetition } from '@/services/competition';
 import { FormErrorBanner } from '@/components/FieldError';
 import { VerifyBusinessModal, checkVerificationGate, isVerificationRequiredError, type VerifyGate } from '@/features/business/competition/VerifyBusinessModal';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
@@ -27,23 +28,62 @@ type Step = Exclude<FormStep, 'review'>;
 const numOrNull = (v: string) => (v.trim() === '' || Number.isNaN(Number(v)) ? null : Number(v));
 
 /**
- * Native competition builder — the counterpart of web's CompetitionFormPage
- * (create only). Basics → Rules → Schedule → Stages → Prizes → Judging →
- * Review, then "Save draft" (stays here) or "Submit for review". Every
- * competition is reviewed by Kolab before creators can see it.
+ * Native competition builder — the counterpart of web's CompetitionFormPage.
+ * Basics → Rules → Schedule → Stages → Prizes → Judging → Review.
+ * New: "Save draft" (stays here) or "Submit for review".
+ * Edit (`?id=`): opens on the summary; "Save changes" from any step. Once
+ * live, dates/stage structure are locked (deadline controls live on the
+ * manage screen) and rules/eligibility/prize edits go to Kolab review.
  */
 export default function CreateCompetitionScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
-  const toast = useToast();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const [existing, setExisting] = useState<EditableCompetition | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [f, setF] = useState<CompetitionInput>(emptyForm);
-  const [savedId, setSavedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    competitionService.getForEdit(id)
+      .then((c) => { if (alive) setExisting(c); })
+      .catch((e) => { if (alive) setLoadError(e instanceof Error ? e.message : t('competition.somethingWrong')); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per id
+  }, [id]);
+
+  if (!id) return <CompetitionBuilder existing={null} />;
+  if (existing) return <CompetitionBuilder key={existing.id} existing={existing} />;
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.background }} edges={['top']}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md }}>
+        <BackButton onPress={() => router.back()} />
+      </View>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SCREEN_GUTTER, gap: SPACING.md }}>
+        {loadError ? (
+          <>
+            <Text style={[st.body, { color: C.textSecondary, textAlign: 'center' }]}>{loadError}</Text>
+            <Button label={t('competition.ok')} variant="secondary" onPress={() => router.back()} />
+          </>
+        ) : <ActivityIndicator size="large" color={C.brinjal1} />}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function CompetitionBuilder({ existing }: { existing: EditableCompetition | null }) {
+  const C = useAppColors();
+  const { t } = useLanguage();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+
+  const [f, setF] = useState<CompetitionInput>(() => (existing ? fromManaged(existing) : emptyForm()));
+  const [savedId, setSavedId] = useState<string | null>(existing?.id ?? null);
   const [dirty, setDirty] = useState(false);
-  const [step, setStep] = useState<FormStep>('basics');
+  const [step, setStep] = useState<FormStep>(existing ? 'review' : 'basics');
   const [returnToReview, setReturnToReview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const [busy, setBusy] = useState<'draft' | 'submit' | 'cover' | null>(null);
+  const [busy, setBusy] = useState<'draft' | 'submit' | 'save' | 'cover' | null>(null);
   // Set when submit was blocked because a direct-paying business isn't verified yet (draft already saved).
   const [verifyGate, setVerifyGate] = useState<VerifyGate | null>(null);
 
@@ -52,7 +92,15 @@ export default function CreateCompetitionScreen() {
   const setStage = (i: number, patch: Partial<CompetitionStageInput>) => edit((p) => ({ ...p, stages: p.stages.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
   const setPrize = (i: number, patch: Partial<CompetitionPrize>) => edit((p) => ({ ...p, prizes: p.prizes.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
 
-  const allIssues = validateAll(f, t);
+  // After publication the stage structure and dates are fixed; content stays editable.
+  const structural = !existing || !!existing.allowedActions?.editStructure;
+  // Not yet sent to (or sent back from) Kolab review — can be saved half-filled.
+  const isDraft = !!existing && ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(existing.status);
+  const paymentEditable = !existing || isDraft;
+  // Existing competitions keep their saved payment setup untouched unless the business changes it here.
+  const [paymentTouched, setPaymentTouched] = useState(false);
+  const checkPayment = paymentEditable && (!existing || paymentTouched);
+  const allIssues = validateAll(f, t, { payment: checkPayment });
   const cashTotal = cashPrizeTotal(f.prizes);
   const [kolabPayments, setKolabPayments] = useState(false);
   useEffect(() => {
@@ -62,11 +110,11 @@ export default function CreateCompetitionScreen() {
   // Paying winners directly needs a verified business — warn while they're still filling the form.
   const bizProfile = useBusinessProfile();
   const unverified = !!bizProfile.data && !bizProfile.data.isVerified && bizProfile.data.verificationStatus !== 'VERIFIED';
-  const setPayMethod = (m: 'KOLAB' | 'DIRECT') => edit((p) => ({ ...p, prizePaymentMethod: m, paymentTermsAccepted: p.prizePaymentMethod === m ? p.paymentTermsAccepted : false }));
+  const setPayMethod = (m: 'KOLAB' | 'DIRECT') => { setPaymentTouched(true); edit((p) => ({ ...p, prizePaymentMethod: m, paymentTermsAccepted: p.prizePaymentMethod === m ? p.paymentTermsAccepted : false })); };
 
   function go(next: FormStep) { setErrors([]); setStep(next); }
   function next(current: Step) {
-    const v = validateStep(f, current, t);
+    const v = validateStep(f, current, t, { payment: checkPayment });
     if (v.length) { setErrors(v); return; }
     const i = FORM_STEPS.indexOf(current);
     if (returnToReview || i === FORM_STEPS.length - 1) { setReturnToReview(false); go('review'); }
@@ -78,10 +126,27 @@ export default function CreateCompetitionScreen() {
   }
   function editFromReview(s: Step) { setReturnToReview(true); go(s); }
 
+  /** What an update sends — mirrors web's bodyForSave. */
+  function bodyForSave(): Partial<CompetitionInput> {
+    const body: Partial<CompetitionInput> = toPayload(f);
+    // Payment setup is fixed after review; for an existing competition it's only sent when changed here.
+    if (!paymentEditable || (existing && !paymentTouched)) {
+      delete body.prizePaymentMethod;
+      delete body.cashPrizePool;
+      delete body.paymentTermsAccepted;
+    }
+    if (structural) return body;
+    // Live competitions: dates go through the deadline controls on the manage screen.
+    delete body.registrationOpensAt;
+    delete body.registrationDeadline;
+    delete body.startsAt;
+    delete body.endsAt;
+    return body;
+  }
+
   /** Creates the competition the first time, updates it after that. */
   async function persist(): Promise<string> {
-    const body = toPayload(f);
-    const saved = savedId ? await competitionService.update(savedId, body) : await competitionService.create(body);
+    const saved = savedId ? await competitionService.update(savedId, bodyForSave()) : await competitionService.create(toPayload(f));
     setSavedId(saved.id);
     setDirty(false);
     return saved.id;
@@ -121,6 +186,28 @@ export default function CreateCompetitionScreen() {
         return;
       }
       Alert.alert(t('competition.submittedTitle'), t('competition.submittedBody'), [{ text: t('competition.ok'), onPress: () => router.back() }]);
+    } catch (e) {
+      setErrors([e instanceof Error ? e.message : t('competition.somethingWrong')]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Edit mode: save everything and go back to the manage screen. */
+  async function saveChanges() {
+    if (!existing) return;
+    if (allIssues.length) { setErrors(allIssues.map((i) => i.message)); return; }
+    setBusy('save');
+    setErrors([]);
+    try {
+      const saved = await competitionService.update(existing.id, bodyForSave());
+      setDirty(false);
+      const sentForReview = (existing.status === 'SCHEDULED' && saved.status === 'PENDING_REVIEW')
+        || (!!saved.review?.pendingChangesSubmittedAt && saved.review.pendingChangesSubmittedAt !== existing.review?.pendingChangesSubmittedAt);
+      toast.success(sentForReview ? t('comp.savedForReviewToast') : t('comp.savedToast'));
+      void queryClient.invalidateQueries({ queryKey: ['competition', 'manage', existing.id] });
+      void queryClient.invalidateQueries({ queryKey: ['competitions', 'mine'] });
+      router.back();
     } catch (e) {
       setErrors([e instanceof Error ? e.message : t('competition.somethingWrong')]);
     } finally {
@@ -169,16 +256,26 @@ export default function CreateCompetitionScreen() {
     <>
       {errorBox}
       <FooterNav onBack={FORM_STEPS.indexOf(s) > 0 ? () => back(s) : undefined} onNext={() => next(s)} nextLabel={returnToReview ? t('competition.backToReview') : undefined} />
+      {/* Editing: save straight from any step, no trip back to the summary. */}
+      {existing ? (
+        <View style={{ marginTop: SPACING.md }}>
+          <Button label={t('comp.saveChanges')} icon="check" loading={busy === 'save'} disabled={busy !== null && busy !== 'save'} onPress={saveChanges} fullWidth />
+        </View>
+      ) : null}
     </>
   );
+  // Live competitions: greyed out and untouchable (web disables the same fieldsets).
+  const lockStyle = (locked: boolean) => (locked ? { opacity: 0.5 } : null);
+  const lockProps = (locked: boolean) => ({ pointerEvents: locked ? ('none' as const) : ('auto' as const), style: lockStyle(locked) });
   const objectives = parseObjectives(f.objectives);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.background }} edges={['top']}>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, gap: SPACING.sm }}>
         <View style={{ minWidth: 88, alignItems: 'flex-start' }}><BackButton onPress={close} /></View>
-        <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontFamily: F.bold, color: C.text }} numberOfLines={1}>{t('competition.newTitle')}</Text>
+        <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontFamily: F.bold, color: C.text }} numberOfLines={1}>{existing ? t('comp.editTitle') : t('competition.newTitle')}</Text>
         <View style={{ minWidth: 88, alignItems: 'flex-end' }}>
+          {!existing || isDraft ? (
           <Pressable
             onPress={saveDraft}
             disabled={busy !== null}
@@ -187,6 +284,7 @@ export default function CreateCompetitionScreen() {
             style={({ pressed }) => [pill.btn, { borderColor: C.brinjal1, opacity: busy !== null ? 0.5 : pressed ? 0.7 : 1 }]}>
             <Text style={[pill.txt, { color: C.brinjal1 }]}>{busy === 'draft' ? t('competition.saving') : t('competition.saveDraft')}</Text>
           </Pressable>
+          ) : null}
         </View>
       </View>
 
@@ -249,16 +347,17 @@ export default function CreateCompetitionScreen() {
 
         {step === 'schedule' && (
           <StepShell header={rail} title={t('competition.stepTitle_schedule')} subtitle={t('competition.stepSub_schedule')} footer={nav('schedule')}>
+            {!structural ? <View style={[st.note, { borderColor: C.border }]}><Text style={[st.small, { color: C.textSecondary }]}>{t('comp.scheduleLocked')}</Text></View> : null}
             <Field label={t('competition.registrationWindow')}>
               <View style={{ gap: SPACING.md }}>
-                <DateTimeField label={t('competition.fRegOpens')} value={f.registrationOpensAt} onChange={(v) => set('registrationOpensAt', v)} />
-                <DateTimeField label={t('competition.fRegDeadline')} value={f.registrationDeadline} onChange={(v) => set('registrationDeadline', v)} />
+                <DateTimeField label={t('competition.fRegOpens')} value={f.registrationOpensAt} onChange={(v) => set('registrationOpensAt', v)} disabled={!structural} />
+                <DateTimeField label={t('competition.fRegDeadline')} value={f.registrationDeadline} onChange={(v) => set('registrationDeadline', v)} disabled={!structural} />
               </View>
             </Field>
             <Field label={t('competition.competitionWindow')}>
               <View style={{ gap: SPACING.md }}>
-                <DateTimeField label={t('competition.fStarts')} value={f.startsAt} onChange={(v) => set('startsAt', v)} />
-                <DateTimeField label={t('competition.fEnds')} value={f.endsAt} onChange={(v) => set('endsAt', v)} />
+                <DateTimeField label={t('competition.fStarts')} value={f.startsAt} onChange={(v) => set('startsAt', v)} disabled={!structural} />
+                <DateTimeField label={t('competition.fEnds')} value={f.endsAt} onChange={(v) => set('endsAt', v)} disabled={!structural} />
               </View>
             </Field>
           </StepShell>
@@ -267,6 +366,7 @@ export default function CreateCompetitionScreen() {
         {step === 'stages' && (
           <StepShell header={rail} title={t('competition.stepTitle_stages')} subtitle={f.submissionMode === 'SINGLE' ? t('competition.stagesHelpSingle') : t('competition.stagesHelp')} footer={nav('stages')}>
             <Field label={t('competition.deadlineMode')}>
+              <View {...lockProps(!structural)}>
               <ChoiceChips
                 value={f.submissionMode}
                 onChange={(v) => set('submissionMode', v)}
@@ -275,6 +375,7 @@ export default function CreateCompetitionScreen() {
                   { value: 'PER_STAGE', label: t('competition.modePerStage'), icon: 'calendar-alt' },
                 ]}
               />
+              </View>
               <Text style={[st.small, { color: C.textSecondary, marginTop: SPACING.sm }]}>
                 {f.submissionMode === 'SINGLE' ? t('competition.modeSingleDesc') : t('competition.modePerStageDesc')}
               </Text>
@@ -283,13 +384,16 @@ export default function CreateCompetitionScreen() {
               const isFinal = i === f.stages.length - 1;
               const review = isReviewRound(f, i);
               const single = f.submissionMode === 'SINGLE';
+              // Live: only stages that haven't opened yet keep their shortlist size editable.
+              const upcoming = structural || existing?.stages.find((x) => x.id === s.id)?.status === 'UPCOMING';
               return (
-                <View key={i} style={[st.card, { borderColor: C.border, backgroundColor: C.surface }]}>
+                <View key={s.id ?? i} style={[st.card, { borderColor: C.border, backgroundColor: C.surface }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text style={[st.fieldLabel, { color: C.text, flex: 1 }]}>
                       {t('competition.stageN', { n: i + 1 })}{isFinal ? ` · ${t('competition.finalStage')}` : ''}
                       {single ? ` · ${review ? t('competition.shortlistRound') : t('competition.entryRound')}` : ''}
                     </Text>
+                    {structural ? (
                     <Pressable
                       onPress={() => edit((p) => ({ ...p, stages: p.stages.filter((_, j) => j !== i) }))}
                       disabled={f.stages.length === 1}
@@ -299,6 +403,7 @@ export default function CreateCompetitionScreen() {
                       accessibilityLabel={t('competition.removeStage')}>
                       <FontAwesome5 name="trash-alt" size={14} color={C.textSecondary} />
                     </Pressable>
+                    ) : null}
                   </View>
                   <Input value={s.name} onChangeText={(v) => setStage(i, { name: v })} placeholder={t('competition.fStageName')} maxLength={80} />
                   {review ? (
@@ -307,12 +412,14 @@ export default function CreateCompetitionScreen() {
                   <Input value={s.brief ?? ''} onChangeText={(v) => setStage(i, { brief: v || null })} placeholder={t('competition.fStageBrief')} multiline maxLength={5000} />
                   {!review ? (
                     <>
-                      <DateTimeField label={single ? t('competition.fEntryOpens') : t('competition.fStageOpens')} value={s.opensAt} onChange={(v) => setStage(i, { opensAt: v })} />
-                      <DateTimeField label={single ? t('competition.fEntryDeadline') : t('competition.fStageDeadline')} value={s.deadline} onChange={(v) => setStage(i, { deadline: v })} />
+                      <DateTimeField label={single ? t('competition.fEntryOpens') : t('competition.fStageOpens')} value={s.opensAt} onChange={(v) => setStage(i, { opensAt: v })} disabled={!structural} />
+                      <DateTimeField label={single ? t('competition.fEntryDeadline') : t('competition.fStageDeadline')} value={s.deadline} onChange={(v) => setStage(i, { deadline: v })} disabled={!structural} />
                     </>
                   ) : null}
                   {!isFinal ? (
+                    <View {...lockProps(!upcoming)}>
                     <Input value={s.advanceLimit?.toString() ?? ''} onChangeText={(v) => setStage(i, { advanceLimit: numOrNull(v) })} placeholder={t('competition.fAdvanceLimit')} keyboardType="number-pad" />
+                    </View>
                   ) : null}
                   {!review ? (
                     <Input value={s.requirements ?? ''} onChangeText={(v) => setStage(i, { requirements: v || null })} placeholder={t('competition.fStageRequirements')} multiline maxLength={2000} />
@@ -320,7 +427,7 @@ export default function CreateCompetitionScreen() {
                 </View>
               );
             })}
-            <Button label={t('competition.addStage')} icon="plus" variant="secondary" onPress={addStage} disabled={f.stages.length >= MAX_STAGES} />
+            {structural ? <Button label={t('competition.addStage')} icon="plus" variant="secondary" onPress={addStage} disabled={f.stages.length >= MAX_STAGES} /> : null}
           </StepShell>
         )}
 
@@ -358,6 +465,11 @@ export default function CreateCompetitionScreen() {
               <View style={[st.card, { borderColor: C.border, backgroundColor: C.surface }]}>
                 <Text style={[st.fieldLabel, { color: C.text }]}>{t('competition.payTitle')}</Text>
                 <Text style={[st.small, { color: C.textSecondary }]}>{t('competition.payPool', { amount: cashTotal.toLocaleString('en-IN') })}</Text>
+                {!paymentEditable ? (
+                  <Text style={[st.body, { color: C.text }]}>
+                    {f.prizePaymentMethod === 'KOLAB' ? t('competition.payKolab') : f.prizePaymentMethod === 'DIRECT' ? t('competition.payDirect') : '—'}
+                  </Text>
+                ) : (<>
                 <ChoiceChips
                   value={f.prizePaymentMethod ?? null}
                   onChange={setPayMethod}
@@ -385,7 +497,7 @@ export default function CreateCompetitionScreen() {
                 ) : null}
                 {f.prizePaymentMethod ? (
                   <Pressable
-                    onPress={() => set('paymentTermsAccepted', !f.paymentTermsAccepted)}
+                    onPress={() => { setPaymentTouched(true); set('paymentTermsAccepted', !f.paymentTermsAccepted); }}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: !!f.paymentTermsAccepted }}
                     style={{ flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm, minHeight: MIN_TOUCH_TARGET, paddingTop: SPACING.xs }}>
@@ -395,6 +507,7 @@ export default function CreateCompetitionScreen() {
                     </Text>
                   </Pressable>
                 ) : null}
+                </>)}
               </View>
             ) : null}
           </StepShell>
@@ -442,17 +555,26 @@ export default function CreateCompetitionScreen() {
         {step === 'review' && (
           <StepShell
             header={rail}
-            title={t('competition.stepTitle_review')}
-            subtitle={t('competition.stepSub_review')}
+            title={existing ? t('comp.stepTitle_reviewEdit') : t('competition.stepTitle_review')}
+            subtitle={existing ? t('comp.stepSub_reviewEdit') : t('competition.stepSub_review')}
             footer={
               <>
                 {errorBox}
+                {existing ? (
+                  <Button label={t('comp.saveChanges')} icon="check" loading={busy === 'save'} disabled={busy !== null && busy !== 'save'} onPress={saveChanges} fullWidth />
+                ) : (
                 <View style={{ flexDirection: 'row', gap: SPACING.md }}>
                   <View style={{ flex: 1 }}><Button label={t('competition.saveDraft')} variant="secondary" loading={busy === 'draft'} disabled={busy !== null} onPress={saveDraft} /></View>
                   <View style={{ flex: 1.4 }}><Button label={t('competition.submitForReview')} loading={busy === 'submit'} disabled={busy !== null || allIssues.length > 0} onPress={submit} /></View>
                 </View>
+                )}
               </>
             }>
+            {existing && !structural ? (
+              <View style={[st.note, { borderColor: C.border }]}><Text style={[st.small, { color: C.textSecondary }]}>{t('comp.liveEditNote')}</Text></View>
+            ) : existing?.status === 'SCHEDULED' ? (
+              <View style={[st.note, { borderColor: C.border }]}><Text style={[st.small, { color: C.textSecondary }]}>{t('comp.scheduledEditNote')}</Text></View>
+            ) : null}
             {allIssues.length ? (
               <View style={[st.note, { borderColor: C.draft, gap: 6 }]}>
                 <Text style={[st.fieldLabel, { color: C.text }]}>{t('competition.fixBeforeSubmit')}</Text>
@@ -487,7 +609,7 @@ export default function CreateCompetitionScreen() {
               onEdit={() => editFromReview('judging')}
               lines={[f.scoringEnabled ? t('competition.summaryScoring', { n: f.judgingCriteria.length }) : t('competition.summaryNoScoring')]}
             />
-            <Text style={[st.small, { color: C.textSecondary }]}>{t('competition.reviewNote')}</Text>
+            {!existing ? <Text style={[st.small, { color: C.textSecondary }]}>{t('competition.reviewNote')}</Text> : null}
           </StepShell>
         )}
       </KeyboardAvoidingView>

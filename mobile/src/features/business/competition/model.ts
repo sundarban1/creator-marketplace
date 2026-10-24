@@ -1,4 +1,4 @@
-import type { CompetitionInput, CompetitionStageInput } from '@/services/competition';
+import type { CompetitionInput, CompetitionStageInput, EditableCompetition } from '@/services/competition';
 
 // Form model for the native competition builder — same defaults, steps and
 // client-side checks as web/src/app/competitions/CompetitionFormPage.tsx.
@@ -124,7 +124,8 @@ export function toPayload(f: CompetitionInput): CompetitionInput {
 
 type TFn = (key: string, vars?: Record<string, string | number>) => string;
 
-export function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'review'>, t: TFn): string[] {
+/** `payment: false` skips the prize-payment checks (an existing competition whose payment setup wasn't touched — same as web). */
+export function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'review'>, t: TFn, opts: { payment?: boolean } = {}): string[] {
   const e: string[] = [];
   const ts = (s: string) => new Date(s).getTime();
   switch (step) {
@@ -154,7 +155,7 @@ export function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'revie
       break;
     case 'prizes':
       f.prizes.forEach((p, i) => { if (!p.title.trim()) e.push(t('competition.vPrizeTitle', { n: i + 1 })); });
-      if (cashPrizeTotal(f.prizes) > 0) {
+      if (opts.payment !== false && cashPrizeTotal(f.prizes) > 0) {
         if (!f.prizePaymentMethod) e.push(t('competition.vPayMethod'));
         else if (!f.paymentTermsAccepted) e.push(t('competition.vPayTerms'));
       }
@@ -169,6 +170,31 @@ export function validateStep(f: CompetitionInput, step: Exclude<FormStep, 'revie
   return Array.from(new Set(e));
 }
 
-export function validateAll(f: CompetitionInput, t: TFn): { step: Exclude<FormStep, 'review'>; message: string }[] {
-  return FORM_STEPS.flatMap((step) => validateStep(f, step, t).map((message) => ({ step, message })));
+export function validateAll(f: CompetitionInput, t: TFn, opts: { payment?: boolean } = {}): { step: Exclude<FormStep, 'review'>; message: string }[] {
+  return FORM_STEPS.flatMap((step) => validateStep(f, step, t, opts).map((message) => ({ step, message })));
+}
+
+/** Existing competition → builder form (web's fromManaged). Shows a pending edit's proposal when one is waiting for review. */
+export function fromManaged(c: EditableCompetition): CompetitionInput {
+  const pending = c.review?.pendingChanges ?? null;
+  return {
+    title: c.title, description: c.description, objectives: c.objectives ?? null, coverImageUrl: c.coverImageUrl ?? null,
+    rules: pending?.rules ?? c.rules,
+    eligibility: pending && 'eligibility' in pending ? pending.eligibility ?? null : c.eligibility ?? null,
+    contentFormats: c.contentFormats ?? [], skills: c.skills ?? [], submissionMode: c.submissionMode ?? 'PER_STAGE',
+    submissionInstructions: c.submissionInstructions ?? null, videoMinSec: c.videoMinSec ?? null, videoMaxSec: c.videoMaxSec ?? null,
+    contactInstructions: c.contactInstructions ?? null, resultsVisibility: c.resultsVisibility,
+    registrationOpensAt: c.registrationOpensAt, registrationDeadline: c.registrationDeadline, startsAt: c.startsAt, endsAt: c.endsAt,
+    allowSubmissionEdits: c.allowSubmissionEdits, onePrizePerCreator: c.onePrizePerCreator,
+    scoringEnabled: c.scoringEnabled, judgingCriteria: c.judgingCriteria ?? [],
+    stages: c.stages.map((s) => ({
+      id: s.id, name: s.name, description: s.description ?? null, brief: s.brief ?? null, requirements: s.requirements ?? null,
+      opensAt: s.opensAt, deadline: s.deadline, advanceLimit: s.advanceLimit ?? null, allowedMethods: s.allowedMethods,
+      videoMinSec: s.videoMinSec ?? null, videoMaxSec: s.videoMaxSec ?? null,
+    })),
+    prizes: (pending?.prizes ?? c.prizes).map((p) => ({ id: p.id, kind: p.kind, title: p.title, description: p.description ?? null, amount: p.amount ?? null, currency: 'NPR', recipientCount: p.recipientCount, notes: p.notes ?? null })),
+    // Kept exactly as saved — opening an existing competition never changes its payment setup.
+    prizePaymentMethod: c.payment?.prizePaymentMethod ?? null,
+    paymentTermsAccepted: !!c.payment?.paymentTermsAccepted,
+  };
 }

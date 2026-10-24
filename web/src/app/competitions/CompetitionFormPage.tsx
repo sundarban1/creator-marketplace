@@ -379,7 +379,16 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   const stepFooter = (s: Exclude<FormStep, 'review'>) => (
     <>
       {errorAlert}
-      <StepFooter onBack={FORM_STEPS.indexOf(s) > 0 ? () => back(s) : undefined} onNext={() => next(s)} nextLabel={nextLabel} nextDisabled={uploading} />
+      <StepFooter
+        onBack={FORM_STEPS.indexOf(s) > 0 ? () => back(s) : undefined}
+        onNext={() => next(s)}
+        nextLabel={nextLabel}
+        nextDisabled={uploading}
+        // Editing an existing competition: save straight from any step, no trip back to the summary.
+        onSave={existing ? () => save('save') : undefined}
+        saving={busy === 'save'}
+        saveDisabled={uploading || (busy !== null && busy !== 'save')}
+      />
     </>
   );
 
@@ -779,14 +788,20 @@ function CompetitionForm({ existing }: { existing: ManagedCompetition | null }) 
   );
 }
 
-function StepFooter({ onBack, onNext, nextLabel, nextDisabled }: { onBack?: () => void; onNext: () => void; nextLabel?: string; nextDisabled?: boolean }) {
+function StepFooter({ onBack, onNext, nextLabel, nextDisabled, onSave, saving, saveDisabled }: {
+  onBack?: () => void; onNext: () => void; nextLabel?: string; nextDisabled?: boolean;
+  onSave?: () => void; saving?: boolean; saveDisabled?: boolean;
+}) {
   const t = useT();
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       {onBack ? (
         <Button type="button" variant="secondary" size="lg" onClick={onBack}><ArrowLeft size={16} aria-hidden />{t('guided.back')}</Button>
       ) : <span />}
-      <Button type="button" size="lg" onClick={onNext} disabled={nextDisabled} className="min-w-[9rem]">{nextLabel ?? t('guided.continue')}</Button>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <Button type="button" size="lg" variant={onSave ? 'secondary' : 'primary'} onClick={onNext} disabled={nextDisabled} className="min-w-[9rem]">{nextLabel ?? t('guided.continue')}</Button>
+        {onSave && <Button type="button" size="lg" onClick={onSave} loading={saving} disabled={saveDisabled} className="min-w-[9rem]">{t('comp.saveChanges')}</Button>}
+      </div>
     </div>
   );
 }

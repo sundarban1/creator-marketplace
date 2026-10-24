@@ -80,6 +80,20 @@ export interface ManagedCompetition extends Omit<CompetitionInput, 'stages'> {
   stages: (CompetitionStageInput & { id: string; order: number; status: string })[];
 }
 
+/**
+ * The full organizer record the builder's edit mode loads (GET /manage/:id —
+ * the same response web's CompetitionFormPage reads).
+ */
+export interface EditableCompetition extends ManagedCompetition {
+  prizes: (CompetitionPrize & { id: string })[];
+  payment?: { prizePaymentMethod: PrizePaymentMethod | null; paymentTermsAccepted: boolean } | null;
+  review: {
+    pendingChanges: { rules?: string; eligibility?: string | null; prizes?: (CompetitionPrize & { id?: string })[] } | null;
+    pendingChangesSubmittedAt: string | null;
+  };
+  allowedActions: Partial<Record<'edit' | 'editStructure', boolean>>;
+}
+
 /** One row of the organizer's own competitions list (GET /manage). */
 export interface ManagedListItem {
   id: string; slug: string; title: string; coverImageUrl: string | null; status: CompetitionStatus; suspended: boolean;
@@ -96,8 +110,12 @@ export const competitionService = {
   async create(body: CompetitionInput): Promise<ManagedCompetition> {
     return (await request<ManagedCompetition>('POST', M, body)).data;
   },
-  async update(id: string, body: Partial<CompetitionInput>): Promise<ManagedCompetition> {
-    return (await request<ManagedCompetition>('PATCH', `${M}/${id}`, body)).data;
+  async update(id: string, body: Partial<CompetitionInput>): Promise<EditableCompetition> {
+    return (await request<EditableCompetition>('PATCH', `${M}/${id}`, body)).data;
+  },
+  /** Loads an existing competition into the builder (edit mode). */
+  async getForEdit(id: string): Promise<EditableCompetition> {
+    return (await request<EditableCompetition>('GET', `${M}/${id}`)).data;
   },
   /** Which prize payment methods this server offers (Kolab-managed is behind a flag). */
   async paymentConfig(): Promise<{ kolabPaymentsEnabled: boolean }> {

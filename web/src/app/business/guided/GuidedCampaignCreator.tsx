@@ -285,7 +285,13 @@ export function GuidedCampaignCreator({ mode = 'create', campaign, onSwitchToFre
     : [...planned, 'review'];
   const railSteps = railKeys.map((k) => ({ key: k, label: t(`guided.stepLabel_${k}`) }));
   const railCurrent = step === 'requirements' ? 'content' : step === 'clarify' ? 'idea' : step;
-  const stepProps = { form, update, issues };
+  // Edit mode: every step gets a direct "Save changes". Blocking issues are
+  // listed on the summary, so send the business there instead of saving.
+  const saveFromStep = () => {
+    if (issues.some((i) => i.severity === 'required')) { setStep('review'); return; }
+    void publish();
+  };
+  const stepProps = { form, update, issues, ...(mode === 'edit' ? { onSave: saveFromStep, saving: publishing } : {}) };
 
   const headerActions = (
     <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 whitespace-nowrap">

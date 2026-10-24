@@ -67,7 +67,21 @@ export default function ManageCompetitionScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <PageHeader title={t('comp.manage')} backFallback="/(business)/(tabs)/campaigns" />
+      <PageHeader
+        title={t('comp.manage')}
+        backFallback="/(business)/(tabs)/campaigns"
+        rightSlot={c?.allowedActions.edit ? (
+          <Pressable
+            onPress={() => router.push({ pathname: '/create-competition', params: { id: c.id } })}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('comp.editTitle')}
+            style={({ pressed }) => [styles.editBtn, { borderColor: C.brinjal1, opacity: pressed ? 0.7 : 1 }]}>
+            <FontAwesome5 name="pen" size={11} color={C.brinjal1} />
+            <Text style={[styles.editBtnText, { color: C.brinjal1 }]}>{t('comp.edit')}</Text>
+          </Pressable>
+        ) : undefined}
+      />
       <MaxWidthContainer>
         {q.isPending ? (
           <View style={{ padding: SCREEN_GUTTER, gap: 14 }}>
@@ -162,4 +176,6 @@ const styles = StyleSheet.create({
   title:      { fontSize: 17, fontFamily: F.bold, lineHeight: lineHeightFor(17) },
   publicLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
   publicLinkText: { fontSize: 12, fontFamily: F.semibold },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: 12, borderRadius: RADIUS.full, borderWidth: 1.5 },
+  editBtnText: { fontSize: 13, lineHeight: lineHeightFor(13), fontFamily: F.semibold },
 });
