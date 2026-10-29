@@ -47,7 +47,7 @@ function TestimonialQuote({
 
   return (
     <>
-      <motion.p className="lp-display mt-5 text-xl leading-relaxed text-lp-black/80 dark:text-white/80">
+      <motion.p className="lp-display text-xl leading-relaxed text-lp-black/80 dark:text-white/80">
         {displayWords.map((word, index) => (
           <motion.span
             key={index}
@@ -162,6 +162,25 @@ export function AnimatedTestimonials({
               ))}
             </AnimatePresence>
           </div>
+          <motion.div
+            key={active}
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="mt-6 text-center"
+          >
+            <h3 className="block text-2xl font-bold text-lp-black dark:text-white">{current.name}</h3>
+            {/* "Role, Location" → role and location on their own lines */}
+            {current.designation
+              .split(',')
+              .map((part) => part.trim())
+              .filter(Boolean)
+              .map((part, i) => (
+                <p key={i} className="block text-sm text-lp-black/55 dark:text-white/55">
+                  {part}
+                </p>
+              ))}
+          </motion.div>
         </div>
         <div className="flex flex-col justify-between py-4">
           <motion.div
@@ -171,8 +190,6 @@ export function AnimatedTestimonials({
             exit={{ y: -20, opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            <h3 className="text-2xl font-bold text-lp-black dark:text-white">{current.name}</h3>
-            <p className="text-sm text-lp-black/55 dark:text-white/55">{current.designation}</p>
             <TestimonialQuote quote={current.quote} showMoreLabel={showMoreLabel} showLessLabel={showLessLabel} />
           </motion.div>
           <div className="flex gap-4 pt-12 md:pt-0">
