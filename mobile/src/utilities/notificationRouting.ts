@@ -79,7 +79,10 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
      // timeline (confirm, submit, review, fund), for whichever role got it.
      'confirmation_pending', 'deliverable_due_24h', 'deliverable_due_3h', 'payment_pending',
      'collaboration_inactive', 'revision_submitted', 'review_reminder', 'content_overdue',
-     'payment_expired', 'reliability_warning', 'review_pending', 'response_pending', 'deadline_risk'].includes(n.type)
+     'payment_expired', 'reliability_warning', 'review_pending', 'response_pending', 'deadline_risk',
+     // Missed deliverable deadline + refund lifecycle — the deadline card on the timeline.
+     'extension_requested', 'extension_approved', 'extension_rejected', 'deadline_missed', 'deliverable_cancelled',
+     'refund_requested', 'refund_approved', 'refund_rejected', 'refund_failed', 'refund_completed'].includes(n.type)
   ) {
     return {
       pathname: '/(business)/activity-timeline',

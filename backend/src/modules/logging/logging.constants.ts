@@ -92,6 +92,14 @@ export const AuditAction = {
   COMPETITION_PAYOUTS_CREATED:     'competition.payouts_created',
   COMPETITION_PAYOUTS_CANCELLED:   'competition.payouts_cancelled',
   COMPETITION_PAYOUT_UPDATED:      'competition.payout_updated',
+  DELIVERABLE_EXCEPTIONAL_EXTENSION: 'deliverable.exceptional_extension',
+  APPLICATIONS_REOPENED:           'campaign.applications_reopened',
+  REFUND_RECIPIENT_VERIFIED:       'refund.recipient_verified',
+  REFUND_APPROVED:                 'refund.approved',
+  REFUND_REJECTED:                 'refund.rejected',
+  REFUND_PROCESSING:               'refund.processing',
+  REFUND_COMPLETED:                'refund.completed',
+  REFUND_FAILED:                   'refund.failed',
 } as const;
 
 export const EntityType = {

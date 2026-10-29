@@ -33,6 +33,8 @@ export function notificationRoute(n: ApiNotification): string | null {
     case 'withdrawal_requested':
     case 'money_withdrawn':     return '/admin/payments?tab=withdrawals';
     case 'dispute_opened':      return '/admin/payments?tab=disputes';
+    case 'refund_requested':
+    case 'payment_refunded':    return '/admin/payments?tab=refunds';
     case 'issue_reported':      return '/admin/support-inbox?tab=reports';
     case 'contact_message':     return '/admin/support-inbox?tab=contacts';
     case 'account_verified':
@@ -52,6 +54,7 @@ export function notificationRoute(n: ApiNotification): string | null {
     case 'issue_report':    return '/admin/support-inbox?tab=reports';
     case 'dispute':         return '/admin/payments?tab=disputes';
     case 'withdrawal':      return '/admin/payments?tab=withdrawals';
+    case 'refund_request':  return '/admin/payments?tab=refunds';
     case 'competition':     return n.refId ? `/admin/competitions/${n.refId}` : '/admin/competitions';
     default:                return '/admin/dashboard';
   }
@@ -67,6 +70,7 @@ const TYPE_ICONS: Record<string, IconType> = {
   money_withdrawn:           FaMoneyBillWave,
   withdrawal_requested:      FaHandHoldingDollar,
   dispute_opened:            FaScaleBalanced,
+  refund_requested:          FaMoneyBillWave,
   issue_reported:            FaTriangleExclamation,
   contact_message:           FaEnvelope,
   account_verified:          FaShieldHalved,

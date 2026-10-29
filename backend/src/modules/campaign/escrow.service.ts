@@ -1,4 +1,4 @@
-import { Prisma, WorkStatus, CampaignEventActor } from '@prisma/client';
+import { Prisma, WorkStatus, CampaignEventActor, type Application } from '@prisma/client';
 import prisma from '../../prisma';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
@@ -10,6 +10,7 @@ import { recordCampaignEventTx } from './campaign-events';
 import { recordWalletTransaction } from '../wallet/wallet.ledger';
 import { assertEscrowTransition } from './application-state-machine';
 import { logActivity } from '../logging/activity.service';
+import { createRefundRequestInTx, REFUND_REASON, type RefundReasonCode } from '../refund/refund.core';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 
 import { HttpStatus } from '../../constants/httpStatus';
@@ -67,19 +68,41 @@ interface RefundInput {
   requireWorkStatus?: WorkStatus[];
   /** Also expire the assignment and free the slot, in the same transaction. */
   expireApplication?: boolean;
+  /** Why the refund is owed — stored on the refund request for admins. */
+  reasonCode?: RefundReasonCode;
+  /** Close the deliverable for good with this reason (no further submissions). */
+  closeDeliverable?: string;
+  /**
+   * Extra writes that must commit atomically with the refund (e.g. marking an
+   * extension request rejected/expired). Runs after the guards pass, under the
+   * row lock.
+   */
+  inTx?: (tx: Prisma.TransactionClient) => Promise<void>;
+  /**
+   * Extra precondition read under the row lock — e.g. "the deadline is still
+   * in the past". Returning false makes the call a no-op, so a stale sweep can
+   * never refund an engagement whose deadline was just extended.
+   */
+  guard?: (app: Application) => boolean;
 }
 
 interface RefundResult {
-  refunded: boolean;      // false ⇒ nothing to do (already refunded / not funded)
+  /** True when this call opened the refund request (escrow → REFUND_PENDING). */
+  refunded: boolean;      // false ⇒ nothing to do (already requested / not funded / guard failed)
   amount: number;
   partial: boolean;
+  refundRequestId?: string;
+  referenceCode?: string;
 }
 
 class EscrowService {
   /**
-   * Return held escrow to the business, fully or partially. Safe to call more
-   * than once for the same (applicationId, partial?) — the second call is a
-   * no-op. Notifications fire only on the transaction that actually moved money.
+   * Return held escrow to the business, fully or partially. This does NOT move
+   * money: it opens a RefundRequest that an admin settles by recording the
+   * actual bank/wallet transfer (refund.admin.service.ts), and parks the escrow
+   * at REFUND_PENDING until then. Safe to call more than once for the same
+   * (applicationId, partial?) — the refund request's idempotency key makes the
+   * second call a no-op. Notifications fire only on the call that opened it.
    */
   async refund(input: RefundInput): Promise<RefundResult> {
     const {
@@ -101,11 +124,14 @@ class EscrowService {
       });
       if (!app) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
 
-      const REFUNDABLE = ['HELD', 'FROZEN', 'RELEASE_PENDING', 'REFUND_PENDING'];
+      const REFUNDABLE = ['HELD', 'FROZEN', 'RELEASE_PENDING'];
       if (!REFUNDABLE.includes(app.escrowStatus)) {
         return { moved: false as const, app, amount: 0, partial: false };
       }
       if (input.requireWorkStatus && !input.requireWorkStatus.includes(app.workStatus)) {
+        return { moved: false as const, app, amount: 0, partial: false };
+      }
+      if (input.guard && !input.guard(app)) {
         return { moved: false as const, app, amount: 0, partial: false };
       }
 
@@ -114,25 +140,25 @@ class EscrowService {
       if (amount <= 0) return { moved: false as const, app, amount: 0, partial: false };
 
       const partial = !full;
-      const reference = partial ? `refund:${applicationId}:partial` : `refund:${applicationId}`;
-
-      const existing = await tx.paymentTransaction.findUnique({ where: { reference } });
-      if (existing) return { moved: false as const, app, amount, partial };
-
-      await tx.paymentTransaction.create({
-        data: {
-          type:          partial ? 'PARTIAL_REFUND' : 'REFUND',
-          amount,
-          method:        app.paymentMethod,
-          applicationId,
-          campaignId:    app.campaignId,
-          businessId:    app.campaign.business.id,
-          reference,
-          metadata:      { reason, actorType } as Prisma.InputJsonValue,
-        },
+      const request = await createRefundRequestInTx(tx, {
+        applicationId,
+        campaignId:         app.campaignId,
+        businessId:         app.campaign.business.id,
+        creatorId:          app.creatorId,
+        paymentMethod:      app.paymentMethod,
+        amount,
+        partial,
+        reasonCode:         input.reasonCode ?? REFUND_REASON.OTHER,
+        reason,
+        escrowStatusBefore: app.escrowStatus,
+        actorType,
+        actorId,
       });
+      if (!request.created) return { moved: false as const, app, amount, partial };
 
-      const nextEscrow = partial ? 'PARTIALLY_REFUNDED' : 'REFUNDED';
+      if (input.inTx) await input.inTx(tx);
+
+      assertEscrowTransition(app.escrowStatus, 'REFUND_PENDING');
       const workStatusAfter =
         input.workStatusAfter === null
           ? undefined
@@ -141,10 +167,11 @@ class EscrowService {
       await tx.application.update({
         where: { id: applicationId },
         data: {
-          escrowStatus:  nextEscrow,
-          // Keep the legacy coarse flag in step for existing reads.
-          paymentStatus: partial ? undefined : 'REFUNDED',
+          escrowStatus: 'REFUND_PENDING',
           ...(workStatusAfter ? { workStatus: workStatusAfter } : {}),
+          ...(input.closeDeliverable
+            ? { deliverableClosedAt: new Date(), deliverableClosedReason: input.closeDeliverable, contentGraceDeadline: null }
+            : {}),
         },
       });
 
@@ -153,37 +180,52 @@ class EscrowService {
         applicationId,
         axis:          'escrow',
         fromStatus:    app.escrowStatus,
-        toStatus:      nextEscrow,
+        toStatus:      'REFUND_PENDING',
         actorId,
         actorType,
         reason,
-        metadata:      { amount, partial },
+        metadata:      { amount, partial, refundRequestId: request.id, referenceCode: request.referenceCode },
       });
+      if (workStatusAfter && workStatusAfter !== app.workStatus) {
+        await recordCampaignEventTx(tx, {
+          campaignId: app.campaignId, applicationId, axis: 'work',
+          fromStatus: app.workStatus, toStatus: workStatusAfter, actorId, actorType, reason,
+        });
+      }
 
       if (input.expireApplication) await this.voidInTx(tx, applicationId, reason);
 
-      return { moved: true as const, app, amount, partial };
+      return { moved: true as const, app, amount, partial, request };
     });
 
     if (!outcome.moved) {
       return { refunded: false, amount: outcome.amount, partial: outcome.partial };
     }
 
-    const { app, amount, partial } = outcome;
+    const { app, amount, partial, request } = outcome;
     logActivity({
       userId:     actorId,
       action:     ActivityAction.PAYMENT_REFUNDED,
       entityType: EntityType.APPLICATION,
       entityId:   applicationId,
-      metadata:   { campaignId: app.campaignId, amount, partial, reason },
+      metadata:   { campaignId: app.campaignId, amount, partial, reason, refundRequestId: request.id },
     });
+
+    // Admins always hear about a new refund to process.
+    notificationService.createForAdmins({
+      type:    'refund_requested',
+      title:   'New refund request',
+      body:    `${request.referenceCode}: Rs. ${amount.toLocaleString()} to ${app.campaign.business.businessName ?? 'a business'} for "${app.campaign.title}".`,
+      refId:   request.id,
+      refType: 'refund_request',
+    }).catch(() => {});
 
     if (!silent) {
       notificationService.create({
         userId:  app.campaign.business.userId,
-        type:    'payment_refunded',
-        title:   partial ? 'Partial refund processed' : 'Refund processed',
-        body:    `A ${partial ? 'partial ' : ''}refund of Rs. ${amount.toLocaleString()} for "${app.campaign.title}" is being returned to your original payment method within 3–5 business days.`,
+        type:    'refund_requested',
+        title:   partial ? 'Partial refund requested' : 'Refund requested',
+        body:    `Your refund request for "${app.campaign.title}" (Rs. ${amount.toLocaleString()}, ref ${request.referenceCode}) has been created and is awaiting processing. Kolab will notify you when the transfer is completed.`,
         refId:   app.campaignId,
         refType: 'campaign',
       }).catch(() => {});
@@ -221,7 +263,7 @@ class EscrowService {
       })();
     }
 
-    return { refunded: true, amount, partial };
+    return { refunded: true, amount, partial, refundRequestId: request.id, referenceCode: request.referenceCode };
   }
 
   /**
@@ -671,7 +713,7 @@ class EscrowService {
     if (outcome === 'CREATOR_WON') {
       await this.release({ applicationId: app.id, actor: { userId: adminUserId, type: 'ADMIN' }, reason: `Dispute resolved — creator: ${note}` });
     } else if (outcome === 'BUSINESS_WON') {
-      await this.refund({ applicationId: app.id, reason: `Dispute resolved — business: ${note}`, actorId: adminUserId, actorType: 'ADMIN', workStatusAfter: WorkStatus.CANCELLED, silent: true });
+      await this.refund({ applicationId: app.id, reason: `Dispute resolved — business: ${note}`, actorId: adminUserId, actorType: 'ADMIN', workStatusAfter: WorkStatus.CANCELLED, silent: true, reasonCode: REFUND_REASON.DISPUTE_BUSINESS_WON });
     } else if (outcome === 'PARTIAL') {
       const cAmt = Math.max(0, params.creatorAmount ?? 0);
       const bAmt = Math.max(0, params.businessAmount ?? 0);
@@ -743,18 +785,24 @@ class EscrowService {
       if (app.escrowStatus === 'PARTIALLY_REFUNDED' || app.escrowStatus === 'RELEASED') return;
       assertEscrowTransition(app.escrowStatus, 'PARTIALLY_REFUNDED');
 
+      // The business's share is owed, not yet moved — an admin records the
+      // actual transfer from the refund request, which writes the
+      // PARTIAL_REFUND ledger row on completion.
       if (businessAmount > 0) {
-        const ref = `refund:${applicationId}:partial`;
-        if (!(await tx.paymentTransaction.findUnique({ where: { reference: ref } }))) {
-          await tx.paymentTransaction.create({
-            data: {
-              type: 'PARTIAL_REFUND', amount: businessAmount, method: app.paymentMethod,
-              applicationId, campaignId: app.campaignId, businessId: app.campaign.business.id,
-              adminId: adminUserId, reference: ref,
-              metadata: { reason: params.note, split: true } as Prisma.InputJsonValue,
-            },
-          });
-        }
+        await createRefundRequestInTx(tx, {
+          applicationId,
+          campaignId:         app.campaignId,
+          businessId:         app.campaign.business.id,
+          creatorId:          app.creatorId,
+          paymentMethod:      app.paymentMethod,
+          amount:             businessAmount,
+          partial:            true,
+          reasonCode:         REFUND_REASON.DISPUTE_SPLIT,
+          reason:             `Dispute settled with a split — ${params.note}`,
+          escrowStatusBefore: app.escrowStatus,
+          actorType:          'ADMIN',
+          actorId:            adminUserId,
+        });
       }
       if (creatorAmount > 0) {
         const ref = `payout:${applicationId}`;

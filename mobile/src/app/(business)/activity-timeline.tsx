@@ -25,7 +25,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
-import { campaignService, type DeliverableVideo, type DeliverableFile, type EngagementStateValue, type EngagementDispute } from '@/services/campaign';
+import { campaignService, type DeliverableVideo, type DeliverableFile, type EngagementStateValue, type EngagementDispute, type DeliverableDeadlineInfo } from '@/services/campaign';
 import type { ApiReviewReceived } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { useDeliverableVideoUploads, type DeliverableUploadItem } from '@/hooks/useDeliverableVideoUploads';
@@ -48,6 +48,7 @@ import { F, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPA
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 import { useToast } from '@/components/Toast';
+import { DeliverableDeadlineCard, ExtendedDeadlineNotice, isDeadlineCardState } from '@/components/DeliverableDeadlineCard';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ type AppInfo = {
   businessReviewDueAt: string | null;
   paymentReleaseAt: string | null;
   submittedLate: boolean;
-};
+} & DeliverableDeadlineInfo;
 
 // ─── Progress steps ────────────────────────────────────────────────────────────
 // idx: 0=Accepted 1=Payment 2=Secured 3=Waiting 4=Started 5=Submitted 6=Review 7=Approved 8=Released (terminal)
@@ -1298,6 +1299,12 @@ export default function CampaignWorkspaceScreen() {
             businessReviewDueAt:       myApp.businessReviewDueAt ?? null,
             paymentReleaseAt:          myApp.paymentReleaseAt ?? null,
             submittedLate:             myApp.submittedLate ?? false,
+            originalContentDeadline:   myApp.originalContentDeadline,
+            contentOverdueAt:          myApp.contentOverdueAt,
+            extensionCount:            myApp.extensionCount,
+            deliverableClosedAt:       myApp.deliverableClosedAt,
+            extensions:                myApp.extensions,
+            refundRequest:             myApp.refundRequest,
           });
           // Sync paymentStatus from API into campaign
           setCampaign(prev => prev ? {
@@ -1344,6 +1351,12 @@ export default function CampaignWorkspaceScreen() {
             businessReviewDueAt:       accepted.businessReviewDueAt ?? null,
             paymentReleaseAt:          accepted.paymentReleaseAt ?? null,
             submittedLate:             accepted.submittedLate ?? false,
+            originalContentDeadline:   accepted.originalContentDeadline,
+            contentOverdueAt:          accepted.contentOverdueAt,
+            extensionCount:            accepted.extensionCount,
+            deliverableClosedAt:       accepted.deliverableClosedAt,
+            extensions:                accepted.extensions,
+            refundRequest:             accepted.refundRequest,
           });
         }
       }
@@ -1907,6 +1920,22 @@ export default function CampaignWorkspaceScreen() {
           <ProgressTracker current={pIdx} scrollRef={progressScrollRef} labels={progressLabels} />
         </View>
 
+        {/* ── Missed deliverable deadline: overdue (extension request /
+              decision) or closed with its refund status. Replaces the normal
+              step card — overdue work can't be uploaded until an extension is
+              approved (enforced server-side). ── */}
+        {app && isDeadlineCardState(app) ? (
+          <DeliverableDeadlineCard
+            app={app}
+            isCreator={isCreator}
+            counterpartName={app.creatorName}
+            onChanged={(msg) => { topToast.success(msg); void load({ silent: true }); }}
+          />
+        ) : (
+        <>
+        {app && (app.engagementState === 'IN_PROGRESS' || app.engagementState === 'REVISION_REQUESTED') && (
+          <ExtendedDeadlineNotice extensionCount={app.extensionCount} contentDeadline={app.contentDeadline} />
+        )}
         {/* ── Current step — one card: what to do next, with the stage
               countdown / dispute status folded in underneath. ── */}
         <ActionCard
@@ -1933,6 +1962,8 @@ export default function CampaignWorkspaceScreen() {
             }
           }}
         />
+        </>
+        )}
 
         {/* ── Free-event Q&A ("Ask Organizer") — a free event never opens a
               chat, so this shared page is how the organizer and accepted

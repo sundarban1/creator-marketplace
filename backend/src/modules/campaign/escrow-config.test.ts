@@ -23,6 +23,9 @@ describe('getEscrowTimings', () => {
       maxIncludedRevisions: 2,
       settlementHoldEnabled: false,
       autoApproveOnReviewTimeout: false,
+      extensionDecisionHours: 24,
+      maxExtensionHours: 48,
+      maxDeadlineExtensions: 2,
     });
   });
 

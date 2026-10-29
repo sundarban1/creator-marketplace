@@ -27,6 +27,10 @@ type Status =
   | 'changes_requested'
   | 'rejected'
   | 'published'
+  | 'processing'
+  | 'accepted'
+  | 'withdrawn'
+  | 'deadline_missed'
   | 'deleted';
 
 const styles: Record<Status, string> = {
@@ -59,6 +63,10 @@ const styles: Record<Status, string> = {
   changes_requested: 'bg-orange-100 text-orange-700',
   rejected:          'bg-red-100 text-red-700',
   published:         'bg-emerald-100 text-emerald-700',
+  processing:        'bg-blue-100 text-blue-700',
+  accepted:          'bg-emerald-100 text-emerald-700',
+  withdrawn:         'bg-gray-100 text-gray-600',
+  deadline_missed:   'bg-red-100 text-red-700',
 };
 
 interface StatusBadgeProps {

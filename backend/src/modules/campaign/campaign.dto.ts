@@ -187,6 +187,33 @@ export interface SubmissionVersionDto {
   createdAt: string;
 }
 
+export interface DeliverableExtensionDto {
+  id: string;
+  kind: string;            // STANDARD | ADMIN_EXCEPTIONAL
+  status: string;          // PENDING | APPROVED | REJECTED | EXPIRED | CANCELLED
+  reason: string;
+  proposedDeadline: string;
+  previewUrl: string | null;
+  previousDeadline: string | null;
+  decisionDueAt: string | null;
+  approvedDeadline: string | null;
+  decisionNote: string | null;
+  decidedAt: string | null;
+  decidedByRole: string | null;
+  createdAt: string;
+}
+
+export interface ApplicationRefundDto {
+  id: string;
+  referenceCode: string;
+  status: string;          // PENDING | APPROVED | PROCESSING | COMPLETED | REJECTED | FAILED | CANCELLED
+  amount: number;
+  partial: boolean;
+  reasonCode: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 export interface ApplicationDto {
   id: string;
   campaignId: string;
@@ -232,6 +259,18 @@ export interface ApplicationDto {
   businessReviewDueAt: string | null;
   paymentReleaseAt: string | null;
   submittedLate: boolean;
+  // ── Deliverable deadline (separate from the proposal status) ──
+  // The very first content deadline, kept after an extension moves contentDeadline.
+  originalContentDeadline: string | null;
+  contentOverdueAt: string | null;
+  extensionCount: number;
+  deliverableClosedAt: string | null;
+  deliverableClosedReason: string | null;
+  // Extension requests, newest first.
+  extensions: DeliverableExtensionDto[];
+  // The latest refund request on this engagement (the refund's own status —
+  // separate from escrowStatus), null when none.
+  refundRequest: ApplicationRefundDto | null;
   // Present only while a dispute has been raised on this engagement.
   dispute?: {
     status: string;
@@ -489,6 +528,20 @@ type RawApplication = {
   businessReviewDueAt?: Date | null;
   paymentReleaseAt?: Date | null;
   submittedLate?: boolean;
+  originalContentDeadline?: Date | null;
+  contentOverdueAt?: Date | null;
+  extensionCount?: number;
+  deliverableClosedAt?: Date | null;
+  deliverableClosedReason?: string | null;
+  extensions?: {
+    id: string; kind: string; status: string; reason: string; proposedDeadline: Date; previewUrl: string | null;
+    previousDeadline: Date | null; decisionDueAt: Date | null; approvedDeadline: Date | null; decisionNote: string | null;
+    decidedAt: Date | null; decidedByRole: string | null; createdAt: Date;
+  }[];
+  refundRequests?: {
+    id: string; referenceCode: string; status: string; refundableAmount: Prisma.Decimal | number | string; partial: boolean;
+    reasonCode: string; createdAt: Date; completedAt: Date | null; transferredAt: Date | null;
+  }[];
   deliverableUrls: string | null;
   deliverableVideos?: Prisma.JsonValue;
   deliverableFiles?: Prisma.JsonValue;
@@ -588,6 +641,36 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     businessReviewDueAt:      iso(a.businessReviewDueAt),
     paymentReleaseAt:         iso(a.paymentReleaseAt),
     submittedLate:            a.submittedLate ?? false,
+    originalContentDeadline:  iso(a.originalContentDeadline),
+    contentOverdueAt:         iso(a.contentOverdueAt),
+    extensionCount:           a.extensionCount ?? 0,
+    deliverableClosedAt:      iso(a.deliverableClosedAt),
+    deliverableClosedReason:  a.deliverableClosedReason ?? null,
+    extensions: (a.extensions ?? []).map((e) => ({
+      id:               e.id,
+      kind:             e.kind,
+      status:           e.status,
+      reason:           e.reason,
+      proposedDeadline: e.proposedDeadline.toISOString(),
+      previewUrl:       e.previewUrl,
+      previousDeadline: iso(e.previousDeadline),
+      decisionDueAt:    iso(e.decisionDueAt),
+      approvedDeadline: iso(e.approvedDeadline),
+      decisionNote:     e.decisionNote,
+      decidedAt:        iso(e.decidedAt),
+      decidedByRole:    e.decidedByRole,
+      createdAt:        e.createdAt.toISOString(),
+    })),
+    refundRequest: (() => {
+      // A voided request (deliverable reopened) isn't a live refund.
+      const r = (a.refundRequests ?? []).find((x) => x.status !== 'CANCELLED');
+      return r
+        ? {
+            id: r.id, referenceCode: r.referenceCode, status: r.status, amount: Number(r.refundableAmount),
+            partial: r.partial, reasonCode: r.reasonCode, createdAt: r.createdAt.toISOString(), completedAt: iso(r.completedAt),
+          }
+        : null;
+    })(),
     deliverableUrls: a.deliverableUrls,
     deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
     deliverableFiles: z.array(deliverableFileSchema).catch([]).parse(a.deliverableFiles ?? []),

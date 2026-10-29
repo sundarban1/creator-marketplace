@@ -833,6 +833,7 @@ model BusinessProfile {
   creditsLedger            BusinessCreditsLedger[]
   redemptionSessions       RedemptionSession[]
   competitions             Competition[]
+  refundRequests           RefundRequest[]
 
   @@index([isVerified])
   // Business discovery filters `categories` with array `has` and orders by
@@ -1017,6 +1018,7 @@ model Campaign {
   events                CampaignEvent[]
   disputes              Dispute[]
   opportunityShares     OpportunityShare[]
+  refundRequests        RefundRequest[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -1304,6 +1306,19 @@ model Application {
   // Settlement hold expiry — set on approval when escrow.settlementHoldEnabled
   // is on; the release job pays out once it passes and no dispute intervened.
   paymentReleaseAt             DateTime?
+  // ── Deliverable deadline extensions ──────────────────────────────────────
+  // The first contentDeadline this engagement had — kept once an extension
+  // moves contentDeadline, so the missed original stays on record.
+  originalContentDeadline      DateTime?
+  // When the content deadline passed with nothing submitted (→ CONTENT_OVERDUE).
+  contentOverdueAt             DateTime?
+  // Approved extensions so far (standard + admin exceptional). Once ≥ 1, a
+  // further missed deadline closes the deliverable immediately.
+  extensionCount               Int                         @default(0)
+  // When/why the deliverable was closed for good. Submissions are refused
+  // while the work status is closed.
+  deliverableClosedAt          DateTime?
+  deliverableClosedReason      String?
   // Dynamic open-event invitation PNG (OPEN_EVENT + status ACCEPTED only).
   // Generated on acceptance, re-generated when any invitation-visible field
   // changes (event title/date/venue/location/description, business name/logo).
@@ -1330,6 +1345,8 @@ model Application {
   events                       CampaignEvent[]
   submissionVersions           CampaignSubmissionVersion[]
   dispute                      Dispute?
+  extensions                   DeliverableExtension[]
+  refundRequests               RefundRequest[]
   // Share Opportunity analytics — set when the proposal was submitted from a
   // validated share link for this same campaign (never the applicant's own
   // share). Attribution only; appliedAt is this row's createdAt.
@@ -2105,19 +2122,25 @@ model SavedCreator {
 }
 
 model CampaignInvitation {
-  id          String           @id @default(cuid())
-  campaignId  String
-  creatorId   String
-  businessId  String
-  message     String?
-  status      InvitationStatus @default(PENDING)
-  respondedAt DateTime?
-  createdAt   DateTime         @default(now())
-  campaign    Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  creator     CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  business    BusinessProfile  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id           String           @id @default(cuid())
+  campaignId   String
+  creatorId    String
+  businessId   String
+  message      String?
+  status       InvitationStatus @default(PENDING)
+  respondedAt  DateTime?
+  // Set when an invited creator never submitted a proposal and the system
+  // closed the invitation: DEADLINE_MISSED (application deadline passed) or
+  // EXPIRED (the business closed the opportunity first).
+  closedAt     DateTime?
+  closedReason String?
+  createdAt    DateTime         @default(now())
+  campaign     Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator      CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  business     BusinessProfile  @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, creatorId])
+  @@index([status])
   @@map("campaign_invitations")
 }
 
@@ -2489,6 +2512,11 @@ enum InvitationStatus {
   PENDING
   ACCEPTED
   DECLINED
+  // Invited creator never submitted a proposal before the application deadline.
+  DEADLINE_MISSED
+  // The opportunity closed before the invited creator applied — not the
+  // creator's failure.
+  EXPIRED
 }
 
 enum CategoryScope {
@@ -3636,4 +3664,172 @@ model CompetitionPayoutEvent {
 
   @@index([payoutId, createdAt])
   @@map("competition_payout_events")
+}
+
+// ─── Deliverable deadline extensions ─────────────────────────────────────────
+// A creator who missed the content deadline (workStatus CONTENT_OVERDUE) may
+// ask once for more time; the business approves or rejects within the decision
+// window. An admin may grant one exceptional extra extension with recorded
+// business consent. Rows are history — never deleted, only status-moved.
+
+enum DeliverableExtensionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  // The decision window lapsed with no business response.
+  EXPIRED
+  // Superseded (e.g. the business cancelled the deliverable instead).
+  CANCELLED
+}
+
+enum DeliverableExtensionKind {
+  STANDARD
+  ADMIN_EXCEPTIONAL
+}
+
+model DeliverableExtension {
+  id               String                     @id @default(cuid())
+  applicationId    String
+  campaignId       String
+  kind             DeliverableExtensionKind   @default(STANDARD)
+  status           DeliverableExtensionStatus @default(PENDING)
+  requestedById    String?
+  requestedByRole  CampaignEventActor         @default(CREATOR)
+  reason           String
+  proposedDeadline DateTime
+  // Optional draft/preview link the creator shares with the request.
+  previewUrl       String?
+  // The deadline that had been missed when this request was made.
+  previousDeadline DateTime?
+  // The business must decide by this time, or the deliverable is cancelled.
+  decisionDueAt    DateTime?
+  approvedDeadline DateTime?
+  decidedById      String?
+  decidedByRole    CampaignEventActor?
+  decisionNote     String?
+  decidedAt        DateTime?
+  // ADMIN_EXCEPTIONAL only — the admin attests the business agreed.
+  businessConsent  Boolean                    @default(false)
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+  @@index([status, decisionDueAt])
+  @@map("deliverable_extensions")
+}
+
+// ─── Refund requests (manual transfer) ───────────────────────────────────────
+// A refund owed to a business. Created by the escrow flow (missed deadline,
+// dispute, late payment, …); an admin transfers the money outside Kolab and
+// records it. Only COMPLETED writes the REFUND / PARTIAL_REFUND row into
+// payment_transactions — that table stays the financial source of truth.
+
+enum RefundRequestStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+  FAILED
+  // Voided before any money moved because the deliverable was reopened
+  // (admin exceptional extension).
+  CANCELLED
+}
+
+model RefundRequest {
+  id                   String              @id @default(cuid())
+  // Human handle, e.g. "RF-A7K2QP9M".
+  referenceCode        String              @unique
+  // One request per refundable obligation — "refund:{appId}" (full) or
+  // "refund:{appId}:partial". The completed ledger row reuses this key.
+  idempotencyKey       String              @unique
+  applicationId        String
+  campaignId           String
+  businessId           String
+  creatorId            String?
+  // The ESCROW_IN payment_transactions row being refunded.
+  paymentTransactionId String?
+  paymentReference     String?
+  paymentMethod        String?
+  // DEADLINE_MISSED | EXTENSION_REJECTED | EXTENSION_EXPIRED | BUSINESS_CANCELLED_OVERDUE |
+  // CONFIRMATION_TIMEOUT | DISPUTE_BUSINESS_WON | DISPUTE_SPLIT | LATE_PAYMENT | OTHER
+  reasonCode           String
+  reason               String
+  partial              Boolean             @default(false)
+  currency             String              @default("NPR")
+  originalAmount       Decimal             @db.Decimal(12, 2)
+  deductionAmount      Decimal             @default(0) @db.Decimal(12, 2)
+  refundableAmount     Decimal             @db.Decimal(12, 2)
+  calculationNote      String?
+  status               RefundRequestStatus @default(PENDING)
+  // Escrow status before the refund was requested — restored on reject/cancel.
+  escrowStatusBefore   String?
+  initiatedByType      CampaignEventActor  @default(SYSTEM)
+  initiatedById        String?
+
+  // Refund destination, entered and verified by an admin.
+  recipientName         String?
+  recipientMethod       String?
+  recipientAccount      Json?
+  recipientVerifiedAt   DateTime?
+  recipientVerifiedById String?
+
+  // Dual approval (amount ≥ refund.dualApprovalThreshold): the first approver
+  // is recorded here, a different admin then moves it to APPROVED.
+  firstApprovedById     String?
+  firstApprovedAt       DateTime?
+  approvedById          String?
+  approvedAt            DateTime?
+  rejectedById          String?
+  rejectedAt            DateTime?
+  rejectionReason       String?
+  processingStartedById String?
+  processingStartedAt   DateTime?
+
+  // The recorded transfer.
+  transferMethod    String?
+  transferAmount    Decimal?  @db.Decimal(12, 2)
+  transferredAt     DateTime?
+  transferReference String?
+  proofUrl          String?
+  adminNotes        String?
+  completedById     String?
+  completedAt       DateTime?
+  failedAt          DateTime?
+  failureReason     String?
+  attemptCount      Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  application Application          @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  campaign    Campaign             @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  business    BusinessProfile      @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  events      RefundRequestEvent[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([applicationId])
+  @@index([businessId])
+  @@map("refund_requests")
+}
+
+// Append-only audit trail for a refund request.
+model RefundRequestEvent {
+  id              String             @id @default(cuid())
+  refundRequestId String
+  action          String
+  fromStatus      String?
+  toStatus        String
+  actorId         String?
+  actorType       CampaignEventActor
+  note            String?
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+
+  refundRequest RefundRequest @relation(fields: [refundRequestId], references: [id], onDelete: Cascade)
+
+  @@index([refundRequestId, createdAt])
+  @@map("refund_request_events")
 }

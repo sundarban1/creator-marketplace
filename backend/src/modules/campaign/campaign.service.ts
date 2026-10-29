@@ -30,6 +30,8 @@ import { logActivity, getActivityForEntity } from '../logging/activity.service';
 import { recordCampaignEvent, recordCampaignEventTx } from './campaign-events';
 import { assertWorkTransition, assertEscrowTransition } from './application-state-machine';
 import { getEscrowTimings, deadlineFromNow } from './escrow-config';
+import { createRefundRequestInTx, REFUND_REASON } from '../refund/refund.core';
+import { assertApplicationWindowOpen, expireOpenInvitations } from './proposal-deadline.service';
 import { escrowService, lockApplication } from './escrow.service';
 import { ActivityAction, EntityType } from '../logging/logging.constants';
 import { translateFields, translateMany } from '../../utils/translation';
@@ -79,6 +81,21 @@ async function applicationTotalNpr(adminRepo: AdminRepository, proposedRate: num
   const platformFee = Math.round(proposedRate * (feePercent / 100));
   const tax = Math.round(platformFee * (taxPercent / 100));
   return proposedRate + platformFee + tax;
+}
+
+// A deliverable can only take a submission (or new uploads) while it is open:
+// not overdue (needs an approved extension first), not closed, and — for work
+// in progress — not past its deadline at this instant.
+function assertDeliverableOpenForSubmission(app: { workStatus: string; contentDeadline: Date | null; deliverableClosedAt?: Date | null }) {
+  if (app.workStatus === 'CONTENT_OVERDUE') {
+    throw new AppError('Your submission deadline has passed. Request an extension — the business must approve it before you can submit.', HttpStatus.CONFLICT);
+  }
+  if (app.workStatus === 'CREATOR_FAILED' || app.workStatus === 'CANCELLED' || app.deliverableClosedAt) {
+    throw new AppError('This deliverable is closed and no longer accepts submissions.', HttpStatus.CONFLICT);
+  }
+  if (app.workStatus === 'IN_PROGRESS' && app.contentDeadline && app.contentDeadline < new Date()) {
+    throw new AppError('The submission deadline has passed. You can request an extension once the deliverable is marked overdue.', HttpStatus.CONFLICT);
+  }
 }
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered as MP4 via
@@ -1406,6 +1423,9 @@ export class CampaignService {
     if (campaign.status !== 'ACTIVE') {
       throw new AppError(getDict().campaign.campaignNotAcceptingApplications, HttpStatus.BAD_REQUEST);
     }
+    // Late proposals are refused unless an admin reopened applications (which
+    // moves applicationDeadline forward — see proposal-deadline.service).
+    assertApplicationWindowOpen(campaign);
 
     // Requirement-scoped applications (multi-role campaigns) validate and
     // dedupe against that one requirement, not the whole campaign — a
@@ -1753,6 +1773,8 @@ export class CampaignService {
           if (acceptedCount >= campaignCapacity) {
             const rejected = await this.repo.rejectPendingApplications(campaignId, appId);
             await this.repo.closeCampaign(campaignId);
+            // Invited creators who never applied: closed early, not their failure.
+            void expireOpenInvitations([campaignId], 'The opportunity closed before a proposal was submitted').catch(() => 0);
             if (rejected.length > 0) {
               notificationService.createMany(
                 rejected.map((a) => ({
@@ -1781,6 +1803,8 @@ export class CampaignService {
         if (acceptedCount >= needed) {
           const rejected = await this.repo.rejectPendingApplications(campaignId, appId);
           await this.repo.closeCampaign(campaignId);
+            // Invited creators who never applied: closed early, not their failure.
+            void expireOpenInvitations([campaignId], 'The opportunity closed before a proposal was submitted').catch(() => 0);
           if (rejected.length > 0) {
             notificationService.createMany(
               rejected.map((a) => ({
@@ -1818,6 +1842,8 @@ export class CampaignService {
         }
         if (await this.repo.areAllRequirementsFilled(campaignId)) {
           await this.repo.closeCampaign(campaignId);
+            // Invited creators who never applied: closed early, not their failure.
+            void expireOpenInvitations([campaignId], 'The opportunity closed before a proposal was submitted').catch(() => 0);
         }
       }
     }
@@ -2062,8 +2088,10 @@ export class CampaignService {
       await tx.application.update({
         where: { id: params.appId },
         data: {
-          paymentStatus:        live ? 'PAID' : 'REFUNDED',
-          escrowStatus:         live ? 'HELD' : 'REFUNDED',
+          // A late payment is still "paid" until an admin confirms the refund
+          // transfer; the escrow parks at REFUND_PENDING with a refund request.
+          paymentStatus:        'PAID',
+          escrowStatus:         live ? 'HELD' : 'REFUND_PENDING',
           paidAt:               now,
           paymentMethod:        params.method,
           khaltiPidx:           null,
@@ -2085,21 +2113,22 @@ export class CampaignService {
       }
 
       if (!live) {
-        const refundRef = `refund:${params.appId}`;
-        if (!(await tx.paymentTransaction.findUnique({ where: { reference: refundRef } }))) {
-          await tx.paymentTransaction.create({
-            data: {
-              ...txBase,
-              type:      'REFUND',
-              amount:    params.proposedRate,
-              reference: refundRef,
-              metadata:  { reason: 'Payment arrived after the creator selection had expired', actorType: 'SYSTEM' } as Prisma.InputJsonValue,
-            },
-          });
-        }
+        await createRefundRequestInTx(tx, {
+          applicationId:      params.appId,
+          campaignId:         params.campaignId,
+          businessId:         params.businessId,
+          creatorId:          params.creatorId,
+          paymentMethod:      params.method,
+          amount:             params.proposedRate,
+          partial:            false,
+          reasonCode:         REFUND_REASON.LATE_PAYMENT,
+          reason:             'Payment arrived after the creator selection had expired',
+          escrowStatusBefore: app.escrowStatus,
+          actorType:          'SYSTEM',
+        });
         await recordCampaignEventTx(tx, {
           campaignId: params.campaignId, applicationId: params.appId, axis: 'escrow',
-          fromStatus: app.escrowStatus, toStatus: 'REFUNDED', actorType: 'SYSTEM',
+          fromStatus: app.escrowStatus, toStatus: 'REFUND_PENDING', actorType: 'SYSTEM',
           reason:     'Payment arrived after the creator selection had expired',
           metadata:   { amount: params.proposedRate, method: params.method },
         });
@@ -2121,7 +2150,7 @@ export class CampaignService {
         userId:  params.businessUserId,
         type:    'payment_refunded',
         title:   'Payment refunded',
-        body:    `Your payment for "${params.campaignTitle}" arrived after the creator selection had expired, so Rs. ${params.proposedRate.toLocaleString()} is being returned to your original payment method within 3–5 business days. You can select a creator again.`,
+        body:    `Your payment for "${params.campaignTitle}" arrived after the creator selection had expired. A refund request for Rs. ${params.proposedRate.toLocaleString()} has been created and is awaiting processing — Kolab will notify you when the transfer is completed. You can select a creator again.`,
         refId:   params.campaignId,
         refType: 'campaign',
       }).catch(() => {});
@@ -2712,6 +2741,8 @@ export class CampaignService {
     if (app.campaign.campaignType === 'OPEN_EVENT') {
       throw new AppError(getDict().campaign.freeEventsNoDeliverablesToSubmit, HttpStatus.BAD_REQUEST);
     }
+    // Deadline rules are enforced here, not just in the clients.
+    assertDeliverableOpenForSubmission(app);
     assertWorkTransition(app.workStatus, 'SUBMITTED');
 
     // Deliverable links (Google Drive / Dropbox / YouTube — the path for files
@@ -2731,12 +2762,21 @@ export class CampaignService {
       data = { ...data, urls: links.length ? links.join('\n') : undefined };
     }
 
+    // Conditional write: only lands while the deliverable is still open and the
+    // deadline hasn't passed at this instant. A deadline sweep running at the
+    // same moment either sees SUBMITTED (and backs off) or has already moved
+    // the row, in which case this update matches nothing.
     const updated = await this.repo.submitWork(appId, data);
+    if (!updated) {
+      throw new AppError('The submission deadline has passed, so this deliverable can no longer be submitted. You can request an extension if it is still open.', HttpStatus.CONFLICT);
+    }
 
     // Escrow spec §24/§26: opens the business's review window, clears the grace
     // deadline, and flags a late submission for reliability scoring (never
     // blocks payout).
-    const wasLate = app.workStatus === 'CONTENT_OVERDUE' || (!!app.contentDeadline && app.contentDeadline < new Date());
+    // Late submissions are refused above; this stays false for every new
+    // submission and is kept for older rows/reporting.
+    const wasLate = false;
     const { businessReviewHours } = await getEscrowTimings();
     await this.repo
       .setEngagementTiming(appId, {
@@ -3086,6 +3126,7 @@ export class CampaignService {
     if (['APPROVED', 'COMPLETED'].includes(app.workStatus)) {
       throw new AppError(getDict().campaign.projectAlreadyApprovedNoVideos, HttpStatus.BAD_REQUEST);
     }
+    assertDeliverableOpenForSubmission(app);
     return app;
   }
 
@@ -3332,6 +3373,9 @@ export class CampaignService {
     const updated = await this.repo.cancelCampaign(campaignId);
     if (campaign.status !== 'CANCELLED') {
       this.closeChatsForCancelledCampaign(campaignId).catch(() => {});
+      // Invited creators who hadn't applied yet didn't miss anything — the
+      // opportunity closed early.
+      expireOpenInvitations([campaignId], 'The business cancelled this opportunity').catch(() => {});
     }
 
     recordCampaignEvent({
@@ -3384,6 +3428,7 @@ export class CampaignService {
     if (campaigns.length === 0) return { campaignCount: 0, applicationCount: 0 };
 
     const campaignById = new Map(campaigns.map((c) => [c.id, c]));
+    await expireOpenInvitations(campaigns.map((c) => c.id), 'The opportunity ended before a proposal was submitted').catch(() => 0);
 
     for (const campaign of campaigns) {
       notificationService.createForAdmins({

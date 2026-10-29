@@ -29,10 +29,9 @@ d('Escrow race guards', () => {
     expect(await finalize(s, 'esewa')).toBe('late');
 
     const app = await prisma.application.findUniqueOrThrow({ where: { id: s.applicationId } });
-    expect(app.escrowStatus).toBe('REFUNDED');
-    expect(app.paymentStatus).toBe('REFUNDED');
+    expect(app.escrowStatus).toBe('REFUND_PENDING');
     expect(await prisma.paymentTransaction.count({ where: { applicationId: s.applicationId, type: 'ESCROW_IN' } })).toBe(1);
-    expect(await prisma.paymentTransaction.count({ where: { applicationId: s.applicationId, type: 'REFUND' } })).toBe(1);
+    expect(await prisma.refundRequest.count({ where: { applicationId: s.applicationId, reasonCode: 'LATE_PAYMENT' } })).toBe(1);
   });
 
   it('credits are never debited for an expired slot', async () => {
@@ -76,7 +75,7 @@ d('Escrow race guards', () => {
     });
     expect(r.refunded).toBe(true);
     const app = await prisma.application.findUniqueOrThrow({ where: { id: s.applicationId } });
-    expect(app.escrowStatus).toBe('REFUNDED');
+    expect(app.escrowStatus).toBe('REFUND_PENDING');
     expect(app.status).toBe('EXPIRED');
   });
 

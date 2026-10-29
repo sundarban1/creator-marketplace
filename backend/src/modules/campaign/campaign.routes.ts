@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CampaignController } from './campaign.controller';
+import { registerDeliverableDeadlineRoutes } from './deliverable-deadline.controller';
 import { authenticate, authorize, optionalAuthenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { uploadImage, uploadDeliverableFile, uploadCampaignAttachment } from '../../middleware/upload';
@@ -403,6 +404,8 @@ router.post(
   authorize('BUSINESS'),
   ctrl.initiateConnectIpsPayment.bind(ctrl)
 );
+
+registerDeliverableDeadlineRoutes(router);
 
 router.put(
   '/applications/:appId/submit',

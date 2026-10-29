@@ -11,6 +11,9 @@ import { logActivity } from '../modules/logging/activity.service';
 import { ActivityAction, EntityType } from '../modules/logging/logging.constants';
 import { CampaignService } from '../modules/campaign/campaign.service';
 import { withJobLock } from '../utils/jobLock';
+import { deliverableDeadlineService } from '../modules/campaign/deliverable-deadline.service';
+import { REFUND_REASON } from '../modules/refund/refund.core';
+import { sweepApplicationDeadlines } from '../modules/campaign/proposal-deadline.service';
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Escrow state-machine sweep (escrow spec §38). Every automatic transition the
@@ -96,6 +99,7 @@ async function sweepConfirmationTimeouts(now: Date): Promise<number> {
     const { refunded } = await escrowService.refund({
       applicationId:     app.id,
       reason:            'Creator did not confirm the engagement within the confirmation window',
+      reasonCode:        REFUND_REASON.CONFIRMATION_TIMEOUT,
       actorType:         'SYSTEM',
       silent:            true,
       requireWorkStatus: ['NONE'],
@@ -109,8 +113,8 @@ async function sweepConfirmationTimeouts(now: Date): Promise<number> {
     notificationService.create({
       userId:  app.campaign.business.userId,
       type:    'payment_refunded',
-      title:   'Creator did not start — full refund',
-      body:    `The creator for "${app.campaign.title}" didn't confirm in time. Your payment is being refunded in full and you can select another creator.`,
+      title:   'Creator did not start — refund requested',
+      body:    `The creator for "${app.campaign.title}" didn't confirm in time. A full refund request has been created and is awaiting processing — Kolab will notify you when the transfer is completed. You can select another creator.`,
       refId:   app.campaignId,
       refType: 'campaign',
     }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
@@ -118,7 +122,7 @@ async function sweepConfirmationTimeouts(now: Date): Promise<number> {
       userId:  app.creator.userId,
       type:    'proposal_expired',
       title:   'Engagement released',
-      body:    `You didn't confirm "${app.campaign.title}" in time, so it was released and the business refunded. Confirming promptly keeps your reliability score healthy.`,
+      body:    `You didn't confirm "${app.campaign.title}" in time, so it was released and a refund was initiated for the business. Confirming promptly keeps your reliability score healthy.`,
       refId:   app.campaignId,
       refType: 'campaign',
     }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
@@ -126,53 +130,32 @@ async function sweepConfirmationTimeouts(now: Date): Promise<number> {
   return rows.length;
 }
 
-// ── Sweep 3: content deadline passed → CONTENT_OVERDUE + grace clock (§23) ────
+// ── Sweep 3: content deadline passed → CONTENT_OVERDUE (+ decision window), or
+// — after an approved extension — straight to CREATOR_FAILED + refund request.
 async function sweepContentDeadlines(now: Date): Promise<number> {
-  const timings = await getEscrowTimings();
   const rows = await prisma.application.findMany({
     where: {
       status:          'ACCEPTED',
       workStatus:      'IN_PROGRESS',
       contentDeadline: { lt: now },
     },
-    include: ENGAGEMENT_INCLUDE,
-  }) as EngagementRow[];
-
-  for (const app of rows) {
-    // Conditional: a creator who submitted between the query above and this
-    // write must not be knocked back to CONTENT_OVERDUE.
-    const { count } = await prisma.application.updateMany({
-      where: { id: app.id, status: 'ACCEPTED', workStatus: 'IN_PROGRESS' },
-      data: {
-        workStatus:           'CONTENT_OVERDUE',
-        contentGraceDeadline: deadlineFromNow(timings.contentGraceHours, now),
-      },
-    });
-    if (count === 0) continue;
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'IN_PROGRESS', toStatus: 'CONTENT_OVERDUE', actorType: 'SYSTEM', reason: 'Content deadline passed' });
-    logActivity({ userId: null, action: ActivityAction.CONTENT_OVERDUE, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId } });
-
-    notificationService.create({
-      userId:  app.creator.userId,
-      type:    'content_overdue',
-      title:   'Your campaign deadline has passed',
-      body:    `The deadline for "${app.campaign.title}" has passed. Please submit your content as soon as possible — you have a short grace period.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
-    notificationService.create({
-      userId:  app.campaign.business.userId,
-      type:    'content_overdue',
-      title:   'Creator missed the deadline',
-      body:    `The creator for "${app.campaign.title}" has missed the content deadline. They have a short grace period to deliver.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
+    select: { id: true },
+  });
+  let moved = 0;
+  for (const { id } of rows) {
+    try {
+      // Re-checks the persisted state under the row lock — a submission or an
+      // extension that landed after the query above wins.
+      if (await deliverableDeadlineService.handleMissedDeadline(id, now)) moved += 1;
+    } catch (err) {
+      reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: 'contentDeadlines', appId: id });
+    }
   }
-  return rows.length;
+  return moved;
 }
 
-// ── Sweep 4: grace elapsed with nothing submitted → CREATOR_FAILED + refund (§25)
+// ── Sweep 4: overdue decision window elapsed (no extension agreed) →
+// CREATOR_FAILED + refund request (§25 + deadline-extension rules).
 async function sweepCreatorFailures(now: Date): Promise<number> {
   const rows = await prisma.application.findMany({
     where: {
@@ -180,43 +163,17 @@ async function sweepCreatorFailures(now: Date): Promise<number> {
       workStatus:           'CONTENT_OVERDUE',
       contentGraceDeadline: { lt: now },
     },
-    include: ENGAGEMENT_INCLUDE,
-  }) as EngagementRow[];
-
-  for (const app of rows) {
-    const { refunded } = await escrowService.refund({
-      applicationId:     app.id,
-      reason:            'Creator failed to deliver any content by the deadline',
-      actorType:         'SYSTEM',
-      workStatusAfter:   'CREATOR_FAILED',
-      silent:            true,
-      requireWorkStatus: ['CONTENT_OVERDUE'],
-      systemMessage:     'This engagement has been closed and the payment refunded — the creator did not deliver any content by the deadline.',
-    });
-    // Submitted at the last moment (or already handled) — nothing to report.
-    if (!refunded) continue;
-    recordCampaignEvent({ campaignId: app.campaignId, applicationId: app.id, axis: 'work', fromStatus: 'CONTENT_OVERDUE', toStatus: 'CREATOR_FAILED', actorType: 'SYSTEM', reason: 'Grace period elapsed with no submission' });
-    void escrowService.bumpReliability(app.creatorId, 'failed');
-    logActivity({ userId: null, action: ActivityAction.CREATOR_FAILED, entityType: EntityType.APPLICATION, entityId: app.id, metadata: { campaignId: app.campaignId } });
-
-    notificationService.create({
-      userId:  app.campaign.business.userId,
-      type:    'payment_refunded',
-      title:   'Creator did not deliver — full refund',
-      body:    `The creator for "${app.campaign.title}" did not deliver any content. Your payment is being refunded in full.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
-    notificationService.create({
-      userId:  app.creator.userId,
-      type:    'reliability_warning',
-      title:   'Campaign missed',
-      body:    `You didn't deliver content for "${app.campaign.title}" and the business was refunded. Repeated misses affect your reliability score and campaign ranking.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch((err) => logger.warn({ err, appId: app.id }, 'escrow sweep: notification failed'));
+    select: { id: true },
+  });
+  let closed = 0;
+  for (const { id } of rows) {
+    try {
+      if (await deliverableDeadlineService.handleDecisionWindowLapsed(id, now)) closed += 1;
+    } catch (err) {
+      reportError(err, { event: LogEvent.ESCROW_SWEEP_STEP_FAILED, sweep: 'creatorFailures', appId: id });
+    }
   }
-  return rows.length;
+  return closed;
 }
 
 // ── Sweep 5: review-window reminder + optional auto-approve (§26) ─────────────
@@ -338,6 +295,7 @@ async function runEscrowSweep(): Promise<void> {
   await step('creatorFailures',      () => sweepCreatorFailures(now));
   await step('settlementReleases',   () => sweepSettlementReleases(now));
   await step('businessReview',       () => sweepBusinessReview(now));
+  await step('applicationDeadlines', () => sweepApplicationDeadlines(now));
 
   const touched = Object.values(results).some(
     (v) => (typeof v === 'number' && v > 0) || (v && typeof v === 'object' && Object.values(v).some((n) => (n as number) > 0)),

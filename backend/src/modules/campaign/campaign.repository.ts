@@ -25,6 +25,31 @@ function roleCategoryMatch(terms: string[]): Prisma.Sql {
   )`;
 }
 
+// Deliverable-deadline + refund context every application read path carries
+// (see ApplicationDto.extensions / refundRequest).
+export const DEADLINE_SELECT = {
+  originalContentDeadline: true,
+  contentOverdueAt:        true,
+  extensionCount:          true,
+  deliverableClosedAt:     true,
+  deliverableClosedReason: true,
+  extensions: {
+    orderBy: { createdAt: 'desc' as const },
+    select: {
+      id: true, kind: true, status: true, reason: true, proposedDeadline: true, previewUrl: true,
+      previousDeadline: true, decisionDueAt: true, approvedDeadline: true, decisionNote: true,
+      decidedAt: true, decidedByRole: true, createdAt: true,
+    },
+  },
+  refundRequests: {
+    orderBy: { createdAt: 'desc' as const },
+    select: {
+      id: true, referenceCode: true, status: true, refundableAmount: true, partial: true,
+      reasonCode: true, createdAt: true, completedAt: true, transferredAt: true,
+    },
+  },
+} as const;
+
 export class CampaignRepository {
   // A campaign matches a category filter on its primary `category` or any of
   // its (up to 3) `categories`, case-insensitively.
@@ -796,6 +821,8 @@ export class CampaignRepository {
               socialLinks: true,
             },
           },
+          extensions: DEADLINE_SELECT.extensions,
+          refundRequests: DEADLINE_SELECT.refundRequests,
         },
       }),
       prisma.application.count({ where: { campaignId } }),
@@ -859,6 +886,7 @@ export class CampaignRepository {
           businessReviewDueAt: true,
           paymentReleaseAt: true,
           submittedLate: true,
+          ...DEADLINE_SELECT,
           paidAt: true,
           createdAt: true,
           creator: {
@@ -888,6 +916,8 @@ export class CampaignRepository {
         creator: { select: { id: true, userId: true, fullName: true } },
         submissionVersions: { orderBy: { version: 'asc' } },
         dispute: true,
+        extensions: DEADLINE_SELECT.extensions,
+        refundRequests: DEADLINE_SELECT.refundRequests,
       },
     });
   }
@@ -973,6 +1003,7 @@ export class CampaignRepository {
           businessReviewDueAt: true,
           paymentReleaseAt: true,
           submittedLate: true,
+          ...DEADLINE_SELECT,
           paidAt: true,
           createdAt: true,
           campaign: {
@@ -1041,16 +1072,28 @@ export class CampaignRepository {
     return prisma.application.update({ where: { id: appId }, data });
   }
 
+  // Conditional so a deadline sweep and a submission can't both win: the
+  // update only matches while the work is open and the deadline (if any)
+  // hasn't passed at the moment Postgres evaluates it. Returns null when it
+  // matched nothing.
   async submitWork(appId: string, data: { note?: string; urls?: string }) {
-    return prisma.application.update({
-      where: { id: appId },
+    const now = new Date();
+    const { count } = await prisma.application.updateMany({
+      where: {
+        id: appId,
+        workStatus: { in: [WorkStatus.IN_PROGRESS, WorkStatus.REVISION] },
+        deliverableClosedAt: null,
+        OR: [{ contentDeadline: null }, { contentDeadline: { gte: now } }],
+      },
       data: {
         workStatus:      WorkStatus.SUBMITTED,
         workNote:        data.note ?? null,
         deliverableUrls: data.urls ?? null,
-        submittedAt:     new Date(),
+        submittedAt:     now,
       },
     });
+    if (count === 0) return null;
+    return prisma.application.findUniqueOrThrow({ where: { id: appId } });
   }
 
   // ── Submission versions (escrow spec §5) ─────────────────────────────────

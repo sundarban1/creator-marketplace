@@ -186,7 +186,13 @@ function InvitationCard({ item, onAccept, onDecline, onApplyNow }: {
           <Text style={[styles.businessName, { color: C.textSecondary }]} numberOfLines={1}>{item.business.businessName}</Text>
           <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={2}>{item.campaign.title}</Text>
         </View>
-        {isPaidInvite && item.hasApplied ? (
+        {(item.status === 'DEADLINE_MISSED' || item.status === 'EXPIRED') && !item.hasApplied ? (
+          <View style={[styles.statusBadge, { backgroundColor: item.status === 'DEADLINE_MISSED' ? '#FEF2F2' : C.background }]}>
+            <Text style={[styles.statusBadgeText, { color: item.status === 'DEADLINE_MISSED' ? '#DC2626' : C.textSecondary }]}>
+              {item.status === 'DEADLINE_MISSED' ? t('invitations.statusDeadlineMissed') : t('invitations.statusExpired')}
+            </Text>
+          </View>
+        ) : isPaidInvite && item.hasApplied ? (
           <View style={[styles.statusBadge, { backgroundColor: '#F0FDF4' }]}>
             <Text style={[styles.statusBadgeText, { color: '#16A34A' }]}>{t('invitations.statusApplied')}</Text>
           </View>
@@ -235,7 +241,9 @@ function InvitationCard({ item, onAccept, onDecline, onApplyNow }: {
         </View>
       )}
 
-      {isPaidInvite && !item.hasApplied && (
+      {(item.status === 'DEADLINE_MISSED' || item.status === 'EXPIRED') && !item.hasApplied ? (
+        <Text style={[styles.applyHint, { color: C.textSecondary, borderTopColor: C.border }]}>{t('invitations.closedNote')}</Text>
+      ) : isPaidInvite && !item.hasApplied && (
         <View style={{ gap: 8 }}>
           <Text style={[styles.applyHint, { color: C.textSecondary, borderTopColor: C.border }]}>
             {t('invitations.applyHint')}

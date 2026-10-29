@@ -92,6 +92,13 @@ const DEFAULTS: Record<string, unknown> = {
   'escrow.businessReviewReminderHours': 12, // nudge partway through the review window
   'escrow.settlementHours':             24, // hold after approval before funds release (when the hold is on)
   'escrow.maxIncludedRevisions':         2, // revisions included before a change request
+  // Missed content deadline: how long the business has to decide (or answer an
+  // extension request) before the deliverable is cancelled + refund requested.
+  'escrow.extensionDecisionHours':      24,
+  'escrow.maxExtensionHours':           48, // longest extension the business may grant
+  'escrow.maxDeadlineExtensions':        2, // 1 standard + 1 admin-exceptional, total
+  // Refunds ≥ this amount (NPR) need a second, different admin to approve. 0 = off.
+  'refund.dualApprovalThreshold':        0,
   // Conservative launch defaults — both OFF. When settlementHoldEnabled is
   // false, business approval releases escrow immediately (current behaviour).
   // When autoApproveOnReviewTimeout is false, a lapsed review window only keeps

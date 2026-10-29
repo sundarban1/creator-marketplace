@@ -71,6 +71,7 @@ const Creators = named(() => import('./pages/Creators'), 'Creators');
 const Businesses = named(() => import('./pages/Businesses'), 'Businesses');
 const Campaigns = named(() => import('./pages/Campaigns'), 'Campaigns');
 const Payments = named(() => import('./pages/Payments'), 'Payments');
+const Proposals = named(() => import('./pages/Proposals'), 'Proposals');
 const Referrals = named(() => import('./pages/Referrals'), 'Referrals');
 const Reports = named(() => import('./pages/Reports'), 'Reports');
 const Settings = named(() => import('./pages/Settings'), 'Settings');
@@ -208,6 +209,7 @@ export default function App() {
                 <Route path="/admin/success-stories/edit/:id" element={<EditSuccessStoryPage />} />
                 <Route path="/admin/partners" element={<PartnersPage />} />
                 <Route path="/admin/payments" element={<Payments />} />
+                <Route path="/admin/proposals" element={<Proposals />} />
                 <Route path="/admin/referrals" element={<Referrals />} />
                 <Route path="/admin/reports" element={<Reports />} />
                 <Route path="/admin/help-center" element={<HelpCenter />} />

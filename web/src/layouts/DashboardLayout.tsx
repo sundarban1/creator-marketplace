@@ -20,6 +20,7 @@ function resolveTitle(pathname: string): string {
     '/admin/categories': 'Categories',
     '/admin/platforms': 'Platforms',
     '/admin/payments':    'Payments',
+    '/admin/proposals':   'Proposals',
     '/admin/reports':     'Reports',
     '/admin/help-center':   'Help Center',
     '/admin/faqs':          'FAQ Manager',

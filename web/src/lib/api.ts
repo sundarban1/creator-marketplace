@@ -618,6 +618,106 @@ export interface ApiPaymentTransaction {
   createdAt: string;
 }
 
+// ── Refund requests (Payments → Refund Requests) ─────────────────────────────
+export type RefundStatus = 'PENDING' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'FAILED' | 'CANCELLED';
+export type RefundTransferMethod = 'BANK' | 'ESEWA' | 'KHALTI' | 'CONNECTIPS' | 'OTHER';
+
+export interface ApiAdminRefund {
+  id: string;
+  referenceCode: string;
+  status: RefundStatus;
+  reasonCode: string;
+  reason: string;
+  partial: boolean;
+  currency: string;
+  refundableAmount: number;
+  transferAmount: number | null;
+  paymentMethod: string | null;
+  paymentReference: string | null;
+  applicationId: string;
+  business: { id: string; businessName: string | null };
+  campaign: { id: string; title: string };
+  needsSecondApproval: boolean;
+  createdAt: string;
+  completedAt: string | null;
+  updatedAt: string;
+}
+
+export interface ApiRefundList {
+  items: ApiAdminRefund[];
+  total: number;
+  page: number;
+  limit: number;
+  counts: Partial<Record<RefundStatus, number>>;
+  summary: { pendingCount: number; pendingAmount: number; completedCount: number; completedAmount: number };
+}
+
+export interface ApiAdminRefundDetail {
+  id: string;
+  referenceCode: string;
+  status: RefundStatus;
+  reasonCode: string;
+  reason: string;
+  partial: boolean;
+  currency: string;
+  initiatedByType: string;
+  initiatedBy: string | null;
+  createdAt: string;
+  business: { id: string; name: string | null; contactPerson: string | null; email: string | null; phone: string | null; isVerified: boolean };
+  recipient: { name: string | null; method: string | null; account: Record<string, string> | null; verifiedAt: string | null; verifiedBy: string | null };
+  payment: {
+    paymentTransactionId: string | null; paymentReference: string | null; method: string | null; paidAt: string | null;
+    originalAmount: number | null; remainingRefundable: number;
+    previousRefunds: { id: string; type: string; amount: number; reference: string | null; createdAt: string }[];
+  };
+  campaign: { id: string; title: string; campaignType: string };
+  deliverable: {
+    applicationId: string; creator: { id: string; fullName: string | null };
+    proposalStatus: string; workStatus: string; escrowStatus: string;
+    originalDeadline: string | null; currentDeadline: string | null; overdueAt: string | null;
+    closedAt: string | null; closedReason: string | null; extensionCount: number;
+    extensions: { id: string; kind: string; status: string; reason: string; proposedDeadline: string; approvedDeadline: string | null; decisionNote: string | null; decidedByRole: string | null; decidedAt: string | null; businessConsent: boolean; createdAt: string }[];
+    history: { axis: string; fromStatus: string | null; toStatus: string; actorType: string; actor: string | null; reason: string | null; createdAt: string }[];
+  };
+  calculation: { originalAmount: number | null; deductionAmount: number | null; refundableAmount: number | null; note: string | null };
+  approval: {
+    dualApprovalRequired: boolean; threshold: number; firstApprovedBy: string | null; firstApprovedAt: string | null;
+    approvedBy: string | null; approvedAt: string | null; rejectedAt: string | null; rejectionReason: string | null;
+  };
+  transfer: {
+    method: string | null; amount: number | null; transferredAt: string | null; reference: string | null; proofUrl: string | null;
+    adminNotes: string | null; processingStartedAt: string | null; completedAt: string | null; completedBy: string | null;
+    failedAt: string | null; failureReason: string | null; attemptCount: number;
+  };
+  events: { id: string; action: string; fromStatus: string | null; toStatus: string; actorType: string; actor: string | null; note: string | null; createdAt: string }[];
+}
+
+// ── Admin proposals (application deadlines) ─────────────────────────────────
+export type ProposalFilter = 'all' | 'pending' | 'accepted' | 'rejected' | 'deadline_missed' | 'expired' | 'withdrawn';
+export interface ApiAdminProposal {
+  kind: 'PROPOSAL' | 'INVITATION';
+  id: string;
+  creator: { id: string; name: string | null };
+  business: { id: string; name: string | null };
+  campaign: { id: string; title: string; status: string; type: string };
+  status: string;
+  applicationDeadline: string | null;
+  submittedAt: string | null;
+  submittedOnTime: boolean | null;
+  decidedAt: string | null;
+  closedAt: string | null;
+  reason: string | null;
+  deliverable: { applicationId: string; workStatus: string | null } | null;
+  refundRequest: { id: string; status: string | null } | null;
+}
+export interface ApiAdminProposalList {
+  items: ApiAdminProposal[];
+  total: number;
+  page: number;
+  limit: number;
+  counts: Record<ProposalFilter, number>;
+}
+
 export type WithdrawalStatus = 'PENDING' | 'PROCESSING' | 'PAID' | 'REJECTED' | 'CANCELLED';
 
 export interface ApiAdminWithdrawal {
@@ -1442,6 +1542,38 @@ export const api = {
       if (fields.adminNotes) form.append('adminNotes', fields.adminNotes);
       return uploadForm<ApiAdminWithdrawalDetail>(`/api/admin/withdrawals/${id}/mark-paid`, form);
     },
+
+    refunds: (params?: { page?: number; limit?: number; status?: string; search?: string; reasonCode?: string; paymentMethod?: string; from?: string; to?: string; sort?: 'createdAt' | 'amount'; order?: 'asc' | 'desc' }) =>
+      request<ApiRefundList>('GET', '/api/admin/refunds', undefined, params as Record<string, string | number | undefined>),
+    refund: (id: string) =>
+      request<ApiAdminRefundDetail>('GET', `/api/admin/refunds/${id}`),
+    setRefundRecipient: (id: string, body: { recipientName: string; recipientMethod: RefundTransferMethod; account: Record<string, string>; verified: true }) =>
+      request<ApiAdminRefundDetail>('POST', `/api/admin/refunds/${id}/recipient`, body),
+    approveRefund: (id: string, body: { note?: string; amount?: number }) =>
+      request<ApiAdminRefundDetail>('POST', `/api/admin/refunds/${id}/approve`, body),
+    rejectRefund: (id: string, reason: string) =>
+      request<ApiAdminRefundDetail>('POST', `/api/admin/refunds/${id}/reject`, { reason }),
+    processRefund: (id: string, note?: string) =>
+      request<ApiAdminRefundDetail>('POST', `/api/admin/refunds/${id}/process`, { note }),
+    failRefund: (id: string, reason: string) =>
+      request<ApiAdminRefundDetail>('POST', `/api/admin/refunds/${id}/fail`, { reason }),
+    completeRefund: (id: string, fields: { transferMethod: RefundTransferMethod; amount: number; transferredAt: string; transferReference: string; adminNotes?: string }, proof: File | null) => {
+      const form = new FormData();
+      form.append('transferMethod', fields.transferMethod);
+      form.append('amount', String(fields.amount));
+      form.append('currency', 'NPR');
+      form.append('transferredAt', fields.transferredAt);
+      form.append('transferReference', fields.transferReference);
+      if (fields.adminNotes) form.append('adminNotes', fields.adminNotes);
+      if (proof) form.append('proof', proof);
+      return uploadForm<ApiAdminRefundDetail>(`/api/admin/refunds/${id}/complete`, form);
+    },
+    grantExceptionalExtension: (applicationId: string, body: { newDeadline: string; reason: string; businessConsent: true }) =>
+      request<unknown>('POST', `/api/admin/deadlines/deliverables/${applicationId}/exceptional-extension`, body),
+    proposals: (params: { filter?: ProposalFilter; search?: string; sort?: 'submittedAt' | 'deadline' | 'createdAt'; order?: 'asc' | 'desc'; page?: number; limit?: number }) =>
+      request<ApiAdminProposalList>('GET', '/api/admin/deadlines/proposals', undefined, params as Record<string, string | number | undefined>),
+    reopenApplications: (campaignId: string, body: { applicationDeadline: string; reason: string }) =>
+      request<{ applicationDeadline: string; invitationsRestored: number }>('POST', `/api/admin/deadlines/campaigns/${campaignId}/reopen-applications`, body),
 
     disputes: (params?: { page?: number; limit?: number; status?: string }) =>
       request<ApiAdminDispute[]>('GET', '/api/admin/disputes', undefined,

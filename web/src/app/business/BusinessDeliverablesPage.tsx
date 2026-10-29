@@ -17,8 +17,10 @@ import { Textarea } from '../ui/Textarea';
 import { DeliverableStrip } from '../ui/DeliverableGallery';
 import { DeliverableLinkList, parseDeliverableLinks } from '../ui/DeliverableLinks';
 import { confirmDialog } from '../ui/confirmDialog';
+import { DeliverableDeadlinePanel } from '../ui/DeliverableDeadlinePanel';
+import { isDeadlineState } from '../lib/engagement';
 
-const TABS = ['review', 'approved'] as const;
+const TABS = ['review', 'overdue', 'approved'] as const;
 type Tab = (typeof TABS)[number];
 
 export function BusinessDeliverablesPage() {
@@ -39,6 +41,11 @@ export function BusinessDeliverablesPage() {
     const list = (apps.data?.items ?? []).filter((a) => !campaignFilter || a.campaignId === campaignFilter);
     return {
       review: list.filter((a) => a.engagementState === 'BUSINESS_REVIEW'),
+      // Missed deadlines: decisions needed first (overdue), then closed ones
+      // with their refund status.
+      overdue: list
+        .filter((a) => isDeadlineState(a))
+        .sort((x, y) => Number(y.engagementState === 'CONTENT_OVERDUE') - Number(x.engagementState === 'CONTENT_OVERDUE')),
       approved: list.filter(
         (a) => a.engagementState === 'PAYMENT_RELEASE_PENDING' || a.engagementState === 'PAYMENT_RELEASED' || a.engagementState === 'COMPLETED',
       ),
@@ -91,7 +98,7 @@ export function BusinessDeliverablesPage() {
         }}
         tabs={TABS.map((v) => ({
           value: v,
-          label: t(`biz.delivTab${v[0].toUpperCase()}${v.slice(1)}`),
+          label: v === 'overdue' ? t('delivDeadline.tabOverdue') : t(`biz.delivTab${v[0].toUpperCase()}${v.slice(1)}`),
           count: apps.loading ? undefined : buckets[v].length,
         }))}
       />
@@ -100,7 +107,24 @@ export function BusinessDeliverablesPage() {
         {apps.loading ? (
           [0, 1].map((i) => <Skeleton key={i} className="h-40 w-full rounded-2xl" />)
         ) : list.length === 0 ? (
-          <EmptyState variant="empty" title={t('biz.noDeliverables')} />
+          <EmptyState variant="empty" title={tab === 'overdue' ? t('delivDeadline.noOverdue') : t('biz.noDeliverables')} />
+        ) : tab === 'overdue' ? (
+          list.map((a) => (
+            <div key={a.id}>
+              <div className="mb-2 flex items-center gap-3 px-1">
+                <Avatar name={a.creator?.fullName ?? 'Creator'} src={a.creator?.avatarUrl} size="sm" />
+                <p className="min-w-0 truncate text-[13px] text-ink-soft">
+                  <span className="font-semibold text-ink">{a.creator?.fullName}</span> · {a.campaign?.title} · {rupees(a.proposedRate)}
+                </p>
+              </div>
+              <DeliverableDeadlinePanel
+                app={a}
+                role="BUSINESS"
+                counterpartName={a.creator?.fullName}
+                onChanged={(msg) => { setFlash(msg); setError(''); apps.reload(); }}
+              />
+            </div>
+          ))
         ) : (
           list.map((a) => (
             <Card key={a.id}>

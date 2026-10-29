@@ -547,6 +547,19 @@ export function reportIssue(appId: string, reason: string): Promise<void> {
   return apiRequest('PUT', `/api/campaigns/applications/${appId}/report-issue`, { reason }).then(() => undefined);
 }
 
+export function approveExtension(appId: string, extensionId: string, note?: string): Promise<unknown> {
+  return apiRequest('POST', `/api/campaigns/applications/${appId}/extension-requests/${extensionId}/approve`, { note }).then((r) => r.data);
+}
+
+export function rejectExtension(appId: string, extensionId: string, note: string): Promise<unknown> {
+  return apiRequest('POST', `/api/campaigns/applications/${appId}/extension-requests/${extensionId}/reject`, { note }).then((r) => r.data);
+}
+
+/** Cancel an overdue deliverable and open a refund request. */
+export function cancelOverdueDeliverable(appId: string, reason?: string): Promise<unknown> {
+  return apiRequest('POST', `/api/campaigns/applications/${appId}/cancel-overdue`, { reason }).then((r) => r.data);
+}
+
 export function requestRevision(appId: string, note: string): Promise<BusinessApplication> {
   return apiRequest<BusinessApplication>(
     'PUT',

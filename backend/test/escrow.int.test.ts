@@ -29,7 +29,7 @@ d('EscrowService — financial idempotency (§42/§43)', () => {
     expect(app.paymentStatus).toBe('RELEASED');
   });
 
-  it('refund: returns money once and is a no-op afterwards', async () => {
+  it('refund: opens exactly one refund request and is a no-op afterwards', async () => {
     const s = await seedFundedEngagement({ proposedRate: 3000 });
 
     const f1 = await escrowService.refund({ applicationId: s.applicationId, reason: 'test' });
@@ -37,10 +37,12 @@ d('EscrowService — financial idempotency (§42/§43)', () => {
 
     expect(f1).toMatchObject({ refunded: true, amount: 3000, partial: false });
     expect(f2.refunded).toBe(false);
-    expect(await prisma.paymentTransaction.count({ where: { applicationId: s.applicationId, type: 'REFUND' } })).toBe(1);
+    // No money has moved yet — the ledger row is written when an admin records the transfer.
+    expect(await prisma.paymentTransaction.count({ where: { applicationId: s.applicationId, type: 'REFUND' } })).toBe(0);
+    expect(await prisma.refundRequest.count({ where: { applicationId: s.applicationId } })).toBe(1);
 
     const app = await prisma.application.findUniqueOrThrow({ where: { id: s.applicationId } });
-    expect(app.escrowStatus).toBe('REFUNDED');
+    expect(app.escrowStatus).toBe('REFUND_PENDING');
     expect(app.workStatus).toBe('CANCELLED');
     expect(await walletBalance(s.creatorId)).toBe(0);
   });
@@ -89,9 +91,12 @@ d('Disputes (§27–§28)', () => {
     const txns = await prisma.paymentTransaction.findMany({ where: { applicationId: s.applicationId }, select: { type: true, amount: true } });
     expect(txns).toEqual(expect.arrayContaining([
       { type: 'ESCROW_IN', amount: 10_000 },
-      { type: 'PARTIAL_REFUND', amount: 4000 },
       { type: 'PAYOUT', amount: 6000 },
     ]));
+    // The business share is a refund request until an admin records the transfer.
+    const rr = await prisma.refundRequest.findFirstOrThrow({ where: { applicationId: s.applicationId } });
+    expect(rr).toMatchObject({ partial: true, status: 'PENDING', reasonCode: 'DISPUTE_SPLIT' });
+    expect(Number(rr.refundableAmount)).toBe(4000);
     const app = await prisma.application.findUniqueOrThrow({ where: { id: s.applicationId } });
     expect(app.escrowStatus).toBe('PARTIALLY_REFUNDED');
     expect(app.workStatus).toBe('COMPLETED');
@@ -122,7 +127,8 @@ d('Disputes (§27–§28)', () => {
     const ld = await escrowService.raiseDispute({ applicationId: lost.applicationId, raisedByUserId: lost.bizUserId, raisedByRole: 'BUSINESS', reason: 'r' });
     await escrowService.resolveDispute({ disputeId: ld.disputeId, adminUserId: lost.adminId, outcome: 'BUSINESS_WON', note: 'not delivered' });
     expect(await walletBalance(lost.creatorId)).toBe(0);
-    expect((await prisma.application.findUniqueOrThrow({ where: { id: lost.applicationId } })).escrowStatus).toBe('REFUNDED');
+    expect((await prisma.application.findUniqueOrThrow({ where: { id: lost.applicationId } })).escrowStatus).toBe('REFUND_PENDING');
+    expect(await prisma.refundRequest.count({ where: { applicationId: lost.applicationId, reasonCode: 'DISPUTE_BUSINESS_WON' } })).toBe(1);
   });
 });
 
@@ -138,13 +144,13 @@ d('Sweeps (§10–§26)', () => {
 
     await runEscrowSweep();
     let app = await prisma.application.findUniqueOrThrow({ where: { id: s.applicationId } });
-    expect(app.escrowStatus).toBe('REFUNDED');
+    expect(app.escrowStatus).toBe('REFUND_PENDING');
     expect(app.status).toBe('EXPIRED');
     expect((await prisma.campaign.findUniqueOrThrow({ where: { id: s.campaignId } })).status).toBe('ACTIVE');
-    expect(await prisma.paymentTransaction.count({ where: { applicationId: s.applicationId, type: 'REFUND' } })).toBe(1);
+    expect(await prisma.refundRequest.count({ where: { applicationId: s.applicationId, reasonCode: 'CONFIRMATION_TIMEOUT' } })).toBe(1);
 
     await runEscrowSweep();
-    expect(await prisma.paymentTransaction.count({ where: { applicationId: s.applicationId, type: 'REFUND' } })).toBe(1);
+    expect(await prisma.refundRequest.count({ where: { applicationId: s.applicationId } })).toBe(1);
   });
 
   it('content deadline → overdue → grace elapsed → CREATOR_FAILED + refund + reliability strike', async () => {
@@ -164,7 +170,7 @@ d('Sweeps (§10–§26)', () => {
     await runEscrowSweep();
     const app = await prisma.application.findUniqueOrThrow({ where: { id: s.applicationId } });
     expect(app.workStatus).toBe('CREATOR_FAILED');
-    expect(app.escrowStatus).toBe('REFUNDED');
+    expect(app.escrowStatus).toBe('REFUND_PENDING');
     const rel = await prisma.creatorReliability.findUnique({ where: { creatorId: s.creatorId } });
     expect(rel?.failedCampaigns).toBe(1);
     expect(rel?.reliabilityScore).toBe(85);

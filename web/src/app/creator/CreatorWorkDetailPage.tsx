@@ -37,8 +37,12 @@ import { EventQuestionsPanel } from '../events/EventQuestions';
 import { EventInvitationButton } from '../events/EventInvitation';
 import { WorkStepper } from './WorkStepper';
 import { confirmDialog } from '../ui/confirmDialog';
+import { DeliverableDeadlinePanel, ExtendedDeadlineNotice } from '../ui/DeliverableDeadlinePanel';
+import { isDeadlineState } from '../lib/engagement';
 
-const CAN_UPLOAD = new Set(['IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE']);
+// Overdue work can't be uploaded/submitted until the business approves an
+// extension (enforced server-side) — that state gets the deadline panel.
+const CAN_UPLOAD = new Set(['IN_PROGRESS', 'REVISION_REQUESTED']);
 const CAN_REPORT = new Set([
   'ESCROW_FUNDED',
   'IN_PROGRESS',
@@ -309,9 +313,20 @@ export function CreatorWorkDetailPage() {
       );
     }
 
+    if (isDeadlineState(app!)) {
+      return (
+        <DeliverableDeadlinePanel
+          app={app!}
+          role="CREATOR"
+          onChanged={(msg) => { setFlash(msg); reload(); }}
+        />
+      );
+    }
+
     if (CAN_UPLOAD.has(state)) {
       return (
         <Card>
+          <ExtendedDeadlineNotice app={app!} />
           {state === 'REVISION_REQUESTED' && app!.revisionNotes && app!.revisionNotes.length > 0 && (
             <Alert tone="warning" className="mb-4">
               <span className="block font-semibold">{t('workDetail.revisionRequested')}</span>

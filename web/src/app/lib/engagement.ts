@@ -23,6 +23,7 @@ export type EngagementState =
   | 'PAYMENT_RELEASE_PENDING'
   | 'DISPUTED'
   | 'PAYMENT_RELEASED'
+  | 'REFUND_PENDING'
   | 'REFUNDED'
   | 'PARTIALLY_REFUNDED'
   | 'CANCELLED'
@@ -55,6 +56,7 @@ const META: Record<EngagementState, EngagementMeta> = {
   PAYMENT_RELEASE_PENDING: { bucket: 'active', labelKey: 'paymentReleasePending', tone: 'progress' },
   DISPUTED: { bucket: 'active', labelKey: 'disputed', tone: 'danger' },
   PAYMENT_RELEASED: { bucket: 'completed', labelKey: 'paymentReleased', tone: 'success' },
+  REFUND_PENDING: { bucket: 'closed', labelKey: 'refundPending', tone: 'warning' },
   REFUNDED: { bucket: 'closed', labelKey: 'refunded', tone: 'neutral' },
   PARTIALLY_REFUNDED: { bucket: 'closed', labelKey: 'partiallyRefunded', tone: 'neutral' },
   CANCELLED: { bucket: 'closed', labelKey: 'cancelled', tone: 'neutral' },
@@ -71,3 +73,13 @@ export function engagementMeta(state: string): EngagementMeta {
 export function isActiveWork(state: string): boolean {
   return engagementMeta(state).bucket === 'active';
 }
+
+/** States this panel owns (the rest of the work UI handles everything else). */
+export function isDeadlineState(app: { engagementState: string; deliverableClosedAt?: string | null }): boolean {
+  const s = app.engagementState;
+  if (s === 'CONTENT_OVERDUE' || s === 'CREATOR_FAILED') return true;
+  // Once the refund settles the derived state reads REFUNDED, but the
+  // deliverable is still the one that was closed for a missed deadline.
+  return !!app.deliverableClosedAt && ['REFUND_PENDING', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(s);
+}
+

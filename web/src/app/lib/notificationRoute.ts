@@ -8,6 +8,14 @@ const COLLAB_TYPES = new Set([
   'confirmation_pending', 'deliverable_due_24h', 'deliverable_due_3h', 'payment_pending',
   'collaboration_inactive', 'content_overdue', 'payment_expired', 'payment_refunded',
   'reliability_warning', 'dispute_opened', 'dispute_resolved', 'review_pending', 'deadline_risk',
+  ...['extension_requested', 'extension_approved', 'extension_rejected', 'deadline_missed', 'deliverable_cancelled',
+    'refund_requested', 'refund_approved', 'refund_rejected', 'refund_failed', 'refund_completed'],
+]);
+// Missed-deadline decisions + refund updates live on the business's
+// "Missed deadlines" deliverables tab.
+const BUSINESS_DEADLINE_TYPES = new Set([
+  'content_overdue', 'extension_requested', 'extension_approved', 'deadline_missed', 'deliverable_cancelled',
+  'refund_requested', 'refund_approved', 'refund_rejected', 'refund_failed', 'refund_completed', 'payment_refunded',
 ]);
 
 /**
@@ -27,6 +35,7 @@ export function notificationRoute(n: AppNotification, role: AppRole): string {
 
   if (ref && n.refType === 'campaign' && COLLAB_TYPES.has(n.type)) {
     if (role === 'CREATOR') return `${base}/work/${ref}`;
+    if (BUSINESS_DEADLINE_TYPES.has(n.type)) return `${base}/deliverables?tab=overdue&campaign=${ref}`;
     return BUSINESS_REVIEW_TYPES.has(n.type)
       ? `${base}/deliverables?campaign=${ref}`
       : `${base}/events/${ref}`;

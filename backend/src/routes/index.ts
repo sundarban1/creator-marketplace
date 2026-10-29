@@ -46,6 +46,7 @@ import providerMemberRoutes from '../modules/provider-member/provider-member.rou
 import serviceRequestRoutes from '../modules/service-request/service-request.routes';
 import reportRoutes         from '../modules/report/report.routes';
 import reportAdminRoutes    from '../modules/report/report.admin.routes';
+import { refundAdminRoutes, deadlineAdminRoutes } from '../modules/refund/refund.admin.routes';
 import withdrawalAdminRoutes from '../modules/withdrawal/withdrawal.admin.routes';
 import promotionRoutes from '../modules/promotion/promotion.routes';
 import redemptionRoutes from '../modules/redemption/redemption.routes';
@@ -102,6 +103,8 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/admin/services', serviceAdminRoutes);
   app.use('/api/admin/reports', reportAdminRoutes);
   app.use('/api/admin/withdrawals', withdrawalAdminRoutes);
+  app.use('/api/admin/refunds', refundAdminRoutes);
+  app.use('/api/admin/deadlines', deadlineAdminRoutes);
   app.use('/api/admin/competitions', competitionAdminRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/categories', categoryRoutes);

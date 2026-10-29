@@ -26,7 +26,59 @@ export type EngagementStateValue =
   | 'CREATOR_SELECTED' | 'PAYMENT_EXPIRED' | 'ESCROW_FUNDED' | 'CREATOR_CONFIRMATION_EXPIRED'
   | 'IN_PROGRESS' | 'REVISION_REQUESTED' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED'
   | 'BUSINESS_REVIEW' | 'PAYMENT_RELEASE_PENDING' | 'DISPUTED'
-  | 'PAYMENT_RELEASED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'CANCELLED' | 'COMPLETED';
+  | 'PAYMENT_RELEASED' | 'REFUND_PENDING' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'CANCELLED' | 'COMPLETED';
+
+/** A creator's request for more time on an overdue deliverable. */
+export interface DeliverableExtension {
+  id: string;
+  kind: 'STANDARD' | 'ADMIN_EXCEPTIONAL' | string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'CANCELLED' | string;
+  reason: string;
+  proposedDeadline: string;
+  previewUrl: string | null;
+  previousDeadline: string | null;
+  decisionDueAt: string | null;
+  approvedDeadline: string | null;
+  decisionNote: string | null;
+  decidedAt: string | null;
+  decidedByRole: string | null;
+  createdAt: string;
+}
+
+/** The refund's own status — separate from the deliverable and the proposal. */
+export interface ApplicationRefund {
+  id: string;
+  referenceCode: string;
+  status: 'PENDING' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'FAILED' | string;
+  amount: number;
+  partial: boolean;
+  reasonCode: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+/** Deliverable-deadline fields every application read carries. */
+export interface DeliverableDeadlineInfo {
+  originalContentDeadline: string | null;
+  contentOverdueAt:        string | null;
+  extensionCount:          number;
+  deliverableClosedAt:     string | null;
+  extensions:              DeliverableExtension[];
+  refundRequest:           ApplicationRefund | null;
+}
+
+type RawDeadlineInfo = Partial<DeliverableDeadlineInfo>;
+
+function mapDeadlineInfo(a: RawDeadlineInfo): DeliverableDeadlineInfo {
+  return {
+    originalContentDeadline: a.originalContentDeadline ?? null,
+    contentOverdueAt:        a.contentOverdueAt ?? null,
+    extensionCount:          a.extensionCount ?? 0,
+    deliverableClosedAt:     a.deliverableClosedAt ?? null,
+    extensions:              a.extensions ?? [],
+    refundRequest:           a.refundRequest ?? null,
+  };
+}
 
 export interface EngagementDispute {
   status: string;
@@ -901,6 +953,24 @@ export const campaignService = {
   // Escrow state machine §27 — either the business or the accepted creator can
   // raise a dispute, which freezes the escrow until an admin resolves it. Same
   // endpoint as reportIssue; the backend infers the role from the caller.
+  // ── Missed deliverable deadline ──────────────────────────────────────────
+  async requestExtension(appId: string, body: { reason: string; proposedDeadline: string; previewUrl?: string }): Promise<void> {
+    await request('POST', `/api/campaigns/applications/${appId}/extension-requests`, body);
+  },
+
+  async approveExtension(appId: string, extensionId: string, note?: string): Promise<void> {
+    await request('POST', `/api/campaigns/applications/${appId}/extension-requests/${extensionId}/approve`, { note });
+  },
+
+  async rejectExtension(appId: string, extensionId: string, note: string): Promise<void> {
+    await request('POST', `/api/campaigns/applications/${appId}/extension-requests/${extensionId}/reject`, { note });
+  },
+
+  /** Cancel an overdue deliverable and open a refund request. */
+  async cancelOverdue(appId: string, reason?: string): Promise<void> {
+    await request('POST', `/api/campaigns/applications/${appId}/cancel-overdue`, { reason });
+  },
+
   async raiseDispute(appId: string, reason: string): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/report-issue`, { reason });
   },
@@ -959,7 +1029,7 @@ export const campaignService = {
     // Which role of a multi-role campaign this application is for — null
     // for the simple single-category campaigns every existing campaign uses.
     requirementId:   string | null;
-  }>> {
+  } & DeliverableDeadlineInfo>> {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
       workStatus?: string; submittedAt?: string | null; deliverableUrls?: string | null;
@@ -974,7 +1044,7 @@ export const campaignService = {
       workNote?: string | null; revisionRequestedAt?: string | null;
       revisionNotes?: { note: string; createdAt: string }[];
       requirementId?: string | null;
-    }>>('GET', `/api/campaigns/${campaignId}/applications`);
+    } & RawDeadlineInfo>>('GET', `/api/campaigns/${campaignId}/applications`);
     return res.data.map((a) => ({
       id:              a.id,
       status:          a.status.toLowerCase() as 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'expired',
@@ -1004,6 +1074,7 @@ export const campaignService = {
       revisionRequestedAt: a.revisionRequestedAt ?? null,
       revisionNotes:   a.revisionNotes ?? [],
       requirementId:   a.requirementId ?? null,
+      ...mapDeadlineInfo(a),
     }));
   },
 
@@ -1055,7 +1126,7 @@ export const campaignService = {
       // Which role of a multi-role campaign this application is for — null
       // for the simple single-category campaigns every existing campaign uses.
       requirementId:    string | null;
-    }>;
+    } & DeliverableDeadlineInfo>;
     total: number;
   }> {
     const res = await request<Array<{
@@ -1085,6 +1156,12 @@ export const campaignService = {
       revisionRequestedAt?: string | null;
       revisionNotes?:  { note: string; createdAt: string }[];
       requirementId?:  string | null;
+      originalContentDeadline?: string | null;
+      contentOverdueAt?: string | null;
+      extensionCount?: number;
+      deliverableClosedAt?: string | null;
+      extensions?: DeliverableExtension[];
+      refundRequest?: ApplicationRefund | null;
       campaign:     {
         id: string; title: string; campaignType?: string;
         paymentStatus?: string; paidAt?: string | null; featureImageUrl?: string | null;
@@ -1133,6 +1210,7 @@ export const campaignService = {
         revisionRequestedAt: a.revisionRequestedAt ?? null,
         revisionNotes:   a.revisionNotes ?? [],
         requirementId:   a.requirementId ?? null,
+        ...mapDeadlineInfo(a),
       })),
       total: res.pagination?.total ?? res.data.length,
     };

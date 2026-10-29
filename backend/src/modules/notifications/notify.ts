@@ -38,6 +38,21 @@ export const NotificationEvent = {
   RESPONSE_PENDING:                   'response_pending',
   DEADLINE_RISK:                      'deadline_risk',
   APPLICATIONS_PENDING_REVIEW:        'applications_pending_review',
+  APPLICATION_DEADLINE_PASSED:        'application_deadline_passed',
+  // Deliverable deadline + refund lifecycle (deliverable-deadline.service.ts,
+  // refund.admin.service.ts). Bell types the clients route to the workspace /
+  // business payments.
+  DELIVERABLE_OVERDUE:                'content_overdue',
+  EXTENSION_REQUESTED:                'extension_requested',
+  EXTENSION_APPROVED:                 'extension_approved',
+  EXTENSION_REJECTED:                 'extension_rejected',
+  DEADLINE_MISSED:                    'deadline_missed',
+  DELIVERABLE_CANCELLED:              'deliverable_cancelled',
+  REFUND_REQUESTED:                   'refund_requested',
+  REFUND_APPROVED:                    'refund_approved',
+  REFUND_REJECTED:                    'refund_rejected',
+  REFUND_FAILED:                      'refund_failed',
+  REFUND_COMPLETED:                   'refund_completed',
 } as const;
 export type NotificationEventType = (typeof NotificationEvent)[keyof typeof NotificationEvent];
 

@@ -31,6 +31,7 @@ import {
   CalendarHeart,
   ClipboardCheck,
   Handshake,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -48,6 +49,7 @@ const navGroups: NavGroup[] = [
       { to: '/admin/verification', label: 'Verification', icon: ShieldCheck },
       { to: '/admin/campaigns',  label: 'Events',     icon: Megaphone       },
       { to: '/admin/event-reviews', label: 'Event Reviews', icon: ClipboardCheck },
+      { to: '/admin/proposals',  label: 'Proposals',  icon: FileText        },
       { to: '/admin/competitions', label: 'Competitions', icon: Trophy },
       { to: '/admin/creator-meetups', label: 'Creator Meetups', icon: CalendarDays },
       { to: '/admin/events',     label: 'Community Events', icon: CalendarHeart },

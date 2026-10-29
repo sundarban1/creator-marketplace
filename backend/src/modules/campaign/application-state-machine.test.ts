@@ -58,7 +58,8 @@ describe('assertWorkTransition', () => {
   it('allows the legal edges', () => {
     expect(() => assertWorkTransition('NONE', 'IN_PROGRESS')).not.toThrow();
     expect(() => assertWorkTransition('IN_PROGRESS', 'SUBMITTED')).not.toThrow();
-    expect(() => assertWorkTransition('CONTENT_OVERDUE', 'SUBMITTED')).not.toThrow();
+    expect(() => assertWorkTransition('CONTENT_OVERDUE', 'IN_PROGRESS')).not.toThrow(); // extension approved
+    expect(() => assertWorkTransition('IN_PROGRESS', 'CREATOR_FAILED')).not.toThrow(); // extended deadline missed
     expect(() => assertWorkTransition('SUBMITTED', 'APPROVED')).not.toThrow();
     expect(() => assertWorkTransition('SUBMITTED', 'IN_PROGRESS')).not.toThrow(); // revision
     expect(() => assertWorkTransition('SUBMITTED', 'DISPUTED')).not.toThrow();
@@ -72,6 +73,7 @@ describe('assertWorkTransition', () => {
       ['COMPLETED', 'IN_PROGRESS'],
       ['IN_PROGRESS', 'APPROVED'],
       ['CREATOR_FAILED', 'SUBMITTED'],
+      ['CONTENT_OVERDUE', 'SUBMITTED'], // overdue work needs an approved extension first
       ['CANCELLED', 'IN_PROGRESS'],
     ] as const;
     for (const [from, to] of bad) {

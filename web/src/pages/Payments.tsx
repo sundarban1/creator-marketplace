@@ -5,10 +5,12 @@ import { PaymentMethodsTab } from './payments/PaymentMethodsTab';
 import { WithdrawalsTab } from './payments/WithdrawalsTab';
 import { WithdrawalLimitsTab } from './payments/WithdrawalLimitsTab';
 import { DisputesTab } from './payments/DisputesTab';
+import { RefundsTab } from './payments/RefundsTab';
 
 const TABS = [
   { key: 'transactions', label: 'Transactions' },
   { key: 'disputes',     label: 'Disputes' },
+  { key: 'refunds',      label: 'Refund Requests' },
   { key: 'withdrawals',  label: 'Withdrawal Requests' },
   { key: 'methods',      label: 'Payment Methods' },
   { key: 'limits',       label: 'Creator Withdrawal Limit' },
@@ -45,6 +47,7 @@ export function Payments() {
 
       {tab === 'transactions' && <PaymentTransactionsTab />}
       {tab === 'disputes'     && <DisputesTab />}
+      {tab === 'refunds'      && <RefundsTab />}
       {tab === 'withdrawals'  && <WithdrawalsTab />}
       {tab === 'methods'      && <PaymentMethodsTab />}
       {tab === 'limits'       && <WithdrawalLimitsTab />}

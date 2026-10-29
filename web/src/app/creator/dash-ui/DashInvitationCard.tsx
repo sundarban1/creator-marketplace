@@ -27,6 +27,9 @@ export function DashInvitationCard({
   const c = invitation.campaign;
   const isFreeEvent = c?.campaignType === 'OPEN_EVENT' || (!c?.budgetMin && !c?.budgetMax);
   const isPaidInvite = !isFreeEvent;
+  // Never applied and the opportunity's application window is over —
+  // DEADLINE_MISSED (deadline passed) or EXPIRED (closed early by the business).
+  const closed = !invitation.hasApplied && (invitation.status === 'DEADLINE_MISSED' || invitation.status === 'EXPIRED');
 
   async function respond(status: 'ACCEPTED' | 'DECLINED') {
     if (status === 'DECLINED' && !(await confirmDialog({ title: t('applications.invitedConfirmDecline'), confirmLabel: t('applications.invitedDecline') }))) return;
@@ -50,7 +53,12 @@ export function DashInvitationCard({
           <p className="truncate text-[12px] font-medium text-ink-soft">{c?.business?.businessName}</p>
           <p className="mt-0.5 line-clamp-2 text-[14px] font-semibold text-ink">{c?.title ?? 'Campaign'}</p>
         </div>
-        {isPaidInvite && invitation.hasApplied ? (
+        {closed ? (
+          <StatusBadge
+            label={invitation.status === 'DEADLINE_MISSED' ? t('applications.invitedDeadlineMissed') : t('applications.invitedExpired')}
+            tone={invitation.status === 'DEADLINE_MISSED' ? 'danger' : 'neutral'}
+          />
+        ) : isPaidInvite && invitation.hasApplied ? (
           <StatusBadge label={t('applications.invitedApplied')} tone="success" />
         ) : !isPaidInvite && invitation.status !== 'PENDING' ? (
           <StatusBadge
@@ -91,7 +99,9 @@ export function DashInvitationCard({
         </div>
       )}
 
-      {isPaidInvite && !invitation.hasApplied && (
+      {closed && <p className="mt-3 text-[12.5px] text-ink-soft">{t('applications.invitedClosedNote')}</p>}
+
+      {isPaidInvite && !invitation.hasApplied && !closed && (
         <div className="mt-3">
           <Link to={`/creator/events/${invitation.campaignId}`}>
             <Button size="sm" fullWidth>

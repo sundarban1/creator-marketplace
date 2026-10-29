@@ -223,7 +223,18 @@ export type AppNotification = {
     | 'reliability_warning'
     | 'review_pending'
     | 'response_pending'
-    | 'deadline_risk';
+    | 'deadline_risk'
+    | 'extension_requested'
+    | 'extension_approved'
+    | 'extension_rejected'
+    | 'deadline_missed'
+    | 'deliverable_cancelled'
+    | 'refund_requested'
+    | 'refund_approved'
+    | 'refund_rejected'
+    | 'refund_failed'
+    | 'refund_completed'
+    | 'application_deadline_passed';
   title: string;
   body: string;
   timestamp: string;

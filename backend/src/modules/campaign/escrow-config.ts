@@ -27,6 +27,16 @@ export interface EscrowTimings {
   settlementHoldEnabled: boolean;
   /** Whether a lapsed review window auto-approves the submission. */
   autoApproveOnReviewTimeout: boolean;
+  /**
+   * Hours the business has to decide what happens after a missed content
+   * deadline (or to answer an extension request). No decision ⇒ the
+   * deliverable is cancelled and a refund request is created.
+   */
+  extensionDecisionHours: number;
+  /** Longest extension (hours from the decision) a creator may be granted. */
+  maxExtensionHours: number;
+  /** Total approved extensions per deliverable — 1 standard + admin exceptional. */
+  maxDeadlineExtensions: number;
 }
 
 const FALLBACK: EscrowTimings = {
@@ -40,11 +50,19 @@ const FALLBACK: EscrowTimings = {
   maxIncludedRevisions:         2,
   settlementHoldEnabled:      false,
   autoApproveOnReviewTimeout: false,
+  extensionDecisionHours:      24,
+  maxExtensionHours:           48,
+  maxDeadlineExtensions:        2,
 };
 
 function nonNegNumber(value: unknown, fallback: number): number {
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+function positive(value: unknown, fallback: number): number {
+  const n = nonNegNumber(value, fallback);
+  return n > 0 ? n : fallback;
 }
 
 function boolean(value: unknown, fallback: boolean): boolean {
@@ -64,10 +82,19 @@ export async function getEscrowTimings(): Promise<EscrowTimings> {
     maxIncludedRevisions:        Math.floor(nonNegNumber(s['escrow.maxIncludedRevisions'], FALLBACK.maxIncludedRevisions)),
     settlementHoldEnabled:       boolean(s['escrow.settlementHoldEnabled'], FALLBACK.settlementHoldEnabled),
     autoApproveOnReviewTimeout:  boolean(s['escrow.autoApproveOnReviewTimeout'], FALLBACK.autoApproveOnReviewTimeout),
+    extensionDecisionHours:      positive(s['escrow.extensionDecisionHours'], FALLBACK.extensionDecisionHours),
+    maxExtensionHours:           positive(s['escrow.maxExtensionHours'], FALLBACK.maxExtensionHours),
+    maxDeadlineExtensions:       Math.max(1, Math.floor(nonNegNumber(s['escrow.maxDeadlineExtensions'], FALLBACK.maxDeadlineExtensions))),
   };
 }
 
 /** A deadline `hours` from now, as an absolute timestamp to be stored, never recomputed. */
 export function deadlineFromNow(hours: number, from: Date = new Date()): Date {
   return new Date(from.getTime() + hours * 3_600_000);
+}
+
+/** Refunds at or above this amount (NPR) need two different admins to approve. 0 = off. */
+export async function getRefundDualApprovalThreshold(): Promise<number> {
+  const s = await getCachedSettings();
+  return nonNegNumber(s['refund.dualApprovalThreshold'], 0);
 }

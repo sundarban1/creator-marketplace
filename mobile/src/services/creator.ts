@@ -102,8 +102,11 @@ export interface ApiCampaignInvitation {
   campaignId: string;
   businessId: string;
   message: string | null;
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  // DEADLINE_MISSED: never applied before the application deadline.
+  // EXPIRED: the business closed the opportunity first.
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'DEADLINE_MISSED' | 'EXPIRED';
   respondedAt: string | null;
+  closedAt?: string | null;
   createdAt: string;
   // Paid-campaign invitations are not accepted/declined — the creator applies
   // via the normal proposal flow. This flags whether they already have.

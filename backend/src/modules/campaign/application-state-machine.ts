@@ -40,6 +40,7 @@ export type EngagementState =
   | 'PAYMENT_RELEASE_PENDING'  // approved, settlement window counting down
   | 'DISPUTED'
   | 'PAYMENT_RELEASED'
+  | 'REFUND_PENDING'           // refund requested, admin transfer not yet confirmed
   | 'REFUNDED'
   | 'PARTIALLY_REFUNDED'
   | 'CANCELLED'
@@ -86,6 +87,7 @@ export function deriveEngagementState(s: EngagementSnapshot): EngagementState {
 
   if (workStatus === 'SUBMITTED') return 'BUSINESS_REVIEW';
   if (workStatus === 'CREATOR_FAILED') return 'CREATOR_FAILED';
+  if (escrowStatus === 'REFUND_PENDING') return 'REFUND_PENDING';
   if (workStatus === 'CONTENT_OVERDUE') return 'CONTENT_OVERDUE';
 
   if (workStatus === 'IN_PROGRESS') {
@@ -94,7 +96,6 @@ export function deriveEngagementState(s: EngagementSnapshot): EngagementState {
 
   // workStatus NONE (or REVISION) — depends on escrow.
   if (escrowStatus === 'HELD')            return 'ESCROW_FUNDED';
-  if (escrowStatus === 'REFUND_PENDING')  return 'REFUNDED';
   if (escrowStatus === 'PAYMENT_PENDING') return 'CREATOR_SELECTED';
   if (escrowStatus === 'NOT_FUNDED')      return 'CREATOR_SELECTED';
 
@@ -110,9 +111,11 @@ const ESCROW_TRANSITIONS: Record<string, string[]> = {
   NOT_FUNDED:         ['PAYMENT_PENDING', 'HELD'],
   PAYMENT_PENDING:    ['HELD', 'NOT_FUNDED'],                 // NOT_FUNDED = payment window expired
   HELD:               ['RELEASE_PENDING', 'RELEASED', 'REFUND_PENDING', 'REFUNDED', 'FROZEN'],
-  RELEASE_PENDING:    ['RELEASED', 'FROZEN'],
+  RELEASE_PENDING:    ['RELEASED', 'FROZEN', 'REFUND_PENDING'],
   FROZEN:             ['HELD', 'RELEASED', 'REFUND_PENDING', 'REFUNDED', 'PARTIALLY_REFUNDED'],
-  REFUND_PENDING:     ['REFUNDED', 'PARTIALLY_REFUNDED'],
+  // A refund request is settled by an admin-recorded transfer (→ REFUNDED /
+  // PARTIALLY_REFUNDED); rejecting or voiding it restores the prior hold.
+  REFUND_PENDING:     ['REFUNDED', 'PARTIALLY_REFUNDED', 'HELD', 'FROZEN', 'RELEASE_PENDING'],
   RELEASED:           [],
   REFUNDED:           [],
   PARTIALLY_REFUNDED: [],
@@ -120,13 +123,18 @@ const ESCROW_TRANSITIONS: Record<string, string[]> = {
 
 const WORK_TRANSITIONS: Record<string, string[]> = {
   NONE:            ['IN_PROGRESS', 'CANCELLED'],
-  IN_PROGRESS:     ['SUBMITTED', 'CONTENT_OVERDUE', 'CANCELLED'],
-  CONTENT_OVERDUE: ['SUBMITTED', 'CREATOR_FAILED'],
+  // CREATOR_FAILED from IN_PROGRESS = an *extended* deadline was missed (no
+  // second overdue window).
+  IN_PROGRESS:     ['SUBMITTED', 'CONTENT_OVERDUE', 'CREATOR_FAILED', 'CANCELLED'],
+  // Overdue work can't be submitted directly — the business must approve an
+  // extension first (→ IN_PROGRESS with a new deadline), or it's cancelled.
+  CONTENT_OVERDUE: ['IN_PROGRESS', 'CREATOR_FAILED', 'CANCELLED'],
   SUBMITTED:       ['APPROVED', 'IN_PROGRESS', 'DISPUTED', 'COMPLETED'], // IN_PROGRESS = revision requested
   REVISION:        ['SUBMITTED', 'IN_PROGRESS'],
   APPROVED:        ['COMPLETED', 'DISPUTED'],
   DISPUTED:        ['COMPLETED', 'IN_PROGRESS', 'CANCELLED'],
-  CREATOR_FAILED:  ['CANCELLED'],
+  // IN_PROGRESS only via an admin exceptional extension, before any refund moved.
+  CREATOR_FAILED:  ['CANCELLED', 'IN_PROGRESS'],
   COMPLETED:       [],
   CANCELLED:       [],
 };

@@ -156,6 +156,35 @@ export interface DeliverableVideo {
   status?: 'PROCESSING' | 'READY' | 'FAILED';
 }
 
+/** A creator's request for more time on an overdue deliverable. */
+export interface DeliverableExtension {
+  id: string;
+  kind: 'STANDARD' | 'ADMIN_EXCEPTIONAL' | string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'CANCELLED' | string;
+  reason: string;
+  proposedDeadline: string;
+  previewUrl: string | null;
+  previousDeadline: string | null;
+  decisionDueAt: string | null;
+  approvedDeadline: string | null;
+  decisionNote: string | null;
+  decidedAt: string | null;
+  decidedByRole: string | null;
+  createdAt: string;
+}
+
+/** The refund's own status — separate from the deliverable and the proposal. */
+export interface ApplicationRefund {
+  id: string;
+  referenceCode: string;
+  status: 'PENDING' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'FAILED' | string;
+  amount: number;
+  partial: boolean;
+  reasonCode: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 export interface CreatorApplication {
   id: string;
   campaignId: string;
@@ -183,6 +212,14 @@ export interface CreatorApplication {
   contentGraceDeadline?: string | null;
   businessReviewDueAt?: string | null;
   paymentReleaseAt: string | null;
+  /** First content deadline, kept once an extension moves `contentDeadline`. */
+  originalContentDeadline?: string | null;
+  contentOverdueAt?: string | null;
+  extensionCount?: number;
+  deliverableClosedAt?: string | null;
+  deliverableClosedReason?: string | null;
+  extensions?: DeliverableExtension[];
+  refundRequest?: ApplicationRefund | null;
   createdAt: string;
   paidAt: string | null;
   deliverableFiles?: DeliverableFile[];
@@ -253,6 +290,13 @@ export function submitWork(appId: string, note?: string, urls?: string[]): Promi
     note,
     urls: urls && urls.length > 0 ? urls.join('\n') : undefined,
   }).then((r) => r.data);
+}
+
+export function requestExtension(
+  appId: string,
+  body: { reason: string; proposedDeadline: string; previewUrl?: string },
+): Promise<DeliverableExtension> {
+  return apiRequest<DeliverableExtension>('POST', `/api/campaigns/applications/${appId}/extension-requests`, body).then((r) => r.data);
 }
 
 export function reportIssue(appId: string, reason: string): Promise<void> {
