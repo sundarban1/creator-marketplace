@@ -457,6 +457,9 @@ function RootLayoutInner() {
             </SupportContactProvider>
             <OfflineBanner />
             <GlobalUploadBanner />
+            {/* Inside AuthProvider so it can cut itself short for a restored
+                session instead of always playing the full intro. */}
+            <SplashScreen />
           </ThemeProvider>
         </NotificationProvider>
       </AuthProvider>
@@ -515,7 +518,6 @@ function RootLayout() {
                   <ImageCropHost />
                   {/* Confirm-before-upload preview for every picked photo. */}
                   <UploadPreviewHost />
-                  <SplashScreen />
                 </View>
               </PersistQueryClientProvider>
             </LanguageProvider>

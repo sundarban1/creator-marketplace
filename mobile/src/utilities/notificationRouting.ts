@@ -25,6 +25,14 @@ export function resolveNotificationRoute(n: NotificationRouteInput, isCreator: b
     return isCreator ? { pathname: '/(creator)/(tabs)/proposals', params: { tab: 'rejected' } } : null;
   }
 
+  // Competition notifications (refType 'competition', refId = competition id).
+  // Creators open the public detail page; the organizer opens their manage page.
+  if (n.refType === 'competition' && n.refId) {
+    return isCreator
+      ? { pathname: '/competition-detail', params: { id: n.refId } }
+      : { pathname: '/(business)/manage-competition', params: { id: n.refId } };
+  }
+
   // Free-event Q&A ("Ask Organizer") — both the "new question" (business) and
   // "organizer answered" (accepted creators) notifications open the same shared
   // page. Checked before the generic event branch below, which would otherwise

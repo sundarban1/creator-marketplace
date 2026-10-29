@@ -59,12 +59,12 @@ export const competitionNotifications = {
     });
   },
 
-  /** Grouped: at most one bell row per competition per hour, however many creators join. */
-  newParticipant(organizerUserId: string, c: { id: string; title: string }, now = new Date()) {
+  /** One notification per creator who joins, naming them. */
+  newParticipant(organizerUserId: string, c: { id: string; title: string }, creator: { id: string; name: string }) {
     return send({
       userId: organizerUserId, type: E.NEW_PARTICIPANTS, competitionId: c.id,
-      title: 'New participants', body: `Creators are joining ${c.title}.`,
-      dedupeKey: `comp:${c.id}:new_participants:${window(now)}`,
+      title: 'New participant', body: `${creator.name} has joined ${c.title}.`,
+      dedupeKey: `comp:${c.id}:new_participant:${creator.id}`,
     });
   },
 

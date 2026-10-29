@@ -1570,7 +1570,13 @@ export class CompetitionService {
     }
 
     void N.joined(userId, c).catch(() => {});
-    void N.newParticipant(c.business.userId, c, now).catch(() => {});
+    void prisma.creatorProfile
+      .findUnique({ where: { id: creator.id }, select: { fullName: true, username: true } })
+      .then((p) => N.newParticipant(c.business.userId, c, {
+        id: creator.id,
+        name: p?.fullName?.trim() || (p?.username ? `@${p.username}` : 'A creator'),
+      }))
+      .catch(() => {});
     return this.myProgress(userId, id);
   }
 

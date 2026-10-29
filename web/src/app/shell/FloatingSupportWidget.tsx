@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Headset, X, Phone, Mail } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
@@ -7,6 +7,7 @@ import { useT } from '../i18n';
 import { cn } from '../ui/cn';
 import { getSupportSiteInfo, invalidateSupportSiteInfo, type SupportSiteInfo } from '../api/siteInfo';
 import { useLiveRefresh } from '../lib/liveUpdates';
+import { useDraggableFab } from '../lib/useDraggableFab';
 import {
   buildMailtoUrl,
   buildTelUrl,
@@ -29,14 +30,16 @@ const HIDDEN_ON = /\/messages(\/|$)/;
  * phone (9–5 Kathmandu) → email. Contact details come from the admin's
  * site-info settings, never hardcoded. Mounted inside AppShell and
  * PublicLayout so it inherits that layout's theme; `aboveBottomNav` lifts it
- * over AppShell's mobile tab bar.
+ * over AppShell's mobile tab bar. The button can be dragged anywhere and
+ * snaps to the nearest side edge; the panel opens on that side.
  */
 export function FloatingSupportWidget({ aboveBottomNav = false }: { aboveBottomNav?: boolean }) {
   const t = useT();
   const { user } = useAppAuth();
   const { pathname } = useLocation();
   const panelId = useId();
-  const rootRef = useRef<HTMLDivElement>(null);
+  const fab = useDraggableFab<HTMLDivElement>('support-widget');
+  const rootRef = fab.rootRef;
   const reopenRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const focusPanelNext = useRef(false);
@@ -77,6 +80,12 @@ export function FloatingSupportWidget({ aboveBottomNav = false }: { aboveBottomN
     if (open) panelRef.current?.focus();
     else reopenRef.current?.focus();
   }, [open]);
+
+  // The panel grows upward from the button — if the button was dragged near
+  // the top, nudge it down so the opened panel stays on screen.
+  useLayoutEffect(() => {
+    if (open) fab.clamp();
+  }, [open, fab.clamp]);
 
   const minimize = () => {
     focusPanelNext.current = true;
@@ -145,8 +154,10 @@ export function FloatingSupportWidget({ aboveBottomNav = false }: { aboveBottomN
   return (
     <div
       ref={rootRef}
+      style={fab.style}
       className={cn(
-        'pointer-events-none fixed right-4 z-[35] flex flex-col items-end gap-3 sm:right-6',
+        'pointer-events-none fixed z-[35] flex flex-col gap-3',
+        fab.side === 'left' ? 'left-4 items-start sm:left-6' : 'right-4 items-end sm:right-6',
         aboveBottomNav
           ? 'bottom-[calc(env(safe-area-inset-bottom)_+_76px)] lg:bottom-6'
           : 'bottom-[calc(env(safe-area-inset-bottom)_+_16px)] sm:bottom-6',
@@ -158,7 +169,7 @@ export function FloatingSupportWidget({ aboveBottomNav = false }: { aboveBottomN
           id={panelId}
           aria-label={t('supportWidget.title')}
           tabIndex={-1}
-          className="support-pop pointer-events-auto relative w-[min(272px,calc(100vw-2rem))] origin-bottom-right overflow-hidden rounded-[20px] border border-line bg-surface text-ink shadow-[0_24px_64px_-24px_rgba(10,16,51,0.45)] outline-none"
+          className={cn(fab.side === 'left' ? 'origin-bottom-left' : 'origin-bottom-right', "support-pop pointer-events-auto relative w-[min(272px,calc(100vw-2rem))] overflow-hidden rounded-[20px] border border-line bg-surface text-ink shadow-[0_24px_64px_-24px_rgba(10,16,51,0.45)] outline-none")}
         >
           {/* Icons only; the × sits in the corner. */}
           <button
@@ -234,21 +245,22 @@ export function FloatingSupportWidget({ aboveBottomNav = false }: { aboveBottomN
         <button
           ref={reopenRef}
           type="button"
+          {...fab.handleProps}
           onClick={expand}
           aria-expanded={false}
           aria-controls={panelId}
-          className="group pointer-events-auto flex flex-col items-end gap-0.5 rounded-full focus-visible:outline-none"
+          className={cn('group pointer-events-auto flex select-none flex-col gap-0.5 rounded-full focus-visible:outline-none', fab.side === 'left' ? 'items-start' : 'items-end')}
         >
           {/* Label + arrow bob together (so the arrow keeps pointing at the
               icon); the tip lands on the top of the headset icon below. */}
-          <span className="support-nudge mr-[18px] flex items-start gap-0.5">
+          <span className={cn('support-nudge flex items-start gap-0.5', fab.side === 'left' ? 'ml-[18px] flex-row-reverse' : 'mr-[18px]')}>
             <span className="rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-ink shadow-[0_8px_24px_-12px_rgba(10,16,51,0.45)] group-focus-visible:ring-2 group-focus-visible:ring-lp-orange">
               {t('supportWidget.helpNeeded')}
             </span>
             <svg
               aria-hidden
               viewBox="0 0 30 30"
-              className="mt-3 h-7 w-7 flex-shrink-0 text-lp-orange"
+              className={cn('mt-3 h-7 w-7 flex-shrink-0 text-lp-orange', fab.side === 'left' && '-scale-x-100')}
               fill="none"
               stroke="currentColor"
               strokeWidth="2"

@@ -1308,6 +1308,7 @@ const en = {
     drawerTitle: 'Need help? Talk to us',
     drawerSub: 'WhatsApp 24/7 · Phone 9 AM–5 PM · Email',
     fabLabel: 'Contact support on WhatsApp',
+    fabDragHint: 'Drag to move the button',
     moreHelp: 'More help',
     moreHelpSub: 'Call, email, FAQs & help center',
     whatsappTitle: 'Chat on WhatsApp',

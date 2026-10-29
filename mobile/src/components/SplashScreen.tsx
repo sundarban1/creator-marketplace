@@ -4,6 +4,7 @@ import * as ExpoSplashScreen from 'expo-splash-screen';
 import { AppState, Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { RADIUS } from '@/utilities/constants';
 
 const TOTAL = 2400;
@@ -17,6 +18,11 @@ const TOTAL = 2400;
 // keyframe below is now purely the fade-out visual.
 const DISMISS_AFTER = TOTAL + 400;
 const FADE_START = TOTAL * 0.72;
+// Returning signed-in users skip the intro: once the saved session is restored
+// the home screen is already mounting underneath, so just give the redirect a
+// beat to land and fade out quickly.
+const RESTORED_SETTLE = 150;
+const RESTORED_FADE = 250;
 
 // Keep the native splash up until this overlay has actually laid out —
 // otherwise expo-router's auto-hide can drop it a few frames before the
@@ -42,6 +48,7 @@ const textKf = new Keyframe({
 
 export function SplashScreen() {
   const { t } = useLanguage();
+  const { user, isLoading } = useAuth();
   const [visible, setVisible] = useState(() => !shownThisLaunch);
   // The container must NOT use a reanimated `entering` animation: on the new
   // architecture a view with `entering` stays hidden until the animation
@@ -85,6 +92,17 @@ export function SplashScreen() {
     // Mount-only: decides once whether this launch's splash plays.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const signedInRestored = !isLoading && !!user;
+  useEffect(() => {
+    if (!visible || !signedInRestored) return;
+    const settle = setTimeout(() => {
+      opacity.set(withTiming(0, { duration: RESTORED_FADE, easing: Easing.out(Easing.ease) }));
+    }, RESTORED_SETTLE);
+    const done = setTimeout(() => setVisible(false), RESTORED_SETTLE + RESTORED_FADE + 50);
+    return () => { clearTimeout(settle); clearTimeout(done); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedInRestored]);
 
   if (!visible) return null;
 

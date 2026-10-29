@@ -1299,6 +1299,7 @@ const ne = {
     drawerTitle: 'मद्दत चाहियो? हामीसँग कुरा गर्नुहोस्',
     drawerSub: 'WhatsApp २४/७ · फोन बिहान ९–बेलुका ५ · इमेल',
     fabLabel: 'WhatsApp मा सहयोग टोलीलाई सम्पर्क गर्नुहोस्',
+    fabDragHint: 'बटन सार्न तान्नुहोस्',
     moreHelp: 'थप सहयोग',
     moreHelpSub: 'फोन, इमेल, FAQ र सहायता केन्द्र',
     whatsappTitle: 'WhatsApp मा च्याट गर्नुहोस्',
