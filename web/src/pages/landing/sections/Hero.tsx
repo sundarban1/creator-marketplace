@@ -56,7 +56,8 @@ export function Hero({
   // positive — `stats` can resolve to real zeros pre-launch, and a "0+
   // creators are already on Kolab" line would be worse than a qualitative one.
   // No manufactured fallback number is shown while loading or if it's zero.
-  const liveTotal = stats ? stats.totalCreators + stats.totalBusinesses : null;
+  // "n+ creators are already on Kolab" — creators only, businesses excluded.
+  const liveTotal = stats ? stats.totalCreators : null;
   const hasLiveSocialProof = liveTotal !== null && liveTotal > 0;
   const { ref: countRef, display } = useCountUp(liveTotal ?? 0);
 

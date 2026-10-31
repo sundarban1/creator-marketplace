@@ -4,8 +4,9 @@ import prisma from '../../prisma';
 export class PublicRepository {
   async getLandingStats() {
     const [totalCreators, totalBusinesses, categories] = await Promise.all([
-      prisma.user.count({ where: { role: Role.CREATOR } }),
-      prisma.user.count({ where: { role: Role.BUSINESS } }),
+      // Only accounts that finished onboarding count toward the landing numbers.
+      prisma.user.count({ where: { role: Role.CREATOR, isOnboarded: true } }),
+      prisma.user.count({ where: { role: Role.BUSINESS, isOnboarded: true } }),
       prisma.category.findMany({
         where: { status: 'ACTIVE' },
         select: { id: true, name: true, icon: true, color: true },
