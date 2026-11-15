@@ -27,6 +27,7 @@ import { contractService, type Contract } from '@/services/contract';
 import { ContractModal } from '@/components/ContractModal';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { useToast } from '@/components/Toast';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED' | 'DISPUTED' | 'REVISION' | 'CONTENT_OVERDUE' | 'CREATOR_FAILED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
@@ -573,6 +574,7 @@ const cm = StyleSheet.create({
 export default function CampaignProposalsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const params = useLocalSearchParams<{
     campaignId: string;
     campaignTitle: string;
@@ -687,7 +689,7 @@ export default function CampaignProposalsScreen() {
       const contract = await contractService.getContractForApplication(p.id);
       setContractModal({ visible: true, contract, proposal: p, agreeing: false });
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : 'Could not load the contract for this proposal.');
+      toast.error(e instanceof Error ? e.message : 'Could not load the contract for this proposal.');
     } finally {
       setActingId(null);
     }
@@ -860,7 +862,7 @@ export default function CampaignProposalsScreen() {
               await campaignService.update(campaignId, { status: 'closed' });
               setCampaignStatus('closed');
             } catch (e) {
-              Alert.alert(t('common.error'), e instanceof Error ? e.message : t('campaignProposals.closeCampaignFailed'));
+              toast.error(e instanceof Error ? e.message : t('campaignProposals.closeCampaignFailed'));
             } finally {
               setClosing(false);
             }

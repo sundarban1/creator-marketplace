@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -79,7 +79,7 @@ export default function ServiceFormScreen() {
       .then((services) => {
         if (cancelled) return;
         const existing = services.find((s) => s.id === id);
-        if (!existing) { Alert.alert(t('common.error'), t('serviceForm.notFound')); router.back(); return; }
+        if (!existing) { toast.error(t('serviceForm.notFound')); router.back(); return; }
         setCategoryKey(existing.category.key);
         setName(existing.name);
         setDescription(existing.description);
@@ -88,10 +88,10 @@ export default function ServiceFormScreen() {
         setDeliveryTime(existing.deliveryTime ?? '');
         setIncluded(existing.whatsIncluded);
       })
-      .catch((err) => { Alert.alert(t('common.error'), err instanceof Error ? err.message : t('serviceForm.loadFailed')); router.back(); })
+      .catch((err) => { toast.error(err instanceof Error ? err.message : t('serviceForm.loadFailed')); router.back(); })
       .finally(() => { if (!cancelled) setLoadingExisting(false); });
     return () => { cancelled = true; };
-  }, [id, t]);
+  }, [id, t, toast]);
 
   function addIncluded() {
     const v = newIncluded.trim();

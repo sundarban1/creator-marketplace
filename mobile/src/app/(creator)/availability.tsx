@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -17,6 +17,7 @@ import { STALE } from '@/lib/queryClient';
 import { OfflineError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
 import { FieldError } from '@/components/FieldError';
+import { useToast } from '@/components/Toast';
 
 type AvailabilityStatus = 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
 const STATUSES: AvailabilityStatus[] = ['AVAILABLE', 'BUSY', 'UNAVAILABLE'];
@@ -32,6 +33,7 @@ type DaySchedule = { availableFrom: string; availableUntil: string } | null;
 export default function AvailabilityScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   // Same shared profile cache as home/Discover/profile tab — availabilityStatus
   // lives on it, so a successful save here (below) invalidates it and every
   // other screen showing status picks the change up too.
@@ -87,7 +89,7 @@ export default function AvailabilityScreen() {
       invalidateProfile();
     } catch (err) {
       setStatus(prev);
-      Alert.alert(t('common.error'), err instanceof Error ? err.message : t('availabilityScreen.saveFailed'));
+      toast.error(err instanceof Error ? err.message : t('availabilityScreen.saveFailed'));
     } finally {
       setSavingStatus(false);
     }
@@ -103,7 +105,7 @@ export default function AvailabilityScreen() {
       await creatorService.updateAvailabilitySchedule(days);
       void scheduleQuery.refetch();
     } catch (err) {
-      Alert.alert(t('common.error'), err instanceof Error ? err.message : t('availabilityScreen.saveFailed'));
+      toast.error(err instanceof Error ? err.message : t('availabilityScreen.saveFailed'));
       setSchedule(prev); // revert to the last-known-good local copy on failure
     } finally {
       setSavingSchedule(false);

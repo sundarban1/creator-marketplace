@@ -1,11 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
-import { useRef, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
-  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet } from '@/components/BottomSheet';
+import { useToast } from '@/components/Toast';
 import { EventTimeSheet, formatEventTime } from '@/components/EventTimeField';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -232,16 +232,12 @@ export default function EditCampaignScreen() {
   const [featuredQuota, setFeaturedQuota] = useState<{ remaining: number; price: number; unlimited: boolean } | null>(null);
 
   // ── Toast ──
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
-
+  // Standard app toast (@/components/Toast). showToast keeps this screen's
+  // existing call sites: 'success' | 'error'.
+  const toast = useToast();
   function showToast(message: string, type: 'success' | 'error' = 'success') {
-    setToast({ message, type });
-    Animated.sequence([
-      Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-      Animated.delay(2200),
-      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start(() => setToast(null));
+    if (type === 'error') toast.error(message);
+    else toast.success(message);
   }
 
   async function handlePickFeatureImage() {
@@ -944,15 +940,6 @@ export default function EditCampaignScreen() {
         onChange={(v) => updateEdit('eventTime', v)}
       />
 
-      {/* Toast */}
-      {toast && (
-        <Animated.View
-          style={[s.toast, { opacity: toastOpacity, backgroundColor: toast.type === 'success' ? '#22C55E' : '#EF4444' }]}
-          pointerEvents="none">
-          <FontAwesome5 name={toast.type === 'success' ? 'check-circle' : 'times-circle'} solid size={18} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={s.toastTxt}>{toast.message}</Text>
-        </Animated.View>
-      )}
     </SafeAreaView>
   );
 }
@@ -1008,6 +995,4 @@ const s = StyleSheet.create({
   singleRoleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   editBtn:       { width: 28, height: 28, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 
-  toast:    { position: 'absolute', bottom: 100, left: 20, right: 20, borderRadius: RADIUS.md, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', ...SHADOW.floating },
-  toastTxt: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.bold },
 });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useAppColors } from '@/context/ThemeContext';
@@ -20,6 +20,7 @@ import {
   SUPPORT_EMAIL_SUBJECT,
   type SupportContext,
 } from '@/utilities/supportContact';
+import { useToast } from '@/components/Toast';
 
 const WHATSAPP_GREEN = '#25D366';
 /** Darker WhatsApp-family green — white text on it passes WCAG AA (5:1). */
@@ -34,6 +35,7 @@ const WHATSAPP_ACTION = '#15803D';
 export function SupportChannels({ context }: { context: SupportContext }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const { data, isPending, isError, refetch, isFetching } = useSupportContacts();
   const [phoneStatus, setPhoneStatus] = useState(() => getPhoneSupportStatus());
   const [copied, setCopied] = useState(false);
@@ -80,9 +82,9 @@ export function SupportChannels({ context }: { context: SupportContext }) {
     Linking.openURL(url).catch(() => {
       if (fallback) {
         void Clipboard.setStringAsync(fallback.value);
-        Alert.alert(t('supportContact.openFailedTitle'), fallback.message);
+        toast.error(fallback.message, t('supportContact.openFailedTitle'));
       } else {
-        Alert.alert(t('supportContact.openFailedTitle'), t('supportContact.openFailedGeneric'));
+        toast.error(t('supportContact.openFailedGeneric'), t('supportContact.openFailedTitle'));
       }
     });
   };

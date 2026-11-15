@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
@@ -17,6 +17,7 @@ import { STALE } from '@/lib/queryClient';
 import { serviceRequestService, type ApiServiceRequestReceived } from '@/services/serviceRequest';
 import { OfflineError } from '@/lib/api';
 import { F, RADIUS, SCREEN_GUTTER, SHADOW, SPACING } from '@/utilities/constants';
+import { useToast } from '@/components/Toast';
 
 const EMPTY_REQUESTS: ApiServiceRequestReceived[] = [];
 const REQUESTS_KEY = ['serviceRequests', 'received'] as const;
@@ -35,6 +36,7 @@ const INITIAL_MODAL: ModalState = { visible: false, status: 'ACCEPTED', request:
 export default function ServiceRequestsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const [modal, setModal]     = useState<ModalState>(INITIAL_MODAL);
 
@@ -66,7 +68,7 @@ export default function ServiceRequestsScreen() {
       setModal(INITIAL_MODAL);
     } catch (err) {
       setModal((m) => ({ ...m, submitting: false }));
-      Alert.alert(t('common.error'), err instanceof Error ? err.message : t('serviceRequests.respondFailed'));
+      toast.error(err instanceof Error ? err.message : t('serviceRequests.respondFailed'));
     }
   }
 

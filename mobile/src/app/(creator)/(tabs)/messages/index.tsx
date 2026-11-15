@@ -35,6 +35,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 // import { TabColors } from '@/utilities/tabColors'; // hidden for now (tab slider)
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
+import { useToast } from '@/components/Toast';
 
 const ACCENT = '#0EA5E9';
 const EMPTY_CONVERSATIONS: Conversation[] = [];
@@ -205,6 +206,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
 function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: string) => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const hasUnread = conv.unreadCount > 0;
 
   function handleLongPress() {
@@ -219,7 +221,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
           onPress: () => {
             chatService.deleteConversation(conv.id)
               .then(() => onDelete(conv.id))
-              .catch(() => Alert.alert(t('common.error'), t('messages.deleteConversationFailed')));
+              .catch(() => toast.error(t('messages.deleteConversationFailed')));
           },
         },
       ],

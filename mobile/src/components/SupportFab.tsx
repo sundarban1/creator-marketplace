@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Animated, Keyboard, Linking, PanResponder, Pressable, StyleSheet, Text, View,
+  Animated, Keyboard, Linking, PanResponder, Pressable, StyleSheet, Text, View,
   useWindowDimensions,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useSupportContacts } from '@/services/siteInfo';
 import { F, RADIUS, SHADOW, SPACING } from '@/utilities/constants';
 import { buildWhatsAppUrl, supportWhatsAppMessage } from '@/utilities/supportContact';
+import { useToast } from '@/components/Toast';
 
 const WHATSAPP_GREEN = '#25D366';
 const FAB_SIZE = 52;
@@ -39,6 +40,7 @@ const HIDDEN_ROOTS = new Set(['(auth)', 'onboarding', 'business-onboarding', 'ad
 export function SupportFab() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const { user } = useAuth();
   const segments = useSegments() as readonly string[];
   const insets = useSafeAreaInsets();
@@ -151,7 +153,7 @@ export function SupportFab() {
   const openWhatsApp = () => {
     setOpen(false);
     Linking.openURL(whatsappUrl).catch(() =>
-      Alert.alert(t('supportContact.openFailedTitle'), t('supportContact.openFailedGeneric')));
+      toast.error(t('supportContact.openFailedGeneric'), t('supportContact.openFailedTitle')));
   };
 
   const openMoreHelp = () => {

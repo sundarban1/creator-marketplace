@@ -2508,14 +2508,6 @@ const styles = StyleSheet.create({
   accordionBody: { fontSize: 13, lineHeight: 20, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg, fontFamily: F.regular },
   navIonIconWrap: { width: 34, height: 34, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
 
-  toast: {
-    position: 'absolute', bottom: 32, left: 32, right: 32,
-    borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 18,
-    flexDirection: 'row', alignItems: 'center',
-    ...SHADOW.floating,
-  },
-  toastText: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.semibold },
-
   otpCloseBtn: { width: 30, height: 30, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
   phoneError: { fontSize: 12, fontFamily: F.regular, marginTop: -4 },

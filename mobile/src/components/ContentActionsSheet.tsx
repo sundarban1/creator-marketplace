@@ -9,6 +9,7 @@ import { useBlocks } from '@/context/BlockContext';
 import type { ReportTargetType } from '@/services/report';
 import type { BlockSource } from '@/services/safety';
 import { F, MIN_TOUCH_TARGET, RADIUS } from '@/utilities/constants';
+import { useToast } from '@/components/Toast';
 
 /**
  * The ⋯ actions for any piece of user-generated content: Report, and — when
@@ -34,6 +35,7 @@ export function ContentActionsSheet({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const blocks = useBlocks();
   const [reporting, setReporting] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -56,9 +58,9 @@ export function ContentActionsSheet({
           onPress: async () => {
             try {
               await blocks.unblock(block.userId);
-              Alert.alert(t('safety.unblocked', { name: block.name }));
+              toast.success(t('safety.unblocked', { name: block.name }));
             } catch (e) {
-              Alert.alert(t('safety.unblockFailed'), e instanceof Error ? e.message : undefined);
+              toast.error(e instanceof Error ? e.message : t('safety.unblockFailed'), t('safety.unblockFailed'));
             }
           },
         },
@@ -78,7 +80,7 @@ export function ContentActionsSheet({
             onBlocked?.();
           } catch (e) {
             // Never pretend a block happened if the server didn't accept it.
-            Alert.alert(t('safety.blockFailed'), e instanceof Error ? e.message : undefined);
+            toast.error(e instanceof Error ? e.message : t('safety.blockFailed'), t('safety.blockFailed'));
           } finally {
             setBusy(false);
           }

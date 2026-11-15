@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -17,10 +17,12 @@ import { pickAndUpload } from '@/utilities/uploadImage';
 import { F, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
 import { FieldError, FormErrorBanner } from '@/components/FieldError';
 import { useFormValidation, useValidators } from '@/hooks/useFormValidation';
+import { useToast } from '@/components/Toast';
 
 export default function PortfolioFormScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
   const queryClient = useQueryClient();
@@ -53,12 +55,12 @@ export default function PortfolioFormScreen() {
   const seededRef = useRef(false);
   function seedFromExisting() {
     if (portfolioListQuery.isError) {
-      Alert.alert(t('common.error'), t('portfolioForm.loadFailed'));
+      toast.error(t('portfolioForm.loadFailed'));
       router.back();
       return;
     }
     const existing = portfolioListQuery.data?.find((i) => i.id === id);
-    if (!existing) { Alert.alert(t('common.error'), t('portfolioForm.notFound')); router.back(); return; }
+    if (!existing) { toast.error(t('portfolioForm.notFound')); router.back(); return; }
     setDescription(existing.description ?? '');
     setMediaUrl(existing.mediaUrl);
     setExternalUrl(existing.externalUrl ?? '');
@@ -79,7 +81,7 @@ export default function PortfolioFormScreen() {
       const result = await pickAndUpload('portfolio-item');
       if (result?.url) setMediaUrl(result.url);
     } catch (err) {
-      Alert.alert(t('common.error'), err instanceof Error ? err.message : t('portfolioForm.uploadFailed'));
+      toast.error(err instanceof Error ? err.message : t('portfolioForm.uploadFailed'));
     } finally {
       setUploading(false);
     }

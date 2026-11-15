@@ -14,6 +14,7 @@ import {
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { F, RADIUS, SPACING, lineHeightFor } from '@/utilities/constants';
+import { useToast } from '@/components/Toast';
 
 // Reference images (max 3) and PDFs (max 2) on an event — brief.attachments.
 // Edit mode uploads each file the moment it's picked (per-tile progress bar,
@@ -34,6 +35,7 @@ export function EventAttachmentsField(props: Props) {
   const { value, mode } = props;
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const [pending, setPending] = useState<Pending[]>([]);
   const [tileSize, setTileSize] = useState(0);
   const [imageIndex, setImageIndex] = useState<number | null>(null);
@@ -102,7 +104,7 @@ export function EventAttachmentsField(props: Props) {
       : choice === 'photo-camera' ? await takeAttachmentPhoto()
       : await pickAttachmentImages(imageRoom);
     if (res.tooLarge) {
-      Alert.alert(t('eventAttachments.tooLargeTitle'), choice === 'pdf' ? t('eventAttachments.pdfTooLarge') : t('eventAttachments.imageTooLarge'));
+      toast.warning(choice === 'pdf' ? t('eventAttachments.pdfTooLarge') : t('eventAttachments.imageTooLarge'), t('eventAttachments.tooLargeTitle'));
     }
     if (!res.files.length) return;
     const items: Pending[] = res.files.map((file) => ({ id: `p${++seqRef.current}`, file, progress: 0, controller: new AbortController() }));
@@ -140,7 +142,7 @@ export function EventAttachmentsField(props: Props) {
     try {
       await downloadAndShareAttachment(a.url, a.name);
     } catch {
-      Alert.alert(t('eventAttachments.downloadFailedTitle'), t('eventAttachments.downloadFailed'));
+      toast.error(t('eventAttachments.downloadFailed'), t('eventAttachments.downloadFailedTitle'));
     } finally {
       setDownloading(null);
     }
@@ -215,7 +217,7 @@ export function EventAttachmentsField(props: Props) {
           return (
             <View key={p.id} style={{ width: tileSize }}>
               <Pressable
-                onPress={() => (isPdf ? Alert.alert(t('eventAttachments.previewAfterUpload')) : setLocalPreview({ uri: p.file.uri, name: p.file.name }))}
+                onPress={() => (isPdf ? toast.info(t('eventAttachments.previewAfterUpload')) : setLocalPreview({ uri: p.file.uri, name: p.file.name }))}
                 style={[st.tile, tile, { borderColor: p.error ? C.error : C.border, backgroundColor: C.surface }]}>
                 {isPdf ? <PdfFace color={C.brinjal1} bg={C.primaryLight} /> : <Image source={{ uri: p.file.uri }} style={[StyleSheet.absoluteFill, { opacity: p.error ? 0.4 : 0.6 }]} contentFit="cover" />}
                 {!p.error && (

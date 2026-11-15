@@ -24,6 +24,7 @@ import {
 import type { VoiceRecorderResult } from '@/features/chat/components/VoiceRecorderButton';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import type { Message } from '@/types';
+import { useToast } from '@/components/Toast';
 
 function isTransientNetworkError(e: unknown): boolean {
   // A definitive rejection from the server (e.g. "exceeds 2 minute limit") throws
@@ -64,6 +65,7 @@ export function useChatConversation({
 }: UseChatConversationOptions) {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const toast = useToast();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesError, setMessagesError] = useState('');
@@ -215,7 +217,7 @@ export function useChatConversation({
         const removeAt = prev.length - 1 - idx;
         return prev.filter((_, i) => i !== removeAt);
       });
-      Alert.alert(t('messages.sendFailedTitle'), data.message ?? t('messages.sendFailedGeneric'));
+      toast.error(data.message ?? t('messages.sendFailedGeneric'), t('messages.sendFailedTitle'));
     };
 
     socket.on('typing:start', onTypingStart);
@@ -296,7 +298,7 @@ export function useChatConversation({
         setMessages((prev) => prev.filter((m) => m.id !== msg.id));
       }
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('messages.deleteFailedGeneric'));
+      toast.error(e instanceof Error ? e.message : t('messages.deleteFailedGeneric'));
     }
   }
 
@@ -319,7 +321,7 @@ export function useChatConversation({
       setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
       clearComposer();
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('messages.editFailedGeneric'));
+      toast.error(e instanceof Error ? e.message : t('messages.editFailedGeneric'));
     }
   }
 
@@ -390,7 +392,7 @@ export function useChatConversation({
           })
           .catch((e) => {
             setMessages((prev) => prev.filter((m) => m.id !== tempId));
-            Alert.alert(t('messages.sendFailedTitle'), e instanceof Error ? e.message : t('messages.sendFailedGeneric'));
+            toast.error(e instanceof Error ? e.message : t('messages.sendFailedGeneric'), t('messages.sendFailedTitle'));
           })
           .finally(() => { isSending.current = false; });
       }
@@ -428,7 +430,7 @@ export function useChatConversation({
       });
     } catch (e) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      Alert.alert(t('messages.sendFailedTitle'), e instanceof Error ? e.message : t('messages.sendFailedGeneric'));
+      toast.error(e instanceof Error ? e.message : t('messages.sendFailedGeneric'), t('messages.sendFailedTitle'));
     } finally {
       isSending.current = false;
     }

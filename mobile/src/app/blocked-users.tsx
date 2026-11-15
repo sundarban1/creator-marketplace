@@ -10,6 +10,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useBlocks } from '@/context/BlockContext';
 import { blockService, type BlockedUser } from '@/services/safety';
 import { F, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities/constants';
+import { useToast } from '@/components/Toast';
 
 // Settings → Help & Safety → Blocked users. Name, photo, date blocked, and
 // Unblock (with confirmation). Unblocking restores normal interaction; it does
@@ -17,6 +18,7 @@ import { F, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SPACING } from '@/utilities
 export default function BlockedUsersScreen() {
   const C = useAppColors();
   const { t, language } = useLanguage();
+  const toast = useToast();
   const blocks = useBlocks();
   const [busy, setBusy] = useState<string | null>(null);
   const query = useQuery({ queryKey: ['blockedUsers'], queryFn: () => blockService.list() });
@@ -31,7 +33,7 @@ export default function BlockedUsersScreen() {
           try {
             await blocks.unblock(u.userId); // invalidates every query, incl. this list
           } catch (e) {
-            Alert.alert(t('safety.unblockFailed'), e instanceof Error ? e.message : undefined);
+            toast.error(e instanceof Error ? e.message : t('safety.unblockFailed'), t('safety.unblockFailed'));
           } finally {
             setBusy(null);
           }

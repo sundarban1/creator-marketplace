@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Image } from 'expo-image';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -83,7 +83,7 @@ export default function InvitationsScreen() {
       );
     } catch (err) {
       setModal((m) => ({ ...m, submitting: false }));
-      Alert.alert(t('common.error'), err instanceof Error ? err.message : t('invitations.respondFailed'));
+      toast.error(err instanceof Error ? err.message : t('invitations.respondFailed'));
     }
   }
 

@@ -3037,14 +3037,6 @@ const styles = StyleSheet.create({
   guideTitle: { fontSize: 15, fontFamily: F.bold },
   guideBody: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
 
-  // Toast
-  toast: {
-    position: 'absolute', bottom: 32, left: 32, right: 32,
-    borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 18,
-    flexDirection: 'row', alignItems: 'center',
-    ...SHADOW.floating,
-  },
-  toastText: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.semibold },
 
   // Confirmation modals
   confirmOverlay: {

@@ -5,7 +5,6 @@ import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-au
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -26,6 +25,7 @@ import { usePlatforms } from '@/hooks/usePlatforms';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { BottomSheet } from '@/components/BottomSheet';
+import { useToast } from '@/components/Toast';
 import { EventTimeField, EventTimeSheet, formatEventTime } from '@/components/EventTimeField';
 import { BackButton } from '@/components/BackButton';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
@@ -1012,19 +1012,13 @@ export default function CreateCampaignScreen() {
     if (aiLocationError) setAiLocationError(undefined);
   }
 
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
-
+  // Standard app toast (@/components/Toast). showToast keeps this screen's
+  // existing call sites: 'success' | 'error'.
+  const toast = useToast();
   function showToast(message: string, type: 'success' | 'error' = 'success') {
-    setToast({ message, type });
-    Animated.sequence([
-      Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-      Animated.delay(2200),
-      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start(() => setToast(null));
+    if (type === 'error') toast.error(message);
+    else toast.success(message);
   }
-
-  useEffect(() => () => { toastOpacity.stopAnimation(); }, []);
 
   function update<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -3947,15 +3941,6 @@ export default function CreateCampaignScreen() {
 
       <AiGeneratingOverlay visible={aiLoading} t={t} />
 
-      {/* Toast */}
-      {toast && (
-        <Animated.View
-          style={[s.toast, { opacity: toastOpacity, backgroundColor: toast.type === 'success' ? '#22C55E' : '#EF4444' }]}
-          pointerEvents="none">
-          <FontAwesome5 name={toast.type === 'success' ? 'check-circle' : 'times-circle'} solid size={18} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={s.toastText}>{toast.message}</Text>
-        </Animated.View>
-      )}
     </SafeAreaView>
   );
 }
@@ -4048,8 +4033,6 @@ const s = StyleSheet.create({
   helpCardIcon:  { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   helpCardLabel: { fontSize: 12, fontFamily: F.semibold, textAlign: 'center' },
 
-  toast:     { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: RADIUS.md, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', ...SHADOW.floating },
-  toastText: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.bold },
 
   stepSectionHeading: { fontSize: 15, fontFamily: F.bold },
   stepSectionSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginBottom: 4 },

@@ -169,8 +169,10 @@ export default function GuestHomeScreen() {
           <View style={[s.heroCtas, { marginTop: sp.heroCtas }]}>
             <Pressable
               onPress={() => router.navigate('/(guest)/events')}
-              style={({ pressed }) => [s.pillBtn, { backgroundColor: C.accent }, SHADOW.raised, { shadowColor: C.accent }, pressed && { opacity: 0.9 }]}
+              style={({ pressed }) => [s.pillBtn, SHADOW.raised, { shadowColor: C.brinjal1 }, pressed && { opacity: 0.9 }]}
               accessibilityRole="button">
+              {/* Same brinjal gradient as the login screen's primary button. */}
+              <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.btnGradient} pointerEvents="none" />
               <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.hero.explore')}</Text>
               <FontAwesome5 name="arrow-right" size={12} color="#fff" />
             </Pressable>
@@ -310,8 +312,9 @@ export default function GuestHomeScreen() {
           </Text>
           <Pressable
             onPress={() => openGuestSignup()}
-            style={({ pressed }) => [s.pillBtn, s.finalBtn, { backgroundColor: C.accent }, pressed && { opacity: 0.9 }]}
+            style={({ pressed }) => [s.pillBtn, s.finalBtn, pressed && { opacity: 0.9 }]}
             accessibilityRole="button">
+            <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.btnGradient} pointerEvents="none" />
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.final.cta')}</Text>
             <FontAwesome5 name="arrow-right" size={12} color="#fff" />
           </Pressable>
@@ -461,6 +464,8 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: SPACING.md,
   },
   pillBtnText: { fontSize: FONT_SIZE.md, fontFamily: F.bold },
+  // Fills a pill button behind its label (login-style brinjal gradient).
+  btnGradient: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: RADIUS.full },
 
   // How it works
   steps:     { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER },
