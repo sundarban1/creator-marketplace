@@ -8,7 +8,7 @@ import { api, type ApiModerationEvent, type ApiModerationReportRow } from '../..
 import { useApi } from '../../lib/useApi';
 import { alertDialog } from '../../app/ui/confirmDialog';
 import { usePoll } from './usePoll';
-import { REASON_LABEL, TARGET_LABEL, errMessage, fmtDate } from './labels';
+import { LEGACY_REASONS, REASON_LABEL, TARGET_LABEL, errMessage, fmtDate } from './labels';
 import { PriorityPill, StatusPill, VerificationPill } from './pills';
 
 // Admin › Moderation — the single queue every user report and safety signal
@@ -125,7 +125,7 @@ function ReportsTab({ initialQuery }: { initialQuery: string }) {
         </form>
         <select className={select} value={reason} onChange={(e) => reset(() => setReason(e.target.value))} aria-label="Reason">
           <option value="">All reasons</option>
-          {Object.entries(REASON_LABEL).slice(0, 10).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          {Object.entries(REASON_LABEL).filter(([k]) => !LEGACY_REASONS.has(k)).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
         <select className={select} value={targetType} onChange={(e) => reset(() => setTargetType(e.target.value))} aria-label="Content type">
           <option value="">All content</option>

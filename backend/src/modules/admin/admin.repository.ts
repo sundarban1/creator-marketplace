@@ -48,6 +48,9 @@ const DEFAULTS: Record<string, unknown> = {
   // contract text and DTO fields at campaign-creation time.
   'platform.paymentFeePercent':    5,
   'platform.paymentTaxPercent':    13,
+  // Off = Kolab charges no platform fee (and so no VAT on it); the pay modal
+  // shows the standard fee struck through with a "No platform fee" label.
+  'platform.paymentFeeEnabled':    true,
   'messaging.enabled':             true,
   'messaging.directMessages':      true,
   'messaging.pushNotifications':   true,

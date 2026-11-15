@@ -69,20 +69,60 @@ import {
 // never wrote.
 const CAMPAIGN_FIELDS = ['description', 'category', 'goals', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
 
-// Mirrors the fee breakdown shown to the business in the pay modal (mobile
-// activity-timeline.tsx's crFee/pfFee/tax/total) — must stay in lockstep with
-// that formula since this is the amount actually charged through Khalti/eSewa.
+// The ONE source of truth for what a business pays for an application —
+// returned to the pay modal (GET /applications/:appId/payment-breakdown, web +
+// mobile render it as-is, never recomputing) and charged through
+// Khalti/eSewa/connectIPS (applicationTotalNpr below).
 // Rates come from PlatformSetting ('platform.paymentFeePercent' /
 // 'platform.paymentTaxPercent'), not 'platform.commission' (a separate,
 // campaign-creation-time value used only for the contract text).
-async function applicationTotalNpr(adminRepo: AdminRepository, proposedRate: number): Promise<number> {
-  const [feePercent, taxPercent] = await Promise.all([
+// 'platform.paymentFeeEnabled' OFF (admin "Charge platform fee" switch) =
+// Kolab charges no platform fee: fee and the VAT on it drop to 0, but the
+// standard fee/percent is still reported so the UI can show it struck through. Amounts are rounded to the paisa.
+export interface PaymentBreakdown {
+  currency:           'NPR';
+  creatorRate:        number;
+  standardFeePercent: number;
+  standardFee:        number;
+  feeWaived:          boolean;
+  platformFee:        number;
+  taxPercent:         number;
+  taxApplicable:      boolean;
+  tax:                number;
+  total:              number;
+  creatorReceives:    number;
+}
+
+const roundPaisa = (n: number) => Math.round(n * 100) / 100;
+
+export async function computePaymentBreakdown(adminRepo: AdminRepository, proposedRate: number): Promise<PaymentBreakdown> {
+  const [feePercent, taxPercent, enabledRaw] = await Promise.all([
     adminRepo.getSetting('platform.paymentFeePercent').then((v) => numericSetting(v, 5)),
     adminRepo.getSetting('platform.paymentTaxPercent').then((v) => numericSetting(v, 13)),
+    adminRepo.getSetting('platform.paymentFeeEnabled'),
   ]);
-  const platformFee = Math.round(proposedRate * (feePercent / 100));
-  const tax = Math.round(platformFee * (taxPercent / 100));
-  return proposedRate + platformFee + tax;
+  const creatorRate = roundPaisa(proposedRate);
+  const standardFee = roundPaisa(creatorRate * (feePercent / 100));
+  const feeWaived   = enabledRaw === false || enabledRaw === 'false' || feePercent === 0;
+  const platformFee = feeWaived ? 0 : standardFee;
+  const tax         = roundPaisa(platformFee * (taxPercent / 100));
+  return {
+    currency:           'NPR',
+    creatorRate,
+    standardFeePercent: feePercent,
+    standardFee,
+    feeWaived,
+    platformFee,
+    taxPercent,
+    taxApplicable:      tax > 0,
+    tax,
+    total:              roundPaisa(creatorRate + platformFee + tax),
+    creatorReceives:    creatorRate,
+  };
+}
+
+async function applicationTotalNpr(adminRepo: AdminRepository, proposedRate: number): Promise<number> {
+  return (await computePaymentBreakdown(adminRepo, proposedRate)).total;
 }
 
 // A deliverable can only take a submission (or new uploads) while it is open:
@@ -2419,6 +2459,19 @@ export class CampaignService {
     return { campaignId: application.campaignId };
   }
 
+  // Fee breakdown for the business's Confirm payment modal — the exact
+  // amounts the gateways will charge (see computePaymentBreakdown).
+  async getApplicationPaymentBreakdown(appId: string, userId: string): Promise<PaymentBreakdown> {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError(getDict().campaign.businessProfileNotFound, HttpStatus.NOT_FOUND);
+    const application = await this.repo.findApplicationById(appId);
+    if (!application) throw new AppError(getDict().campaign.applicationNotFound, HttpStatus.NOT_FOUND);
+    const campaign = await this.repo.findById(application.campaignId);
+    if (!campaign) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
+    if (campaign.businessId !== business.id) throw new AppError(getDict().campaign.notAuthorized, HttpStatus.FORBIDDEN);
+    return computePaymentBreakdown(this.adminRepo, application.proposedRate);
+  }
+
   // Shared validation for both payment initiate paths (Khalti above, eSewa
   // below) — business owns the campaign, the creator's already accepted, and
   // nothing's been paid yet.
@@ -3318,10 +3371,20 @@ export class CampaignService {
     await this.assertCanUploadDeliverable(appId, userId);
     const existing = await this.repo.getDeliverableVideos(appId);
     const entry = existing.find((v) => v.publicId === publicId);
-    if (entry?.provider === 'R2') await deleteR2Object(publicId).catch(() => {});
-    else await deleteVideo(publicId).catch(() => {});
+    // A reported deliverable's media is moderation evidence — detach it from
+    // the draft but keep the stored asset.
+    if (!(await this.isDeliverableReported(appId))) {
+      if (entry?.provider === 'R2') await deleteR2Object(publicId).catch(() => {});
+      else await deleteVideo(publicId).catch(() => {});
+    }
     const updated = await this.repo.removeDeliverableVideo(appId, publicId);
     return toApplicationDto(updated);
+  }
+
+  // Any content report (open or closed) on this engagement's deliverable.
+  private async isDeliverableReported(appId: string): Promise<boolean> {
+    const r = await prisma.report.findFirst({ where: { targetType: 'DELIVERABLE', targetId: appId }, select: { id: true } });
+    return !!r;
   }
 
   async renameDeliverableVideo(appId: string, userId: string, publicId: string, label: string) {
@@ -3390,7 +3453,7 @@ export class CampaignService {
     await this.assertCanUploadDeliverable(appId, userId);
     const existing = await this.repo.getDeliverableFiles(appId);
     const target = existing.find((f) => f.id === fileId);
-    if (target) {
+    if (target && !(await this.isDeliverableReported(appId))) {
       await (target.fileType === 'IMAGE' ? deleteImage(deliverableFileCloudinaryId(target.publicId)) : deleteRawFile(deliverableFileCloudinaryId(target.publicId))).catch(() => {});
     }
     const updated = await this.repo.removeDeliverableFile(appId, fileId);

@@ -226,6 +226,8 @@ export interface CreatorApplication {
   deliverableVideos?: DeliverableVideo[];
   /** Newline-separated Google Drive / Dropbox / YouTube share links. */
   deliverableUrls?: string | null;
+  /** Kolab moderation hid the submitted deliverable after a content report. */
+  deliverableHidden?: boolean;
   dispute?: {
     status: string;
     reason: string;

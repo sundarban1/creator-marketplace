@@ -15,7 +15,7 @@ import { cn } from '../ui/cn';
 import { Logo } from '../ui/Logo';
 import { Avatar } from '../ui/Avatar';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
-import { NotificationsProvider } from '../notifications/NotificationsContext';
+import { NotificationsProvider, useNotifications } from '../notifications/NotificationsContext';
 import { NotificationsBell } from '../notifications/NotificationsBell';
 // Test-phase pill hidden for now — kept for later.
 // import { TestPhasePill } from './TestPhasePill';
@@ -170,18 +170,7 @@ function AppShellInner() {
             {/* <TestPhasePill /> */}
             <LanguageSwitcher className="h-9 min-w-9 border-line bg-transparent hover:bg-surface-dim" />
             <ThemeToggle className="hidden h-9 w-9 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:bg-surface-dim hover:text-ink sm:flex" />
-            <NavLink
-              to={messagesPath}
-              aria-label={t('nav.messages')}
-              className={({ isActive }) =>
-                cn(
-                  'flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink-soft hover:bg-surface-dim hover:text-ink transition-colors',
-                  isActive && 'bg-surface-dim text-ink',
-                )
-              }
-            >
-              <MessageCircle size={16} strokeWidth={2} />
-            </NavLink>
+            <MessagesButton to={messagesPath} label={t('nav.messages')} />
             <NotificationsBell />
 
             {/* User menu */}
@@ -345,5 +334,29 @@ function UserMenu({
         </div>
       )}
     </div>
+  );
+}
+
+/** Header chat icon with the unread-messages badge (live via socket). */
+function MessagesButton({ to, label }: { to: string; label: string }) {
+  const { chatUnread } = useNotifications();
+  return (
+    <NavLink
+      to={to}
+      aria-label={chatUnread > 0 ? `${label} (${chatUnread})` : label}
+      className={({ isActive }) =>
+        cn(
+          'relative flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink-soft hover:bg-surface-dim hover:text-ink transition-colors',
+          isActive && 'bg-surface-dim text-ink',
+        )
+      }
+    >
+      <MessageCircle size={16} strokeWidth={2} />
+      {chatUnread > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
+          {chatUnread > 9 ? '9+' : chatUnread}
+        </span>
+      )}
+    </NavLink>
   );
 }

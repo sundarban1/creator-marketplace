@@ -14,7 +14,12 @@ export const REASON_LABEL: Record<string, string> = {
   FRAUD: 'Fraud',
   FAKE_PROFILE: 'Fake profile',
   PAYMENT_ISSUE: 'Payment issue',
+  SEXUAL_CONTENT: 'Sexual or nudity content',
+  ILLEGAL_CONTENT: 'Illegal or prohibited content',
 };
+
+// Legacy reasons kept for old rows but not offered as filters.
+export const LEGACY_REASONS = new Set(['FRAUD', 'FAKE_PROFILE', 'PAYMENT_ISSUE']);
 
 export const TARGET_LABEL: Record<string, string> = {
   USER: 'Creator profile',
@@ -26,6 +31,7 @@ export const TARGET_LABEL: Record<string, string> = {
   MESSAGE: 'Chat message',
   SERVICE: 'Service',
   REVIEW: 'Review',
+  DELIVERABLE: 'Campaign deliverable',
   POST: 'Post',
 };
 

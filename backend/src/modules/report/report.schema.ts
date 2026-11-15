@@ -7,10 +7,11 @@ const REASONS = [
   'HARASSMENT', 'HATE_SPEECH', 'INAPPROPRIATE_CONTENT', 'VIOLENCE', 'SPAM', 'SCAM',
   'COPYRIGHT', 'EXPLOITATION', 'AGE_INAPPROPRIATE', 'OTHER',
   'FRAUD', 'FAKE_PROFILE', 'PAYMENT_ISSUE',
+  'SEXUAL_CONTENT', 'ILLEGAL_CONTENT',
 ] as const;
 
 export const createReportSchema = z.object({
-  targetType:  z.enum(['USER', 'BUSINESS', 'SERVICE', 'OPPORTUNITY', 'POST', 'MESSAGE', 'REVIEW', 'COMPETITION', 'COMPETITION_SUBMISSION', 'PORTFOLIO_ITEM']),
+  targetType:  z.enum(['USER', 'BUSINESS', 'SERVICE', 'OPPORTUNITY', 'POST', 'MESSAGE', 'REVIEW', 'COMPETITION', 'COMPETITION_SUBMISSION', 'PORTFOLIO_ITEM', 'DELIVERABLE']),
   targetId:    z.string().trim().min(1, 'Target is required').max(64),
   reason:      z.enum(REASONS),
   description: z.string().trim().max(1000).optional(),

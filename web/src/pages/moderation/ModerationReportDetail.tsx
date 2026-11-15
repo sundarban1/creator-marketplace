@@ -113,7 +113,46 @@ function Media({ url, label }: { url?: unknown; label: string }) {
 const TEXT_FIELDS: Array<[string, string]> = [['name', 'Name'], ['title', 'Title'], ['username', 'Username'], ['content', 'Message'], ['caption', 'Caption'], ['bio', 'Bio'], ['description', 'Description'], ['comment', 'Review'], ['externalUrl', 'Link']];
 const MEDIA_FIELDS: Array<[string, string]> = [['imageUrl', 'Image'], ['mediaUrl', 'Media'], ['avatarUrl', 'Avatar'], ['logoUrl', 'Logo'], ['coverImageUrl', 'Cover'], ['thumbnailUrl', 'Thumbnail'], ['videoUrl', 'Video'], ['attachmentUrl', 'Attachment']];
 
+type DelivVideo = { url?: string; label?: string; thumbnailUrl?: string };
+type DelivFile = { url?: string; fileType?: string; originalFileName?: string };
+
+// A campaign deliverable reported from "Raise an issue": the media the
+// business saw, plus the immutable submission version it belonged to.
+function DeliverableSnapshot({ snap }: { snap: Record<string, unknown> }) {
+  const videos = (Array.isArray(snap.videos) ? snap.videos : []) as DelivVideo[];
+  const files = (Array.isArray(snap.files) ? snap.files : []) as DelivFile[];
+  const version = snap.submissionVersion as { id: string; version: number; createdAt: string } | null | undefined;
+  const links = typeof snap.urls === 'string' ? snap.urls.split(/[\n,]+/).map((u) => u.trim()).filter(Boolean) : [];
+  const meta: Array<[string, unknown]> = [['Campaign', snap.campaignTitle], ['Business', snap.businessName], ['Creator', snap.creatorName], ['Work status', snap.workStatus], ['Submitted', snap.submittedAt ? fmtDate(String(snap.submittedAt)) : null]];
+  return (
+    <div className="space-y-3">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        {meta.map(([k, v]) => v ? (
+          <div key={k}><dt className="text-[11px] uppercase tracking-wide text-gray-400">{k}</dt><dd className="text-gray-800">{String(v)}</dd></div>
+        ) : null)}
+      </dl>
+      {typeof snap.note === 'string' && snap.note && (
+        <div><div className="text-[11px] uppercase tracking-wide text-gray-400">Creator note</div><p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{snap.note}</p></div>
+      )}
+      {videos.length + files.length === 0 && links.length === 0 && <p className="text-sm text-gray-400">No files in the current draft.</p>}
+      <div className="flex flex-wrap gap-3">
+        {videos.map((v, i) => <Media key={`v${i}`} url={v.url} label={v.label || `Video ${i + 1}`} />)}
+        {files.map((f, i) => f.fileType === 'IMAGE'
+          ? <Media key={`f${i}`} url={f.url} label={f.originalFileName || `Image ${i + 1}`} />
+          : f.url ? <a key={`f${i}`} href={f.url} target="_blank" rel="noreferrer" className="text-sm text-indigo-700 underline break-all">{f.originalFileName || `File ${i + 1}`}</a> : null)}
+      </div>
+      {links.length > 0 && (
+        <div><div className="text-[11px] uppercase tracking-wide text-gray-400">Links</div>
+          {links.map((u) => <a key={u} href={u} target="_blank" rel="noreferrer" className="block text-sm text-indigo-700 underline break-all">{u}</a>)}
+        </div>
+      )}
+      {version && <p className="text-[11px] text-gray-400">Submission version v{version.version} · {fmtDate(version.createdAt)} · <span className="font-mono">{version.id}</span></p>}
+    </div>
+  );
+}
+
 function Snapshot({ snap }: { snap: Record<string, unknown> }) {
+  if (snap.kind === 'deliverable') return <DeliverableSnapshot snap={snap} />;
   const context = Array.isArray(snap.context) ? (snap.context as Array<{ id: string; senderId: string; content: string; sentAt: string }>) : null;
   return (
     <div className="space-y-3">

@@ -20,6 +20,13 @@ export const USER_REPORT_REASONS = [
   'SCAM', 'COPYRIGHT', 'EXPLOITATION', 'AGE_INAPPROPRIATE', 'OTHER',
 ] as const;
 
+// The categories a business picks from when it raises an issue about a
+// creator's submitted deliverable (targetType DELIVERABLE).
+export const DELIVERABLE_REPORT_REASONS = [
+  'SEXUAL_CONTENT', 'VIOLENCE', 'HATE_SPEECH', 'HARASSMENT', 'SCAM',
+  'ILLEGAL_CONTENT', 'COPYRIGHT', 'INAPPROPRIATE_CONTENT',
+] as const;
+
 // Threats, exploitation and content unsafe for the age rating (which covers
 // anything involving minors) jump the queue and trigger the urgent alert.
 export function priorityForReason(reason: ReportReason): ReportPriority {
@@ -27,10 +34,12 @@ export function priorityForReason(reason: ReportReason): ReportPriority {
     case 'VIOLENCE':
     case 'EXPLOITATION':
     case 'AGE_INAPPROPRIATE':
+    case 'ILLEGAL_CONTENT':
       return 'URGENT';
     case 'HARASSMENT':
     case 'HATE_SPEECH':
     case 'INAPPROPRIATE_CONTENT':
+    case 'SEXUAL_CONTENT':
     case 'SCAM':
     case 'FRAUD':
       return 'HIGH';
@@ -84,7 +93,7 @@ export function canResolve(status: ReportStatus, verification: ReportVerificatio
 
 // Which enforcement actions make sense for a given report target. Content
 // actions need something that can be hidden; user actions need an owner.
-export const CONTENT_REMOVABLE_TYPES = ['OPPORTUNITY', 'COMPETITION', 'COMPETITION_SUBMISSION', 'PORTFOLIO_ITEM', 'MESSAGE', 'BUSINESS', 'SERVICE'] as const;
+export const CONTENT_REMOVABLE_TYPES = ['OPPORTUNITY', 'COMPETITION', 'COMPETITION_SUBMISSION', 'PORTFOLIO_ITEM', 'MESSAGE', 'BUSINESS', 'SERVICE', 'DELIVERABLE'] as const;
 export function isContentRemovable(targetType: string): boolean {
   return (CONTENT_REMOVABLE_TYPES as readonly string[]).includes(targetType);
 }

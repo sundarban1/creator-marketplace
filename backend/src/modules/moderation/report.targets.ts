@@ -175,6 +175,53 @@ export async function resolveReportTarget(
         hidden: !!m.deletedAt && m.deletedBy === MODERATION_ACTOR,
       };
     }
+    case 'DELIVERABLE': {
+      // targetId = Application.id. The snapshot freezes the deliverable as the
+      // business saw it (current files/videos/links + the latest immutable
+      // CampaignSubmissionVersion), so later creator edits can't erase it.
+      const a = await prisma.application.findUnique({
+        where: { id: targetId },
+        select: {
+          id: true, campaignId: true, workStatus: true, workNote: true, submittedAt: true,
+          deliverableUrls: true, deliverableVideos: true, deliverableFiles: true, deliverableHiddenAt: true,
+          creator: { select: { id: true, userId: true, fullName: true } },
+          campaign: { select: { title: true, business: { select: { id: true, userId: true, businessName: true } } } },
+          submissionVersions: { orderBy: { version: 'desc' }, take: 1, select: { id: true, version: true, note: true, urls: true, videos: true, files: true, createdAt: true } },
+        },
+      });
+      if (!a) return null;
+      // Only the campaign's business reviews — and so can report — a deliverable.
+      if (viewerUserId && viewerUserId !== a.campaign.business.userId) return null;
+      const latest = a.submissionVersions[0] ?? null;
+      const videos = (a.deliverableVideos as unknown[] | null) ?? [];
+      const files = (a.deliverableFiles as unknown[] | null) ?? [];
+      const hasCurrent = videos.length > 0 || files.length > 0 || !!a.deliverableUrls?.trim();
+      if (!hasCurrent && !latest) return null;
+      return {
+        ownerUserId: a.creator.userId,
+        title: `Deliverable: ${a.campaign.title}`,
+        snapshot: {
+          kind: 'deliverable',
+          applicationId: a.id,
+          campaignId: a.campaignId,
+          campaignTitle: a.campaign.title,
+          businessProfileId: a.campaign.business.id,
+          businessName: a.campaign.business.businessName,
+          creatorProfileId: a.creator.id,
+          creatorName: a.creator.fullName,
+          workStatus: a.workStatus,
+          submittedAt: a.submittedAt?.toISOString() ?? null,
+          note: a.workNote,
+          urls: a.deliverableUrls,
+          videos,
+          files,
+          submissionVersion: latest
+            ? { id: latest.id, version: latest.version, note: latest.note, urls: latest.urls, videos: latest.videos, files: latest.files, createdAt: latest.createdAt.toISOString() }
+            : null,
+        },
+        hidden: !!a.deliverableHiddenAt,
+      };
+    }
     case 'POST':
     default:
       // No standalone "post" content exists in Kolab today.

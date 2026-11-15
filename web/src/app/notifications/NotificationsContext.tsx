@@ -9,16 +9,19 @@ import {
   type ReactNode,
 } from 'react';
 import { apiRequest, endSessionNow } from '../lib/apiClient';
-import { publishLive, type LiveTopic } from '../lib/liveUpdates';
+import { publishLive, useLiveRefresh, type LiveTopic } from '../lib/liveUpdates';
 import { useToast } from '../ui/Toast';
 import { useT } from '../i18n';
 import { connectSocket, disconnectSocket } from '../lib/socket';
 import { fetchNotifications, markNotificationRead, type AppNotification } from '../api/creator';
+import { getBadgeCount } from '../api/chat';
 import { useAppAuth } from '../auth/AppAuthContext';
 
 interface NotificationsValue {
   items: AppNotification[];
   unread: number;
+  /** Unread chat messages + pending message requests (header message icon). */
+  chatUnread: number;
   loading: boolean;
   reload: () => void;
   markRead: (id: string) => void;
@@ -55,6 +58,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const [items, setItems] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
+  const [chatUnread, setChatUnread] = useState(0);
   const [loading, setLoading] = useState(true);
   const nonce = useRef(0);
 
@@ -76,16 +80,33 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }, [authed]);
 
+  const chatNonce = useRef(0);
+  const loadChatBadge = useCallback(async () => {
+    if (!authed) return;
+    const id = ++chatNonce.current;
+    try {
+      const badge = await getBadgeCount();
+      if (id === chatNonce.current) setChatUnread(badge.count);
+    } catch {
+      /* keep whatever we have */
+    }
+  }, [authed]);
+
+  // Re-count whenever a conversation changes (read, accepted, closed…).
+  useLiveRefresh(['conversations'], () => void loadChatBadge());
+
   // Initial load + on auth change.
   useEffect(() => {
     if (!authed) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems([]);
       setUnread(0);
+      setChatUnread(0);
       return;
     }
     void load();
-  }, [authed, load]);
+    void loadChatBadge();
+  }, [authed, load, loadChatBadge]);
 
   // Realtime: refresh on a new notification, and on window focus.
   useEffect(() => {
@@ -117,6 +138,13 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     };
     const onSettingsUpdated = () => publishLive('platformFlags');
     const onConversationUpdate = () => publishLive('conversations');
+    // New chat message: the server sends this user's fresh chat badge count.
+    const onMessageNew = (data?: { chatBadgeCount?: number }) => {
+      chatNonce.current++; // supersede any in-flight badge fetch
+      if (typeof data?.chatBadgeCount === 'number') setChatUnread(data.chatBadgeCount);
+      publishLive('conversations');
+    };
+    socket.on('message:new',         onMessageNew);
     socket.on('session:revoked',     onSessionRevoked);
     socket.on('campaign:new',        onCampaignNew);
     socket.on('campaign:updated',    onCampaignUpdated);
@@ -124,7 +152,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     socket.on('settings:updated',    onSettingsUpdated);
     socket.on('conversation:update', onConversationUpdate);
 
-    const onFocus = () => load();
+    const onFocus = () => {
+      load();
+      loadChatBadge();
+    };
     window.addEventListener('focus', onFocus);
 
     return () => {
@@ -135,9 +166,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       socket.off('catalog:updated',     onCatalogUpdated);
       socket.off('settings:updated',    onSettingsUpdated);
       socket.off('conversation:update', onConversationUpdate);
+      socket.off('message:new',         onMessageNew);
       window.removeEventListener('focus', onFocus);
     };
-  }, [authed, load]);
+  }, [authed, load, loadChatBadge]);
 
   useEffect(() => () => disconnectSocket(), []);
 
@@ -154,8 +186,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<NotificationsValue>(
-    () => ({ items, unread, loading, reload: load, markRead, markAllRead }),
-    [items, unread, loading, load, markRead, markAllRead],
+    () => ({ items, unread, chatUnread, loading, reload: load, markRead, markAllRead }),
+    [items, unread, chatUnread, loading, load, markRead, markAllRead],
   );
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;

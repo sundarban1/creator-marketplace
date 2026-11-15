@@ -1,4 +1,5 @@
 import { request, API_BASE, ensureFreshAccessToken, getApiLanguage, ApiError } from '@/lib/api';
+import type { PaymentBreakdown } from '@/features/payments/paymentBreakdown';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign, EventQuestion } from '@/types';
 import type { CampaignAttachment, CampaignBrief } from '@/services/guidedCampaign';
@@ -795,6 +796,13 @@ export const campaignService = {
     await request('PUT', `/api/campaigns/applications/${appId}/pay`, method ? { method } : undefined);
   },
 
+  // What the business will be charged for this application — computed by the
+  // backend (fee %, waiver, VAT, total) so the pay modal never recomputes it.
+  async getPaymentBreakdown(appId: string): Promise<PaymentBreakdown> {
+    const res = await request<PaymentBreakdown>('GET', `/api/campaigns/applications/${appId}/payment-breakdown`);
+    return res.data;
+  },
+
   // Khalti only (see getTiktokAuthorizeUrl above for the same "backend hands
   // back a browser URL, we open it, the redirect lands on our API" pattern) —
   // other payment methods still go through the mock payForApplication above.
@@ -1021,6 +1029,8 @@ export const campaignService = {
     deliverableUrls: string | null;
     deliverableVideos: DeliverableVideo[];
     deliverableFiles: DeliverableFile[];
+    // Kolab moderation hid the submitted deliverable after a content report.
+    deliverableHidden: boolean;
     paymentStatus:   'UNPAID' | 'PAID' | 'RELEASED';
     paidAt:          string | null;
     creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
@@ -1040,6 +1050,7 @@ export const campaignService = {
       businessReviewDueAt?: string | null; paymentReleaseAt?: string | null; submittedLate?: boolean;
       deliverableVideos?: DeliverableVideo[];
       deliverableFiles?: DeliverableFile[];
+      deliverableHidden?: boolean;
       paymentStatus?: string; paidAt?: string | null;
       creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
       workNote?: string | null; revisionRequestedAt?: string | null;
@@ -1068,6 +1079,7 @@ export const campaignService = {
       deliverableUrls: a.deliverableUrls ?? null,
       deliverableVideos: a.deliverableVideos ?? [],
       deliverableFiles: a.deliverableFiles ?? [],
+      deliverableHidden: a.deliverableHidden ?? false,
       paymentStatus:   (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
       paidAt:          a.paidAt ?? null,
       creator:         a.creator,
@@ -1121,6 +1133,7 @@ export const campaignService = {
       deliverableUrls:  string | null;
       deliverableVideos: DeliverableVideo[];
       deliverableFiles: DeliverableFile[];
+      deliverableHidden: boolean;
       workNote:         string | null;
       revisionRequestedAt: string | null;
       revisionNotes:    { note: string; createdAt: string }[];
@@ -1151,6 +1164,7 @@ export const campaignService = {
       deliverableUrls?: string | null;
       deliverableVideos?: DeliverableVideo[];
       deliverableFiles?: DeliverableFile[];
+      deliverableHidden?: boolean;
       paymentStatus?:  string;
       paidAt?:         string | null;
       workNote?:       string | null;
@@ -1207,6 +1221,7 @@ export const campaignService = {
         deliverableUrls: a.deliverableUrls ?? null,
         deliverableVideos: a.deliverableVideos ?? [],
         deliverableFiles: a.deliverableFiles ?? [],
+        deliverableHidden: a.deliverableHidden ?? false,
         workNote:        a.workNote ?? null,
         revisionRequestedAt: a.revisionRequestedAt ?? null,
         revisionNotes:   a.revisionNotes ?? [],

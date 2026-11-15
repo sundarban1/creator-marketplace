@@ -193,6 +193,7 @@ const DEFAULTS: PlatformSettings = {
   'platform.name':               'Kolab',
   'platform.supportEmail':       'support@collab.com',
   'platform.commission':         '12',
+  'platform.paymentFeeEnabled':  true,
   'platform.paymentFeePercent':  '5',
   'platform.paymentTaxPercent':  '13',
   'platform.description':        'Kolab connects brands with top creators for authentic events.',
@@ -387,6 +388,7 @@ export function Settings() {
 
         {/* Payment Fees */}
         <SectionCard title="Payment Fees" subtitle="Platform fee and tax added to the total when a business pays a creator — shown live in the web and mobile pay screens">
+          <Toggle label="Charge Platform Fee" description="Off = businesses pay only the creator's rate; the pay screen shows the standard fee struck through with a “No platform fee” label (no VAT either)" value={bool('platform.paymentFeeEnabled')} onChange={(v) => toggle('platform.paymentFeeEnabled', v)} />
           <InputField label="Platform Fee (%)" settingKey="platform.paymentFeePercent" settings={settings} onChange={setString} type="number" />
           <InputField label="Tax (%)"          settingKey="platform.paymentTaxPercent" settings={settings} onChange={setString} type="number" />
         </SectionCard>

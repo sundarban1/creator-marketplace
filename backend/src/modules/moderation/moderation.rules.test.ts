@@ -98,3 +98,15 @@ describe('content screening (local layer)', () => {
     expect(() => enforceScreen({ outcome: 'APPROVED' })).not.toThrow();
   });
 });
+
+describe('deliverable content reports', () => {
+  it('deliverables are removable content', () => {
+    expect(isContentRemovable('DELIVERABLE')).toBe(true);
+  });
+
+  it('prioritises deliverable categories', () => {
+    expect(priorityForReason('ILLEGAL_CONTENT')).toBe('URGENT');
+    expect(priorityForReason('SEXUAL_CONTENT')).toBe('HIGH');
+    expect(priorityForReason('COPYRIGHT')).toBe('NORMAL');
+  });
+});

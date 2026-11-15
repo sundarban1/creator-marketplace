@@ -503,6 +503,26 @@ export function getBusinessCredits(): Promise<{ balance: number }> {
   return apiRequest<{ balance: number }>('GET', '/api/business/credits').then((r) => r.data);
 }
 
+/** Backend-computed escrow payment breakdown (fee %, waiver, VAT, total) —
+ *  the exact amounts the gateways charge. Mirrors backend PaymentBreakdown. */
+export interface PaymentBreakdown {
+  currency: 'NPR';
+  creatorRate: number;
+  standardFeePercent: number;
+  standardFee: number;
+  feeWaived: boolean;
+  platformFee: number;
+  taxPercent: number;
+  taxApplicable: boolean;
+  tax: number;
+  total: number;
+  creatorReceives: number;
+}
+
+export function getPaymentBreakdown(appId: string): Promise<PaymentBreakdown> {
+  return apiRequest<PaymentBreakdown>('GET', `/api/campaigns/applications/${appId}/payment-breakdown`).then((r) => r.data);
+}
+
 /** Starts an eSewa escrow-funding payment; returns a checkout-page URL to redirect the browser to. */
 export function initiateEsewaPayment(appId: string): Promise<{ paymentUrl: string }> {
   return apiRequest<{ paymentUrl: string }>(

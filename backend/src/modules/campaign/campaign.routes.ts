@@ -386,6 +386,13 @@ router.put(
   ctrl.payForApplication.bind(ctrl)
 );
 
+router.get(
+  '/applications/:appId/payment-breakdown',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.getPaymentBreakdown.bind(ctrl)
+);
+
 router.post(
   '/applications/:appId/pay/khalti/initiate',
   authenticate,

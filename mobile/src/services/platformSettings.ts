@@ -11,6 +11,8 @@ export type PlatformFlags = {
   // Fee/tax breakdown shown in the business's Complete Payment modal.
   paymentFeePercent: number;
   paymentTaxPercent: number;
+  // Admin "Charge Platform Fee" switch — off = fee (and VAT on it) waived.
+  paymentFeeEnabled: boolean;
   // Landing-page download buttons, per store. `comingSoon` = both at once.
   comingSoonIos: boolean;
   comingSoonAndroid: boolean;

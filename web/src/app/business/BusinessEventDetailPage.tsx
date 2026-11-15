@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Pencil, MessageCircle, Check, Gift, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Pencil, MessageCircle, Check, Gift, CheckCheck, Lock } from 'lucide-react';
 import { useT, type TFn } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useLiveRefresh } from '../lib/liveUpdates';
@@ -20,7 +20,8 @@ import {
   initiateKhaltiPayment,
   payForApplication,
   getBusinessCredits,
-  reportIssue,
+  getPaymentBreakdown,
+  type PaymentBreakdown,
   updateCampaign,
   fetchCampaignInvitees,
   type BusinessApplication,
@@ -30,7 +31,7 @@ import { StatusBadge, type BadgeTone } from '../ui/StatusBadge';
 import { fetchContractForApplication, type Contract } from '../api/contract';
 import { ContractModal } from '../events/ContractModal';
 import { fetchPaymentMethods, type PublicPaymentMethod } from '../api/paymentMethods';
-import { fetchPlatformFlags } from '../api/platformFlags';
+import { PaymentBreakdownCard, formatNpr } from './PaymentBreakdownCard';
 import { listenForPaymentResults } from '../lib/paymentHandoff';
 import { ApiError } from '../lib/apiClient';
 import { PageHeader } from '../ui/PageHeader';
@@ -41,7 +42,6 @@ import { Avatar } from '../ui/Avatar';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton, SkeletonText } from '../ui/Skeleton';
 import { Modal } from '../ui/Modal';
-import { Textarea } from '../ui/Textarea';
 import { EngagementBadge } from '../creator/EngagementBadge';
 import { DisputeStatusCard } from '../creator/DisputeStatus';
 import { ReviewSection } from '../creator/ReviewSection';
@@ -49,12 +49,9 @@ import { cn } from '../ui/cn';
 import { StatusStrip } from '../ui/StatusStrip';
 import { stageInfo } from '../lib/engagementStage';
 import { confirmDialog } from '../ui/confirmDialog';
+import { RaiseIssueModal, canRaiseIssue } from './RaiseIssueModal';
 
-// Mirrors CreatorWorkDetailPage.tsx's CAN_REPORT — same shared engagement
-// states, just viewed from the business side.
 const INVITE_TONE: Record<string, BadgeTone> = { PENDING: 'warning', ACCEPTED: 'success', DECLINED: 'neutral' };
-
-const CAN_REPORT = new Set(['ESCROW_FUNDED', 'IN_PROGRESS', 'REVISION_REQUESTED', 'CONTENT_OVERDUE', 'BUSINESS_REVIEW', 'PAYMENT_RELEASE_PENDING']);
 
 /** A plain-language status line for the "Working on this" row — the badge
  * already names the raw state, this explains what it means and, where
@@ -169,29 +166,31 @@ export function BusinessEventDetailPage() {
   // mobile's activity-timeline.tsx pay modal (methodCatalog + creditsAvailable).
   const [methodCatalog, setMethodCatalog] = useState<PublicPaymentMethod[]>([]);
   const [creditsBalance, setCreditsBalance] = useState(0);
-  const [feePercents, setFeePercents] = useState({ paymentFeePercent: 5, paymentTaxPercent: 13 });
-
-  // Uncached fetch (not the session-memoized getPlatformFlags()) — this is a
-  // live money figure shown right before the business pays into escrow, so
-  // it needs the current admin-set fee/tax. Re-run when the pay modal opens
-  // and whenever the admin saves settings (socket → 'platformFlags'), so an
-  // open tab never shows a stale rate.
-  const loadFeePercents = useCallback(() => {
-    fetchPlatformFlags()
-      .then((f) => setFeePercents({ paymentFeePercent: f.paymentFeePercent, paymentTaxPercent: f.paymentTaxPercent }))
-      .catch(() => {});
-  }, []);
+  // Backend-computed breakdown (fee %, waiver, VAT, total) for the open pay
+  // modal — the exact amounts the gateways charge, never recomputed here.
+  // Re-pulled when the modal opens and whenever the admin saves settings
+  // (socket → 'platformFlags'), so an open tab never shows a stale fee.
+  const [breakdown, setBreakdown] = useState<PaymentBreakdown | null>(null);
+  const [breakdownError, setBreakdownError] = useState(false);
+  const payTargetId = payTarget?.id ?? null;
+  const loadBreakdown = useCallback(() => {
+    if (!payTargetId) return;
+    setBreakdownError(false);
+    getPaymentBreakdown(payTargetId)
+      .then(setBreakdown)
+      .catch(() => setBreakdownError(true));
+  }, [payTargetId]);
 
   useEffect(() => {
     fetchPaymentMethods().then(setMethodCatalog).catch(() => {});
     getBusinessCredits().then((b) => setCreditsBalance(b.balance)).catch(() => {});
-    loadFeePercents();
-  }, [loadFeePercents]);
+  }, []);
 
-  useLiveRefresh(['platformFlags'], loadFeePercents);
+  useLiveRefresh(['platformFlags'], loadBreakdown);
   useEffect(() => {
-    if (payTarget) loadFeePercents();
-  }, [payTarget, loadFeePercents]);
+    setBreakdown(null);
+    loadBreakdown();
+  }, [loadBreakdown]);
 
   // Defaults to the first admin-enabled method until the business picks one
   // explicitly — derived at render time rather than synced via an effect,
@@ -425,15 +424,10 @@ export function BusinessEventDetailPage() {
   const isPaid = c.campaignType !== 'OPEN_EVENT';
   const fmtDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
-  // Fee breakdown for the pay modal — same formula as the backend's
-  // applicationTotalNpr (the amount actually charged through eSewa) and
-  // mobile's activity-timeline.tsx crFee/pfFee/tax/total, rather than the
-  // application's own platformFee/businessTotal fields (a different,
-  // campaign-commissionRate-based figure used elsewhere, not for escrow funding).
-  const crFee = payTarget?.proposedRate ?? 0;
-  const pfFee = Math.round(crFee * (feePercents.paymentFeePercent / 100));
-  const tax = Math.round(pfFee * (feePercents.paymentTaxPercent / 100));
-  const payTotal = crFee + pfFee + tax;
+  // Amounts come from the backend breakdown (see loadBreakdown); credits pay
+  // the creator's rate only, gateways pay the breakdown total.
+  const crFee = breakdown?.creatorRate ?? payTarget?.proposedRate ?? 0;
+  const payTotal = breakdown?.total ?? 0;
   const creditsAffordable = creditsBalance >= crFee;
   const payAmountDue = payMethod === 'credits' ? crFee : payTotal;
 
@@ -594,17 +588,16 @@ export function BusinessEventDetailPage() {
                     <div className="mt-3">
                       <DisputeStatusCard dispute={a.dispute} viewerRole="BUSINESS" />
                     </div>
-                  ) : (
-                    CAN_REPORT.has(a.engagementState) && (
+                  ) : null}
+                  {canRaiseIssue(a) && (
                       <div className="mt-2 text-right">
                         <button
                           onClick={() => setReportTarget(a)}
                           className="text-[12px] font-semibold text-ink-soft underline hover:text-danger"
                         >
-                          {t('workDetail.reportIssue')}
+                          {t('raiseIssue.title')}
                         </button>
                       </div>
-                    )
                   )}
 
                   {(a.engagementState === 'COMPLETED' || a.engagementState === 'PAYMENT_RELEASED') && (
@@ -778,29 +771,21 @@ export function BusinessEventDetailPage() {
               </div>
             )} */}
 
-            <div className="flex items-center gap-3">
-              <Avatar name={payTarget.creator?.fullName ?? 'Creator'} src={payTarget.creator?.avatarUrl} size="md" />
-              <p className="text-[14px] font-semibold text-ink">{payTarget.creator?.fullName ?? 'Creator'}</p>
-            </div>
-
-            <dl className="space-y-2 rounded-xl border border-line bg-surface-dim p-4">
-              <div className="flex items-center justify-between text-[14px]">
-                <dt className="text-ink-soft">{t('biz.payModalCreatorRate')}</dt>
-                <dd className="text-ink">{rupees(crFee)}</dd>
+            {breakdown ? (
+              <PaymentBreakdownCard
+                breakdown={breakdown}
+                creatorName={payTarget.creator?.fullName ?? 'Creator'}
+                creatorAvatar={payTarget.creator?.avatarUrl}
+              />
+            ) : breakdownError ? (
+              <Alert tone="error">{t('payBreakdown.loadFailed')}</Alert>
+            ) : (
+              <div className="space-y-3">
+                <Skeleton className="h-11 w-2/3" />
+                <Skeleton className="h-52 w-full rounded-2xl" />
+                <Skeleton className="h-20 w-full rounded-2xl" />
               </div>
-              <div className="flex items-center justify-between text-[14px]">
-                <dt className="text-ink-soft">{t('biz.payModalPlatformFee', { pct: feePercents.paymentFeePercent })}</dt>
-                <dd className="text-ink">{rupees(pfFee)}</dd>
-              </div>
-              <div className="flex items-center justify-between text-[14px]">
-                <dt className="text-ink-soft">{t('biz.payModalTax', { pct: feePercents.paymentTaxPercent })}</dt>
-                <dd className="text-ink">{rupees(tax)}</dd>
-              </div>
-              <div className="flex items-center justify-between border-t border-line pt-2 text-[15px] font-semibold">
-                <dt className="text-ink">{t('biz.payModalTotal')}</dt>
-                <dd className="text-ink">{rupees(payTotal)}</dd>
-              </div>
-            </dl>
+            )}
 
             <div>
               <p className="mb-2 text-[13px] font-semibold text-ink">{t('biz.payModalPayWith')}</p>
@@ -850,25 +835,27 @@ export function BusinessEventDetailPage() {
               <Button
                 className="flex-1"
                 loading={payBusy}
-                disabled={payMethod === 'credits' && !creditsAffordable}
+                disabled={!breakdown || (payMethod === 'credits' && !creditsAffordable)}
                 onClick={confirmPay}
               >
-                {t('biz.payModalConfirmBtn', { amount: rupees(payAmountDue) })}
+                {t('payBreakdown.confirmPay', { amount: formatNpr(payAmountDue) })}
               </Button>
               <Button variant="secondary" disabled={payBusy} onClick={() => setPayTarget(null)}>
                 {t('common.cancel')}
               </Button>
             </div>
+            <p className="flex items-center justify-center gap-1.5 text-[12px] text-ink-soft">
+              <Lock size={11} />
+              {t('payBreakdown.secure')}
+            </p>
           </div>
         )}
       </Modal>
 
-      <ReportIssueModal
-        open={!!reportTarget}
+      <RaiseIssueModal
+        app={reportTarget}
         onClose={() => setReportTarget(null)}
-        onSubmit={async (reason) => {
-          await reportIssue(reportTarget!.id, reason);
-          setReportTarget(null);
+        onDisputeRaised={() => {
           setFlash(t('workDetail.reportIssueSent'));
           apps.reload();
         }}
@@ -919,58 +906,6 @@ function PayMethodRow({
 
 function isFeatured(c: { isFeatured?: boolean }): boolean {
   return !!c.isFeatured;
-}
-
-function ReportIssueModal({
-  open,
-  onClose,
-  onSubmit,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (reason: string) => Promise<void>;
-}) {
-  const t = useT();
-  const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={t('workDetail.reportIssueTitle')}
-      footer={
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            variant="danger"
-            loading={busy}
-            disabled={reason.trim().length < 10}
-            onClick={async () => {
-              setBusy(true);
-              setErr('');
-              try {
-                await onSubmit(reason.trim());
-              } catch (e) {
-                setErr(e instanceof Error ? e.message : t('common.somethingWrong'));
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {t('workDetail.reportIssueSubmit')}
-          </Button>
-        </div>
-      }
-    >
-      {err && <Alert tone="error" className="mb-3">{err}</Alert>}
-      <p className="mb-3 text-[13px] text-ink-soft">{t('workDetail.reportIssueHint')}</p>
-      <Textarea label={t('workDetail.reportIssueReason')} rows={4} value={reason} onChange={(e) => setReason(e.target.value)} />
-    </Modal>
-  );
 }
 
 function DetailField({ label, value }: { label: string; value: string }) {

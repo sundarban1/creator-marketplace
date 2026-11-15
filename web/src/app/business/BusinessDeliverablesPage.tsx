@@ -19,6 +19,7 @@ import { DeliverableLinkList, parseDeliverableLinks } from '../ui/DeliverableLin
 import { confirmDialog } from '../ui/confirmDialog';
 import { DeliverableDeadlinePanel } from '../ui/DeliverableDeadlinePanel';
 import { isDeadlineState } from '../lib/engagement';
+import { RaiseIssueModal, canRaiseIssue } from './RaiseIssueModal';
 
 const TABS = ['review', 'overdue', 'approved'] as const;
 type Tab = (typeof TABS)[number];
@@ -36,6 +37,7 @@ export function BusinessDeliverablesPage() {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState('');
   const [revisionFor, setRevisionFor] = useState<BusinessApplication | null>(null);
+  const [issueFor, setIssueFor] = useState<BusinessApplication | null>(null);
 
   const buckets = useMemo(() => {
     const list = (apps.data?.items ?? []).filter((a) => !campaignFilter || a.campaignId === campaignFilter);
@@ -141,6 +143,10 @@ export function BusinessDeliverablesPage() {
                 </Link>
               </div>
 
+              {a.deliverableHidden && (
+                <Alert tone="info" className="mt-3">{t('raiseIssue.contentHidden')}</Alert>
+              )}
+
               {((a.deliverableFiles ?? []).length > 0 || (a.deliverableVideos ?? []).length > 0) && (
                 <div className="mt-3">
                   <p className="mb-1.5 text-[12px] font-semibold text-ink-soft">{t('biz.submittedFiles')}</p>
@@ -172,10 +178,31 @@ export function BusinessDeliverablesPage() {
                   </Button>
                 </div>
               )}
+
+              {canRaiseIssue(a) && (
+                <div className="mt-3 text-right">
+                  <button
+                    type="button"
+                    onClick={() => setIssueFor(a)}
+                    className="text-[12px] font-semibold text-ink-soft underline hover:text-danger"
+                  >
+                    {t('raiseIssue.title')}
+                  </button>
+                </div>
+              )}
             </Card>
           ))
         )}
       </div>
+
+      <RaiseIssueModal
+        app={issueFor}
+        onClose={() => setIssueFor(null)}
+        onDisputeRaised={() => {
+          setFlash(t('workDetail.reportIssueSent'));
+          apps.reload();
+        }}
+      />
 
       <Modal open={!!revisionFor} onClose={() => setRevisionFor(null)} title={t('biz.requestChanges')}>
         <RevisionForm

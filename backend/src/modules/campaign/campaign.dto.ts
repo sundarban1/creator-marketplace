@@ -238,6 +238,9 @@ export interface ApplicationDto {
   deliverableUrls: string | null;
   deliverableVideos: DeliverableVideo[];
   deliverableFiles: DeliverableFile[];
+  // True when Kolab moderation hid this deliverable after a content report —
+  // the deliverable fields (and submission history media) are then empty.
+  deliverableHidden: boolean;
   // Immutable per-attempt history (escrow spec §5) — present on the single
   // application read path; each entry snapshots what was delivered for that
   // version and how the business responded to it.
@@ -545,6 +548,7 @@ type RawApplication = {
   deliverableUrls: string | null;
   deliverableVideos?: Prisma.JsonValue;
   deliverableFiles?: Prisma.JsonValue;
+  deliverableHiddenAt?: Date | null;
   submissionVersions?: {
     version: number;
     note: string | null;
@@ -616,6 +620,7 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
   const commissionRate = a.campaign?.commissionRate ?? 0;
   const platformFee = Math.round(a.proposedRate * (commissionRate / 100) * 100) / 100;
   const escrowStatus = a.escrowStatus ?? escrowStatusFromPaymentStatus(a.paymentStatus, a.workStatus);
+  const hidden = !!a.deliverableHiddenAt;
   const dto: ApplicationDto = {
     id:              a.id,
     campaignId:      a.campaignId,
@@ -671,17 +676,18 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
           }
         : null;
     })(),
-    deliverableUrls: a.deliverableUrls,
-    deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
-    deliverableFiles: z.array(deliverableFileSchema).catch([]).parse(a.deliverableFiles ?? []),
+    deliverableUrls: hidden ? null : a.deliverableUrls,
+    deliverableVideos: hidden ? [] : z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
+    deliverableFiles: hidden ? [] : z.array(deliverableFileSchema).catch([]).parse(a.deliverableFiles ?? []),
+    deliverableHidden: hidden,
     ...(a.submissionVersions?.length
       ? {
           submissionVersions: a.submissionVersions.map((v) => ({
             version:       v.version,
             note:          v.note,
-            urls:          v.urls,
-            videos:        z.array(deliverableVideoSchema).catch([]).parse(v.videos ?? []),
-            files:         z.array(deliverableFileSchema).catch([]).parse(v.files ?? []),
+            urls:          hidden ? null : v.urls,
+            videos:        hidden ? [] : z.array(deliverableVideoSchema).catch([]).parse(v.videos ?? []),
+            files:         hidden ? [] : z.array(deliverableFileSchema).catch([]).parse(v.files ?? []),
             late:          v.late,
             reviewOutcome: v.reviewOutcome,
             reviewNote:    v.reviewNote,

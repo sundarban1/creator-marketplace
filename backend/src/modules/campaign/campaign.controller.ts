@@ -538,6 +538,15 @@ export class CampaignController {
     } catch (e) { next(e); }
   }
 
+  async getPaymentBreakdown(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.getApplicationPaymentBreakdown(req.params.appId, req.user!.id);
+      success(res, result, 'Payment breakdown');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async initiateKhaltiPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const platform = req.query.platform === 'web' ? 'web' : undefined;

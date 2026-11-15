@@ -384,12 +384,17 @@ function ConversationThread({
     setLiveMessages((prev) => [...prev.filter((m) => m.id !== msg.id), msg]);
   }
 
+  const myId = user?.id;
   useEffect(() => {
     const socket = connectSocket();
     socket.emit('join:conversation', { conversationId: id });
     function onNew(payload: { conversationId: string; message: ChatMessage }) {
       if (payload.conversationId !== id) return;
       setLiveMessages((prev) => (prev.some((m) => m.id === payload.message.id) ? prev : [...prev, payload.message]));
+      // Arrived while this thread is open — it's read; clear it from the badge.
+      if (payload.message.senderId !== myId) {
+        markSeen(id).then(() => publishLive('conversations')).catch(() => {});
+      }
     }
     function onEdited(payload: { conversationId: string; message: ChatMessage }) {
       if (payload.conversationId !== id) return;
@@ -408,10 +413,10 @@ function ConversationThread({
       socket.off('message:edited', onEdited);
       socket.off('message:deleted', onDeletedMsg);
     };
-  }, [id]);
+  }, [id, myId]);
 
   useEffect(() => {
-    markSeen(id).catch(() => {});
+    markSeen(id).then(() => publishLive('conversations')).catch(() => {});
   }, [id]);
 
   // Scrolls only the messages panel itself — never scrollIntoView(), which

@@ -37,6 +37,7 @@ import {
 } from '@/utilities/chatAttachments';
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
 import { BottomSheet } from '@/components/BottomSheet';
+import { RaiseIssueSheet } from '@/components/RaiseIssueSheet';
 import { TabSlider } from '@/components/TabSlider';
 import { ContractBody } from '@/components/ContractModal';
 import { contractService, type Contract } from '@/services/contract';
@@ -48,6 +49,8 @@ import { F, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SHADOW as TOKEN_SHADOW, SPA
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { EventQuestionsEntry } from '@/components/EventQuestionsEntry';
 import { useToast } from '@/components/Toast';
+import { PaymentBreakdownCard } from '@/features/payments/PaymentBreakdownCard';
+import { estimateBreakdown, formatNpr, type PaymentBreakdown } from '@/features/payments/paymentBreakdown';
 import { DeliverableDeadlineCard, ExtendedDeadlineNotice, isDeadlineCardState } from '@/components/DeliverableDeadlineCard';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -75,6 +78,7 @@ type AppInfo = {
   deliverableUrls: string | null;
   deliverableVideos: DeliverableVideo[];
   deliverableFiles: DeliverableFile[];
+  deliverableHidden: boolean;
   creatorProfileId: string;
   creatorUserId: string;
   creatorName: string;
@@ -182,6 +186,13 @@ function countdownLabel(iso: string | null | undefined, t: TFn): { text: string;
     text: overdue ? t('activityTimeline.banOverdueBy', { time: human }) : t('activityTimeline.banStillLeft', { time: human }),
     overdue,
   };
+}
+
+// The business can report the creator's submitted content (independent of
+// any escrow state) once something has been delivered.
+function hasReportableDeliverable(app: AppInfo): boolean {
+  if (app.deliverableHidden) return false;
+  return app.deliverableVideos.length > 0 || app.deliverableFiles.length > 0 || !!app.deliverableUrls?.trim() || !!app.submittedAt;
 }
 
 // Which engagement states let either party raise a dispute (payment is held /
@@ -928,9 +939,18 @@ function StageStrip({ app, isCreator, onRaiseDispute, part }: {
   }
 
   if (part === 'dispute') {
-    return showDisputeBtn
+    // Business: the same button also reports objectionable deliverable content.
+    return showDisputeBtn || (!isCreator && hasReportableDeliverable(app))
       ? <ActionBtn label={t('activityTimeline.disputeBtn')} color="#EF4444" icon="flag" onPress={onRaiseDispute} />
       : null;
+  }
+  if (app.deliverableHidden) {
+    return (
+      <>
+        {strip}
+        <Strip late={false} tone="red" icon="eye-slash" label={t('raiseIssue.contentHidden')} />
+      </>
+    );
   }
   return strip;
 }
@@ -997,6 +1017,9 @@ export default function CampaignWorkspaceScreen() {
   const contractFetchStarted = useRef(false);
 
   const [showPay, setShowPay]           = useState(false);
+  // Backend-computed fee breakdown (fee %, waiver, VAT, total) — business only;
+  // re-pulled every time the pay sheet opens so an admin fee change shows up.
+  const [serverBreakdown, setServerBreakdown] = useState<PaymentBreakdown | null>(null);
   const [showUpload, setShowUpload]     = useState(false);
   const [showReview, setShowReview]     = useState(false);
   const [showRevision, setShowRevision] = useState(false);
@@ -1280,6 +1303,7 @@ export default function CampaignWorkspaceScreen() {
             submittedAt:      myApp.workSubmittedAt ?? null,
             deliverableUrls:  myApp.deliverableUrls ?? null,
             deliverableVideos: myApp.deliverableVideos ?? [],
+            deliverableHidden: myApp.deliverableHidden ?? false,
             deliverableFiles: myApp.deliverableFiles ?? [],
             creatorProfileId: myApp.businessId,
             creatorUserId:    myApp.businessId,
@@ -1332,6 +1356,7 @@ export default function CampaignWorkspaceScreen() {
             submittedAt:      accepted.submittedAt,
             deliverableUrls:  accepted.deliverableUrls,
             deliverableVideos: accepted.deliverableVideos ?? [],
+            deliverableHidden: accepted.deliverableHidden ?? false,
             deliverableFiles: accepted.deliverableFiles ?? [],
             creatorProfileId: accepted.creator.id,
             creatorUserId:    accepted.creator.userId,
@@ -1365,6 +1390,15 @@ export default function CampaignWorkspaceScreen() {
   }
 
   useFocusEffect(useCallback(() => { void load(); void refetchPlatformFlags(); }, [campaignId, isCreator, applicationId]));
+
+  useEffect(() => {
+    if (isCreator || !app?.id || app.paymentStatus !== 'UNPAID') return;
+    let alive = true;
+    campaignService.getPaymentBreakdown(app.id)
+      .then((b) => { if (alive) setServerBreakdown(b); })
+      .catch(() => { /* estimate from admin flags stays on screen */ });
+    return () => { alive = false; };
+  }, [isCreator, app?.id, app?.paymentStatus, showPay]);
 
   useEffect(() => {
     if (app?.workStatus !== 'COMPLETED' || !app.id) return;
@@ -1700,6 +1734,16 @@ export default function CampaignWorkspaceScreen() {
     }
   }
 
+  // Business "Raise an issue" sheet → payment-dispute branch. Throws so the
+  // sheet can show the server's message inline.
+  async function raiseDisputeFromSheet(note: string) {
+    if (!app) return;
+    await campaignService.raiseDispute(app.id, note);
+    setApp(a => a ? { ...a, workStatus: 'DISPUTED', escrowStatus: 'FROZEN', engagementState: 'DISPUTED' } : a);
+    void load({ silent: true });
+    topToast.success(t('activityTimeline.toastDisputeRaised'));
+  }
+
   async function handleMessage() {
     const otherProfileId = app?.creatorProfileId;
     const otherName      = isCreator ? (app?.creatorName ?? t('activityTimeline.fallbackBrand')) : (app?.creatorName ?? t('activityTimeline.fallbackCreator'));
@@ -1772,10 +1816,9 @@ export default function CampaignWorkspaceScreen() {
   const isService = jobCompletionType === 'SERVICE';
   const progressLabels = getProgressLabels(t, isService, isFreeEvent);
 
-  const crFee = app?.proposedRateRaw ?? 0;
-  const pfFee = Math.round(crFee * (flags.paymentFeePercent / 100));
-  const tax   = Math.round(pfFee * (flags.paymentTaxPercent / 100));
-  const total = crFee + pfFee + tax;
+  const breakdown = serverBreakdown ?? estimateBreakdown(app?.proposedRateRaw ?? 0, flags);
+  const crFee = breakdown.creatorRate;
+  const total = breakdown.total;
 
   const submittedUrls  = parseUrls(app?.deliverableUrls);
   const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator, t, isService, isFreeEvent);
@@ -2024,11 +2067,19 @@ export default function CampaignWorkspaceScreen() {
           </View>
         )}
 
-        {/* ── Security Footer ── */}
-        <View style={s.secFooter}>
-          <FontAwesome5 name="shield-alt" solid size={13} color="#9CA3AF" />
-          <Text style={[s.secFooterTxt, { color: '#9CA3AF' }]}>{t('activityTimeline.paymentSecurityFooter')}</Text>
-        </View>
+        {/* ── Security Footer — names only the gateways the admin has enabled ── */}
+        {methodCatalog.length > 0 && (() => {
+          const names = methodCatalog.map((m) => m.name);
+          const methods = names.length === 1
+            ? names[0]
+            : `${names.slice(0, -1).join(', ')} ${t('activityTimeline.paymentSecurityAnd')} ${names[names.length - 1]}`;
+          return (
+            <View style={s.secFooter}>
+              <FontAwesome5 name="shield-alt" solid size={13} color="#9CA3AF" />
+              <Text style={[s.secFooterTxt, { color: '#9CA3AF' }]}>{t('activityTimeline.paymentSecurityFooter', { methods })}</Text>
+            </View>
+          );
+        })()}
         </>)}
 
         {activeTab === 'deliverables' && (
@@ -2073,20 +2124,40 @@ export default function CampaignWorkspaceScreen() {
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.paymentDetails')}</Text>
           <View style={{ marginTop: 12, gap: 10 }}>
-            {[
-              { label: t('activityTimeline.paymentCreatorFee'),   value: `Rs. ${crFee.toLocaleString()}` },
-              { label: t('activityTimeline.paymentPlatformFee', { pct: flags.paymentFeePercent }), value: `Rs. ${pfFee.toLocaleString()}` },
-              { label: t('activityTimeline.paymentTax', { pct: flags.paymentTaxPercent }),         value: `Rs. ${tax.toLocaleString()}` },
-            ].map((row, idx) => (
-              <View key={idx} style={py.row}>
-                <Text style={[py.label, { color: C.textSecondary }]}>{row.label}</Text>
-                <Text style={[py.value, { color: C.text }]}>{row.value}</Text>
+            <View style={py.row}>
+              <Text style={[py.label, { color: C.textSecondary }]}>{t('payBreakdown.creatorRate')}</Text>
+              <Text style={[py.value, { color: C.text }]}>{formatNpr(breakdown.creatorRate)}</Text>
+            </View>
+            <View style={py.row}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+                <Text style={[py.label, { color: C.textSecondary }]}>{t('payBreakdown.platformFee')}</Text>
+                {breakdown.feeWaived && (
+                  <View style={{ backgroundColor: '#DCFCE7', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={{ color: '#16A34A', fontFamily: F.bold, fontSize: 10 }}>{t('payBreakdown.noPlatformFee')}</Text>
+                  </View>
+                )}
               </View>
-            ))}
+              {breakdown.feeWaived ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ color: C.textPlaceholder, fontFamily: F.regular, fontSize: 12, textDecorationLine: 'line-through' }}>{formatNpr(breakdown.standardFee)}</Text>
+                  <Text style={[py.value, { color: '#16A34A' }]}>{formatNpr(0)}</Text>
+                </View>
+              ) : (
+                <Text style={[py.value, { color: C.text }]}>{formatNpr(breakdown.platformFee)}</Text>
+              )}
+            </View>
+            <View style={py.row}>
+              <Text style={[py.label, { color: C.textSecondary }]}>
+                {t('payBreakdown.vat')}{breakdown.taxApplicable ? ` (${breakdown.taxPercent}%)` : ''}
+              </Text>
+              <Text style={[py.value, { color: breakdown.taxApplicable ? C.text : C.textPlaceholder }]}>
+                {breakdown.taxApplicable ? formatNpr(breakdown.tax) : t('payBreakdown.notApplicable')}
+              </Text>
+            </View>
             <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
             <View style={py.row}>
               <Text style={[py.totalLabel, { color: C.text }]}>{t('activityTimeline.paymentTotal')}</Text>
-              <Text style={[py.totalValue, { color: '#16A34A' }]}>Rs. {total.toLocaleString()}</Text>
+              <Text style={[py.totalValue, { color: '#16A34A' }]}>{formatNpr(total)}</Text>
             </View>
             <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
             <View style={py.row}>
@@ -2173,14 +2244,10 @@ export default function CampaignWorkspaceScreen() {
 
 
       {/* ── Pay Modal ── */}
-      <BottomSheet visible={showPay} onClose={() => setShowPay(false)} title={t('activityTimeline.modalPayTitle')}>
+      <BottomSheet visible={showPay} onClose={() => setShowPay(false)} title={t('payBreakdown.confirmTitle')}>
         <Text style={sh.sub}>{t('activityTimeline.modalPaySub')}</Text>
-        <View style={{ gap: 8, marginVertical: 14 }}>
-          {([[t('activityTimeline.feeCreator'), crFee], [t('activityTimeline.feePlatform', { pct: flags.paymentFeePercent }), pfFee], [t('activityTimeline.feeTax', { pct: flags.paymentTaxPercent }), tax]] as [string, number][]).map(([l, v]) => (
-            <View key={l} style={sh.sumRow}><Text style={sh.sumLabel}>{l}</Text><Text style={sh.sumValue}>Rs. {v.toLocaleString()}</Text></View>
-          ))}
-          <View style={[sh.divider, { backgroundColor: '#E5E7EB' }]} />
-          <View style={sh.sumRow}><Text style={sh.totalLabel}>{t('activityTimeline.feeTotal')}</Text><Text style={sh.totalValue}>Rs. {total.toLocaleString()}</Text></View>
+        <View style={{ marginTop: 10, marginBottom: 18 }}>
+          <PaymentBreakdownCard breakdown={breakdown} creatorName={app?.creatorName} creatorAvatar={app?.creatorAvatar} />
         </View>
         <Text style={sh.sectionLabel}>{t('activityTimeline.modalPayWith')}</Text>
         <View style={{ gap: 8, marginBottom: 16 }}>
@@ -2231,12 +2298,16 @@ export default function CampaignWorkspaceScreen() {
         </View>
         <ActionBtn
           size="lg" mt={0}
-          label={t('activityTimeline.modalPayConfirmBtn', { amount: (payMethod === 'credits' ? crFee : total).toLocaleString() })}
+          label={t('payBreakdown.confirmPay', { amount: formatNpr(payMethod === 'credits' ? crFee : total) })}
           color="#7C3AED"
           onPress={handlePay}
           loading={submitting}
           disabled={payMethod === 'credits' && creditsAvailable < crFee}
         />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10 }}>
+          <FontAwesome5 name="lock" solid size={10} color="#6B7280" />
+          <Text style={{ fontFamily: F.regular, fontSize: 12, color: '#6B7280' }}>{t('payBreakdown.secure')}</Text>
+        </View>
       </BottomSheet>
 
       {/* ── Upload Deliverables Modal ── */}
@@ -2662,8 +2733,23 @@ export default function CampaignWorkspaceScreen() {
         )}
       </BottomSheet>
 
-      {/* ── Raise-a-dispute sheet (either party) ── */}
-      <BottomSheet visible={showDispute} onClose={() => setShowDispute(false)} title={t('activityTimeline.disputeSheetTitle')}>
+      {/* ── Business: Raise an issue (payment dispute or deliverable content report) ── */}
+      {!isCreator && app && (
+        <RaiseIssueSheet
+          visible={showDispute}
+          onClose={() => setShowDispute(false)}
+          applicationId={app.id}
+          disputeAllowed={
+            !app.dispute && app.engagementState != null && DISPUTABLE_STATES.has(app.engagementState) &&
+            (app.escrowStatus === 'HELD' || app.escrowStatus === 'RELEASE_PENDING')
+          }
+          contentAllowed={hasReportableDeliverable(app)}
+          onRaiseDispute={raiseDisputeFromSheet}
+        />
+      )}
+
+      {/* ── Raise-a-dispute sheet (creator) ── */}
+      <BottomSheet visible={isCreator && showDispute} onClose={() => setShowDispute(false)} title={t('activityTimeline.disputeSheetTitle')}>
         <Text style={sh.sub}>{t('activityTimeline.disputeSheetSub')}</Text>
         <View style={{ marginVertical: 14 }}>
           <TextInputWithLabel

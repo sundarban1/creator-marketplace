@@ -51,6 +51,7 @@ export class PublicService {
       platformCommission:          numericSetting(s['platform.commission'], 0),
       paymentFeePercent:           numericSetting(s['platform.paymentFeePercent'], 5),
       paymentTaxPercent:           numericSetting(s['platform.paymentTaxPercent'], 13),
+      paymentFeeEnabled:           s['platform.paymentFeeEnabled'] !== false,
       comingSoonIos:               comingSoon.ios,
       comingSoonAndroid:           comingSoon.android,
       comingSoon:                  comingSoon.ios && comingSoon.android,

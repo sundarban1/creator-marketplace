@@ -1341,6 +1341,11 @@ model Application {
   // while the work status is closed.
   deliverableClosedAt          DateTime?
   deliverableClosedReason      String?
+  // Set when a Kolab moderator hides this engagement's submitted deliverables
+  // after a DELIVERABLE content report (moderation REMOVE_CONTENT). The JSON
+  // arrays are kept untouched as evidence; the API masks them for business
+  // and creator reads. Independent of workStatus / escrow.
+  deliverableHiddenAt          DateTime?
   // Dynamic open-event invitation PNG (OPEN_EVENT + status ACCEPTED only).
   // Generated on acceptance, re-generated when any invitation-visible field
   // changes (event title/date/venue/location/description, business name/logo).
@@ -2269,6 +2274,8 @@ enum ReportTargetType {
   POST
   MESSAGE
   REVIEW
+  // A creator's submitted campaign deliverable — targetId = Application.id.
+  DELIVERABLE
 }
 
 // The first ten are the user-facing reasons; FRAUD / FAKE_PROFILE /
@@ -2287,6 +2294,9 @@ enum ReportReason {
   FRAUD
   FAKE_PROFILE
   PAYMENT_ISSUE
+  // Deliverable content-report categories (Raise an issue on submitted work).
+  SEXUAL_CONTENT
+  ILLEGAL_CONTENT
 }
 
 // NEW = pending. A report can only reach ACTION_TAKEN with verification VALID,

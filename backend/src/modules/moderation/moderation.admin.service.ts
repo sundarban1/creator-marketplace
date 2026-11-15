@@ -566,6 +566,15 @@ async function setContentHidden(tx: Tx, type: ReportTargetType, id: string, hide
     case 'PORTFOLIO_ITEM':
       await tx.portfolioItem.update({ where: { id }, data: { moderationHiddenAt: hide ? now : null } });
       return { portfolioItemId: id };
+    case 'DELIVERABLE': {
+      // Masks the submitted files/videos/links on every app read; the stored
+      // arrays (and the report's evidence snapshot) stay intact. Work, escrow
+      // and payment state are deliberately untouched.
+      const a = await tx.application.findUnique({ where: { id }, select: { deliverableHiddenAt: true, campaignId: true } });
+      if (!a) throw new AppError('Deliverable not found', HttpStatus.NOT_FOUND);
+      await tx.application.update({ where: { id }, data: { deliverableHiddenAt: hide ? now : null } });
+      return { applicationId: id, campaignId: a.campaignId, previouslyHidden: !!a.deliverableHiddenAt };
+    }
     case 'SERVICE': {
       const s = await tx.service.findUnique({ where: { id }, select: { status: true } });
       if (!s) throw new AppError('Service not found', HttpStatus.NOT_FOUND);
