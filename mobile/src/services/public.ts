@@ -6,13 +6,15 @@ import type { ApiCreatorListResponse, ApiCreatorPublicProfile } from '@/services
 import type { BusinessDetailResult, BusinessListItem } from '@/services/business';
 
 export const publicService = {
-  /** Only creators who opted into a public profile (`publicOnly=true`). */
+  /** Only creators who opted into a public profile (`publicOnly=true`),
+   *  those with a profile photo first (`avatarFirst=true`). */
   async listCreators(params?: { page?: number; limit?: number; search?: string }): Promise<ApiCreatorListResponse> {
     const res = await request<ApiCreatorListResponse>('GET', '/api/public/creators', undefined, {
       page:       params?.page ?? 1,
       limit:      params?.limit ?? 12,
       search:     params?.search?.trim() || undefined,
-      publicOnly: 'true',
+      publicOnly:  'true',
+      avatarFirst: 'true',
     });
     return res.data;
   },

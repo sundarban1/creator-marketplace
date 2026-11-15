@@ -138,6 +138,8 @@ export class CreatorRepository {
     page: number;
     limit: number;
     sort?: 'newest' | 'oldest' | 'followers';
+    /** Creators with a profile photo before those without (chronological browse only). */
+    avatarFirst?: boolean;
   }) {
     const where = await this.buildListWhere(filters);
     const rankPlatforms = filters.followersPlatforms?.length ? new Set(filters.followersPlatforms) : null;
@@ -217,6 +219,42 @@ export class CreatorRepository {
       return { creators: ranked.slice(skip, skip + filters.limit), total };
     }
 
+    const orderBy: Prisma.CreatorProfileOrderByWithRelationInput[] = [
+      { createdAt: filters.sort === 'oldest' ? 'asc' : 'desc' },
+      { id: 'asc' },
+    ];
+
+    // Creators with a profile photo first, then the rest — each segment in the
+    // usual chronological order. Paged across the two segments by offset so
+    // the order stays deterministic page to page (guest home / discover).
+    if (filters.avatarFirst && !filters.hasAvatar) {
+      const hasPhoto: Prisma.CreatorProfileWhereInput = { avatarUrl: { not: null, notIn: [''] } };
+      const withPhotoWhere: Prisma.CreatorProfileWhereInput = { AND: [where, hasPhoto] };
+      const noPhotoWhere: Prisma.CreatorProfileWhereInput = { AND: [where, { OR: [{ avatarUrl: null }, { avatarUrl: '' }] }] };
+
+      const [withPhotoCount, total] = await Promise.all([
+        prisma.creatorProfile.count({ where: withPhotoWhere }),
+        prisma.creatorProfile.count({ where }),
+      ]);
+      const fromWithPhoto = Math.max(0, Math.min(filters.limit, withPhotoCount - skip));
+      const fromNoPhoto = filters.limit - fromWithPhoto;
+      const [first, rest] = await Promise.all([
+        fromWithPhoto > 0
+          ? prisma.creatorProfile.findMany({ where: withPhotoWhere, skip, take: fromWithPhoto, orderBy, select })
+          : Promise.resolve([]),
+        fromNoPhoto > 0
+          ? prisma.creatorProfile.findMany({
+              where: noPhotoWhere,
+              skip: Math.max(0, skip - withPhotoCount),
+              take: fromNoPhoto,
+              orderBy,
+              select,
+            })
+          : Promise.resolve([]),
+      ]);
+      return { creators: [...first, ...rest], total };
+    }
+
     const [creators, total] = await Promise.all([
       prisma.creatorProfile.findMany({
         where,
@@ -227,7 +265,7 @@ export class CreatorRepository {
         // deterministic sort, Postgres can return the same row on two
         // different pages (or skip one entirely) as the result set shifts
         // between paginated queries.
-        orderBy: [{ createdAt: filters.sort === 'oldest' ? 'asc' : 'desc' }, { id: 'asc' }],
+        orderBy,
         select,
       }),
       prisma.creatorProfile.count({ where }),

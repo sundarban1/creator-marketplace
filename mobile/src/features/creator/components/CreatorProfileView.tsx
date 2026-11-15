@@ -193,7 +193,8 @@ function ChipRow({ items, primary }: { items: string[]; primary?: boolean }) {
   );
 }
 
-export function PlatformList({ platforms }: { platforms: MergedPlatform[] }) {
+/** `linksDisabled` — guests see the platforms but can't open the accounts. */
+export function PlatformList({ platforms, linksDisabled }: { platforms: MergedPlatform[]; linksDisabled?: boolean }) {
   const C = useAppColors();
   const { isDark } = useIsDark();
   const { t } = useLanguage();
@@ -203,11 +204,12 @@ export function PlatformList({ platforms }: { platforms: MergedPlatform[] }) {
         const info = platformInfo(p.platform);
         // A near-black brand tile (TikTok) melts into the dark card — outline it.
         const outlineTile = readableOnSurface(info.color, isDark, '') === '';
-        const canOpen = !!p.profileUrl;
+        const canOpen = !!p.profileUrl && !linksDisabled;
         return (
           <Pressable
             key={p.key}
             style={[styles.socialRow, { borderColor: C.border }]}
+            disabled={!canOpen}
             onPress={() => canOpen && Linking.openURL(p.profileUrl!).catch(() => {})}>
             <View
               style={[
@@ -728,12 +730,14 @@ export function CreatorProfileView({
               title={t('creatorDetailExtra.sectionWebsite')}
               icon="globe"
               action={isOwner ? { label: t('common.edit'), onPress: () => router.push('/(creator)/edit-profile' as never) } : undefined}>
+              {/* Guests see the address but can't open it — links work once signed in. */}
               <Pressable
                 style={styles.inlineRow}
+                disabled={isGuest}
                 onPress={() => Linking.openURL(vm.website!).catch(() => {})}
-                accessibilityRole="link">
-                <FontAwesome5 name="globe" solid size={14} color={C.brinjal1} />
-                <Text style={[styles.inlineText, { color: C.brinjal1 }]} numberOfLines={1}>{vm.website.replace(/^https?:\/\//, '')}</Text>
+                accessibilityRole={isGuest ? 'text' : 'link'}>
+                <FontAwesome5 name="globe" solid size={14} color={isGuest ? C.textSecondary : C.brinjal1} />
+                <Text style={[styles.inlineText, { color: isGuest ? C.text : C.brinjal1 }]} numberOfLines={1}>{vm.website.replace(/^https?:\/\//, '')}</Text>
               </Pressable>
             </InfoCard>
           ) : null}
@@ -741,7 +745,7 @@ export function CreatorProfileView({
           {/* Social platforms (visitor only) */}
           {isVisitor && vm.platforms.length > 0 && (
             <InfoCard title={t('creatorDetailExtra.sectionPlatforms')} icon="share-alt">
-              <PlatformList platforms={vm.platforms} />
+              <PlatformList platforms={vm.platforms} linksDisabled={isGuest} />
             </InfoCard>
           )}
 
@@ -844,7 +848,7 @@ export function CreatorProfileView({
                       accessibilityLabel={title}
                       onPress={() => {
                         if (hasMedia) setPreviewItem(item);
-                        else if (item.externalUrl) Linking.openURL(item.externalUrl).catch(() => {});
+                        else if (item.externalUrl && !isGuest) Linking.openURL(item.externalUrl).catch(() => {});
                       }}
                       // Signed-in visitors can report a single item (long-press or the flag).
                       onLongPress={isVisitor && !isGuest ? () => setReportPortfolioId(item.id) : undefined}>
@@ -863,7 +867,7 @@ export function CreatorProfileView({
                         <Text style={[styles.workTitle, { color: C.text }]} numberOfLines={1}>{title}</Text>
                         {!!subline && (
                           <View style={styles.workSubRow}>
-                            {platform && !hasMedia && !item.category && (
+                            {platform && !hasMedia && !item.category && !isGuest && (
                               <FontAwesome5 name="external-link-alt" solid size={9} color={C.textSecondary} />
                             )}
                             <Text style={[styles.workCategory, { color: C.textSecondary }]} numberOfLines={1}>{subline}</Text>
@@ -885,6 +889,7 @@ export function CreatorProfileView({
                   <Pressable
                     key={link.id}
                     style={[styles.socialRow, { borderColor: C.border }]}
+                    disabled={isGuest}
                     onPress={() => Linking.openURL(link.url).catch(() => {})}>
                     <View
                       style={[
@@ -898,7 +903,7 @@ export function CreatorProfileView({
                       <FontAwesome5 name="link" solid size={16} color={C.brinjal1} />
                     </View>
                     <Text style={[styles.portfolioLabel, { color: C.text }]} numberOfLines={1}>{link.label}</Text>
-                    <FontAwesome5 name="external-link-alt" solid size={15} color={C.brinjal1} />
+                    {!isGuest && <FontAwesome5 name="external-link-alt" solid size={15} color={C.brinjal1} />}
                   </Pressable>
                 ))}
               </View>

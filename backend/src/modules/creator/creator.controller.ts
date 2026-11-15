@@ -91,6 +91,9 @@ export class CreatorController {
         // `publicOnly=true` — mobile guest browsing: only creators who opted
         // into a public profile. Opt-in so the web listing is unchanged.
         publicOnly: verified || req.query.publicOnly === 'true' || undefined,
+        // `avatarFirst=true` — creators with a profile photo listed first
+        // (mobile guest home / discover), the rest after.
+        avatarFirst: req.query.avatarFirst === 'true' || undefined,
         lang: req.language,
         viewerUserId: req.user?.id,
       });
