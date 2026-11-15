@@ -248,7 +248,14 @@ export default function GuestHomeScreen() {
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
-          <Text style={[s.finalTitle, { color: C.text }]} accessibilityRole="header">{t('guest.final.title')}</Text>
+          <Text
+            style={[s.finalTitle, { color: C.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+            accessibilityRole="header">
+            {t('guest.final.title')}
+          </Text>
           <Pressable
             onPress={() => openGuestSignup()}
             style={({ pressed }) => [s.pillBtn, s.finalBtn, { backgroundColor: C.accent }, pressed && { opacity: 0.9 }]}
@@ -434,7 +441,7 @@ const s = StyleSheet.create({
   audiencePhoto:   { alignSelf: 'stretch' },
 
   // Final CTA
-  final:      { marginHorizontal: SCREEN_GUTTER, marginTop: SPACING.xl + 4, borderRadius: RADIUS.lg, padding: SPACING.xl, minHeight: 180, justifyContent: 'center', gap: SPACING.lg, overflow: 'hidden' },
-  finalTitle: { fontSize: FONT_SIZE.xl, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.xl), maxWidth: '75%' },
-  finalBtn:   { flex: 0, alignSelf: 'flex-start', paddingHorizontal: SPACING.xl },
+  final:      { marginHorizontal: SCREEN_GUTTER, marginTop: SPACING.xl + 4, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.lg + 4, minHeight: 140, justifyContent: 'center', gap: SPACING.md, overflow: 'hidden' },
+  finalTitle: { fontSize: FONT_SIZE.xl, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.xl) },
+  finalBtn:   { flex: 0, alignSelf: 'center', paddingHorizontal: SPACING.xl },
 });
