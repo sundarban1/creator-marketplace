@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import { useAppColors } from '@/context/ThemeContext';
+import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
@@ -25,6 +25,8 @@ import { F, FONT_SIZE, RADIUS, SHADOW, SPACING, lineHeightFor } from '@/utilitie
 import { openCreatorProfile } from './components';
 
 const PURPLE = '#7C3AED';
+// #7C3AED text on dark surfaces is below readable contrast — lighter on dark.
+const PURPLE_ON_DARK = '#A78BFA';
 const GREEN = '#059669';
 
 function shortDate(iso: string | null | undefined): string {
@@ -101,6 +103,7 @@ export function OpportunityRow({ campaign }: { campaign: Campaign }) {
 /** Thumbnail · "Competition" pill, title, short description · prize + deadline panel. */
 export function CompetitionRow({ c }: { c: CompetitionCard }) {
   const C = useAppColors();
+  const isDark = useIsDark();
   const { t } = useLanguage();
   const prize = c.prizePool ? npr(c.prizePool.amount) : (c.prizeHighlights[0]?.title ?? '');
 
@@ -116,7 +119,7 @@ export function CompetitionRow({ c }: { c: CompetitionCard }) {
       </View>
 
       <View style={s.body}>
-        <Pill label={t('guest.card.competition')} color={PURPLE} />
+        <Pill label={t('guest.card.competition')} color={isDark ? PURPLE_ON_DARK : PURPLE} />
         <Text style={[s.title, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
         {c.summary ? <Text style={[s.meta, { color: C.textSecondary }]} numberOfLines={2}>{c.summary}</Text> : null}
       </View>

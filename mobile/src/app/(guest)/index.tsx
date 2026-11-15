@@ -49,6 +49,7 @@ function heroMetrics(screenW: number) {
     title,
     titleLineLatin: Math.round(title * 1.18),
     art,
+    artRadius: r(24),
     // The art floats (absolute) over the right of the row, so the text column
     // reserves at least the art's height: the row then ends at whichever is
     // lower — the image or a long, wrapped headline — never at a fixed number.
@@ -77,6 +78,9 @@ function pageSpacing(screenH: number) {
 // the hero's fixed two-column layout would otherwise break apart.
 const HERO_FONT_CAP = 1.3;
 const PURPLE = '#7C3AED';
+// Lighter purple for purple *foreground* (icons/text) on dark surfaces, where
+// #7C3AED falls below readable contrast. White-on-purple fills keep PURPLE.
+const PURPLE_ON_DARK = '#A78BFA';
 
 export default function GuestHomeScreen() {
   const C = useAppColors();
@@ -124,7 +128,15 @@ export default function GuestHomeScreen() {
 
         {/* ── B. Hero ── headline left, collaboration art right */}
         <View style={s.hero}>
-          <ExpoImage source={HERO_ART} style={[s.heroArt, { width: hm.art, height: hm.art }]} contentFit="contain" accessible={false} />
+          {/* The art PNG has a solid near-white background: rounded so its edge
+              reads as a soft card (invisible on light, intentional on dark),
+              and slightly dimmed on dark so it doesn't glare against black. */}
+          <ExpoImage
+            source={HERO_ART}
+            style={[s.heroArt, { width: hm.art, height: hm.art, borderRadius: hm.artRadius, opacity: isDark ? 0.92 : 1 }]}
+            contentFit="contain"
+            accessible={false}
+          />
           <View style={[s.heroText, hm.text]}>
             <View style={[s.badgePill, { marginTop: hm.pillLift, marginBottom: hm.pillGap, backgroundColor: C.surface, borderColor: withAlpha(C.accent, 0.3) }]}>
               <View style={[s.badgeDot, { backgroundColor: C.accent }]} />
@@ -276,7 +288,12 @@ export default function GuestHomeScreen() {
               mountains in both light and dark mode. */}
           <ExpoImage source={FINAL_BG} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="right bottom" accessible={false} />
           <LinearGradient
-            colors={[C.accentLight, withAlpha(C.accentLight, 0.85), withAlpha(C.accentLight, 0.1)]}
+            // The photo is bright end to end. On light the dark title reads fine
+            // over it; on dark the title is white, so the scrim stays heavy all
+            // the way across instead of fading out on the right.
+            colors={isDark
+              ? [C.accentLight, withAlpha(C.accentLight, 0.92), withAlpha(C.accentLight, 0.7)]
+              : [C.accentLight, withAlpha(C.accentLight, 0.85), withAlpha(C.accentLight, 0.1)]}
             locations={[0, 0.5, 1]}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
@@ -324,6 +341,7 @@ const AUDIENCES: {
 /** "For creators / For businesses" — a two-option slider over a single tinted card. */
 function AudienceSwitcher() {
   const C = useAppColors();
+  const isDark = useIsDark();
   // Photo column ≈ 29% of the screen (112 on a 393pt phone), so the copy
   // column keeps enough room on compact phones.
   const { width: screenW } = useWindowDimensions();
@@ -396,7 +414,7 @@ function AudienceSwitcher() {
           <View style={s.points}>
             {[1, 2, 3, 4].map((n) => (
               <View key={n} style={s.point}>
-                <FontAwesome5 name="check" size={10} color={tone} style={{ marginTop: 4 }} />
+                <FontAwesome5 name="check" size={10} color={isDark && tone === PURPLE ? PURPLE_ON_DARK : tone} style={{ marginTop: 4 }} />
                 <Text style={[s.pointText, { color: C.text }]}>{t(`${current.i18n}.p${n}`)}</Text>
               </View>
             ))}
@@ -425,7 +443,7 @@ const s = StyleSheet.create({
   // Hero
   hero:        { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, overflow: 'hidden' },
   // Sizes / offsets below are the 393pt design; heroMetrics() scales them inline.
-  heroArt:     { position: 'absolute', right: -4, top: SPACING.lg },
+  heroArt:     { position: 'absolute', right: -4, top: SPACING.lg, overflow: 'hidden' },
   heroText:    { width: '60%', gap: SPACING.md },
   badgePill: {
     alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', maxWidth: '100%',
