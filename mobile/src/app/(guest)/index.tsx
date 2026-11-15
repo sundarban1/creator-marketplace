@@ -1,7 +1,7 @@
 // Guest Home — the signed-out discovery homepage. Real published content only
 // (events, competitions, opted-in creator profiles) from the public API;
 // every account-only action routes through the guest login prompt.
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { openGuestSignup } from '@/components/GuestAuthPrompt';
 import { Skeleton } from '@/components/Skeleton';
-import { BUSINESS_DARK_COLORS, useAppColors, useIsDark } from '@/context/ThemeContext';
+import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { FriendlyEmpty, GuestHeader, InlineNotice, RailSkeleton, SectionHeader } from '@/features/guest/components';
 import { CREATOR_PHOTO_CARD_W, CompetitionRow, CreatorPhotoCard, OpportunityRow } from '@/features/guest/homeCards';
@@ -23,7 +23,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorCompetitionService } from '@/services/competition';
 import { publicService } from '@/services/public';
 import { withAlpha } from '@/utilities/color';
-import { BUSINESS_COLORS, F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
 
 const HERO_ART      = require('@/assets/images/login/creator3.png');
 const CREATOR_PHOTO = require('@/assets/images/login/login_1.jpg');
@@ -31,6 +31,9 @@ const BUSINESS_PHOTO = require('@/assets/images/login/business.jpg');
 const FINAL_BG      = require('@/assets/images/login/himalaya.jpg');
 
 const TRACK_PAD = 4;
+// Green for "together" in the hero tagline: deep green on light; the deep
+// shade is near-invisible on dark, so dark mode uses a brighter Kolab green.
+const TOGETHER_GREEN = { light: '#012F1F', dark: '#01AF57' };
 
 // The hero was designed on a 393pt-wide phone (iPhone 15/16/17 Pro). Its
 // fixed sizes scale with the screen width so small (SE, compact Android) and
@@ -101,10 +104,10 @@ export default function GuestHomeScreen() {
   const hm = heroMetrics(screenW);
   const sp = pageSpacing(screenH);
   const sectionStyle = [s.section, { marginTop: sp.section }];
-  const isDark = useIsDark();
   // Tagline highlights in Kolab's three brand colours, in order:
-  // creators → orange, opportunities → brinjal, together → business green.
-  const taglineColors = [C.accent, C.brinjal1, (isDark ? BUSINESS_DARK_COLORS : BUSINESS_COLORS).brinjal1];
+  // creators → orange, opportunities → brinjal, together → Kolab green.
+  const isDark = useIsDark();
+  const taglineColors = [C.accent, C.brinjal1, isDark ? TOGETHER_GREEN.dark : TOGETHER_GREEN.light];
 
   const eventList = events.data?.campaigns ?? [];
   const compList = competitions.data?.items ?? [];
@@ -238,23 +241,30 @@ export default function GuestHomeScreen() {
           <AudienceSwitcher />
         </View>
 
-        {/* ── H. How Kolab Works ── four connected steps */}
+        {/* ── H. How Kolab Works ── four steps joined by arrows */}
         <View style={sectionStyle}>
           <SectionHeader title={t('guest.how.title')} />
           <View style={s.steps}>
-            <View style={[s.stepsLine, { backgroundColor: C.border }]} pointerEvents="none" />
             {([
               ['search', 'discover'],
               ['users', 'connect'],
               ['handshake', 'collaborate'],
               ['chart-line', 'grow'],
             ] as const).map(([icon, key], i) => (
-              <View key={key} style={s.step} accessible accessibilityLabel={`${i + 1}. ${t(`guest.how.${key}`)}. ${t(`guest.how.${key}Body`)}`}>
-                <View style={[s.stepIcon, { backgroundColor: C.accentLight, borderColor: C.background }]}>
-                  <FontAwesome5 name={icon} size={16} color={C.accent} />
+              <Fragment key={key}>
+                {i > 0 && (
+                  <View style={s.stepArrow} pointerEvents="none" accessible={false}>
+                    <FontAwesome5 name="arrow-right" size={12} color={C.accent} />
+                  </View>
+                )}
+                {/* The step number stays in the screen-reader label only. */}
+                <View style={s.step} accessible accessibilityLabel={`${i + 1}. ${t(`guest.how.${key}`)}. ${t(`guest.how.${key}Body`)}`}>
+                  <View style={[s.stepIcon, { backgroundColor: C.accentLight, borderColor: C.background }]}>
+                    <FontAwesome5 name={icon} size={16} color={C.accent} />
+                  </View>
+                  <Text style={[s.stepTitle, { color: C.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t(`guest.how.${key}`)}</Text>
                 </View>
-                <Text style={[s.stepTitle, { color: C.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{`${i + 1}. ${t(`guest.how.${key}`)}`}</Text>
-              </View>
+              </Fragment>
             ))}
           </View>
         </View>
@@ -307,7 +317,7 @@ type Audience = 'creators' | 'businesses';
 const AUDIENCES: {
   key: Audience; icon: keyof typeof FontAwesome5.glyphMap; i18n: string; role: 'CREATOR' | 'BUSINESS'; photo: number;
 }[] = [
-  { key: 'creators',   icon: 'palette', i18n: 'guest.forCreators',   role: 'CREATOR',  photo: CREATOR_PHOTO },
+  { key: 'creators',   icon: 'user-friends', i18n: 'guest.forCreators',   role: 'CREATOR',  photo: CREATOR_PHOTO },
   { key: 'businesses', icon: 'store',   i18n: 'guest.forBusinesses', role: 'BUSINESS', photo: BUSINESS_PHOTO },
 ];
 
@@ -382,10 +392,6 @@ function AudienceSwitcher() {
       {/* Tinted card: copy left, photo right */}
       <View style={[s.audience, { backgroundColor: tint }]}>
         <View style={s.audienceText}>
-          <View style={s.eyebrowRow}>
-            <FontAwesome5 name={current.icon} size={12} color={tone} />
-            <Text style={[s.eyebrow, { color: tone }]}>{t(`${current.i18n}.eyebrow`)}</Text>
-          </View>
           <Text style={[s.audienceTitle, { color: C.text }]}>{t(`${current.i18n}.title`)}</Text>
           <View style={s.points}>
             {[1, 2, 3, 4].map((n) => (
@@ -440,7 +446,8 @@ const s = StyleSheet.create({
 
   // How it works
   steps:     { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER },
-  stepsLine: { position: 'absolute', top: 24, left: SCREEN_GUTTER + 40, right: SCREEN_GUTTER + 40, height: 1.5 },
+  // Arrow between steps, vertically centred on the 48pt icon circles.
+  stepArrow: { height: 48, justifyContent: 'center', paddingHorizontal: 2 },
   step:      { flex: 1, alignItems: 'center', gap: SPACING.sm },
   stepIcon:  { width: 48, height: 48, borderRadius: 24, borderWidth: 4, alignItems: 'center', justifyContent: 'center' },
   stepTitle: { fontSize: 12, fontFamily: F.semibold },
@@ -453,8 +460,6 @@ const s = StyleSheet.create({
   segmentText:  { flexShrink: 1 },
   audience:     { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', minHeight: 230 },
   audienceText: { flex: 1, padding: SPACING.lg, paddingRight: SPACING.sm, gap: SPACING.sm },
-  eyebrowRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  eyebrow:      { fontSize: 12, fontFamily: F.bold },
   audienceTitle: { fontSize: FONT_SIZE.lg + 1, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.lg + 1) },
   points:       { gap: 4 },
   point:        { flexDirection: 'row', gap: 7 },
