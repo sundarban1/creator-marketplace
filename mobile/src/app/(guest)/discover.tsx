@@ -49,7 +49,13 @@ export default function GuestDiscoverScreen() {
     placeholderData: keepPreviousData,
     staleTime: STALE.list,
   });
-  const rows = query.data?.pages.flatMap((p) => p.rows) ?? [];
+  const allRows = query.data?.pages.flatMap((p) => p.rows) ?? [];
+  // keepPreviousData keeps the OTHER tab's rows on screen while the new tab
+  // loads — show the skeleton instead of a flash of the wrong list.
+  const wantKind = tab === 'creators' ? 'creator' : 'business';
+  const showingStale = query.isPlaceholderData && allRows.length > 0 && allRows[0].kind !== wantKind;
+  const loading = query.isPending || showingStale;
+  const rows = loading ? [] : allRows;
 
   const tabs = [
     { key: 'creators',   label: t('guest.discover.creators'),   icon: 'user-friends' as const, color: C.accent },
@@ -70,32 +76,37 @@ export default function GuestDiscoverScreen() {
         <TabSlider tabs={tabs} active={tab} onChange={(k) => setTab(k as Tab)} justify />
       </View>
 
-      {query.isPending ? (
-        <View style={s.list}><RowSkeletons count={7} /></View>
-      ) : query.isError && rows.length === 0 ? (
-        <EmptyState faIcon="wifi" title={t('guest.loadFailed')} action={{ label: t('guest.retry'), onPress: () => void query.refetch() }} />
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={rows}
-          keyExtractor={(r) => `${r.kind}-${r.item.id}`}
-          renderItem={({ item }) => item.kind === 'creator' ? <CreatorRow creator={item.item} /> : <BusinessRow business={item.item} />}
-          contentContainerStyle={s.list}
-          ItemSeparatorComponent={Gap}
-          keyboardDismissMode="on-drag"
-          onEndReached={() => { if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage(); }}
-          onEndReachedThreshold={0.4}
-          refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => void query.refetch()} tintColor={C.accent} />}
-          ListEmptyComponent={
+      {/* One FlatList stays mounted through loading → data. Swapping a
+          skeleton View for a freshly mounted list made the first rows settle a
+          few points higher on iOS (visible "pull up" on first visit). */}
+      <FlatList
+        ref={listRef}
+        data={rows}
+        keyExtractor={(r) => `${r.kind}-${r.item.id}`}
+        renderItem={({ item }) => item.kind === 'creator' ? <CreatorRow creator={item.item} /> : <BusinessRow business={item.item} />}
+        contentContainerStyle={s.list}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
+        ItemSeparatorComponent={Gap}
+        keyboardDismissMode="on-drag"
+        onEndReached={() => { if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage(); }}
+        onEndReachedThreshold={0.4}
+        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => void query.refetch()} tintColor={C.accent} />}
+        ListEmptyComponent={
+          loading ? (
+            <RowSkeletons count={7} height={78} />
+          ) : query.isError ? (
+            <EmptyState faIcon="wifi" title={t('guest.loadFailed')} action={{ label: t('guest.retry'), onPress: () => void query.refetch() }} />
+          ) : (
             <EmptyState
               faIcon={tab === 'creators' ? 'users' : 'store'}
               title={q ? t('guest.empty.searchTitle') : tab === 'creators' ? t('guest.empty.creators') : t('guest.empty.businesses')}
               subtitle={q ? t('guest.empty.searchBody') : undefined}
             />
-          }
-          ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={{ paddingVertical: SPACING.lg }} color={C.accent} /> : null}
-        />
-      )}
+          )
+        }
+        ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={{ paddingVertical: SPACING.lg }} color={C.accent} /> : null}
+      />
     </SafeAreaView>
   );
 }

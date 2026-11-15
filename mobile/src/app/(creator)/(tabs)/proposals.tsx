@@ -542,7 +542,7 @@ export default function ProposalsScreen() {
               subtitle={emptyMsg.sub}
               // Every empty tab — not just "All" — dead-ends unless the creator
               // goes and applies to something, so all of them offer the same way
-              // out: straight to the Find Work tab.
+              // out: straight to the Discover tab.
               action={{ label: t('proposal.creator.browseWork'), onPress: () => router.push('/(creator)/(tabs)/discover') }}
             />
           }

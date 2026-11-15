@@ -3,9 +3,9 @@
 // screen, where Join asks a guest to log in first.
 import { useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { TabSlider } from '@/components/TabSlider';
@@ -27,7 +27,15 @@ export default function GuestCompetitionsScreen() {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [q] = useDebouncedValue(search.trim(), 350);
-  const [tab, setTab] = useState<Tab>('open');
+  // `?tab=results` (e.g. from guest home's empty state) opens on Results.
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<Tab>(params.tab === 'results' ? 'results' : 'open');
+  const [seenParam, setSeenParam] = useState(params.tab);
+  // Tabs stay mounted, so a later navigate with a new ?tab must still switch.
+  if (params.tab !== seenParam) {
+    setSeenParam(params.tab);
+    if (params.tab === 'results' || params.tab === 'open') setTab(params.tab);
+  }
   const listRef = useRef<FlatList>(null);
   useScrollToTopOnTabPress('guest-competitions', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
@@ -36,7 +44,8 @@ export default function GuestCompetitionsScreen() {
     queryFn: ({ pageParam }) => creatorCompetitionService.discover({ tab, q: q || undefined, page: pageParam, limit: PAGE_SIZE }),
     initialPageParam: 1,
     getNextPageParam: (last) => (last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined),
-    placeholderData: keepPreviousData,
+    // Keep old results while a search is typed; not across a filter switch.
+    placeholderData: (prev, prevQuery) => (prevQuery?.queryKey[2] === tab ? prev : undefined),
     staleTime: STALE.list,
   });
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
@@ -60,34 +69,38 @@ export default function GuestCompetitionsScreen() {
         <TabSlider tabs={tabs} active={tab} onChange={(k) => setTab(k as Tab)} justify />
       </View>
 
-      {query.isPending ? (
-        <View style={s.list}><RowSkeletons count={3} height={280} /></View>
-      ) : query.isError && items.length === 0 ? (
-        <EmptyState faIcon="wifi" title={t('guest.loadFailed')} action={{ label: t('guest.retry'), onPress: () => void query.refetch() }} />
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={items}
-          keyExtractor={(c) => c.id}
-          renderItem={({ item }) => (
-            <CompetitionCardItem c={item} showSummary onPress={() => router.push({ pathname: '/competition-detail', params: { id: item.id } })} />
-          )}
-          contentContainerStyle={s.list}
-          ItemSeparatorComponent={Gap}
-          keyboardDismissMode="on-drag"
-          onEndReached={() => { if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage(); }}
-          onEndReachedThreshold={0.4}
-          refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => void query.refetch()} tintColor={C.accent} />}
-          ListEmptyComponent={
-            <EmptyState
-              faIcon="trophy"
-              title={q ? t('guest.empty.searchTitle') : tab === 'results' ? t('comp.emptyResultsTitle') : t('guest.empty.competitions')}
-              subtitle={q ? t('guest.empty.searchBody') : undefined}
-            />
-          }
-          ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={{ paddingVertical: SPACING.lg }} color={C.accent} /> : null}
-        />
-      )}
+      {/* One FlatList stays mounted through loading → data (avoids the first-visit
+          layout jump from swapping a skeleton View for a new list). */}
+      <FlatList
+        ref={listRef}
+        data={items}
+        keyExtractor={(c) => c.id}
+        renderItem={({ item }) => (
+          <CompetitionCardItem c={item} showSummary onPress={() => router.push({ pathname: '/competition-detail', params: { id: item.id } })} />
+        )}
+        contentContainerStyle={s.list}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
+        ItemSeparatorComponent={Gap}
+        keyboardDismissMode="on-drag"
+        onEndReached={() => { if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage(); }}
+        onEndReachedThreshold={0.4}
+        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => void query.refetch()} tintColor={C.accent} />}
+        ListEmptyComponent={
+          query.isPending ? (
+            <RowSkeletons count={3} height={280} />
+          ) : query.isError ? (
+            <EmptyState faIcon="wifi" title={t('guest.loadFailed')} action={{ label: t('guest.retry'), onPress: () => void query.refetch() }} />
+          ) : (
+              <EmptyState
+                faIcon="trophy"
+                title={q ? t('guest.empty.searchTitle') : tab === 'results' ? t('comp.emptyResultsTitle') : t('guest.empty.competitions')}
+                subtitle={q ? t('guest.empty.searchBody') : undefined}
+              />
+          )
+        }
+        ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={{ paddingVertical: SPACING.lg }} color={C.accent} /> : null}
+      />
     </SafeAreaView>
   );
 }

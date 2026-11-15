@@ -2074,9 +2074,9 @@ export default function CampaignWorkspaceScreen() {
           <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.paymentDetails')}</Text>
           <View style={{ marginTop: 12, gap: 10 }}>
             {[
-              { label: t('activityTimeline.paymentCreatorFee'),   value: `NPR ${crFee.toLocaleString()}` },
-              { label: t('activityTimeline.paymentPlatformFee', { pct: flags.paymentFeePercent }), value: `NPR ${pfFee.toLocaleString()}` },
-              { label: t('activityTimeline.paymentTax', { pct: flags.paymentTaxPercent }),         value: `NPR ${tax.toLocaleString()}` },
+              { label: t('activityTimeline.paymentCreatorFee'),   value: `Rs. ${crFee.toLocaleString()}` },
+              { label: t('activityTimeline.paymentPlatformFee', { pct: flags.paymentFeePercent }), value: `Rs. ${pfFee.toLocaleString()}` },
+              { label: t('activityTimeline.paymentTax', { pct: flags.paymentTaxPercent }),         value: `Rs. ${tax.toLocaleString()}` },
             ].map((row, idx) => (
               <View key={idx} style={py.row}>
                 <Text style={[py.label, { color: C.textSecondary }]}>{row.label}</Text>
@@ -2086,7 +2086,7 @@ export default function CampaignWorkspaceScreen() {
             <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
             <View style={py.row}>
               <Text style={[py.totalLabel, { color: C.text }]}>{t('activityTimeline.paymentTotal')}</Text>
-              <Text style={[py.totalValue, { color: '#16A34A' }]}>NPR {total.toLocaleString()}</Text>
+              <Text style={[py.totalValue, { color: '#16A34A' }]}>Rs. {total.toLocaleString()}</Text>
             </View>
             <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
             <View style={py.row}>
@@ -2177,10 +2177,10 @@ export default function CampaignWorkspaceScreen() {
         <Text style={sh.sub}>{t('activityTimeline.modalPaySub')}</Text>
         <View style={{ gap: 8, marginVertical: 14 }}>
           {([[t('activityTimeline.feeCreator'), crFee], [t('activityTimeline.feePlatform', { pct: flags.paymentFeePercent }), pfFee], [t('activityTimeline.feeTax', { pct: flags.paymentTaxPercent }), tax]] as [string, number][]).map(([l, v]) => (
-            <View key={l} style={sh.sumRow}><Text style={sh.sumLabel}>{l}</Text><Text style={sh.sumValue}>NPR {v.toLocaleString()}</Text></View>
+            <View key={l} style={sh.sumRow}><Text style={sh.sumLabel}>{l}</Text><Text style={sh.sumValue}>Rs. {v.toLocaleString()}</Text></View>
           ))}
           <View style={[sh.divider, { backgroundColor: '#E5E7EB' }]} />
-          <View style={sh.sumRow}><Text style={sh.totalLabel}>{t('activityTimeline.feeTotal')}</Text><Text style={sh.totalValue}>NPR {total.toLocaleString()}</Text></View>
+          <View style={sh.sumRow}><Text style={sh.totalLabel}>{t('activityTimeline.feeTotal')}</Text><Text style={sh.totalValue}>Rs. {total.toLocaleString()}</Text></View>
         </View>
         <Text style={sh.sectionLabel}>{t('activityTimeline.modalPayWith')}</Text>
         <View style={{ gap: 8, marginBottom: 16 }}>

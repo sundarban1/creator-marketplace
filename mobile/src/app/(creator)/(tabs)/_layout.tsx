@@ -27,11 +27,11 @@ type IoniconName = keyof typeof FontAwesome5.glyphMap;
 // "notifications" is intentionally absent here — it stays a real, routable
 // screen (see the <Tabs.Screen> entry below) reached from Home's header bell
 // rather than a bottom tab bar icon. "proposals" (Applications) IS on the bar:
-// the spec's Service Giver navigation is Home | Find Work | Applications |
+// the spec's Service Giver navigation is Home | Discover (formerly Find Work) | Applications |
 // Messages | Profile.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home',          iconActive: 'home',          label: 'Home' },
-  discover:      { icon: 'search',        iconActive: 'search',        label: 'Find Work' },
+  discover:      { icon: 'search',        iconActive: 'search',        label: 'Discover' },
   proposals:     { icon: 'file-alt',      iconActive: 'file-alt',      label: 'Applications', color: '#059669' },
   messages:      { icon: 'comment',    iconActive: 'comment',    label: 'Messages',   color: '#2563EB' },
   profile:       { icon: 'user', iconActive: 'user', label: 'Profile' },

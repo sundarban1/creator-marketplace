@@ -113,7 +113,6 @@ export function CompetitionCardItem({ c, onPress, showSummary = false }: { c: Co
         )}
         {(c.prizePool || c.prizeHighlights.length > 0) && (
           <View style={s.prizeRow}>
-            <FontAwesome5 name="trophy" size={12} color={ORANGE} style={{ marginTop: 3 }} />
             <Text style={[s.prizeText, { color: C.text }]} numberOfLines={2}>
               {c.prizePool ? t('comp.prizePool', { amount: npr(c.prizePool.amount) }) : c.prizeHighlights.map((p) => p.title).join(' · ')}
             </Text>

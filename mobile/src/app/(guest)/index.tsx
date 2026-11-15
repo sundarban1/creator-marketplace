@@ -10,13 +10,11 @@ import { Animated, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { openGuestSignup } from '@/components/GuestAuthPrompt';
+import { Skeleton } from '@/components/Skeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { CampaignCard } from '@/features/creator/components/CampaignCard';
-import { CompetitionCardItem } from '@/features/creator/competition/parts';
-import {
-  Bullet, CREATOR_CARD_W, CreatorCard, GuestHeader, InlineNotice, RailSkeleton, SectionHeader,
-} from '@/features/guest/components';
+import { FriendlyEmpty, GuestHeader, InlineNotice, RailSkeleton, SectionHeader } from '@/features/guest/components';
+import { CREATOR_PHOTO_CARD_W, CompetitionRow, CreatorPhotoCard, OpportunityRow } from '@/features/guest/homeCards';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { STALE } from '@/lib/queryClient';
@@ -24,27 +22,31 @@ import { campaignService } from '@/services/campaign';
 import { creatorCompetitionService } from '@/services/competition';
 import { publicService } from '@/services/public';
 import { withAlpha } from '@/utilities/color';
-import { COLORS, F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
 
-const HERO = require('@/assets/images/login/login.jpg');
-const COMP_CARD_W = 286;
+const HERO_ART      = require('@/assets/images/login/creator3.png');
+const CREATOR_PHOTO = require('@/assets/images/login/login_1.jpg');
+const BUSINESS_PHOTO = require('@/assets/images/login/business.jpg');
+const FINAL_BG      = require('@/assets/images/login/himalaya.jpg');
+
 const RAIL_GAP = SPACING.md;
 const TRACK_PAD = 4;
+const PURPLE = '#7C3AED';
 
 export default function GuestHomeScreen() {
   const C = useAppColors();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTopOnTabPress('guest-index', () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
 
   const events = useQuery({
     queryKey: ['guest', 'home', 'events'],
-    queryFn: () => campaignService.list({ limit: 8 }),
+    queryFn: () => campaignService.list({ limit: 3 }),
     staleTime: STALE.list,
   });
   const competitions = useQuery({
     queryKey: ['guest', 'home', 'competitions'],
-    queryFn: () => creatorCompetitionService.discover({ tab: 'open', limit: 6 }),
+    queryFn: () => creatorCompetitionService.discover({ tab: 'open', limit: 2 }),
     staleTime: STALE.list,
   });
   const creators = useQuery({
@@ -67,126 +69,102 @@ export default function GuestHomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}>
 
-        {/* ── B. Hero ── */}
-        <View style={s.heroWrap}>
-          <View style={[s.hero, SHADOW.raised]}>
-            <ExpoImage source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
-            <LinearGradient
-              colors={[withAlpha(COLORS.brinjal2, 0.25), withAlpha(COLORS.brinjal2, 0.7), withAlpha(COLORS.brinjal2, 0.96)]}
-              locations={[0, 0.45, 1]}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
-            {/* Creator ⇄ Business — the two sides Kolab connects */}
-            <View style={s.heroPills}>
-              <View style={s.heroPill}>
-                <FontAwesome5 name="camera" size={11} color="#fff" />
-                <Text style={s.heroPillText}>{t('guest.hero.creators')}</Text>
-              </View>
-              <FontAwesome5 name="exchange-alt" size={12} color={withAlpha('#FFFFFF', 0.85)} />
-              <View style={s.heroPill}>
-                <FontAwesome5 name="store" size={11} color="#fff" />
-                <Text style={s.heroPillText}>{t('guest.hero.businesses')}</Text>
-              </View>
-            </View>
-            <View style={s.heroBody}>
-              <Text style={s.heroTitle} accessibilityRole="header">{t('guest.hero.headline')}</Text>
-              <Text style={s.heroTagline}>{t('guest.hero.tagline')}</Text>
-              <Text style={s.heroDesc}>{t('guest.hero.description')}</Text>
-              <View style={s.heroCtas}>
-                <Pressable
-                  onPress={() => router.navigate('/(guest)/events')}
-                  style={({ pressed }) => [s.heroBtn, { backgroundColor: C.accent }, pressed && { opacity: 0.9 }]}
-                  accessibilityRole="button">
-                  <Text style={s.heroBtnText}>{t('guest.hero.explore')}</Text>
-                  <FontAwesome5 name="arrow-right" size={12} color="#fff" />
-                </Pressable>
-                <Pressable
-                  onPress={() => openGuestSignup()}
-                  style={({ pressed }) => [s.heroBtn, s.heroBtnGhost, pressed && { opacity: 0.9 }]}
-                  accessibilityRole="button">
-                  <Text style={s.heroBtnText}>{t('guest.createAccount')}</Text>
-                </Pressable>
-              </View>
-            </View>
+        {/* ── B. Hero ── headline left, collaboration art on a soft blob right */}
+        <View style={s.hero}>
+          <View style={[s.heroBlob, { backgroundColor: C.accentLight }]} pointerEvents="none" />
+          <ExpoImage source={HERO_ART} style={s.heroArt} contentFit="contain" accessible={false} />
+          <View style={s.heroText}>
+            <Text
+              style={[s.heroTitle, { color: C.text, lineHeight: language === 'ne' ? lineHeightFor(34) : 40 }]}
+              accessibilityRole="header">
+              {t('guest.hero.headlineLead')}{' '}
+              <Text style={{ color: C.accent }}>{t('guest.hero.headlineAccent')}</Text>
+            </Text>
+            <Text style={[s.heroTagline, { color: C.textSecondary }]}>{t('guest.hero.tagline')}</Text>
+          </View>
+          <Text style={[s.heroDesc, { color: C.textSecondary }]}>{t('guest.hero.description')}</Text>
+          <View style={s.heroCtas}>
+            <Pressable
+              onPress={() => router.navigate('/(guest)/events')}
+              style={({ pressed }) => [s.pillBtn, { backgroundColor: C.accent }, SHADOW.raised, { shadowColor: C.accent }, pressed && { opacity: 0.9 }]}
+              accessibilityRole="button">
+              <Text style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.hero.explore')}</Text>
+              <FontAwesome5 name="arrow-right" size={12} color="#fff" />
+            </Pressable>
+            <Pressable
+              onPress={() => openGuestSignup()}
+              style={({ pressed }) => [s.pillBtn, { borderWidth: 1.5, borderColor: C.border, backgroundColor: C.surface }, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button">
+              <Text style={[s.pillBtnText, { color: C.text }]}>{t('guest.createAccount')}</Text>
+            </Pressable>
           </View>
         </View>
 
         {/* ── C. Discover Opportunities ── */}
         <View style={s.section}>
-          <SectionHeader
-            title={t('guest.sections.opportunities')}
-            subtitle={t('guest.sections.opportunitiesSub')}
-            onSeeAll={() => router.navigate('/(guest)/events')}
-          />
+          <SectionHeader title={t('guest.sections.opportunities')} onSeeAll={() => router.navigate('/(guest)/events')} />
           {events.isPending ? (
-            <RailSkeleton width={260} height={300} />
+            <RowSkeletons count={2} />
           ) : events.isError && eventList.length === 0 ? (
             <InlineNotice icon="wifi" text={t('guest.loadFailed')} actionLabel={t('guest.retry')} onAction={() => void events.refetch()} />
           ) : eventList.length === 0 ? (
-            <InlineNotice icon="briefcase" text={t('guest.empty.events')} />
-          ) : (
-            <FlatList
-              horizontal
-              data={eventList}
-              keyExtractor={(c) => c.id}
-              renderItem={({ item }) => <CampaignCard campaign={item} variant="featured" />}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.rail}
-              ItemSeparatorComponent={RailGap}
+            <FriendlyEmpty
+              icon="briefcase"
+              title={t('guest.empty.eventsTitle')}
+              body={t('guest.empty.eventsBody')}
+              actionLabel={t('guest.empty.eventsCta')}
+              onAction={() => openGuestSignup()}
             />
+          ) : (
+            <View style={s.stack}>
+              {eventList.map((c) => <OpportunityRow key={c.id} campaign={c} />)}
+            </View>
           )}
         </View>
 
         {/* ── D. Competitions ── */}
         <View style={s.section}>
-          <SectionHeader
-            title={t('guest.sections.competitions')}
-            subtitle={t('guest.sections.competitionsSub')}
-            onSeeAll={() => router.navigate('/(guest)/competitions')}
-          />
+          <SectionHeader title={t('guest.sections.competitions')} onSeeAll={() => router.navigate('/(guest)/competitions')} />
           {competitions.isPending ? (
-            <RailSkeleton width={COMP_CARD_W} height={300} />
+            <RowSkeletons count={1} />
           ) : competitions.isError && compList.length === 0 ? (
             <InlineNotice icon="wifi" text={t('guest.loadFailed')} actionLabel={t('guest.retry')} onAction={() => void competitions.refetch()} />
           ) : compList.length === 0 ? (
-            <InlineNotice icon="trophy" text={t('guest.empty.competitions')} />
-          ) : (
-            <FlatList
-              horizontal
-              data={compList}
-              keyExtractor={(c) => c.id}
-              renderItem={({ item }) => (
-                <View style={{ width: COMP_CARD_W }}>
-                  <CompetitionCardItem c={item} showSummary onPress={() => router.push({ pathname: '/competition-detail', params: { id: item.id } })} />
-                </View>
-              )}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.rail}
-              ItemSeparatorComponent={RailGap}
+            <FriendlyEmpty
+              icon="trophy"
+              title={t('guest.empty.competitionsTitle')}
+              body={t('guest.empty.competitionsBody')}
+              actionLabel={t('guest.empty.competitionsCta')}
+              onAction={() => router.navigate({ pathname: '/(guest)/competitions', params: { tab: 'results' } })}
             />
+          ) : (
+            <View style={s.stack}>
+              {compList.map((c) => <CompetitionRow key={c.id} c={c} />)}
+            </View>
           )}
         </View>
 
         {/* ── E. Discover Creators ── */}
         <View style={s.section}>
-          <SectionHeader
-            title={t('guest.sections.creators')}
-            subtitle={t('guest.sections.creatorsSub')}
-            onSeeAll={() => router.navigate('/(guest)/discover')}
-          />
+          <SectionHeader title={t('guest.sections.creators')} onSeeAll={() => router.navigate('/(guest)/discover')} />
           {creators.isPending ? (
-            <RailSkeleton width={CREATOR_CARD_W} height={190} />
+            <RailSkeleton width={CREATOR_PHOTO_CARD_W} height={200} />
           ) : creators.isError && creatorList.length === 0 ? (
             <InlineNotice icon="wifi" text={t('guest.loadFailed')} actionLabel={t('guest.retry')} onAction={() => void creators.refetch()} />
           ) : creatorList.length === 0 ? (
-            <InlineNotice icon="users" text={t('guest.empty.creators')} />
+            <FriendlyEmpty
+              icon="user-friends"
+              title={t('guest.empty.creatorsTitle')}
+              body={t('guest.empty.creatorsBody')}
+              actionLabel={t('guest.empty.creatorsCta')}
+              onAction={() => openGuestSignup('CREATOR')}
+            />
           ) : (
             <FlatList
               horizontal
               data={creatorList}
               keyExtractor={(c) => c.id}
-              renderItem={({ item }) => <CreatorCard creator={item} />}
+              renderItem={({ item }) => <CreatorPhotoCard creator={item} />}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={s.rail}
               ItemSeparatorComponent={RailGap}
@@ -195,38 +173,52 @@ export default function GuestHomeScreen() {
         </View>
 
         {/* ── F / G. For Creators · For Businesses — one card, slider picks the audience ── */}
-        <AudienceSwitcher />
+        <View style={s.section}>
+          <AudienceSwitcher />
+        </View>
 
-        {/* ── H. How Kolab Works ── */}
+        {/* ── H. How Kolab Works ── four connected steps */}
         <View style={s.section}>
           <SectionHeader title={t('guest.how.title')} />
           <View style={s.steps}>
+            <View style={[s.stepsLine, { backgroundColor: C.border }]} pointerEvents="none" />
             {([
               ['search', 'discover'],
-              ['handshake', 'connect'],
-              ['users', 'collaborate'],
+              ['users', 'connect'],
+              ['handshake', 'collaborate'],
               ['chart-line', 'grow'],
             ] as const).map(([icon, key], i) => (
-              <View key={key} style={[s.step, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <View style={[s.stepNum, { backgroundColor: C.accentLight }]}>
-                  <FontAwesome5 name={icon} size={15} color={C.accent} />
+              <View key={key} style={s.step} accessible accessibilityLabel={`${i + 1}. ${t(`guest.how.${key}`)}. ${t(`guest.how.${key}Body`)}`}>
+                <View style={[s.stepIcon, { backgroundColor: C.accentLight, borderColor: C.background }]}>
+                  <FontAwesome5 name={icon} size={16} color={C.accent} />
                 </View>
-                <Text style={[s.stepIndex, { color: C.textSecondary }]}>{String(i + 1).padStart(2, '0')}</Text>
-                <Text style={[s.stepTitle, { color: C.text }]}>{t(`guest.how.${key}`)}</Text>
-                <Text style={[s.stepBody, { color: C.textSecondary }]}>{t(`guest.how.${key}Body`)}</Text>
+                <Text style={[s.stepTitle, { color: C.text }]} numberOfLines={1}>{`${i + 1}. ${t(`guest.how.${key}`)}`}</Text>
               </View>
             ))}
           </View>
         </View>
 
         {/* ── I. Final CTA ── */}
-        <View style={[s.final, { backgroundColor: COLORS.brinjal2 }]}>
-          <Text style={s.finalTitle} accessibilityRole="header">{t('guest.final.title')}</Text>
+        <View style={[s.final, { backgroundColor: C.accentLight }]}>
+          {/* Full-bleed background photo; text + button sit on top of it. A fade
+              from the card colour on the left keeps the copy readable over the
+              mountains in both light and dark mode. */}
+          <ExpoImage source={FINAL_BG} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="right bottom" accessible={false} />
+          <LinearGradient
+            colors={[C.accentLight, withAlpha(C.accentLight, 0.85), withAlpha(C.accentLight, 0.1)]}
+            locations={[0, 0.5, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <Text style={[s.finalTitle, { color: C.text }]} accessibilityRole="header">{t('guest.final.title')}</Text>
           <Pressable
             onPress={() => openGuestSignup()}
-            style={({ pressed }) => [s.heroBtn, { backgroundColor: C.accent, alignSelf: 'stretch' }, pressed && { opacity: 0.9 }]}
+            style={({ pressed }) => [s.pillBtn, s.finalBtn, { backgroundColor: C.accent }, pressed && { opacity: 0.9 }]}
             accessibilityRole="button">
-            <Text style={s.heroBtnText}>{t('guest.final.cta')}</Text>
+            <Text style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.final.cta')}</Text>
+            <FontAwesome5 name="arrow-right" size={12} color="#fff" />
           </Pressable>
         </View>
       </ScrollView>
@@ -238,14 +230,24 @@ function RailGap() {
   return <View style={{ width: RAIL_GAP }} />;
 }
 
+function RowSkeletons({ count }: { count: number }) {
+  return (
+    <View style={s.stack}>
+      {Array.from({ length: count }, (_, i) => <Skeleton key={i} width="100%" height={112} radius={RADIUS.lg} />)}
+    </View>
+  );
+}
+
 type Audience = 'creators' | 'businesses';
 
-const AUDIENCES: { key: Audience; icon: keyof typeof FontAwesome5.glyphMap; i18n: string; role: 'CREATOR' | 'BUSINESS' }[] = [
-  { key: 'creators',   icon: 'palette', i18n: 'guest.forCreators',   role: 'CREATOR' },
-  { key: 'businesses', icon: 'store',   i18n: 'guest.forBusinesses', role: 'BUSINESS' },
+const AUDIENCES: {
+  key: Audience; icon: keyof typeof FontAwesome5.glyphMap; i18n: string; role: 'CREATOR' | 'BUSINESS'; photo: number;
+}[] = [
+  { key: 'creators',   icon: 'palette', i18n: 'guest.forCreators',   role: 'CREATOR',  photo: CREATOR_PHOTO },
+  { key: 'businesses', icon: 'store',   i18n: 'guest.forBusinesses', role: 'BUSINESS', photo: BUSINESS_PHOTO },
 ];
 
-/** "For creators / For businesses" — a two-option slider over a single card. */
+/** "For creators / For businesses" — a two-option slider over a single tinted card. */
 function AudienceSwitcher() {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -254,6 +256,10 @@ function AudienceSwitcher() {
   const indicatorX = useAnimatedValue(0);
 
   const segW = trackW > 0 ? (trackW - TRACK_PAD * 2) / AUDIENCES.length : 0;
+  const current = AUDIENCES.find((a) => a.key === active)!;
+  // Creators on the orange accent, businesses on violet — same split as the reference.
+  const tone = active === 'creators' ? C.accent : PURPLE;
+  const tint = active === 'creators' ? C.accentLight : withAlpha(PURPLE, 0.1);
 
   function select(key: Audience) {
     setActive(key);
@@ -261,13 +267,11 @@ function AudienceSwitcher() {
     Animated.spring(indicatorX, { toValue: index * segW, useNativeDriver: true, speed: 18, bounciness: 4 }).start();
   }
 
-  const current = AUDIENCES.find((a) => a.key === active)!;
-
   return (
-    <View style={[s.audience, SHADOW.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+    <View style={s.audienceWrap}>
       {/* Slider menu */}
       <View
-        style={[s.track, { backgroundColor: C.background, borderColor: C.border }]}
+        style={[s.track, { backgroundColor: C.surface, borderColor: C.border }]}
         onLayout={(e) => {
           const w = e.nativeEvent.layout.width;
           setTrackW(w);
@@ -279,7 +283,7 @@ function AudienceSwitcher() {
         {segW > 0 && (
           <Animated.View
             pointerEvents="none"
-            style={[s.indicator, { width: segW, backgroundColor: C.accent, transform: [{ translateX: indicatorX }] }]}
+            style={[s.indicator, { width: segW, backgroundColor: tone, transform: [{ translateX: indicatorX }] }]}
           />
         )}
         {AUDIENCES.map((a) => {
@@ -307,84 +311,89 @@ function AudienceSwitcher() {
         })}
       </View>
 
-      <AudienceBody
-        title={t(`${current.i18n}.title`)}
-        points={[1, 2, 3, 4].map((n) => t(`${current.i18n}.p${n}`))}
-        cta={t(`${current.i18n}.cta`)}
-        onPress={() => openGuestSignup(current.role)}
-      />
-    </View>
-  );
-}
-
-function AudienceBody({ title, points, cta, onPress }: {
-  title: string; points: string[]; cta: string; onPress: () => void;
-}) {
-  const C = useAppColors();
-  return (
-    <>
-      <Text style={[s.audienceTitle, { color: C.text }]}>{title}</Text>
-      <View style={s.points}>
-        {points.map((p) => <Bullet key={p}>{p}</Bullet>)}
+      {/* Tinted card: copy left, photo right */}
+      <View style={[s.audience, { backgroundColor: tint }]}>
+        <View style={s.audienceText}>
+          <View style={s.eyebrowRow}>
+            <FontAwesome5 name={current.icon} size={12} color={tone} />
+            <Text style={[s.eyebrow, { color: tone }]}>{t(`${current.i18n}.eyebrow`)}</Text>
+          </View>
+          <Text style={[s.audienceTitle, { color: C.text }]}>{t(`${current.i18n}.title`)}</Text>
+          <View style={s.points}>
+            {[1, 2, 3, 4].map((n) => (
+              <View key={n} style={s.point}>
+                <FontAwesome5 name="check" size={10} color={tone} style={{ marginTop: 4 }} />
+                <Text style={[s.pointText, { color: C.text }]}>{t(`${current.i18n}.p${n}`)}</Text>
+              </View>
+            ))}
+          </View>
+          <Pressable
+            onPress={() => openGuestSignup(current.role)}
+            style={({ pressed }) => [s.audienceBtn, { backgroundColor: tone }, pressed && { opacity: 0.9 }]}
+            accessibilityRole="button">
+            <Text style={s.audienceBtnText} numberOfLines={1}>{t(`${current.i18n}.cta`)}</Text>
+            <FontAwesome5 name="arrow-right" size={11} color="#fff" />
+          </Pressable>
+        </View>
+        <ExpoImage source={current.photo} style={s.audiencePhoto} contentFit="cover" transition={150} accessible={false} />
       </View>
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [s.audienceBtn, { borderColor: C.text }, pressed && { opacity: 0.85 }]}
-        accessibilityRole="button">
-        <Text style={[s.audienceBtnText, { color: C.text }]}>{cta}</Text>
-        <FontAwesome5 name="arrow-right" size={12} color={C.text} />
-      </Pressable>
-    </>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   safe:    { flex: 1 },
   scroll:  { paddingBottom: SPACING.xxl },
-  section: { marginTop: SPACING.xxl },
+  section: { marginTop: SPACING.xl + 4 },
+  stack:   { paddingHorizontal: SCREEN_GUTTER, gap: SPACING.md },
   rail:    { paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.sm },
 
-  heroWrap: { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.sm },
-  hero:     { borderRadius: RADIUS.xl, overflow: 'hidden', minHeight: 420, justifyContent: 'space-between', backgroundColor: COLORS.brinjal2 },
-  heroPills: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, padding: SPACING.lg },
-  heroPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full,
-    backgroundColor: withAlpha('#FFFFFF', 0.16), borderWidth: 1, borderColor: withAlpha('#FFFFFF', 0.3),
-  },
-  heroPillText: { color: '#fff', fontSize: FONT_SIZE.xs, fontFamily: F.semibold },
-  heroBody:  { padding: SPACING.xl, paddingTop: 0, gap: SPACING.sm },
-  heroTitle: { color: '#fff', fontSize: 30, fontFamily: F.bold, lineHeight: lineHeightFor(30), letterSpacing: -0.4 },
-  heroTagline: { color: '#FED7AA', fontSize: FONT_SIZE.md, fontFamily: F.semibold, lineHeight: lineHeightFor(FONT_SIZE.md) },
-  heroDesc:  { color: withAlpha('#FFFFFF', 0.88), fontSize: FONT_SIZE.md, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.md) },
-  heroCtas:  { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm },
-  heroBtn: {
-    flex: 1, minHeight: 48, borderRadius: RADIUS.md, flexDirection: 'row',
+  // Hero
+  hero:        { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, overflow: 'hidden' },
+  heroBlob:    { position: 'absolute', right: -60, top: -10, width: 260, height: 240, borderRadius: 130, transform: [{ rotate: '-12deg' }] },
+  heroArt:     { position: 'absolute', right: -4, top: SPACING.lg, width: 170, height: 170 },
+  heroText:    { width: '60%', gap: SPACING.md, minHeight: 190 },
+  // lineHeight set inline: tight for Latin, ≥1.5× for Devanagari (matras clip otherwise).
+  heroTitle:   { fontSize: 34, fontFamily: F.bold, letterSpacing: -0.6 },
+  heroTagline: { fontSize: FONT_SIZE.md, fontFamily: F.medium, lineHeight: lineHeightFor(FONT_SIZE.md) },
+  heroDesc:    { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm), marginTop: SPACING.md },
+  heroCtas:    { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
+  pillBtn: {
+    flex: 1, minHeight: 50, borderRadius: RADIUS.full, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: SPACING.md,
   },
-  heroBtnGhost: { backgroundColor: withAlpha('#FFFFFF', 0.14), borderWidth: 1, borderColor: withAlpha('#FFFFFF', 0.45) },
-  heroBtnText:  { color: '#fff', fontSize: FONT_SIZE.md, fontFamily: F.bold },
+  pillBtnText: { fontSize: FONT_SIZE.md, fontFamily: F.bold },
 
-  audience:      { marginHorizontal: SCREEN_GUTTER, marginTop: SPACING.xxl, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.xl },
-  track:         { flexDirection: 'row', borderWidth: 1, borderRadius: RADIUS.full, padding: TRACK_PAD },
-  indicator:     { position: 'absolute', top: TRACK_PAD, bottom: TRACK_PAD, left: TRACK_PAD, borderRadius: RADIUS.full },
-  segment:       { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: SPACING.xs },
-  segmentText:   { flexShrink: 1 },
-  audienceTitle: { fontSize: FONT_SIZE.xl, fontFamily: F.bold, marginTop: SPACING.md, lineHeight: lineHeightFor(FONT_SIZE.xl) },
-  points:        { gap: SPACING.sm, marginTop: SPACING.md },
+  // How it works
+  steps:     { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER },
+  stepsLine: { position: 'absolute', top: 24, left: SCREEN_GUTTER + 40, right: SCREEN_GUTTER + 40, height: 1.5 },
+  step:      { flex: 1, alignItems: 'center', gap: SPACING.sm },
+  stepIcon:  { width: 48, height: 48, borderRadius: 24, borderWidth: 4, alignItems: 'center', justifyContent: 'center' },
+  stepTitle: { fontSize: 12, fontFamily: F.semibold },
+
+  // Audience switcher
+  audienceWrap: { paddingHorizontal: SCREEN_GUTTER, gap: SPACING.md },
+  track:        { flexDirection: 'row', borderWidth: 1, borderRadius: RADIUS.full, padding: TRACK_PAD },
+  indicator:    { position: 'absolute', top: TRACK_PAD, bottom: TRACK_PAD, left: TRACK_PAD, borderRadius: RADIUS.full },
+  segment:      { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: SPACING.xs },
+  segmentText:  { flexShrink: 1 },
+  audience:     { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', minHeight: 230 },
+  audienceText: { flex: 1, padding: SPACING.lg, paddingRight: SPACING.sm, gap: SPACING.sm },
+  eyebrowRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  eyebrow:      { fontSize: 12, fontFamily: F.bold },
+  audienceTitle: { fontSize: FONT_SIZE.lg + 1, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.lg + 1) },
+  points:       { gap: 4 },
+  point:        { flexDirection: 'row', gap: 7 },
+  pointText:    { flex: 1, fontSize: 13, fontFamily: F.regular, lineHeight: lineHeightFor(13) },
   audienceBtn: {
-    marginTop: SPACING.lg, minHeight: 48, borderRadius: RADIUS.md, borderWidth: 1.5,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    alignSelf: 'flex-start', minHeight: 40, borderRadius: RADIUS.full, flexDirection: 'row',
+    alignItems: 'center', gap: 6, paddingHorizontal: 14, marginTop: SPACING.xs,
   },
-  audienceBtnText: { fontSize: FONT_SIZE.md, fontFamily: F.bold },
+  audienceBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
+  audiencePhoto:   { width: 112, alignSelf: 'stretch' },
 
-  steps:     { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, paddingHorizontal: SCREEN_GUTTER },
-  step:      { flexBasis: '47%', flexGrow: 1, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.lg, gap: 4 },
-  stepNum:   { width: 36, height: 36, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.sm },
-  stepIndex: { fontSize: FONT_SIZE.xs, fontFamily: F.bold, letterSpacing: 0.6 },
-  stepTitle: { fontSize: FONT_SIZE.md, fontFamily: F.bold },
-  stepBody:  { fontSize: 12.5, fontFamily: F.regular, lineHeight: lineHeightFor(12.5) },
-
-  final:      { marginHorizontal: SCREEN_GUTTER, marginTop: SPACING.xxl, borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.lg, alignItems: 'center' },
-  finalTitle: { color: '#fff', fontSize: FONT_SIZE.xxl, fontFamily: F.bold, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.xxl) },
+  // Final CTA
+  final:      { marginHorizontal: SCREEN_GUTTER, marginTop: SPACING.xl + 4, borderRadius: RADIUS.lg, padding: SPACING.xl, minHeight: 180, justifyContent: 'center', gap: SPACING.lg, overflow: 'hidden' },
+  finalTitle: { fontSize: FONT_SIZE.xl, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.xl), maxWidth: '75%' },
+  finalBtn:   { flex: 0, alignSelf: 'flex-start', paddingHorizontal: SPACING.xl },
 });

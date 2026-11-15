@@ -1,7 +1,7 @@
-// "Competitions" tab of the creator Find Work screen — lists open competitions
+// "Competitions" tab of the creator Discover screen — lists open competitions
 // (the old Discover sub-tab). The creator's own competitions + Results live in
 // the Applications tab → Competitions (see CompetitionApplications below).
-// Search text comes from the Find Work shell's shared search bar via the
+// Search text comes from the Discover shell's shared search bar via the
 // exposed ref (same pattern as the Work/Businesses tabs).
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';

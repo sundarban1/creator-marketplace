@@ -1,9 +1,8 @@
 // Building blocks shared by the Guest navigation screens ((guest)/*).
-import type { ReactNode } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Skeleton } from '@/components/Skeleton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { openGuestLogin, openGuestSignup } from '@/components/GuestAuthPrompt';
@@ -12,7 +11,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { PersonAvatar } from '@/features/creator/competition/ProfileAvatar';
 import type { ApiCreatorListItem } from '@/services/creator';
 import type { BusinessListItem } from '@/services/business';
-import { F, FONT_SIZE, MIN_TOUCH_TARGET, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SPACING, lineHeightFor } from '@/utilities/constants';
 
 const LOGO = require('@/assets/images/kolab.svg');
 
@@ -29,7 +28,11 @@ export function GuestHeader({ title }: { title?: string }) {
         <ExpoImage source={LOGO} style={s.logo} contentFit="contain" accessibilityLabel="Kolab" />
       )}
       <View style={s.headerActions}>
-        <Pressable onPress={openGuestLogin} hitSlop={8} style={s.headerLink} accessibilityRole="button">
+        <Pressable
+          onPress={openGuestLogin}
+          hitSlop={6}
+          style={({ pressed }) => [s.headerLink, { borderColor: C.text }, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button">
           <Text style={[s.headerLinkText, { color: C.text }]}>{t('guest.logIn')}</Text>
         </Pressable>
         <Pressable
@@ -66,47 +69,11 @@ export function SectionHeader({ title, subtitle, onSeeAll }: { title: string; su
 
 // ─── Creator card (opted-in public profiles only) ────────────────────────────
 
-export const CREATOR_CARD_W = 168;
-
 export function openCreatorProfile(id: string) {
   router.push({ pathname: '/creator-profile', params: { handle: id } });
 }
 export function openBusinessProfile(id: string) {
   router.push({ pathname: '/business-profile', params: { id } });
-}
-
-export function CreatorCard({ creator, style }: { creator: ApiCreatorListItem; style?: StyleProp<ViewStyle> }) {
-  const C = useAppColors();
-  const name = creator.fullName ?? '';
-  const cats = creator.categories.slice(0, 2);
-  return (
-    <Pressable
-      onPress={() => openCreatorProfile(creator.id)}
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      style={({ pressed }) => [s.creatorCard, SHADOW.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }, style]}>
-      <PersonAvatar uri={creator.avatarUrl} name={name} size={64} />
-      <View style={s.nameRow}>
-        <Text style={[s.creatorName, { color: C.text }]} numberOfLines={1}>{name}</Text>
-        {creator.fullyVerified && <VerifiedBadge size={13} />}
-      </View>
-      {creator.location ? (
-        <View style={s.metaRow}>
-          <FontAwesome5 name="map-marker-alt" solid size={10} color={C.textSecondary} />
-          <Text style={[s.meta, { color: C.textSecondary }]} numberOfLines={1}>{creator.location}</Text>
-        </View>
-      ) : null}
-      {cats.length > 0 && (
-        <View style={s.chips}>
-          {cats.map((c) => (
-            <View key={c} style={[s.chip, { backgroundColor: C.primaryLight }]}>
-              <Text style={[s.chipText, { color: C.brinjal1 }]} numberOfLines={1}>{c}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-    </Pressable>
-  );
 }
 
 /** Full-width row variant for the Discover list. */
@@ -187,6 +154,31 @@ export function RowSkeletons({ count = 5, height = 76 }: { count?: number; heigh
   );
 }
 
+/** Friendly empty state for a home section — icon, headline, warm message and a next step. */
+export function FriendlyEmpty({ icon, title, body, actionLabel, onAction }: {
+  icon: keyof typeof FontAwesome5.glyphMap; title: string; body: string; actionLabel?: string; onAction?: () => void;
+}) {
+  const C = useAppColors();
+  return (
+    <View style={[s.empty, { backgroundColor: C.surface, borderColor: C.border }]}>
+      <View style={[s.emptyIcon, { backgroundColor: C.accentLight }]}>
+        <FontAwesome5 name={icon} size={20} color={C.accent} />
+      </View>
+      <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
+      <Text style={[s.emptyBody, { color: C.textSecondary }]}>{body}</Text>
+      {actionLabel && onAction && (
+        <Pressable
+          onPress={onAction}
+          style={({ pressed }) => [s.emptyBtn, { borderColor: C.accent }, pressed && { opacity: 0.8 }]}
+          accessibilityRole="button">
+          <Text style={[s.emptyBtnText, { color: C.accent }]}>{actionLabel}</Text>
+          <FontAwesome5 name="arrow-right" size={11} color={C.accent} />
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
 /** Compact inline message used inside a section (empty or failed). */
 export function InlineNotice({ icon, text, actionLabel, onAction }: {
   icon: keyof typeof FontAwesome5.glyphMap; text: string; actionLabel?: string; onAction?: () => void;
@@ -205,24 +197,18 @@ export function InlineNotice({ icon, text, actionLabel, onAction }: {
   );
 }
 
-export function Bullet({ children }: { children: ReactNode }) {
-  const C = useAppColors();
-  return (
-    <View style={s.bullet}>
-      <View style={[s.bulletIcon, { backgroundColor: C.accentLight }]}>
-        <FontAwesome5 name="check" size={10} color={C.accent} />
-      </View>
-      <Text style={[s.bulletText, { color: C.text }]}>{children}</Text>
-    </View>
-  );
-}
-
 const s = StyleSheet.create({
+  empty:         { marginHorizontal: SCREEN_GUTTER, alignItems: 'center', borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: SPACING.xl, paddingHorizontal: SPACING.lg, gap: SPACING.sm },
+  emptyIcon:     { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.xs },
+  emptyTitle:    { fontSize: FONT_SIZE.md, fontFamily: F.bold, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.md) },
+  emptyBody:     { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm), maxWidth: 300 },
+  emptyBtn:      { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: SPACING.lg, marginTop: SPACING.sm },
+  emptyBtnText:  { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
   header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.sm, gap: SPACING.md },
   logo:          { width: 92, height: 30 },
   headerTitle:   { fontSize: FONT_SIZE.xl, fontFamily: F.bold, flexShrink: 1, lineHeight: lineHeightFor(FONT_SIZE.xl) },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  headerLink:    { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center', paddingHorizontal: SPACING.xs },
+  headerLink:    { minHeight: 36, borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 14, justifyContent: 'center' },
   headerLinkText: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
   headerCta:     { minHeight: 36, borderRadius: RADIUS.full, paddingHorizontal: 14, justifyContent: 'center' },
   headerCtaText: { color: '#fff', fontSize: FONT_SIZE.sm, fontFamily: F.bold },
@@ -233,14 +219,9 @@ const s = StyleSheet.create({
   seeAll:        { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 32 },
   seeAllText:    { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
 
-  creatorCard:   { width: CREATOR_CARD_W, borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.md, alignItems: 'center' },
   nameRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: SPACING.sm, maxWidth: '100%' },
-  creatorName:   { fontSize: FONT_SIZE.md, fontFamily: F.bold, flexShrink: 1 },
   metaRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 2, maxWidth: '100%' },
   meta:          { fontSize: 12, fontFamily: F.regular, flexShrink: 1, lineHeight: lineHeightFor(12) },
-  chips:         { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4, marginTop: SPACING.sm },
-  chip:          { borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 3, maxWidth: CREATOR_CARD_W - 24 },
-  chipText:      { fontSize: FONT_SIZE.xs, fontFamily: F.semibold },
 
   row:           { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md },
   rowTitle:      { fontSize: FONT_SIZE.md, fontFamily: F.bold, flexShrink: 1 },
@@ -250,7 +231,4 @@ const s = StyleSheet.create({
   noticeText:    { flex: 1, fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm) },
   noticeAction:  { fontSize: FONT_SIZE.sm, fontFamily: F.bold },
 
-  bullet:        { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm },
-  bulletIcon:    { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  bulletText:    { flex: 1, fontSize: FONT_SIZE.md, fontFamily: F.medium, lineHeight: lineHeightFor(FONT_SIZE.md) },
 });

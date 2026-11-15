@@ -4,7 +4,7 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { TabSlider } from '@/components/TabSlider';
@@ -40,7 +40,8 @@ export default function GuestEventsScreen() {
     }),
     initialPageParam: 1,
     getNextPageParam: (last) => (last.page < last.totalPages ? last.page + 1 : undefined),
-    placeholderData: keepPreviousData,
+    // Keep old results while a search is typed; not across a filter switch.
+    placeholderData: (prev, prevQuery) => (prevQuery?.queryKey[2] === type ? prev : undefined),
     staleTime: STALE.list,
   });
   const items = query.data?.pages.flatMap((p) => p.campaigns) ?? [];
@@ -65,28 +66,32 @@ export default function GuestEventsScreen() {
         <TabSlider tabs={tabs} active={type} onChange={(k) => setType(k as TypeFilter)} justify />
       </View>
 
-      {query.isPending ? (
-        <View style={s.list}><RowSkeletons count={6} height={96} /></View>
-      ) : query.isError && items.length === 0 ? (
-        <EmptyState faIcon="wifi" title={t('guest.loadFailed')} action={{ label: t('guest.retry'), onPress: () => void query.refetch() }} />
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={items}
-          keyExtractor={(c) => c.id}
-          renderItem={({ item }) => <CampaignListItem campaign={item} />}
-          contentContainerStyle={s.list}
-          ItemSeparatorComponent={Gap}
-          keyboardDismissMode="on-drag"
-          onEndReached={() => { if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage(); }}
-          onEndReachedThreshold={0.4}
-          refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => void query.refetch()} tintColor={C.accent} />}
-          ListEmptyComponent={
-            <EmptyState faIcon="briefcase" title={q ? t('guest.empty.searchTitle') : t('guest.empty.events')} subtitle={q ? t('guest.empty.searchBody') : undefined} />
-          }
-          ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={{ paddingVertical: SPACING.lg }} color={C.accent} /> : null}
-        />
-      )}
+      {/* One FlatList stays mounted through loading → data (avoids the first-visit
+          layout jump from swapping a skeleton View for a new list). */}
+      <FlatList
+        ref={listRef}
+        data={items}
+        keyExtractor={(c) => c.id}
+        renderItem={({ item }) => <CampaignListItem campaign={item} />}
+        contentContainerStyle={s.list}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
+        ItemSeparatorComponent={Gap}
+        keyboardDismissMode="on-drag"
+        onEndReached={() => { if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage(); }}
+        onEndReachedThreshold={0.4}
+        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => void query.refetch()} tintColor={C.accent} />}
+        ListEmptyComponent={
+          query.isPending ? (
+            <RowSkeletons count={6} height={96} />
+          ) : query.isError ? (
+            <EmptyState faIcon="wifi" title={t('guest.loadFailed')} action={{ label: t('guest.retry'), onPress: () => void query.refetch() }} />
+          ) : (
+              <EmptyState faIcon="briefcase" title={q ? t('guest.empty.searchTitle') : t('guest.empty.events')} subtitle={q ? t('guest.empty.searchBody') : undefined} />
+          )
+        }
+        ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={{ paddingVertical: SPACING.lg }} color={C.accent} /> : null}
+      />
     </SafeAreaView>
   );
 }

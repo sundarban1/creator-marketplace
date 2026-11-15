@@ -13,7 +13,7 @@ export type SegmentedMenuItem = {
 /**
  * Top-level type menu — equal-width pill segments, the selected one filled
  * brand color. Used above a screen's status sub-tabs (TabSlider): business
- * My Work (Paid / Open / Competitions), creator Find Work and Applications.
+ * My Work (Paid / Open / Competitions), creator Discover and Applications.
  * The caller owns outer spacing via `style`.
  *
  * The filled pill is one shared layer that slides between segments (native

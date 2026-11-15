@@ -21,7 +21,7 @@ export function timeLeft(iso: string, t: TFn): { label: string; urgent: boolean;
 
 export function npr(amount: number | null | undefined): string {
   if (amount == null) return '';
-  return `NPR ${Math.round(amount).toLocaleString('en-IN')}`;
+  return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;
 }
 
 export function competitionStatusBadge(s: CompetitionStatus, t: TFn): { label: string; tone: Tone } {

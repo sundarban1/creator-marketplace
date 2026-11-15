@@ -1808,7 +1808,8 @@ export default function BusinessSettingsScreen() {
                 setPrefBudget(range);
                 profileService.updateBusinessProfile({ defaultBudgetRange: range }).catch(() => toast.error(t('businessSettings.prefSaveFailed')));
               }}>
-              <Text style={[styles.rowLabel, { color: C.text }]}>{range}</Text>
+              {/* Stored value keeps "NPR" (saved as defaultBudgetRange) — only the label shows "Rs.". */}
+              <Text style={[styles.rowLabel, { color: C.text }]}>{range.replace(/NPR/g, 'Rs.')}</Text>
               <View style={[styles.radioOuter, { borderColor: prefBudget === range ? C.brinjal1 : C.border }]}>
                 {prefBudget === range ? <View style={[styles.radioInner, { backgroundColor: C.brinjal1 }]} /> : null}
               </View>
