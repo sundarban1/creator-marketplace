@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Flag } from 'lucide-react';
+import { ReportDialog } from '../ui/ReportButton';
 import { ExternalLink, Play } from 'lucide-react';
 import { MediaLightbox, type LightboxItem } from '../ui/MediaLightbox';
 import { detectLinkPlatform, portfolioItemTitle, videoPosterSrc } from '../ui/portfolioLink';
@@ -23,9 +25,10 @@ export interface PortfolioGridLink {
  * items that are just an external link (no uploaded media) still open in a
  * new tab, same as the plain portfolioLinks list.
  */
-export function PortfolioGrid({ items, links }: { items: PortfolioGridItem[]; links: PortfolioGridLink[] }) {
+export function PortfolioGrid({ items, links, reportable = false }: { items: PortfolioGridItem[]; links: PortfolioGridLink[]; reportable?: boolean }) {
   const t = useT();
   const [active, setActive] = useState<PortfolioGridItem | null>(null);
+  const [reportId, setReportId] = useState<string | null>(null);
 
   return (
     <>
@@ -33,7 +36,7 @@ export function PortfolioGrid({ items, links }: { items: PortfolioGridItem[]; li
         {items.map((p) => {
           const title = portfolioItemTitle(p, t);
           const platformLabel = p.externalUrl ? detectLinkPlatform(p.externalUrl).label : null;
-          return p.mediaUrl ? (
+          const tile = p.mediaUrl ? (
             <button
               key={p.id}
               type="button"
@@ -90,6 +93,23 @@ export function PortfolioGrid({ items, links }: { items: PortfolioGridItem[]; li
               </span>
             </a>
           ) : null;
+          if (!tile || !reportable) return tile;
+          // Signed-in viewers can report a single item (sibling button — a
+          // <button> can't nest inside the tile's own button/link).
+          return (
+            <div key={p.id} className="group/tile relative">
+              {tile}
+              <button
+                type="button"
+                onClick={() => setReportId(p.id)}
+                aria-label={t('safety.report')}
+                title={t('safety.report')}
+                className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity focus:opacity-100 group-hover/tile:opacity-100"
+              >
+                <Flag size={12} />
+              </button>
+            </div>
+          );
         })}
         {links.map((l) => {
           const lp = detectLinkPlatform(l.url);
@@ -117,6 +137,9 @@ export function PortfolioGrid({ items, links }: { items: PortfolioGridItem[]; li
       </div>
 
       <MediaLightbox item={active} onClose={() => setActive(null)} />
+      {reportable && (
+        <ReportDialog open={!!reportId} onClose={() => setReportId(null)} targetType="PORTFOLIO_ITEM" targetId={reportId ?? ''} />
+      )}
     </>
   );
 }

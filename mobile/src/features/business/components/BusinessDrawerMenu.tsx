@@ -42,6 +42,7 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
       { iconName: 'lock',      labelKey: 'drawer.security',          route: '/(business)/settings?section=account',       color: '#0369A1' },
       { iconName: 'bell', faName: 'bell', labelKey: 'drawer.notifications', route: '/(business)/settings?section=notifications', color: '#D97706' },
       { iconName: 'life-ring', faName: 'life-ring', labelKey: 'drawer.support',        route: '/(business)/settings?section=support',       color: '#0891B2' },
+      { iconName: 'user-shield', faName: 'user-shield', labelKey: 'drawer.helpSafety', route: '/help-safety',                               color: '#DC2626' },
       { iconName: 'shield-alt', faName: 'shield-alt',  labelKey: 'drawer.privacy',        route: '/(business)/settings?section=privacy',       color: '#0D9488' },
       { iconName: 'cog',         labelKey: 'drawer.settings',          route: '/(business)/settings?section=app',           color: '#6B7280' },
       // Shared route with the creator drawer — same colour as DrawerMenu.tsx's About Us.

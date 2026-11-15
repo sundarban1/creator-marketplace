@@ -36,6 +36,7 @@ function named(
 
 const PrivacyPage = named(() => import('./pages/landing/LegalDocPage'), 'PrivacyPage');
 const TermsPage = named(() => import('./pages/landing/LegalDocPage'), 'TermsPage');
+const CommunityGuidelinesPage = named(() => import('./pages/landing/LegalDocPage'), 'CommunityGuidelinesPage');
 const SupportPage = named(() => import('./pages/landing/SupportPage'), 'SupportPage');
 const AboutPage = named(() => import('./pages/landing/AboutPage'), 'AboutPage');
 const NotFoundPage = named(() => import('./pages/landing/NotFoundPage'), 'NotFoundPage');
@@ -73,7 +74,8 @@ const Campaigns = named(() => import('./pages/Campaigns'), 'Campaigns');
 const Payments = named(() => import('./pages/Payments'), 'Payments');
 const Proposals = named(() => import('./pages/Proposals'), 'Proposals');
 const Referrals = named(() => import('./pages/Referrals'), 'Referrals');
-const Reports = named(() => import('./pages/Reports'), 'Reports');
+const ModerationDashboard = named(() => import('./pages/moderation/ModerationDashboard'), 'ModerationDashboard');
+const ModerationReportDetail = named(() => import('./pages/moderation/ModerationReportDetail'), 'ModerationReportDetail');
 const Settings = named(() => import('./pages/Settings'), 'Settings');
 const ContactInfo = named(() => import('./pages/ContactInfo'), 'ContactInfo');
 const RateLimits = named(() => import('./pages/RateLimits'), 'RateLimits');
@@ -143,6 +145,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/trust-and-safety" element={<TrustSafetyPage />} />
@@ -211,7 +214,9 @@ export default function App() {
                 <Route path="/admin/payments" element={<Payments />} />
                 <Route path="/admin/proposals" element={<Proposals />} />
                 <Route path="/admin/referrals" element={<Referrals />} />
-                <Route path="/admin/reports" element={<Reports />} />
+                <Route path="/admin/moderation" element={<ModerationDashboard />} />
+                <Route path="/admin/moderation/reports/:id" element={<ModerationReportDetail />} />
+                <Route path="/admin/reports" element={<Navigate to="/admin/moderation" replace />} />
                 <Route path="/admin/help-center" element={<HelpCenter />} />
                 <Route path="/admin/faqs" element={<FAQManager />} />
                 <Route path="/admin/support-inbox" element={<SupportInbox />} />

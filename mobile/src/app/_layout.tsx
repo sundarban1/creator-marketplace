@@ -1,4 +1,7 @@
 import * as Sentry from '@sentry/react-native';
+// import { AgreementScreen } from '@/features/legal/AgreementScreen'; // post-login gate disabled
+import { useTermsGate } from '@/features/legal/useTermsGate';
+import { BlockProvider } from '@/context/BlockContext';
 import { DarkTheme, DefaultTheme, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -20,7 +23,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { useAuth } from '@/context/AuthContext';
 import { queryClient, persistOptions } from '@/lib/queryClient';
 import { LanguageProvider } from '@/context/LanguageContext';
-import { AppThemeProvider, useAppColors, useIsDark } from '@/context/ThemeContext';
+import { AppThemeProvider, PreLoginTheme, useAppColors, useIsDark } from '@/context/ThemeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { PlatformSettingsProvider, usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { SplashScreen } from '@/components/SplashScreen';
@@ -261,12 +264,12 @@ const ef = StyleSheet.create({
 // the (auth) flow). All read-only; their account-only actions open the guest
 // login prompt instead. Every other route redirects a guest to guest home.
 const GUEST_PUBLIC_ROUTES = new Set([
-  'legal', 'about-us', 'campaign-detail', 'competition-detail', 'creator-profile', 'business-profile',
+  'legal', 'about-us', 'help-safety', 'campaign-detail', 'competition-detail', 'creator-profile', 'business-profile',
 ]);
 
 // Handles auth-based redirects for both login AND logout
 function RootNavigator() {
-  const { user, isLoading, updateUser } = useAuth();
+  const { user, isLoading, updateUser, logout } = useAuth();
   const { flags } = usePlatformFlags();
   const segments = useSegments();
   const router = useRouter();
@@ -305,6 +308,12 @@ function RootNavigator() {
   // Previous `user` — lets the effect below tell "just signed out" (tear the
   // whole stack down to guest home) apart from "still a guest, browsing".
   const prevUserRef = useRef(user);
+
+  // Mandatory agreement gate (rendered after the version + biometric gates below):
+  // a signed-in user who hasn't accepted the current Terms + Guidelines sees
+  // only the agreement screen. See useTermsGate.
+  const terms = useTermsGate(user?.id ?? null);
+
 
   useEffect(() => {
     if (isLoading) return;
@@ -397,6 +406,19 @@ function RootNavigator() {
     return <BiometricGateScreen onUnlock={() => setBiometricUnlocked(true)} />;
   }
 
+  // Post-login "Welcome to Kolab" agreement screen disabled (2026-11-15):
+  // users already agree to the Terms / Privacy / Guidelines when creating an
+  // account, so it isn't shown again after sign-in. useTermsGate still runs
+  // above to silently record that sign-up acceptance on the server.
+  // if (!isLoading && user && terms.status && !terms.status.accepted) {
+  //   return (
+  //     <PreLoginTheme>
+  //       <AgreementScreen mode="signedIn" status={terms.status} onDone={terms.markAccepted} onLogout={() => void logout()} />
+  //     </PreLoginTheme>
+  //   );
+  // }
+  void terms;
+
   // Logout / session-expiry flash guard. `logout()` just nulls `user`; the
   // redirect to guest home happens in the effect above, which only runs *after*
   // this render commits and paints — so for one frame the now-unauthorised
@@ -446,6 +468,8 @@ function RootNavigator() {
         <Stack.Screen name="(creator)" />
         <Stack.Screen name="(business)" />
         <Stack.Screen name="legal" options={{ presentation: 'card' }} />
+        <Stack.Screen name="help-safety" options={{ presentation: 'card' }} />
+        <Stack.Screen name="blocked-users" options={{ presentation: 'card' }} />
         <Stack.Screen name="about-us" options={{ presentation: 'card' }} />
         <Stack.Screen name="campaign-detail" options={{ presentation: 'card' }} />
         <Stack.Screen name="competition-detail" options={{ presentation: 'card' }} />
@@ -484,6 +508,7 @@ function RootLayoutInner() {
     <PlatformSettingsProvider>
       <AuthProvider>
         <NotificationProvider>
+        <BlockProvider>
           <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
             {/* Default status bar for plain-background screens — light-headered
                 auth screens override this locally with their own <StatusBar style="light" />. */}
@@ -497,6 +522,7 @@ function RootLayoutInner() {
                 session instead of always playing the full intro. */}
             <SplashScreen />
           </ThemeProvider>
+        </BlockProvider>
         </NotificationProvider>
       </AuthProvider>
     </PlatformSettingsProvider>

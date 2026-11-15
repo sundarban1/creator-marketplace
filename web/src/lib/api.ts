@@ -104,18 +104,62 @@ export interface ApiAuditLog {
   createdAt:        string;
 }
 
-export interface ApiReport {
-  id:          string;
-  targetType:  'USER' | 'BUSINESS' | 'SERVICE' | 'OPPORTUNITY' | 'POST' | 'MESSAGE' | 'REVIEW';
-  targetId:    string;
-  reason:      'SPAM' | 'SCAM' | 'FRAUD' | 'HARASSMENT' | 'INAPPROPRIATE_CONTENT' | 'FAKE_PROFILE' | 'PAYMENT_ISSUE' | 'OTHER';
-  description: string | null;
-  status:      'NEW' | 'UNDER_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED';
-  reviewedBy:  string | null;
-  reviewedAt:  string | null;
-  actionNote:  string | null;
-  createdAt:   string;
-  reporter:    { id: string; email: string; role: string };
+// ── UGC moderation (admin) — mirrors backend modules/moderation ─────────────
+export type ModReportStatus = 'NEW' | 'UNDER_REVIEW' | 'NEEDS_MORE_INFO' | 'ACTION_TAKEN' | 'DISMISSED' | 'RESOLVED';
+export type ModVerification = 'UNVERIFIED' | 'VALID' | 'INVALID' | 'NEEDS_MORE_INFORMATION';
+export type ModPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+export type ModActionType = 'REMOVE_CONTENT' | 'RESTORE_CONTENT' | 'WARN_USER' | 'RESTRICT_MESSAGING' | 'SUSPEND_TEMPORARY' | 'SUSPEND_PERMANENT' | 'LIFT_RESTRICTIONS' | 'NO_ACTION';
+export type ModUserRef = { id: string; email: string; name: string | null } | null;
+export type ModPagination = { total: number; page: number; limit: number; totalPages: number };
+
+export interface ApiModerationStats {
+  total: number; pending: number; underReview: number; needsMoreInfo: number; actionTaken: number;
+  dismissed: number; resolved: number; urgentOpen: number; unassignedOpen: number;
+  blockEvents: number; unreviewedBlocks: number; unreviewedContentSignals: number;
+}
+
+export interface ApiModerationReportRow {
+  id: string; targetType: string; targetId: string; reason: string; status: ModReportStatus;
+  verification: ModVerification; priority: ModPriority; createdAt: string; assignedAt: string | null;
+  contentTitle: string | null; contentPreview: string | null;
+  reporter: ModUserRef; reportedUser: ModUserRef; assignedTo: { id: string; email: string } | null;
+}
+
+export interface ApiModerationUserSummary {
+  id: string; email: string; role: string; name: string | null; isActive: boolean;
+  suspendedAt: string | null; suspendedUntil: string | null; suspensionReason: string | null;
+  messagingRestrictedUntil: string | null; createdAt: string; avatarUrl: string | null;
+  creatorProfileId: string | null; businessProfileId: string | null;
+}
+
+export interface ApiModerationAction {
+  id: string; reportId: string | null; targetUserId: string | null; adminId: string; action: ModActionType;
+  contentType: string | null; contentId: string | null; reason: string; notes: string | null;
+  durationDays: number | null; expiresAt: string | null; metadata: Record<string, unknown> | null; createdAt: string;
+}
+
+export interface ApiModerationReportDetail {
+  id: string; targetType: string; targetId: string; conversationId: string | null; messageId: string | null;
+  reason: string; description: string | null; status: ModReportStatus; verification: ModVerification; priority: ModPriority;
+  evidence: Record<string, unknown> | null; actionNote: string | null; createdAt: string; updatedAt: string;
+  assignedTo: { id: string; email: string } | null; assignedAt: string | null; reviewStartedAt: string | null;
+  reviewedAt: string | null; reviewedBy: string | null; resolvedAt: string | null;
+  reporter: ApiModerationUserSummary | null; reportedUser: ApiModerationUserSummary | null;
+  liveContent: { exists: boolean; title?: string; snapshot?: Record<string, unknown>; hidden?: boolean };
+  contentRemovable: boolean;
+  actions: ApiModerationAction[];
+  related: Array<{ id: string; reason: string; status: ModReportStatus; verification: ModVerification; priority: ModPriority; targetType: string; targetId: string; createdAt: string }>;
+  userHistory: ApiModerationAction[];
+  blocksAgainstUser: number;
+  auditTrail: Array<{ id: string; action: string; userId: string | null; oldValue: Record<string, unknown> | null; newValue: Record<string, unknown> | null; metadata: Record<string, unknown> | null; createdAt: string }>;
+}
+
+export interface ApiModerationEvent {
+  id: string; type: 'USER_BLOCKED' | 'USER_UNBLOCKED' | 'CONTENT_AUTO_REJECTED' | 'CONTENT_HELD_FOR_REVIEW' | 'MODERATION_SERVICE_ERROR';
+  actorUserId: string | null; targetUserId: string | null; contentType: string | null; contentId: string | null;
+  metadata: Record<string, unknown> | null; reviewedAt: string | null; createdAt: string;
+  actor: (ModUserRef & { role?: string }) | null; target: (ModUserRef & { role?: string }) | null;
+  timesBlocked: number; blockActive?: boolean;
 }
 
 export interface ApiMeetup {
@@ -1358,10 +1402,6 @@ export const api = {
       request<ApiCampaign[]>('GET', '/api/admin/campaigns', undefined,
         params as Record<string, string | number | undefined>),
 
-    reports: (params?: { page?: number; limit?: number; status?: string; targetType?: string }) =>
-      request<{ items: ApiReport[]; total: number }>('GET', '/api/admin/reports', undefined,
-        params as Record<string, string | number | undefined>),
-
     auditLogs: (params?: { page?: number; limit?: number; userId?: string; action?: string; from?: string; to?: string }) =>
       request<ApiAuditLog[]>('GET', '/api/admin/audit-logs', undefined,
         params as Record<string, string | number | undefined>),
@@ -1370,8 +1410,26 @@ export const api = {
       request<ApiActivityLog[]>('GET', '/api/admin/activity-logs', undefined,
         params as Record<string, string | number | undefined>),
 
-    updateReportStatus: (id: string, status: 'UNDER_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED', actionNote?: string) =>
-      request<ApiReport>('PUT', `/api/admin/reports/${id}/status`, { status, actionNote }),
+    moderation: {
+      stats: () => request<ApiModerationStats>('GET', '/api/admin/moderation/stats'),
+      moderators: () => request<Array<{ id: string; email: string }>>('GET', '/api/admin/moderation/moderators'),
+      reports: (params: Record<string, string | number | undefined>) =>
+        request<{ items: ApiModerationReportRow[]; pagination: ModPagination }>('GET', '/api/admin/moderation/reports', undefined, params),
+      report: (id: string) => request<ApiModerationReportDetail>('GET', `/api/admin/moderation/reports/${id}`),
+      assign: (id: string, assigneeId?: string | null) =>
+        request<ApiModerationReportDetail>('POST', `/api/admin/moderation/reports/${id}/assign`, assigneeId === undefined ? {} : { assigneeId }),
+      startReview: (id: string) => request<ApiModerationReportDetail>('POST', `/api/admin/moderation/reports/${id}/start-review`, {}),
+      verify: (id: string, decision: Exclude<ModVerification, 'UNVERIFIED'>, note: string) =>
+        request<ApiModerationReportDetail>('POST', `/api/admin/moderation/reports/${id}/verify`, { decision, note }),
+      action: (id: string, body: { action: ModActionType; reason: string; notes?: string; durationDays?: number; interim?: boolean; confirm?: boolean }) =>
+        request<ApiModerationReportDetail>('POST', `/api/admin/moderation/reports/${id}/actions`, body),
+      dismiss: (id: string, note: string) => request<ApiModerationReportDetail>('POST', `/api/admin/moderation/reports/${id}/dismiss`, { note }),
+      resolve: (id: string, note: string | undefined, notifyReporter: boolean) =>
+        request<ApiModerationReportDetail>('POST', `/api/admin/moderation/reports/${id}/resolve`, { note, notifyReporter }),
+      events: (params: Record<string, string | number | undefined>) =>
+        request<{ items: ApiModerationEvent[]; pagination: ModPagination }>('GET', '/api/admin/moderation/events', undefined, params),
+      reviewEvent: (id: string, note?: string) => request<unknown>('POST', `/api/admin/moderation/events/${id}/review`, { note }),
+    },
 
     competitions: (params: { status?: string; flagged?: 'true'; review?: 'pending'; q?: string; page?: number }) =>
       request<{ items: ApiCompetitionAdminRow[]; pagination: { total: number; page: number; limit: number; totalPages: number } }>('GET', '/api/admin/competitions', undefined, params),

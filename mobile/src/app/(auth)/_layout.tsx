@@ -15,6 +15,9 @@ export default function AuthLayout() {
 
 function AuthStack() {
   const C = useAppColors();
+  // No pre-join agreement screen: Terms of Use / Privacy Policy / Community
+  // Guidelines are agreed via the checkbox on the login + create-account forms
+  // (stored on the device, recorded on the server once signed in).
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.background } }}>
       <Stack.Screen name="login" />

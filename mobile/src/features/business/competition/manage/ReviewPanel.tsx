@@ -2,6 +2,7 @@
 // Pick a stage, filter/search entrants, mark Advance / Not selected (kept as a
 // private draft until saved), open an entry to add notes/scores, then publish.
 import { useState } from 'react';
+import { ReportModal } from '@/components/ReportModal';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -285,6 +286,7 @@ function EntrySheet({ c, stageId, row, editable, canDecide, pending, onClose, on
     return Object.fromEntries(Object.entries(src).map(([k, v]) => [k, String(v)]));
   });
   const [decision, setDecision] = useState<Decision>(pending?.decision !== undefined ? pending.decision! : row.decision?.decision ?? null);
+  const [reporting, setReporting] = useState(false);
 
   function apply() {
     const p: Pending = { notes: notes.trim() || null };
@@ -297,6 +299,7 @@ function EntrySheet({ c, stageId, row, editable, canDecide, pending, onClose, on
   const d = detail.data;
   const name = row.creator.fullName ?? row.creator.username ?? t('comp.entry');
   return (
+    <>
     <BottomSheet
       visible
       onClose={onClose}
@@ -325,6 +328,15 @@ function EntrySheet({ c, stageId, row, editable, canDecide, pending, onClose, on
         ) : (
           <View style={{ gap: 8 }}>
             <SubmissionPreview sub={d.submission} />
+            {/* Organizers can report an entry that breaks the Community Guidelines. */}
+            <Pressable
+              onPress={() => setReporting(true)}
+              hitSlop={8}
+              style={styles.reportEntry}
+              accessibilityRole="button">
+              <FontAwesome5 name="flag" size={11} color={C.textSecondary} />
+              <Text style={[shared.meta, { color: C.textSecondary }]}>{t('safety.report')}</Text>
+            </Pressable>
             <Text style={[shared.meta, { color: C.textSecondary }]}>
               {t('comp.submittedAt', { when: formatNpt(d.submission.submittedAt) })}{d.creator.location ? ` · ${d.creator.location}` : ''}
             </Text>
@@ -372,6 +384,10 @@ function EntrySheet({ c, stageId, row, editable, canDecide, pending, onClose, on
         )}
       </View>
     </BottomSheet>
+    {d?.submission && (
+      <ReportModal visible={reporting} onClose={() => setReporting(false)} targetType="COMPETITION_SUBMISSION" targetId={d.submission.id} />
+    )}
+    </>
   );
 }
 
@@ -437,6 +453,7 @@ function PublishSheet({ c, stageId, onClose, onPublished }: { c: ManageDetail; s
 }
 
 const styles = StyleSheet.create({
+  reportEntry: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 32 },
   stageChip:    { borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 12, paddingVertical: 10, gap: 6, minWidth: 140 },
   selectionBar: { borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, gap: 10 },
   barButtons:   { flexDirection: 'row', gap: 8 },

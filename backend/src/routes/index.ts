@@ -45,7 +45,7 @@ import portfolioRoutes      from '../modules/portfolio/portfolio.routes';
 import providerMemberRoutes from '../modules/provider-member/provider-member.routes';
 import serviceRequestRoutes from '../modules/service-request/service-request.routes';
 import reportRoutes         from '../modules/report/report.routes';
-import reportAdminRoutes    from '../modules/report/report.admin.routes';
+import { blockRoutes, moderationAdminRoutes } from '../modules/moderation/moderation.routes';
 import { refundAdminRoutes, deadlineAdminRoutes } from '../modules/refund/refund.admin.routes';
 import withdrawalAdminRoutes from '../modules/withdrawal/withdrawal.admin.routes';
 import promotionRoutes from '../modules/promotion/promotion.routes';
@@ -101,7 +101,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/admin/community-events', communityEventAdminRoutes);
   app.use('/api/admin/visitor-chats', visitorChatAdminRoutes);
   app.use('/api/admin/services', serviceAdminRoutes);
-  app.use('/api/admin/reports', reportAdminRoutes);
+  app.use('/api/admin/moderation', moderationAdminRoutes);
   app.use('/api/admin/withdrawals', withdrawalAdminRoutes);
   app.use('/api/admin/refunds', refundAdminRoutes);
   app.use('/api/admin/deadlines', deadlineAdminRoutes);
@@ -113,6 +113,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/services', servicePublicRoutes);
   app.use('/api/service-requests', serviceRequestRoutes);
   app.use('/api/reports', reportRoutes);
+  app.use('/api/blocks', blockRoutes);
   app.use('/api/success-stories', successStoryRoutes);
   app.use('/api/partners', partnerRoutes);
   app.use('/api/community-events', communityEventRoutes);

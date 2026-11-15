@@ -19,6 +19,13 @@ const DEFAULTS: Record<string, unknown> = {
   // 'platform.comingSoon' key (both stores at once) is still read as a fallback
   // for whichever of these two has no explicit value yet — see
   // PublicRepository.getComingSoon.
+  // Mandatory agreement versions (modules/legal/terms.service). Bump one to
+  // make every user re-accept on their next app open.
+  'legal.version.terms':           '1',
+  'legal.version.guidelines':      '1',
+  'legal.version.privacy':         '1',
+  // Declared-age gate shown before sign-up / first acceptance.
+  'legal.minimumAge':              18,
   'platform.comingSoon.ios':       false,
   'platform.comingSoon.android':   false,
   'business.registrationEnabled':  true,

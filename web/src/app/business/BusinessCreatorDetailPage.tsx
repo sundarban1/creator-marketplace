@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, Star, ExternalLink, Bookmark } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -15,7 +15,7 @@ import { fetchCategories } from '../api/catalog';
 import { ApiError } from '../lib/apiClient';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
-import { ReportButton } from '../ui/ReportButton';
+import { SafetyMenu } from '../ui/SafetyMenu';
 import { Card, CardHeader } from '../ui/Card';
 import { Alert } from '../ui/Alert';
 import { EmptyState } from '../ui/EmptyState';
@@ -29,6 +29,7 @@ import { PortfolioGrid } from '../public/PortfolioGrid';
 import { VerifiedTick } from '../ui/VerifiedTick';
 
 export function BusinessCreatorDetailPage() {
+  const navigate = useNavigate();
   const t = useT();
   const { id = '' } = useParams();
   const creator = useAsync((s) => getBusinessCreator(id, s), [id]);
@@ -122,7 +123,11 @@ export function BusinessCreatorDetailPage() {
           <Bookmark size={15} className={isSaved ? 'fill-violet text-violet' : ''} />
           {isSaved ? t('biz.saved') : t('biz.save')}
         </Button>
-        <ReportButton targetType="USER" targetId={c.userId ?? c.id} />
+        <SafetyMenu
+          report={{ type: 'USER', id: c.userId ?? c.id }}
+          block={{ userId: c.userId ?? c.id, name }}
+          onBlocked={() => navigate('/business/creators', { replace: true })}
+        />
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -180,7 +185,7 @@ export function BusinessCreatorDetailPage() {
       {(c.portfolioItems.length > 0 || c.portfolioLinks.length > 0) && (
         <Card className="mt-6">
           <CardHeader title={t('public.portfolioHeading')} />
-          <PortfolioGrid items={c.portfolioItems} links={c.portfolioLinks} />
+          <PortfolioGrid items={c.portfolioItems} links={c.portfolioLinks} reportable />
         </Card>
       )}
 

@@ -7,7 +7,7 @@ import {
   Briefcase,
   Megaphone,
   CreditCard,
-  FileBarChart,
+  ShieldAlert,
   Settings,
   Tag,
   Share2,
@@ -68,12 +68,12 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/admin/payments',   label: 'Payments',   icon: CreditCard   },
       { to: '/admin/referrals',  label: 'Referrals',  icon: Gift         },
-      { to: '/admin/reports',    label: 'Reports',    icon: FileBarChart },
     ],
   },
   {
     label: 'Support',
     items: [
+      { to: '/admin/moderation',    label: 'Moderation',    icon: ShieldAlert   },
       { to: '/admin/help-center',   label: 'Help Center',   icon: HelpCircle    },
       { to: '/admin/faqs',          label: 'FAQs',          icon: BookOpen      },
       { to: '/admin/success-stories', label: 'Success Stories', icon: Quote     },

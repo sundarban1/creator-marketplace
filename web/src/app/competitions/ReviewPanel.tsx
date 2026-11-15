@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { ReportDialog } from '../ui/ReportButton';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Check, X, Eye, ExternalLink, Inbox } from 'lucide-react';
+import { Check, X, Eye, ExternalLink, Flag, Inbox } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
 import { useDebouncedValue } from '../lib/useDebouncedValue';
@@ -229,6 +230,7 @@ function EntryModal({ c, stageId, row, editable, canDecide, pending, onClose, on
   c: ManagedCompetition; stageId: string; row: ParticipantRow; editable: boolean; canDecide: boolean;
   pending?: Pending; onClose: () => void; onApply: (p: Pending) => void;
 }) {
+  const [reporting, setReporting] = useState(false);
   const t = useT();
   const detail = useAsync((s) => fetchSubmissionDetail(c.id, stageId, row.participantId, s), [c.id, stageId, row.participantId]);
   const [notes, setNotes] = useState<string>(pending?.notes ?? row.decision?.notes ?? '');
@@ -268,6 +270,11 @@ function EntryModal({ c, stageId, row, editable, canDecide, pending, onClose, on
       {detail.loading ? <Skeleton className="h-64 rounded-xl" /> : !d?.submission ? <p className="text-[14px] text-ink-soft">{t('comp.noEntryYet')}</p> : (
         <div className="space-y-4">
           <SubmissionPreview s={d.submission} />
+          {/* Organizers can report an entry that breaks the Community Guidelines. */}
+          <button type="button" onClick={() => setReporting(true)} className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-ink-soft hover:text-danger">
+            <Flag size={12} /> {t('safety.report')}
+          </button>
+          <ReportDialog open={reporting} onClose={() => setReporting(false)} targetType="COMPETITION_SUBMISSION" targetId={d.submission.id} />
           <p className="text-[12.5px] text-ink-soft">{t('comp.submittedAt', { when: formatNpt(d.submission.submittedAt) })}{d.creator.location ? ` · ${d.creator.location}` : ''}</p>
           {d.submission.history.length > 0 && (
             <details className="rounded-xl border border-line px-3 py-2">

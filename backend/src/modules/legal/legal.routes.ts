@@ -7,6 +7,7 @@ import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import prisma from '../../prisma';
 import { getDict } from '../../i18n';
+import { termsService, currentLegalVersions } from './terms.service';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -31,6 +32,31 @@ const sectionSchema = z.object({
 });
 
 const updateSchema = sectionSchema.partial().omit({ type: true });
+
+// ── Agreement acceptance (must precede the /:typeSlug catch-all) ─────────────
+
+router.get('/versions', async (_req: Request, res: Response, next: NextFunction) => {
+  try { success(res, await currentLegalVersions(), 'Legal versions'); } catch (err) { next(err); }
+});
+
+router.get('/acceptance', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try { success(res, await termsService.status(req.user!.id), 'Acceptance status'); } catch (err) { next(err); }
+});
+
+const acceptSchema = z.object({
+  termsVersion:      z.string().min(1).max(20),
+  guidelinesVersion: z.string().min(1).max(20),
+  privacyVersion:    z.string().max(20).optional(),
+  // YYYY-MM-DD from the neutral age gate. Private — never in any profile DTO.
+  birthDate:         z.string().regex(/^\d{4}-\d{2}-\d{2}/).optional(),
+  platform:          z.enum(['ios', 'android', 'web']).optional(),
+  // The checkbox itself — must be explicitly true.
+  agreed:            z.literal(true),
+});
+
+router.post('/acceptance', authenticate, validate(acceptSchema), async (req: Request, res: Response, next: NextFunction) => {
+  try { success(res, await termsService.accept(req.user!.id, req.body, req.ip), 'Agreement accepted'); } catch (err) { next(err); }
+});
 
 // ── Public: mobile fetches by type slug ──────────────────────────────────────
 

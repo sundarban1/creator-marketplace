@@ -38,6 +38,8 @@ export class BusinessRepository {
     platform?:  string;
     locations?: string[]; // OR-matched against campaign.location
     sort?:      'newest';
+    /** Business profiles hidden from this viewer (blocks — UGC safety). */
+    excludeIds?: string[];
     page:       number;
     limit:      number;
   }) {
@@ -61,6 +63,7 @@ export class BusinessRepository {
       showPublicProfile: true,
       isActive: true,
       user: { isOnboarded: true, isActive: true },
+      ...(params.excludeIds?.length ? { id: { notIn: params.excludeIds } } : {}),
     };
 
     if (params.category) {
@@ -118,6 +121,7 @@ export class BusinessRepository {
     category?:  string;
     platform?:  string;
     locations?: string[];
+    excludeIds?: string[];
     page:       number;
     limit:      number;
   }) {
@@ -130,6 +134,9 @@ export class BusinessRepository {
       Prisma.sql`b."isActive" = true`,
       Prisma.sql`EXISTS (SELECT 1 FROM users u WHERE u.id = b."userId" AND u."isOnboarded" = true AND u."isActive" = true)`,
     ];
+    if (params.excludeIds?.length) {
+      conditions.push(Prisma.sql`b.id NOT IN (${Prisma.join(params.excludeIds)})`);
+    }
 
     if (params.category) {
       conditions.push(Prisma.sql`${params.category} = ANY(b.categories)`);

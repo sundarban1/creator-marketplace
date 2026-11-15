@@ -234,8 +234,8 @@ export const chatService = {
     await request('DELETE', `/api/messaging/conversations/${conversationId}/block`);
   },
 
-  async getBlockStatus(conversationId: string): Promise<{ blockedByMe: boolean; blockedByOther: boolean }> {
-    const res = await request<{ blockedByMe: boolean; blockedByOther: boolean }>(
+  async getBlockStatus(conversationId: string): Promise<{ blockedByMe: boolean; blockedByOther: boolean; otherUserId?: string }> {
+    const res = await request<{ blockedByMe: boolean; blockedByOther: boolean; otherUserId?: string }>(
       'GET', `/api/messaging/conversations/${conversationId}/block-status`,
     );
     return res.data;

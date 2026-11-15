@@ -155,7 +155,7 @@ export class CampaignController {
 
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { campaigns, total, page, limit } = await campaignService.list(req.query as any, req.language);
+      const { campaigns, total, page, limit } = await campaignService.list(req.query as any, req.language, req.user?.id);
       paginated(res, campaigns, total, page, limit);
     } catch (err) {
       next(err);
@@ -164,7 +164,7 @@ export class CampaignController {
 
   async nearby(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { campaigns, total, page, limit } = await campaignService.nearby(req.query as any, req.language);
+      const { campaigns, total, page, limit } = await campaignService.nearby(req.query as any, req.language, req.user?.id);
       paginated(res, campaigns, total, page, limit);
     } catch (err) {
       next(err);
@@ -203,7 +203,7 @@ export class CampaignController {
       // or a raw id (older links) — see CampaignService.resolveSlugToId.
       const id = await campaignService.resolveSlugToId(req.params.id);
       if (!id) throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
-      const campaign = await campaignService.getById(id, req.language);
+      const campaign = await campaignService.getById(id, req.language, req.user ? { id: req.user.id, role: req.user.role } : null);
       const PUBLIC_STATUSES: CampaignStatus[] = [
         CampaignStatus.ACTIVE,
         CampaignStatus.PAUSED,

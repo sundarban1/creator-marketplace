@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { SafetyMenu } from '../ui/SafetyMenu';
 import { ArrowLeft, MapPin, Star, ExternalLink, Users } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -22,6 +23,7 @@ import { VerifiedTick } from '../ui/VerifiedTick';
 const SHOW_PROVIDER_BADGE: boolean = false;
 
 export function CreatorDiscoverCreatorDetailPage() {
+  const navigate = useNavigate();
   const t = useT();
   const { handle = '' } = useParams();
   const creator = useAsync((s) => fetchCreatorByHandle(handle, s), [handle]);
@@ -64,10 +66,17 @@ export function CreatorDiscoverCreatorDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link to="/creator/creators" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
-        <ArrowLeft size={14} />
-        {t('public.backToCreators')}
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link to="/creator/creators" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+          <ArrowLeft size={14} />
+          {t('public.backToCreators')}
+        </Link>
+        <SafetyMenu
+          report={{ type: 'USER', id: c.userId ?? c.id }}
+          block={{ userId: c.userId ?? c.id, name }}
+          onBlocked={() => navigate('/creator/creators', { replace: true })}
+        />
+      </div>
 
       <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start">
         <Avatar name={name} src={c.avatarUrl} size="xl" className="h-20 w-20 flex-shrink-0" />
@@ -156,7 +165,7 @@ export function CreatorDiscoverCreatorDetailPage() {
       {(c.portfolioItems.length > 0 || c.portfolioLinks.length > 0) && (
         <Card className="mt-6">
           <CardHeader title={t('public.portfolioHeading')} />
-          <PortfolioGrid items={c.portfolioItems} links={c.portfolioLinks} />
+          <PortfolioGrid items={c.portfolioItems} links={c.portfolioLinks} reportable />
         </Card>
       )}
 

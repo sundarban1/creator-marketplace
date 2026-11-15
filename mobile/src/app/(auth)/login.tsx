@@ -48,6 +48,9 @@ import {
   type BiometricLabel,
 } from '@/services/biometric';
 import { FieldError } from '@/components/FieldError';
+import { useQuery } from '@tanstack/react-query';
+import { termsService, type LegalVersions } from '@/services/safety';
+import { termsPending } from '@/features/legal/termsPending';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -458,6 +461,52 @@ function TempleSkyline() {
 
 // ── Login form ────────────────────────────────────────────────────────────────
 
+type LegalDoc = 'terms' | 'privacy-policy' | 'guidelines';
+function openLegal(type: LegalDoc) {
+  router.push({ pathname: '/legal', params: { type } } as never);
+}
+
+/** Current legal versions — fetched up front so agreeing on the form can be
+ *  stored on the device and recorded server-side once signed in. */
+function useLegalVersions(): LegalVersions | null {
+  const q = useQuery({ queryKey: ['legalVersions'], queryFn: () => termsService.versions(), staleTime: 5 * 60_000 });
+  return q.data ?? null;
+}
+
+/** Remember the user's agreement on this device; useTermsGate replays it to
+ *  the server after sign-in, so they aren't asked again. Best-effort. */
+async function rememberAgreement(versions: LegalVersions | null) {
+  if (!versions) return;
+  try { await termsPending.set({ versions, agreedAt: new Date().toISOString() }); } catch { /* gate will ask after sign-in */ }
+}
+
+/** "I have read and agree to the Terms of Use, Privacy Policy and Community
+ *  Guidelines" — required on both the login and create-account forms. */
+function AgreeCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+  const C = useAppColors();
+  const s = useMemo(() => makeStyles(C), [C]);
+  const { t } = useLanguage();
+  const link = { color: C.brinjal1, fontFamily: F.semibold };
+  return (
+    <Pressable
+      style={[s.checkRow, s.checkRowTop]}
+      onPress={onToggle}
+      hitSlop={8}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}>
+      <FontAwesome5 name={checked ? 'check-square' : 'square'} solid={checked} size={19} color={checked ? C.brinjal1 : C.textSecondary} />
+      <Text style={s.termsRowText}>
+        {t('auth.login.agreePrefix')}{' '}
+        <Text style={link} onPress={() => openLegal('terms')}>{t('auth.login.termsOfUse')}</Text>
+        {', '}
+        <Text style={link} onPress={() => openLegal('privacy-policy')}>{t('auth.login.privacyPolicy')}</Text>
+        {' '}{t('auth.login.agreeAnd')}{' '}
+        <Text style={link} onPress={() => openLegal('guidelines')}>{t('auth.login.communityGuidelines')}</Text>
+      </Text>
+    </Pressable>
+  );
+}
+
 function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError, appleAvailable, onApplePress, appleLoading, appleError, onTiktokPress, tiktokLoading, tiktokError, onLoginSuccess }: {
   verified?: string;
   onGooglePress: () => void;
@@ -722,6 +771,7 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
   const [identifierInput, setIdentifierInput] = useState('');
   const [password,  setPassword]  = useState('');
   const [agreed,    setAgreed]    = useState(false);
+  const legalVersions = useLegalVersions();
   const [submitted, setSubmitted] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
@@ -740,6 +790,7 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
     if (!agreed) { setError(t('auth.signup.termsRequired')); return; }
     setLoading(true);
     try {
+      await rememberAgreement(legalVersions);
       if (channel === 'email') {
         const trimmedEmail = trimmedIdentifier.toLowerCase();
         await authService.register({ email: trimmedEmail, password, role });
@@ -821,20 +872,7 @@ function SignupForm({ initialRole, onGooglePress, googleLoading, googleError, on
           )}
         </View>
 
-        <Pressable
-          style={[s.checkRow, s.checkRowTop]}
-          onPress={() => { setAgreed((v) => !v); setError(''); }}
-          hitSlop={8}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: agreed }}>
-          <FontAwesome5 name={agreed ? 'check-square' : 'square'} solid={agreed} size={19} color={agreed ? C.brinjal1 : C.textSecondary} />
-          <Text style={s.termsRowText}>
-            {t('auth.signup.termsPrefix')}{' '}
-            <Text style={{ color: C.brinjal1, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>{t('auth.signup.termsLink')}</Text>
-            {' '}{t('auth.signup.termsAnd')}{' '}
-            <Text style={{ color: C.brinjal1, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>{t('auth.signup.privacyLink')}</Text>
-          </Text>
-        </Pressable>
+        <AgreeCheckbox checked={agreed} onToggle={() => { setAgreed((v) => !v); setError(''); }} />
 
         <Pressable
           onPress={handleCreate} disabled={loading}

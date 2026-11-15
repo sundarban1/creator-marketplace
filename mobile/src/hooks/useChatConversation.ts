@@ -260,6 +260,8 @@ export function useChatConversation({
     };
   }, [participantUserId]);
 
+  const [reportMessageId, setReportMessageId] = useState<string | null>(null);
+
   function handleMessageLongPress(msg: Message) {
     if (msg.isDeleted || msg.id.startsWith('temp-')) return;
     const isMine = msg.senderId === user?.id;
@@ -275,6 +277,9 @@ export function useChatConversation({
         } });
       }
       options.push({ text: t('messages.deleteForEveryone'), style: 'destructive', onPress: () => void deleteMessage(msg, true) });
+    } else {
+      // Report someone else's message to Kolab moderators (opens ReportModal).
+      options.unshift({ text: t('safety.report'), onPress: () => setReportMessageId(msg.id) });
     }
     options.push({ text: t('common.cancel'), style: 'cancel' });
     Alert.alert(t('messages.deleteMessageTitle'), undefined, options);
@@ -691,7 +696,7 @@ export function useChatConversation({
     otherTyping, emojiOpen, setEmojiOpen, presence,
     listRef, inputRef, isSending, uploadTasks,
     scrollToBottom, loadMessages, markSeen,
-    handleMessageLongPress, clearComposer, handleTextChange, handleSend,
+    handleMessageLongPress, reportMessageId, setReportMessageId, clearComposer, handleTextChange, handleSend,
     handleSendAttachment, handleSendVideoAttachment, handleSendVoiceAttachment,
     runVideoSend, runVoiceSend,
     handleCameraPress, handleAttachmentPress,

@@ -284,6 +284,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     paymentType:  api.paymentType,
     brand:        api.business.businessName,
     brandLogoUrl: api.business.logoUrl ?? undefined,
+    businessUserId: api.business.userId ?? api.business.id,
     platforms:     api.platforms,
     platformIcons: api.platforms.map((p) => PLATFORM_ICONS[p] ?? '📱'),
     // An unfinished draft with no amount yet isn't an exchange — it just

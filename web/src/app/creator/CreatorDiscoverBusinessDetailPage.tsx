@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, Star, Globe, Heart } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
@@ -7,7 +7,7 @@ import { fetchPublicBusiness } from '../api/publicMarketplace';
 import { fetchCategories } from '../api/catalog';
 import { fetchFavoriteBusinessIds, toggleFavoriteBusiness } from '../api/creator';
 import { Button } from '../ui/Button';
-import { ReportButton } from '../ui/ReportButton';
+import { SafetyMenu } from '../ui/SafetyMenu';
 import { useToast } from '../ui/Toast';
 import { ApiError } from '../lib/apiClient';
 import { Avatar } from '../ui/Avatar';
@@ -19,6 +19,7 @@ import { makeCategoryLookup } from '../public/categoryLookup';
 import { VerifiedTick } from '../ui/VerifiedTick';
 
 export function CreatorDiscoverBusinessDetailPage() {
+  const navigate = useNavigate();
   const t = useT();
   const { id = '' } = useParams();
   const business = useAsync((s) => fetchPublicBusiness(id, s), [id]);
@@ -137,7 +138,11 @@ export function CreatorDiscoverBusinessDetailPage() {
           <Heart size={14} className={isFavorite ? 'fill-danger text-danger' : ''} />
           {isFavorite ? t('favoriteBusinesses.favorited') : t('favoriteBusinesses.addFavorite')}
         </Button>
-        <ReportButton targetType="BUSINESS" targetId={b.userId ?? b.id} />
+        <SafetyMenu
+          report={{ type: 'BUSINESS', id: b.userId ?? b.id }}
+          block={{ userId: b.userId ?? b.id, name }}
+          onBlocked={() => navigate('/creator/businesses', { replace: true })}
+        />
         </div>
       </div>
 

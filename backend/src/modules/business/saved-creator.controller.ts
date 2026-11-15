@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { hiddenFor } from '../moderation/block.service';
 import { SavedCreatorRepository } from './saved-creator.repository';
 import { BusinessRepository } from './business.repository';
 import { notificationService } from '../notifications/notification.service';
@@ -102,7 +103,11 @@ export class SavedCreatorController {
         select: { creatorId: true },
       });
       const alreadyInvited = new Set(existing.map((e) => e.creatorId));
-      const newCreatorIds = requestedIds.filter((id) => !alreadyInvited.has(id));
+      // Blocked creators (either direction) are silently skipped — the business
+      // isn't told which, and the creator never receives the invite.
+      const hidden = await hiddenFor(req.user!.id);
+      const blockedCreators = new Set(hidden.creatorProfileIds);
+      const newCreatorIds = requestedIds.filter((id) => !alreadyInvited.has(id) && !blockedCreators.has(id));
 
       if (newCreatorIds.length > 0) {
         await prisma.campaignInvitation.createMany({

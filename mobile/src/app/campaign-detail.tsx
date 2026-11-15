@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ContentActionsButton, ContentActionsSheet } from '@/components/ContentActionsSheet';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CampaignBriefSections } from '@/components/CampaignBriefSections';
 import { SaveTemplateButton } from '@/features/business/guided/templates';
@@ -65,6 +66,7 @@ export default function CampaignDetailScreen() {
   // guest login prompt and comes back here (resume=apply) once signed in.
   const isGuest = !user;
   const isCreator = user?.role === 'CREATOR';
+  const [showActions, setShowActions] = useState(false);
   const { categories: allCategories } = useAllCategories();
   // Set by the create flows right after a new event is submitted — show the
   // one-time "submitted for review" modal, then drop the param so a re-render
@@ -228,10 +230,21 @@ export default function CampaignDetailScreen() {
         {/* Save-for-later. The wrapper keeps its 40px slot even for a business
             session, where ShortlistButton renders nothing, so the centred
             title stays centred. */}
-        <View style={s.headerAction}>
+        <View style={s.headerActionRow}>
           <ShortlistButton campaignId={campaign.id} size="sm" style={s.headerSaveBtn} />
+          {/* ⋯ Report the event / Block the organizer — not on your own event. */}
+          {!isGuest && !isBusiness && (
+            <ContentActionsButton onPress={() => setShowActions(true)} />
+          )}
         </View>
       </View>
+      <ContentActionsSheet
+        visible={showActions}
+        onClose={() => setShowActions(false)}
+        report={{ type: 'OPPORTUNITY', id: campaign.id }}
+        block={campaign.businessUserId ? { userId: campaign.businessUserId, name: campaign.brand, source: 'event' } : undefined}
+        onBlocked={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+      />
 
       <ScrollView
         contentContainerStyle={s.scroll}
@@ -818,6 +831,7 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md, borderBottomWidth: 1 },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
   headerAction: { width: 40, alignItems: 'flex-end' },
+  headerActionRow: { minWidth: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2 },
   // Matches BackButton's 40px circle so the two header controls read as a pair.
   headerSaveBtn: { width: 40, height: 40, borderRadius: 20 },
 

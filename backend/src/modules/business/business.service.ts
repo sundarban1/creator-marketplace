@@ -1,4 +1,6 @@
 import { AppError } from '../../middleware/error';
+import { screenContent, enforceScreen } from '../../moderation/contentScreening';
+import { hiddenFor, isBlockedEitherWay } from '../moderation/block.service';
 import { getDict } from '../../i18n';
 import { logger } from '../../config/logger';
 import { toBusinessProfileDto, toPublicBusinessDto, toBusinessListItemDto, toPrivateBusinessDto } from './business.dto';
@@ -73,6 +75,9 @@ export class BusinessService {
         throw new AppError(getDict().business.displayNameNotAllowed, HttpStatus.BAD_REQUEST, true, { code: 'DISPLAY_NAME_NOT_ALLOWED' });
       }
     }
+    if (input.description && input.description !== profile.description) {
+      enforceScreen(await screenContent({ texts: { description: input.description }, profile: 'bio' }, { userId, contentType: 'business_description' }));
+    }
 
     const { email, ...rest } = input;
     if (email) {
@@ -146,9 +151,11 @@ export class BusinessService {
     page:       number;
     limit:      number;
     lang?:      string;
+    viewerUserId?: string;
   }) {
-    const { lang = 'en', ...rest } = params;
-    const { businesses, total } = await this.repo.findMany(rest);
+    const { lang = 'en', viewerUserId, ...rest } = params;
+    const hidden = await hiddenFor(viewerUserId);
+    const { businesses, total } = await this.repo.findMany({ ...rest, excludeIds: hidden.businessProfileIds });
     const dtos = businesses.map(toBusinessListItemDto);
     const translated = await translateMany(dtos, [...BUSINESS_FIELDS], lang);
     return { businesses: translated, total };
@@ -165,9 +172,13 @@ export class BusinessService {
     return byId ? byId.id : null;
   }
 
-  async getBusinessPublic(id: string, lang = 'en') {
+  async getBusinessPublic(id: string, lang = 'en', viewerUserId?: string) {
     const business = await this.repo.findPublicById(id);
     if (!business) throw new AppError(getDict().business.businessNotFound, HttpStatus.NOT_FOUND);
+    // Blocked either way: the profile is unavailable to the other party.
+    if (viewerUserId && viewerUserId !== business.userId && (await isBlockedEitherWay(viewerUserId, business.userId))) {
+      throw new AppError('This profile isn’t available.', HttpStatus.NOT_FOUND, true, { code: 'USER_BLOCKED' });
+    }
     if (!business.showPublicProfile) return toPrivateBusinessDto(business);
 
     return cached(publicBusinessCacheKey(id, lang), PUBLIC_PROFILE_CACHE_TTL_SEC, async () => {

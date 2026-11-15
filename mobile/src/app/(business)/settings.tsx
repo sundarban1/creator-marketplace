@@ -2200,6 +2200,8 @@ export default function BusinessSettingsScreen() {
           <SupportChannels context="business" />
         </View>
         <Card>
+          <NavRow ionIcon="user-shield"             ionIconColor="#DC2626" label={t('safety.helpTitle')}                     onPress={() => router.push('/help-safety')} />
+          <NavRow ionIcon="ban"                     ionIconColor="#6B7280" label={t('safety.blockedUsers')}                  onPress={() => router.push('/blocked-users')} />
           <NavRow ionIcon="question-circle"         ionIconColor="#0891B2" label={t('businessSettings.helpCenterNavLabel')}  onPress={() => setSubPage('help-center')} />
           <NavRow ionIcon="comment-alt" ionIconColor="#7C3AED" label={t('businessSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
           <NavRow ionIcon="exclamation-triangle"             ionIconColor="#EF4444" label={t('businessSettings.reportIssueLabel')}    onPress={() => setSubPage('report-issue')} />

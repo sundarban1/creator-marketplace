@@ -30,7 +30,7 @@ export class CreatorController {
       const priceMax = req.query.priceMax ? parseFloat(String(req.query.priceMax)) : undefined;
       const sortRaw = req.query.sort as string | undefined;
       const sort = sortRaw === 'oldest' || sortRaw === 'followers' ? sortRaw : 'newest';
-      const result = await creatorService.listCreators({ page, limit, search, categories, location, platforms, priceMin, priceMax, sort, lang: req.language });
+      const result = await creatorService.listCreators({ page, limit, search, categories, location, platforms, priceMin, priceMax, sort, lang: req.language, viewerUserId: req.user?.id });
       success(res, result, getDict().creator.creatorsRetrieved);
     } catch (err) {
       next(err);
@@ -48,7 +48,7 @@ export class CreatorController {
       const platforms = req.query.platforms ? String(req.query.platforms).split(',').filter(Boolean) : undefined;
       const minFollowers = req.query.minFollowers ? parseInt(String(req.query.minFollowers), 10) : undefined;
       const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
-      const creators = await creatorService.getRecommendedForCampaign({ category, lat, lng, budgetMin, budgetMax, platforms, minFollowers, limit, lang: req.language });
+      const creators = await creatorService.getRecommendedForCampaign({ category, lat, lng, budgetMin, budgetMax, platforms, minFollowers, limit, lang: req.language, viewerUserId: req.user?.id });
       success(res, creators, getDict().creator.recommendedCreatorsRetrieved);
     } catch (err) {
       next(err);
@@ -92,6 +92,7 @@ export class CreatorController {
         // into a public profile. Opt-in so the web listing is unchanged.
         publicOnly: verified || req.query.publicOnly === 'true' || undefined,
         lang: req.language,
+        viewerUserId: req.user?.id,
       });
       success(res, result, getDict().creator.creatorsRetrieved);
     } catch (err) {
@@ -129,7 +130,7 @@ export class CreatorController {
     try {
       const id = await creatorService.resolveHandleToId(req.params.handle);
       if (!id) throw new AppError(getDict().creator.creatorNotFound, HttpStatus.NOT_FOUND);
-      const profile = await creatorService.getCreatorPublicProfile(id, req.language);
+      const profile = await creatorService.getCreatorPublicProfile(id, req.language, req.user?.id);
       success(res, profile, getDict().creator.creatorProfileRetrieved);
     } catch (err) {
       next(err);
@@ -155,7 +156,7 @@ export class CreatorController {
       const viewer = await creatorService.findByUserId(req.user!.id);
       const result = await creatorService.listCreators({
         page, limit, search, categories, location, platforms, priceMin, priceMax,
-        excludeId: viewer?.id, lang: req.language,
+        excludeId: viewer?.id, lang: req.language, viewerUserId: req.user!.id,
       });
       success(res, result, getDict().creator.creatorsRetrieved);
     } catch (err) {

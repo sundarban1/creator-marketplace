@@ -1,4 +1,6 @@
 import { randomUUID, randomBytes, createHash } from 'crypto';
+import { screenContent, enforceScreen } from '../../moderation/contentScreening';
+import { hiddenFor, isBlockedEitherWay } from '../moderation/block.service';
 import OpenAI from 'openai';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
@@ -485,11 +487,13 @@ export class CreatorService {
     publicOnly?: boolean;
     sort?: 'newest' | 'oldest' | 'followers';
     lang?: string;
+    viewerUserId?: string;
   }) {
     const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, hasAvatar, fullyVerified, publicOnly, sort, lang = 'en' } = params;
+    const hidden = await hiddenFor(params.viewerUserId);
     const { creators: raw, total } = await this.repo.findMany({
       page, limit: Math.min(limit, 20),
-      search, categories, location, platforms, priceMin, priceMax, excludeId, hasAvatar, fullyVerified, publicOnly, sort,
+      search, categories, location, platforms, priceMin, priceMax, excludeId, excludeIds: hidden.creatorProfileIds, hasAvatar, fullyVerified, publicOnly, sort,
     });
     const dtos = raw.map(toCreatorListItemDto);
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
@@ -679,12 +683,17 @@ export class CreatorService {
     minFollowers?: number;
     limit?: number;
     lang?: string;
+    viewerUserId?: string;
   }) {
     const limit = Math.min(params.limit ?? 10, 20);
-    const [candidates, settings] = await Promise.all([
+    const [all, settings, hidden] = await Promise.all([
       this.repo.findRecommended(params.category),
       getCachedSettings(),
+      hiddenFor(params.viewerUserId),
     ]);
+    // Blocked either way → never recommended.
+    const hiddenUsers = new Set(hidden.userIds);
+    const candidates = hiddenUsers.size ? all.filter((c) => !hiddenUsers.has(c.userId)) : all;
     const priorityCity = (settings['marketplace.launchPriorityCity'] as string | undefined) ?? '';
     const analyticsByUserId = new Map(
       (await this.repo.findAnalyticsByUserIds(candidates.map((c) => c.userId))).map((a) => [a.userId, a]),
@@ -728,6 +737,10 @@ export class CreatorService {
     const profile = await this.repo.findByIdPublic(creatorId);
     if (!profile) throw new AppError(getDict().creator.creatorNotFound, HttpStatus.NOT_FOUND);
     const isOwnProfile = viewerUserId != null && profile.userId === viewerUserId;
+    // Blocked either way: the profile is unavailable to the other party.
+    if (viewerUserId && !isOwnProfile && (await isBlockedEitherWay(viewerUserId, profile.userId))) {
+      throw new AppError('This profile isn’t available.', HttpStatus.NOT_FOUND, true, { code: 'USER_BLOCKED' });
+    }
 
     // Fire-and-forget — only authenticated brands reach this route at all
     // (business.routes.ts gates the whole file on authorize('BUSINESS')), so
@@ -848,6 +861,10 @@ export class CreatorService {
         logModerationRejection({ userId, field: 'displayName', result: displayNameModeration });
         throw new AppError(getDict().creator.displayNameNotAllowed, HttpStatus.BAD_REQUEST, true, { code: 'DISPLAY_NAME_NOT_ALLOWED' });
       }
+    }
+    // Bio is public UGC — screened only when it actually changes.
+    if (input.bio && input.bio !== profile.bio) {
+      enforceScreen(await screenContent({ texts: { bio: input.bio }, profile: 'bio' }, { userId, contentType: 'creator_bio' }));
     }
 
     const { email, ...rest } = input;
@@ -1638,7 +1655,10 @@ export class CreatorService {
   async listInvitations(userId: string) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError(getDict().creator.creatorProfileNotFound, HttpStatus.NOT_FOUND);
-    const invitations = await this.repo.findInvitations(profile.id);
+    const [all, hidden] = await Promise.all([this.repo.findInvitations(profile.id), hiddenFor(userId)]);
+    // Invitations from a business the creator blocked (or that blocked them) drop out.
+    const blockedBusinesses = new Set(hidden.businessProfileIds);
+    const invitations = blockedBusinesses.size ? all.filter((i) => !blockedBusinesses.has(i.businessId)) : all;
     // Paid-campaign invitations route the creator through the proposal flow
     // rather than an accept/decline — tag each with whether they've applied so
     // the invitations screen can show "Applied" instead of "Apply Now".

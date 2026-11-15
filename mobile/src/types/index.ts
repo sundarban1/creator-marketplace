@@ -20,6 +20,8 @@ export type Campaign = {
   title: string;
   brand: string;
   brandLogoUrl?: string;
+  /** Owning business account — present on detail reads; used for Block. */
+  businessUserId?: string;
   platforms: string[];
   platformIcons: string[];
   budget: string;

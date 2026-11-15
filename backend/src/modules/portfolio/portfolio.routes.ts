@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { uploadImage } from '../../middleware/upload';
+import { uploadImage, screenImageUpload } from '../../middleware/upload';
 import { PortfolioController } from './portfolio.controller';
 import { createPortfolioItemSchema, updatePortfolioItemSchema } from './portfolio.schema';
 
@@ -15,7 +15,7 @@ const ctrl = new PortfolioController();
 router.use(authenticate, authorize('CREATOR'));
 
 router.get('/', ctrl.listMine.bind(ctrl));
-router.post('/upload', uploadImage.single('media'), ctrl.uploadMedia.bind(ctrl));
+router.post('/upload', uploadImage.single('media'), screenImageUpload('portfolio_media'), ctrl.uploadMedia.bind(ctrl));
 router.post('/', validate(createPortfolioItemSchema), ctrl.create.bind(ctrl));
 router.put('/:id', validate(updatePortfolioItemSchema), ctrl.update.bind(ctrl));
 router.delete('/:id', ctrl.remove.bind(ctrl));

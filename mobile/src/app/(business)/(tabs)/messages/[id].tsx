@@ -1,4 +1,7 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { ContentActionsButton, ContentActionsSheet } from '@/components/ContentActionsSheet';
+import { ReportModal } from '@/components/ReportModal';
+import { useConversationBlock } from '@/hooks/useConversationBlock';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -448,6 +451,10 @@ export default function BusinessChatRoomScreen() {
   const androidKeyboardVisible = Platform.OS === 'android' && keyboardVisible;
 
   const personName  = name ?? 'Chat';
+  // Block state for this conversation (account-level block, see BlockContext).
+  const blockStatus = useConversationBlock(id);
+  const isBlockedEither = !!blockStatus && (blockStatus.blockedByMe || blockStatus.blockedByOther);
+  const [showActions, setShowActions] = useState(false);
   const personColor = avatarColor(personName);
   const personAvatar = avatar || undefined;
   const [personAvatarFailed, setPersonAvatarFailed] = useState(false);
@@ -516,6 +523,8 @@ export default function BusinessChatRoomScreen() {
                   })()}
             </View>
           </Pressable>
+          {/* ⋯ Report / Block the creator. */}
+          <ContentActionsButton onPress={() => setShowActions(true)} />
         </View>
         <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
       </View>
@@ -614,13 +623,35 @@ export default function BusinessChatRoomScreen() {
         />
         )}
 
+        <ContentActionsSheet
+          visible={showActions}
+          onClose={() => setShowActions(false)}
+          report={{ type: 'USER', id: participantId ?? participantUserId ?? '' }}
+          block={(blockStatus?.otherUserId ?? participantUserId ?? participantId)
+            ? { userId: (blockStatus?.otherUserId ?? participantUserId ?? participantId)!, name: personName, source: 'chat', conversationId: id }
+            : undefined}
+        />
+        <ReportModal
+          visible={!!chat.reportMessageId}
+          onClose={() => chat.setReportMessageId(null)}
+          targetType="MESSAGE"
+          targetId={chat.reportMessageId ?? ''}
+        />
+
         {/* ── Input bar ── */}
         {chat.status === 'ACCEPTED' && !flags.messagingEnabled && (
           <View style={[s.inputBar, { backgroundColor: C.surface, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
             <Text style={[s.charCount, { color: C.textSecondary }]}>{t('messages.messagingDisabled')}</Text>
           </View>
         )}
-        {chat.status === 'ACCEPTED' && flags.messagingEnabled && (
+        {chat.status === 'ACCEPTED' && flags.messagingEnabled && isBlockedEither && (
+          <View style={[s.inputBar, { backgroundColor: C.surface, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
+            <Text style={[s.charCount, { color: C.textSecondary }]}>
+              {blockStatus?.blockedByMe ? t('messages.youBlockedUser') : t('messages.blockedByOther')}
+            </Text>
+          </View>
+        )}
+        {chat.status === 'ACCEPTED' && flags.messagingEnabled && !isBlockedEither && (
           <>
             {chat.editingMessage && (
               <View style={[s.editingBanner, { backgroundColor: C.surface, borderTopColor: C.border }]}>

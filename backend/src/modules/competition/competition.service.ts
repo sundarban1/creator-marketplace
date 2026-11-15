@@ -1,4 +1,6 @@
 import { randomUUID } from 'crypto';
+import { screenContent, enforceScreen } from '../../moderation/contentScreening';
+import { hiddenFor, isBlockedEitherWay, assertCanInteract } from '../moderation/block.service';
 import { v2 as cloudinary } from 'cloudinary';
 import { Prisma, type CompetitionStage } from '@prisma/client';
 import prisma from '../../prisma';
@@ -328,6 +330,10 @@ export class CompetitionService {
 
   async create(userId: string, input: CreateCompetitionInput) {
     const b = await this.organizerProfile(userId);
+    // Every competition goes through mandatory admin review, so screening only
+    // has to refuse clearly prohibited text up front (flags are recorded as
+    // moderation events for the reviewer).
+    enforceScreen(await screenContent({ texts: { title: input.title, description: input.description, rules: input.rules }, profile: 'event' }, { userId, contentType: 'competition', holdOnError: true }), { gated: true });
     input = { ...input, stages: rules.normalizeStageDates(input.submissionMode, input.stages, input.endsAt) };
     validateConfig({ ...input, publishAt: null });
     const { pay, rest } = splitPayment(input);
@@ -359,6 +365,9 @@ export class CompetitionService {
     const c = await this.owned(userId, id);
     this.assertEditable(c);
     this.assertNotSuspended(c);
+    if (input.title !== undefined || input.description !== undefined || input.rules !== undefined) {
+      enforceScreen(await screenContent({ texts: { title: input.title, description: input.description, rules: input.rules }, profile: 'event' }, { userId, contentType: 'competition', contentId: id, holdOnError: true }), { gated: true });
+    }
 
     if (rules.PRE_LAUNCH_EDITABLE.includes(c.status)) return this.updateDraft(userId, c, input);
     // Approved but not public yet: nobody has joined, so a change to the
@@ -1420,10 +1429,13 @@ export class CompetitionService {
 
   async discover(q: DiscoverQuery, viewer?: { id: string; role: string }) {
     const statuses = q.tab === 'open' ? [...LIVE] : q.tab === 'results' ? ['COMPLETED'] : [...LIVE, 'COMPLETED'];
+    // Organizers the viewer has blocked / been blocked by are left out (UGC safety).
+    const hidden = await hiddenFor(viewer?.id);
     const where: Prisma.CompetitionWhereInput = {
       status: { in: statuses as never },
       suspendedAt: null,
       business: { isActive: true },
+      ...(hidden.businessProfileIds.length ? { businessId: { notIn: hidden.businessProfileIds } } : {}),
       ...(q.q ? { title: { contains: q.q, mode: 'insensitive' } } : {}),
     };
     const [total, rows] = await Promise.all([
@@ -1495,6 +1507,11 @@ export class CompetitionService {
       const creator = await prisma.creatorProfile.findUnique({ where: { userId: viewer.id }, select: { id: true } });
       if (creator) participant = await prisma.competitionParticipant.findUnique({ where: { competitionId_creatorId: { competitionId: c.id, creatorId: creator.id } } });
     }
+    // Blocked either way → behaves as not found, except for an existing
+    // participant (their entry/history is never taken away by a block).
+    if (viewer && !isOwner && !participant && viewer.role !== 'ADMIN' && (await isBlockedEitherWay(viewer.id, c.business.userId))) {
+      throw fail(M().notFound, HttpStatus.NOT_FOUND);
+    }
 
     const now = new Date();
     const regOpen = rules.registrationOpen(c, now);
@@ -1558,6 +1575,7 @@ export class CompetitionService {
 
     const c = await prisma.competition.findUnique({ where: { id }, include: { business: { select: ORGANIZER_DISPLAY } } });
     if (!c || rules.UNPUBLISHED_STATUSES.includes(c.status) || !c.business.isActive) throw fail(m.notFound, HttpStatus.NOT_FOUND);
+    await assertCanInteract(userId, c.business.userId, m.notFound);
     const now = new Date();
     if (!rules.registrationOpen(c, now)) {
       throw fail(c.suspendedAt ? m.competitionSuspended : this.registrationClosedReason(c, now), HttpStatus.CONFLICT, 'REGISTRATION_CLOSED');
@@ -1723,6 +1741,7 @@ export class CompetitionService {
     if (!ctx.stage.allowedMethods.includes('EXTERNAL_LINK')) throw fail(m.methodNotAllowed, HttpStatus.BAD_REQUEST);
     const link = validateSubmissionLink(input.url);
     if (!link.ok) throw fail(link.message, HttpStatus.BAD_REQUEST, 'INVALID_LINK');
+    if (input.caption) enforceScreen(await screenContent({ texts: { caption: input.caption }, profile: 'bio' }, { userId, contentType: 'competition_submission' }));
     return this.writeSubmission(ctx, { method: 'EXTERNAL_LINK', externalUrl: link.url, caption: input.caption ?? null }, userId);
   }
 
@@ -1745,6 +1764,7 @@ export class CompetitionService {
    * CampaignService.completeDeliverableVideo.
    */
   async completeVideoUpload(userId: string, id: string, stageId: string, ref: VideoCompleteInput) {
+    if (ref.caption) enforceScreen(await screenContent({ texts: { caption: ref.caption }, profile: 'bio' }, { userId, contentType: 'competition_submission' }));
     const m = M();
     const ctx = await this.submissionContext(userId, id, stageId);
     if (!ctx.stage.allowedMethods.includes('VIDEO_UPLOAD')) throw fail(m.methodNotAllowed, HttpStatus.BAD_REQUEST);

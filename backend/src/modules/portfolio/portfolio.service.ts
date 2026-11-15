@@ -3,6 +3,7 @@ import { PortfolioRepository } from './portfolio.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import type { CreatePortfolioItemInput, UpdatePortfolioItemInput } from './portfolio.schema';
 import { getDict } from '../../i18n';
+import { screenContent, enforceScreen } from '../../moderation/contentScreening';
 
 import { HttpStatus } from '../../constants/httpStatus';
 
@@ -13,12 +14,13 @@ export class PortfolioService {
   async listMine(userId: string) {
     const profile = await this.creatorRepo.findByUserId(userId);
     if (!profile) throw new AppError(getDict().portfolio.creatorProfileNotFound, HttpStatus.NOT_FOUND);
-    return this.repo.findByCreatorProfileId(profile.id);
+    return this.repo.findByCreatorProfileId(profile.id, { includeHidden: true });
   }
 
   async create(userId: string, input: CreatePortfolioItemInput) {
     const profile = await this.creatorRepo.findByUserId(userId);
     if (!profile) throw new AppError(getDict().portfolio.creatorProfileNotFound, HttpStatus.NOT_FOUND);
+    enforceScreen(await screenContent({ texts: { title: input.title, description: input.description }, profile: 'bio' }, { userId, contentType: 'portfolio_item' }));
     return this.repo.create(profile.id, input);
   }
 
@@ -38,6 +40,9 @@ export class PortfolioService {
     const externalUrl = input.externalUrl === undefined ? item.externalUrl : input.externalUrl;
     if (!mediaUrl && !externalUrl) {
       throw new AppError('Either mediaUrl or externalUrl is required', HttpStatus.BAD_REQUEST);
+    }
+    if (input.title !== undefined || input.description !== undefined) {
+      enforceScreen(await screenContent({ texts: { title: input.title, description: input.description }, profile: 'bio' }, { userId, contentType: 'portfolio_item', contentId: itemId }));
     }
     return this.repo.update(itemId, input);
   }

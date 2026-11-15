@@ -7,7 +7,7 @@ import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { StatusBadge } from '../ui/StatusBadge';
-import { ReportButton } from '../ui/ReportButton';
+import { SafetyMenu } from '../ui/SafetyMenu';
 import { useToast } from '../ui/Toast';
 import { confirmDialog } from '../ui/confirmDialog';
 import { fetchCompetition, fetchMyProgress, joinCompetition, type CompetitionDetail, type MyProgress } from '../api/competitions';
@@ -68,7 +68,7 @@ export function CreatorCompetitionDetailPage() {
         <Link to="/creator/competitions" className="inline-flex items-center gap-1 text-[13px] font-medium text-ink-soft hover:text-ink">
           <ArrowLeft size={14} aria-hidden /> {t('comp.backToCompetitions')}
         </Link>
-        <ReportButton targetType="COMPETITION" targetId={c.id} />
+        <SafetyMenu report={{ type: 'COMPETITION', id: c.id }} />
       </div>
       <CompetitionOverview
         c={c}

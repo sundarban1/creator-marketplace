@@ -1,22 +1,40 @@
 import { useState } from 'react';
 import { CheckCircle2, Flag } from 'lucide-react';
 import { useT } from '../i18n';
-import { submitReport, type ReportReason, type ReportTargetType } from '../api/report';
+import { REPORT_REASONS, submitReport, type ReportReason, type ReportTargetType } from '../api/report';
 import { Alert } from './Alert';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { Textarea } from './Textarea';
 import { cn } from './cn';
 
-const REASONS: ReportReason[] = ['SPAM', 'SCAM', 'FRAUD', 'HARASSMENT', 'INAPPROPRIATE_CONTENT', 'FAKE_PROFILE', 'PAYMENT_ISSUE', 'OTHER'];
 
 /**
  * Flag button + report form — web twin of mobile's ReportModal. Caller passes
  * what's being reported; the modal owns its own open/submitted state.
+ * `ReportDialog` is the same form without the trigger, for ⋯ menus.
  */
 export function ReportButton({ targetType, targetId }: { targetType: ReportTargetType; targetId: string }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={t('reportModal.title')}
+        title={t('reportModal.title')}
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-line-strong text-ink-soft hover:text-danger"
+      >
+        <Flag size={15} />
+      </button>
+      <ReportDialog open={open} onClose={() => setOpen(false)} targetType={targetType} targetId={targetId} />
+    </>
+  );
+}
+
+export function ReportDialog({ open, onClose, targetType, targetId }: { open: boolean; onClose: () => void; targetType: ReportTargetType; targetId: string }) {
+  const t = useT();
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -24,15 +42,18 @@ export function ReportButton({ targetType, targetId }: { targetType: ReportTarge
   const [error, setError] = useState('');
 
   function close() {
-    setOpen(false);
+    onClose();
     setReason(null);
     setDescription('');
     setSubmitted(false);
     setError('');
   }
 
+  const otherMissing = reason === 'OTHER' && description.trim().length < 5;
+
   async function submit() {
-    if (!reason) return;
+    if (!reason || submitting) return;
+    if (otherMissing) { setError(t('reportModal.otherRequired')); return; }
     setSubmitting(true);
     setError('');
     try {
@@ -47,16 +68,6 @@ export function ReportButton({ targetType, targetId }: { targetType: ReportTarge
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={t('reportModal.title')}
-        title={t('reportModal.title')}
-        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-line-strong text-ink-soft hover:text-danger"
-      >
-        <Flag size={15} />
-      </button>
-
       <Modal
         open={open}
         onClose={() => (submitting ? null : close())}
@@ -71,7 +82,7 @@ export function ReportButton({ targetType, targetId }: { targetType: ReportTarge
               <Button variant="secondary" onClick={close} disabled={submitting}>
                 {t('common.cancel')}
               </Button>
-              <Button variant="danger" onClick={submit} loading={submitting} disabled={!reason}>
+              <Button variant="danger" onClick={submit} loading={submitting} disabled={!reason || otherMissing}>
                 {t('reportModal.submitBtn')}
               </Button>
             </div>
@@ -88,7 +99,7 @@ export function ReportButton({ targetType, targetId }: { targetType: ReportTarge
           <div className="space-y-4">
             <p className="text-[13px] text-ink-soft">{t('reportModal.subtitle')}</p>
             <div role="radiogroup" aria-label={t('reportModal.title')} className="flex flex-wrap gap-2">
-              {REASONS.map((r) => (
+              {REPORT_REASONS.map((r) => (
                 <button
                   key={r}
                   type="button"
@@ -105,7 +116,7 @@ export function ReportButton({ targetType, targetId }: { targetType: ReportTarge
               ))}
             </div>
             <Textarea
-              label={t('reportModal.descriptionLabel')}
+              label={reason === 'OTHER' ? t('reportModal.descriptionLabelRequired') : t('reportModal.descriptionLabel')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('reportModal.descriptionPlaceholder')}

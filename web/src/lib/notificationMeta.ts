@@ -1,7 +1,7 @@
 import {
   FaUserPlus, FaBriefcase, FaBullhorn, FaPaperPlane, FaHourglassHalf, FaWallet,
   FaMoneyBillWave, FaTriangleExclamation, FaEnvelope, FaShieldHalved, FaUserSlash,
-  FaUserXmark, FaBell, FaScaleBalanced, FaHandHoldingDollar,
+  FaUserXmark, FaBell, FaScaleBalanced, FaHandHoldingDollar, FaFlag, FaBan,
 } from 'react-icons/fa6';
 import type { IconType } from 'react-icons';
 import type { ApiNotification } from './api';
@@ -40,6 +40,13 @@ export function notificationRoute(n: ApiNotification): string | null {
     case 'account_verified':
     case 'account_deactivated':
     case 'account_deleted':     return '/admin/users';
+    case 'moderation_report':
+    case 'moderation_report_urgent':
+    case 'moderation_assigned':
+      return n.refId ? `/admin/moderation/reports/${n.refId}` : '/admin/moderation';
+    case 'moderation_block':
+    case 'moderation_content_held':
+      return '/admin/moderation?tab=signals';
     case 'competition_review_submitted':
       return n.refId ? `/admin/competitions/${n.refId}` : '/admin/competitions?review=pending';
   }
@@ -56,6 +63,8 @@ export function notificationRoute(n: ApiNotification): string | null {
     case 'withdrawal':      return '/admin/payments?tab=withdrawals';
     case 'refund_request':  return '/admin/payments?tab=refunds';
     case 'competition':     return n.refId ? `/admin/competitions/${n.refId}` : '/admin/competitions';
+    case 'report':          return n.refId ? `/admin/moderation/reports/${n.refId}` : '/admin/moderation';
+    case 'moderation_event': return '/admin/moderation?tab=signals';
     default:                return '/admin/dashboard';
   }
 }
@@ -76,6 +85,10 @@ const TYPE_ICONS: Record<string, IconType> = {
   account_verified:          FaShieldHalved,
   account_deactivated:       FaUserSlash,
   account_deleted:           FaUserXmark,
+  moderation_report:         FaFlag,
+  moderation_report_urgent:  FaTriangleExclamation,
+  moderation_assigned:       FaFlag,
+  moderation_block:          FaBan,
 };
 
 export function notificationIcon(type: string): IconType {

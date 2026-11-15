@@ -21,7 +21,7 @@ function resolveTitle(pathname: string): string {
     '/admin/platforms': 'Platforms',
     '/admin/payments':    'Payments',
     '/admin/proposals':   'Proposals',
-    '/admin/reports':     'Reports',
+    '/admin/moderation':  'Moderation',
     '/admin/help-center':   'Help Center',
     '/admin/faqs':          'FAQ Manager',
     '/admin/support-inbox': 'Support Inbox',

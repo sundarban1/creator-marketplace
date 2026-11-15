@@ -42,6 +42,10 @@ const envSchema = z.object({
   // (view private submissions, flag/suspend). Ordinary admins only get the
   // competition oversight summary. Kept in env (not a platform setting) so an
   // admin can't grant themselves access from the dashboard.
+  // Comma-separated inboxes that get an email for URGENT UGC reports
+  // (threats, exploitation, minors). The moderation queue + admin bell are the
+  // source of truth; this is an extra out-of-app alert. Unset = no emails.
+  MODERATION_ALERT_EMAILS: z.string().optional(),
   COMPETITION_MODERATOR_EMAILS: z.string().optional(),
   // Competition prize payments. Kolab-managed prize funding (business pays the
   // prize pool to Kolab, Kolab pays winners) stays OFF until the collection +

@@ -4,6 +4,10 @@ import { CreatorController } from '../creator/creator.controller';
 import { BusinessController } from '../business/business.controller';
 import { CampaignController } from '../campaign/campaign.controller';
 import { validate } from '../../middleware/validate';
+// Optional: a signed-in viewer gets the same listings minus accounts they've
+// blocked / been blocked by. Anonymous visitors are unaffected. These
+// responses are never HTTP-cached, so personalising them is safe.
+import { optionalAuthenticate } from '../../middleware/auth';
 import { campaignListQuerySchema } from '../campaign/campaign.schema';
 import { publicCreatorSearchQuerySchema } from '../creator/creator.schema';
 import { publicSearchLimiter } from '../../middleware/rateLimit';
@@ -41,20 +45,20 @@ router.get(
   creatorCtrl.searchPublicCreators.bind(creatorCtrl),
 );
 router.get('/creators/popular-searches', creatorCtrl.getPopularSearches.bind(creatorCtrl));
-router.get('/creators', creatorCtrl.listPublicCreators.bind(creatorCtrl));
-router.get('/creators/:handle', creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
+router.get('/creators', optionalAuthenticate, creatorCtrl.listPublicCreators.bind(creatorCtrl));
+router.get('/creators/:handle', optionalAuthenticate, creatorCtrl.getPublicCreatorByHandle.bind(creatorCtrl));
 
 // ── Public business marketplace (kolab.com.np/businesses) ───────────────────────
 // Same as creators above: fully public, actions gated in the UI instead.
-router.get('/businesses', businessCtrl.listBusinesses.bind(businessCtrl));
-router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl));
+router.get('/businesses', optionalAuthenticate, businessCtrl.listBusinesses.bind(businessCtrl));
+router.get('/businesses/:id', optionalAuthenticate, businessCtrl.getBusinessPublic.bind(businessCtrl));
 
 // ── Public event marketplace (kolab.com.np/events) ──────────────────────────────
 // `campaignService.list` already defaults to status=ACTIVE and needs no auth;
 // this is just the public-namespaced alias. Detail 404s non-public statuses.
 // (The landing page's events preview used to have its own `/events/showcase`
 // route here — folded into `/showcase` above, alongside creators/businesses.)
-router.get('/events', validate(campaignListQuerySchema, 'query'), campaignCtrl.list.bind(campaignCtrl));
-router.get('/events/:id', campaignCtrl.getPublicById.bind(campaignCtrl));
+router.get('/events', optionalAuthenticate, validate(campaignListQuerySchema, 'query'), campaignCtrl.list.bind(campaignCtrl));
+router.get('/events/:id', optionalAuthenticate, campaignCtrl.getPublicById.bind(campaignCtrl));
 
 export default router;

@@ -7,7 +7,8 @@ export const hasDb = !!process.env.TEST_DATABASE_URL;
 const TABLES = [
   'competition_payout_events', 'competition_payouts', 'competition_fundings',
   'competition_awards', 'competition_prizes', 'competition_stage_decisions', 'competition_submission_versions',
-  'competition_submissions', 'competition_participants', 'competition_stages', 'competitions', 'reports',
+  'competition_submissions', 'competition_participants', 'competition_stages', 'competitions', 'moderation_actions', 'reports',
+  'moderation_events', 'terms_acceptances', 'blocks', 'messages', 'conversations', 'portfolio_items',
   'refund_request_events', 'refund_requests', 'deliverable_extensions', 'campaign_invitations',
   'campaign_events', 'campaign_submission_versions', 'disputes', 'revision_notes',
   'wallet_transactions', 'payment_transactions', 'creator_reliability',

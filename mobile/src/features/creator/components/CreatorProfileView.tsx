@@ -24,6 +24,7 @@ import { ReviewsModal } from '@/components/ReviewsModal';
 import { SeeMoreText } from '@/components/SeeMoreText';
 import { SectionEmptyState } from '@/components/SectionEmptyState';
 import { ReportModal } from '@/components/ReportModal';
+import { ContentActionsButton, ContentActionsSheet } from '@/components/ContentActionsSheet';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
 import { PortfolioThumb, portfolioItemTitle } from '@/components/PortfolioThumb';
@@ -338,6 +339,7 @@ export function CreatorProfileView({
 
   // ── Business/peer: portfolio media preview ──
   const [previewItem, setPreviewItem] = useState<ApiPortfolioItem | null>(null);
+  const [reportPortfolioId, setReportPortfolioId] = useState<string | null>(null);
 
   // ── Reviews: summary under the name, full list in a modal ──
   const [reviewsOpen, setReviewsOpen] = useState(false);
@@ -491,18 +493,11 @@ export function CreatorProfileView({
               <>
                 <BackButton variant="overlay" fallback={backFallback} />
                 <View style={{ flex: 1 }} />
-                {isBusiness || isGuest ? (
-                  <Pressable
-                    style={styles.topIconBtnLight}
-                    hitSlop={10}
-                    onPress={() => (isGuest ? promptLogin('report') : setShowReportModal(true))}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('reportModal.title')}>
-                    <FontAwesome5 name="flag" size={16} color="#9CA3AF" />
-                  </Pressable>
-                ) : (
-                  <View style={{ width: 38, height: 38 }} />
-                )}
+                {/* ⋯ Report / Block — every non-owner viewer (guests are asked to sign in). */}
+                <ContentActionsButton
+                  variant="overlay"
+                  onPress={() => (isGuest ? promptLogin('report') : setShowReportModal(true))}
+                />
               </>
             )
           }
@@ -850,8 +845,20 @@ export function CreatorProfileView({
                       onPress={() => {
                         if (hasMedia) setPreviewItem(item);
                         else if (item.externalUrl) Linking.openURL(item.externalUrl).catch(() => {});
-                      }}>
+                      }}
+                      // Signed-in visitors can report a single item (long-press or the flag).
+                      onLongPress={isVisitor && !isGuest ? () => setReportPortfolioId(item.id) : undefined}>
                       <PortfolioThumb item={item} style={styles.workThumb} iconSize={24} badgeSize={24} />
+                      {isVisitor && !isGuest && (
+                        <Pressable
+                          onPress={() => setReportPortfolioId(item.id)}
+                          hitSlop={10}
+                          style={styles.workReportBtn}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('safety.report')}>
+                          <FontAwesome5 name="flag" size={10} color="#fff" />
+                        </Pressable>
+                      )}
                       <View style={styles.workMeta}>
                         <Text style={[styles.workTitle, { color: C.text }]} numberOfLines={1}>{title}</Text>
                         {!!subline && (
@@ -1033,11 +1040,19 @@ export function CreatorProfileView({
                 {!!serviceReqError && <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 8 }}>{serviceReqError}</Text>}
               </BottomSheet>
 
-              <ReportModal
+              <ContentActionsSheet
                 visible={showReportModal}
                 onClose={() => setShowReportModal(false)}
-                targetType="USER"
-                targetId={vm.userId ?? vm.id}
+                report={{ type: 'USER', id: vm.userId ?? vm.id }}
+                block={{ userId: vm.userId ?? vm.id, name: vm.fullName ?? vm.username ?? '' }}
+                // The profile is now hidden for this viewer — leave it.
+                onBlocked={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+              />
+              <ReportModal
+                visible={!!reportPortfolioId}
+                onClose={() => setReportPortfolioId(null)}
+                targetType="PORTFOLIO_ITEM"
+                targetId={reportPortfolioId ?? ''}
               />
 
               <ImagePreviewModal
@@ -1084,6 +1099,7 @@ function StatItem({ value, label, onPress }: { value: number; label: string; onP
 }
 
 const styles = StyleSheet.create({
+  workReportBtn: { position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, padding: 32 },
 

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { blockSync } from '@/lib/blockEvents';
 import { Alert, AppState, type AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
@@ -170,6 +171,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     socket.on('catalog:updated',  onCatalogUpdated);
     socket.on('settings:updated', onSettingsUpdated);
     socket.on('campaign:updated', onCampaignUpdated);
+    // Block list changed on another of this user's devices.
+    const onBlockChanged = () => blockSync.emit();
+    socket.on('block:changed', onBlockChanged);
 
     // ── Chat badge + message forwarding ─────────────────────────────────────
     // The server includes chatBadgeCount in the message:new payload so we can
@@ -248,6 +252,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       socket.off('catalog:updated',  onCatalogUpdated);
       socket.off('settings:updated', onSettingsUpdated);
       socket.off('campaign:updated', onCampaignUpdated);
+      socket.off('block:changed', onBlockChanged);
       socket.off('message:new',         onMessageNew);
       socket.off('conversation:update', onConvUpdate);
       unsubMessaging();

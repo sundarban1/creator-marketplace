@@ -108,7 +108,7 @@ const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/admin/payments',                   'Payments'],
   ['/admin/proposals',                  'Proposals'],
   ['/admin/referrals',                  'Referrals'],
-  ['/admin/reports',                    'Reports'],
+  ['/admin/moderation',                 'Moderation'],
   ['/admin/help-center',                'Help Center'],
   ['/admin/faqs',                       'FAQs'],
   ['/admin/support-inbox',              'Support Inbox'],

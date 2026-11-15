@@ -8,7 +8,7 @@ import { api, type LegalSection } from '../../lib/api';
 import { SEO } from '../../lib/seo/SEO';
 import { webPageSchema } from '../../lib/seo/schema';
 
-type LegalSlug = 'privacy-policy' | 'terms';
+type LegalSlug = 'privacy-policy' | 'terms' | 'guidelines';
 
 function LegalDocContent({ slug }: { slug: LegalSlug }) {
   const { d, lang } = useLandingLanguage();
@@ -31,7 +31,7 @@ function LegalDocContent({ slug }: { slug: LegalSlug }) {
     return () => { cancelled = true; };
   }, [slug]);
 
-  const title = slug === 'privacy-policy' ? d.legalPages.privacyTitle : d.legalPages.termsTitle;
+  const title = slug === 'privacy-policy' ? d.legalPages.privacyTitle : slug === 'guidelines' ? d.legalPages.guidelinesTitle : d.legalPages.termsTitle;
 
   return (
     <motion.div initial="hidden" animate="show" variants={stagger()}>
@@ -107,6 +107,20 @@ export function TermsPage() {
         jsonLd={webPageSchema({ path: '/terms', title: 'Terms of Service | Kolab', description: "Kolab's terms and conditions for brands and creators." })}
       />
       <LegalDocContent slug="terms" />
+    </StandalonePageShell>
+  );
+}
+
+export function CommunityGuidelinesPage() {
+  return (
+    <StandalonePageShell>
+      <SEO
+        title="Community Guidelines"
+        description="What is and isn't allowed on Kolab, how to report content or block an account, and how Kolab's moderation team reviews reports."
+        path="/community-guidelines"
+        jsonLd={webPageSchema({ path: '/community-guidelines', title: 'Community Guidelines | Kolab', description: "Kolab's rules for safe, respectful collaboration." })}
+      />
+      <LegalDocContent slug="guidelines" />
     </StandalonePageShell>
   );
 }

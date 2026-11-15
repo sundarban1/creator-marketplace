@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { TermsGate } from './TermsGate';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, Search, MessageCircle, ChevronDown, User as UserIcon } from 'lucide-react';
 import { useAppAuth } from '../auth/AppAuthContext';
@@ -34,7 +35,9 @@ import { ThemeToggle } from '../../pages/landing/components/ThemeToggle';
 export function AppShell() {
   return (
     <LandingThemeProvider>
-      <AppShellInner />
+      <TermsGate>
+        <AppShellInner />
+      </TermsGate>
     </LandingThemeProvider>
   );
 }

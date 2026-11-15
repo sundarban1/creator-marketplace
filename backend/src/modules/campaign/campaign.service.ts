@@ -1,4 +1,6 @@
 import { CampaignStatus, ApplicationStatus, CampaignType, WorkStatus, Prisma } from '@prisma/client';
+import { screenContent, enforceScreen } from '../../moderation/contentScreening';
+import { hiddenFor, isBlockedEitherWay } from '../moderation/block.service';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import prisma from '../../prisma';
@@ -474,8 +476,18 @@ export class CampaignService {
       }
     }
 
+    // Pre-publication screening (UGC safety). Clearly prohibited text is
+    // refused; anything flagged/ambiguous — or unscreenable because the AI
+    // layer is down — goes to the admin review queue even for a verified
+    // business. Drafts are screened when they're submitted.
+    const screen = input.status === 'DRAFT'
+      ? null
+      : await screenContent({ texts: { title: input.title, description: input.description }, profile: 'event' }, { userId, contentType: 'event', holdOnError: true });
+    if (screen) enforceScreen(screen, { gated: true });
+    const contentFlagged = !!screen && screen.outcome !== 'APPROVED';
+
     // Verified businesses skip the review queue and publish straight to ACTIVE.
-    const autoApprove = input.status !== 'DRAFT' && skipsReview(business);
+    const autoApprove = input.status !== 'DRAFT' && skipsReview(business) && !contentFlagged;
     const resolvedStatus: 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' =
       input.status === 'DRAFT' ? 'DRAFT' : autoApprove ? 'ACTIVE' : 'PENDING_APPROVAL';
     const [commissionRate, featuredAllowed] = await Promise.all([
@@ -579,6 +591,9 @@ export class CampaignService {
       this.fanOutNewCampaign(campaign, business, userId);
     }
 
+    if (contentFlagged) {
+      await prisma.campaign.update({ where: { id: campaign.id }, data: { contentFlaggedAt: new Date() } }).catch(() => {});
+    }
     return campaign;
   }
 
@@ -800,8 +815,9 @@ export class CampaignService {
     return campaigns.map((c) => ({ ...c, recentApplications: counts.get(c.id) ?? 0 }));
   }
 
-  async list(query: CampaignListQuery, lang = 'en') {
+  async list(query: CampaignListQuery, lang = 'en', viewerId?: string) {
     const { page = 1, limit = 10, ...filters } = query;
+    const hidden = await hiddenFor(viewerId);
     const validatedLimit = Math.min(limit, 50);
     // Public listing: a status filter can only narrow among creator-visible
     // statuses — drafts and events in review are never listable here.
@@ -809,6 +825,7 @@ export class CampaignService {
 
     const { campaigns: raw, total } = await this.repo.findMany({
       ...filters,
+      excludeBusinessIds: hidden.businessProfileIds,
       page,
       limit: validatedLimit,
     });
@@ -841,8 +858,9 @@ export class CampaignService {
   async nearby(query: {
     lat: number; lng: number; radiusKm: number; page?: number; limit?: number;
     search?: string; category?: string[]; platform?: string[];
-  }, lang = 'en') {
+  }, lang = 'en', viewerId?: string) {
     const page  = query.page ?? 1;
+    const hidden = await hiddenFor(viewerId);
     const limit = Math.min(query.limit ?? 10, 50);
 
     const { campaigns: raw, total } = await this.repo.findNearby({
@@ -854,6 +872,7 @@ export class CampaignService {
       search: query.search,
       category: query.category,
       platform: query.platform,
+      excludeBusinessIds: hidden.businessProfileIds,
     });
 
     const dtos = (await this.withRecentApplicationCounts(raw)).map(toCampaignDto);
@@ -874,8 +893,8 @@ export class CampaignService {
     if (!creator) throw new AppError(getDict().campaign.creatorProfileNotFound, HttpStatus.NOT_FOUND);
 
     const cappedLimit = Math.min(limit, 20);
-    const excludeCampaignIds = await this.repo.findAppliedCampaignIds(creator.id);
-    const candidates = await this.repo.findCandidatesForRecommendation(excludeCampaignIds, RECOMMENDATION_POOL_SIZE);
+    const [excludeCampaignIds, hidden] = await Promise.all([this.repo.findAppliedCampaignIds(creator.id), hiddenFor(userId)]);
+    const candidates = await this.repo.findCandidatesForRecommendation(excludeCampaignIds, RECOMMENDATION_POOL_SIZE, hidden.businessProfileIds);
 
     const ranked = candidates
       .map((c) => ({
@@ -955,7 +974,11 @@ export class CampaignService {
     }
     // An admin-deactivated business's events are treated like unpublished ones:
     // hidden from discovery, but in-flight collaborations stay reachable.
-    const hidden = !isCreatorVisible(campaign.status) || !campaign.business.isActive;
+    // Moderator-hidden events, and events from a business the viewer has
+    // blocked (or been blocked by), are treated the same way — existing
+    // collaborators keep access via canSeeUnpublished.
+    const blocked = !!viewer && viewer.role !== 'ADMIN' && (await isBlockedEitherWay(viewer.id, campaign.business.userId));
+    const hidden = !isCreatorVisible(campaign.status) || !campaign.business.isActive || !!campaign.moderationHiddenAt || blocked;
     if (hidden && !(await this.canSeeUnpublished(campaign, viewer))) {
       throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
@@ -992,7 +1015,18 @@ export class CampaignService {
       throw new AppError(getDict().campaign.notAuthorizedToUpdateCampaign, HttpStatus.FORBIDDEN);
     }
 
-    const verified = skipsReview(business);
+    // Screen the text whenever it changes or the event is being submitted;
+    // flagged content can't take the verified-business fast path.
+    let contentFlagged = false;
+    if (input.title !== undefined || input.description !== undefined || input.status === 'ACTIVE') {
+      const screen = await screenContent(
+        { texts: { title: input.title ?? campaign.title, description: input.description ?? campaign.description }, profile: 'event' },
+        { userId, contentType: 'event', contentId: id, holdOnError: true },
+      );
+      enforceScreen(screen, { gated: true });
+      contentFlagged = screen.outcome !== 'APPROVED';
+    }
+    const verified = skipsReview(business) && !contentFlagged;
     const review = this.planReviewTransition(campaign, input, verified);
 
     if (campaign._count.applications > 0) {
@@ -1415,8 +1449,9 @@ export class CampaignService {
     }
 
     const campaign = await this.repo.findById(campaignId);
-    // Admin-deactivated business → its events don't exist for new applicants.
-    if (!campaign || !campaign.business.isActive) {
+    // Admin-deactivated business, moderator-hidden event, or a block between
+    // the two accounts → the event doesn't exist for new applicants.
+    if (!campaign || !campaign.business.isActive || campaign.moderationHiddenAt || (await isBlockedEitherWay(userId, campaign.business.userId))) {
       throw new AppError(getDict().campaign.campaignNotFound, HttpStatus.NOT_FOUND);
     }
 

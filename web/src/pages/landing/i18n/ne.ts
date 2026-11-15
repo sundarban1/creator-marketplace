@@ -452,6 +452,7 @@ export const ne: LandingDict = {
     lastUpdated: 'अन्तिम पटक अपडेट: {{date}}',
     privacyTitle: 'गोपनीयता नीति',
     termsTitle: 'सेवाका सर्तहरू',
+    guidelinesTitle: 'सामुदायिक दिशानिर्देश',
     emptyTitle: 'सामग्री चाँडै आउँदैछ',
     emptyBody: 'यो पेज अझै प्रकाशित भएको छैन। पछि फेरि हेर्नुहोस्।',
     loadError: 'यो पेज लोड गर्न सकिएन। कृपया फेरि प्रयास गर्नुहोस्।',

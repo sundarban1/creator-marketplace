@@ -4,7 +4,12 @@
  * backend DTOs — keep them in sync.
  */
 
-import { apiRequest, type ApiPagination } from '../lib/apiClient';
+import { apiRequest, getAccessToken, type ApiPagination } from '../lib/apiClient';
+
+// Public listings are personalised only by blocks (server filters out
+// accounts the viewer blocked / was blocked by), so a signed-in viewer sends
+// their token; logged-out visitors stay anonymous exactly as before.
+const viewerAnonymous = () => !getAccessToken();
 import type { PublicCreatorLite, PublicBusinessLite } from '../../lib/api';
 
 // ── Creators ─────────────────────────────────────────────────────────────────
@@ -117,7 +122,7 @@ export async function fetchPublicCreators(
     page: number;
     limit: number;
   }>('GET', '/api/public/creators', undefined, {
-    anonymous: true,
+    anonymous: viewerAnonymous(),
     signal,
     params: {
       search: q.search,
@@ -139,7 +144,7 @@ export async function fetchCreatorFilterOptions(signal?: AbortSignal): Promise<C
     'GET',
     '/api/public/creators/filter-options',
     undefined,
-    { anonymous: true, signal },
+    { anonymous: viewerAnonymous(), signal },
   );
   return res.data;
 }
@@ -196,7 +201,7 @@ export async function searchPublicCreators(
   signal?: AbortSignal,
 ): Promise<CreatorSearchResult> {
   const res = await apiRequest<CreatorSearchResult>('GET', '/api/public/creators/search', undefined, {
-    anonymous: true,
+    anonymous: viewerAnonymous(),
     signal,
     params: {
       q: q.q,
@@ -217,7 +222,7 @@ export async function fetchPopularCreatorSearches(signal?: AbortSignal): Promise
     'GET',
     '/api/public/creators/popular-searches',
     undefined,
-    { anonymous: true, signal },
+    { anonymous: viewerAnonymous(), signal },
   );
   return res.data.searches;
 }
@@ -319,7 +324,7 @@ export async function fetchPublicBusinesses(
     '/api/public/businesses',
     undefined,
     {
-      anonymous: true,
+      anonymous: viewerAnonymous(),
       signal,
       params: {
         search: q.search,
@@ -418,7 +423,7 @@ export async function fetchPublicEvents(
   signal?: AbortSignal,
 ): Promise<{ items: EventCard[]; pagination?: ApiPagination }> {
   const res = await apiRequest<EventCard[]>('GET', '/api/public/events', undefined, {
-    anonymous: true,
+    anonymous: viewerAnonymous(),
     signal,
     params: {
       search: q.search,
@@ -452,7 +457,7 @@ export async function fetchLandingShowcase(signal?: AbortSignal): Promise<Landin
     'GET',
     '/api/public/showcase',
     undefined,
-    { anonymous: true, signal },
+    { anonymous: viewerAnonymous(), signal },
   );
   return res.data;
 }
@@ -462,7 +467,7 @@ export async function fetchPublicEvent(id: string, signal?: AbortSignal): Promis
     'GET',
     `/api/public/events/${encodeURIComponent(id)}`,
     undefined,
-    { anonymous: true, signal },
+    { anonymous: viewerAnonymous(), signal },
   );
   return res.data;
 }

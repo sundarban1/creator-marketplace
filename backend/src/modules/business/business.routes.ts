@@ -13,7 +13,7 @@ import {
   connectFacebookPageSchema,
   connectInstagramAccountSchema,
 } from './business.schema';
-import { uploadImage } from '../../middleware/upload';
+import { uploadImage, screenImageUpload } from '../../middleware/upload';
 
 const router      = Router();
 const ctrl        = new BusinessController();
@@ -39,8 +39,8 @@ router.get('/campaigns/:campaignId/invitations', savedCtrl.listCampaignInvitatio
 // Profile
 router.get('/profile', ctrl.getProfile.bind(ctrl));
 router.put('/profile', validate(updateBusinessProfileSchema), ctrl.updateProfile.bind(ctrl));
-router.post('/logo', uploadImage.single('logo'), ctrl.uploadLogo.bind(ctrl));
-router.post('/cover', uploadImage.single('cover'), ctrl.uploadCoverImage.bind(ctrl));
+router.post('/logo', uploadImage.single('logo'), screenImageUpload('business_logo'), ctrl.uploadLogo.bind(ctrl));
+router.post('/cover', uploadImage.single('cover'), screenImageUpload('business_cover'), ctrl.uploadCoverImage.bind(ctrl));
 router.post('/documents/pan',         uploadImage.single('document'), ctrl.uploadPanDoc.bind(ctrl));
 router.post('/documents/company-reg', uploadImage.single('document'), ctrl.uploadCompanyRegDoc.bind(ctrl));
 router.post('/documents/identity',    uploadImage.single('document'), ctrl.uploadIdentityDoc.bind(ctrl));

@@ -175,6 +175,8 @@ export class CampaignRepository {
     deadlineTo?: Date;
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     sort?: 'newest' | 'oldest' | 'budget_high';
+    // Businesses the viewer has blocked / been blocked by (UGC safety).
+    excludeBusinessIds?: string[];
     page: number;
     limit: number;
   }) {
@@ -189,7 +191,13 @@ export class CampaignRepository {
     // whatever `status` filter is applied, since a deleted campaign can keep
     // its pre-deletion status (see Campaign.deletedAt's schema comment).
     // Events of an admin-deactivated business are hidden the same way.
-    const where: Prisma.CampaignWhereInput = { deletedAt: null, business: { isActive: true } };
+    // Moderator-hidden events (moderationHiddenAt) are excluded the same way.
+    const where: Prisma.CampaignWhereInput = {
+      deletedAt: null,
+      moderationHiddenAt: null,
+      business: { isActive: true },
+      ...(filters.excludeBusinessIds?.length ? { businessId: { notIn: filters.excludeBusinessIds } } : {}),
+    };
 
     if (filters.category?.length) {
       where.OR = [{ category: { in: filters.category, mode: 'insensitive' } }, { categories: { hasSome: filters.category } }];
@@ -316,15 +324,20 @@ export class CampaignRepository {
     deadlineFrom?: Date;
     deadlineTo?: Date;
     campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    excludeBusinessIds?: string[];
     page: number;
     limit: number;
   }) {
     const { search } = filters;
     const conditions: Prisma.Sql[] = [
       Prisma.sql`c."deletedAt" IS NULL`,
+      Prisma.sql`c."moderationHiddenAt" IS NULL`,
       Prisma.sql`b."isActive" = true`,
       Prisma.sql`c.status = ${filters.status ?? 'ACTIVE'}::"CampaignStatus"`,
     ];
+    if (filters.excludeBusinessIds?.length) {
+      conditions.push(Prisma.sql`c."businessId" NOT IN (${Prisma.join(filters.excludeBusinessIds)})`);
+    }
     if (filters.category?.length) {
       conditions.push(this.categoryMatchSql(filters.category));
     }
@@ -406,8 +419,12 @@ export class CampaignRepository {
   async findNearby(params: {
     lat: number; lng: number; radiusKm: number; page: number; limit: number;
     search?: string; category?: string[]; platform?: string[];
+    excludeBusinessIds?: string[];
   }) {
     const { lat, lng, radiusKm, page, limit, search, category, platform } = params;
+    const excludeSql = params.excludeBusinessIds?.length
+      ? Prisma.sql`AND c."businessId" NOT IN (${Prisma.join(params.excludeBusinessIds)})`
+      : Prisma.empty;
 
     const latDelta = radiusKm / 111; // ~111km per degree of latitude
     const lngDelta = radiusKm / (111 * Math.cos((lat * Math.PI) / 180) || 1);
@@ -427,7 +444,9 @@ export class CampaignRepository {
 
     const boundingBoxWhere = Prisma.sql`
       c."deletedAt" IS NULL
+      AND c."moderationHiddenAt" IS NULL
       AND b."isActive" = true
+      ${excludeSql}
       AND c.status = 'ACTIVE'
       AND c."locationLat" IS NOT NULL
       AND c."locationLng" IS NOT NULL
@@ -546,7 +565,7 @@ export class CampaignRepository {
       where: { id, deletedAt: null },
       include: {
         business: {
-          select: { id: true, slug: true, businessName: true, logoUrl: true, website: true, description: true, isActive: true },
+          select: { id: true, userId: true, slug: true, businessName: true, logoUrl: true, website: true, description: true, isActive: true },
         },
         _count: { select: { applications: true } },
         requirements: {
@@ -715,12 +734,14 @@ export class CampaignRepository {
   // try to pre-rank by category/budget/location in SQL the way findMany's
   // filters do — the pool just needs to be reasonably fresh and large enough
   // that scoring has real signal to rank within.
-  async findCandidatesForRecommendation(excludeCampaignIds: string[], poolSize: number) {
+  async findCandidatesForRecommendation(excludeCampaignIds: string[], poolSize: number, excludeBusinessIds: string[] = []) {
     return prisma.campaign.findMany({
       where: {
         deletedAt: null,
+        moderationHiddenAt: null,
         status: 'ACTIVE',
         business: { isActive: true },
+        ...(excludeBusinessIds.length ? { businessId: { notIn: excludeBusinessIds } } : {}),
         ...(excludeCampaignIds.length ? { id: { notIn: excludeCampaignIds } } : {}),
       },
       orderBy: { createdAt: 'desc' },

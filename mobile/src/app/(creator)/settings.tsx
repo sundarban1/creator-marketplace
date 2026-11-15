@@ -2457,6 +2457,8 @@ export default function CreatorSettingsScreen() {
           <SupportChannels context="creator" />
         </View>
         <Card>
+          <NavRow ionIcon="user-shield"            ionIconColor="#DC2626" label={t('safety.helpTitle')}                     onPress={() => router.push('/help-safety')} />
+          <NavRow ionIcon="ban"                    ionIconColor="#6B7280" label={t('safety.blockedUsers')}                  onPress={() => router.push('/blocked-users')} />
           <NavRow ionIcon="question-circle"        ionIconColor="#0891B2" label={t('creatorSettings.helpCenterLabel')}      onPress={() => setSubPage('help-center')} />
           <NavRow ionIcon="comment-alt" ionIconColor="#7C3AED" label={t('creatorSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
           <NavRow ionIcon="exclamation-triangle"            ionIconColor="#EF4444" label={t('creatorSettings.reportIssueLabel')}    onPress={() => setSubPage('report-issue')} />

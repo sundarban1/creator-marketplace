@@ -157,6 +157,17 @@ export const opportunityShareVisitLimiter = limiter({
   legacyHeaders: false,
 });
 
+// UGC reports — per signed-in user. Enough for someone genuinely flagging
+// several items in a session; mass-reporting campaigns hit the wall.
+export const reportSubmitLimiter = limiter({
+  windowMs: 60 * 60 * 1000,
+  limit: isProd ? 20 : 200,
+  keyGenerator: (req: Request) => req.user!.id,
+  message: { success: false, message: 'You’ve sent a lot of reports recently. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Messaging routes need a much higher ceiling for real-time chat
 const messagingLimiter = limiter({
   windowMs: 60 * 1000,

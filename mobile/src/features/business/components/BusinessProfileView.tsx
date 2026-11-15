@@ -23,7 +23,7 @@ import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { ProfileRatingRow } from '@/components/ProfileRatingRow';
 import { ReviewsModal } from '@/components/ReviewsModal';
 import { SeeMoreText } from '@/components/SeeMoreText';
-import { ReportModal } from '@/components/ReportModal';
+import { ContentActionsButton, ContentActionsSheet } from '@/components/ContentActionsSheet';
 import { BackButton } from '@/components/BackButton';
 import { promptGuestAuth } from '@/components/GuestAuthPrompt';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -483,14 +483,11 @@ export function BusinessProfileView({
                 <BackButton variant="overlay" fallback={isGuest ? '/(guest)/discover' : '/(creator)/explore-businesses'} />
                 <View style={{ flex: 1 }} />
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Pressable
-                    style={styles.topIconBtnLight}
-                    hitSlop={10}
+                  {/* ⋯ Report / Block (guests are asked to sign in). */}
+                  <ContentActionsButton
+                    variant="overlay"
                     onPress={() => (isGuest ? promptLogin('report') : setShowReportModal(true))}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('reportModal.title')}>
-                    <FontAwesome5 name="flag" size={16} color="#9CA3AF" />
-                  </Pressable>
+                  />
                   <Pressable
                     style={styles.topIconBtnLight}
                     hitSlop={10}
@@ -814,11 +811,12 @@ export function BusinessProfileView({
             <Text style={[styles.modalCounter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
           </BottomSheet>
 
-          <ReportModal
+          <ContentActionsSheet
             visible={showReportModal}
             onClose={() => setShowReportModal(false)}
-            targetType="BUSINESS"
-            targetId={vm.userId ?? vm.id}
+            report={{ type: 'BUSINESS', id: vm.userId ?? vm.id }}
+            block={{ userId: vm.userId ?? vm.id, name: vm.name }}
+            onBlocked={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           />
         </>
       )}

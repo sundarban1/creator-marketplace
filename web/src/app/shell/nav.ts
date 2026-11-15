@@ -1,4 +1,5 @@
 import {
+  ShieldCheck,
   LayoutDashboard,
   Compass,
   FileText,
@@ -84,6 +85,7 @@ const CREATOR_NAV_GROUPS: NavGroup[] = [
       { key: 'settings', to: '/creator/settings', icon: Settings },
       { key: 'verification', to: '/creator/verification', icon: BadgeCheck },
       { key: 'help', to: '/creator/support', icon: HelpCircle },
+      { key: 'safety', to: '/creator/safety', icon: ShieldCheck },
     ],
   },
 ];
@@ -127,6 +129,7 @@ const BUSINESS_NAV_GROUPS: NavGroup[] = [
       { key: 'settings', to: '/business/settings', icon: Settings },
       { key: 'verification', to: '/business/verification', icon: BadgeCheck },
       { key: 'help', to: '/business/support', icon: HelpCircle },
+      { key: 'safety', to: '/business/safety', icon: ShieldCheck },
     ],
   },
 ];

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { suspensionActive } from '../moderation/suspension';
 import { AuthProvider, Prisma, Role } from '@prisma/client';
 import { AppError, AuthErrorCode } from '../../middleware/error';
 import { getDict } from '../../i18n';
@@ -327,7 +328,7 @@ export class AuthService {
     let activeUser = user;
     let reactivated = false;
     if (!user.isActive) {
-      if (user.suspendedAt) {
+      if (suspensionActive(user)) {
         throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN, true, { code: AuthErrorCode.ACCOUNT_SUSPENDED });
       }
       activeUser = await this.repo.reactivateAccount(user.id);
@@ -490,7 +491,7 @@ export class AuthService {
     let activeUser = user;
     let reactivated = false;
     if (!user.isActive) {
-      if (user.suspendedAt) throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN, true, { code: AuthErrorCode.ACCOUNT_SUSPENDED });
+      if (suspensionActive(user)) throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN, true, { code: AuthErrorCode.ACCOUNT_SUSPENDED });
       activeUser = await this.repo.reactivateAccount(user.id);
       reactivated = true;
     }
@@ -709,7 +710,7 @@ export class AuthService {
 
     if (existing) {
       if (!existing.isActive) {
-        if (existing.suspendedAt) {
+        if (suspensionActive(existing)) {
           throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN, true, { code: AuthErrorCode.ACCOUNT_SUSPENDED });
         }
         await this.repo.reactivateAccount(existing.id);
@@ -778,7 +779,7 @@ export class AuthService {
 
     if (existing) {
       if (!existing.isActive) {
-        if (existing.suspendedAt) {
+        if (suspensionActive(existing)) {
           throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN, true, { code: AuthErrorCode.ACCOUNT_SUSPENDED });
         }
         await this.repo.reactivateAccount(existing.id);
@@ -841,7 +842,7 @@ export class AuthService {
     if (linked) {
       const user = linked.user;
       if (!user.isActive) {
-        if (user.suspendedAt) {
+        if (suspensionActive(user)) {
           throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN, true, { code: AuthErrorCode.ACCOUNT_SUSPENDED });
         }
         await this.repo.reactivateAccount(user.id);
@@ -1123,7 +1124,7 @@ export class AuthService {
     if (linked) {
       const user = linked.user;
       if (!user.isActive) {
-        if (user.suspendedAt) {
+        if (suspensionActive(user)) {
           throw new AppError(getDict().auth.accountSuspended, HttpStatus.FORBIDDEN, true, { code: AuthErrorCode.ACCOUNT_SUSPENDED });
         }
         await this.repo.reactivateAccount(user.id);

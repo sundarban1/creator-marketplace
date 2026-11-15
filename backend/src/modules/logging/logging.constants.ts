@@ -51,6 +51,16 @@ export const AuditAction = {
   BUSINESS_ACTIVATED:       'business.activated',
   ACCOUNT_DELETED_BY_ADMIN: 'account.deleted_by_admin',
   REPORT_REVIEWED:          'report.reviewed',
+  // UGC moderation (modules/moderation) — one row per admin step on a report
+  // or enforcement action, alongside the ModerationAction ledger.
+  REPORT_OPENED:            'report.opened',
+  REPORT_ASSIGNED:          'report.assigned',
+  REPORT_STATUS_CHANGED:    'report.status_changed',
+  REPORT_VERIFIED:          'report.verified',
+  REPORT_RESOLVED:          'report.resolved',
+  MODERATION_ACTION:        'moderation.action',
+  MODERATION_EVENT_REVIEWED:'moderation.event_reviewed',
+  TERMS_ACCEPTED:           'terms.accepted',
   WITHDRAWAL_PROCESSING:    'withdrawal.processing',
   WITHDRAWAL_PAID:          'withdrawal.paid',
   WITHDRAWAL_REJECTED:      'withdrawal.rejected',
@@ -109,6 +119,8 @@ export const EntityType = {
   CREATOR_PROFILE:  'CreatorProfile',
   BUSINESS_PROFILE: 'BusinessProfile',
   COMPETITION:      'Competition',
+  REPORT:           'Report',
+  USER:             'User',
 } as const;
 
 export type ActivityActionValue = typeof ActivityAction[keyof typeof ActivityAction];

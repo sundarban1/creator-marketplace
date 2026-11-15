@@ -3,6 +3,7 @@
 // overview, join, "Your progress" and the stage entry form (Google Drive link,
 // same as web — direct video upload is switched off there too).
 import { useEffect, useState } from 'react';
+import { ContentActionsButton, ContentActionsSheet } from '@/components/ContentActionsSheet';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -49,6 +50,7 @@ export default function CompetitionDetailScreen() {
   const queryClient = useQueryClient();
   const { id = '', resume } = useLocalSearchParams<{ id: string; resume?: string }>();
   const { user } = useAuth();
+  const [showActions, setShowActions] = useState(false);
 
   // Keyed by viewer: the response carries viewer-specific joined/canJoin, so
   // a copy cached while browsing as a guest mustn't be reused after login.
@@ -105,7 +107,14 @@ export default function CompetitionDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <PageHeader title={c?.title ?? t('comp.typeBadge')} backFallback={user ? '/(creator)/(tabs)/discover' : '/(guest)/competitions'} />
+      <PageHeader
+        title={c?.title ?? t('comp.typeBadge')}
+        backFallback={user ? '/(creator)/(tabs)/discover' : '/(guest)/competitions'}
+        rightSlot={user && c ? <ContentActionsButton onPress={() => setShowActions(true)} /> : undefined}
+      />
+      {c && (
+        <ContentActionsSheet visible={showActions} onClose={() => setShowActions(false)} report={{ type: 'COMPETITION', id: c.id }} />
+      )}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <MaxWidthContainer>
           {detail.isPending ? (

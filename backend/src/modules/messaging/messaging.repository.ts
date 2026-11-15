@@ -430,19 +430,7 @@ export class MessagingRepository {
     }
   }
 
-  // ── Blocking (currently only reachable via creator<->creator conversations) ──
-
-  async createBlock(blockerId: string, blockedId: string) {
-    return prisma.block.upsert({
-      where: { blockerId_blockedId: { blockerId, blockedId } },
-      create: { blockerId, blockedId },
-      update: {},
-    });
-  }
-
-  async removeBlock(blockerId: string, blockedId: string) {
-    await prisma.block.deleteMany({ where: { blockerId, blockedId } });
-  }
+  // ── Blocking (rows are written by modules/moderation/block.service) ──
 
   async findBlockBetween(userIdA: string, userIdB: string) {
     return prisma.block.findFirst({

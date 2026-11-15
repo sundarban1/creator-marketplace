@@ -1,4 +1,7 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { ContentActionsButton, ContentActionsSheet } from '@/components/ContentActionsSheet';
+import { ReportModal } from '@/components/ReportModal';
+import { useConversationBlock } from '@/hooks/useConversationBlock';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
@@ -465,13 +468,9 @@ export default function CreatorChatRoomScreen() {
   const keyboardVisible = useKeyboardVisible();
   const androidKeyboardVisible = Platform.OS === 'android' && keyboardVisible;
 
-  const [blockStatus, setBlockStatus] = useState<{ blockedByMe: boolean; blockedByOther: boolean } | null>(null);
-
-  useEffect(() => {
-    if (participantRole === 'CREATOR' && id) {
-      chatService.getBlockStatus(id).then(setBlockStatus).catch(() => {});
-    }
-  }, [id, participantRole]);
+  // Block state for any conversation type (account-level block, see BlockContext).
+  const blockStatus = useConversationBlock(id);
+  const [showActions, setShowActions] = useState(false);
 
   function openParticipantProfile() {
     if (!participantId) return;
@@ -480,31 +479,6 @@ export default function CreatorChatRoomScreen() {
     } else if (participantRole === 'CREATOR') {
       router.push({ pathname: '/(creator)/creator-detail', params: { id: participantId } });
     }
-  }
-
-  function handleBlockPress() {
-    if (blockStatus?.blockedByMe) {
-      chatService.unblockConversation(id)
-        .then(() => setBlockStatus((prev) => ({ blockedByMe: false, blockedByOther: prev?.blockedByOther ?? false })))
-        .catch(() => {});
-      return;
-    }
-    Alert.alert(
-      t('messages.blockConfirmTitle', { name: name ?? '' }),
-      t('messages.blockConfirmBody', { name: name ?? '' }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('messages.block'),
-          style: 'destructive',
-          onPress: () => {
-            chatService.blockConversation(id)
-              .then(() => setBlockStatus((prev) => ({ blockedByMe: true, blockedByOther: prev?.blockedByOther ?? false })))
-              .catch(() => {});
-          },
-        },
-      ],
-    );
   }
 
   const [acting, setActing] = useState<'accept' | 'decline' | null>(null);
@@ -598,28 +572,24 @@ export default function CreatorChatRoomScreen() {
                 })()}
           </View>
         </Pressable>
-        {participantRole === 'CREATOR' && blockStatus && (
-          <Pressable
-            style={[
-              s.blockBtn,
-              blockStatus.blockedByMe
-                ? { backgroundColor: '#EEF2FF', borderColor: C.brinjal1 }
-                : { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
-            ]}
-            hitSlop={4}
-            onPress={handleBlockPress}
-          >
-            <FontAwesome5
-              name={blockStatus.blockedByMe ? 'lock-open' : 'ban'}
-              size={13}
-              color={blockStatus.blockedByMe ? C.brinjal1 : '#EF4444'}
-            />
-            <Text style={[s.blockBtnTxt, { color: blockStatus.blockedByMe ? C.brinjal1 : '#EF4444' }]}>
-              {blockStatus.blockedByMe ? t('messages.unblock') : t('messages.block')}
-            </Text>
-          </Pressable>
-        )}
+        {/* ⋯ Report / Block the other participant. */}
+        <ContentActionsButton onPress={() => setShowActions(true)} />
       </View>
+
+      <ContentActionsSheet
+        visible={showActions}
+        onClose={() => setShowActions(false)}
+        report={{ type: participantRole === 'BUSINESS' ? 'BUSINESS' : 'USER', id: participantId ?? participantUserId ?? '' }}
+        block={(blockStatus?.otherUserId ?? participantUserId ?? participantId)
+          ? { userId: (blockStatus?.otherUserId ?? participantUserId ?? participantId)!, name: personName, source: 'chat', conversationId: id }
+          : undefined}
+      />
+      <ReportModal
+        visible={!!chat.reportMessageId}
+        onClose={() => chat.setReportMessageId(null)}
+        targetType="MESSAGE"
+        targetId={chat.reportMessageId ?? ''}
+      />
 
       {/* ── Campaign banner ── */}
       {!!campaignTitle && (

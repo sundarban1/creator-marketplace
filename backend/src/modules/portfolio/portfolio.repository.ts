@@ -2,9 +2,11 @@ import prisma from '../../prisma';
 import type { CreatePortfolioItemInput, UpdatePortfolioItemInput } from './portfolio.schema';
 
 export class PortfolioRepository {
-  async findByCreatorProfileId(creatorProfileId: string) {
+  // Moderator-hidden items are excluded unless the owner is listing their own
+  // portfolio (they see them flagged so they know what happened).
+  async findByCreatorProfileId(creatorProfileId: string, opts: { includeHidden?: boolean } = {}) {
     return prisma.portfolioItem.findMany({
-      where: { creatorProfileId },
+      where: { creatorProfileId, ...(opts.includeHidden ? {} : { moderationHiddenAt: null }) },
       orderBy: { createdAt: 'desc' },
     });
   }

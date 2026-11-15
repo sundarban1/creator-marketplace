@@ -1,6 +1,6 @@
 import { request, API_BASE }                              from '@/lib/api';
 import { storage }                                        from '@/utilities/storage';
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY, APPLE_USER_ID_KEY } from '@/utilities/constants';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY, APPLE_USER_ID_KEY, TERMS_PENDING_KEY } from '@/utilities/constants';
 import type { ApiLoginResponse }                          from '@/lib/api';
 import type { User }                                      from '@/types';
 
@@ -133,7 +133,7 @@ export const authService = {
   },
 
   async getStoredUser(): Promise<User | null> {
-    await storage.hydrate([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY, APPLE_USER_ID_KEY]);
+    await storage.hydrate([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TERMS_PENDING_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY, BIOMETRIC_OFFERED_KEY, RECENT_SEARCHES_KEY, APPLE_USER_ID_KEY]);
     const user = storage.getJSON<User>(USER_KEY);
     // A stored user with no refresh token can't make a single authenticated
     // call. This happens with a "don't remember me" session whose profile was

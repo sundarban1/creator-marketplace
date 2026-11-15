@@ -63,6 +63,7 @@ const BusinessAnalyticsPage = screen(() => import('./shell/AnalyticsPage'), 'Bus
 const CreatorReferralsPage = screen(() => import('./creator/CreatorReferralsPage'), 'CreatorReferralsPage');
 const AccountSettingsPage = screen(() => import('./shell/AccountSettingsPage'), 'AccountSettingsPage');
 const HelpSupportPage = screen(() => import('./shell/HelpSupportPage'), 'HelpSupportPage');
+const SafetyCenterPage = screen(() => import('./shell/SafetyCenterPage'), 'SafetyCenterPage');
 const AboutKolabPage = screen(() => import('./shell/AboutKolabPage'), 'AboutKolabPage');
 
 const BusinessCreatorsPage = screen(() => import('./business/BusinessCreatorsPage'), 'BusinessCreatorsPage');
@@ -174,6 +175,7 @@ export function marketplaceRoutes() {
               <Route path="team" element={<CreatorTeamPage />} />
               <Route path="analytics" element={<CreatorAnalyticsPage />} />
               <Route path="support" element={<HelpSupportPage />} />
+              <Route path="safety" element={<SafetyCenterPage />} />
               <Route path="about" element={<AboutKolabPage />} />
             </Route>
           </Route>
@@ -209,6 +211,7 @@ export function marketplaceRoutes() {
               <Route path="analytics" element={<BusinessAnalyticsPage />} />
               <Route path="verification" element={<BusinessVerificationPage />} />
               <Route path="support" element={<HelpSupportPage />} />
+              <Route path="safety" element={<SafetyCenterPage />} />
               <Route path="about" element={<AboutKolabPage />} />
             </Route>
           </Route>

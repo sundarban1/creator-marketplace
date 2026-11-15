@@ -473,6 +473,7 @@ export const en = {
     lastUpdated: 'Last updated {{date}}',
     privacyTitle: 'Privacy Policy',
     termsTitle: 'Terms of Service',
+    guidelinesTitle: 'Community Guidelines',
     emptyTitle: 'Content coming soon',
     emptyBody: "This page hasn't been published yet. Check back soon.",
     loadError: "Couldn't load this page. Please try again.",

@@ -6,7 +6,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Animated, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useAnimatedValue } from 'react-native';
+import { Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useAnimatedValue } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { openGuestSignup } from '@/components/GuestAuthPrompt';
@@ -15,6 +15,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { FriendlyEmpty, GuestHeader, InlineNotice, RailSkeleton, SectionHeader } from '@/features/guest/components';
 import { CREATOR_PHOTO_CARD_W, CompetitionRow, CreatorPhotoCard, OpportunityRow } from '@/features/guest/homeCards';
+import { CardSlider } from '@/features/guest/CardSlider';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { STALE } from '@/lib/queryClient';
@@ -29,7 +30,6 @@ const CREATOR_PHOTO = require('@/assets/images/login/login_1.jpg');
 const BUSINESS_PHOTO = require('@/assets/images/login/business.jpg');
 const FINAL_BG      = require('@/assets/images/login/himalaya.jpg');
 
-const RAIL_GAP = SPACING.md;
 const TRACK_PAD = 4;
 const PURPLE = '#7C3AED';
 
@@ -41,12 +41,12 @@ export default function GuestHomeScreen() {
 
   const events = useQuery({
     queryKey: ['guest', 'home', 'events'],
-    queryFn: () => campaignService.list({ limit: 3 }),
+    queryFn: () => campaignService.list({ limit: 8 }),
     staleTime: STALE.list,
   });
   const competitions = useQuery({
     queryKey: ['guest', 'home', 'competitions'],
-    queryFn: () => creatorCompetitionService.discover({ tab: 'open', limit: 2 }),
+    queryFn: () => creatorCompetitionService.discover({ tab: 'open', limit: 6 }),
     staleTime: STALE.list,
   });
   const creators = useQuery({
@@ -104,7 +104,7 @@ export default function GuestHomeScreen() {
         <View style={s.section}>
           <SectionHeader title={t('guest.sections.opportunities')} onSeeAll={() => router.navigate('/(guest)/events')} />
           {events.isPending ? (
-            <RowSkeletons count={2} />
+            <RowSkeletons count={1} />
           ) : events.isError && eventList.length === 0 ? (
             <InlineNotice icon="wifi" text={t('guest.loadFailed')} actionLabel={t('guest.retry')} onAction={() => void events.refetch()} />
           ) : eventList.length === 0 ? (
@@ -116,9 +116,7 @@ export default function GuestHomeScreen() {
               onAction={() => openGuestSignup()}
             />
           ) : (
-            <View style={s.stack}>
-              {eventList.map((c) => <OpportunityRow key={c.id} campaign={c} />)}
-            </View>
+            <CardSlider data={eventList} keyExtractor={(c) => c.id} renderItem={(c) => <OpportunityRow campaign={c} />} />
           )}
         </View>
 
@@ -138,9 +136,7 @@ export default function GuestHomeScreen() {
               onAction={() => router.navigate({ pathname: '/(guest)/competitions', params: { tab: 'results' } })}
             />
           ) : (
-            <View style={s.stack}>
-              {compList.map((c) => <CompetitionRow key={c.id} c={c} />)}
-            </View>
+            <CardSlider data={compList} keyExtractor={(c) => c.id} renderItem={(c) => <CompetitionRow c={c} />} />
           )}
         </View>
 
@@ -160,14 +156,11 @@ export default function GuestHomeScreen() {
               onAction={() => openGuestSignup('CREATOR')}
             />
           ) : (
-            <FlatList
-              horizontal
+            <CardSlider
               data={creatorList}
               keyExtractor={(c) => c.id}
-              renderItem={({ item }) => <CreatorPhotoCard creator={item} />}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.rail}
-              ItemSeparatorComponent={RailGap}
+              renderItem={(c) => <CreatorPhotoCard creator={c} />}
+              itemWidth={CREATOR_PHOTO_CARD_W}
             />
           )}
         </View>
@@ -224,10 +217,6 @@ export default function GuestHomeScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function RailGap() {
-  return <View style={{ width: RAIL_GAP }} />;
 }
 
 function RowSkeletons({ count }: { count: number }) {
@@ -346,7 +335,6 @@ const s = StyleSheet.create({
   scroll:  { paddingBottom: SPACING.xxl },
   section: { marginTop: SPACING.xl + 4 },
   stack:   { paddingHorizontal: SCREEN_GUTTER, gap: SPACING.md },
-  rail:    { paddingHorizontal: SCREEN_GUTTER, paddingBottom: SPACING.sm },
 
   // Hero
   hero:        { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, overflow: 'hidden' },

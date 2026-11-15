@@ -44,6 +44,7 @@ export class BusinessController {
         page:      parseInt(page,  10) || 1,
         limit:     parseInt(limit, 10) || 20,
         lang:      req.language,
+        viewerUserId: req.user?.id,
       });
       success(res, result, getDict().business.businessesRetrieved);
     } catch (err) {
@@ -58,7 +59,7 @@ export class BusinessController {
       // BusinessService.resolveSlugToId.
       const id = await businessService.resolveSlugToId(req.params.id);
       if (!id) throw new AppError(getDict().business.businessNotFound, HttpStatus.NOT_FOUND);
-      const business = await businessService.getBusinessPublic(id, req.language);
+      const business = await businessService.getBusinessPublic(id, req.language, req.user?.id);
       success(res, business, getDict().business.businessRetrieved);
     } catch (err) {
       next(err);

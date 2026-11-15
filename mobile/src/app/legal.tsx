@@ -24,6 +24,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 const META: Partial<Record<LegalSlug, { titleKey: string; icon: keyof typeof FontAwesome5.glyphMap }>> = {
   'terms':          { titleKey: 'legalScreen.termsTitle',   icon: 'file-alt' },
   'privacy-policy': { titleKey: 'legalScreen.privacyTitle', icon: 'shield-alt' },
+  'guidelines':     { titleKey: 'legalScreen.guidelinesTitle', icon: 'users' },
 };
 
 function formatDate(iso: string | null): string {

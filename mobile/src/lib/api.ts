@@ -160,7 +160,8 @@ export interface ApiCampaign {
   completionType?:   'SERVICE' | 'DELIVERABLE' | null;
   completionReason?: string | null;
   distanceKm?:   number;
-  business:      { businessName: string; logoUrl: string | null };
+  // id/userId are present on detail reads (used for Report / Block).
+  business:      { businessName: string; logoUrl: string | null; id?: string; userId?: string };
   _count:        { applications: number };
   // Detail-page views, deduped per visitor per 24h (backend campaign-views.ts).
   viewCount?:    number;

@@ -5,7 +5,7 @@ import { FavoriteController } from './favorite.controller';
 import { ShortlistController } from './shortlist.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { uploadImage } from '../../middleware/upload';
+import { uploadImage, screenImageUpload } from '../../middleware/upload';
 import {
   updateCreatorProfileSchema,
   addPortfolioLinkSchema,
@@ -130,8 +130,8 @@ router.put('/profile', validate(updateCreatorProfileSchema), ctrl.updateProfile.
  *         description: Generated bio text
  */
 router.post('/generate-bio', ctrl.generateBio.bind(ctrl));
-router.post('/avatar', uploadImage.single('avatar'), ctrl.uploadAvatar.bind(ctrl));
-router.post('/cover', uploadImage.single('cover'), ctrl.uploadCoverImage.bind(ctrl));
+router.post('/avatar', uploadImage.single('avatar'), screenImageUpload('creator_avatar'), ctrl.uploadAvatar.bind(ctrl));
+router.post('/cover', uploadImage.single('cover'), screenImageUpload('creator_cover'), ctrl.uploadCoverImage.bind(ctrl));
 router.post('/citizenship', uploadImage.single('document'), ctrl.uploadCitizenship.bind(ctrl));
 router.post('/pan', uploadImage.single('document'), ctrl.uploadPan.bind(ctrl));
 // §5 — AGENCY only; the controller rejects other provider types before upload.

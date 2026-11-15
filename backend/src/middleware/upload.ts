@@ -1,5 +1,7 @@
 import multer from 'multer';
 import { AppError } from './error';
+import type { Request as ExpressRequest, Response as ExpressResponse, NextFunction as ExpressNext } from 'express';
+import { screenContent, bufferToDataUrl, CONTENT_REJECTED_MESSAGE, aiScreeningEnabled } from '../moderation/contentScreening';
 
 import { HttpStatus } from '../constants/httpStatus';
 
@@ -182,3 +184,31 @@ export const uploadAudio = multer({
 // client uploads directly to Cloudinary using a signed URL (see
 // messaging.service.ts requestVideoUploadSignature/completeVideoAttachment),
 // so there's no multer config for video here anymore.
+
+// ── UGC image screening ─────────────────────────────────────────────────────
+// Runs AFTER multer (memoryStorage) and BEFORE the controller uploads to
+// Cloudinary/R2, so a rejected image is never stored or exposed. Ambiguous
+// images are refused too — avatars/covers/portfolio have no review queue to
+// hold them in, and the Community Guidelines are deliberately conservative.
+// Non-image files (PDFs) pass straight through. If the screening provider is
+// down the upload proceeds and a MODERATION_SERVICE_ERROR event is recorded
+// for admin follow-up (see moderation/contentScreening.ts).
+
+export function screenImageUpload(contentType: string) {
+  return async (req: ExpressRequest, _res: ExpressResponse, next: ExpressNext): Promise<void> => {
+    try {
+      const file = req.file;
+      if (!file || !file.mimetype.startsWith('image/') || !file.buffer || !aiScreeningEnabled()) return next();
+      const result = await screenContent(
+        { imageUrls: [bufferToDataUrl(file.buffer, file.mimetype)] },
+        { userId: req.user?.id, contentType },
+      );
+      if (result.outcome !== 'APPROVED' && result.source !== 'ai_unavailable') {
+        return next(new AppError(CONTENT_REJECTED_MESSAGE, HttpStatus.UNPROCESSABLE_ENTITY, true, { code: 'CONTENT_REJECTED' }));
+      }
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
+}

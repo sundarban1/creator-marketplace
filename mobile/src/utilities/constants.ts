@@ -205,6 +205,10 @@ export const USER_KEY               = 'ch_user';
 export const ACCESS_TOKEN_KEY       = 'ch_access_token';
 export const REFRESH_TOKEN_KEY      = 'ch_refresh_token';
 export const BIOMETRIC_ENABLED_KEY  = 'ch_biometric_enabled';
+// Terms of Use + Community Guidelines accepted on THIS device before sign-in
+// (versions + declared birth date). Sent to the server right after the account
+// signs in, then kept so the pre-login agreement isn't shown again.
+export const TERMS_PENDING_KEY      = 'ch_terms_pending';
 // One-shot marker for the post-login "Enable Face ID / Fingerprint?" offer —
 // set whether the user taps Enable or Not now, so the offer never nags twice.
 export const BIOMETRIC_OFFERED_KEY  = 'ch_biometric_offered';

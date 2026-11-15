@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SafetyMenu } from '../ui/SafetyMenu';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Bookmark, CheckCircle2 } from 'lucide-react';
 import { useT } from '../i18n';
@@ -117,6 +118,11 @@ export function CreatorEventDetailPage() {
       {cta}
       {acceptedFree && <EventInvitationButton campaignId={ev.id} campaignTitle={ev.title} />}
       <ShareOpportunityButton campaignId={ev.id} isOpen={isOpen} variant="button" />
+      <SafetyMenu
+        report={{ type: 'OPPORTUNITY', id: ev.id }}
+        block={ev.business.id ? { userId: ev.business.id, name: ev.business.businessName, source: 'event' } : undefined}
+        onBlocked={() => navigate('/creator/events', { replace: true })}
+      />
       <Button
         variant="secondary"
         onClick={toggleSave}

@@ -1,4 +1,6 @@
 import { ConversationStatus, Role } from '@prisma/client';
+import { blockService } from '../moderation/block.service';
+import { screenChatMessage, CONTENT_REJECTED_MESSAGE } from '../../moderation/contentScreening';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
 import { logger } from '../../config/logger';
@@ -175,7 +177,22 @@ export class MessagingService {
 
   private async assertNotBlocked(userIdA: string, userIdB: string): Promise<void> {
     const block = await this.repo.findBlockBetween(userIdA, userIdB);
-    if (block) throw new AppError(getDict().messaging.cannotMessageBlockedUser, HttpStatus.FORBIDDEN);
+    if (block) throw new AppError(getDict().messaging.cannotMessageBlockedUser, HttpStatus.FORBIDDEN, true, { code: 'USER_BLOCKED' });
+  }
+
+  // Moderator-imposed messaging restriction (see modules/moderation). One PK
+  // lookup; the restriction lapses on its own once the timestamp passes.
+  private async assertCanSend(userId: string): Promise<void> {
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { messagingRestrictedUntil: true } });
+    if (u?.messagingRestrictedUntil && u.messagingRestrictedUntil > new Date()) {
+      throw new AppError(`Your messaging is restricted until ${u.messagingRestrictedUntil.toDateString()} for a Community Guidelines violation.`, HttpStatus.FORBIDDEN, true, { code: 'MESSAGING_RESTRICTED' });
+    }
+  }
+
+  private assertCleanText(text: string): void {
+    if (screenChatMessage(text).outcome === 'REJECTED') {
+      throw new AppError(CONTENT_REJECTED_MESSAGE, HttpStatus.UNPROCESSABLE_ENTITY, true, { code: 'CONTENT_REJECTED' });
+    }
   }
 
   // Boolean, non-throwing variant of verifyConversationAccess — lets the socket
@@ -246,6 +263,9 @@ export class MessagingService {
       const business     = await this.resolveBusiness(userId);
       const otherCreator = await this.creatorRepo.findByUserId(input.otherUserId);
       if (!otherCreator) throw new AppError(getDict().messaging.creatorNotFound, HttpStatus.NOT_FOUND);
+      await this.assertNotBlocked(userId, otherCreator.userId);
+      await this.assertCanSend(userId);
+      if (input.requestMessage) this.assertCleanText(input.requestMessage);
       const conv = await this.repo.findOrCreateConversation(
         otherCreator.id,
         business.id,
@@ -261,6 +281,9 @@ export class MessagingService {
       const creator      = await this.resolveCreator(userId);
       const otherBusiness = await this.businessRepo.findByUserId(input.otherUserId);
       if (!otherBusiness) throw new AppError(getDict().messaging.businessNotFound, HttpStatus.NOT_FOUND);
+      await this.assertNotBlocked(userId, otherBusiness.userId);
+      await this.assertCanSend(userId);
+      if (input.requestMessage) this.assertCleanText(input.requestMessage);
       // Direct-message-enabled businesses skip the request step entirely; others still require approval.
       const initialStatus: ConversationStatus = otherBusiness.allowDirectMessages ? 'ACCEPTED' : 'PENDING';
       const conv = await this.repo.findOrCreateConversation(
@@ -304,6 +327,8 @@ export class MessagingService {
     if (otherCreator.id === creator.id) throw new AppError(getDict().messaging.cannotMessageYourself, HttpStatus.BAD_REQUEST);
 
     await this.assertNotBlocked(userId, otherUserId);
+    await this.assertCanSend(userId);
+    if (requestMessage) this.assertCleanText(requestMessage);
 
     const conv = await this.repo.findOrCreateCreatorConversation(creator.id, otherCreator.id, requestMessage, userId);
     emitToUser(otherCreator.userId, 'conversation:update', { conversationId: conv.id });
@@ -315,48 +340,40 @@ export class MessagingService {
     return this.repo.findCreatorConversationBetween(creator.id, otherCreatorProfileId);
   }
 
-  // ── Blocking (creator<->creator conversations only) ────────────────────────
+  // ── Blocking (any conversation: creator<->creator and creator<->business) ──
+  // Delegates to the account-level block (modules/moderation/block.service),
+  // so a block from chat is the same block as one from a profile: it hides
+  // content everywhere, restricts messaging both ways and alerts moderators.
 
-  async blockInConversation(conversationId: string, userId: string, role: Role) {
-    if (role !== 'CREATOR') throw new AppError(getDict().messaging.accessDenied, HttpStatus.FORBIDDEN);
+  private async otherParty(conversationId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
-    if (conversation.creatorId2 == null) throw new AppError(getDict().messaging.blockingCreatorToCreatorOnly, HttpStatus.BAD_REQUEST);
-
     const [pA, pB] = this.participantsOf(conversation);
-    const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
-    await this.repo.createBlock(userId, otherUserId);
+    return userId === pA.userId ? pB.userId : pA.userId;
+  }
+
+  async blockInConversation(conversationId: string, userId: string, role: Role) {
+    const otherUserId = await this.otherParty(conversationId, userId, role);
+    await blockService.block(userId, otherUserId, { source: 'chat', conversationId });
     emitToUser(otherUserId, 'conversation:update', { conversationId });
     return { blocked: true };
   }
 
   async unblockInConversation(conversationId: string, userId: string, role: Role) {
-    if (role !== 'CREATOR') throw new AppError(getDict().messaging.accessDenied, HttpStatus.FORBIDDEN);
-    const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
-    await this.verifyConversationAccess(conversation, userId, role);
-    if (conversation.creatorId2 == null) throw new AppError(getDict().messaging.blockingCreatorToCreatorOnly, HttpStatus.BAD_REQUEST);
-
-    const [pA, pB] = this.participantsOf(conversation);
-    const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
-    await this.repo.removeBlock(userId, otherUserId);
+    const otherUserId = await this.otherParty(conversationId, userId, role);
+    await blockService.unblock(userId, otherUserId);
+    emitToUser(otherUserId, 'conversation:update', { conversationId });
     return { blocked: false };
   }
 
   async getBlockStatus(conversationId: string, userId: string, role: Role) {
-    const conversation = await this.repo.findConversationById(conversationId);
-    if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
-    await this.verifyConversationAccess(conversation, userId, role);
-    if (conversation.creatorId2 == null) return { blockedByMe: false, blockedByOther: false };
-
-    const [pA, pB] = this.participantsOf(conversation);
-    const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
+    const otherUserId = await this.otherParty(conversationId, userId, role);
     const [blockedByMe, blockedByOther] = await Promise.all([
       this.repo.isBlockedBy(userId, otherUserId),
       this.repo.isBlockedBy(otherUserId, userId),
     ]);
-    return { blockedByMe, blockedByOther };
+    return { blockedByMe, blockedByOther, otherUserId };
   }
 
   // ── Request accept / decline ───────────────────────────────────────────────
@@ -371,10 +388,12 @@ export class MessagingService {
     // Whichever side (creator, creator2, or business) received the request may respond
     await this.verifyConversationAccess(conversation, userId, role);
 
+    const [pA, pB] = this.participantsOf(conversation);
+    if (action === 'accept') await this.assertNotBlocked(pA.userId, pB.userId);
+
     const newStatus: ConversationStatus = action === 'accept' ? 'ACCEPTED' : 'DECLINED';
     await this.repo.updateStatus(conversationId, newStatus);
 
-    const [pA, pB] = this.participantsOf(conversation);
     const responder = userId === pA.userId ? pA : pB;
     const recipient = responder === pA ? pB : pA;
 
@@ -451,6 +470,7 @@ export class MessagingService {
     if (message.senderId !== userId) throw new AppError(getDict().messaging.canOnlyEditOwnMessage, HttpStatus.FORBIDDEN);
     if (message.deletedAt) throw new AppError(getDict().messaging.cannotEditDeletedMessage, HttpStatus.BAD_REQUEST);
     if (message.type !== 'TEXT') throw new AppError(getDict().messaging.onlyTextMessagesCanBeEdited, HttpStatus.BAD_REQUEST);
+    this.assertCleanText(content);
 
     const updated = await this.repo.editMessage(messageId, content);
     const dto = toMessageDto(updated);
@@ -483,10 +503,10 @@ export class MessagingService {
     if (!conversation) throw new AppError(getDict().messaging.conversationNotFound, HttpStatus.NOT_FOUND);
     await this.verifyConversationAccess(conversation, userId, role);
 
-    if (conversation.creatorId2 != null) {
+    {
       const [pA, pB] = this.participantsOf(conversation);
       const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
-      await this.assertNotBlocked(userId, otherUserId);
+      await Promise.all([this.assertNotBlocked(userId, otherUserId), this.assertCanSend(userId)]);
     }
 
     if (conversation.status === 'PENDING') {
@@ -577,6 +597,7 @@ export class MessagingService {
   }
 
   async sendMessage(conversationId: string, userId: string, role: Role, input: SendMessageInput) {
+    this.assertCleanText(input.content);
     const conversation = await this.prepareSend(conversationId, userId, role);
 
     if ((await this.adminRepo.getSetting('rateLimit.duplicateMessages.enabled')) !== false) {

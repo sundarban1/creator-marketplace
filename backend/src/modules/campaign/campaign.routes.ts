@@ -3,7 +3,7 @@ import { CampaignController } from './campaign.controller';
 import { registerDeliverableDeadlineRoutes } from './deliverable-deadline.controller';
 import { authenticate, authorize, optionalAuthenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { uploadImage, uploadDeliverableFile, uploadCampaignAttachment } from '../../middleware/upload';
+import { uploadImage, uploadDeliverableFile, uploadCampaignAttachment, screenImageUpload } from '../../middleware/upload';
 import {
   createCampaignSchema,
   updateCampaignSchema,
@@ -53,6 +53,7 @@ router.post(
   authenticate,
   authorize('BUSINESS'),
   uploadImage.single('image'),
+  screenImageUpload('event_image'),
   ctrl.uploadFeatureImage.bind(ctrl)
 );
 
@@ -64,6 +65,7 @@ router.post(
   authenticate,
   authorize('BUSINESS'),
   uploadCampaignAttachment.single('file'),
+  screenImageUpload('event_attachment'),
   ctrl.uploadAttachment.bind(ctrl)
 );
 
@@ -214,7 +216,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/PaginatedResponse'
  */
-router.get('/', validate(campaignListQuerySchema, 'query'), ctrl.list.bind(ctrl));
+router.get('/', optionalAuthenticate, validate(campaignListQuerySchema, 'query'), ctrl.list.bind(ctrl));
 router.get('/categories', ctrl.getCategories.bind(ctrl));
 router.get('/master-categories', ctrl.getMasterCategories.bind(ctrl));
 router.get('/platforms', ctrl.getPlatforms.bind(ctrl));
@@ -251,7 +253,7 @@ router.get('/platforms', ctrl.getPlatforms.bind(ctrl));
  *             schema:
  *               $ref: '#/components/schemas/PaginatedResponse'
  */
-router.get('/nearby', validate(nearbyQuerySchema, 'query'), ctrl.nearby.bind(ctrl));
+router.get('/nearby', optionalAuthenticate, validate(nearbyQuerySchema, 'query'), ctrl.nearby.bind(ctrl));
 
 /**
  * @swagger

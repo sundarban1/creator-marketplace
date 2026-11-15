@@ -16,7 +16,7 @@ export class ShortlistRepository {
     // Un-shortlisting always works; adding needs a creator-visible event, so a
     // known id can't be used to probe one that's still under review.
     const visible = await prisma.campaign.count({
-      where: { id: campaignId, deletedAt: null, status: { in: [...CREATOR_VISIBLE_STATUSES] } },
+      where: { id: campaignId, deletedAt: null, moderationHiddenAt: null, status: { in: [...CREATOR_VISIBLE_STATUSES] } },
     });
     if (!visible) return { isShortlisted: false };
     await prisma.shortlistedCampaign.create({ data: { creatorId, campaignId } });
@@ -36,7 +36,7 @@ export class ShortlistRepository {
   // closed still shows, so the creator can see what they missed.
   async listCampaigns(creatorId: string) {
     const rows = await prisma.shortlistedCampaign.findMany({
-      where: { creatorId, campaign: { deletedAt: null, status: { in: [...CREATOR_VISIBLE_STATUSES] } } },
+      where: { creatorId, campaign: { deletedAt: null, moderationHiddenAt: null, status: { in: [...CREATOR_VISIBLE_STATUSES] } } },
       orderBy: { createdAt: 'desc' },
       include: {
         campaign: {

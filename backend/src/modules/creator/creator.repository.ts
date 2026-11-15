@@ -117,6 +117,8 @@ export type CreatorListFilters = {
   priceMin?: number;
   priceMax?: number;
   excludeId?: string;
+  /** Creator profiles hidden from this viewer (blocks — UGC safety). */
+  excludeIds?: string[];
   hasAvatar?: boolean;
   /** Only creators who earn the verified badge — mirrors
    *  isCreatorFullyVerified (utils/verification.ts); keep the two in sync. */
@@ -320,7 +322,10 @@ export class CreatorRepository {
     }
     if (filters.categories?.length) where.categories = { hasSome: filters.categories };
     if (filters.publicOnly) where.showPublicProfile = true;
-    if (filters.excludeId) where.id = { not: filters.excludeId };
+    {
+      const exclude = [...(filters.excludeIds ?? []), ...(filters.excludeId ? [filters.excludeId] : [])];
+      if (exclude.length) where.id = { notIn: exclude };
+    }
     // Landing-page showcase wants real faces, not initials placeholders —
     // '' is treated the same as unset since an empty string is what a
     // removed avatar can leave behind.

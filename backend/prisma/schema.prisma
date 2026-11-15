@@ -32,6 +32,15 @@ model User {
   // Consecutive failed-password count on login — reset to 0 on a successful
   // login. Drives the admin-configurable CAPTCHA-after-suspicious-behaviour
   // trigger (see AuthService.login); not a lockout by itself.
+  // Moderation (UGC safety) — temporary suspension auto-lifts at login once
+  // suspendedUntil has passed; null with suspendedAt set = permanent. Messaging
+  // restriction blocks sending/starting chats until the timestamp passes.
+  suspendedUntil            DateTime?
+  suspensionReason          String?
+  messagingRestrictedUntil  DateTime?
+  // Declared date of birth from the pre-signup age gate. PRIVATE — never part
+  // of any public/profile DTO; used only for the minimum-age check.
+  birthDate                 DateTime?              @db.Date
   failedLoginCount          Int                    @default(0)
   lastFailedLoginAt         DateTime?
   // False for accounts created purely through a social provider (Apple/Google) —
@@ -63,6 +72,9 @@ model User {
   sessions                  Session[]
   pushTokens                PushToken[]
   reportsFiled              Report[]               @relation("ReportsFiled")
+  reportsAgainst            Report[]               @relation("ReportsAgainst")
+  reportsAssigned           Report[]               @relation("ReportsAssigned")
+  termsAcceptances          TermsAcceptance[]
   authAccounts              AuthAccount[]
   biometricCredentials      BiometricCredential[]
   campaignReviews           CampaignReview[]       @relation("CampaignReviewActor")
@@ -416,16 +428,19 @@ enum ServiceRequestStatus {
 // (unstructured Json, still read by existing code) — new uploads should prefer
 // this table; the Json field is not being migrated or deprecated here.
 model PortfolioItem {
-  id               String         @id @default(cuid())
-  creatorProfileId String
-  title            String?
-  description      String?
-  category         String?
-  mediaUrl         String?
-  mediaType        MediaType?
-  externalUrl      String?
-  createdAt        DateTime       @default(now())
-  creatorProfile   CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  id                 String         @id @default(cuid())
+  creatorProfileId   String
+  title              String?
+  description        String?
+  category           String?
+  mediaUrl           String?
+  mediaType          MediaType?
+  externalUrl        String?
+  // Hidden by a Kolab moderator (report action) — excluded from every
+  // consumer-facing read, kept for evidence; restore clears it.
+  moderationHiddenAt DateTime?
+  createdAt          DateTime       @default(now())
+  creatorProfile     CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
 
   @@index([creatorProfileId])
   @@map("portfolio_items")
@@ -929,6 +944,13 @@ model Campaign {
   // their status. Independent of `status` above — a deleted campaign keeps
   // whatever status it had when removed.
   deletedAt             DateTime?
+  // Hidden by a Kolab moderator after a verified report — excluded from public
+  // discovery/detail like deletedAt, but nothing is deleted and restore simply
+  // clears it. The owning business still sees it (with a notice).
+  moderationHiddenAt    DateTime?
+  // Set when pre-publication content screening flagged the text/images — the
+  // event is forced through admin review even for a verified business.
+  contentFlaggedAt      DateTime?
   // Snapshotted from the platform.commission admin setting at creation time,
   // so later changes to the global rate never retroactively affect an
   // already-posted event. Null on campaigns created before this field existed.
@@ -2192,24 +2214,47 @@ model BrandAnalytics {
 // from hardcoded mock data (web/src/data/mockData.ts) — this table plus the
 // report module is the first time a real reporting pipeline exists at all.
 model Report {
-  id          String           @id @default(cuid())
-  reporterId  String
-  targetType  ReportTargetType
-  targetId    String
-  reason      ReportReason
-  description String?
-  status      ReportStatus     @default(NEW)
-  // Set together when an admin moves this off NEW — actionNote is shown back
-  // to admins reviewing history, never to the reporter or the reported party.
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  actionNote  String?
-  createdAt   DateTime         @default(now())
+  id              String             @id @default(cuid())
+  reporterId      String
+  targetType      ReportTargetType
+  targetId        String
+  // Owner of the reported content (resolved server-side at submission) — the
+  // person any user-level moderation action applies to.
+  reportedUserId  String?
+  // MESSAGE reports only.
+  conversationId  String?
+  messageId       String?
+  reason          ReportReason
+  description     String?
+  status          ReportStatus       @default(NEW)
+  verification    ReportVerification @default(UNVERIFIED)
+  priority        ReportPriority     @default(NORMAL)
+  // Snapshot of the reported content at submission time (text, media URLs,
+  // surrounding chat context) so evidence survives later edits/removal.
+  evidence        Json?
+  assignedToId    String?
+  assignedAt      DateTime?
+  reviewStartedAt DateTime?
+  // Set together when an admin records the verification decision. actionNote
+  // is internal — never shown to the reporter or the reported party.
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  actionNote      String?
+  resolvedAt      DateTime?
+  resolvedById    String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @default(now()) @updatedAt
 
-  reporter User @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter     User               @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User?              @relation("ReportsAgainst", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  assignedTo   User?              @relation("ReportsAssigned", fields: [assignedToId], references: [id], onDelete: SetNull)
+  actions      ModerationAction[]
 
   @@index([targetType, targetId])
   @@index([status, createdAt(sort: Desc)])
+  @@index([reportedUserId])
+  @@index([reporterId, targetType, targetId])
+  @@index([assignedToId])
   @@map("reports")
 }
 
@@ -2219,27 +2264,140 @@ enum ReportTargetType {
   SERVICE
   OPPORTUNITY
   COMPETITION
+  COMPETITION_SUBMISSION
+  PORTFOLIO_ITEM
   POST
   MESSAGE
   REVIEW
 }
 
+// The first ten are the user-facing reasons; FRAUD / FAKE_PROFILE /
+// PAYMENT_ISSUE predate them and stay for existing rows.
 enum ReportReason {
+  HARASSMENT
+  HATE_SPEECH
+  INAPPROPRIATE_CONTENT
+  VIOLENCE
   SPAM
   SCAM
+  COPYRIGHT
+  EXPLOITATION
+  AGE_INAPPROPRIATE
+  OTHER
   FRAUD
-  HARASSMENT
-  INAPPROPRIATE_CONTENT
   FAKE_PROFILE
   PAYMENT_ISSUE
-  OTHER
 }
 
+// NEW = pending. A report can only reach ACTION_TAKEN with verification VALID,
+// DISMISSED with INVALID, and RESOLVED only from one of those two — see
+// modules/moderation/report.rules.ts.
 enum ReportStatus {
   NEW
   UNDER_REVIEW
+  NEEDS_MORE_INFO
   ACTION_TAKEN
   DISMISSED
+  RESOLVED
+}
+
+enum ReportVerification {
+  UNVERIFIED
+  VALID
+  INVALID
+  NEEDS_MORE_INFORMATION
+}
+
+enum ReportPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// Internal safety signals that are not themselves reports — a block, an
+// automatic pre-publication rejection, a moderation-service outage. Visible
+// to admins in the moderation dashboard; never to ordinary users.
+model ModerationEvent {
+  id           String              @id @default(cuid())
+  type         ModerationEventType
+  actorUserId  String?
+  targetUserId String?
+  reportId     String?
+  contentType  String?
+  contentId    String?
+  metadata     Json?
+  // An admin marks the signal as looked at.
+  reviewedAt   DateTime?
+  reviewedById String?
+  createdAt    DateTime            @default(now())
+
+  @@index([type, createdAt(sort: Desc)])
+  @@index([targetUserId])
+  @@index([actorUserId])
+  @@map("moderation_events")
+}
+
+enum ModerationEventType {
+  USER_BLOCKED
+  USER_UNBLOCKED
+  CONTENT_AUTO_REJECTED
+  CONTENT_HELD_FOR_REVIEW
+  MODERATION_SERVICE_ERROR
+}
+
+// Enforcement taken by an admin (usually from a report). Append-only.
+model ModerationAction {
+  id           String               @id @default(cuid())
+  reportId     String?
+  targetUserId String?
+  adminId      String
+  action       ModerationActionType
+  contentType  String?
+  contentId    String?
+  reason       String
+  notes        String?
+  durationDays Int?
+  expiresAt    DateTime?
+  // e.g. the campaign/competition state before removal, for restore.
+  metadata     Json?
+  createdAt    DateTime             @default(now())
+
+  report Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  @@index([reportId])
+  @@index([targetUserId, createdAt(sort: Desc)])
+  @@map("moderation_actions")
+}
+
+enum ModerationActionType {
+  REMOVE_CONTENT
+  RESTORE_CONTENT
+  WARN_USER
+  RESTRICT_MESSAGING
+  SUSPEND_TEMPORARY
+  SUSPEND_PERMANENT
+  LIFT_RESTRICTIONS
+  NO_ACTION
+}
+
+// Auditable record of each acceptance of the mandatory agreements. A new row
+// per acceptance (never updated) — the latest row says which versions the
+// user is currently on; versions live in platform settings (legal.version.*).
+model TermsAcceptance {
+  id                String   @id @default(cuid())
+  userId            String
+  termsVersion      String
+  guidelinesVersion String
+  privacyVersion    String?
+  ageConfirmed      Boolean  @default(false)
+  platform          String?
+  ipAddress         String?
+  acceptedAt        DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, acceptedAt(sort: Desc)])
+  @@map("terms_acceptances")
 }
 
 model PlatformSetting {
@@ -3393,22 +3551,24 @@ model CompetitionParticipant {
 // The ACTIVE submission for (stage, participant) — unique, so at most one.
 // Every replacement appends a CompetitionSubmissionVersion row first.
 model CompetitionSubmission {
-  id              String                      @id @default(cuid())
-  stageId         String
-  participantId   String
-  method          CompetitionSubmissionMethod
-  videoUrl        String?
-  thumbnailUrl    String?
+  id                 String                      @id @default(cuid())
+  stageId            String
+  participantId      String
+  method             CompetitionSubmissionMethod
+  videoUrl           String?
+  thumbnailUrl       String?
   // Storage reference (R2 key or Cloudinary publicId) — never sent to clients.
-  storageRef      String?
-  storageProvider String?
-  durationSec     Int?
-  sizeBytes       Int?
-  externalUrl     String?
-  caption         String?
-  version         Int                         @default(1)
-  submittedAt     DateTime                    @default(now())
-  updatedAt       DateTime                    @updatedAt
+  storageRef         String?
+  storageProvider    String?
+  durationSec        Int?
+  sizeBytes          Int?
+  externalUrl        String?
+  caption            String?
+  // Hidden by a Kolab moderator — excluded from public galleries/results.
+  moderationHiddenAt DateTime?
+  version            Int                         @default(1)
+  submittedAt        DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
 
   stage       CompetitionStage               @relation(fields: [stageId], references: [id], onDelete: Cascade)
   participant CompetitionParticipant         @relation(fields: [participantId], references: [id], onDelete: Cascade)

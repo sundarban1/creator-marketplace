@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent,
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Check, X, Send, Smile, Paperclip, FileText, Play, Loader2, MessageCircle,
-  MoreVertical, MoreHorizontal, Pencil, Trash2, Ban, LockOpen,
+  MoreVertical, MoreHorizontal, Pencil, Trash2, Ban, LockOpen, Flag,
 } from 'lucide-react';
 import { useT } from '../i18n';
 import { useAsync } from '../lib/useAsync';
-import { useLiveRefresh } from '../lib/liveUpdates';
+import { publishLive, useLiveRefresh } from '../lib/liveUpdates';
+import { ReportDialog } from '../ui/ReportButton';
+import type { ReportTargetType } from '../api/report';
 import { useAppAuth } from '../auth/AppAuthContext';
 import {
   fetchConversations,
@@ -315,11 +317,11 @@ function ConversationThread({
 
   const messagesQuery = useAsync((s) => fetchMessages(id, { limit: 100 }, s), [id]);
 
-  // Blocking exists for creator ↔ creator chats only (same as mobile). Hidden
-  // for now — creator ↔ creator chat is disabled; restore the line below when
-  // it comes back.
-  // const canBlock = user?.role === 'CREATOR' && conversation.otherPartyRole === 'CREATOR';
-  const canBlock = false;
+  // Blocking works for every conversation (creator ↔ business and creator ↔
+  // creator) — it's the same account-level block as from a profile, enforced
+  // server-side, and alerts Kolab moderators.
+  const canBlock = true;
+  const [reportTarget, setReportTarget] = useState<{ type: ReportTargetType; id: string } | null>(null);
   const blockQuery = useAsync(
     (s) => (canBlock ? fetchBlockStatus(id, s) : Promise.resolve({ blockedByMe: false, blockedByOther: false })),
     [id, canBlock],
@@ -510,7 +512,11 @@ function ConversationThread({
       tone: 'danger',
       action: () => blockConversation(id),
     });
-    if (ok) setBlockOverride(true);
+    if (ok) {
+      setBlockOverride(true);
+      // Discovery feeds drop this account right away.
+      publishLive('campaigns', 'conversations');
+    }
   }
 
   async function onDeleteChat() {
@@ -650,6 +656,17 @@ function ConversationThread({
               <button
                 type="button"
                 role="menuitem"
+                onClick={() => {
+                  setChatMenuOpen(false);
+                  setReportTarget({ type: conversation.otherPartyRole === 'BUSINESS' ? 'BUSINESS' : 'USER', id: conversation.otherPartyProfileId });
+                }}
+                className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] font-medium text-ink hover:bg-surface-dim"
+              >
+                <Flag size={15} /> {t('safety.report')}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
                 onClick={onDeleteChat}
                 className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] font-medium text-danger hover:bg-surface-dim"
               >
@@ -730,6 +747,16 @@ function ConversationThread({
                         className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] font-medium text-ink hover:bg-surface-dim"
                       >
                         <Pencil size={14} /> {t('chat.edit')}
+                      </button>
+                    )}
+                    {!mine && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => { setMenuFor(null); setReportTarget({ type: 'MESSAGE', id: m.id }); }}
+                        className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] font-medium text-ink hover:bg-surface-dim"
+                      >
+                        <Flag size={14} /> {t('safety.report')}
                       </button>
                     )}
                     <button
@@ -937,6 +964,9 @@ function ConversationThread({
       )}
 
       <AttachmentPreviewModal preview={preview} onClose={() => setPreview(null)} />
+      {reportTarget && (
+        <ReportDialog open onClose={() => setReportTarget(null)} targetType={reportTarget.type} targetId={reportTarget.id} />
+      )}
     </div>
   );
 }

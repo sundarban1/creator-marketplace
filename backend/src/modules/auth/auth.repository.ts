@@ -364,7 +364,8 @@ export class AuthRepository {
   async reactivateAccount(userId: string) {
     return prisma.user.update({
       where: { id: userId },
-      data: { isActive: true, suspendedAt: null },
+      // Also clears an expired temporary moderation suspension.
+      data: { isActive: true, suspendedAt: null, suspendedUntil: null, suspensionReason: null },
       include: profileSelect,
     });
   }
