@@ -5851,7 +5851,9 @@ const en = {
       genericBody: "Create a free account or sign in to work together. We'll bring you back to this page.",
     },
     hero: {
-      headlineLead: 'Great ideas deserve the',
+      badge: 'Nepal’s Creator Marketplace',
+      headlineBrand: 'Great ideas',
+      headlineMid: 'deserve the',
       headlineAccent: 'right people.',
       creators: 'Creators',
       businesses: 'Businesses',

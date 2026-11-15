@@ -6,7 +6,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useAnimatedValue } from 'react-native';
+import { Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useAnimatedValue, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { openGuestSignup } from '@/components/GuestAuthPrompt';
@@ -31,6 +31,34 @@ const BUSINESS_PHOTO = require('@/assets/images/login/business.jpg');
 const FINAL_BG      = require('@/assets/images/login/himalaya.jpg');
 
 const TRACK_PAD = 4;
+
+// The hero was designed on a 393pt-wide phone (iPhone 15/16/17 Pro). Its
+// fixed sizes scale with the screen width so small (SE, compact Android) and
+// large (Pro Max, wide Android) phones keep the same composition. Clamped so
+// nothing becomes tiny or oversized on extreme widths.
+const DESIGN_WIDTH = 393;
+function heroMetrics(screenW: number) {
+  const k = Math.min(1.12, Math.max(0.82, screenW / DESIGN_WIDTH));
+  const r = (n: number) => Math.round(n * k);
+  const title = Math.max(26, r(32));
+  const art = r(185);
+  return {
+    title,
+    titleLineLatin: Math.round(title * 1.18),
+    art,
+    // The art floats (absolute) over the right of the row, so the text column
+    // reserves at least the art's height: the row then ends at whichever is
+    // lower — the image or a long, wrapped headline — never at a fixed number.
+    text: { minHeight: art, paddingTop: r(48) },
+    // One consistent gap between that row and the tagline.
+    taglineGap: r(4),
+    pillLift: -r(48),
+    pillGap: r(12),
+  };
+}
+// Big Dynamic Type / Android font scaling still grows text, but capped where
+// the hero's fixed two-column layout would otherwise break apart.
+const HERO_FONT_CAP = 1.3;
 const PURPLE = '#7C3AED';
 
 export default function GuestHomeScreen() {
@@ -55,6 +83,8 @@ export default function GuestHomeScreen() {
     staleTime: STALE.list,
   });
   const { refreshing, onRefresh } = usePullToRefresh(events, competitions, creators);
+  const { width: screenW } = useWindowDimensions();
+  const hm = heroMetrics(screenW);
 
   const eventList = events.data?.campaigns ?? [];
   const compList = competitions.data?.items ?? [];
@@ -69,33 +99,46 @@ export default function GuestHomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}>
 
-        {/* ── B. Hero ── headline left, collaboration art on a soft blob right */}
+        {/* ── B. Hero ── headline left, collaboration art right */}
         <View style={s.hero}>
-          <View style={[s.heroBlob, { backgroundColor: C.accentLight }]} pointerEvents="none" />
-          <ExpoImage source={HERO_ART} style={s.heroArt} contentFit="contain" accessible={false} />
-          <View style={s.heroText}>
+          <ExpoImage source={HERO_ART} style={[s.heroArt, { width: hm.art, height: hm.art }]} contentFit="contain" accessible={false} />
+          <View style={[s.heroText, hm.text]}>
+            <View style={[s.badgePill, { marginTop: hm.pillLift, marginBottom: hm.pillGap, backgroundColor: C.surface, borderColor: withAlpha(C.accent, 0.3) }]}>
+              <View style={[s.badgeDot, { backgroundColor: C.accent }]} />
+              <Text style={[s.badgeText, { color: C.text }]} numberOfLines={1} maxFontSizeMultiplier={HERO_FONT_CAP}>{t('guest.hero.badge')}</Text>
+            </View>
             <Text
-              style={[s.heroTitle, { color: C.text, lineHeight: language === 'ne' ? lineHeightFor(34) : 40 }]}
+              style={[s.heroTitle, { color: C.text, fontSize: hm.title, lineHeight: language === 'ne' ? lineHeightFor(hm.title) : hm.titleLineLatin }]}
+              maxFontSizeMultiplier={HERO_FONT_CAP}
               accessibilityRole="header">
-              {t('guest.hero.headlineLead')}{' '}
+              {/* Three-tone headline: brand indigo → body colour → accent orange.
+                  headlineMid may be empty (Nepali word order has no middle part). */}
+              <Text style={{ color: C.brinjal1 }}>{t('guest.hero.headlineBrand')}</Text>{' '}
+              {t('guest.hero.headlineMid') ? `${t('guest.hero.headlineMid')} ` : ''}
               <Text style={{ color: C.accent }}>{t('guest.hero.headlineAccent')}</Text>
             </Text>
-            <Text style={[s.heroTagline, { color: C.textSecondary }]}>{t('guest.hero.tagline')}</Text>
           </View>
-          <Text style={[s.heroDesc, { color: C.textSecondary }]}>{t('guest.hero.description')}</Text>
+          {/* Tagline on one full-width line under the headline/art row. */}
+          <Text
+            style={[s.heroTagline, { color: C.textSecondary, marginTop: hm.taglineGap }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}>
+            {t('guest.hero.tagline')}
+          </Text>
           <View style={s.heroCtas}>
             <Pressable
               onPress={() => router.navigate('/(guest)/events')}
               style={({ pressed }) => [s.pillBtn, { backgroundColor: C.accent }, SHADOW.raised, { shadowColor: C.accent }, pressed && { opacity: 0.9 }]}
               accessibilityRole="button">
-              <Text style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.hero.explore')}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.hero.explore')}</Text>
               <FontAwesome5 name="arrow-right" size={12} color="#fff" />
             </Pressable>
             <Pressable
               onPress={() => openGuestSignup()}
               style={({ pressed }) => [s.pillBtn, { borderWidth: 1.5, borderColor: C.border, backgroundColor: C.surface }, pressed && { opacity: 0.85 }]}
               accessibilityRole="button">
-              <Text style={[s.pillBtnText, { color: C.text }]}>{t('guest.createAccount')}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.pillBtnText, { color: C.text }]}>{t('guest.createAccount')}</Text>
             </Pressable>
           </View>
         </View>
@@ -185,7 +228,7 @@ export default function GuestHomeScreen() {
                 <View style={[s.stepIcon, { backgroundColor: C.accentLight, borderColor: C.background }]}>
                   <FontAwesome5 name={icon} size={16} color={C.accent} />
                 </View>
-                <Text style={[s.stepTitle, { color: C.text }]} numberOfLines={1}>{`${i + 1}. ${t(`guest.how.${key}`)}`}</Text>
+                <Text style={[s.stepTitle, { color: C.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{`${i + 1}. ${t(`guest.how.${key}`)}`}</Text>
               </View>
             ))}
           </View>
@@ -210,7 +253,7 @@ export default function GuestHomeScreen() {
             onPress={() => openGuestSignup()}
             style={({ pressed }) => [s.pillBtn, s.finalBtn, { backgroundColor: C.accent }, pressed && { opacity: 0.9 }]}
             accessibilityRole="button">
-            <Text style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.final.cta')}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.final.cta')}</Text>
             <FontAwesome5 name="arrow-right" size={12} color="#fff" />
           </Pressable>
         </View>
@@ -239,6 +282,10 @@ const AUDIENCES: {
 /** "For creators / For businesses" — a two-option slider over a single tinted card. */
 function AudienceSwitcher() {
   const C = useAppColors();
+  // Photo column ≈ 29% of the screen (112 on a 393pt phone), so the copy
+  // column keeps enough room on compact phones.
+  const { width: screenW } = useWindowDimensions();
+  const photoW = Math.round(Math.min(130, Math.max(90, screenW * 0.285)));
   const { t } = useLanguage();
   const [active, setActive] = useState<Audience>('creators');
   const [trackW, setTrackW] = useState(0);
@@ -324,7 +371,7 @@ function AudienceSwitcher() {
             <FontAwesome5 name="arrow-right" size={11} color="#fff" />
           </Pressable>
         </View>
-        <ExpoImage source={current.photo} style={s.audiencePhoto} contentFit="cover" transition={150} accessible={false} />
+        <ExpoImage source={current.photo} style={[s.audiencePhoto, { width: photoW }]} contentFit="cover" transition={150} accessible={false} />
       </View>
     </View>
   );
@@ -338,13 +385,19 @@ const s = StyleSheet.create({
 
   // Hero
   hero:        { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, overflow: 'hidden' },
-  heroBlob:    { position: 'absolute', right: -60, top: -10, width: 260, height: 240, borderRadius: 130, transform: [{ rotate: '-12deg' }] },
-  heroArt:     { position: 'absolute', right: -4, top: SPACING.lg, width: 170, height: 170 },
-  heroText:    { width: '60%', gap: SPACING.md, minHeight: 190 },
+  // Sizes / offsets below are the 393pt design; heroMetrics() scales them inline.
+  heroArt:     { position: 'absolute', right: -4, top: SPACING.lg },
+  heroText:    { width: '60%', gap: SPACING.md },
+  badgePill: {
+    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', maxWidth: '100%',
+    borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6, gap: 6,
+    // marginTop (lift) / marginBottom (gap to headline) are set inline, scaled with the screen.
+  },
+  badgeDot:  { width: 7, height: 7, borderRadius: 3.5 },
+  badgeText: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, flexShrink: 1 },
   // lineHeight set inline: tight for Latin, ≥1.5× for Devanagari (matras clip otherwise).
-  heroTitle:   { fontSize: 34, fontFamily: F.bold, letterSpacing: -0.6 },
+  heroTitle:   { fontFamily: F.bold, letterSpacing: -0.6 },
   heroTagline: { fontSize: FONT_SIZE.md, fontFamily: F.medium, lineHeight: lineHeightFor(FONT_SIZE.md) },
-  heroDesc:    { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: lineHeightFor(FONT_SIZE.sm), marginTop: SPACING.md },
   heroCtas:    { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
   pillBtn: {
     flex: 1, minHeight: 50, borderRadius: RADIUS.full, flexDirection: 'row',
@@ -378,7 +431,7 @@ const s = StyleSheet.create({
     alignItems: 'center', gap: 6, paddingHorizontal: 14, marginTop: SPACING.xs,
   },
   audienceBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
-  audiencePhoto:   { width: 112, alignSelf: 'stretch' },
+  audiencePhoto:   { alignSelf: 'stretch' },
 
   // Final CTA
   final:      { marginHorizontal: SCREEN_GUTTER, marginTop: SPACING.xl + 4, borderRadius: RADIUS.lg, padding: SPACING.xl, minHeight: 180, justifyContent: 'center', gap: SPACING.lg, overflow: 'hidden' },
