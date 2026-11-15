@@ -5858,7 +5858,8 @@ const en = {
       creators: 'Creators',
       businesses: 'Businesses',
       headline: 'Great ideas deserve the right people.',
-      tagline: 'Find creators. Discover opportunities. Make things happen.',
+      // *word* = emphasised (bold, brand colour) on the guest home hero.
+      tagline: 'Find *creators*. Discover *opportunities*. Collaborate *together*.',
       description: 'Kolab brings creators and businesses together to turn ideas into real collaborations.',
       explore: 'Explore Kolab',
     },

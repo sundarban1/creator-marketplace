@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { openGuestSignup } from '@/components/GuestAuthPrompt';
 import { Skeleton } from '@/components/Skeleton';
-import { useAppColors } from '@/context/ThemeContext';
+import { BUSINESS_DARK_COLORS, useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { FriendlyEmpty, GuestHeader, InlineNotice, RailSkeleton, SectionHeader } from '@/features/guest/components';
 import { CREATOR_PHOTO_CARD_W, CompetitionRow, CreatorPhotoCard, OpportunityRow } from '@/features/guest/homeCards';
@@ -23,7 +23,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorCompetitionService } from '@/services/competition';
 import { publicService } from '@/services/public';
 import { withAlpha } from '@/utilities/color';
-import { F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
+import { BUSINESS_COLORS, F, FONT_SIZE, RADIUS, SCREEN_GUTTER, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
 
 const HERO_ART      = require('@/assets/images/login/creator3.png');
 const CREATOR_PHOTO = require('@/assets/images/login/login_1.jpg');
@@ -56,6 +56,20 @@ function heroMetrics(screenW: number) {
     pillGap: r(12),
   };
 }
+// Vertical rhythm for the whole page, from the screen HEIGHT: short phones
+// (SE, compact Android) get tighter spacing so more content shows above the
+// fold; tall phones (Pro Max, tall Android) get a little more air. Every
+// section — and the final card — uses the same gap, so the page reads evenly.
+function pageSpacing(screenH: number) {
+  const compact = screenH < 700;
+  const tall = screenH > 880;
+  return {
+    section: compact ? SPACING.lg + 6 : tall ? SPACING.xxl : SPACING.xl + 4, // 22 / 28 / 32
+    heroCtas: compact ? SPACING.md : SPACING.lg,                              // 12 / 16
+    bottom: compact ? SPACING.xl : SPACING.xxl,                               // 24 / 32
+  };
+}
+
 // Big Dynamic Type / Android font scaling still grows text, but capped where
 // the hero's fixed two-column layout would otherwise break apart.
 const HERO_FONT_CAP = 1.3;
@@ -83,8 +97,14 @@ export default function GuestHomeScreen() {
     staleTime: STALE.list,
   });
   const { refreshing, onRefresh } = usePullToRefresh(events, competitions, creators);
-  const { width: screenW } = useWindowDimensions();
+  const { width: screenW, height: screenH } = useWindowDimensions();
   const hm = heroMetrics(screenW);
+  const sp = pageSpacing(screenH);
+  const sectionStyle = [s.section, { marginTop: sp.section }];
+  const isDark = useIsDark();
+  // Tagline highlights in Kolab's three brand colours, in order:
+  // creators → orange, opportunities → brinjal, together → business green.
+  const taglineColors = [C.accent, C.brinjal1, (isDark ? BUSINESS_DARK_COLORS : BUSINESS_COLORS).brinjal1];
 
   const eventList = events.data?.campaigns ?? [];
   const compList = competitions.data?.items ?? [];
@@ -95,7 +115,7 @@ export default function GuestHomeScreen() {
       <GuestHeader />
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={s.scroll}
+        contentContainerStyle={[s.scroll, { paddingBottom: sp.bottom }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}>
 
@@ -124,9 +144,14 @@ export default function GuestHomeScreen() {
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.75}>
-            {t('guest.hero.tagline')}
+            {t('guest.hero.tagline').split('*').map((part, i) =>
+              // Odd segments sit between *…* markers → emphasised.
+              i % 2 === 1
+                ? <Text key={i} style={{ color: taglineColors[(i - 1) / 2] ?? C.brinjal1, fontFamily: F.bold }}>{part}</Text>
+                : part,
+            )}
           </Text>
-          <View style={s.heroCtas}>
+          <View style={[s.heroCtas, { marginTop: sp.heroCtas }]}>
             <Pressable
               onPress={() => router.navigate('/(guest)/events')}
               style={({ pressed }) => [s.pillBtn, { backgroundColor: C.accent }, SHADOW.raised, { shadowColor: C.accent }, pressed && { opacity: 0.9 }]}
@@ -144,7 +169,7 @@ export default function GuestHomeScreen() {
         </View>
 
         {/* ── C. Discover Opportunities ── */}
-        <View style={s.section}>
+        <View style={sectionStyle}>
           <SectionHeader title={t('guest.sections.opportunities')} onSeeAll={() => router.navigate('/(guest)/events')} />
           {events.isPending ? (
             <RowSkeletons count={1} />
@@ -164,7 +189,7 @@ export default function GuestHomeScreen() {
         </View>
 
         {/* ── D. Competitions ── */}
-        <View style={s.section}>
+        <View style={sectionStyle}>
           <SectionHeader title={t('guest.sections.competitions')} onSeeAll={() => router.navigate('/(guest)/competitions')} />
           {competitions.isPending ? (
             <RowSkeletons count={1} />
@@ -184,7 +209,7 @@ export default function GuestHomeScreen() {
         </View>
 
         {/* ── E. Discover Creators ── */}
-        <View style={s.section}>
+        <View style={sectionStyle}>
           <SectionHeader title={t('guest.sections.creators')} onSeeAll={() => router.navigate('/(guest)/discover')} />
           {creators.isPending ? (
             <RailSkeleton width={CREATOR_PHOTO_CARD_W} height={200} />
@@ -209,12 +234,12 @@ export default function GuestHomeScreen() {
         </View>
 
         {/* ── F / G. For Creators · For Businesses — one card, slider picks the audience ── */}
-        <View style={s.section}>
+        <View style={sectionStyle}>
           <AudienceSwitcher />
         </View>
 
         {/* ── H. How Kolab Works ── four connected steps */}
-        <View style={s.section}>
+        <View style={sectionStyle}>
           <SectionHeader title={t('guest.how.title')} />
           <View style={s.steps}>
             <View style={[s.stepsLine, { backgroundColor: C.border }]} pointerEvents="none" />
@@ -235,7 +260,7 @@ export default function GuestHomeScreen() {
         </View>
 
         {/* ── I. Final CTA ── */}
-        <View style={[s.final, { backgroundColor: C.accentLight }]}>
+        <View style={[s.final, { marginTop: sp.section, backgroundColor: C.accentLight }]}>
           {/* Full-bleed background photo; text + button sit on top of it. A fade
               from the card colour on the left keeps the copy readable over the
               mountains in both light and dark mode. */}
@@ -386,8 +411,9 @@ function AudienceSwitcher() {
 
 const s = StyleSheet.create({
   safe:    { flex: 1 },
-  scroll:  { paddingBottom: SPACING.xxl },
-  section: { marginTop: SPACING.xl + 4 },
+  // Vertical spacing (section gaps, bottom padding) is set inline from pageSpacing().
+  scroll:  {},
+  section: {},
   stack:   { paddingHorizontal: SCREEN_GUTTER, gap: SPACING.md },
 
   // Hero
@@ -405,7 +431,7 @@ const s = StyleSheet.create({
   // lineHeight set inline: tight for Latin, ≥1.5× for Devanagari (matras clip otherwise).
   heroTitle:   { fontFamily: F.bold, letterSpacing: -0.6 },
   heroTagline: { fontSize: FONT_SIZE.md, fontFamily: F.medium, lineHeight: lineHeightFor(FONT_SIZE.md) },
-  heroCtas:    { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
+  heroCtas:    { flexDirection: 'row', gap: SPACING.sm },
   pillBtn: {
     flex: 1, minHeight: 50, borderRadius: RADIUS.full, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: SPACING.md,
@@ -441,7 +467,7 @@ const s = StyleSheet.create({
   audiencePhoto:   { alignSelf: 'stretch' },
 
   // Final CTA
-  final:      { marginHorizontal: SCREEN_GUTTER, marginTop: SPACING.xl + 4, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.lg + 4, minHeight: 140, justifyContent: 'center', gap: SPACING.md, overflow: 'hidden' },
+  final:      { marginHorizontal: SCREEN_GUTTER, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.lg + 4, minHeight: 140, justifyContent: 'center', gap: SPACING.md, overflow: 'hidden' },
   finalTitle: { fontSize: FONT_SIZE.xl, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.xl) },
   finalBtn:   { flex: 0, alignSelf: 'center', paddingHorizontal: SPACING.xl },
 });
