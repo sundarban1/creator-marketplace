@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Application from 'expo-application';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LogBox, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
@@ -17,7 +17,7 @@ import {
 } from '@expo-google-fonts/dm-sans';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { AuthProvider } from '@/context/AuthContext';
-import { useAuth, hasSignedInThisLaunch } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { queryClient, persistOptions } from '@/lib/queryClient';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppThemeProvider, useAppColors, useIsDark } from '@/context/ThemeContext';
@@ -34,6 +34,8 @@ import { GlobalUploadBanner } from '@/components/GlobalUploadBanner';
 import { ToastProvider } from '@/components/Toast';
 import { SupportContactProvider } from '@/context/SupportContactContext';
 import { SupportFab } from '@/components/SupportFab';
+import { GuestAuthPromptHost } from '@/components/GuestAuthPrompt';
+import { consumePendingAuthIntent, hasPendingAuthIntent } from '@/lib/pendingAuthIntent';
 import { syncBiometricLoginWithDevice } from '@/services/biometric';
 import { authService } from '@/services/auth';
 import { useAppleCredentialWatch } from '@/hooks/useAppleCredentialWatch';
@@ -255,6 +257,13 @@ const ef = StyleSheet.create({
   devText: { fontFamily: F.regular, fontSize: 12, lineHeight: 18 },
 });
 
+// Root-level screens a signed-out guest may open (besides the (guest) tabs and
+// the (auth) flow). All read-only; their account-only actions open the guest
+// login prompt instead. Every other route redirects a guest to guest home.
+const GUEST_PUBLIC_ROUTES = new Set([
+  'legal', 'about-us', 'campaign-detail', 'competition-detail', 'creator-profile', 'business-profile',
+]);
+
 // Handles auth-based redirects for both login AND logout
 function RootNavigator() {
   const { user, isLoading, updateUser } = useAuth();
@@ -293,39 +302,49 @@ function RootNavigator() {
     void syncBiometricLoginWithDevice().then(setBiometricGateArmed);
   }, [isLoading]);
 
+  // Previous `user` — lets the effect below tell "just signed out" (tear the
+  // whole stack down to guest home) apart from "still a guest, browsing".
+  const prevUserRef = useRef(user);
+
   useEffect(() => {
     if (isLoading) return;
-    const inAuthGroup  = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding' || segments[0] === 'business-onboarding';
-    const onAddEmail   = segments[0] === 'add-email';
-    const isPublic     = segments[0] === 'legal';
-    // The root index route (the doodle splash) resolves to zero path segments —
-    // Expo Router's generated typed-segments union confirms 'index' never appears
-    // as a literal segment value (the root path has no segments at all), but that
-    // same generated union also claims segments.length can never be 0, which is
-    // the actual runtime shape being checked for here — cast around the mismatch.
+    const seg0         = (segments as readonly string[])[0];
+    const inAuthGroup  = seg0 === '(auth)';
+    const inGuest      = seg0 === '(guest)';
+    const inOnboarding = seg0 === 'onboarding' || seg0 === 'business-onboarding';
+    const onAddEmail   = seg0 === 'add-email';
+    const inAppGroup   = seg0 === '(creator)' || seg0 === '(business)';
+    // The root index route resolves to zero path segments — Expo Router's
+    // generated typed-segments union claims that can't happen, hence the cast.
     const onSplash     = (segments as readonly string[]).length === 0;
 
-    // `onSplash` (the root welcome route) is normally left alone so a genuine
-    // first launch can park there — but once a session has existed this launch,
-    // landing back on it means Logout unwound the stack through here, so push on
-    // to /login instead of stranding the user on the intro screen.
-    if (!user && !inAuthGroup && !isPublic && (!onSplash || hasSignedInThisLaunch())) {
-      // Logout (or a token-refresh failure) fired from somewhere deep in the
-      // authenticated stack. A bare replace() swaps the current screen for
-      // /login but leaves every authenticated screen below it in the history —
-      // so /login shows a back button that pops the user straight back into a
-      // now-unauthorised screen, which this same effect then bounces back to
-      // /login (a second time, now with no back button). Tear the stack down to
-      // its root first so /login becomes the only entry and shows no back arrow.
-      try { if (router.canGoBack()) router.dismissAll(); } catch {}
-      router.replace('/login');
+    const justSignedOut = !user && !!prevUserRef.current;
+    prevUserRef.current = user;
+
+    if (!user) {
+      // Signed out → the Guest navigation. A guest may stay on the guest tabs,
+      // the auth flow, and the read-only public screens (GUEST_PUBLIC_ROUTES);
+      // anything else — including a deep link into an account-only screen —
+      // lands on guest home. On logout / session expiry the whole stack is torn
+      // down first so no authenticated screen stays in the back history (even
+      // one like campaign-detail that guests are otherwise allowed on).
+      const allowed = inGuest || inAuthGroup || GUEST_PUBLIC_ROUTES.has(seg0 ?? '');
+      if (justSignedOut || !allowed || onSplash) {
+        try { if (router.canGoBack()) router.dismissAll(); } catch {}
+        router.replace('/(guest)');
+      }
     } else if (user && user.emailIsPlaceholder && !onAddEmail) {
       // Sign in with Apple returned no email (a repeat authorization) — the
       // account holds a placeholder address and can't proceed until the user
       // adds + verifies a real one. Takes precedence over onboarding/home.
       router.replace('/add-email');
-    } else if (user && inAuthGroup) {
+    } else if (user && (inAuthGroup || inGuest)) {
+      // Login / signup is pushed on top of the guest tabs (possibly several
+      // auth screens deep: account-type → login → verify). Pop the ROOT stack
+      // back to the guest group (dismissAll would only unwind the inner (auth)
+      // stack), then the replace below swaps it for home — leaving home as the
+      // only entry, so Back can't return to guest screens.
+      if (inAuthGroup) router.dismissTo('/(guest)');
       if (user.isFirstLogin === true && onboardingEnabledFor(user.role)) {
         router.replace(user.role === 'CREATOR' ? '/onboarding' : '/business-onboarding');
       } else {
@@ -345,6 +364,14 @@ function RootNavigator() {
       // stranded there. Only targets the splash specifically, not other valid
       // in-app screens like campaign-detail/submit-proposal/create-campaign.
       router.replace(user.role === 'CREATOR' ? '/(creator)/' : '/(business)/');
+    } else if (user && user.isFirstLogin !== true && inAppGroup && hasPendingAuthIntent()) {
+      // Signed in from a guest "log in to continue" prompt (directly, or after
+      // onboarding) — home is now underneath, so re-open the screen they were
+      // on with the action hint (apply / join) for it to pick back up.
+      const intent = consumePendingAuthIntent();
+      if (intent) {
+        router.push({ pathname: intent.pathname, params: { ...intent.params, ...(intent.resume ? { resume: intent.resume } : {}) } } as never);
+      }
     }
     // biometricUnlocked is a dependency even though it isn't read above: flipping
     // it remounts <Stack> fresh onto the index route (see the gate below), and
@@ -371,7 +398,7 @@ function RootNavigator() {
   }
 
   // Logout / session-expiry flash guard. `logout()` just nulls `user`; the
-  // redirect to /login happens in the effect above, which only runs *after*
+  // redirect to guest home happens in the effect above, which only runs *after*
   // this render commits and paints — so for one frame the now-unauthorised
   // (creator)/(business) screen is still mounted and visibly rendered (often
   // with blank user data) before it slides away to /login. Scoped strictly to
@@ -387,7 +414,9 @@ function RootNavigator() {
   const onSplashNow = (segments as readonly string[]).length === 0;
   const coverLoggedOutFrame =
     !isLoading && !user &&
-    (seg0 === '(creator)' || seg0 === '(business)' || (onSplashNow && hasSignedInThisLaunch()));
+    // The root index route is only ever a pass-through for a guest now (the
+    // effect sends them to guest home), so it's covered too.
+    (seg0 === '(creator)' || seg0 === '(business)' || onSplashNow);
 
   return (
     <>
@@ -408,6 +437,8 @@ function RootNavigator() {
             authenticated screen draws the eye to content that's on its way out.
             Entering the app after login animates the (creator)/(business)
             screen instead, so that transition is unaffected. */}
+        {/* Signed-out browsing — fades in on logout like (auth) used to. */}
+        <Stack.Screen name="(guest)" options={{ animation: 'fade' }} />
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
         <Stack.Screen name="add-email" />
         <Stack.Screen name="onboarding" />
@@ -418,6 +449,8 @@ function RootNavigator() {
         <Stack.Screen name="about-us" options={{ presentation: 'card' }} />
         <Stack.Screen name="campaign-detail" options={{ presentation: 'card' }} />
         <Stack.Screen name="competition-detail" options={{ presentation: 'card' }} />
+        <Stack.Screen name="creator-profile" options={{ presentation: 'card' }} />
+        <Stack.Screen name="business-profile" options={{ presentation: 'card' }} />
         <Stack.Screen name="submit-proposal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="create-campaign" options={{ presentation: 'modal' }} />
         <Stack.Screen name="guided-campaign" options={{ presentation: 'modal' }} />
@@ -434,6 +467,9 @@ function RootNavigator() {
           one-shot enrolment offer can only ever appear over real app content —
           never stacked on top of a blocking screen. */}
       <BiometricEnrollPrompt />
+
+      {/* "Log in to continue" sheet for guests (promptGuestAuth). */}
+      <GuestAuthPromptHost />
 
       {coverLoggedOutFrame && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: C.background }]} />

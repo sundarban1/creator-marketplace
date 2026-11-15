@@ -158,6 +158,8 @@ export interface CompetitionCard {
   title: string;
   coverImageUrl: string | null;
   status: CompetitionStatus;
+  /** Plain-text teaser of the description (absent from older API builds). */
+  summary?: string;
   organizer: Organizer;
   registrationOpen: boolean;
   registrationOpensAt: string;

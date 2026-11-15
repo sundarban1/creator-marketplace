@@ -1,132 +1,15 @@
-import { Image as ExpoImage } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth, hasSignedInThisLaunch } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
-import { withAlpha } from '@/utilities/color';
-import { COLORS, F, FONT_SIZE, RADIUS, SPACING, lineHeightFor } from '@/utilities/constants';
+import { View } from 'react-native';
+import { useAppColors } from '@/context/ThemeContext';
 
-// Full-bleed photo of the people Kolab connects, sitting behind the brand
-// headline the same way the auth screens carry it.
-const HERO = require('@/assets/images/login/login.jpg');
-const HIGHLIGHT = COLORS.brinjal1;
-
-// Language toggle shows the language you'd switch TO — same as login / account-type.
-const LANG_LABELS = { en: 'Eng', ne: 'ने' } as const;
-
-// ─── Welcome Screen ───────────────────────────────────────────────────────────
-
-// Single intro screen + entry CTAs. Navigation away from here (once the user
-// taps Get Started, or once RootNavigator (src/app/_layout.tsx) determines
-// they're already signed in) is entirely owned by RootNavigator — this screen
-// itself never redirects on a timer. It used to auto-redirect unauthenticated
-// users straight to /login the instant auth-loading resolved, which meant this
-// screen was never actually seen; RootNavigator now leaves unauthenticated
-// users parked here until they choose Get Started or Log in.
-export default function WelcomeScreen() {
-  const { language, setLanguage, t } = useLanguage();
-  const { user } = useAuth();
-  const contentOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(contentOpacity, { toValue: 1, duration: 420, useNativeDriver: true }).start();
-  }, []);
-
-  // A signed-out user only reaches this root route by way of Logout —
-  // RootNavigator tears down the authed stack, which unwinds through here on its
-  // way to /login. Skip the welcome UI entirely in that case so logout lands
-  // straight on the login screen with no intro-screen flash. A genuine first
-  // launch (never signed in this session) still gets the welcome screen.
-  if (!user && hasSignedInThisLaunch()) {
-    return <Redirect href="/login" />;
-  }
-
-  return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
-
-      {/* Backdrop — the photo fills the screen; a vertical brand wash keeps it
-          soft up top and deep enough at the bottom for white text + CTAs. */}
-      <ExpoImage source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
-      <LinearGradient
-        colors={[withAlpha(COLORS.brinjal2, 0.15), withAlpha(COLORS.brinjal2, 0.55), withAlpha(COLORS.brinjal2, 0.96)]}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
-
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <Animated.View style={{ flex: 1, width: '100%', opacity: contentOpacity }}>
-          {/* Language toggle — top-right over the hero, translucent on the wash */}
-          <View style={styles.topBar}>
-            <Pressable
-              style={styles.langChip}
-              hitSlop={8}
-              accessibilityRole="button"
-              onPress={() => setLanguage(language === 'en' ? 'ne' : 'en')}>
-              <Text style={styles.langChipText}>{LANG_LABELS[language === 'en' ? 'ne' : 'en']}</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.spacer} />
-
-          <View style={styles.content}>
-            <View style={styles.headlineBlock}>
-              <Text style={styles.headline}>{t('welcome.headline1')}</Text>
-              <Text style={styles.headline}>{t('welcome.headline2')}</Text>
-              <Text style={styles.headline}>{t('welcome.headline3')}</Text>
-            </View>
-
-            {/* ─── Entry CTAs ─── */}
-            <Pressable
-              onPress={() => router.push('/account-type')}
-              style={({ pressed }) => [styles.primaryBtn, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-              <Text style={styles.primaryBtnText}>{t('welcome.getStarted')}</Text>
-            </Pressable>
-
-            <Pressable onPress={() => router.push('/login')} hitSlop={8} style={styles.loginRow}>
-              <Text style={styles.loginPrompt}>{t('welcome.alreadyHaveAccount')} </Text>
-              <Text style={styles.loginLink}>{t('welcome.logIn')}</Text>
-            </Pressable>
-          </View>
-        </Animated.View>
-      </SafeAreaView>
-    </View>
-  );
+// Root route — a pass-through only. RootNavigator (src/app/_layout.tsx) owns
+// every redirect from here: a signed-out visitor goes to the Guest navigation
+// ((guest)/ — browse first, no forced login), a signed-in user to their
+// creator / business home or onboarding. The branded SplashScreen overlay
+// covers this blank frame on cold start.
+//
+// This used to be a standalone "Welcome" screen with Get Started / Log in.
+// Guest home's header and CTAs (Log In, Create Account) replace it.
+export default function RootIndex() {
+  const C = useAppColors();
+  return <View style={{ flex: 1, backgroundColor: C.background }} />;
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.brinjal2 },
-  safe: { flex: 1 },
-
-  topBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: SPACING.xl, paddingTop: SPACING.sm },
-  langChip: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, minHeight: 36,
-    backgroundColor: withAlpha('#FFFFFF', 0.18),
-    borderWidth: 1, borderColor: withAlpha('#FFFFFF', 0.35),
-  },
-  langChipText: { fontSize: FONT_SIZE.xs, fontFamily: F.bold, color: '#fff' },
-
-  spacer: { flex: 1 },
-  content: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.md, gap: SPACING.md },
-
-  headlineBlock: { marginBottom: SPACING.lg },
-  headline: {
-    color: '#fff',
-    fontSize: FONT_SIZE.xxl,
-    fontFamily: F.extrabold,
-    lineHeight: lineHeightFor(FONT_SIZE.xxl),
-  },
-
-  primaryBtn: { height: 54, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', backgroundColor: HIGHLIGHT },
-  primaryBtnText: { fontSize: FONT_SIZE.md, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
-
-  loginRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: SPACING.sm },
-  loginPrompt: { fontSize: FONT_SIZE.sm, color: withAlpha('#FFFFFF', 0.8), fontFamily: F.medium },
-  loginLink: { fontSize: FONT_SIZE.sm, fontFamily: F.bold, color: '#fff' },
-});

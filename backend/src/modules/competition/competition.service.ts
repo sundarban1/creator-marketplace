@@ -1457,6 +1457,7 @@ export class CompetitionService {
         const cur = currentStage(c.stages);
         return {
           id: c.id, slug: c.slug, title: c.title, coverImageUrl: c.coverImageUrl, status: c.status,
+          summary: plainSummary(c.description),
           organizer: { name: c.business.businessName, slug: c.business.slug, logoUrl: c.business.logoUrl, isVerified: c.business.isVerified },
           registrationOpen: rules.registrationOpen(c, now),
           registrationOpensAt: c.registrationOpensAt,
@@ -2196,3 +2197,15 @@ export class CompetitionService {
 }
 
 export const competitionService = new CompetitionService();
+
+/** Short plain-text teaser for list cards — description is Markdown (rich-text editor). */
+function plainSummary(md: string | null | undefined, max = 160): string {
+  if (!md) return '';
+  const text = md
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')      // images
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')   // links → label
+    .replace(/[#>*_`~|-]+/g, ' ')              // markdown punctuation
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}

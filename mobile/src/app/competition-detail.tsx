@@ -2,11 +2,11 @@
 // web/src/app/competitions/CreatorCompetitionDetailPage.tsx + CompetitionOverview.tsx:
 // overview, join, "Your progress" and the stage entry form (Google Drive link,
 // same as web — direct video upload is switched off there too).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/features/creator/components/PageHeader';
@@ -19,6 +19,8 @@ import { MarkdownText } from '@/components/MarkdownText';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { FormErrorBanner } from '@/components/FieldError';
 import { useToast } from '@/components/Toast';
+import { promptGuestAuth } from '@/components/GuestAuthPrompt';
+import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useFormValidation, useValidators } from '@/hooks/useFormValidation';
@@ -45,9 +47,12 @@ export default function CompetitionDetailScreen() {
   const { t } = useLanguage();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { id = '' } = useLocalSearchParams<{ id: string }>();
+  const { id = '', resume } = useLocalSearchParams<{ id: string; resume?: string }>();
+  const { user } = useAuth();
 
-  const detail = useQuery({ queryKey: ['competition', id], queryFn: () => creatorCompetitionService.get(id), enabled: !!id });
+  // Keyed by viewer: the response carries viewer-specific joined/canJoin, so
+  // a copy cached while browsing as a guest mustn't be reused after login.
+  const detail = useQuery({ queryKey: ['competition', id, 'detail', user?.id ?? 'guest'], queryFn: () => creatorCompetitionService.get(id), enabled: !!id });
   const joined = !!detail.data?.viewer.joined;
   const progress = useQuery({
     queryKey: ['competition', id, 'progress'],
@@ -57,6 +62,23 @@ export default function CompetitionDetailScreen() {
 
   const [confirmJoin, setConfirmJoin] = useState(false);
   const [joining, setJoining] = useState(false);
+
+  // Back from a guest "log in to join" prompt (resume=join): reopen the join
+  // confirmation once the signed-in detail says this creator can still join.
+  // Adjusted during render (React docs pattern), not from an effect.
+  const [resumeHandled, setResumeHandled] = useState(false);
+  if (resume === 'join' && !resumeHandled && detail.data && !detail.isFetching) {
+    setResumeHandled(true);
+    if (detail.data.viewer.canJoin) setConfirmJoin(true);
+  }
+  // Drop the one-shot param so a re-render / back-navigation doesn't re-trigger it.
+  useEffect(() => {
+    if (resumeHandled) router.setParams({ resume: undefined });
+  }, [resumeHandled]);
+
+  function promptGuestJoin() {
+    promptGuestAuth({ reason: 'join', intent: { pathname: '/competition-detail', params: { id }, resume: 'join' } });
+  }
 
   function refreshAll() {
     void queryClient.invalidateQueries({ queryKey: ['competition', id] });
@@ -83,7 +105,7 @@ export default function CompetitionDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <PageHeader title={c?.title ?? t('comp.typeBadge')} backFallback="/(creator)/(tabs)/discover" />
+      <PageHeader title={c?.title ?? t('comp.typeBadge')} backFallback={user ? '/(creator)/(tabs)/discover' : '/(guest)/competitions'} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <MaxWidthContainer>
           {detail.isPending ? (
@@ -140,7 +162,7 @@ export default function CompetitionDetailScreen() {
                 </Section>
               </ScrollView>
 
-              <JoinBar c={c} p={p} onJoin={() => setConfirmJoin(true)} />
+              <JoinBar c={c} p={p} isGuest={!user} onJoin={() => (user ? setConfirmJoin(true) : promptGuestJoin())} />
             </>
           )}
         </MaxWidthContainer>
@@ -532,9 +554,18 @@ function SubmissionPanel({ competitionId, stage, allowEdits, onSaved, previous }
 }
 
 /** Pinned bottom bar: Join (when open) / "You're in" status / why joining is closed. */
-function JoinBar({ c, p, onJoin }: { c: CompetitionDetail; p: MyProgress | null; onJoin: () => void }) {
+function JoinBar({ c, p, isGuest, onJoin }: { c: CompetitionDetail; p: MyProgress | null; isGuest: boolean; onJoin: () => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  // Guests: the server never reports canJoin without a session, so offer
+  // "log in to join" whenever registration itself is open.
+  if (isGuest && c.registrationOpen) {
+    return (
+      <View style={[styles.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+        <View style={{ flex: 1 }}><Button label={t('guest.loginToJoin')} icon="lock" onPress={onJoin} /></View>
+      </View>
+    );
+  }
   if (c.viewer.joined) {
     if (!p) return null;
     const b = creatorStatusBadge(p.status, t);

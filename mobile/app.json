@@ -119,9 +119,11 @@
       ],
       "expo-web-browser",
       [
-        "expo-audio",
+    "expo-audio",
         {
-          "microphonePermission": "Allow Kolab to use your microphone to record voice messages for the AI assistant."
+          "microphonePermission": "Allow Kolab to use your microphone to record and send voice messages.",
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
         }
       ],
       "@sentry/react-native/expo",

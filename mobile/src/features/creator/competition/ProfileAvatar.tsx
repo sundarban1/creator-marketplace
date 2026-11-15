@@ -49,6 +49,8 @@ export function useOpenProfile() {
   return {
     creator: (id: string | null | undefined): (() => void) | null => {
       if (!id) return null;
+      // Signed-out guest → the public profile screen.
+      if (!role) return () => router.push({ pathname: '/creator-profile', params: { handle: id } });
       if (role === 'BUSINESS') return () => router.push({ pathname: '/(business)/creator-detail', params: { id } });
       if (role === 'CREATOR') {
         // The peer-profile route excludes yourself — your own avatar opens your Profile tab.
@@ -58,7 +60,9 @@ export function useOpenProfile() {
       return null;
     },
     business: (slugOrId: string | null | undefined): (() => void) | null => {
-      if (!slugOrId || role !== 'CREATOR') return null;
+      if (!slugOrId) return null;
+      if (!role) return () => router.push({ pathname: '/business-profile', params: { id: slugOrId } });
+      if (role !== 'CREATOR') return null;
       return () => router.push({ pathname: '/(creator)/business-detail', params: { id: slugOrId } });
     },
   };

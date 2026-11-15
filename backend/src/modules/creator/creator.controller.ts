@@ -88,7 +88,9 @@ export class CreatorController {
       const result = await creatorService.listCreators({
         page, limit, search, categories, location, platforms, priceMin, priceMax, sort,
         fullyVerified: verified || undefined, hasAvatar: hasAvatar || undefined,
-        publicOnly: verified || undefined,
+        // `publicOnly=true` — mobile guest browsing: only creators who opted
+        // into a public profile. Opt-in so the web listing is unchanged.
+        publicOnly: verified || req.query.publicOnly === 'true' || undefined,
         lang: req.language,
       });
       success(res, result, getDict().creator.creatorsRetrieved);

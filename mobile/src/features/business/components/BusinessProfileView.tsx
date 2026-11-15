@@ -25,6 +25,7 @@ import { ReviewsModal } from '@/components/ReviewsModal';
 import { SeeMoreText } from '@/components/SeeMoreText';
 import { ReportModal } from '@/components/ReportModal';
 import { BackButton } from '@/components/BackButton';
+import { promptGuestAuth } from '@/components/GuestAuthPrompt';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -48,7 +49,10 @@ import type { BusinessProfileVM } from '@/features/business/utils/businessProfil
 type ConvStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED';
 
 type Props = {
-  mode: 'owner' | 'visitor';
+  // guest = signed-out visitor (Guest navigation): same read-only page as
+  // visitor, but favorite / report open the guest login prompt and no
+  // auth-only API (conversation check) is called.
+  mode: 'owner' | 'visitor' | 'guest';
   vm: BusinessProfileVM | null;
   // Visitor load states — owner always feeds a vm (or null while the first
   // fetch is in flight, which just renders nothing rather than a spinner, same
@@ -273,6 +277,12 @@ export function BusinessProfileView({
   const { favoriteIds, toggle: toggleFavorite } = useFavoriteBusinesses();
 
   const isOwner = mode === 'owner';
+  const isGuest = mode === 'guest';
+  // Guest: come back to this business after logging in.
+  function promptLogin(reason: 'save' | 'report') {
+    if (!vm) return;
+    promptGuestAuth({ reason, intent: { pathname: '/business-profile', params: { id: vm.id } } });
+  }
 
   // ── Owner: cover / logo upload (local optimistic override) ──
   const [logoOverride, setLogoOverride]   = useState<string | null>(null);
@@ -316,7 +326,7 @@ export function BusinessProfileView({
 
   const businessId = vm?.id ?? null;
   useEffect(() => {
-    if (isOwner || !businessId || isPrivate) return;
+    if (isOwner || isGuest || !businessId || isPrivate) return;
     let cancelled = false;
     // Re-check whenever a conversation changes (e.g. closed because the
     // event was cancelled) so "Open Chat" doesn't linger on a closed chat.
@@ -332,7 +342,7 @@ export function BusinessProfileView({
       cancelled = true;
       socket?.off('conversation:update', load);
     };
-  }, [isOwner, businessId, isPrivate]);
+  }, [isOwner, isGuest, businessId, isPrivate]);
 
   // ── Reviews: summary under the name, full list in a modal ──
   // A review_received deep-link (?focus=reviews) pops the modal open once the
@@ -348,7 +358,7 @@ export function BusinessProfileView({
 
   const edges: Edge[] = isOwner ? ['top'] : ['top', 'bottom'];
   const coverUri = coverOverride ?? vm?.coverImageUrl ?? null;
-  const backTopBar = <BackButton variant="overlay" fallback="/(creator)/explore-businesses" />;
+  const backTopBar = <BackButton variant="overlay" fallback={isGuest ? '/(guest)/discover' : '/(creator)/explore-businesses'} />;
 
   // ── Loading / error / private (visitor only) ──
   if (!isOwner && loading) {
@@ -470,13 +480,13 @@ export function BusinessProfileView({
               </Pressable>
             ) : (
               <>
-                <BackButton variant="overlay" fallback="/(creator)/explore-businesses" />
+                <BackButton variant="overlay" fallback={isGuest ? '/(guest)/discover' : '/(creator)/explore-businesses'} />
                 <View style={{ flex: 1 }} />
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Pressable
                     style={styles.topIconBtnLight}
                     hitSlop={10}
-                    onPress={() => setShowReportModal(true)}
+                    onPress={() => (isGuest ? promptLogin('report') : setShowReportModal(true))}
                     accessibilityRole="button"
                     accessibilityLabel={t('reportModal.title')}>
                     <FontAwesome5 name="flag" size={16} color="#9CA3AF" />
@@ -484,7 +494,7 @@ export function BusinessProfileView({
                   <Pressable
                     style={styles.topIconBtnLight}
                     hitSlop={10}
-                    onPress={handleToggleFavorite}
+                    onPress={isGuest ? () => promptLogin('save') : handleToggleFavorite}
                     accessibilityRole="button"
                     accessibilityLabel={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                     accessibilityState={{ selected: isFavorited }}>

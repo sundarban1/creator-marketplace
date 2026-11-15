@@ -29,6 +29,7 @@ import { VideoPlayerModal } from '@/components/VideoPlayerModal';
 import { PortfolioThumb, portfolioItemTitle } from '@/components/PortfolioThumb';
 import { detectLinkPlatform } from '@/utilities/portfolioLink';
 import { BackButton } from '@/components/BackButton';
+import { promptGuestAuth } from '@/components/GuestAuthPrompt';
 import { IconButton } from '@/components/IconButton';
 import { BottomSheet } from '@/components/BottomSheet';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
@@ -54,7 +55,11 @@ import type { CreatorProfileVM, MergedPlatform } from '@/features/creator/utils/
 //   business — a business viewing a creator (services + service-request, team
 //              roster, portfolio gallery, report)
 //   peer     — a creator viewing another creator (no services/team/report)
-type Mode = 'owner' | 'business' | 'peer';
+//   guest    — a signed-out visitor (Guest navigation): read-only like business
+//              (services, team, portfolio) but every account action — service
+//              request, report, collaborate — opens the guest login prompt, and
+//              no auth-only API (conversation check) is called.
+type Mode = 'owner' | 'business' | 'peer' | 'guest';
 type ConvStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CLOSED';
 
 type Props = {
@@ -246,6 +251,7 @@ export function CreatorProfileView({
 
   const isOwner = mode === 'owner';
   const isBusiness = mode === 'business';
+  const isGuest = mode === 'guest';
   const isVisitor = !isOwner;
 
   // Owner mode is the creator's Profile bottom tab — scroll back up when that tab
@@ -253,7 +259,12 @@ export function CreatorProfileView({
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTopOnTabPress(isOwner ? 'profile' : '', () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
 
-  const backFallback = isBusiness ? '/(business)/explore-creators' : '/(creator)/explore-creators';
+  const backFallback = isGuest ? '/(guest)/discover' : isBusiness ? '/(business)/explore-creators' : '/(creator)/explore-creators';
+  // Guest: come back to this profile after logging in.
+  function promptLogin(reason: 'message' | 'report' | 'generic') {
+    if (!vm) return;
+    promptGuestAuth({ reason, intent: { pathname: '/creator-profile', params: { handle: vm.id } } });
+  }
   const chatPath = isBusiness ? '/(business)/chat/[id]' : '/(creator)/chat/[id]';
 
   // ── Owner: avatar / cover upload (local optimistic override) ──
@@ -298,7 +309,7 @@ export function CreatorProfileView({
 
   const creatorId = vm?.id ?? null;
   useEffect(() => {
-    if (isOwner || !creatorId || isPrivate) return;
+    if (isOwner || isGuest || !creatorId || isPrivate) return;
     let cancelled = false;
     const check = isBusiness ? chatService.checkConversation : chatService.checkCreatorConversation;
     // Re-check whenever a conversation changes (e.g. closed because the
@@ -315,7 +326,7 @@ export function CreatorProfileView({
       cancelled = true;
       socket?.off('conversation:update', load);
     };
-  }, [isOwner, isBusiness, creatorId, isPrivate]);
+  }, [isOwner, isGuest, isBusiness, creatorId, isPrivate]);
 
   // ── Business: service-request flow ──
   const [requestingService, setRequestingService] = useState<ApiPublicService | null>(null);
@@ -480,11 +491,11 @@ export function CreatorProfileView({
               <>
                 <BackButton variant="overlay" fallback={backFallback} />
                 <View style={{ flex: 1 }} />
-                {isBusiness ? (
+                {isBusiness || isGuest ? (
                   <Pressable
                     style={styles.topIconBtnLight}
                     hitSlop={10}
-                    onPress={() => setShowReportModal(true)}
+                    onPress={() => (isGuest ? promptLogin('report') : setShowReportModal(true))}
                     accessibilityRole="button"
                     accessibilityLabel={t('reportModal.title')}>
                     <FontAwesome5 name="flag" size={16} color="#9CA3AF" />
@@ -624,7 +635,7 @@ export function CreatorProfileView({
           ) : null}
 
           {/* Services (business only) */}
-          {isBusiness && vm.services.length > 0 && (
+          {(isBusiness || isGuest) && vm.services.length > 0 && (
             <InfoCard title={t('creatorDetailExtra.sectionServices')} icon="concierge-bell">
               <View style={{ gap: 10 }}>
                 {vm.services.map((svc) => {
@@ -646,7 +657,7 @@ export function CreatorProfileView({
                       <Pressable
                         style={[styles.svcReqBtn, requested ? { backgroundColor: C.background, borderWidth: 1, borderColor: C.border } : { backgroundColor: C.brinjal1 }]}
                         disabled={requested}
-                        onPress={() => openServiceRequest(svc)}>
+                        onPress={() => (isGuest ? promptLogin('message') : openServiceRequest(svc))}>
                         <Text style={[styles.svcReqBtnTxt, { color: requested ? C.textSecondary : '#fff' }]}>
                           {requested ? t('creatorDetailExtra.serviceRequested') : t('creatorDetailExtra.serviceRequestBtn')}
                         </Text>
@@ -666,7 +677,7 @@ export function CreatorProfileView({
           )}
 
           {/* Team members (business only) */}
-          {isBusiness && vm.teamMembers.length > 0 && (
+          {(isBusiness || isGuest) && vm.teamMembers.length > 0 && (
             <InfoCard title={t('creatorDetailExtra.sectionTeamMembers')} icon="users">
               <View style={styles.memberList}>
                 {vm.teamMembers.map((m) => {
@@ -675,7 +686,9 @@ export function CreatorProfileView({
                     <Pressable
                       key={m.id}
                       style={[styles.memberRow, { borderColor: C.border }]}
-                      onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: m.id, viaTeam: '1' } } as never)}
+                      onPress={() => router.push((isGuest
+                        ? { pathname: '/creator-profile', params: { handle: m.id } }
+                        : { pathname: '/(business)/creator-detail', params: { id: m.id, viaTeam: '1' } }) as never)}
                       accessibilityRole="button">
                       {m.avatarUrl ? (
                         <Image source={{ uri: m.avatarUrl }} style={styles.memberAvatar} />
@@ -914,6 +927,21 @@ export function CreatorProfileView({
           )}
         </View>
       </ScrollView>
+
+      {isGuest && (
+        <View style={[styles.msgBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: Math.max(SPACING.md, insets.bottom) }]}>
+          <Pressable
+            style={[
+              styles.msgBtn,
+              { backgroundColor: C.brinjal1, shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
+            ]}
+            onPress={() => promptLogin('generic')}
+            accessibilityRole="button">
+            <FontAwesome5 name="handshake" size={16} color="#fff" solid />
+            <Text style={styles.msgBtnText}>{t('guest.profile.collaborate')}</Text>
+          </Pressable>
+        </View>
+      )}
 
       {showMsgBar && (
         <View style={[styles.msgBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: Math.max(SPACING.md, insets.bottom) }]}>

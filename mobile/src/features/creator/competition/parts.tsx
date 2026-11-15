@@ -68,7 +68,8 @@ function Cover({ uri, style }: { uri: string | null; style: object }) {
 }
 
 /** Discover/Results card — same content as web's CompetitionCard. */
-export function CompetitionCardItem({ c, onPress }: { c: CompetitionCard; onPress: () => void }) {
+/** `showSummary` adds the short description teaser (guest home rail). */
+export function CompetitionCardItem({ c, onPress, showSummary = false }: { c: CompetitionCard; onPress: () => void; showSummary?: boolean }) {
   const C = useAppColors();
   const openProfile = useOpenProfile();
   const { t } = useLanguage();
@@ -101,6 +102,9 @@ export function CompetitionCardItem({ c, onPress }: { c: CompetitionCard; onPres
           )}
         </View>
         <Text style={[s.cardTitle, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
+        {showSummary && !!c.summary && (
+          <Text style={[s.meta, { color: C.textSecondary }]} numberOfLines={2}>{c.summary}</Text>
+        )}
         {!!c.organizer.name && (
           <ProfileRow onPress={openProfile.business(c.organizer.slug)} label={c.organizer.name} style={s.orgRow}>
             <PersonAvatar uri={c.organizer.logoUrl} name={c.organizer.name} size={18} />

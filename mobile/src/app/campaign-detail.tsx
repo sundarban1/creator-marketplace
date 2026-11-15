@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CampaignBriefSections } from '@/components/CampaignBriefSections';
 import { SaveTemplateButton } from '@/features/business/guided/templates';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
+import { promptGuestAuth } from '@/components/GuestAuthPrompt';
 import { AppModal } from '@/components/AppModal';
 import { EventSubmittedModal } from '@/components/EventSubmittedModal';
 import { ShortlistButton } from '@/components/ShortlistButton';
@@ -55,11 +56,15 @@ function formatDeadline(iso: string) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CampaignDetailScreen() {
-  const { campaignId, submitted } = useLocalSearchParams<{ campaignId: string; submitted?: string }>();
+  const { campaignId, submitted, resume } = useLocalSearchParams<{ campaignId: string; submitted?: string; resume?: string }>();
   const { user } = useAuth();
   const { t } = useLanguage();
   const C = useAppColors();
   const isBusiness = user?.role === 'BUSINESS';
+  // Signed-out visitor from the Guest navigation — read-only; Apply opens the
+  // guest login prompt and comes back here (resume=apply) once signed in.
+  const isGuest = !user;
+  const isCreator = user?.role === 'CREATOR';
   const { categories: allCategories } = useAllCategories();
   // Set by the create flows right after a new event is submitted — show the
   // one-time "submitted for review" modal, then drop the param so a re-render
@@ -90,14 +95,14 @@ export default function CampaignDetailScreen() {
   const applicationsQuery = useQuery({
     queryKey: ['applications', 'creator', 'all'],
     queryFn: () => campaignService.getMyApplications().then((r) => r.proposals),
-    enabled: !isBusiness && !!campaignId,
+    enabled: isCreator && !!campaignId,
     staleTime: STALE.list,
   });
 
   const invitationsQuery = useQuery({
     queryKey: ['invitations', 'creator'],
     queryFn: () => creatorService.listInvitations(),
-    enabled: !isBusiness && !!campaignId,
+    enabled: isCreator && !!campaignId,
     staleTime: STALE.list,
   });
 
@@ -134,6 +139,39 @@ export default function CampaignDetailScreen() {
     ? ((invitationsQuery.data ?? NO_INVITATIONS)
         .find((i) => i.campaignId === campaignId && i.status === 'PENDING') ?? null)
     : null;
+
+  function proposalParams(extra?: Record<string, string>) {
+    const c = campaign!;
+    return {
+      campaignId: c.id, campaignTitle: c.title, brand: c.brand, budget: c.budget,
+      budgetMin: String(c.budgetRaw), budgetMax: String(c.budgetMax ?? c.budgetRaw),
+      category: c.category, campaignType: c.campaignType ?? 'PAID_CAMPAIGN',
+      ...extra,
+    };
+  }
+
+  // Guest tapped Apply → "log in to continue" prompt; after login RootNavigator
+  // re-opens this screen with resume=apply.
+  function promptGuestApply() {
+    promptGuestAuth({
+      reason: 'apply',
+      intent: { pathname: '/campaign-detail', params: { campaignId: campaignId! }, resume: 'apply' },
+    });
+  }
+
+  // Back from a guest login with resume=apply: continue straight into the
+  // proposal form once we know this creator hasn't already applied / been
+  // invited. Multi-role events need a role picked here first, so they just
+  // land on the detail. Consumed once (param cleared) either way.
+  const resumeReady = resume === 'apply' && !!campaign && (!isCreator || (applicationsQuery.isFetched && invitationsQuery.isFetched));
+  useEffect(() => {
+    if (!resumeReady) return;
+    router.setParams({ resume: undefined });
+    const canApplyNow = isCreator && !hasApplied && !pendingInvitation
+      && !(campaign!.requirements && campaign!.requirements.length > 0)
+      && (!campaign!.status || campaign!.status === 'active');
+    if (canApplyNow) router.push({ pathname: '/submit-proposal', params: proposalParams() });
+  }, [resumeReady]);
 
   if (loading) {
     return (
@@ -556,6 +594,14 @@ export default function CampaignDetailScreen() {
               <Text style={s.applyBtnTxt}>{canResubmitEvent(campaign) ? t('eventReview.editAndResubmit') : t('campaignDetail.editEvent')}</Text>
             </Pressable>
           )
+        ) : isGuest && !(campaign.requirements && campaign.requirements.length > 0) ? (
+          <Pressable
+            style={({ pressed }) => [s.applyBtn, s.applyBtnFull, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+            onPress={promptGuestApply}
+            accessibilityRole="button">
+            <FontAwesome5 name="lock" size={14} color="#fff" />
+            <Text style={s.applyBtnTxt}>{t('guest.loginToApply')}</Text>
+          </Pressable>
         ) : pendingInvitation ? (
           // The business invited this creator directly — don't offer "Submit
           // Proposal", send them to the Invitations screen to accept/decline.
@@ -615,7 +661,7 @@ export default function CampaignDetailScreen() {
                     ) : (
                       <Pressable
                         style={[s.roleChipApplyBtn, { backgroundColor: C.brinjal1 }]}
-                        onPress={() => router.push({
+                        onPress={() => isGuest ? promptGuestApply() : router.push({
                           pathname: '/submit-proposal',
                           params: {
                             campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand,
