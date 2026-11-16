@@ -7,7 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { RADIUS } from '@/utilities/constants';
 
-const TOTAL = 2400;
+const TOTAL = 1200;
 // The splash overlay is dismissed by this timer, NOT by the reanimated
 // entering animation's finish callback. On Android that callback is
 // unreliable — it can fire with `finished: false` (or never) when the JS
@@ -16,7 +16,7 @@ const TOTAL = 2400;
 // login. Either case used to leave this full-screen indigo overlay stuck on
 // top of the real app forever. The timer is the source of truth; the
 // keyframe below is now purely the fade-out visual.
-const DISMISS_AFTER = TOTAL + 400;
+const DISMISS_AFTER = TOTAL + 100;
 const FADE_START = TOTAL * 0.72;
 // Returning signed-in users skip the intro: once the saved session is restored
 // the home screen is already mounting underneath, so just give the redirect a

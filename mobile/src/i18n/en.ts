@@ -5892,16 +5892,16 @@ const en = {
       eyebrow: 'For Creators',
       title: 'Turn your creativity into opportunities.',
       p1: 'Discover paid collaborations',
-      p2: 'Work with businesses and brands',
+      p2: 'Work with Brands',
       p3: 'Participate in competitions',
-      p4: 'Build your portfolio and reputation',
+      p4: 'Build your portfolio',
       cta: 'Join as a Creator',
     },
     forBusinesses: {
       eyebrow: 'For Businesses',
       title: 'Bring your ideas to life with creators.',
       p1: 'Find skilled local creators',
-      p2: 'Publish campaigns and opportunities',
+      p2: 'Create multiple campaigns',
       p3: 'Organize competitions',
       p4: 'Collaborate directly with talent',
       cta: 'Join as a Business',
@@ -5939,7 +5939,7 @@ const en = {
       searchBusinesses: 'Search businesses',
     },
     profile: {
-      collaborate: 'Log in to collaborate',
+      collaborate: 'Work with this Creator',
     },
   },
   payBreakdown: {
