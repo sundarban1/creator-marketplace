@@ -6,6 +6,17 @@ import { expandSearchQuery, filterByTerms, substringSafeTerms } from '../../util
 // query onto the labels it should match (see findMany). Cached because search
 // runs on every keystroke-debounced request while the vocabulary only changes
 // when someone onboards or edits their profile.
+/** Profile-completeness signals used by the guest discovery listing. An empty
+ *  avatarUrl is what a removed photo can leave behind, so it counts as unset;
+ *  portfolio items hidden by moderation don't count. */
+function completenessSignals() {
+  return {
+    photo: { avatarUrl: { not: null, notIn: [''] } },
+    social: { socialAccounts: { some: {} } },
+    portfolio: { portfolioItems: { some: { moderationHiddenAt: null } } },
+  } satisfies Record<string, Prisma.CreatorProfileWhereInput>;
+}
+
 const LABEL_VOCABULARY_TTL_MS = 5 * 60_000;
 let labelVocabulary: { loadedAt: number; categories: string[]; industries: string[] } | null = null;
 
@@ -125,6 +136,10 @@ export type CreatorListFilters = {
   fullyVerified?: boolean;
   /** Only creators who left their public profile on — anonymous discovery. */
   publicOnly?: boolean;
+  /** Mobile guest home / discover: only creators who completed most of their
+   *  profile — at least two of photo / connected social / portfolio — with
+   *  fully complete profiles ranked first (chronological browse). */
+  completeFirst?: boolean;
   /** Audience-size range. Checked against an account on one of
    *  `followersPlatforms` when given ("TikTok creators with 10k+"), else
    *  against the creator's total across all connected accounts. */
@@ -138,8 +153,6 @@ export class CreatorRepository {
     page: number;
     limit: number;
     sort?: 'newest' | 'oldest' | 'followers';
-    /** Creators with a profile photo before those without (chronological browse only). */
-    avatarFirst?: boolean;
   }) {
     const where = await this.buildListWhere(filters);
     const rankPlatforms = filters.followersPlatforms?.length ? new Set(filters.followersPlatforms) : null;
@@ -224,35 +237,17 @@ export class CreatorRepository {
       { id: 'asc' },
     ];
 
-    // Creators with a profile photo first, then the rest — each segment in the
-    // usual chronological order. Paged across the two segments by offset so
-    // the order stays deterministic page to page (guest home / discover).
-    if (filters.avatarFirst && !filters.hasAvatar) {
-      const hasPhoto: Prisma.CreatorProfileWhereInput = { avatarUrl: { not: null, notIn: [''] } };
-      const withPhotoWhere: Prisma.CreatorProfileWhereInput = { AND: [where, hasPhoto] };
-      const noPhotoWhere: Prisma.CreatorProfileWhereInput = { AND: [where, { OR: [{ avatarUrl: null }, { avatarUrl: '' }] }] };
-
-      const [withPhotoCount, total] = await Promise.all([
-        prisma.creatorProfile.count({ where: withPhotoWhere }),
-        prisma.creatorProfile.count({ where }),
-      ]);
-      const fromWithPhoto = Math.max(0, Math.min(filters.limit, withPhotoCount - skip));
-      const fromNoPhoto = filters.limit - fromWithPhoto;
-      const [first, rest] = await Promise.all([
-        fromWithPhoto > 0
-          ? prisma.creatorProfile.findMany({ where: withPhotoWhere, skip, take: fromWithPhoto, orderBy, select })
-          : Promise.resolve([]),
-        fromNoPhoto > 0
-          ? prisma.creatorProfile.findMany({
-              where: noPhotoWhere,
-              skip: Math.max(0, skip - withPhotoCount),
-              take: fromNoPhoto,
-              orderBy,
-              select,
-            })
-          : Promise.resolve([]),
-      ]);
-      return { creators: [...first, ...rest], total };
+    // Guest home / discover: the most complete profiles first — all three
+    // completeness signals (photo, social, portfolio) before two-of-three. The
+    // fewer-than-two tail was already excluded in buildListWhere. Paged across
+    // the tiers by offset so the order stays deterministic page to page.
+    if (filters.completeFirst) {
+      const s = completenessSignals();
+      const tiers: Prisma.CreatorProfileWhereInput[] = [
+        { AND: [where, s.photo, s.social, s.portfolio] },
+        { AND: [where, { NOT: { AND: [s.photo, s.social, s.portfolio] } }] },
+      ];
+      return this.findManySegmented(tiers, where, skip, filters.limit, orderBy, select);
     }
 
     const [creators, total] = await Promise.all([
@@ -423,8 +418,50 @@ export class CreatorRepository {
     if (filters.priceMax !== undefined && filters.priceMax < PRICE_MAX) {
       andConditions.push({ prefBudgetMin: { lte: filters.priceMax } });
     }
+    if (filters.completeFirst) {
+      const sig = completenessSignals();
+      andConditions.push({
+        OR: [
+          { AND: [sig.photo, sig.social] },
+          { AND: [sig.photo, sig.portfolio] },
+          { AND: [sig.social, sig.portfolio] },
+        ],
+      });
+    }
     if (andConditions.length) where.AND = andConditions;
     return where;
+  }
+
+  /** Pages through `segments` (disjoint, each a subset of `where`) in order, as
+   *  if they were one list — offset `skip` spans the segment boundaries. */
+  private async findManySegmented<S extends Prisma.CreatorProfileSelect>(
+    segments: Prisma.CreatorProfileWhereInput[],
+    where: Prisma.CreatorProfileWhereInput,
+    skip: number,
+    limit: number,
+    orderBy: Prisma.CreatorProfileOrderByWithRelationInput[],
+    select: S,
+  ) {
+    const [counts, total] = await Promise.all([
+      Promise.all(segments.map((w) => prisma.creatorProfile.count({ where: w }))),
+      prisma.creatorProfile.count({ where }),
+    ]);
+    const queries: Promise<Prisma.CreatorProfileGetPayload<{ select: S }>[]>[] = [];
+    let offset = skip;
+    let remaining = limit;
+    for (let i = 0; i < segments.length && remaining > 0; i++) {
+      if (offset >= counts[i]) { offset -= counts[i]; continue; }
+      const take = Math.min(remaining, counts[i] - offset);
+      queries.push(
+        prisma.creatorProfile.findMany({ where: segments[i], skip: offset, take, orderBy, select }) as Promise<
+          Prisma.CreatorProfileGetPayload<{ select: S }>[]
+        >,
+      );
+      remaining -= take;
+      offset = 0;
+    }
+    const creators = (await Promise.all(queries)).flat();
+    return { creators, total };
   }
 
   /**
