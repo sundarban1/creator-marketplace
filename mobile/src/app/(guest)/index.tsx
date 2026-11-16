@@ -139,7 +139,6 @@ export default function GuestHomeScreen() {
           />
           <View style={[s.heroText, hm.text]}>
             <View style={[s.badgePill, { marginTop: hm.pillLift, marginBottom: hm.pillGap, backgroundColor: C.surface, borderColor: withAlpha(C.accent, 0.3) }]}>
-              <View style={[s.badgeDot, { backgroundColor: C.accent }]} />
               <Text style={[s.badgeText, { color: C.text }]} numberOfLines={1} maxFontSizeMultiplier={HERO_FONT_CAP}>{t('guest.hero.badge')}</Text>
             </View>
             <Text
@@ -453,7 +452,6 @@ const s = StyleSheet.create({
     borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6, gap: 6,
     // marginTop (lift) / marginBottom (gap to headline) are set inline, scaled with the screen.
   },
-  badgeDot:  { width: 7, height: 7, borderRadius: 3.5 },
   badgeText: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold, flexShrink: 1 },
   // lineHeight set inline: tight for Latin, ≥1.5× for Devanagari (matras clip otherwise).
   heroTitle:   { fontFamily: F.bold, letterSpacing: -0.6 },
