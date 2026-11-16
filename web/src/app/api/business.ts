@@ -35,8 +35,9 @@ export interface MyCampaign {
   minFollowers: number;
   paymentStatus: string;
   createdAt: string;
-  business: { businessName: string; logoUrl: string | null };
-  _count: { applications: number };
+  // Optional: older API builds omitted these on GET /api/campaigns/my.
+  business?: { businessName: string; logoUrl: string | null };
+  _count?: { applications: number };
   goals?: string[];
   hashtags?: string[];
   budgetRateType?: 'FIXED' | 'RANGE' | null;

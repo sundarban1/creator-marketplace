@@ -1,7 +1,7 @@
 import multer from 'multer';
 import { AppError } from './error';
 import type { Request as ExpressRequest, Response as ExpressResponse, NextFunction as ExpressNext } from 'express';
-import { screenContent, bufferToDataUrl, CONTENT_REJECTED_MESSAGE, aiScreeningEnabled } from '../moderation/contentScreening';
+import { screenContent, bufferToDataUrl, contentRejectedError, aiScreeningEnabled } from '../moderation/contentScreening';
 
 import { HttpStatus } from '../constants/httpStatus';
 
@@ -204,7 +204,7 @@ export function screenImageUpload(contentType: string) {
         { userId: req.user?.id, contentType },
       );
       if (result.outcome !== 'APPROVED' && result.source !== 'ai_unavailable') {
-        return next(new AppError(CONTENT_REJECTED_MESSAGE, HttpStatus.UNPROCESSABLE_ENTITY, true, { code: 'CONTENT_REJECTED' }));
+        return next(contentRejectedError(result));
       }
       next();
     } catch (err) {

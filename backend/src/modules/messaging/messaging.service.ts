@@ -1,6 +1,6 @@
 import { ConversationStatus, Role } from '@prisma/client';
 import { blockService } from '../moderation/block.service';
-import { screenChatMessage, CONTENT_REJECTED_MESSAGE } from '../../moderation/contentScreening';
+import { screenChatMessage, contentRejectedError } from '../../moderation/contentScreening';
 import { AppError } from '../../middleware/error';
 import { getDict } from '../../i18n';
 import { logger } from '../../config/logger';
@@ -190,9 +190,8 @@ export class MessagingService {
   }
 
   private assertCleanText(text: string): void {
-    if (screenChatMessage(text).outcome === 'REJECTED') {
-      throw new AppError(CONTENT_REJECTED_MESSAGE, HttpStatus.UNPROCESSABLE_ENTITY, true, { code: 'CONTENT_REJECTED' });
-    }
+    const screen = screenChatMessage(text);
+    if (screen.outcome === 'REJECTED') throw contentRejectedError(screen);
   }
 
   // Boolean, non-throwing variant of verifyConversationAccess — lets the socket

@@ -36,6 +36,9 @@ export interface ScreenResult {
   field?: string;
   categories?: string[];
   source?: 'dictionary' | 'ai' | 'ai_unavailable';
+  // What was being screened (ScreenContext.contentType) — lets the rejection
+  // message say "event title" rather than just "content".
+  contentType?: string;
 }
 
 export interface ScreenContext {
@@ -113,19 +116,22 @@ export function screenChatMessage(text: string): ScreenResult {
 
 type AiInput = Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }>;
 
-async function aiCheck(inputs: AiInput): Promise<ScreenResult | 'error'> {
+/** `fields[i]` names the field `inputs[i]` came from, so a flag can be
+ *  pinned to the title vs the description vs an image. */
+async function aiCheck(inputs: AiInput, fields: string[] = []): Promise<ScreenResult | 'error'> {
   const c = ai();
   if (!c || env.NODE_ENV === 'test' || !inputs.length) return APPROVED;
   try {
     const res = await c.moderations.create({ model: 'omni-moderation-latest', input: inputs as never });
     let held: ScreenResult | null = null;
-    for (const r of res.results) {
+    for (const [i, r] of res.results.entries()) {
       if (!r.flagged) continue;
+      const field = fields[i];
       const flagged = Object.entries(r.categories).filter(([, v]) => v).map(([k]) => k);
       const scores = r.category_scores as unknown as Record<string, number>;
       const severe = flagged.some((k) => REJECT_CATEGORIES.has(k) || (scores[k] ?? 0) >= REJECT_SCORE);
-      if (severe) return { outcome: 'REJECTED', categories: flagged, source: 'ai' };
-      held ??= { outcome: 'PENDING_REVIEW', categories: flagged, source: 'ai' };
+      if (severe) return { outcome: 'REJECTED', field, categories: flagged, source: 'ai' };
+      held ??= { outcome: 'PENDING_REVIEW', field, categories: flagged, source: 'ai' };
     }
     return held ?? APPROVED;
   } catch (err) {
@@ -155,27 +161,39 @@ export async function screenContent(
   input: { texts?: Record<string, string | null | undefined>; imageUrls?: (string | null | undefined)[]; profile?: ModerationProfile },
   ctx: ScreenContext,
 ): Promise<ScreenResult> {
-  const local = screenTextLocal(input.texts ?? {}, input.profile ?? 'event', { reviewable: !!ctx.holdOnError });
+  const { contentType } = ctx;
+  const local = { ...screenTextLocal(input.texts ?? {}, input.profile ?? 'event', { reviewable: !!ctx.holdOnError }), contentType };
   if (local.outcome === 'REJECTED') {
     void recordEvent('CONTENT_AUTO_REJECTED', ctx, local);
     return local;
   }
 
+  // One moderation input per field (results come back in the same order), so
+  // a flag names the field that tripped it.
   const inputs: AiInput = [];
-  const text = Object.values(input.texts ?? {}).filter((v): v is string => !!v && !!v.trim()).join('\n\n').slice(0, 20_000);
-  if (text) inputs.push({ type: 'text', text });
-  for (const url of input.imageUrls ?? []) if (url && /^(https:|data:image\/)/.test(url)) inputs.push({ type: 'image_url', image_url: { url } });
+  const fields: string[] = [];
+  let budget = 20_000;
+  for (const [field, value] of Object.entries(input.texts ?? {})) {
+    if (!value || !value.trim() || budget <= 0) continue;
+    const text = value.slice(0, budget);
+    budget -= text.length;
+    inputs.push({ type: 'text', text });
+    fields.push(field);
+  }
+  for (const url of input.imageUrls ?? []) {
+    if (url && /^(https:|data:image\/)/.test(url)) { inputs.push({ type: 'image_url', image_url: { url } }); fields.push('image'); }
+  }
 
-  const aiResult = aiScreeningEnabled() ? await aiCheck(inputs) : APPROVED;
+  const aiResult = aiScreeningEnabled() ? await aiCheck(inputs, fields) : APPROVED;
   if (aiResult === 'error') {
     void recordEvent('MODERATION_SERVICE_ERROR', ctx, { outcome: 'PENDING_REVIEW', source: 'ai_unavailable' });
-    if (ctx.holdOnError) return { outcome: 'PENDING_REVIEW', source: 'ai_unavailable' };
+    if (ctx.holdOnError) return { outcome: 'PENDING_REVIEW', source: 'ai_unavailable', contentType };
     return local;
   }
   const worst = aiResult.outcome === 'REJECTED' ? aiResult : local.outcome === 'PENDING_REVIEW' ? local : aiResult;
   if (worst.outcome === 'REJECTED') void recordEvent('CONTENT_AUTO_REJECTED', ctx, worst);
   else if (worst.outcome === 'PENDING_REVIEW') void recordEvent('CONTENT_HELD_FOR_REVIEW', ctx, worst);
-  return worst;
+  return { ...worst, contentType };
 }
 
 /** Image buffer → data URL for screening before it is uploaded anywhere. */
@@ -184,6 +202,65 @@ export function bufferToDataUrl(buf: Buffer, mime: string): string {
 }
 
 export const CONTENT_REJECTED_MESSAGE = 'This content doesn’t meet the Kolab Community Guidelines. Please edit it and try again.';
+
+// What the user was writing, for the rejection message ("event title").
+const CONTENT_NOUN: Record<string, string> = {
+  event: 'event', competition: 'competition', portfolio_item: 'portfolio item',
+  competition_submission: 'submission', creator_bio: 'profile', business_description: 'business profile',
+};
+const FIELD_NOUN: Record<string, string> = {
+  title: 'title', description: 'description', rules: 'rules', bio: 'bio', caption: 'caption', content: 'message', message: 'message',
+};
+
+// Dictionary categories (ModerationCategory) and OpenAI category keys
+// ("sexual", "harassment/threatening", ...) → a plain-language reason.
+// Prefix match on the OpenAI key's top level. Never includes the term itself.
+function reasonFor(categories?: string[]): string | null {
+  const c = (categories?.[0] ?? '').toLowerCase().split('/')[0];
+  switch (c) {
+    case 'sexual': return 'sexual content';
+    case 'profanity': return 'offensive language';
+    case 'harassment': return 'harassing or threatening language';
+    case 'slur':
+    case 'hate': return 'hateful language';
+    case 'violence': return 'violent content';
+    case 'self-harm': return 'content about self-harm';
+    case 'illicit': return 'content about illegal activity';
+    case 'spam': return 'spam or misleading content';
+    case 'impersonation':
+    case 'reserved': return 'a restricted name';
+    default: return null;
+  }
+}
+
+/**
+ * Specific, actionable rejection text: which field, and why — e.g. "Your event
+ * description appears to contain violent content, which isn't allowed under
+ * the Kolab Community Guidelines. Please edit the description and try again."
+ */
+export function contentRejectedMessage(result: Pick<ScreenResult, 'field' | 'categories' | 'contentType'>): string {
+  const reason = reasonFor(result.categories);
+  const why = (plural: boolean) => reason
+    ? `${plural ? 'appear' : 'appears'} to contain ${reason}, which isn’t allowed under the Kolab Community Guidelines`
+    : `${plural ? 'don’t' : 'doesn’t'} meet the Kolab Community Guidelines`;
+  if (result.field === 'image') return `This image ${why(false)}. Please choose a different image and try again.`;
+  const field = result.field ? FIELD_NOUN[result.field] ?? result.field : null;
+  if (field === 'message') return `This message ${why(false)}. Please edit it and try again.`;
+  if (!field) return reason ? `This content ${why(false)}. Please edit it and try again.` : CONTENT_REJECTED_MESSAGE;
+  const owner = result.contentType ? CONTENT_NOUN[result.contentType] : undefined;
+  const subject = owner ? `Your ${owner} ${field}` : `Your ${field}`;
+  return `${subject} ${why(field === 'rules')}. Please edit the ${field} and try again.`;
+}
+
+/** The 422 thrown for refused content, with `field` + `reason` details so
+ *  clients can also show the error inline under the offending field. */
+export function contentRejectedError(result: ScreenResult): AppError {
+  return new AppError(contentRejectedMessage(result), 422, true, {
+    code: 'CONTENT_REJECTED',
+    field: result.field,
+    reason: reasonFor(result.categories),
+  });
+}
 
 /**
  * Throws the generic 422 for content that can't be published. `gated` = the
@@ -194,5 +271,5 @@ export const CONTENT_REJECTED_MESSAGE = 'This content doesn’t meet the Kolab C
 export function enforceScreen(result: ScreenResult, opts: { gated?: boolean } = {}): void {
   if (result.outcome === 'APPROVED') return;
   if (result.outcome === 'PENDING_REVIEW' && (opts.gated || result.source === 'ai_unavailable')) return;
-  throw new AppError(CONTENT_REJECTED_MESSAGE, 422, true, { code: 'CONTENT_REJECTED', field: result.field });
+  throw contentRejectedError(result);
 }

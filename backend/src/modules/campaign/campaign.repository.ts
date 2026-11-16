@@ -618,7 +618,12 @@ export class CampaignRepository {
         // Drafts list as "continue where you left off" — most recently
         // edited first (autosave bumps updatedAt).
         orderBy: status === 'DRAFT' ? [{ updatedAt: 'desc' }, { id: 'asc' }] : [{ createdAt: 'desc' }, { id: 'asc' }],
-        include: { _count: { select: { applications: true } } },
+        // `business` — list cards fall back to the logo + name when an event
+        // has no cover image (common for drafts); web read it unguarded.
+        include: {
+          _count: { select: { applications: true } },
+          business: { select: { id: true, businessName: true, logoUrl: true } },
+        },
       }),
       prisma.campaign.count({ where }),
     ]);

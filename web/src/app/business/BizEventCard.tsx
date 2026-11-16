@@ -70,7 +70,7 @@ export function BizEventCard({ event, onDelete }: { event: MyCampaign; onDelete?
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Avatar name={event.business.businessName} src={event.business.logoUrl} size="lg" />
+            <Avatar name={event.business?.businessName ?? event.title} src={event.business?.logoUrl ?? null} size="lg" />
           </div>
         )}
         {event.isFeatured && (
@@ -128,7 +128,7 @@ export function BizEventCard({ event, onDelete }: { event: MyCampaign; onDelete?
           <div className="flex items-center gap-4 text-[12px] text-ink-soft">
             <span className="inline-flex items-center gap-1">
               <Users size={13} />
-              {t('biz.applicantsCount', { count: event._count.applications })}
+              {t('biz.applicantsCount', { count: event._count?.applications ?? 0 })}
             </span>
             <span className={cn('inline-flex items-center gap-1', deadline.urgent && 'font-semibold text-warning')}>
               <CalendarClock size={13} />

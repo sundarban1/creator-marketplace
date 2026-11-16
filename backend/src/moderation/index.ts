@@ -50,6 +50,8 @@ const PROFILE_MIN_SEVERITY: Record<ModerationProfile, ModerationSeverity> = {
   message: ModerationSeverity.LOW,
 };
 
+const NAME_PROFILES = new Set<ModerationProfile>(['username', 'displayName']);
+
 export interface ModerateTextOptions {
   field: ModerationField;
   profile: ModerationProfile;
@@ -70,7 +72,11 @@ export function moderateText(text: string, options: ModerateTextOptions): Modera
 
   const reps = buildRepresentations(trimmed);
 
-  const reserved = checkReserved(reps);
+  // Reserved handles / Kolab-impersonation are about what an account is
+  // CALLED — only names. In prose (event descriptions, bios, chat) "Kolab",
+  // "team", "support", "help", "payments" are ordinary words: the substring
+  // impersonation check blocked e.g. "share on Kolab, tag our team".
+  const reserved = NAME_PROFILES.has(options.profile) ? checkReserved(reps) : null;
   if (reserved) {
     return { allowed: false, normalizedText: reps.compact, ...reserved };
   }
