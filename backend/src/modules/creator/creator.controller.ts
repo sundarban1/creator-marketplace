@@ -84,17 +84,26 @@ export class CreatorController {
       // photo, and only those who left their profile public (their face is
       // shown on the marketing page).
       const verified = req.query.verified === 'true';
-      const hasAvatar = req.query.hasAvatar === 'true';
+      // `avatarFirst=true` is sent by both mobile guest screens (same request
+      // shape in shipped builds), told apart by page size: the guest home
+      // "Discover creators" rail asks for ≤10 with no search, the guest
+      // Discover tab pages 20 at a time.
+      //  - home rail: only creators with a profile photo (social/portfolio
+      //    no longer required), newest first;
+      //  - Discover tab: every public creator, those with a photo first.
+      const guestAvatarFirst = req.query.avatarFirst === 'true';
+      const guestHomeRail = guestAvatarFirst && limit <= 10 && !search;
+      const hasAvatar = req.query.hasAvatar === 'true' || guestHomeRail;
       const result = await creatorService.listCreators({
         page, limit, search, categories, location, platforms, priceMin, priceMax, sort,
         fullyVerified: verified || undefined, hasAvatar: hasAvatar || undefined,
         // `publicOnly=true` — mobile guest browsing: only creators who opted
         // into a public profile. Opt-in so the web listing is unchanged.
         publicOnly: verified || req.query.publicOnly === 'true' || undefined,
-        // `avatarFirst=true` (sent by mobile guest home / discover; name kept
-        // for shipped app builds) — only creators who completed most of their
+        // `completeFirst=true` — only creators who completed most of their
         // profile (2+ of photo / social / portfolio), fully complete first.
-        completeFirst: req.query.avatarFirst === 'true' || req.query.completeFirst === 'true' || undefined,
+        completeFirst: req.query.completeFirst === 'true' || undefined,
+        avatarFirst: (guestAvatarFirst && !guestHomeRail) || undefined,
         lang: req.language,
         viewerUserId: req.user?.id,
       });

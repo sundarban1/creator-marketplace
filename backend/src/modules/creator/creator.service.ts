@@ -487,14 +487,15 @@ export class CreatorService {
     publicOnly?: boolean;
     sort?: 'newest' | 'oldest' | 'followers';
     completeFirst?: boolean;
+    avatarFirst?: boolean;
     lang?: string;
     viewerUserId?: string;
   }) {
-    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, hasAvatar, fullyVerified, publicOnly, sort, completeFirst, lang = 'en' } = params;
+    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, hasAvatar, fullyVerified, publicOnly, sort, completeFirst, avatarFirst, lang = 'en' } = params;
     const hidden = await hiddenFor(params.viewerUserId);
     const { creators: raw, total } = await this.repo.findMany({
       page, limit: Math.min(limit, 20),
-      search, categories, location, platforms, priceMin, priceMax, excludeId, excludeIds: hidden.creatorProfileIds, hasAvatar, fullyVerified, publicOnly, sort, completeFirst,
+      search, categories, location, platforms, priceMin, priceMax, excludeId, excludeIds: hidden.creatorProfileIds, hasAvatar, fullyVerified, publicOnly, sort, completeFirst, avatarFirst,
     });
     const dtos = raw.map(toCreatorListItemDto);
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
