@@ -536,6 +536,7 @@ export class CreatorService {
 
     const { creators: raw, total } = await this.repo.findMany({
       ...intentFilters(intent, categories),
+      avatarFirst: true,
       sort: intent.sortByFollowers ? 'followers' : undefined,
       page,
       limit,

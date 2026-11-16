@@ -146,7 +146,12 @@ export type CreatorListFilters = {
   minFollowers?: number;
   maxFollowers?: number;
   followersPlatforms?: string[];
+  /** Creators with a profile photo before those without (public guest
+   *  search) — applied on top of whichever order the list otherwise uses. */
+  avatarFirst?: boolean;
 };
+
+const hasAvatar = (c: { avatarUrl: string | null }) => (c.avatarUrl ? 1 : 0);
 
 export class CreatorRepository {
   async findMany(filters: CreatorListFilters & {
@@ -190,7 +195,10 @@ export class CreatorRepository {
             .filter((a) => !rankPlatforms || rankPlatforms.has(a.platform))
             .reduce((sum, a) => sum + a.followers, 0),
         }))
-        .sort((a, b) => b.totalFollowers - a.totalFollowers);
+        .sort(
+          (a, b) =>
+            (filters.avatarFirst ? hasAvatar(b) - hasAvatar(a) : 0) || b.totalFollowers - a.totalFollowers,
+        );
       return { creators: ranked.slice(skip, skip + filters.limit), total };
     }
 
@@ -223,6 +231,7 @@ export class CreatorRepository {
         .map((c) => ({ c, score: scoreCreatorMatch(c, q) }))
         .sort(
           (a, b) =>
+            (filters.avatarFirst ? hasAvatar(b.c) - hasAvatar(a.c) : 0) ||
             b.score - a.score ||
             b.c.createdAt.getTime() - a.c.createdAt.getTime() ||
             a.c.id.localeCompare(b.c.id),
@@ -246,6 +255,15 @@ export class CreatorRepository {
       const tiers: Prisma.CreatorProfileWhereInput[] = [
         { AND: [where, s.photo, s.social, s.portfolio] },
         { AND: [where, { NOT: { AND: [s.photo, s.social, s.portfolio] } }] },
+      ];
+      return this.findManySegmented(tiers, where, skip, filters.limit, orderBy, select);
+    }
+
+    if (filters.avatarFirst) {
+      const { photo } = completenessSignals();
+      const tiers: Prisma.CreatorProfileWhereInput[] = [
+        { AND: [where, photo] },
+        { AND: [where, { NOT: photo }] },
       ];
       return this.findManySegmented(tiers, where, skip, filters.limit, orderBy, select);
     }
