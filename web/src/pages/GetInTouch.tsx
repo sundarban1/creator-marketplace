@@ -1,5 +1,5 @@
 import { errorText } from '../lib/errorMessage';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Mail, Clock, CheckCircle, Search } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { Pagination } from '../components/Pagination';
@@ -37,6 +37,21 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function MessageCard({ item, onStatusChange }: { item: ContactMessage; onStatusChange: (id: string, status: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [clamped, setClamped]   = useState(false);
+  const msgRef = useRef<HTMLParagraphElement>(null);
+
+  // Show "Read more" only when the 3-line clamp is actually hiding text.
+  useLayoutEffect(() => {
+    const el = msgRef.current;
+    if (!el || expanded) return;
+    const measure = () => setClamped(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [item.message, expanded]);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 adm-card p-5">
       <div className="flex items-start justify-between mb-3">
@@ -46,7 +61,15 @@ function MessageCard({ item, onStatusChange }: { item: ContactMessage; onStatusC
         </div>
         <StatusBadge status={item.status} />
       </div>
-      <p className="text-sm text-gray-600 mb-3 line-clamp-3">{item.message}</p>
+      <div className="mb-3">
+        <p ref={msgRef} className={`text-sm text-gray-600 whitespace-pre-wrap break-words ${expanded ? '' : 'line-clamp-3'}`}>{item.message}</p>
+        {(clamped || expanded) && (
+          <button type="button" onClick={() => setExpanded((v) => !v)}
+            className="mt-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+            {expanded ? 'Show less' : 'Read more'}
+          </button>
+        )}
+      </div>
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <div className="text-xs text-gray-400 space-y-0.5">
           {(item.guestName || item.guestEmail) && (
