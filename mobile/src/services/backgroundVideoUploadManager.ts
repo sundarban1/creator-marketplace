@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import Upload from 'react-native-background-upload';
+import { toNativeUploadPath } from '@/utilities/nativeUploadPath';
 import { request } from '@/lib/api';
 import type { VideoUploadPlan } from '@/services/cloudinaryVideoUpload';
 
@@ -306,7 +307,7 @@ async function uploadOneChunk(
 
         Upload.startUpload({
           url,
-          path:           chunkUri,
+          path:           toNativeUploadPath(chunkUri),
           method:         'PUT',
           type:           'raw',
           customUploadId: nativeUploadId,
@@ -318,7 +319,7 @@ async function uploadOneChunk(
       } else {
         Upload.startUpload({
           url:            pending.signature.uploadUrl,
-          path:           chunkUri,
+          path:           toNativeUploadPath(chunkUri),
           method:         'POST',
           type:           'multipart',
           field:          'file',
@@ -510,7 +511,7 @@ function uploadThumbnailToR2(thumbnailUri: string, uploadUrl: string): Promise<v
 
     Upload.startUpload({
       url:            uploadUrl,
-      path:           thumbnailUri,
+      path:           toNativeUploadPath(thumbnailUri),
       method:         'PUT',
       type:           'raw',
       customUploadId: nativeUploadId,

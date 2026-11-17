@@ -1,5 +1,6 @@
 import { request } from '@/lib/api';
 import Upload from 'react-native-background-upload';
+import { toNativeUploadPath } from '@/utilities/nativeUploadPath';
 
 // ── Signature / upload plan ─────────────────────────────────────────────────
 // Discriminated union matching the backend's VoiceUploadPlan
@@ -108,7 +109,7 @@ function uploadVoiceToR2(
     watchdog.bump();
     Upload.startUpload({
       url:            plan.uploadUrl,
-      path:           fileUri,
+      path:           toNativeUploadPath(fileUri),
       method:         'PUT',
       type:           'raw',
       customUploadId: nativeUploadId,

@@ -53,6 +53,7 @@
         }
       },
       "package": "com.sundarban.kolab",
+      "versionCode": 12,
       "googleServicesFile": "./google-services.json",
       "scheme": ["com.sundarban.kolab", "fb1740519673635792"]
     },

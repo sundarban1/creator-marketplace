@@ -84,8 +84,25 @@ async function validateAndBuildPickedVideo(asset: ImagePicker.ImagePickerAsset):
 
   const durationSec = Math.round((asset.duration ?? 0) / 1000);
 
+  // Android's picker can hand back a raw `content://media/...` URI (notably
+  // with multi-select) instead of a cache copy. The compressor can't open
+  // those and the chunked uploader's ranged base64 read rejects them with
+  // "Unsupported scheme for location", so normalise to a local file:// copy
+  // here — every downstream step (compress, slice, thumbnail) then just works.
+  let uri = asset.uri;
+  if (!uri.startsWith('file://')) {
+    try {
+      const localUri = `${FileSystem.cacheDirectory}picked_video_${Date.now()}_${Math.random().toString(36).slice(2)}.${mimeType === 'video/quicktime' ? 'mov' : 'mp4'}`;
+      await FileSystem.copyAsync({ from: uri, to: localUri });
+      uri = localUri;
+    } catch {
+      Alert.alert('Video unavailable', 'This video could not be read. Please try again.');
+      return null;
+    }
+  }
+
   // Also confirms the file actually exists and is readable before we try to upload it.
-  const info = await FileSystem.getInfoAsync(asset.uri);
+  const info = await FileSystem.getInfoAsync(uri);
   if (!info.exists) {
     Alert.alert('Video unavailable', 'This video could not be read. Please try again.');
     return null;
@@ -97,7 +114,7 @@ async function validateAndBuildPickedVideo(asset: ImagePicker.ImagePickerAsset):
   }
 
   return {
-    uri: asset.uri,
+    uri,
     name: `video_${Date.now()}.${mimeType === 'video/quicktime' ? 'mov' : 'mp4'}`,
     mimeType,
     durationSec,
