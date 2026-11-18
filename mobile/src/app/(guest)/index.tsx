@@ -44,18 +44,24 @@ function heroMetrics(screenW: number) {
   const k = Math.min(1.12, Math.max(0.82, screenW / DESIGN_WIDTH));
   const r = (n: number) => Math.round(n * k);
   const title = Math.max(26, r(32));
-  const art = r(185);
+  const art = r(170);
+  // creator3.png is 1536×1024 (3:2). A square box letterboxed it with ~1/6 of
+  // empty space above and below, which read as a gap around the hero.
+  const artH = Math.round(art * (1024 / 1536));
   return {
     title,
     titleLineLatin: Math.round(title * 1.18),
     art,
+    artH,
     artRadius: r(24),
     // The art floats (absolute) over the right of the row, so the text column
     // reserves at least the art's height: the row then ends at whichever is
     // lower — the image or a long, wrapped headline — never at a fixed number.
-    text: { minHeight: art, paddingTop: r(48) },
+    // Headline and art both start at the hero's top edge (the badge pill that
+    // used to sit above the headline is hidden).
+    text: { minHeight: artH },
     // One consistent gap between that row and the tagline.
-    taglineGap: r(4),
+    taglineGap: r(12),
     pillLift: -r(48),
     pillGap: r(12),
   };
@@ -68,7 +74,7 @@ function pageSpacing(screenH: number) {
   const compact = screenH < 700;
   const tall = screenH > 880;
   return {
-    section: compact ? SPACING.lg + 6 : tall ? SPACING.xxl : SPACING.xl + 4, // 22 / 28 / 32
+    section: compact ? SPACING.lg + 4 : tall ? SPACING.xl + 4 : SPACING.xl,    // 20 / 24 / 28
     heroCtas: compact ? SPACING.md : SPACING.lg,                              // 12 / 16
     bottom: compact ? SPACING.xl : SPACING.xxl,                               // 24 / 32
   };
@@ -133,14 +139,15 @@ export default function GuestHomeScreen() {
               and slightly dimmed on dark so it doesn't glare against black. */}
           <ExpoImage
             source={HERO_ART}
-            style={[s.heroArt, { width: hm.art, height: hm.art, borderRadius: hm.artRadius, opacity: isDark ? 0.92 : 1 }]}
+            style={[s.heroArt, { width: hm.art, height: hm.artH, borderRadius: hm.artRadius, opacity: isDark ? 0.92 : 1 }]}
             contentFit="contain"
             accessible={false}
           />
           <View style={[s.heroText, hm.text]}>
+            {/* "Nepal's Creator Marketplace" badge hidden 2026-11-18.
             <View style={[s.badgePill, { marginTop: hm.pillLift, marginBottom: hm.pillGap, backgroundColor: C.surface, borderColor: withAlpha(C.accent, 0.3) }]}>
               <Text style={[s.badgeText, { color: C.text }]} numberOfLines={1} maxFontSizeMultiplier={HERO_FONT_CAP}>{t('guest.hero.badge')}</Text>
-            </View>
+            </View> */}
             <Text
               style={[s.heroTitle, { color: C.text, fontSize: hm.title, lineHeight: language === 'ne' ? lineHeightFor(hm.title) : hm.titleLineLatin }]}
               maxFontSizeMultiplier={HERO_FONT_CAP}
@@ -157,7 +164,7 @@ export default function GuestHomeScreen() {
             style={[s.heroTagline, { color: C.textSecondary, marginTop: hm.taglineGap }]}
             numberOfLines={1}
             adjustsFontSizeToFit
-            minimumFontScale={0.75}>
+            minimumFontScale={0.65}>
             {t('guest.hero.tagline').split('*').map((part, i) =>
               // Odd segments sit between *…* markers → emphasised.
               i % 2 === 1
@@ -443,9 +450,9 @@ const s = StyleSheet.create({
   stack:   { paddingHorizontal: SCREEN_GUTTER, gap: SPACING.md },
 
   // Hero
-  hero:        { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, overflow: 'hidden' },
+  hero:        { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.md, overflow: 'hidden' },
   // Sizes / offsets below are the 393pt design; heroMetrics() scales them inline.
-  heroArt:     { position: 'absolute', right: 8, top: SPACING.lg, overflow: 'hidden' },
+  heroArt:     { position: 'absolute', right: 8, top: SPACING.md, overflow: 'hidden' },
   heroText:    { width: '60%', gap: SPACING.md },
   badgePill: {
     alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', maxWidth: '100%',

@@ -33,7 +33,10 @@ function shortDate(iso: string | null | undefined): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  // The year only when it isn't this one — "Nov 30" fits the narrow panel
+  // where "Nov 30, 2026" was always cut off.
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString('en-US', sameYear ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function Pill({ label, color }: { label: string; color: string }) {
@@ -92,7 +95,7 @@ export function OpportunityRow({ campaign }: { campaign: Campaign }) {
         {campaign.deadline ? (
           <View style={s.panelLine}>
             <FontAwesome5 name="calendar-alt" size={10} color={C.textSecondary} />
-            <Text style={[s.panelMeta, { color: C.textSecondary }]} numberOfLines={1}>{shortDate(campaign.deadline)}</Text>
+            <Text style={[s.panelMeta, { color: C.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{shortDate(campaign.deadline)}</Text>
           </View>
         ) : null}
       </View>
@@ -132,7 +135,7 @@ export function CompetitionRow({ c }: { c: CompetitionCard }) {
         ) : null}
         <View style={s.panelLine}>
           <FontAwesome5 name="calendar-alt" size={10} color={C.textSecondary} />
-          <Text style={[s.panelMeta, { color: C.textSecondary }]} numberOfLines={1}>{shortDate(c.registrationDeadline)}</Text>
+          <Text style={[s.panelMeta, { color: C.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{shortDate(c.registrationDeadline)}</Text>
         </View>
       </View>
     </Pressable>
@@ -174,8 +177,11 @@ export function CreatorPhotoCard({ creator }: { creator: ApiCreatorListItem }) {
 }
 
 const s = StyleSheet.create({
-  row:        { flexDirection: 'row', alignItems: 'stretch', gap: SPACING.md, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.sm },
-  thumb:      { width: 88, borderRadius: RADIUS.md, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', minHeight: 96 },
+  // Thumb and panel are a share of the card (clamped), not fixed widths, so
+  // the title column keeps usable room on narrow phones (SE / 360pt Android)
+  // instead of shrinking to a couple of words.
+  row:        { flexDirection: 'row', alignItems: 'stretch', gap: SPACING.sm + 2, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.sm },
+  thumb:      { width: '25%', minWidth: 72, maxWidth: 100, borderRadius: RADIUS.md, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', minHeight: 96 },
   body:       { flex: 1, minWidth: 0, gap: 4, paddingVertical: 2, justifyContent: 'center' },
   pill:       { alignSelf: 'flex-start', borderRadius: RADIUS.full, paddingHorizontal: 9, paddingVertical: 3 },
   pillText:   { fontSize: FONT_SIZE.xs, fontFamily: F.semibold },
@@ -183,7 +189,7 @@ const s = StyleSheet.create({
   metaLine:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
   meta:       { fontSize: 12, fontFamily: F.regular, flexShrink: 1, lineHeight: lineHeightFor(12) },
 
-  panel:      { width: 92, borderRadius: RADIUS.md, padding: SPACING.sm, gap: 6, justifyContent: 'center' },
+  panel:      { width: '27%', minWidth: 84, maxWidth: 112, borderRadius: RADIUS.md, padding: SPACING.sm, gap: 6, justifyContent: 'center' },
   panelLine:  { flexDirection: 'row', alignItems: 'center', gap: 5 },
   panelMeta:  { fontSize: FONT_SIZE.xs, fontFamily: F.medium, flexShrink: 1 },
   panelValue: { fontSize: FONT_SIZE.sm, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.sm) },
