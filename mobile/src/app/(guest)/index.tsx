@@ -445,7 +445,7 @@ const s = StyleSheet.create({
   // Hero
   hero:        { paddingHorizontal: SCREEN_GUTTER, paddingTop: SPACING.lg, overflow: 'hidden' },
   // Sizes / offsets below are the 393pt design; heroMetrics() scales them inline.
-  heroArt:     { position: 'absolute', right: -4, top: SPACING.lg, overflow: 'hidden' },
+  heroArt:     { position: 'absolute', right: 8, top: SPACING.lg, overflow: 'hidden' },
   heroText:    { width: '60%', gap: SPACING.md },
   badgePill: {
     alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', maxWidth: '100%',
