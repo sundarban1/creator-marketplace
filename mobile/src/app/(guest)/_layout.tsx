@@ -10,6 +10,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { GUEST_DARK_ORANGE } from '@/features/guest/colors';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { openGuestLogin } from '@/components/GuestAuthPrompt';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
@@ -44,7 +45,7 @@ function GuestTabBar({ state, navigation }: { state: any; navigation: any }) {
         const route = (state.routes as any[]).find((r) => r.name === tab.name);
         if (!route) return null;
         const focused = focusedName === tab.name;
-        const color = focused ? C.accent : C.textPlaceholder;
+        const color = focused ? GUEST_DARK_ORANGE : C.textPlaceholder;
         const label = t(tab.labelKey);
 
         function onPress() {
@@ -63,11 +64,11 @@ function GuestTabBar({ state, navigation }: { state: any; navigation: any }) {
             accessibilityRole="tab"
             accessibilityLabel={label}
             accessibilityState={{ selected: focused }}>
-            <View style={[s.bubble, focused && { backgroundColor: `${C.accent}1A` }]}>
+            <View style={[s.bubble, focused && { backgroundColor: `${GUEST_DARK_ORANGE}1A` }]}>
               <FontAwesome5 name={tab.icon} solid={focused} size={19} color={color} />
             </View>
             <Text style={[s.label, { color, fontWeight: focused ? '700' : '500' }]} numberOfLines={1}>{label}</Text>
-            {focused && <View style={[s.dot, { backgroundColor: C.accent }]} />}
+            {focused && <View style={[s.dot, { backgroundColor: GUEST_DARK_ORANGE }]} />}
           </Pressable>
         );
       })}

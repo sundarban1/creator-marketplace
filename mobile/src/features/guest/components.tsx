@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { openGuestLogin, openGuestSignup } from '@/components/GuestAuthPrompt';
 import { useAppColors } from '@/context/ThemeContext';
-import { useGuestColors } from './colors';
+import { GUEST_DARK_ORANGE, useGuestColors } from './colors';
 import { useLanguage } from '@/context/LanguageContext';
 import { PersonAvatar } from '@/features/creator/competition/ProfileAvatar';
 import type { ApiCreatorListItem } from '@/services/creator';
@@ -38,7 +38,7 @@ export function GuestHeader({ title }: { title?: string }) {
         </Pressable>
         <Pressable
           onPress={() => openGuestSignup()}
-          style={({ pressed }) => [s.headerCta, { backgroundColor: C.accent }, pressed && { opacity: 0.88 }]}
+          style={({ pressed }) => [s.headerCta, { backgroundColor: GUEST_DARK_ORANGE }, pressed && { opacity: 0.88 }]}
           accessibilityRole="button">
           <Text style={s.headerCtaText}>{t('guest.createAccount')}</Text>
         </Pressable>
@@ -155,17 +155,26 @@ export function RowSkeletons({ count = 5, height = 76 }: { count?: number; heigh
   );
 }
 
-/** Friendly empty state for a home section — icon, headline, warm message and a next step. */
-export function FriendlyEmpty({ icon, title, body, actionLabel, onAction }: {
-  icon: keyof typeof FontAwesome5.glyphMap; title: string; body: string; actionLabel?: string; onAction?: () => void;
+/** Friendly empty state for a home section — optional icon, headline, warm message and a next step. */
+export function FriendlyEmpty({ icon, title, body, actionLabel, onAction, emphasizeTitle }: {
+  icon?: keyof typeof FontAwesome5.glyphMap; title: string; body: string; actionLabel?: string; onAction?: () => void;
+  /** Words wrapped in *…* in the title render one size up (lg) in the orange accent. */
+  emphasizeTitle?: boolean;
 }) {
   const C = useGuestColors();
   return (
     <View style={[s.empty, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <View style={[s.emptyIcon, { backgroundColor: C.accentLight }]}>
-        <FontAwesome5 name={icon} size={20} color={C.accent} />
-      </View>
-      <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
+      {icon ? (
+        <View style={[s.emptyIcon, { backgroundColor: C.accentLight }]}>
+          <FontAwesome5 name={icon} size={20} color={C.accent} />
+        </View>
+      ) : null}
+      <Text style={[s.emptyTitle, emphasizeTitle ? s.emptyTitleLg : null, { color: C.text }]}>
+        {emphasizeTitle
+          ? title.split('*').map((part, i) =>
+              i % 2 === 1 ? <Text key={i} style={[s.emptyTitleEm, { color: C.accent }]}>{part}</Text> : part)
+          : title}
+      </Text>
       <Text style={[s.emptyBody, { color: C.textSecondary }]}>{body}</Text>
       {actionLabel && onAction && (
         <Pressable
@@ -202,6 +211,9 @@ const s = StyleSheet.create({
   empty:         { marginHorizontal: SCREEN_GUTTER, alignItems: 'center', borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: SPACING.xl, paddingHorizontal: SPACING.lg, gap: SPACING.sm },
   emptyIcon:     { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.xs },
   emptyTitle:    { fontSize: FONT_SIZE.md, fontFamily: F.bold, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.md) },
+  // Line height sized for the bigger emphasized words so they don't clip.
+  emptyTitleLg:  { lineHeight: lineHeightFor(FONT_SIZE.lg) },
+  emptyTitleEm:  { fontSize: FONT_SIZE.lg },
   emptyBody:     { fontSize: FONT_SIZE.sm, fontFamily: F.regular, textAlign: 'center', lineHeight: lineHeightFor(FONT_SIZE.sm), maxWidth: 300 },
   emptyBtn:      { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: SPACING.lg, marginTop: SPACING.sm },
   emptyBtnText:  { fontSize: FONT_SIZE.sm, fontFamily: F.bold },

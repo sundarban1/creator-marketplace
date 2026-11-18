@@ -10,7 +10,6 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import { useIsDark } from '@/context/ThemeContext';
 import { useGuestColors } from './colors';
 import { useLanguage } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
@@ -25,9 +24,6 @@ import { withAlpha } from '@/utilities/color';
 import { F, FONT_SIZE, RADIUS, SHADOW, SPACING, lineHeightFor } from '@/utilities/constants';
 import { openCreatorProfile } from './components';
 
-const PURPLE = '#7C3AED';
-// #7C3AED text on dark surfaces is below readable contrast — lighter on dark.
-const PURPLE_ON_DARK = '#A78BFA';
 const GREEN = '#059669';
 
 function shortDate(iso: string | null | undefined): string {
@@ -38,14 +34,6 @@ function shortDate(iso: string | null | undefined): string {
   // where "Nov 30, 2026" was always cut off.
   const sameYear = d.getFullYear() === new Date().getFullYear();
   return d.toLocaleDateString('en-US', sameYear ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function Pill({ label, color }: { label: string; color: string }) {
-  return (
-    <View style={[s.pill, { backgroundColor: withAlpha(color, 0.12) }]}>
-      <Text style={[s.pillText, { color }]} numberOfLines={1}>{label}</Text>
-    </View>
-  );
 }
 
 function MetaLine({ icon, text }: { icon: keyof typeof FontAwesome5.glyphMap; text: string }) {
@@ -59,7 +47,7 @@ function MetaLine({ icon, text }: { icon: keyof typeof FontAwesome5.glyphMap; te
   );
 }
 
-/** Thumbnail · type pill, title, category, location · date + compensation panel. */
+/** Thumbnail · title, category, location · date + compensation panel. */
 export function OpportunityRow({ campaign }: { campaign: Campaign }) {
   const C = useGuestColors();
   const { t } = useLanguage();
@@ -83,7 +71,6 @@ export function OpportunityRow({ campaign }: { campaign: Campaign }) {
       </View>
 
       <View style={s.body}>
-        <Pill label={isOpen ? t('guest.card.openEvent') : t('guest.card.paidEvent')} color={isOpen ? GREEN : C.accent} />
         <Text style={[s.title, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
         <MetaLine icon="tag" text={displayCategory(campaign.category)} />
         <MetaLine icon="map-marker-alt" text={location} />
@@ -104,11 +91,9 @@ export function OpportunityRow({ campaign }: { campaign: Campaign }) {
   );
 }
 
-/** Thumbnail · "Competition" pill, title, short description · prize + deadline panel. */
+/** Thumbnail · title, short description · prize + deadline panel. */
 export function CompetitionRow({ c }: { c: CompetitionCard }) {
   const C = useGuestColors();
-  const isDark = useIsDark();
-  const { t } = useLanguage();
   const prize = c.prizePool ? npr(c.prizePool.amount) : (c.prizeHighlights[0]?.title ?? '');
 
   return (
@@ -123,7 +108,6 @@ export function CompetitionRow({ c }: { c: CompetitionCard }) {
       </View>
 
       <View style={s.body}>
-        <Pill label={t('guest.card.competition')} color={isDark ? PURPLE_ON_DARK : PURPLE} />
         <Text style={[s.title, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
         {c.summary ? <Text style={[s.meta, { color: C.textSecondary }]} numberOfLines={2}>{c.summary}</Text> : null}
       </View>
@@ -184,8 +168,6 @@ const s = StyleSheet.create({
   row:        { flexDirection: 'row', alignItems: 'stretch', gap: SPACING.sm + 2, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.sm },
   thumb:      { width: '25%', minWidth: 72, maxWidth: 100, borderRadius: RADIUS.md, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', minHeight: 96 },
   body:       { flex: 1, minWidth: 0, gap: 4, paddingVertical: 2, justifyContent: 'center' },
-  pill:       { alignSelf: 'flex-start', borderRadius: RADIUS.full, paddingHorizontal: 9, paddingVertical: 3 },
-  pillText:   { fontSize: FONT_SIZE.xs, fontFamily: F.semibold },
   title:      { fontSize: FONT_SIZE.md, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.md) },
   metaLine:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
   meta:       { fontSize: 12, fontFamily: F.regular, flexShrink: 1, lineHeight: lineHeightFor(12) },

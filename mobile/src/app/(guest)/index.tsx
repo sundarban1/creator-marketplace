@@ -117,7 +117,7 @@ export default function GuestHomeScreen() {
   const sectionStyle = [s.section, { marginTop: sp.section }];
   // Tagline highlights in Kolab's three brand colours, in order:
   // creators → orange, opportunities → brinjal, together → Kolab green.
-  const isDark = useIsDark();
+  const { isDark } = useIsDark();
   const taglineColors = [C.accent, C.brinjal1, isDark ? TOGETHER_GREEN.dark : TOGETHER_GREEN.light];
 
   const eventList = events.data?.campaigns ?? [];
@@ -241,8 +241,8 @@ export default function GuestHomeScreen() {
             <InlineNotice icon="wifi" text={t('guest.loadFailed')} actionLabel={t('guest.retry')} onAction={() => void creators.refetch()} />
           ) : creatorList.length === 0 ? (
             <FriendlyEmpty
-              icon="user-friends"
               title={t('guest.empty.creatorsTitle')}
+              emphasizeTitle
               body={t('guest.empty.creatorsBody')}
               actionLabel={t('guest.empty.creatorsCta')}
               onAction={() => openGuestSignup('CREATOR')}
@@ -351,7 +351,7 @@ const AUDIENCES: {
 /** "For creators / For businesses" — a two-option slider over a single tinted card. */
 function AudienceSwitcher() {
   const C = useGuestColors();
-  const isDark = useIsDark();
+  const { isDark } = useIsDark();
   // Photo column ≈ 29% of the screen (112 on a 393pt phone), so the copy
   // column keeps enough room on compact phones.
   const { width: screenW } = useWindowDimensions();
@@ -365,7 +365,6 @@ function AudienceSwitcher() {
   const current = AUDIENCES.find((a) => a.key === active)!;
   // Creators on the orange accent, businesses on violet — same split as the reference.
   const tone = active === 'creators' ? C.accent : PURPLE;
-  const tint = active === 'creators' ? C.accentLight : withAlpha(PURPLE, 0.1);
 
   function select(key: Audience) {
     setActive(key);
@@ -417,8 +416,8 @@ function AudienceSwitcher() {
         })}
       </View>
 
-      {/* Tinted card: copy left, photo right */}
-      <View style={[s.audience, { backgroundColor: tint }]}>
+      {/* Plain card (no orange/violet tint): copy left, photo right */}
+      <View style={[s.audience, { backgroundColor: C.surface, borderColor: C.border }]}>
         <View style={s.audienceText}>
           <Text style={[s.audienceTitle, { color: C.text }]}>{t(`${current.i18n}.title`)}</Text>
           <View style={s.points}>
@@ -487,7 +486,7 @@ const s = StyleSheet.create({
   indicator:    { position: 'absolute', top: TRACK_PAD, bottom: TRACK_PAD, left: TRACK_PAD, borderRadius: RADIUS.full },
   segment:      { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: SPACING.xs },
   segmentText:  { flexShrink: 1 },
-  audience:     { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', minHeight: 230 },
+  audience:     { flexDirection: 'row', borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', minHeight: 230 },
   audienceText: { flex: 1, padding: SPACING.lg, paddingRight: SPACING.sm, gap: SPACING.sm },
   audienceTitle: { fontSize: FONT_SIZE.lg + 1, fontFamily: F.bold, lineHeight: lineHeightFor(FONT_SIZE.lg + 1) },
   points:       { gap: 4 },

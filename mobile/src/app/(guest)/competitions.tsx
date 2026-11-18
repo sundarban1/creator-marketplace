@@ -9,6 +9,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { TabSlider } from '@/components/TabSlider';
+import { GUEST_DARK_ORANGE } from '@/features/guest/colors';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { CompetitionCardItem } from '@/features/creator/competition/parts';
@@ -51,7 +52,7 @@ export default function GuestCompetitionsScreen() {
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
 
   const tabs = [
-    { key: 'open',    label: t('guest.competitions.open'),    icon: 'trophy' as const, color: C.accent },
+    { key: 'open',    label: t('guest.competitions.open'),    icon: 'trophy' as const, color: GUEST_DARK_ORANGE },
     { key: 'results', label: t('guest.competitions.results'), icon: 'award' as const,  color: '#059669' },
   ];
 

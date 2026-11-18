@@ -18,11 +18,11 @@ const ACCENT = '#EC4899';
 // home, green on the business home (see `borderColor` prop).
 const BORDER = '#3B82F6';
 const BORDER_BUSINESS = '#22C55E';
-// The highlighted reward figure ("Rs. 500") renders emerald-600 on the light
-// theme; in dark mode it shifts to a deeper, dark green so it reads as a
-// distinct "money" accent rather than a bright neon pop against the near-black
-// surface.
-const AMOUNT_DARK = '#15803D';
+// The highlighted reward figure ("500 Reward Points") is WhatsApp's theme green:
+// the deep #008069 on light, WhatsApp dark mode's #00A884 on dark (the deep
+// shade is too low-contrast against the near-black surface).
+const AMOUNT_LIGHT = '#008069';
+const AMOUNT_DARK = '#00A884';
 
 type Props = {
   icon: IoniconName;
@@ -64,7 +64,7 @@ export function PromoBanner({ icon, title, subtitlePrefix, subtitleAmount, subti
         <Text style={[s.title, { color: C.text }]}>{title}</Text>
         <Text style={[s.sub, { color: C.textSecondary }]} numberOfLines={1}>
           {subtitlePrefix}
-          <Text style={[s.amount, isDark && { color: AMOUNT_DARK }]}>{subtitleAmount}</Text>
+          <Text style={[s.amount, { color: isDark ? AMOUNT_DARK : AMOUNT_LIGHT }]}>{subtitleAmount}</Text>
           {subtitleSuffix}
         </Text>
       </View>
@@ -85,6 +85,6 @@ const s = StyleSheet.create({
   text:  { flex: 1, gap: 2 },
   title: { fontSize: FONT_SIZE.sm, fontFamily: F.semibold },
   sub:   { fontSize: FONT_SIZE.sm, fontFamily: F.regular, lineHeight: 20, opacity: 0.75 },
-  amount: { fontSize: FONT_SIZE.md, fontFamily: F.extrabold, color: '#059669' },
+  amount: { fontSize: FONT_SIZE.md, fontFamily: F.extrabold },
   close: { position: 'absolute', top: 8, right: 8, padding: 4 },
 });

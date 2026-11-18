@@ -5878,7 +5878,7 @@ const en = {
       competitionsTitle: 'No competitions running right now',
       competitionsBody: 'The next challenge is just around the corner — check back soon to show off your skills and win prizes.',
       competitionsCta: 'Browse past results',
-      creatorsTitle: 'Our creator community is just getting started',
+      creatorsTitle: 'Our *creator community* is just getting started',
       creatorsBody: 'Be one of the first faces businesses see on Kolab. Set up your profile and start getting discovered.',
       creatorsCta: 'Join as a Creator',
       events: 'No open opportunities right now. Check back soon.',

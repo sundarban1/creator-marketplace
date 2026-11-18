@@ -8,6 +8,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { TabSlider } from '@/components/TabSlider';
+import { GUEST_DARK_ORANGE } from '@/features/guest/colors';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
@@ -47,7 +48,7 @@ export default function GuestEventsScreen() {
   const items = query.data?.pages.flatMap((p) => p.campaigns) ?? [];
 
   const tabs = [
-    { key: 'all',           label: t('guest.events.all'),  icon: 'th-large' as const,  color: C.accent },
+    { key: 'all',           label: t('guest.events.all'),  icon: 'th-large' as const,  color: GUEST_DARK_ORANGE },
     { key: 'PAID_CAMPAIGN', label: t('guest.events.paid'), icon: 'wallet' as const,    color: '#4F46E5' },
     { key: 'OPEN_EVENT',    label: t('guest.events.open'), icon: 'door-open' as const, color: '#059669' },
   ];

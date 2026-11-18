@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/SearchInput';
 import { TabSlider } from '@/components/TabSlider';
 import { useAppColors } from '@/context/ThemeContext';
+import { GUEST_DARK_ORANGE } from '@/features/guest/colors';
 import { useLanguage } from '@/context/LanguageContext';
 import { BusinessRow, CreatorRow, GuestHeader, RowSkeletons } from '@/features/guest/components';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -58,7 +59,7 @@ export default function GuestDiscoverScreen() {
   const rows = loading ? [] : allRows;
 
   const tabs = [
-    { key: 'creators',   label: t('guest.discover.creators'),   icon: 'user-friends' as const, color: C.accent },
+    { key: 'creators',   label: t('guest.discover.creators'),   icon: 'user-friends' as const, color: GUEST_DARK_ORANGE },
     { key: 'businesses', label: t('guest.discover.businesses'), icon: 'store' as const,        color: '#4F46E5' },
   ];
 
