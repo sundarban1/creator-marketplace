@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { openGuestLogin, openGuestSignup } from '@/components/GuestAuthPrompt';
 import { useAppColors } from '@/context/ThemeContext';
+import { useGuestColors } from './colors';
 import { useLanguage } from '@/context/LanguageContext';
 import { PersonAvatar } from '@/features/creator/competition/ProfileAvatar';
 import type { ApiCreatorListItem } from '@/services/creator';
@@ -49,7 +50,7 @@ export function GuestHeader({ title }: { title?: string }) {
 // ─── Section heading with optional "See all" ─────────────────────────────────
 
 export function SectionHeader({ title, subtitle, onSeeAll }: { title: string; subtitle?: string; onSeeAll?: () => void }) {
-  const C = useAppColors();
+  const C = useGuestColors();
   const { t } = useLanguage();
   return (
     <View style={s.sectionHead}>
@@ -158,7 +159,7 @@ export function RowSkeletons({ count = 5, height = 76 }: { count?: number; heigh
 export function FriendlyEmpty({ icon, title, body, actionLabel, onAction }: {
   icon: keyof typeof FontAwesome5.glyphMap; title: string; body: string; actionLabel?: string; onAction?: () => void;
 }) {
-  const C = useAppColors();
+  const C = useGuestColors();
   return (
     <View style={[s.empty, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={[s.emptyIcon, { backgroundColor: C.accentLight }]}>
@@ -183,7 +184,7 @@ export function FriendlyEmpty({ icon, title, body, actionLabel, onAction }: {
 export function InlineNotice({ icon, text, actionLabel, onAction }: {
   icon: keyof typeof FontAwesome5.glyphMap; text: string; actionLabel?: string; onAction?: () => void;
 }) {
-  const C = useAppColors();
+  const C = useGuestColors();
   return (
     <View style={[s.notice, { backgroundColor: C.surface, borderColor: C.border }]}>
       <FontAwesome5 name={icon} size={16} color={C.textSecondary} />

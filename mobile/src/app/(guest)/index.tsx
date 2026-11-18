@@ -11,7 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { openGuestSignup } from '@/components/GuestAuthPrompt';
 import { Skeleton } from '@/components/Skeleton';
-import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { useIsDark } from '@/context/ThemeContext';
+import { useGuestColors } from '@/features/guest/colors';
 import { useLanguage } from '@/context/LanguageContext';
 import { FriendlyEmpty, GuestHeader, InlineNotice, RailSkeleton, SectionHeader } from '@/features/guest/components';
 import { CREATOR_PHOTO_CARD_W, CompetitionRow, CreatorPhotoCard, OpportunityRow } from '@/features/guest/homeCards';
@@ -89,7 +90,7 @@ const PURPLE = '#7C3AED';
 const PURPLE_ON_DARK = '#A78BFA';
 
 export default function GuestHomeScreen() {
-  const C = useAppColors();
+  const C = useGuestColors();
   const { t, language } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTopOnTabPress('guest-index', () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
@@ -349,7 +350,7 @@ const AUDIENCES: {
 
 /** "For creators / For businesses" — a two-option slider over a single tinted card. */
 function AudienceSwitcher() {
-  const C = useAppColors();
+  const C = useGuestColors();
   const isDark = useIsDark();
   // Photo column ≈ 29% of the screen (112 on a 393pt phone), so the copy
   // column keeps enough room on compact phones.

@@ -10,7 +10,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { useIsDark } from '@/context/ThemeContext';
+import { useGuestColors } from './colors';
 import { useLanguage } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
@@ -48,7 +49,7 @@ function Pill({ label, color }: { label: string; color: string }) {
 }
 
 function MetaLine({ icon, text }: { icon: keyof typeof FontAwesome5.glyphMap; text: string }) {
-  const C = useAppColors();
+  const C = useGuestColors();
   if (!text) return null;
   return (
     <View style={s.metaLine}>
@@ -60,7 +61,7 @@ function MetaLine({ icon, text }: { icon: keyof typeof FontAwesome5.glyphMap; te
 
 /** Thumbnail · type pill, title, category, location · date + compensation panel. */
 export function OpportunityRow({ campaign }: { campaign: Campaign }) {
-  const C = useAppColors();
+  const C = useGuestColors();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { categories } = useAllCategories();
@@ -105,7 +106,7 @@ export function OpportunityRow({ campaign }: { campaign: Campaign }) {
 
 /** Thumbnail · "Competition" pill, title, short description · prize + deadline panel. */
 export function CompetitionRow({ c }: { c: CompetitionCard }) {
-  const C = useAppColors();
+  const C = useGuestColors();
   const isDark = useIsDark();
   const { t } = useLanguage();
   const prize = c.prizePool ? npr(c.prizePool.amount) : (c.prizeHighlights[0]?.title ?? '');
@@ -146,7 +147,7 @@ export const CREATOR_PHOTO_CARD_W = 150;
 
 /** Photo-top creator card: profile image, name, location. */
 export function CreatorPhotoCard({ creator }: { creator: ApiCreatorListItem }) {
-  const C = useAppColors();
+  const C = useGuestColors();
   const [failed, setFailed] = useState(false);
   const name = creator.fullName ?? '';
   const initials = name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
