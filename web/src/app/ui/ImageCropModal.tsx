@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import Cropper, { type Area, type MediaSize, type Point } from 'react-easy-crop';
-import { useT } from '../i18n';
+import { useOptionalT } from '../i18n';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { getCroppedImageBlob } from './cropImage';
@@ -24,6 +24,9 @@ export function ImageCropModal({
   cropShape = 'rect',
   allowFit = false,
   title,
+  aspectOptions,
+  skipLabel,
+  onSkip,
   onCancel,
   onConfirm,
 }: {
@@ -33,10 +36,16 @@ export function ImageCropModal({
   cropShape?: 'rect' | 'round';
   allowFit?: boolean;
   title: string;
+  /** Optional ratio picker shown under the cropper; `aspect` is the initial pick. */
+  aspectOptions?: { label: string; value: number }[];
+  /** Optional "use the image as-is" escape hatch rendered beside Save. */
+  skipLabel?: string;
+  onSkip?: () => void | Promise<void>;
   onCancel: () => void;
   onConfirm: (blob: Blob) => void | Promise<void>;
 }) {
-  const t = useT();
+  const t = useOptionalT();
+  const [activeAspect, setActiveAspect] = useState(aspect);
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   // Zoom at which the whole image fits inside the crop frame. At zoom 1
@@ -54,11 +63,11 @@ export function ImageCropModal({
   const onMediaLoaded = useCallback((media: MediaSize) => {
     if (!allowFit) return;
     const r = media.naturalWidth / media.naturalHeight;
-    const fit = Math.min(r / aspect, aspect / r);
+    const fit = Math.min(r / activeAspect, activeAspect / r);
     setMinZoom(fit);
     setZoom(fit);
     setCrop({ x: 0, y: 0 });
-  }, [allowFit, aspect]);
+  }, [allowFit, activeAspect]);
 
   const reset = () => {
     setCrop({ x: 0, y: 0 });
@@ -66,6 +75,20 @@ export function ImageCropModal({
     setMinZoom(1);
     setCroppedAreaPixels(null);
     setCropError(false);
+    setActiveAspect(aspect);
+  };
+
+  const handleSkip = async () => {
+    if (!onSkip) return;
+    setWorking(true);
+    try {
+      await onSkip();
+      reset();
+    } catch {
+      // onSkip reports its own errors.
+    } finally {
+      setWorking(false);
+    }
   };
 
   const handleCancel = () => {
@@ -107,6 +130,11 @@ export function ImageCropModal({
           <Button variant="secondary" onClick={handleCancel} disabled={working}>
             {t('common.cancel')}
           </Button>
+          {onSkip && (
+            <Button variant="secondary" onClick={handleSkip} disabled={working}>
+              {skipLabel}
+            </Button>
+          )}
           <Button onClick={handleConfirm} loading={working} disabled={!croppedAreaPixels}>
             {t('profile.cropSave')}
           </Button>
@@ -120,7 +148,7 @@ export function ImageCropModal({
               image={imageSrc}
               crop={crop}
               zoom={zoom}
-              aspect={aspect}
+              aspect={activeAspect}
               cropShape={cropShape}
               minZoom={minZoom}
               // Zoomed out past the frame the image is smaller than the crop
@@ -133,6 +161,25 @@ export function ImageCropModal({
               onCropComplete={onCropComplete}
             />
           </div>
+          {aspectOptions && aspectOptions.length > 1 && (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Aspect ratio">
+              {aspectOptions.map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  aria-pressed={activeAspect === o.value}
+                  onClick={() => { setActiveAspect(o.value); setCrop({ x: 0, y: 0 }); setZoom(1); }}
+                  className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
+                    activeAspect === o.value
+                      ? 'border-brand bg-brand text-white'
+                      : 'border-line text-ink-soft hover:border-ink-soft'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
           {cropError && (
             <p role="alert" className="text-[13px] font-medium text-red-600">{t('profile.cropError')}</p>
           )}

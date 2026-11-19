@@ -156,10 +156,12 @@ export function RowSkeletons({ count = 5, height = 76 }: { count?: number; heigh
 }
 
 /** Friendly empty state for a home section — optional icon, headline, warm message and a next step. */
-export function FriendlyEmpty({ icon, title, body, actionLabel, onAction, emphasizeTitle }: {
+export function FriendlyEmpty({ icon, title, body, actionLabel, onAction, emphasizeTitle, emphasisColor }: {
   icon?: keyof typeof FontAwesome5.glyphMap; title: string; body: string; actionLabel?: string; onAction?: () => void;
   /** Words wrapped in *…* in the title render one size up (lg) in the orange accent. */
   emphasizeTitle?: boolean;
+  /** Colour for the *…* words; defaults to the orange accent. */
+  emphasisColor?: string;
 }) {
   const C = useGuestColors();
   return (
@@ -172,7 +174,7 @@ export function FriendlyEmpty({ icon, title, body, actionLabel, onAction, emphas
       <Text style={[s.emptyTitle, emphasizeTitle ? s.emptyTitleLg : null, { color: C.text }]}>
         {emphasizeTitle
           ? title.split('*').map((part, i) =>
-              i % 2 === 1 ? <Text key={i} style={[s.emptyTitleEm, { color: C.accent }]}>{part}</Text> : part)
+              i % 2 === 1 ? <Text key={i} style={[s.emptyTitleEm, { color: emphasisColor ?? C.accent }]}>{part}</Text> : part)
           : title}
       </Text>
       <Text style={[s.emptyBody, { color: C.textSecondary }]}>{body}</Text>

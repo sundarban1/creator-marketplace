@@ -201,8 +201,9 @@ export default function GuestHomeScreen() {
             <InlineNotice icon="wifi" text={t('guest.loadFailed')} actionLabel={t('guest.retry')} onAction={() => void events.refetch()} />
           ) : eventList.length === 0 ? (
             <FriendlyEmpty
-              icon="briefcase"
               title={t('guest.empty.eventsTitle')}
+              emphasizeTitle
+              emphasisColor={isDark ? TOGETHER_GREEN.dark : TOGETHER_GREEN.light}
               body={t('guest.empty.eventsBody')}
               actionLabel={t('guest.empty.eventsCta')}
               onAction={() => openGuestSignup()}
@@ -319,7 +320,8 @@ export default function GuestHomeScreen() {
           </Text>
           <Pressable
             onPress={() => openGuestSignup()}
-            style={({ pressed }) => [s.pillBtn, s.finalBtn, pressed && { opacity: 0.9 }]}
+            // Same brinjal gradient pill (and lift) as the hero's "Explore Kolab".
+            style={({ pressed }) => [s.pillBtn, s.finalBtn, SHADOW.raised, { shadowColor: C.brinjal1 }, pressed && { opacity: 0.9 }]}
             accessibilityRole="button">
             <LinearGradient colors={[C.brinjal1, C.brinjal2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.btnGradient} pointerEvents="none" />
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.pillBtnText, { color: '#fff' }]}>{t('guest.final.cta')}</Text>

@@ -5872,7 +5872,7 @@ const en = {
       creatorsSub: 'Local talent ready to collaborate',
     },
     empty: {
-      eventsTitle: 'New opportunities are on the way',
+      eventsTitle: 'New *opportunities* are on the way',
       eventsBody: "Businesses are getting their next campaigns ready. Create an account and you'll be among the first to hear when they go live.",
       eventsCta: 'Get notified',
       competitionsTitle: 'No competitions running right now',

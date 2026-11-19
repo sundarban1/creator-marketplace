@@ -1,13 +1,21 @@
-import { useState, type FormEvent, type ChangeEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ImagePlus, X, Loader2 } from 'lucide-react';
+import { ImagePlus, X, Loader2, Crop } from 'lucide-react';
 import type { SuccessStory, SuccessStoryStatus } from '../../context/SuccessStoriesContext';
 import { useSuccessStories } from '../../context/SuccessStoriesContext';
-import { confirmImageUpload } from '../../app/ui/uploadPreview';
+import { ImageCropModal } from '../../app/ui/ImageCropModal';
 import { FieldError } from '../../app/ui/FieldError';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+
+// Landing testimonial card is roughly square; offer a few common alternatives.
+const ASPECT_OPTIONS = [
+  { label: 'Square 1:1', value: 1 },
+  { label: 'Portrait 4:5', value: 4 / 5 },
+  { label: 'Portrait 3:4', value: 3 / 4 },
+  { label: 'Landscape 4:3', value: 4 / 3 },
+];
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -32,6 +40,13 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
   const [photoUrl, setPhotoUrl] = useState<string | null>(initial?.photoUrl ?? null);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // The file picked this session (kept so the admin can re-crop from the
+  // original without re-selecting it) and whether the crop modal is open.
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
+  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+
+  useEffect(() => () => { if (sourceUrl) URL.revokeObjectURL(sourceUrl); }, [sourceUrl]);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -56,7 +71,13 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
     }
 
     setErrors((p) => ({ ...p, photo: '' }));
-    if (!(await confirmImageUpload(file))) return;
+    setSourceFile(file);
+    setSourceUrl(URL.createObjectURL(file));
+    setCropOpen(true);
+  }
+
+  async function upload(file: File) {
+    setCropOpen(false);
     setUploading(true);
     try {
       const url = await uploadPhoto(file);
@@ -68,6 +89,11 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
     }
   }
 
+  async function handleCropConfirm(blob: Blob) {
+    const base = sourceFile?.name.replace(/\.[^.]+$/, '') || 'story-photo';
+    await upload(new File([blob], `${base}-cropped.jpg`, { type: 'image/jpeg' }));
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const e2 = validate();
@@ -76,6 +102,7 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} noValidate>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -116,7 +143,17 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
                   {photoUrl ? 'Replace photo' : 'Upload photo'}
                   <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoChange} disabled={uploading} />
                 </label>
-                <p className="text-xs text-gray-400 mt-1.5">Optional — falls back to initials if left blank. JPEG, PNG, or WebP, up to 5MB.</p>
+                {sourceUrl && photoUrl && !uploading && (
+                  <button
+                    type="button"
+                    onClick={() => setCropOpen(true)}
+                    className="mt-2 flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors w-fit"
+                  >
+                    <Crop size={15} />
+                    Crop again
+                  </button>
+                )}
+                <p className="text-xs text-gray-400 mt-1.5">Optional — falls back to initials if left blank. JPEG, PNG, or WebP, up to 5MB. You can crop the photo before it uploads.</p>
                 {errors.photo && <FieldError message={errors.photo} />}
               </div>
             </div>
@@ -237,5 +274,17 @@ export function SuccessStoryForm({ initial, onSubmit, submitLabel }: SuccessStor
         </div>
       </div>
     </form>
+    <ImageCropModal
+        open={cropOpen}
+        imageSrc={sourceUrl}
+        aspect={1}
+        aspectOptions={ASPECT_OPTIONS}
+        title="Crop photo"
+        skipLabel="Use original"
+        onSkip={() => (sourceFile ? upload(sourceFile) : undefined)}
+        onCancel={() => setCropOpen(false)}
+        onConfirm={handleCropConfirm}
+      />
+    </>
   );
 }
