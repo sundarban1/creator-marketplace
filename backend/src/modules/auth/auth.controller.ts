@@ -43,6 +43,13 @@ export class AuthController {
 
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      // An admin's "Log in as" session has no refresh token and no Session
+      // row — and a logout without a refresh token signs the user out of EVERY
+      // device. Ending the admin's tab must never touch the owner's sessions.
+      if (req.user?.impersonatedBy) {
+        success(res, {}, getDict().auth.loggedOut);
+        return;
+      }
       const refreshToken = req.body?.refreshToken as string | undefined;
       // The access token may have already expired (app idle >15 min) — the
       // refresh token alone still identifies this device's session, so a

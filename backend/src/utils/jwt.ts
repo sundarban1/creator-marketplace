@@ -9,6 +9,25 @@ export interface TokenPayload {
   id: string;
   email: string;
   role: Role;
+  /** Admin user id when an admin is acting as this user ("Log in as" in the
+   *  admin dashboard). Only ever present on impersonation access tokens. */
+  impersonatedBy?: string;
+}
+
+/** Lifetime of an admin "Log in as" session. No refresh token is issued, so
+ *  the session simply ends when this access token expires. */
+export const IMPERSONATION_TTL_SEC = 60 * 60;
+
+/**
+ * Access token for an admin acting as another user. Signed with the normal
+ * access secret so every authenticated route and the socket accept it
+ * unchanged, but deliberately has no refresh token and no Session row — it
+ * never appears in the user's logged-in devices and can't outlive the TTL.
+ */
+export function signImpersonationToken(payload: Omit<TokenPayload, 'impersonatedBy'>, adminUserId: string): string {
+  return jwt.sign({ ...payload, impersonatedBy: adminUserId }, env.JWT_ACCESS_SECRET, {
+    expiresIn: IMPERSONATION_TTL_SEC,
+  } as SignOptions);
 }
 
 export function signAccessToken(payload: TokenPayload): string {

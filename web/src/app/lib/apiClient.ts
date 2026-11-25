@@ -81,26 +81,63 @@ const KEY_ACCESS = 'kolab_access';
 const KEY_REFRESH = 'kolab_refresh';
 const KEY_USER = 'kolab_user';
 
+// ── Admin "Log in as" (impersonation) ─────────────────────────────────────────
+// A tab opened from the admin dashboard's "Log in as" action keeps its session
+// in sessionStorage (per-tab) instead of localStorage (shared by every tab), so
+// acting as a business never overwrites — or is overwritten by — a real
+// sign-in in another tab. The marker stays for the tab's lifetime, even after
+// the session ends, so the tab never falls back to the shared session.
+const KEY_IMPERSONATION = 'kolab_impersonation';
+
+export interface ImpersonationInfo {
+  businessName: string | null;
+  expiresAt: string;
+}
+
+export function getImpersonation(): ImpersonationInfo | null {
+  try {
+    const raw = sessionStorage.getItem(KEY_IMPERSONATION);
+    return raw ? (JSON.parse(raw) as ImpersonationInfo) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isImpersonating(): boolean {
+  return getImpersonation() !== null;
+}
+
+/** Marks this tab as an impersonation tab. Call before setTokens/writeStoredUser. */
+export function beginImpersonation(info: ImpersonationInfo): void {
+  sessionStorage.setItem(KEY_IMPERSONATION, JSON.stringify(info));
+}
+
+function store(): Storage {
+  return isImpersonating() ? sessionStorage : localStorage;
+}
+
 export function getAccessToken(): string | null {
-  return localStorage.getItem(KEY_ACCESS);
+  return store().getItem(KEY_ACCESS);
 }
 
 export function getRefreshToken(): string | null {
-  return localStorage.getItem(KEY_REFRESH);
+  return store().getItem(KEY_REFRESH);
 }
 
 export function setTokens(access: string, refresh?: string): void {
-  localStorage.setItem(KEY_ACCESS, access);
-  if (refresh) localStorage.setItem(KEY_REFRESH, refresh);
+  const s = store();
+  s.setItem(KEY_ACCESS, access);
+  if (refresh) s.setItem(KEY_REFRESH, refresh);
 }
 
 export function clearSession(): void {
-  [KEY_ACCESS, KEY_REFRESH, KEY_USER].forEach((k) => localStorage.removeItem(k));
+  const s = store();
+  [KEY_ACCESS, KEY_REFRESH, KEY_USER].forEach((k) => s.removeItem(k));
 }
 
 export function readStoredUser<T>(): T | null {
   try {
-    const raw = localStorage.getItem(KEY_USER);
+    const raw = store().getItem(KEY_USER);
     return raw ? (JSON.parse(raw) as T) : null;
   } catch {
     return null;
@@ -108,7 +145,7 @@ export function readStoredUser<T>(): T | null {
 }
 
 export function writeStoredUser(user: unknown): void {
-  localStorage.setItem(KEY_USER, JSON.stringify(user));
+  store().setItem(KEY_USER, JSON.stringify(user));
 }
 
 // ── Session lifecycle events ──────────────────────────────────────────────────
@@ -155,6 +192,9 @@ export function endSessionNow(): void {
 // refresh in one tab must stop this tab's pollers too.
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
+    // An impersonation tab's session lives in sessionStorage — sign-ins and
+    // sign-outs in other tabs don't concern it.
+    if (isImpersonating()) return;
     if (e.key !== KEY_REFRESH && e.key !== null) return; // null = storage.clear()
     if (!localStorage.getItem(KEY_REFRESH)) emitSession('ended');
     else if (e.oldValue === null && e.key === KEY_REFRESH) emitSession('started');
@@ -253,6 +293,12 @@ export function ensureFreshAccessToken(): Promise<string | null> {
  * refresh keeps the refresh token and so never ends the session.
  */
 async function recoverFrom401(): Promise<string | null> {
+  // Impersonation sessions have no refresh token: a 401 means the 1-hour
+  // token expired, so the session is over.
+  if (isImpersonating() && !getRefreshToken()) {
+    endSession();
+    return null;
+  }
   const fresh = await ensureFreshAccessToken();
   if (!fresh && !getRefreshToken()) emitSession('ended');
   return fresh;

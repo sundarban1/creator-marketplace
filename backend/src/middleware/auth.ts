@@ -2,8 +2,22 @@ import { Request, Response, NextFunction } from 'express';
 import { Role } from '@prisma/client';
 import { verifyAccessToken, verifyVisitorChatToken } from '../utils/jwt';
 import { AppError, AuthErrorCode } from './error';
+import { getRequestContext } from './requestContext';
 
 import { HttpStatus } from '../constants/httpStatus';
+
+function setUser(req: Request, decoded: ReturnType<typeof verifyAccessToken>): void {
+  req.user = {
+    id: decoded.id,
+    email: decoded.email,
+    role: decoded.role,
+    ...(decoded.impersonatedBy ? { impersonatedBy: decoded.impersonatedBy } : {}),
+  };
+  if (decoded.impersonatedBy) {
+    const ctx = getRequestContext();
+    if (ctx) ctx.impersonatedBy = decoded.impersonatedBy;
+  }
+}
 
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
@@ -16,12 +30,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = verifyAccessToken(token);
-    req.user = {
-      id: decoded.id,
-      email: decoded.email,
-      role: decoded.role,
-    };
+    setUser(req, verifyAccessToken(token));
     next();
   } catch (err) {
     next(err);
@@ -32,8 +41,7 @@ export function optionalAuthenticate(req: Request, _res: Response, next: NextFun
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {
     try {
-      const decoded = verifyAccessToken(authHeader.split(' ')[1]);
-      req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
+      setUser(req, verifyAccessToken(authHeader.split(' ')[1]));
     } catch {
       // invalid / expired token — proceed without setting req.user
     }

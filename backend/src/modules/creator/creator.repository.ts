@@ -37,6 +37,62 @@ async function creatorLabelVocabulary() {
   return labelVocabulary;
 }
 
+/** `%term%` for ILIKE, with the user's own `%`, `_` and `\` matched literally
+ *  (Prisma's `contains` escaped these too). */
+function ilikeContains(term: string): string {
+  return `%${term.replace(/[\\%_]/g, '\\$&')}%`;
+}
+
+/**
+ * Ids of onboarded, active creators whose profile matches a search — see the
+ * comment at the call site in buildListWhere. `literal` is the user's own
+ * query (name/handle/location), `terms` the literal query plus its expansions
+ * (bio, services and their category, portfolio).
+ */
+async function findCreatorIdsMatchingSearch(
+  literal: string,
+  terms: string[],
+  categories: string[],
+  industries: string[],
+): Promise<string[]> {
+  const lit = ilikeContains(literal);
+  const pats = [...new Set(terms.map(ilikeContains))];
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT cp.id
+    FROM creator_profiles cp
+    JOIN users u ON u.id = cp."userId"
+    WHERE u."isOnboarded" = true AND u."isActive" = true
+      AND (
+        cp."fullName" ILIKE ${lit}
+        OR cp.username ILIKE ${lit}
+        OR cp.location ILIKE ${lit}
+        OR cp.city ILIKE ${lit}
+        OR cp.district ILIKE ${lit}
+        OR cp.province ILIKE ${lit}
+        OR cp.area ILIKE ${lit}
+        OR cp.bio ILIKE ANY(${pats}::text[])
+        OR cp.categories && ${categories}::text[]
+        OR cp.industries && ${industries}::text[]
+        OR EXISTS (
+          SELECT 1 FROM services s
+          JOIN categories c ON c.id = s."categoryId"
+          WHERE s."creatorProfileId" = cp.id
+            AND (s.name ILIKE ANY(${pats}::text[])
+              OR s.description ILIKE ANY(${pats}::text[])
+              OR c.name ILIKE ANY(${pats}::text[])
+              OR c."group" ILIKE ANY(${pats}::text[]))
+        )
+        OR EXISTS (
+          SELECT 1 FROM portfolio_items p
+          WHERE p."creatorProfileId" = cp.id
+            AND (p.title ILIKE ANY(${pats}::text[])
+              OR p.description ILIKE ANY(${pats}::text[]))
+        )
+      )
+  `;
+  return rows.map((r) => r.id);
+}
+
 // ── Search relevance ranking ─────────────────────────────────────────────────
 // "Newest first" is the wrong order the moment there's a query — a business
 // searching a creator by name or by role wants the closest match at the top,
@@ -217,15 +273,15 @@ export class CreatorRepository {
         portfolioItems: { select: { title: true } },
       } satisfies Prisma.CreatorProfileSelect;
 
-      const [candidates, total] = await Promise.all([
-        prisma.creatorProfile.findMany({
-          where,
-          take: SEARCH_RANK_CAP,
-          orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-          select: searchSelect,
-        }),
-        prisma.creatorProfile.count({ where }),
-      ]);
+      const candidates = await prisma.creatorProfile.findMany({
+        where,
+        take: SEARCH_RANK_CAP,
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        select: searchSelect,
+      });
+      // Under the cap the pool IS the full match set — no second query needed.
+      const total =
+        candidates.length < SEARCH_RANK_CAP ? candidates.length : await prisma.creatorProfile.count({ where });
 
       const ranked = candidates
         .map((c) => ({ c, score: scoreCreatorMatch(c, q) }))
@@ -317,6 +373,7 @@ export class CreatorRepository {
     // isActive covers both admin-suspended and self-deactivated accounts — either
     // way the account shouldn't be discoverable or hireable while it's down.
     const where: Prisma.CreatorProfileWhereInput = { user: { isOnboarded: true, isActive: true } };
+    let searchIds: string[] | null = null;
 
     if (filters.search) {
       // Matching the name alone meant a search for "coffee" found nobody,
@@ -328,24 +385,10 @@ export class CreatorRepository {
       // name, handle and location stay on the literal query, where expansion
       // has no meaning.
       const q = expandSearchQuery(filters.search);
-      // Unlike the other repositories this path stays in the Prisma query
-      // builder (the price/platform/follower-sort filters around it are awkward
-      // in raw SQL), which has no regex operator — so expanded matching uses
-      // substringSafeTerms, dropping terms too short to substring-match
-      // safely. The user's own query is always matched in full alongside them.
+      // Expanded matching uses substringSafeTerms, dropping terms too short to
+      // substring-match safely. The user's own query is always matched in full
+      // alongside them.
       const related = substringSafeTerms(q);
-      const anywhere = (term: string): Prisma.CreatorProfileWhereInput[] => [
-        { bio: { contains: term, mode: 'insensitive' } },
-        { services: { some: { name: { contains: term, mode: 'insensitive' } } } },
-        { services: { some: { description: { contains: term, mode: 'insensitive' } } } },
-        { services: { some: { category: { name: { contains: term, mode: 'insensitive' } } } } },
-        // The category's group is the umbrella term ('Photography' over
-        // Photographer/Wedding Photographer, 'Music & Audio' over DJ) — a
-        // search for "music" has to reach the DJ whose category never says it.
-        { services: { some: { category: { group: { contains: term, mode: 'insensitive' } } } } },
-        { portfolioItems: { some: { title: { contains: term, mode: 'insensitive' } } } },
-        { portfolioItems: { some: { description: { contains: term, mode: 'insensitive' } } } },
-      ];
       // `categories`/`industries` are scalar string arrays holding display
       // labels ("Skincare", "Events and Entertainment"), and Prisma can only
       // match those with hasSome's exact, case-sensitive equality — so a
@@ -357,19 +400,21 @@ export class CreatorRepository {
       const vocabulary = await creatorLabelVocabulary();
       const matchedCategories = filterByTerms(vocabulary.categories, q.all);
       const matchedIndustries = filterByTerms(vocabulary.industries, q.all);
-      where.OR = [
-        { fullName: { contains: filters.search, mode: 'insensitive' } },
-        { username: { contains: filters.search, mode: 'insensitive' } },
-        { location: { contains: filters.search, mode: 'insensitive' } },
-        { city: { contains: filters.search, mode: 'insensitive' } },
-        { district: { contains: filters.search, mode: 'insensitive' } },
-        { province: { contains: filters.search, mode: 'insensitive' } },
-        { area: { contains: filters.search, mode: 'insensitive' } },
-        ...anywhere(filters.search),
-        ...related.flatMap(anywhere),
-        ...(matchedCategories.length ? [{ categories: { hasSome: matchedCategories } }] : []),
-        ...(matchedIndustries.length ? [{ industries: { hasSome: matchedIndustries } }] : []),
-      ];
+      // Resolved to matching ids in one raw query rather than a Prisma OR.
+      // Expressed in the query builder, every term × every described field
+      // became its own ILIKE branch — and five of the seven fields per term
+      // were correlated EXISTS subqueries on services/portfolio — so a topic
+      // like "food" (16 expanded terms) produced ~126 branches and took 10s+
+      // in prod. Here each column is checked once with `ILIKE ANY(patterns)`
+      // and services/portfolio are each a single EXISTS. Same matching as
+      // before: case-insensitive substring, literal query on name/handle/
+      // location, literal + expanded terms on everything that describes them.
+      searchIds = await findCreatorIdsMatchingSearch(
+        filters.search,
+        [filters.search, ...related],
+        matchedCategories,
+        matchedIndustries,
+      );
     }
     if (filters.categories?.length) where.categories = { hasSome: filters.categories };
     if (filters.publicOnly) where.showPublicProfile = true;
@@ -387,10 +432,11 @@ export class CreatorRepository {
     }
 
     const andConditions: Prisma.CreatorProfileWhereInput[] = [];
+    if (searchIds) andConditions.push({ id: { in: searchIds } });
     // The free-text `location` is what most profiles actually carry today
     // ("Birgunj, Nepal"), but the structured columns are checked too so a
     // profile with only city/district set still matches. An AND entry rather
-    // than where.OR, which the search branch above already owns.
+    // than where.OR, so it composes with the other AND filters.
     if (filters.location) {
       const place = { contains: filters.location, mode: 'insensitive' as const };
       andConditions.push({

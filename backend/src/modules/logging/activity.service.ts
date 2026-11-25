@@ -35,7 +35,10 @@ export function logActivity(input: LogActivityInput): void {
         entityType:  input.entityType,
         entityId:    input.entityId,
         description: input.description,
-        metadata:    input.metadata as Prisma.InputJsonValue | undefined,
+        // Tag rows written while an admin is acting as this user ("Log in as").
+        metadata:    (ctx?.impersonatedBy
+          ? { ...input.metadata, impersonatedBy: ctx.impersonatedBy }
+          : input.metadata) as Prisma.InputJsonValue | undefined,
         ipAddress:   ctx?.ip,
         device:      ctx?.userAgent,
         platform:    derivePlatform(ctx?.userAgent),

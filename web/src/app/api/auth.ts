@@ -11,7 +11,9 @@ import {
   ApiError,
   apiRequest,
   clearSession,
+  getAccessToken,
   getRefreshToken,
+  isImpersonating,
   readStoredUser,
   ensureFreshAccessToken,
   setTokens,
@@ -224,6 +226,20 @@ const PROFILE_PATH: Record<'CREATOR' | 'BUSINESS', string> = {
  */
 export async function restoreSession(): Promise<AuthUser | null> {
   const stored = readStoredUser<AuthUser>();
+  // Admin "Log in as" tabs carry only a short-lived access token (no refresh
+  // token, by design) — validate it directly instead of refreshing.
+  if (stored && isImpersonating() && getAccessToken()) {
+    try {
+      await apiRequest('GET', PROFILE_PATH[stored.role as 'CREATOR' | 'BUSINESS']);
+      return stored;
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        clearSession();
+        return null;
+      }
+      return stored;
+    }
+  }
   if (!stored || !getRefreshToken()) {
     clearSession();
     return null;
@@ -256,6 +272,13 @@ export async function restoreSession(): Promise<AuthUser | null> {
 }
 
 export async function logout(): Promise<void> {
+  // An admin's "Log in as" tab must never call the logout API: without a
+  // refresh token it would sign the business out of every device. (The
+  // backend ignores it too — belt and braces.)
+  if (isImpersonating()) {
+    clearSession();
+    return;
+  }
   try {
     // Send this device's refresh token so only this session is revoked —
     // without it the backend signs the user out of every device.

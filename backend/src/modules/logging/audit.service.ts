@@ -36,8 +36,11 @@ export function logAudit(input: LogAuditInput): void {
         campaignId:  input.campaignId,
         oldValue:    input.oldValue as Prisma.InputJsonValue | undefined,
         newValue:    input.newValue as Prisma.InputJsonValue | undefined,
-        metadata:    input.metadata as Prisma.InputJsonValue | undefined,
-        performedBy: input.performedBy,
+        metadata:    (ctx?.impersonatedBy
+          ? { ...input.metadata, impersonatedBy: ctx.impersonatedBy }
+          : input.metadata) as Prisma.InputJsonValue | undefined,
+        // An admin acting as this user ("Log in as") is the real performer.
+        performedBy: input.performedBy ?? ctx?.impersonatedBy,
         ipAddress:   ctx?.ip,
         userAgent:   ctx?.userAgent,
         requestId:   ctx?.requestId,

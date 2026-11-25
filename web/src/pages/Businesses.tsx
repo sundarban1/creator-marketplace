@@ -1,4 +1,5 @@
-import { Eye, BarChart3, Trash2, Power, PowerOff } from 'lucide-react';
+import { Eye, BarChart3, Trash2, Power, PowerOff, LogIn } from 'lucide-react';
+import { encodeHandoff } from '../app/auth/ImpersonationHandoffScreen';
 import { DataTable }     from '../components/DataTable';
 import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
@@ -45,6 +46,23 @@ export function Businesses() {
   const businesses = data?.data ?? [];
   const total      = data?.pagination?.total ?? businesses.length;
   const totalPages = data?.pagination?.totalPages ?? 1;
+
+  // Admin "Log in as": the tab is opened synchronously in the click (so the
+  // popup blocker allows it), then pointed at the handoff page once the
+  // backend has issued the token. The token travels in the URL fragment, which
+  // never reaches a server; the new tab keeps it in its own sessionStorage.
+  async function loginAs(row: ApiBusiness) {
+    const tab = window.open('', '_blank');
+    if (!tab) { showToast('Allow pop-ups for this site to open the business account', false); return; }
+    tab.document.title = 'Opening business account…';
+    try {
+      const res = await api.admin.impersonateBusiness(row.id);
+      tab.location.href = `/impersonate#${encodeHandoff(res.data)}`;
+    } catch (e) {
+      tab.close();
+      showToast(e instanceof Error ? e.message : 'Could not log in as this business', false);
+    }
+  }
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -210,6 +228,7 @@ export function Businesses() {
           ) : (
             <ActionButton variant="warning" icon={PowerOff} title="Deactivate (hide from platform)" onClick={() => setAction({ type: 'hide', business: row })} />
           )}
+          <ActionButton icon={LogIn} title="Log in as this business (new tab)" onClick={() => loginAs(row)} />
           <ActionButton variant="danger" icon={Trash2} title="Delete" onClick={() => setAction({ type: 'delete', business: row })} />
         </div>
       ),

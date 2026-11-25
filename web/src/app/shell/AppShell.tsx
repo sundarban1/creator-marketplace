@@ -11,6 +11,7 @@ import { fetchCreatorFullProfile } from '../api/creator';
 import { navGroupsFor, bottomNavFor, type NavGroup } from './nav';
 import { BottomNav } from './BottomNav';
 import { FloatingSupportWidget } from './FloatingSupportWidget';
+import { ImpersonationBanner } from './ImpersonationBanner';
 import { cn } from '../ui/cn';
 import { Logo } from '../ui/Logo';
 import { Avatar } from '../ui/Avatar';
@@ -197,6 +198,7 @@ function AppShellInner() {
 
       <BottomNav items={bottomNavFor(user.role)} />
       <FloatingSupportWidget aboveBottomNav />
+      <ImpersonationBanner />
     </div>
     </NotificationsProvider>
   );

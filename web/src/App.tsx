@@ -42,6 +42,7 @@ const AboutPage = named(() => import('./pages/landing/AboutPage'), 'AboutPage');
 const NotFoundPage = named(() => import('./pages/landing/NotFoundPage'), 'NotFoundPage');
 const OAuthCallbackPage = named(() => import('./app/oauth/OAuthCallbackPage'), 'OAuthCallbackPage');
 const PaymentResultPage = named(() => import('./app/payments/PaymentResultPage'), 'PaymentResultPage');
+const ImpersonationHandoffScreen = named(() => import('./app/auth/ImpersonationHandoffScreen'), 'ImpersonationHandoffScreen');
 const CreatorMarketplaceNepalPage = named(() => import('./pages/landing/content/CreatorMarketplaceNepalPage'), 'CreatorMarketplaceNepalPage');
 const ContentCreatorsPage = named(() => import('./pages/landing/content/ContentCreatorsPage'), 'ContentCreatorsPage');
 const BrandsPage = named(() => import('./pages/landing/content/BrandsPage'), 'BrandsPage');
@@ -176,6 +177,10 @@ export default function App() {
           {/* eSewa / connectIPS checkout lands here in its own tab and hands the
               result back to the paying tab — see app/lib/paymentHandoff.ts. */}
           <Route path="/payment-result" element={<PaymentResultPage />} />
+          {/* Admin "Log in as" lands here in a new tab. Deliberately outside the
+              marketplace providers so their session restore can't race the
+              handoff into sessionStorage — see ImpersonationHandoffScreen. */}
+          <Route path="/impersonate" element={<ImpersonationHandoffScreen />} />
 
           {/* The admin dashboard lives under /admin/* so the marketplace web
               app can own the clean top-level paths (/login, /creators, /events).

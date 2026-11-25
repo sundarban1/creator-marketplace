@@ -20,7 +20,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { clearSession, getRefreshToken, onSessionChange, readStoredUser, writeStoredUser } from '../lib/apiClient';
+import { clearSession, getAccessToken, getRefreshToken, isImpersonating, onSessionChange, readStoredUser, writeStoredUser } from '../lib/apiClient';
 import * as authApi from '../api/auth';
 import type { AuthUser, Identifier, RegisterInput, SocialAuthResult } from '../api/auth';
 import { claimShareSignup } from '../api/opportunityShare';
@@ -81,7 +81,8 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
     // lands afterwards and corrects this if the session really is dead.
     const safety = setTimeout(() => {
       if (cancelled) return;
-      const stored = getRefreshToken() ? readStoredUser<AuthUser>() : null;
+      const hasSession = getRefreshToken() || (isImpersonating() && getAccessToken());
+      const stored = hasSession ? readStoredUser<AuthUser>() : null;
       if (stored && (stored.role === 'CREATOR' || stored.role === 'BUSINESS')) {
         setUser((u) => u ?? stored);
         setStatus((s) => (s === 'loading' ? 'authenticated' : s));

@@ -12,6 +12,10 @@ export interface RequestContext {
   // only receive (userId, input), never `req`, without threading a `lang` param
   // through every function signature down to them.
   language?: string;
+  // Set by middleware/auth.ts when the request carries an admin "Log in as"
+  // token, so audit/activity rows written deep in services record that an
+  // admin — not the account owner — did it.
+  impersonatedBy?: string;
 }
 
 const als = new AsyncLocalStorage<RequestContext>();

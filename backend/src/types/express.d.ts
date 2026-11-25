@@ -7,6 +7,8 @@ declare global {
         id: string;
         email: string;
         role: Role;
+        /** Admin user id when an admin is acting as this user (see signImpersonationToken). */
+        impersonatedBy?: string;
       };
       /** IANA timezone string sent by the client via X-Timezone header. Defaults to 'UTC'. */
       timezone: string;

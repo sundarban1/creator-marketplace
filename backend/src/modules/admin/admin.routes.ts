@@ -35,6 +35,7 @@ import {
   rejectCreator,
   verifyBusiness,
   setBusinessActive,
+  impersonateBusiness,
   setBusinessDocumentStatus,
   rejectBusiness,
   getProviderVerificationQueue,
@@ -68,6 +69,7 @@ router.patch('/creators/:id/reject', rejectCreator);
 router.get('/businesses', getBusinesses);
 router.patch('/businesses/:id/verify', verifyBusiness);
 router.patch('/businesses/:id/active', setBusinessActive);
+router.post('/businesses/:id/impersonate', impersonateBusiness);
 router.patch('/businesses/:id/documents/:doc', setBusinessDocumentStatus);
 router.patch('/businesses/:id/reject', rejectBusiness);
 

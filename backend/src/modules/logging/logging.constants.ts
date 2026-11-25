@@ -49,6 +49,7 @@ export const AuditAction = {
   ACCOUNT_REACTIVATED:      'account.reactivated',
   BUSINESS_DEACTIVATED:     'business.deactivated',
   BUSINESS_ACTIVATED:       'business.activated',
+  BUSINESS_IMPERSONATED:    'business.impersonated',
   ACCOUNT_DELETED_BY_ADMIN: 'account.deleted_by_admin',
   REPORT_REVIEWED:          'report.reviewed',
   // UGC moderation (modules/moderation) — one row per admin step on a report

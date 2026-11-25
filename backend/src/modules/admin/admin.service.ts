@@ -25,6 +25,9 @@ import { ActivityAction, AuditAction, EntityType } from '../logging/logging.cons
 
 import { HttpStatus } from '../../constants/httpStatus';
 import { AuthRepository } from '../auth/auth.repository';
+import { toUserDto } from '../auth/auth.dto';
+import { signImpersonationToken, IMPERSONATION_TTL_SEC } from '../../utils/jwt';
+import prisma from '../../prisma';
 import { emitToAll, emitToUser } from '../../socket';
 import { invalidatePublicBusinessProfile } from '../business/business.service';
 
@@ -419,6 +422,40 @@ export class AdminService {
   // Marketplace visibility only — the owner keeps full login access. Listings
   // aren't cached, so only the public profile cache needs dropping; the
   // catalog:updated broadcast makes open creator/business screens refetch.
+  /**
+   * Admin "Log in as" a business: a short-lived access token for the
+   * business's own account, tagged with the admin's id (see
+   * signImpersonationToken). Silent by design — no notification to the owner,
+   * no Session row, no entry in their devices list — but audited here, and
+   * everything done with the token is tagged via the request context.
+   */
+  async impersonateBusiness(businessId: string, adminUserId: string) {
+    const business = await prisma.businessProfile.findUnique({
+      where: { id: businessId },
+      select: { id: true, userId: true, businessName: true },
+    });
+    if (!business) throw new AppError('Business not found', HttpStatus.NOT_FOUND);
+    const user = await new AuthRepository().findUserById(business.userId);
+    if (!user || user.role !== 'BUSINESS') throw new AppError('Business account not found', HttpStatus.NOT_FOUND);
+
+    const accessToken = signImpersonationToken({ id: user.id, email: user.email, role: user.role }, adminUserId);
+    logAudit({
+      userId:      user.id,
+      actorType:   'ADMIN',
+      action:      AuditAction.BUSINESS_IMPERSONATED,
+      entityType:  EntityType.BUSINESS_PROFILE,
+      entityId:    business.id,
+      performedBy: adminUserId,
+      metadata:    { expiresInSec: IMPERSONATION_TTL_SEC },
+    });
+    return {
+      accessToken,
+      expiresAt: new Date(Date.now() + IMPERSONATION_TTL_SEC * 1000).toISOString(),
+      businessName: business.businessName,
+      user: toUserDto(user),
+    };
+  }
+
   async setBusinessActive(businessId: string, isActive: boolean, adminUserId: string) {
     const updated = await this.repo.updateBusinessActiveStatus(businessId, isActive);
     logAudit({

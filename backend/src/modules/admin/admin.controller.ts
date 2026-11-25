@@ -509,6 +509,19 @@ export async function setBusinessActive(req: Request, res: Response, next: NextF
   }
 }
 
+// POST /api/admin/businesses/:id/impersonate — admin "Log in as" this business
+export async function impersonateBusiness(req: Request, res: Response, next: NextFunction) {
+  try {
+    // An impersonation token can't mint another one (it isn't an ADMIN token
+    // anyway, but keep the chain impossible even if roles ever change).
+    if (req.user!.impersonatedBy) throw new AppError('Not allowed while impersonating', HttpStatus.FORBIDDEN);
+    const result = await service.impersonateBusiness(req.params['id']!, req.user!.id);
+    return success(res, result, 'Impersonation session started');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // PATCH /api/admin/businesses/:id/reject
 export async function rejectBusiness(req: Request, res: Response, next: NextFunction) {
   try {
